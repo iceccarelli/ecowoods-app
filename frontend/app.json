@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "EcoWoods Hardwood",
+    "slug": "ecowoods-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2C3E50"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ecowoods.hardwood"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2C3E50"
+      },
+      "package": "com.ecowoods.hardwood"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:8000"
+    }
+  }
+}
