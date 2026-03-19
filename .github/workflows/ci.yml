@@ -135,7 +135,7 @@ jobs:
           cd backend
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-cov httpx
+          pip install pytest pytest-asyncio pytest-cov httpx aiosqlite
 
       - name: Run tests with coverage
         run: |
