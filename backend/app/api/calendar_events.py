@@ -2,16 +2,15 @@
 Calendar Event CRUD endpoints.
 """
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.models.user import User
 from app.models.calendar_event import CalendarEvent
-from app.schemas.calendar_event import CalendarEventCreate, CalendarEventUpdate, CalendarEventResponse
+from app.models.user import User
+from app.schemas.calendar_event import CalendarEventCreate, CalendarEventResponse, CalendarEventUpdate
 
 router = APIRouter(prefix="/calendar", tags=["Calendar Events"])
 
@@ -38,10 +37,10 @@ async def create_event(
     return event
 
 
-@router.get("/", response_model=List[CalendarEventResponse])
+@router.get("/", response_model=list[CalendarEventResponse])
 async def list_events(
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
     skip: int = 0,
     limit: int = 200,
     db: AsyncSession = Depends(get_db),

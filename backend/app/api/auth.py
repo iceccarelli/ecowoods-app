@@ -3,14 +3,14 @@ Authentication endpoints: register, login, and current user.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.dependencies import get_current_user
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest
+from app.schemas.user import LoginRequest, Token, UserCreate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

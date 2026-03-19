@@ -2,9 +2,11 @@
 JobRequest ORM model.
 """
 
-from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 
@@ -36,11 +38,11 @@ class JobRequest(Base):
     contact_phone = Column(String(50), nullable=True)
     contact_name = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # Relationships

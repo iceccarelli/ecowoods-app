@@ -2,9 +2,11 @@
 CalendarEvent ORM model.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 
@@ -19,19 +21,15 @@ class CalendarEvent(Base):
     event_type = Column(String(50), default="job", nullable=False)
 
     # Link to job request (optional)
-    job_request_id = Column(
-        Integer, ForeignKey("job_requests.id", ondelete="SET NULL"), nullable=True, index=True
-    )
+    job_request_id = Column(Integer, ForeignKey("job_requests.id", ondelete="SET NULL"), nullable=True, index=True)
     # Creator
-    created_by = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
-    )
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # Relationships

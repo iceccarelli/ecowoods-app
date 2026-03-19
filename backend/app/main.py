@@ -10,20 +10,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import settings
-from app.core.database import engine, Base
-from app.core.security import get_password_hash
 from app.api.auth import router as auth_router
-from app.api.users import router as users_router
-from app.api.job_requests import router as job_requests_router
 from app.api.bids import router as bids_router
 from app.api.calendar_events import router as calendar_router
+from app.api.job_requests import router as job_requests_router
+from app.api.users import router as users_router
+from app.core.config import settings
+from app.core.database import Base, engine
+from app.core.security import get_password_hash
+from app.models.bid import Bid  # noqa: F401
+from app.models.calendar_event import CalendarEvent  # noqa: F401
+from app.models.job_request import JobRequest  # noqa: F401
 
 # Import all models so they are registered with Base.metadata
 from app.models.user import User  # noqa: F401
-from app.models.job_request import JobRequest  # noqa: F401
-from app.models.bid import Bid  # noqa: F401
-from app.models.calendar_event import CalendarEvent  # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 
 async def create_default_admin(engine_ref):
     """Create a default admin user if none exists."""
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
     from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     session_factory = async_sessionmaker(engine_ref, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:

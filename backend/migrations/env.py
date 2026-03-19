@@ -3,15 +3,16 @@ Alembic migration environment configuration.
 """
 
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Import models and Base for autogenerate support
 from app.core.database import Base
-from app.models.user import User  # noqa: F401
-from app.models.job_request import JobRequest  # noqa: F401
 from app.models.bid import Bid  # noqa: F401
 from app.models.calendar_event import CalendarEvent  # noqa: F401
+from app.models.job_request import JobRequest  # noqa: F401
+from app.models.user import User  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

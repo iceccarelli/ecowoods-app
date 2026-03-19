@@ -1,168 +1,156 @@
 # EcoWoods Hardwood Flooring Platform
 
-A complete, production-ready job management platform for hardwood flooring companies. This system includes a polished React Native mobile app for clients, a robust Python FastAPI backend, a web-based admin dashboard for staff, and full Docker containerization for easy deployment.
+[![CI](https://github.com/iceccarelli/ecowoods-app/actions/workflows/ci.yml/badge.svg)](https://github.com/iceccarelli/ecowoods-app/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## 🌟 Features
-
-### Mobile App (React Native / Expo)
-- **User Authentication**: Secure login and registration with JWT.
-- **Job Requests**: Multi-step form to request flooring services (installation, refinishing, etc.) with detailed specifications (wood type, size, timeframe).
-- **Estimates & Bids**: View submitted job requests and track incoming bids/estimates.
-- **Calendar**: Interactive calendar to view scheduled jobs, meetings, and deadlines.
-- **Profile Management**: Update personal information and contact details.
-- **State Management**: Centralized state using Zustand for smooth data flow.
-
-### Backend API (Python FastAPI)
-- **RESTful Architecture**: Clean, documented API endpoints.
-- **Authentication**: JWT-based secure authentication.
-- **Database**: Asynchronous PostgreSQL integration using SQLAlchemy 2.0.
-- **Data Validation**: Strict request/response validation using Pydantic.
-- **Migrations**: Database schema management with Alembic.
-- **Python Support**: Compatible with Python 3.11, 3.12, and 3.13.
-
-### Admin Dashboard (Web)
-- **Overview**: Real-time statistics on job requests, bids, and users.
-- **Job Management**: View, filter, and update the status of all client job requests.
-- **Bid Management**: Create and manage bids/estimates for specific job requests.
-- **Calendar Management**: Schedule and manage events, linking them to specific jobs.
-- **User Management**: View registered users and manage admin privileges.
+A complete, production-ready job-management platform for hardwood flooring companies. This system streamlines the entire workflow from customer job requests to staff bidding and calendar scheduling.
 
 ---
 
-## 🚀 Quick Start (Docker)
+## Architecture
 
-The easiest way to run the backend, database, and admin dashboard is using Docker Compose.
-
-### Prerequisites
-- Docker and Docker Compose installed on your machine.
-
-### Steps
-1. Open a terminal in the root directory of this project.
-2. Run the startup script:
-   ```bash
-   ./scripts/start.sh
-   ```
-   *(Alternatively, run `docker compose up --build -d`)*
-
-3. The services will be available at:
-   - **API Base URL**: `http://localhost:8000/api/v1`
-   - **API Documentation (Swagger)**: `http://localhost:8000/docs`
-   - **Admin Dashboard**: `http://localhost:8000/admin/`
-
-4. **Default Admin Credentials**:
-   - Username: `admin`
-   - Password: `admin123`
-
-To stop the services, run `./scripts/stop.sh` or `docker compose down`.
-
----
-
-## 📱 Running the Mobile App
-
-The mobile app is built with React Native and Expo.
-
-### Prerequisites
-- Node.js (v18+)
-- npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
-- Expo Go app installed on your iOS or Android device (for physical device testing)
-
-### Steps
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Configure the API URL:
-   - Open `frontend/services/api.js`
-   - Update `API_BASE_URL` to point to your backend.
-   - *Note: If testing on a physical device, change `localhost` to your computer's local IP address (e.g., `http://192.168.1.X:8000/api/v1`).*
-
-4. Start the Expo development server:
-   ```bash
-   npm start
-   ```
-
-5. Scan the QR code with your phone's camera (iOS) or the Expo Go app (Android) to run the app.
-
-### Building for Production (EAS Build)
-To build standalone `.apk` (Android) or `.ipa` (iOS) files:
-1. Install EAS CLI: `npm install -g eas-cli`
-2. Login to Expo: `eas login`
-3. Configure the project: `eas build:configure`
-4. Build for Android: `eas build -p android --profile preview`
-5. Build for iOS: `eas build -p ios --profile preview`
-
----
-
-## 🛠️ Manual Backend Setup (Without Docker)
-
-If you prefer to run the backend locally without Docker:
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create a virtual environment and activate it:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up your PostgreSQL database and update the `DATABASE_URL` in `.env`.
-
-5. Run database migrations:
-   ```bash
-   alembic upgrade head
-   ```
-
-6. Start the FastAPI server:
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
----
-
-## 📁 Project Structure
-
-```text
-ecowoods-app/
-├── admin-dashboard/       # Vanilla JS/HTML/CSS admin interface
-│   ├── css/               # Stylesheets
-│   ├── js/                # API client and app logic
-│   └── index.html         # Main dashboard entry point
-├── backend/               # Python FastAPI backend
-│   ├── app/               # Application code (API, models, schemas)
-│   ├── migrations/        # Alembic database migrations
-│   ├── Dockerfile         # Backend container definition
-│   └── requirements.txt   # Python dependencies
-├── frontend/              # React Native / Expo mobile app
-│   ├── assets/            # Images and icons
-│   ├── context/           # Zustand state management
-│   ├── screens/           # UI screens
-│   ├── services/          # API communication
-│   └── App.js             # Navigation and entry point
-├── scripts/               # Helper scripts for Docker
-└── docker-compose.yml     # Multi-container orchestration
+```mermaid
+graph TD
+    subgraph "EcoWoods Platform"
+        subgraph Frontend["Mobile App (React Native)"]
+            Auth[Auth & State<br/>Zustand]
+            Screens[10+ Screens<br/>Job Requests, Bids, Calendar]
+        end
+        
+        subgraph Dashboard["Admin Dashboard (Vanilla JS)"]
+            AdminUI[Staff Interface<br/>HTML/CSS/JS]
+        end
+        
+        subgraph Backend["REST API (FastAPI)"]
+            API[API Router<br/>JWT Auth, CRUD]
+            ORM[SQLAlchemy ORM<br/>Asyncpg]
+        end
+        
+        subgraph Storage["Database"]
+            DB[(PostgreSQL 16)]
+        end
+        
+        Frontend -->|HTTP/JSON| API
+        Dashboard -->|HTTP/JSON| API
+        API -->|Async SQL| DB
+    end
+    
+    Customers["Customers"] --> Frontend
+    Staff["Staff / Admins"] --> Dashboard
 ```
 
 ---
 
-## 🔒 Security Notes
-- The default `.env` files contain placeholder secrets. **You must change `SECRET_KEY` and database passwords before deploying to production.**
-- The admin dashboard is currently served statically by the FastAPI backend for convenience. In a strict production environment, consider serving it via Nginx or a CDN.
+## Features
 
-## 🤝 Extensibility
-- **Database**: Currently uses PostgreSQL. Can be swapped to MySQL or SQLite by changing the SQLAlchemy URL in `.env`.
-- **Payments**: The `Bid` model is ready to be integrated with Stripe or Square. You can add a payment endpoint in the backend and a checkout screen in the frontend.
+### 📱 Mobile App (React Native)
+- **Authentication**: Secure login and registration with JWT.
+- **Job Requests**: Multi-step form for detailed flooring requests (wood type, size, timeframe).
+- **Bidding System**: View estimates and track bid statuses.
+- **Calendar**: Interactive calendar for scheduling installations and pickups.
+- **State Management**: Robust state handling using Zustand.
+
+### ⚙️ Backend (Python FastAPI)
+- **High Performance**: Fully asynchronous execution stack using FastAPI and asyncpg.
+- **Security**: JWT authentication, bcrypt password hashing, and role-based access control.
+- **Database**: PostgreSQL 16 with Alembic migrations.
+- **Code Quality**: Enforced by Ruff (linting), Black (formatting), and Bandit (security scanning).
+- **Testing**: Comprehensive pytest suite covering all endpoints.
+
+### 🖥️ Admin Dashboard
+- **Staff Interface**: Clean, responsive web interface served directly by the backend.
+- **Management**: Full CRUD capabilities for users, job requests, bids, and calendar events.
+
+---
+
+## Quick Start (Docker)
+
+The easiest way to run the entire platform (Backend, Database, and Admin Dashboard) is using Docker Compose.
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Running the System
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/iceccarelli/ecowoods-app.git
+   cd ecowoods-app
+   ```
+
+2. **Start the services**
+   ```bash
+   ./scripts/start.sh
+   ```
+   *(This script automatically creates your `.env` file and runs `docker compose up --build -d`)*
+
+3. **Access the Platform**
+   - **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+   - **Admin Dashboard**: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+   - **Default Admin Login**: `admin` / `admin123`
+
+4. **Stop the services**
+   ```bash
+   ./scripts/stop.sh
+   ```
+
+---
+
+## Mobile App Development
+
+To run the React Native frontend locally:
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18+)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+
+### Running the App
+
+1. **Navigate to the frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the Expo server**
+   ```bash
+   npm start
+   ```
+
+4. **Connect**
+   - Press `i` to open in iOS Simulator
+   - Press `a` to open in Android Emulator
+   - Scan the QR code with the Expo Go app on your physical device
+
+*Note: Ensure the backend is running via Docker so the app can connect to the API.*
+
+---
+
+## CI/CD Pipeline
+
+This project includes a robust GitHub Actions workflow (`.github/workflows/ci.yml`) that ensures code quality and reliability on every push and pull request.
+
+The pipeline includes 6 successful checks:
+1. **Docker Build**: Verifies the container builds cleanly.
+2. **Lint & Format**: Checks code style using Ruff and Black.
+3. **Security Scan**: Performs static analysis using Bandit.
+4. **Tests (Python 3.11)**: Runs the pytest suite.
+5. **Tests (Python 3.12)**: Runs the pytest suite with coverage reporting.
+6. **Tests (Python 3.13)**: Ensures forward compatibility.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

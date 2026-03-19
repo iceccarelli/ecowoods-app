@@ -2,17 +2,16 @@
 Bid CRUD endpoints.
 """
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_current_admin
-from app.models.user import User
+from app.core.dependencies import get_current_user
 from app.models.bid import Bid
 from app.models.job_request import JobRequest
-from app.schemas.bid import BidCreate, BidUpdate, BidResponse
+from app.models.user import User
+from app.schemas.bid import BidCreate, BidResponse, BidUpdate
 
 router = APIRouter(prefix="/bids", tags=["Bids"])
 
@@ -48,9 +47,9 @@ async def create_bid(
     return bid
 
 
-@router.get("/", response_model=List[BidResponse])
+@router.get("/", response_model=list[BidResponse])
 async def list_bids(
-    job_request_id: Optional[int] = Query(None),
+    job_request_id: int | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),

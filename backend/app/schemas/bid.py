@@ -3,7 +3,7 @@ Pydantic schemas for Bid endpoints.
 """
 
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -11,31 +11,31 @@ class BidCreate(BaseModel):
     job_request_id: int
     amount: float = Field(..., gt=0)
     currency: str = "CAD"
-    timeframe: Optional[str] = None
-    pickup_date: Optional[str] = None
-    notes: Optional[str] = None
+    timeframe: str | None = None
+    pickup_date: str | None = None
+    notes: str | None = None
 
 
 class BidUpdate(BaseModel):
-    amount: Optional[float] = None
-    currency: Optional[str] = None
-    timeframe: Optional[str] = None
-    pickup_date: Optional[str] = None
-    status: Optional[str] = None
-    notes: Optional[str] = None
+    amount: float | None = None
+    currency: str | None = None
+    timeframe: str | None = None
+    pickup_date: str | None = None
+    status: str | None = None
+    notes: str | None = None
 
 
 class BidResponse(BaseModel):
     id: int
     job_request_id: int
-    bidder_id: Optional[int] = None
+    bidder_id: int | None = None
     amount: float
     currency: str
-    timeframe: Optional[str] = None
-    pickup_date: Optional[str] = None
+    timeframe: str | None = None
+    pickup_date: str | None = None
     status: str
-    notes: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    notes: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}

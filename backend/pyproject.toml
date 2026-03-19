@@ -1,0 +1,59 @@
+[project]
+name = "ecowoods-api"
+version = "1.0.0"
+description = "EcoWoods Hardwood Flooring Platform — REST API"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "EcoWoods Team"}]
+
+# ── Ruff (linter) ────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit (subset)
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "S101",  # assert used in tests
+    "S105",  # hardcoded password bindings (false positives on defaults)
+    "S106",  # hardcoded password in function args
+    "B008",  # function call in default arg (Depends())
+    "E501",  # line too long — handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"app/core/config.py" = ["S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ── Black (formatter) ────────────────────────────────────────────────────
+[tool.black]
+target-version = ["py311"]
+line-length = 120
+
+# ── Bandit (security) ────────────────────────────────────────────────────
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101", "B105", "B106"]
+
+# ── Pytest ────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

@@ -3,7 +3,6 @@ Application configuration loaded from environment variables.
 """
 
 from pydantic_settings import BaseSettings
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -15,7 +14,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Server
-    HOST: str = "0.0.0.0"
+    HOST: str = "0.0.0.0"  # noqa: S104  # nosec B104
     PORT: int = 8000
 
     # Database
@@ -28,7 +27,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
     # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: list[str] = ["*"]
 
     class Config:
         env_file = ".env"

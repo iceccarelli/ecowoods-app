@@ -2,16 +2,15 @@
 Job Request CRUD endpoints.
 """
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_current_admin
-from app.models.user import User
+from app.core.dependencies import get_current_user
 from app.models.job_request import JobRequest
-from app.schemas.job_request import JobRequestCreate, JobRequestUpdate, JobRequestResponse
+from app.models.user import User
+from app.schemas.job_request import JobRequestCreate, JobRequestResponse, JobRequestUpdate
 
 router = APIRouter(prefix="/job-requests", tags=["Job Requests"])
 
@@ -47,11 +46,11 @@ async def create_job_request(
     return job
 
 
-@router.get("/", response_model=List[JobRequestResponse])
+@router.get("/", response_model=list[JobRequestResponse])
 async def list_job_requests(
     skip: int = 0,
     limit: int = 100,
-    status_filter: Optional[str] = Query(None, alias="status"),
+    status_filter: str | None = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

@@ -3,38 +3,38 @@ Pydantic schemas for CalendarEvent endpoints.
 """
 
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class CalendarEventCreate(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     start_date: str
-    end_date: Optional[str] = None
+    end_date: str | None = None
     event_type: str = "job"
-    job_request_id: Optional[int] = None
+    job_request_id: int | None = None
 
 
 class CalendarEventUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    event_type: Optional[str] = None
-    job_request_id: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    event_type: str | None = None
+    job_request_id: int | None = None
 
 
 class CalendarEventResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     start_date: str
-    end_date: Optional[str] = None
+    end_date: str | None = None
     event_type: str
-    job_request_id: Optional[int] = None
-    created_by: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    job_request_id: int | None = None
+    created_by: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
