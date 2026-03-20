@@ -32,9 +32,7 @@ test_engine = create_async_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestSessionLocal = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 # ── Event loop ───────────────────────────────────────────────────────────
