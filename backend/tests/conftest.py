@@ -32,7 +32,9 @@ test_engine = create_async_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+TestSessionLocal = async_sessionmaker(
+    test_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 # ── Event loop ───────────────────────────────────────────────────────────
@@ -53,6 +55,14 @@ async def setup_database():
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+# ── Dispose engine at end of session to prevent hang ─────────────────────
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_engine(event_loop):
+    """Dispose the async engine when the test session ends."""
+    yield
+    event_loop.run_until_complete(test_engine.dispose())
 
 
 # ── DB session override ─────────────────────────────────────────────────
