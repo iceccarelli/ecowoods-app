@@ -1,13 +1,19 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 
-                process.env.EXPO_PUBLIC_API_URL || 
-                'http://localhost:8000';
+// shared/api/client.ts
+// ONE client used by both Web and Mobile
+
+import { Lead, LeadResponse } from '../types/lead';
+
+const API_URL = 
+  process.env.NEXT_PUBLIC_API_URL || 
+  process.env.EXPO_PUBLIC_API_URL || 
+  'http://localhost:8000';
 
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-  
+
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -24,14 +30,20 @@ export async function apiRequest<T>(
   return res.json();
 }
 
-// Specific helper for leads (used by both web and mobile)
-export async function submitLead(lead: Omit<Lead, 'submitted_at'>) {
+/**
+ * Submit a lead from either the website or the mobile app.
+ * Automatically sets the correct source.
+ */
+export async function submitLead(
+  lead: Omit<Lead, 'submitted_at' | 'source'>,
+  source: 'website' | 'mobile_app' = 'website'
+): Promise<LeadResponse> {
   return apiRequest<LeadResponse>('/api/leads', {
     method: 'POST',
     body: JSON.stringify({
       ...lead,
+      source,
       submitted_at: new Date().toISOString(),
-      source: 'website', // or 'mobile_app' when called from RN
     }),
   });
 }
