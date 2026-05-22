@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-
+import { submitLead } from '../shared/api/client';
+import type { Lead } from '../shared/types/lead';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single-file Next.js client component
@@ -654,47 +655,39 @@ export default function HomePage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    // Posts to /api/leads on the same origin. In production, next.config.js
-    // rewrites that to the FastAPI backend mounted at /_/backend/api/leads.
-    // Override with NEXT_PUBLIC_API_URL to point at an external API.
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-    const endpoint = `${apiBase}/api/leads`;
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          postal: form.postal,
-          service: form.service,
-          sqft: form.sqft,
-          timeline: form.timeline,
-          message: form.message,
-          source: 'website',
-          submitted_at: new Date().toISOString(),
-        }),
-      });
-      if (!res.ok && res.status !== 404) {
-        // 404 means no backend wired yet — that's fine, treat as soft-success
-        // so we don't lose the lead. Anything else: log for diagnostics.
-        console.warn('Lead submit non-200:', res.status);
-      }
-      setSubmitted(true);
-    } catch (err) {
-      // Network/backend offline (e.g. local dev without FastAPI running).
-      // Acknowledge anyway — we'd rather capture intent than block on a flake.
-      console.error('Lead submit error:', err);
-      setSubmitted(true);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+   const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+     if (submitting) return;
+   
+     setSubmitting(true);
+   
+     try {
+       const leadData = {
+         name: form.name,
+         email: form.email,
+         phone: form.phone,
+         postal: form.postal,
+         service: form.service as any,
+         sqft: parseInt(form.sqft) || 0,
+         timeline: form.timeline as any,
+         message: form.message,
+       };
+   
+       const result = await submitLead(leadData, 'website');
+   
+       if (result.success) {
+         setSubmitted(true);
+       } else {
+         alert(result.message || 'Something went wrong. Please try again.');
+       }
+     } catch (err) {
+       console.error('Lead submission error:', err);
+       // Still show success to user (graceful degradation)
+       setSubmitted(true);
+     } finally {
+       setSubmitting(false);
+     }
+   };
 
   return (
     <div ref={root as React.MutableRefObject<HTMLDivElement>}>
@@ -1089,6 +1082,104 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+       {/* ================================================================
+    GET THE MOBILE APP — Perfect Web + Mobile Integration
+    ================================================================ */}
+<section className="section" style={{ background: 'var(--cream-50)' }}>
+  <div className="shell">
+    <div className="section-head centered reveal">
+      <span className="eyebrow">EcoWoods Pro App</span>
+      <h2>
+        Manage jobs on the go. <span className="serif-italic">Same system.</span>
+      </h2>
+      <p>
+        The same platform our installers and project managers use — now in your pocket.
+        Track bids, view schedules, upload photos, and get real-time updates.
+      </p>
+    </div>
+
+    <div className="app-promo reveal" style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '3rem',
+      alignItems: 'center',
+      maxWidth: '1100px',
+      margin: '0 auto',
+    }}>
+      <div>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{
+            background: 'var(--copper)',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '9999px',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            letterSpacing: '0.5px'
+          }}>
+            iOS & Android
+          </div>
+          <div style={{
+            background: '#111',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '9999px',
+            fontSize: '0.75rem',
+            fontWeight: 700
+          }}>
+            Expo + React Native
+          </div>
+        </div>
+
+        <h3 style={{ fontSize: '2rem', lineHeight: 1.1, marginBottom: '1rem' }}>
+          One app.<br />One source of truth.
+        </h3>
+
+        <ul style={{ marginBottom: '2rem', lineHeight: 1.8 }}>
+          <li>✓ Submit job requests in under 60 seconds</li>
+          <li>✓ Real-time bidding from our team</li>
+          <li>✓ Live project timeline & photo updates</li>
+          <li>✓ Instant access to your warranty documents</li>
+          <li>✓ Same data as the website — zero duplication</li>
+        </ul>
+
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <a href="#" className="btn btn-copper btn-lg">
+            Download on App Store
+          </a>
+          <a href="#" className="btn btn-ghost btn-lg">
+            Get it on Google Play
+          </a>
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          width: '220px',
+          height: '220px',
+          background: '#111',
+          margin: '0 auto',
+          borderRadius: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.4)',
+          position: 'relative'
+        }}>
+          <div style={{ textAlign: 'center', color: 'white' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📱</div>
+            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Scan to download</div>
+          </div>
+          {/* Replace with real QR code image later */}
+        </div>
+        <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--muted)' }}>
+          Or visit <strong>app.ecowoods.ca</strong> on your phone
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* ================================================================
           ESTIMATOR
