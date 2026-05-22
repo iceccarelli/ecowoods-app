@@ -4,8 +4,6 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  // Images: page.tsx currently uses plain <img> tags pointing at Unsplash,
-  // but if you migrate to next/image these remote patterns let it work.
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
@@ -15,7 +13,6 @@ const nextConfig = {
     ],
   },
 
-  // Sensible production headers.
   async headers() {
     return [
       {
@@ -39,21 +36,9 @@ const nextConfig = {
     ];
   },
 
-  // Optional: proxy /api/* on the same origin to the FastAPI backend that
-  // Vercel mounts at /_/backend. This means the frontend can call /api/leads
-  // and the backend's /api/leads handler will respond — no CORS, no env vars
-  // required in the browser.
-  //
-  // Comment this block out if your backend exposes routes WITHOUT an /api
-  // prefix, or if you prefer to call /_/backend/* directly from the client.
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: '/_/backend/api/:path*',
-      },
-    ];
-  },
+  // IMPORTANT: Removed the /_/backend rewrite.
+  // The frontend now uses NEXT_PUBLIC_API_URL (set in Vercel) for all API calls.
+  // This is the correct, production-grade pattern for a separate FastAPI backend.
 };
 
 module.exports = nextConfig;
