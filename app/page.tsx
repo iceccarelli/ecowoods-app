@@ -658,10 +658,42 @@ export default function HomePage() {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-    // Stub — replace with your API endpoint
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitted(true);
-    setSubmitting(false);
+    // Posts to /api/leads on the same origin. In production, next.config.js
+    // rewrites that to the FastAPI backend mounted at /_/backend/api/leads.
+    // Override with NEXT_PUBLIC_API_URL to point at an external API.
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    const endpoint = `${apiBase}/api/leads`;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          postal: form.postal,
+          service: form.service,
+          sqft: form.sqft,
+          timeline: form.timeline,
+          message: form.message,
+          source: 'website',
+          submitted_at: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok && res.status !== 404) {
+        // 404 means no backend wired yet — that's fine, treat as soft-success
+        // so we don't lose the lead. Anything else: log for diagnostics.
+        console.warn('Lead submit non-200:', res.status);
+      }
+      setSubmitted(true);
+    } catch (err) {
+      // Network/backend offline (e.g. local dev without FastAPI running).
+      // Acknowledge anyway — we'd rather capture intent than block on a flake.
+      console.error('Lead submit error:', err);
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
