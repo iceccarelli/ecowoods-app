@@ -755,41 +755,29 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* ================================================================
-          MARQUEE / TRUST
-          ================================================================ */}
-      <section className="marquee" aria-label="Certifications and partners">
-        <div className="marquee-track">
-          {[
-            'NWFA Certified Installer',
-            'BBB A+ Accredited',
-            'WSIB Compliant',
-            'Bona Certified Craftsman',
-            'Loba 2K Specialist',
-            'FSC Certified Materials',
-            'GreenGuard Gold Finishes',
-            'HomeStars Best of Award · 8 Years',
-            'Houzz Best of Service',
-          ]
-            .concat([
-              'NWFA Certified Installer',
-              'BBB A+ Accredited',
-              'WSIB Compliant',
-              'Bona Certified Craftsman',
-              'Loba 2K Specialist',
-              'FSC Certified Materials',
-              'GreenGuard Gold Finishes',
-              'HomeStars Best of Award · 8 Years',
-              'Houzz Best of Service',
-            ])
-            .map((label, i) => (
-              <span key={i} className="marquee-item">
-                {Icon.award}
-                {label}
-              </span>
-            ))}
-        </div>
-      </section>
+{/* ================================================================
+    MARQUEE / TRUST — Fixed & Clean
+    ================================================================ */}
+<section className="marquee" aria-label="Certifications and partners">
+  <div className="marquee-track">
+    {[
+      'NWFA Certified Installer',
+      'BBB A+ Accredited',
+      'WSIB Compliant',
+      'Bona Certified Craftsman',
+      'Loba 2K Specialist',
+      'FSC Certified Materials',
+      'GreenGuard Gold Finishes',
+      'HomeStars Best of Award · 8 Years',
+      'Houzz Best of Service',
+    ].map((label, i) => (
+      <span key={i} className="marquee-item">
+        {Icon.award}
+        {label}
+      </span>
+    ))}
+  </div>
+</section>
 
       {/* ================================================================
           SERVICES
