@@ -2,18 +2,29 @@
   "name": "ecowoods-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "Ecowoods — premium Toronto hardwood flooring marketing site",
+  "description": "Ecowoods — premium Toronto hardwood flooring marketing site | Perfectly integrated with full-stack job management platform (React Native + FastAPI + shared types + OData-aligned data layer)",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "next": "^14.2.26",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "@tanstack/react-query": "^5.45.0",
+    "zod": "^3.23.8",
+    "react-hook-form": "^7.51.5",
+    "@hookform/resolvers": "^3.9.0",
+    "framer-motion": "^11.2.10",
+    "sonner": "^1.5.0",
+    "lucide-react": "^0.378.0",
+    "date-fns": "^3.6.0"
   },
   "devDependencies": {
     "@types/node": "20.16.10",
@@ -24,9 +35,12 @@
     "eslint-config-next": "14.2.15",
     "postcss": "8.4.47",
     "tailwindcss": "3.4.13",
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "prettier": "^3.3.2",
+    "@tanstack/react-query-devtools": "^5.45.0"
   },
   "engines": {
     "node": ">=18.18.0"
-  }
+  },
+  "packageManager": "npm@10.8.1"
 }
