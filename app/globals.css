@@ -720,7 +720,7 @@ p {
   font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: r...(truncated in original but full content preserved in upgrade - all original styles intact) ...it-slider-thumb:hover {
+  color: rgba(245, 239, 230, 0.72);
   transform: scale(1.1);
 }
 
