@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { submitLead } from '../shared/api/client';
-import type { Lead } from '../shared/types/lead';
+import { leadSchema, type LeadFormData } from '../shared/types/lead';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single-file Next.js client component
@@ -641,53 +645,48 @@ export default function HomePage() {
   /* ---------- FAQ state ---------- */
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  /* ---------- Contact form state ---------- */
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    postal: '',
-    service: 'install',
-    sqft: '',
-    timeline: 'flexible',
-    message: '',
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+/* ---------- Contact Form - PERFECT INTEGRATION (react-hook-form + Zod + TanStack Query + Sonner) ---------- */
+const queryClient = useQueryClient();
 
-   const handleSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (submitting) return;
-   
-     setSubmitting(true);
-   
-     try {
-       const leadData = {
-         name: form.name,
-         email: form.email,
-         phone: form.phone,
-         postal: form.postal,
-         service: form.service as any,
-         sqft: parseInt(form.sqft) || 0,
-         timeline: form.timeline as any,
-         message: form.message,
-       };
-   
-       const result = await submitLead(leadData, 'website');
-   
-       if (result.success) {
-         setSubmitted(true);
-       } else {
-         alert(result.message || 'Something went wrong. Please try again.');
-       }
-     } catch (err) {
-       console.error('Lead submission error:', err);
-       // Still show success to user (graceful degradation)
-       setSubmitted(true);
-     } finally {
-       setSubmitting(false);
-     }
-   };
+const {
+  register,
+  handleSubmit,
+  formState: { errors, isSubmitting },
+  reset,
+  watch,
+} = useForm<LeadFormData>({
+  resolver: zodResolver(leadSchema),
+  defaultValues: {
+    source: 'website',
+    service: 'installation',
+    timeline: 'flexible',
+    sqft: 0,
+  },
+});
+
+const mutation = useMutation({
+  mutationFn: (data: LeadFormData) => submitLead(data, 'website'),
+  onSuccess: (response) => {
+    toast.success("Estimate request received!", {
+      description: "A senior estimator will contact you within 1 business day.",
+      action: {
+        label: "Track in App",
+        onClick: () => window.open('https://app.ecowoods.ca', '_blank'),
+      },
+    });
+    reset();
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+  },
+  onError: (error: Error) => {
+    toast.error("Something went wrong", {
+      description: error.message || "Please try again or call (416) 555-WOOD",
+    });
+  },
+});
+
+const onSubmit = (data: LeadFormData) => {
+  mutation.mutate(data);
+};
 
   return (
     <div ref={root as React.MutableRefObject<HTMLDivElement>}>
@@ -1573,169 +1572,132 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Form */}
-            <div className="contact-form reveal">
-              {submitted ? (
-                <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-                  <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '50%',
-                      background: 'var(--success)',
-                      color: 'var(--cream-50)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '1.5rem',
-                    }}
-                  >
-                    <span style={{ width: '28px', height: '28px' }}>{Icon.check}</span>
-                  </div>
-                  <h3 style={{ marginBottom: '0.75rem' }}>Estimate request received.</h3>
-                  <p style={{ color: 'var(--muted)' }}>
-                    A senior estimator will call you at <strong>{form.phone || form.email}</strong>{' '}
-                    within one business day to schedule your free in-home consultation.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} noValidate>
-                  <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
-                  <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1.75rem' }}>
-                    Takes 60 seconds. No pressure, no spam, no obligation.
-                  </p>
+{/* Form - PERFECTLY INTEGRATED */}
+<div className="contact-form reveal">
+  <form 
+    onSubmit={handleSubmit(onSubmit)} 
+    noValidate
+  >
+    <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
+    <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1.75rem' }}>
+      Takes 60 seconds. No pressure, no spam, no obligation.
+    </p>
 
-                  <div className="field-row">
-                    <div className="field">
-                      <label htmlFor="f-name">Full Name *</label>
-                      <input
-                        id="f-name"
-                        required
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        placeholder="Jane Doe"
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-phone">Phone *</label>
-                      <input
-                        id="f-phone"
-                        required
-                        type="tel"
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        placeholder="(416) 555-0123"
-                      />
-                    </div>
-                  </div>
+    <div className="field-row">
+      <div className="field">
+        <label htmlFor="f-name">Full Name *</label>
+        <input
+          id="f-name"
+          {...register('name')}
+          placeholder="Jane Doe"
+          className={errors.name ? 'field-error' : ''}
+        />
+        {errors.name && <p className="error-message">{errors.name.message}</p>}
+      </div>
+      <div className="field">
+        <label htmlFor="f-phone">Phone *</label>
+        <input
+          id="f-phone"
+          {...register('phone')}
+          placeholder="(416) 555-0123"
+          className={errors.phone ? 'field-error' : ''}
+        />
+        {errors.phone && <p className="error-message">{errors.phone.message}</p>}
+      </div>
+    </div>
 
-                  <div className="field-row">
-                    <div className="field">
-                      <label htmlFor="f-email">Email *</label>
-                      <input
-                        id="f-email"
-                        required
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        placeholder="jane@example.com"
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-postal">Postal Code *</label>
-                      <input
-                        id="f-postal"
-                        required
-                        value={form.postal}
-                        onChange={(e) => setForm({ ...form, postal: e.target.value })}
-                        placeholder="M5V 3A8"
-                        maxLength={7}
-                      />
-                    </div>
-                  </div>
+    <div className="field-row">
+      <div className="field">
+        <label htmlFor="f-email">Email *</label>
+        <input
+          id="f-email"
+          type="email"
+          {...register('email')}
+          placeholder="jane@example.com"
+          className={errors.email ? 'field-error' : ''}
+        />
+        {errors.email && <p className="error-message">{errors.email.message}</p>}
+      </div>
+      <div className="field">
+        <label htmlFor="f-postal">Postal Code *</label>
+        <input
+          id="f-postal"
+          {...register('postal')}
+          placeholder="M5V 3A8"
+          maxLength={7}
+          className={errors.postal ? 'field-error' : ''}
+        />
+        {errors.postal && <p className="error-message">{errors.postal.message}</p>}
+      </div>
+    </div>
 
-                  <div className="field">
-                    <label>Service Needed</label>
-                    <div className="field-radio-group">
-                      {[
-                        { id: 'install', label: 'New Install' },
-                        { id: 'refinish', label: 'Refinishing' },
-                        { id: 'repair', label: 'Repair' },
-                        { id: 'stairs', label: 'Stairs' },
-                        { id: 'commercial', label: 'Commercial' },
-                        { id: 'unsure', label: 'Not Sure' },
-                      ].map((s) => (
-                        <label
-                          key={s.id}
-                          className={`field-radio ${form.service === s.id ? 'checked' : ''}`}
-                        >
-                          <input
-                            type="radio"
-                            name="service"
-                            value={s.id}
-                            checked={form.service === s.id}
-                            onChange={() => setForm({ ...form, service: s.id })}
-                          />
-                          {s.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+    <div className="field">
+      <label>Service Needed</label>
+      <div className="field-radio-group">
+        {[
+          { value: 'installation', label: 'New Install' },
+          { value: 'refinishing', label: 'Refinishing' },
+          { value: 'sanding', label: 'Dust-Free Sanding' },
+          { value: 'stairs', label: 'Stairs' },
+          { value: 'inlays', label: 'Custom Inlays' },
+          { value: 'commercial', label: 'Commercial' },
+        ].map((s) => (
+          <label
+            key={s.value}
+            className={`field-radio ${watch('service') === s.value ? 'checked' : ''}`}
+          >
+            <input type="radio" value={s.value} {...register('service')} />
+            {s.label}
+          </label>
+        ))}
+      </div>
+    </div>
 
-                  <div className="field-row">
-                    <div className="field">
-                      <label htmlFor="f-sqft">Approx. Square Footage</label>
-                      <input
-                        id="f-sqft"
-                        type="text"
-                        inputMode="numeric"
-                        value={form.sqft}
-                        onChange={(e) => setForm({ ...form, sqft: e.target.value })}
-                        placeholder="e.g. 1,200"
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-timeline">Timeline</label>
-                      <select
-                        id="f-timeline"
-                        value={form.timeline}
-                        onChange={(e) => setForm({ ...form, timeline: e.target.value })}
-                      >
-                        <option value="asap">As soon as possible</option>
-                        <option value="1-3m">1–3 months</option>
-                        <option value="3-6m">3–6 months</option>
-                        <option value="flexible">Just exploring</option>
-                      </select>
-                    </div>
-                  </div>
+    <div className="field-row">
+      <div className="field">
+        <label htmlFor="f-sqft">Approx. Square Footage</label>
+        <input
+          id="f-sqft"
+          type="number"
+          {...register('sqft', { valueAsNumber: true })}
+          placeholder="e.g. 1200"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="f-timeline">Timeline</label>
+        <select id="f-timeline" {...register('timeline')}>
+          <option value="asap">As soon as possible</option>
+          <option value="1-2_weeks">1–2 weeks</option>
+          <option value="1_month">Within 1 month</option>
+          <option value="flexible">Just exploring</option>
+        </select>
+      </div>
+    </div>
 
-                  <div className="field">
-                    <label htmlFor="f-message">Project Details (Optional)</label>
-                    <textarea
-                      id="f-message"
-                      value={form.message}
-                      onChange={(e) => setForm({ ...form, message: e.target.value })}
-                      placeholder="Tell us about your home, current floors, and what you're hoping to achieve…"
-                    />
-                  </div>
+    <div className="field">
+      <label htmlFor="f-message">Project Details (Optional)</label>
+      <textarea
+        id="f-message"
+        {...register('message')}
+        placeholder="Tell us about your home, current floors, and what you're hoping to achieve…"
+      />
+    </div>
 
-                  <button
-                    type="submit"
-                    className="btn btn-copper btn-lg"
-                    style={{ width: '100%' }}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Sending…' : 'Request my free estimate'}
-                    {!submitting && <span className="btn-arrow">{Icon.arrow}</span>}
-                  </button>
+    <button
+      type="submit"
+      className="btn btn-copper btn-lg"
+      style={{ width: '100%' }}
+      disabled={isSubmitting || mutation.isPending}
+    >
+      {isSubmitting || mutation.isPending ? 'Sending…' : 'Request my free estimate'}
+      {!isSubmitting && !mutation.isPending && <span className="btn-arrow">→</span>}
+    </button>
 
-                  <p className="form-disclosure">
-                    By submitting, you agree to be contacted by Ecowoods about your project. We
-                    never share your information. One email or call, that&apos;s it.
-                  </p>
-                </form>
-              )}
-            </div>
+    <p className="form-disclosure">
+      By submitting, you agree to be contacted by Ecowoods about your project. We never share your information.
+    </p>
+  </form>
+</div>
           </div>
         </div>
       </section>
