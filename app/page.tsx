@@ -645,7 +645,7 @@ export default function HomePage() {
   /* ---------- FAQ state ---------- */
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-/* ---------- Contact Form - PERFECT INTEGRATION (react-hook-form + Zod + TanStack Query + Sonner) ---------- */
+/* ---------- Contact Form - PERFECT INTEGRATION ---------- */
 const queryClient = useQueryClient();
 
 const {
@@ -660,13 +660,12 @@ const {
     source: 'website',
     service: 'installation',
     timeline: 'flexible',
-    sqft: 0,
   },
 });
 
 const mutation = useMutation({
   mutationFn: (data: LeadFormData) => submitLead(data, 'website'),
-  onSuccess: (response) => {
+  onSuccess: () => {
     toast.success("Estimate request received!", {
       description: "A senior estimator will contact you within 1 business day.",
       action: {
