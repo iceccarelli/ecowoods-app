@@ -4,16 +4,21 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { submitLead } from '../shared/api/client';
-import { leadSchema, type LeadFormData } from '../shared/types/lead';
-import { Icon } from './icons'; // Assuming you extract icons or import from page
+import { motion } from 'framer-motion';
+import { submitLead } from '../../shared/api/client';
+import { leadSchema, type LeadFormData } from '../../shared/types/lead';
 
 interface QuoteFormProps {
   onSuccess?: () => void;
   className?: string;
+  showTitle?: boolean;
 }
 
-export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps) {
+export default function QuoteForm({ 
+  onSuccess, 
+  className = '', 
+  showTitle = true 
+}: QuoteFormProps) {
   const queryClient = useQueryClient();
 
   const {
@@ -21,6 +26,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
     defaultValues: {
@@ -30,9 +36,9 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
     },
   });
 
-  const leadMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: (data: LeadFormData) => submitLead(data, 'website'),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Estimate request received!", {
         description: "A senior estimator will contact you within 1 business day.",
         action: {
@@ -52,15 +58,28 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
   });
 
   const onSubmit = (data: LeadFormData) => {
-    leadMutation.mutate(data);
+    mutation.mutate(data);
   };
 
+  const selectedService = watch('service');
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={`contact-form ${className}`} noValidate>
-      <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
-      <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1.75rem' }}>
-        Takes 60 seconds. No pressure, no spam, no obligation.
-      </p>
+    <motion.form 
+      onSubmit={handleSubmit(onSubmit)} 
+      className={`contact-form ${className}`}
+      noValidate
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      {showTitle && (
+        <>
+          <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
+          <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1.75rem' }}>
+            Takes 60 seconds. No pressure, no spam, no obligation.
+          </p>
+        </>
+      )}
 
       <div className="field-row">
         <div className="field">
@@ -70,6 +89,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
             {...register('name')}
             placeholder="Jane Doe"
             className={errors.name ? 'field-error' : ''}
+            aria-invalid={!!errors.name}
           />
           {errors.name && <p className="error-message">{errors.name.message}</p>}
         </div>
@@ -80,6 +100,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
             {...register('phone')}
             placeholder="(416) 555-0123"
             className={errors.phone ? 'field-error' : ''}
+            aria-invalid={!!errors.phone}
           />
           {errors.phone && <p className="error-message">{errors.phone.message}</p>}
         </div>
@@ -94,6 +115,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
             {...register('email')}
             placeholder="jane@example.com"
             className={errors.email ? 'field-error' : ''}
+            aria-invalid={!!errors.email}
           />
           {errors.email && <p className="error-message">{errors.email.message}</p>}
         </div>
@@ -105,6 +127,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
             placeholder="M5V 3A8"
             maxLength={7}
             className={errors.postal ? 'field-error' : ''}
+            aria-invalid={!!errors.postal}
           />
           {errors.postal && <p className="error-message">{errors.postal.message}</p>}
         </div>
@@ -114,21 +137,22 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
         <label>Service Needed</label>
         <div className="field-radio-group">
           {[
-            { id: 'installation', label: 'New Install' },
-            { id: 'refinishing', label: 'Refinishing' },
-            { id: 'sanding', label: 'Dust-Free Sanding' },
-            { id: 'stairs', label: 'Stairs' },
-            { id: 'inlays', label: 'Custom Inlays' },
-            { id: 'commercial', label: 'Commercial' },
+            { value: 'installation', label: 'New Install' },
+            { value: 'refinishing', label: 'Refinishing' },
+            { value: 'sanding', label: 'Dust-Free Sanding' },
+            { value: 'stairs', label: 'Stairs' },
+            { value: 'inlays', label: 'Custom Inlays' },
+            { value: 'commercial', label: 'Commercial' },
           ].map((s) => (
             <label
-              key={s.id}
-              className={`field-radio ${watch('service') === s.id ? 'checked' : ''}`}
+              key={s.value}
+              className={`field-radio ${selectedService === s.value ? 'checked' : ''}`}
             >
-              <input
-                type="radio"
-                value={s.id}
-                {...register('service')}
+              <input 
+                type="radio" 
+                value={s.value} 
+                {...register('service')} 
+                aria-label={s.label}
               />
               {s.label}
             </label>
@@ -144,11 +168,17 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
             type="number"
             {...register('sqft', { valueAsNumber: true })}
             placeholder="e.g. 1200"
+            min="50"
+            max="15000"
           />
         </div>
         <div className="field">
           <label htmlFor="f-timeline">Timeline</label>
-          <select id="f-timeline" {...register('timeline')}>
+          <select 
+            id="f-timeline" 
+            {...register('timeline')}
+            aria-label="Project timeline"
+          >
             <option value="asap">As soon as possible</option>
             <option value="1-2_weeks">1–2 weeks</option>
             <option value="1_month">Within 1 month</option>
@@ -163,6 +193,7 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
           id="f-message"
           {...register('message')}
           placeholder="Tell us about your home, current floors, and what you're hoping to achieve…"
+          rows={4}
         />
       </div>
 
@@ -170,15 +201,24 @@ export default function QuoteForm({ onSuccess, className = '' }: QuoteFormProps)
         type="submit"
         className="btn btn-copper btn-lg"
         style={{ width: '100%' }}
-        disabled={isSubmitting || leadMutation.isPending}
+        disabled={isSubmitting || mutation.isPending}
       >
-        {isSubmitting || leadMutation.isPending ? 'Sending…' : 'Request my free estimate'}
-        {!isSubmitting && !leadMutation.isPending && <span className="btn-arrow">→</span>}
+        {isSubmitting || mutation.isPending ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="animate-spin">⟳</span> Sending...
+          </span>
+        ) : (
+          <>
+            Request my free estimate
+            <span className="btn-arrow">→</span>
+          </>
+        )}
       </button>
 
       <p className="form-disclosure">
-        By submitting, you agree to be contacted by Ecowoods about your project. We never share your information.
+        By submitting, you agree to be contacted by Ecowoods about your project. 
+        We never share your information with third parties.
       </p>
-    </form>
+    </motion.form>
   );
 }
