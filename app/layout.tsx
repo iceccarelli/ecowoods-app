@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Header from './components/Header';
 import './globals.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { useState } from 'react';
 
 /* ---------------------- Fonts ---------------------- */
 const fraunces = Fraunces({
@@ -362,19 +365,41 @@ function SiteFooter() {
   );
 }
 
-/* ---------------------- Root Layout ---------------------- */
+/* ---------------------- Root Layout with Perfect Stack Integration ---------------------- */
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // TanStack Query Client for perfect caching + parallel data fetching
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 30,   // 30 minutes
+        retry: 2,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
+
   return (
     <html lang="en-CA" className={`${fraunces.variable} ${jakarta.variable} ${mono.variable}`}>
       <body id="top">
-        <Header />
-        <main role="main">{children}</main>
-        <SiteFooter />
+        <QueryClientProvider client={queryClient}>
+          <Header />
+          <main role="main">{children}</main>
+          <SiteFooter />
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-        />
+          {/* Sonner Toaster for beautiful form success/error feedback (Lead submission, etc.) */}
+          <Toaster 
+            position="top-center" 
+            richColors 
+            closeButton 
+            className="toaster-custom"
+          />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+          />
+        </QueryClientProvider>
       </body>
     </html>
   );
