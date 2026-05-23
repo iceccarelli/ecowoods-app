@@ -1,6 +1,5 @@
 // shared/api/client.ts
 // ULTIMATE PRODUCTION-GRADE API CLIENT — Perfect Integration for Ecowoods Platform
-// Features: OData query builder, TanStack Query ready, JWT auth, retry logic, typed errors, caching headers
 
 import { Lead, LeadResponse, leadSchema, type LeadFormData } from '../types/lead';
 import { Job, JobCreateInput } from '../types/job';
@@ -70,7 +69,7 @@ export async function getLeads(params?: ODataQueryParams & { status?: string }) 
   return apiRequest(`/api/leads${query}`);
 }
 
-// JOBS + BIDS + AUTH (kept from original, enhanced)
+// JOBS
 export async function createJob(input: JobCreateInput, token?: string) {
   return apiRequest<Job>('/api/jobs', { method: 'POST', body: JSON.stringify(input) }, token);
 }
@@ -80,10 +79,16 @@ export async function getJobs(params?: ODataQueryParams, token?: string) {
   return apiRequest(`/api/jobs${query}`, {}, token);
 }
 
+// BIDS
 export async function submitBid(input: BidCreateInput, token?: string) {
   return apiRequest<Bid>('/api/bids', { method: 'POST', body: JSON.stringify(input) }, token);
 }
 
+export async function getBidsForJob(jobId: string, token?: string): Promise<Bid[]> {
+  return apiRequest<Bid[]>(`/api/jobs/${jobId}/bids`, {}, token);
+}
+
+// AUTH
 export async function login(credentials: LoginCredentials) {
   return apiRequest<AuthUser>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
 }
