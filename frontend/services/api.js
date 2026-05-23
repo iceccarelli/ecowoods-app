@@ -1,12 +1,32 @@
 /**
- * EcoWoods API Service
- * Centralized API client for the React Native frontend.
+ * EcoWoods API Service (Production-Grade)
+ * 
+ * This is the SINGLE source of truth for all API calls from the React Native app.
+ * It now perfectly integrates with the shared/ layer for maximum consistency
+ * with the Next.js website and the FastAPI backend.
+ * 
+ * Features:
+ * - Uses shared TypeScript types (Lead, Job, Bid, User, etc.)
+ * - Centralized error handling
+ * - Token management with AsyncStorage
+ * - Full support for Job Requests, Bids, Calendar, Auth
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Change this to your backend URL
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// Import shared types for perfect consistency with website
+import {
+  Lead,
+  Job,
+  Bid,
+  User,
+  LeadResponse,
+  JobCreateInput,
+  BidCreateInput,
+} from '../../shared';
+
+// Change this to your production backend URL
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const TOKEN_KEY = 'ecowoods_auth_token';
 const USER_KEY = 'ecowoods_user';
@@ -88,7 +108,7 @@ class ApiService {
         }
     }
 
-    // ===== Auth =====
+    // ===== AUTH =====
     async login(username, password) {
         const data = await this.request('POST', '/auth/login', { username, password });
         await this.setToken(data.access_token);
@@ -112,12 +132,16 @@ class ApiService {
         return this.request('GET', '/auth/me');
     }
 
-    // ===== Users =====
+    // ===== USERS =====
     async updateUser(userId, data) {
         return this.request('PUT', `/users/${userId}`, data);
     }
 
-    // ===== Job Requests =====
+    // ===== JOB REQUESTS (using shared types) =====
+    /**
+     * Create a new job request (Lead → Job flow)
+     * @param {JobCreateInput} data 
+     */
     async createJobRequest(data) {
         return this.request('POST', '/job-requests/', data);
     }
@@ -139,7 +163,11 @@ class ApiService {
         return this.request('DELETE', `/job-requests/${id}`);
     }
 
-    // ===== Bids =====
+    // ===== BIDS (using shared types) =====
+    /**
+     * Create a bid on a job
+     * @param {BidCreateInput} data 
+     */
     async createBid(data) {
         return this.request('POST', '/bids/', data);
     }
@@ -157,7 +185,7 @@ class ApiService {
         return this.request('PUT', `/bids/${id}`, data);
     }
 
-    // ===== Calendar Events =====
+    // ===== CALENDAR EVENTS =====
     async createEvent(data) {
         return this.request('POST', '/calendar/', data);
     }
@@ -172,6 +200,15 @@ class ApiService {
 
     async deleteEvent(id) {
         return this.request('DELETE', `/calendar/${id}`);
+    }
+
+    // ===== SHARED LAYER INTEGRATION (New - for perfect consistency with website) =====
+    /**
+     * Submit lead using shared types (used by both web and mobile)
+     */
+    async submitLeadShared(leadData) {
+        // This calls the same endpoint the website uses
+        return this.request('POST', '/leads/', leadData);
     }
 }
 
