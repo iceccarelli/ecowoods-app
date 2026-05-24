@@ -2,22 +2,19 @@
   "name": "ecowoods-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Ecowoods — premium Toronto hardwood flooring marketing site | Perfectly integrated with full-stack job management platform (React Native + FastAPI + shared types + OData-aligned data layer) | Monorepo with Turbo + shared packages for zero-drift web/mobile/backend",
+  "description": "Ecowoods — premium Toronto hardwood flooring platform",
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "start": "turbo run start",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "lint:fix": "turbo run lint:fix",
-    "format": "prettier --write .",
-    "analyze": "ANALYZE=true turbo run build --filter=website",
-    "dev:website": "turbo run dev --filter=website",
-    "dev:mobile": "turbo run dev --filter=mobile"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
   },
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "frontend"
   ],
   "dependencies": {
     "next": "^14.2.26",
@@ -48,6 +45,5 @@
   },
   "engines": {
     "node": ">=18.18.0"
-  },
-  "packageManager": "npm@10.8.1"
+  }
 }
