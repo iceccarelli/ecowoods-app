@@ -1,553 +1,729 @@
 /**
- * CalendarScreen - View calendar events with a calendar widget.
- * UPGRADED VERSION v2.0 - Perfect Execution Stack + Safe Data Handling
+ * CalendarScreen — v4.0
+ * ─────────────────────────────────────────────────────────────────────
+ * • useQuery for events list (synced via store realtime events)
+ * • useMutation for createEvent — optimistic with rollback
+ * • react-native-calendars with multi-dot marking by event type
+ * • Selected date events + upcoming events section
+ * • Bottom-sheet modal for adding new events
+ * • Haptic feedback on date tap / event create / type-chip select
+ *
+ * File location: frontend/screens/CalendarScreen.js  (replace existing)
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    RefreshControl,
-    ActivityIndicator,
-    TextInput,
-    Alert,
-    Modal,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  TextInput,
+  Modal,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import api from '../services/api';
 import useStore from '../context/useStore';
 import { COLORS } from '../styles';
 
-export default function CalendarScreen() {
-    const { 
-        events = [], 
-        eventsLoading = false, 
-        fetchEvents, 
-        createEvent 
-    } = useStore();
+const EVENT_TYPES = [
+  { key: 'job', label: 'Job', color: COLORS.accent, icon: 'construct' },
+  {
+    key: 'deadline',
+    label: 'Deadline',
+    color: COLORS.red || '#DC3545',
+    icon: 'alarm',
+  },
+  { key: 'meeting', label: 'Meeting', color: '#3498DB', icon: 'people' },
+  {
+    key: 'reminder',
+    label: 'Reminder',
+    color: '#8E44AD',
+    icon: 'notifications',
+  },
+];
 
-    const [selectedDate, setSelectedDate] = useState('');
-    const [refreshing, setRefreshing] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [newTitle, setNewTitle] = useState('');
-    const [newDescription, setNewDescription] = useState('');
+const today = () => new Date().toISOString().split('T')[0];
 
-    // Safe fetch on mount
-    useEffect(() => {
-        const loadEvents = async () => {
-            try {
-                await fetchEvents?.();
-            } catch (error) {
-                console.warn('Failed to load events:', error);
-            }
+export default function CalendarScreen({ navigation }) {
+  const queryClient = useQueryClient();
+  const storeEvents = useStore((s) => s.events);
+
+  const [selectedDate, setSelectedDate] = useState(today());
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newEventType, setNewEventType] = useState('job');
+  const [creating, setCreating] = useState(false);
+
+  /* ── Query: events ─────────────────────────────────────── */
+  const {
+    data: events = [],
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => api.listEvents(),
+    initialData:
+      Array.isArray(storeEvents) && storeEvents.length > 0
+        ? storeEvents
+        : undefined,
+    placeholderData: (prev) => prev,
+  });
+
+  /* ── Mutation: createEvent (optimistic) ───────────────── */
+  const createMutation = useMutation({
+    mutationFn: (data) => api.createEvent(data),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['events'] });
+      const previous = queryClient.getQueryData(['events']);
+      const optimistic = {
+        id: `tmp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...data,
+        __optimistic: true,
+      };
+      queryClient.setQueryData(['events'], (old) =>
+        Array.isArray(old) ? [optimistic, ...old] : [optimistic]
+      );
+      return { previous, tempId: optimistic.id };
+    },
+    onError: (err, _data, ctx) => {
+      queryClient.setQueryData(['events'], ctx?.previous);
+      Alert.alert(
+        "Couldn't create event",
+        err?.message || 'Please try again.'
+      );
+    },
+    onSuccess: () => {
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        ).catch(() => {});
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+
+  /* ── Derived: marked dates for calendar ──────────────── */
+  const markedDates = useMemo(() => {
+    const marks = {};
+    events.forEach((ev) => {
+      const date = ev.start_date || ev.date;
+      if (!date) return;
+      const typeConfig =
+        EVENT_TYPES.find((t) => t.key === ev.event_type) || EVENT_TYPES[0];
+      if (marks[date]) {
+        marks[date].dots = marks[date].dots || [];
+        if (!marks[date].dots.find((d) => d.color === typeConfig.color)) {
+          marks[date].dots.push({ color: typeConfig.color });
+        }
+      } else {
+        marks[date] = {
+          marked: true,
+          dots: [{ color: typeConfig.color }],
         };
-        loadEvents();
-    }, [fetchEvents]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        try {
-            await fetchEvents?.();
-        } catch (e) {
-            console.warn('Refresh failed:', e);
-        }
-        setRefreshing(false);
-    };
-
-    // ==================== SAFE DATA PROCESSING ====================
-    
-    // Filter out invalid events (perfect consistency)
-    const validEvents = useMemo(() => {
-        return (events || []).filter(ev => 
-            ev && 
-            typeof ev === 'object' && 
-            ev.id && 
-            ev.title
-        );
-    }, [events]);
-
-    // Build marked dates for the calendar (with safety)
-    const markedDates = useMemo(() => {
-        const marks = {};
-        
-        validEvents.forEach((ev) => {
-            const dateStr = ev.start_date || ev.date || ev.startDate;
-            if (dateStr && typeof dateStr === 'string') {
-                marks[dateStr] = {
-                    marked: true,
-                    dotColor: ev.event_type === 'deadline' ? COLORS.red : COLORS.accent,
-                    ...(dateStr === selectedDate ? { selected: true, selectedColor: COLORS.accent } : {}),
-                };
-            }
-        });
-
-        if (selectedDate && !marks[selectedDate]) {
-            marks[selectedDate] = { selected: true, selectedColor: COLORS.accent };
-        }
-
-        return marks;
-    }, [validEvents, selectedDate]);
-
-    // Get events for selected date (safe)
-    const selectedEvents = useMemo(() => {
-        if (!selectedDate) return [];
-        return validEvents.filter((ev) => {
-            const dateStr = ev.start_date || ev.date || ev.startDate;
-            return dateStr === selectedDate;
-        });
-    }, [validEvents, selectedDate]);
-
-    // Safe sorted events for "All Events" section
-    const sortedAllEvents = useMemo(() => {
-        return [...validEvents].sort((a, b) => {
-            const dateA = a.start_date || a.date || a.startDate || '';
-            const dateB = b.start_date || b.date || b.startDate || '';
-            
-            // Safe localeCompare with fallback
-            try {
-                return dateA.localeCompare(dateB);
-            } catch (e) {
-                return dateA > dateB ? 1 : dateA < dateB ? -1 : 0;
-            }
-        });
-    }, [validEvents]);
-
-    // ==================== EVENT HANDLERS ====================
-
-    const handleAddEvent = async () => {
-        if (!newTitle.trim()) {
-            Alert.alert('Error', 'Please enter a title.');
-            return;
-        }
-        if (!selectedDate) {
-            Alert.alert('Error', 'Please select a date on the calendar first.');
-            return;
-        }
-
-        try {
-            await createEvent?.({
-                title: newTitle.trim(),
-                description: newDescription.trim() || null,
-                start_date: selectedDate,
-                event_type: 'job',
-            });
-            
-            setShowModal(false);
-            setNewTitle('');
-            setNewDescription('');
-            Alert.alert('Success', 'Event created successfully!');
-        } catch (e) {
-            Alert.alert('Error', e?.message || 'Failed to create event. Please try again.');
-        }
-    };
-
-    // ==================== RENDER ====================
-
-    if (eventsLoading && !refreshing) {
-        return (
-            <View style={s.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.accent} />
-                <Text style={s.loadingText}>Loading calendar...</Text>
-            </View>
-        );
+      }
+    });
+    if (selectedDate) {
+      marks[selectedDate] = {
+        ...(marks[selectedDate] || {}),
+        selected: true,
+        selectedColor: COLORS.accent,
+      };
     }
+    return marks;
+  }, [events, selectedDate]);
 
-    return (
-        <View style={s.container}>
-            <ScrollView
-                refreshControl={
-                    <RefreshControl 
-                        refreshing={refreshing} 
-                        onRefresh={onRefresh}
-                        colors={[COLORS.accent]}
-                        tintColor={COLORS.accent}
-                    />
-                }
-                contentContainerStyle={{ paddingBottom: 40 }}
-            >
-                {/* Calendar Widget */}
-                <Calendar
-                    onDayPress={(day) => setSelectedDate(day.dateString)}
-                    markedDates={markedDates}
-                    theme={{
-                        backgroundColor: COLORS.white,
-                        calendarBackground: COLORS.white,
-                        todayTextColor: COLORS.accent,
-                        arrowColor: COLORS.accent,
-                        selectedDayBackgroundColor: COLORS.accent,
-                        dotColor: COLORS.accent,
-                        textDayFontWeight: '500',
-                        textMonthFontWeight: '700',
-                        textMonthFontSize: 18,
-                        textDayHeaderFontWeight: '600',
-                    }}
-                    style={s.calendar}
-                    enableSwipeMonths={true}
-                />
+  const selectedEvents = useMemo(
+    () =>
+      events
+        .filter((ev) => (ev.start_date || ev.date) === selectedDate)
+        .sort((a, b) =>
+          (a.created_at || '').localeCompare(b.created_at || '')
+        ),
+    [events, selectedDate]
+  );
 
-                {/* Selected Date Events Section */}
-                <View style={s.eventsSection}>
-                    <View style={s.eventsSectionHeader}>
-                        <Text style={s.sectionTitle}>
-                            {selectedDate
-                                ? `Events on ${selectedDate}`
-                                : 'Select a date to view events'}
-                        </Text>
-                        {selectedDate && (
-                            <TouchableOpacity
-                                style={s.addBtn}
-                                onPress={() => setShowModal(true)}
-                                activeOpacity={0.8}
-                            >
-                                <Ionicons name="add" size={20} color={COLORS.white} />
-                            </TouchableOpacity>
-                        )}
-                    </View>
+  const upcomingEvents = useMemo(() => {
+    const t = today();
+    return events
+      .filter((ev) => {
+        const d = ev.start_date || ev.date;
+        return d && d >= t;
+      })
+      .sort((a, b) => {
+        const da = a.start_date || a.date || '';
+        const db = b.start_date || b.date || '';
+        return da.localeCompare(db);
+      })
+      .slice(0, 10);
+  }, [events]);
 
-                    {/* Empty State for Selected Date */}
-                    {selectedDate && selectedEvents.length === 0 && (
-                        <View style={s.emptyCard}>
-                            <Ionicons name="calendar-outline" size={36} color={COLORS.lightGray} />
-                            <Text style={s.emptyText}>No events scheduled for this date.</Text>
-                            <TouchableOpacity 
-                                style={s.addEventHint} 
-                                onPress={() => setShowModal(true)}
-                            >
-                                <Text style={s.addEventHintText}>+ Add Event</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+  /* ── Handlers ──────────────────────────────────────────── */
+  const onRefresh = useCallback(async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    await refetch();
+  }, [refetch]);
 
-                    {/* Selected Date Events List */}
-                    {selectedEvents.map((ev) => (
-                        <View key={ev.id} style={s.eventCard}>
-                            <View style={[
-                                s.eventDot, 
-                                ev.event_type === 'deadline' && { backgroundColor: COLORS.red }
-                            ]} />
-                            <View style={s.eventContent}>
-                                <Text style={s.eventTitle}>{ev.title}</Text>
-                                {ev.description && (
-                                    <Text style={s.eventDesc} numberOfLines={2}>
-                                        {ev.description}
-                                    </Text>
-                                )}
-                                <Text style={s.eventMeta}>
-                                    {ev.event_type || 'event'} 
-                                    {ev.job_request_id ? `  ·  Job #${ev.job_request_id}` : ''}
-                                </Text>
-                            </View>
-                        </View>
-                    ))}
+  const handleDayPress = useCallback((day) => {
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    setSelectedDate(day.dateString);
+  }, []);
 
-                    {/* All Events Section */}
-                    <View style={s.allEventsHeader}>
-                        <Text style={s.sectionTitle}>
-                            All Events ({sortedAllEvents.length})
-                        </Text>
-                        {sortedAllEvents.length > 0 && (
-                            <Text style={s.eventCountBadge}>
-                                {sortedAllEvents.length} total
-                            </Text>
-                        )}
-                    </View>
+  const openModal = useCallback(() => {
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    setShowModal(true);
+  }, []);
 
-                    {sortedAllEvents.length === 0 ? (
-                        <View style={s.emptyCard}>
-                            <Ionicons name="calendar-outline" size={40} color={COLORS.lightGray} />
-                            <Text style={s.emptyText}>No events yet.</Text>
-                            <Text style={s.emptySubtext}>
-                                Pull down to refresh or add your first event.
-                            </Text>
-                        </View>
-                    ) : (
-                        sortedAllEvents.map((ev) => {
-                            const displayDate = ev.start_date || ev.date || ev.startDate || 'No date';
-                            return (
-                                <View key={ev.id} style={s.eventCard}>
-                                    <View style={[
-                                        s.eventDot, 
-                                        ev.event_type === 'deadline' && { backgroundColor: COLORS.red }
-                                    ]} />
-                                    <View style={s.eventContent}>
-                                        <Text style={s.eventTitle}>{ev.title}</Text>
-                                        <Text style={s.eventMeta}>
-                                            {displayDate}  ·  {ev.event_type || 'event'}
-                                        </Text>
-                                    </View>
-                                </View>
-                            );
-                        })
-                    )}
-                </View>
-            </ScrollView>
+  const closeModal = useCallback(() => {
+    setShowModal(false);
+    setNewTitle('');
+    setNewDescription('');
+    setNewEventType('job');
+  }, []);
 
-            {/* Add Event Modal */}
-            <Modal 
-                visible={showModal} 
-                transparent 
-                animationType="slide"
-                onRequestClose={() => setShowModal(false)}
-            >
-                <View style={s.modalOverlay}>
-                    <View style={s.modalContent}>
-                        <View style={s.modalHeader}>
-                            <Text style={s.modalTitle}>New Event</Text>
-                            <TouchableOpacity 
-                                onPress={() => setShowModal(false)}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <Ionicons name="close" size={24} color={COLORS.text} />
-                            </TouchableOpacity>
-                        </View>
+  const handleAddEvent = async () => {
+    if (!newTitle.trim()) {
+      Alert.alert('Title required', 'Please enter a title for your event.');
+      return;
+    }
+    if (!selectedDate) {
+      Alert.alert('Date required', 'Please select a date on the calendar.');
+      return;
+    }
+    setCreating(true);
+    try {
+      await createMutation.mutateAsync({
+        title: newTitle.trim(),
+        description: newDescription.trim() || null,
+        start_date: selectedDate,
+        event_type: newEventType,
+      });
+      closeModal();
+    } catch (e) {
+      // handled by onError
+    } finally {
+      setCreating(false);
+    }
+  };
 
-                        <Text style={s.modalDate}>Date: {selectedDate}</Text>
+  /* ── Render ────────────────────────────────────────────── */
+  return (
+    <View style={s.container}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={onRefresh}
+            tintColor={COLORS.accent}
+            colors={[COLORS.accent]}
+          />
+        }
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Calendar
+          onDayPress={handleDayPress}
+          markedDates={markedDates}
+          markingType="multi-dot"
+          theme={{
+            backgroundColor: COLORS.white,
+            calendarBackground: COLORS.white,
+            todayTextColor: COLORS.accent,
+            arrowColor: COLORS.accent,
+            selectedDayBackgroundColor: COLORS.accent,
+            selectedDayTextColor: COLORS.white,
+            dotColor: COLORS.accent,
+            textDayFontWeight: '500',
+            textMonthFontWeight: '700',
+            textMonthFontSize: 18,
+            textDayHeaderFontWeight: '600',
+            textSectionTitleColor: COLORS.textLight,
+            textDayFontSize: 14,
+          }}
+          style={s.calendar}
+        />
 
-                        <Text style={s.label}>Title *</Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder="Event title"
-                            placeholderTextColor={COLORS.gray}
-                            value={newTitle}
-                            onChangeText={setNewTitle}
-                            autoFocus
-                        />
-
-                        <Text style={s.label}>Description (optional)</Text>
-                        <TextInput
-                            style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
-                            placeholder="Add details..."
-                            placeholderTextColor={COLORS.gray}
-                            value={newDescription}
-                            onChangeText={setNewDescription}
-                            multiline
-                        />
-
-                        <TouchableOpacity 
-                            style={s.submitBtn} 
-                            onPress={handleAddEvent}
-                            activeOpacity={0.85}
-                        >
-                            <Text style={s.submitBtnText}>Create Event</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+        {/* Type legend */}
+        <View style={s.legend}>
+          {EVENT_TYPES.map((t) => (
+            <View key={t.key} style={s.legendItem}>
+              <View style={[s.legendDot, { backgroundColor: t.color }]} />
+              <Text style={s.legendLabel}>{t.label}</Text>
+            </View>
+          ))}
         </View>
-    );
+
+        {/* Selected date section */}
+        <View style={s.eventsSection}>
+          <View style={s.sectionHeader}>
+            <View>
+              <Text style={s.sectionTitle}>
+                {selectedDate === today()
+                  ? 'Today'
+                  : new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+              </Text>
+              <Text style={s.sectionSubtitle}>
+                {selectedEvents.length}{' '}
+                {selectedEvents.length === 1 ? 'event' : 'events'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={s.addBtn}
+              onPress={openModal}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add" size={22} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+
+          {selectedEvents.length === 0 ? (
+            <View style={s.emptyCard}>
+              <Ionicons
+                name="calendar-outline"
+                size={36}
+                color={COLORS.lightGray}
+              />
+              <Text style={s.emptyText}>No events on this date</Text>
+              <TouchableOpacity onPress={openModal}>
+                <Text style={s.emptyLink}>+ Add event</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            selectedEvents.map((ev) => <EventCard key={ev.id} event={ev} />)
+          )}
+        </View>
+
+        {/* Upcoming */}
+        {upcomingEvents.length > 0 ? (
+          <View style={s.eventsSection}>
+            <Text style={s.sectionTitle}>
+              Upcoming ({upcomingEvents.length})
+            </Text>
+            <View style={{ marginTop: 12 }}>
+              {upcomingEvents.map((ev) => (
+                <EventCard
+                  key={`up-${ev.id}`}
+                  event={ev}
+                  showDate
+                  onPress={
+                    ev.job_request_id
+                      ? () =>
+                          navigation.navigate('JobsTab', {
+                            screen: 'RequestEstimate',
+                            params: { jobId: ev.job_request_id },
+                          })
+                      : undefined
+                  }
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      {/* Add Event Modal */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={s.modalOverlay}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={s.modalBackdrop}
+            onPress={closeModal}
+          />
+          <View style={s.modalContent}>
+            <View style={s.modalHandle} />
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>New Event</Text>
+              <TouchableOpacity
+                onPress={closeModal}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={s.modalDate}>
+              {new Date(selectedDate).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </Text>
+
+            <Text style={s.label}>Type</Text>
+            <View style={s.typeRow}>
+              {EVENT_TYPES.map((t) => {
+                const selected = newEventType === t.key;
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[
+                      s.typeChip,
+                      selected && { backgroundColor: t.color, borderColor: t.color },
+                    ]}
+                    onPress={() => {
+                      if (Platform.OS !== 'web')
+                        Haptics.selectionAsync().catch(() => {});
+                      setNewEventType(t.key);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name={t.icon}
+                      size={14}
+                      color={selected ? COLORS.white : t.color}
+                    />
+                    <Text
+                      style={[
+                        s.typeChipText,
+                        selected && { color: COLORS.white },
+                      ]}
+                    >
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={s.label}>Title</Text>
+            <TextInput
+              style={s.input}
+              placeholder="e.g. Install hardwood — living room"
+              placeholderTextColor={COLORS.lightGray}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              maxLength={100}
+            />
+
+            <Text style={s.label}>Description (optional)</Text>
+            <TextInput
+              style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
+              placeholder="Notes, location, attendees…"
+              placeholderTextColor={COLORS.lightGray}
+              value={newDescription}
+              onChangeText={setNewDescription}
+              multiline
+              maxLength={500}
+            />
+
+            <TouchableOpacity
+              style={[s.submitBtn, creating && { opacity: 0.6 }]}
+              onPress={handleAddEvent}
+              disabled={creating}
+              activeOpacity={0.85}
+            >
+              <Text style={s.submitBtnText}>
+                {creating ? 'Creating…' : 'Create Event'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
 }
 
-// ==================== STYLES ====================
+function EventCard({ event, showDate, onPress }) {
+  const typeConfig =
+    EVENT_TYPES.find((t) => t.key === event.event_type) || EVENT_TYPES[0];
+  const date = event.start_date || event.date;
+
+  const inner = (
+    <View
+      style={[s.eventCard, event.__optimistic && { opacity: 0.55 }]}
+    >
+      <View style={[s.eventStripe, { backgroundColor: typeConfig.color }]} />
+      <View style={s.eventContent}>
+        <View style={s.eventTopRow}>
+          <Text style={s.eventTitle} numberOfLines={1}>
+            {event.title}
+          </Text>
+          <View
+            style={[
+              s.eventTypeBadge,
+              { backgroundColor: typeConfig.color + '20' },
+            ]}
+          >
+            <Text
+              style={[s.eventTypeBadgeText, { color: typeConfig.color }]}
+            >
+              {typeConfig.label}
+            </Text>
+          </View>
+        </View>
+        {event.description ? (
+          <Text style={s.eventDesc} numberOfLines={2}>
+            {event.description}
+          </Text>
+        ) : null}
+        <View style={s.eventMeta}>
+          {showDate && date ? (
+            <>
+              <Ionicons
+                name="calendar-outline"
+                size={12}
+                color={COLORS.textLight}
+              />
+              <Text style={s.eventMetaText}>{date}</Text>
+            </>
+          ) : null}
+          {event.job_request_id ? (
+            <>
+              {showDate && date ? (
+                <Text style={s.eventMetaText}>·</Text>
+              ) : null}
+              <Ionicons
+                name="clipboard-outline"
+                size={12}
+                color={COLORS.textLight}
+              />
+              <Text style={s.eventMetaText}>
+                Job #{event.job_request_id}
+              </Text>
+            </>
+          ) : null}
+        </View>
+      </View>
+      {onPress ? (
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={COLORS.lightGray}
+          style={{ alignSelf: 'center', marginRight: 12 }}
+        />
+      ) : null}
+    </View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+  return inner;
+}
+
 const s = StyleSheet.create({
-    container: { 
-        flex: 1, 
-        backgroundColor: COLORS.offWhite 
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: COLORS.offWhite,
-    },
-    loadingText: {
-        marginTop: 12,
-        fontSize: 14,
-        color: COLORS.textLight,
-    },
-    calendar: {
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.lightGray,
-        paddingBottom: 8,
-    },
-    eventsSection: { 
-        padding: 16,
-        paddingTop: 20,
-    },
-    eventsSectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 14,
-    },
-    allEventsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 28,
-        marginBottom: 14,
-    },
-    sectionTitle: { 
-        fontSize: 17, 
-        fontWeight: '700', 
-        color: COLORS.text 
-    },
-    eventCountBadge: {
-        fontSize: 12,
-        color: COLORS.accent,
-        backgroundColor: COLORS.accent + '15',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-        fontWeight: '600',
-    },
-    addBtn: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        backgroundColor: COLORS.accent,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    emptyCard: {
-        backgroundColor: COLORS.white,
-        borderRadius: 16,
-        padding: 28,
-        alignItems: 'center',
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: COLORS.lightGray,
-    },
-    emptyText: { 
-        fontSize: 15, 
-        color: COLORS.textLight, 
-        marginTop: 12,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    emptySubtext: {
-        fontSize: 13,
-        color: COLORS.gray,
-        marginTop: 6,
-        textAlign: 'center',
-    },
-    addEventHint: {
-        marginTop: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        backgroundColor: COLORS.accent + '15',
-        borderRadius: 20,
-    },
-    addEventHintText: {
-        color: COLORS.accent,
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    eventCard: {
-        backgroundColor: COLORS.white,
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 10,
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: COLORS.lightGray + '40',
-    },
-    eventDot: {
-        width: 11,
-        height: 11,
-        borderRadius: 6,
-        backgroundColor: COLORS.accent,
-        marginTop: 4,
-        marginRight: 14,
-    },
-    eventContent: { 
-        flex: 1,
-        paddingRight: 4,
-    },
-    eventTitle: { 
-        fontSize: 15.5, 
-        fontWeight: '700', 
-        color: COLORS.text,
-        lineHeight: 21,
-    },
-    eventDesc: { 
-        fontSize: 13.5, 
-        color: COLORS.textLight, 
-        marginTop: 5,
-        lineHeight: 19,
-    },
-    eventMeta: { 
-        fontSize: 12, 
-        color: COLORS.gray, 
-        marginTop: 7,
-        fontWeight: '500',
-    },
-    // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: COLORS.white,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        paddingBottom: 40,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    modalTitle: { 
-        fontSize: 22, 
-        fontWeight: '800', 
-        color: COLORS.text 
-    },
-    modalDate: { 
-        fontSize: 14, 
-        color: COLORS.accent, 
-        marginBottom: 20,
-        fontWeight: '600',
-    },
-    label: { 
-        fontSize: 13, 
-        fontWeight: '600', 
-        color: COLORS.textLight, 
-        marginBottom: 7, 
-        marginTop: 14 
-    },
-    input: {
-        backgroundColor: COLORS.offWhite,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 13,
-        fontSize: 15.5,
-        color: COLORS.text,
-        borderWidth: 1,
-        borderColor: COLORS.lightGray,
-    },
-    submitBtn: {
-        backgroundColor: COLORS.accent,
-        borderRadius: 14,
-        paddingVertical: 15,
-        alignItems: 'center',
-        marginTop: 26,
-        shadowColor: COLORS.accent,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    submitBtnText: { 
-        color: COLORS.white, 
-        fontSize: 16, 
-        fontWeight: '700',
-        letterSpacing: 0.3,
-    },
+  container: { flex: 1, backgroundColor: COLORS.offWhite },
+  calendar: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+    paddingBottom: 8,
+  },
+
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexWrap: 'wrap',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { fontSize: 12, color: COLORS.textLight, fontWeight: '500' },
+
+  eventsSection: { padding: 16 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 14,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+
+  addBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  emptyCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    borderStyle: 'dashed',
+  },
+  emptyText: { fontSize: 14, color: COLORS.textLight, marginTop: 10 },
+  emptyLink: {
+    fontSize: 14,
+    color: COLORS.accent,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+
+  eventCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  eventStripe: { width: 4 },
+  eventContent: { flex: 1, padding: 14 },
+  eventTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    flex: 1,
+  },
+  eventTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  eventTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  eventDesc: { fontSize: 13, color: COLORS.textLight, marginTop: 4 },
+  eventMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  eventMetaText: { fontSize: 12, color: COLORS.textLight },
+
+  /* Modal */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.lightGray,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: COLORS.text },
+  modalDate: {
+    fontSize: 14,
+    color: COLORS.accent,
+    marginBottom: 18,
+    fontWeight: '600',
+  },
+
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    marginBottom: 8,
+    marginTop: 14,
+  },
+  input: {
+    backgroundColor: COLORS.offWhite,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+  },
+
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.offWhite,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+  },
+  typeChipText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
+
+  submitBtn: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 22,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
 });
