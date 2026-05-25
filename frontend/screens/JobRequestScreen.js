@@ -1,503 +1,981 @@
 /**
- * JobRequestScreen.js
- * 
- * MASSIVE UPGRADE - Production Ready Multi-Step Job Request Form
- * 
- * Features:
- * - Perfect integration with shared/types (Job, Lead, JobCreateInput)
- * - Uses the new unified useStore and api.js
- * - Matches website lead form data structure for consistency
- * - Advanced validation, loading states, and UX
- * - Ready for production deployment
+ * JobRequestScreen — v4.0  (5-step conversion funnel)
+ * ─────────────────────────────────────────────────────────────────────
+ * • 5-step wizard with progress bar + per-step validation
+ * • Photo uploads (camera + library) via expo-image-picker
+ * • Auto-saves draft to AsyncStorage — recoverable on next launch
+ * • useMutation submit → goes through useStore.createJobRequest
+ *     so the store's optimistic update + socket listeners stay in sync
+ * • Auto-uploads photos via api.uploadPhoto when available
+ * • Haptic feedback on every transition / select
+ *
+ * File location: frontend/screens/JobRequestScreen.js  (replace existing)
+ *
+ * On success → navigates to RequestEstimate for the new job id.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Alert,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  Image,
+  Platform,
+  KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 import useStore from '../context/useStore';
 import { COLORS } from '../styles';
 
-// Import shared types for perfect consistency with website
-import { JobCreateInput, ServiceType, Timeline } from '../../shared';
-
 const SERVICES = [
-    'Hardwood Installation',
-    'Hardwood Refinishing',
-    'Hardwood Repair',
-    'Laminate Installation',
-    'Vinyl Installation',
-    'Tile Installation',
-    'Subfloor Repair',
-    'Demolition & Removal',
+  {
+    key: 'installation',
+    label: 'New Installation',
+    icon: 'construct',
+    desc: 'Install brand-new hardwood floors',
+  },
+  {
+    key: 'refinishing',
+    label: 'Refinishing',
+    icon: 'color-fill',
+    desc: 'Refresh existing floors',
+  },
+  {
+    key: 'repair',
+    label: 'Repair',
+    icon: 'hammer',
+    desc: 'Fix damaged sections',
+  },
+  {
+    key: 'staining',
+    label: 'Staining',
+    icon: 'brush',
+    desc: 'Change the floor color',
+  },
+  {
+    key: 'sanding',
+    label: 'Sanding',
+    icon: 'cut',
+    desc: 'Smooth surface restoration',
+  },
 ];
 
-const WOOD_TYPES = ['Oak', 'Maple', 'Walnut', 'Cherry', 'Hickory', 'Birch', 'Ash', 'Other'];
-const WIDTHS = ['2.25"', '3.25"', '4"', '5"', '6"', '7"+'];
-const THICKNESSES = ['3/8"', '1/2"', '5/8"', '3/4"'];
-const COLORS_LIST = ['Natural', 'Light', 'Medium', 'Dark', 'Ebony', 'Gray', 'White'];
-const PROPERTY_TYPES = ['House', 'Condo', 'Apartment', 'Commercial', 'Other'];
-const HOME_LEVELS = ['Single Level', 'Multi Level', 'Basement Only', 'Stairs Included'];
-const SUBFLOOR_TYPES = ['Plywood', 'Concrete', 'OSB', 'Existing Hardwood', 'Unknown'];
-const TIMEFRAMES = ['ASAP', 'Within 2 weeks', '1 month', '2-3 months', 'Flexible'];
+const WOOD_TYPES = [
+  { key: 'oak', label: 'Oak', icon: 'leaf' },
+  { key: 'maple', label: 'Maple', icon: 'leaf' },
+  { key: 'walnut', label: 'Walnut', icon: 'leaf' },
+  { key: 'cherry', label: 'Cherry', icon: 'leaf' },
+  { key: 'hickory', label: 'Hickory', icon: 'leaf' },
+  { key: 'pine', label: 'Pine', icon: 'leaf' },
+  { key: 'engineered', label: 'Engineered', icon: 'layers' },
+  { key: 'bamboo', label: 'Bamboo', icon: 'leaf' },
+  { key: 'other', label: 'Not Sure', icon: 'help-circle' },
+];
 
-const STEPS = ['Services', 'Flooring Details', 'Property Info', 'Contact & Submit'];
+const PROPERTY_TYPES = [
+  { key: 'residential', label: 'Residential', icon: 'home' },
+  { key: 'commercial', label: 'Commercial', icon: 'business' },
+  { key: 'rental', label: 'Rental', icon: 'key' },
+];
+
+const TIMEFRAMES = [
+  { key: 'asap', label: 'ASAP (within 1 week)' },
+  { key: '2_weeks', label: 'Within 2 weeks' },
+  { key: '1_month', label: 'Within 1 month' },
+  { key: '3_months', label: '1–3 months' },
+  { key: 'flexible', label: 'Flexible / no rush' },
+];
+
+const DRAFT_KEY = 'ecowoods-job-request-draft';
+const TOTAL_STEPS = 5;
 
 export default function JobRequestScreen({ navigation }) {
-    const [step, setStep] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+  const createJobRequest = useStore((s) => s.createJobRequest);
 
-    // Form state - aligned with shared JobCreateInput + website lead form
-    const [selectedServices, setSelectedServices] = useState([]);
-    const [size, setSize] = useState('');
-    const [woodType, setWoodType] = useState('');
-    const [width, setWidth] = useState('');
-    const [thickness, setThickness] = useState('');
-    const [color, setColor] = useState('');
-    const [propertyType, setPropertyType] = useState('');
-    const [homeLevels, setHomeLevels] = useState('');
-    const [demolition, setDemolition] = useState('');
-    const [subfloorType, setSubfloorType] = useState('');
-    const [timeframe, setTimeframe] = useState('');
-    const [additionalDetails, setAdditionalDetails] = useState('');
-    const [contactName, setContactName] = useState('');
-    const [contactEmail, setContactEmail] = useState('');
-    const [contactPhone, setContactPhone] = useState('');
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    services: [],
+    wood_type: '',
+    size: '',
+    property_type: '',
+    address: '',
+    timeframe: '',
+    notes: '',
+    photos: [],
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-    const { createJobRequest, user, submitLead } = useStore();
+  /* ── Load draft on mount ───────────────────────────────── */
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(DRAFT_KEY);
+        if (!stored || !mounted) return;
+        const draft = JSON.parse(stored);
+        const hasContent =
+          draft?.services?.length ||
+          draft?.wood_type ||
+          draft?.notes ||
+          draft?.address;
+        if (hasContent) {
+          Alert.alert(
+            'Continue your draft?',
+            "You have a saved job request. Pick up where you left off?",
+            [
+              {
+                text: 'Discard',
+                style: 'destructive',
+                onPress: () =>
+                  AsyncStorage.removeItem(DRAFT_KEY).catch(() => {}),
+              },
+              { text: 'Continue', onPress: () => mounted && setForm(draft) },
+            ]
+          );
+        }
+      } catch (e) {}
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-    const toggleService = (svc) => {
-        setSelectedServices((prev) =>
-            prev.includes(svc) ? prev.filter((s) => s !== svc) : [...prev, svc]
+  /* ── Auto-save draft on every form change ──────────────── */
+  useEffect(() => {
+    AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(form)).catch(() => {});
+  }, [form]);
+
+  /* ── Mutation: submit ──────────────────────────────────── */
+  const submitMutation = useMutation({
+    mutationFn: (data) => createJobRequest(data),
+    onSuccess: (result) => {
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        ).catch(() => {});
+      }
+      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['jobRequests'] });
+      const newJobId = result?.id || result?.job_request_id;
+      Alert.alert(
+        'Job request submitted!',
+        "We'll send you competitive bids within 24 hours.",
+        [
+          {
+            text: 'View Estimate',
+            onPress: () => {
+              if (newJobId) {
+                navigation.replace('RequestEstimate', { jobId: newJobId });
+              } else {
+                navigation.goBack();
+              }
+            },
+          },
+        ]
+      );
+    },
+    onError: (err) => {
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Error
+        ).catch(() => {});
+      }
+      Alert.alert('Submission failed', err?.message || 'Please try again.');
+    },
+  });
+
+  /* ── Helpers ───────────────────────────────────────────── */
+  const update = useCallback((patch) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const toggleService = useCallback((key) => {
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    setForm((prev) => {
+      const exists = prev.services.includes(key);
+      return {
+        ...prev,
+        services: exists
+          ? prev.services.filter((s) => s !== key)
+          : [...prev.services, key],
+      };
+    });
+  }, []);
+
+  const pickImage = useCallback(async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          'Permission needed',
+          'Please allow photo access to attach images.'
         );
-    };
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.7,
+        selectionLimit: 5,
+      });
+      if (!result.canceled && result.assets?.length) {
+        setForm((prev) => ({
+          ...prev,
+          photos: [
+            ...prev.photos,
+            ...result.assets.map((a) => a.uri),
+          ].slice(0, 5),
+        }));
+        if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
 
-    const validateStep = (currentStep) => {
-        if (currentStep === 0 && selectedServices.length === 0) {
-            Alert.alert('Required', 'Please select at least one service.');
-            return false;
-        }
-        if (currentStep === 3) {
-            if (!contactName || !contactEmail || !contactPhone) {
-                Alert.alert('Required', 'Please fill in all contact information.');
-                return false;
-            }
-        }
-        return true;
-    };
+  const takePhoto = useCallback(async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission needed', 'Please allow camera access.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets?.length) {
+        setForm((prev) => ({
+          ...prev,
+          photos: [...prev.photos, result.assets[0].uri].slice(0, 5),
+        }));
+        if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
 
-    const nextStep = () => {
-        if (validateStep(step)) {
-            setStep((s) => Math.min(s + 1, STEPS.length - 1));
-        }
-    };
+  const removePhoto = useCallback((idx) => {
+    setForm((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== idx),
+    }));
+  }, []);
 
-    const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  /* ── Per-step validation ───────────────────────────────── */
+  const stepValid = useMemo(() => {
+    switch (step) {
+      case 1:
+        return form.services.length > 0;
+      case 2:
+        return !!form.wood_type;
+      case 3:
+        return !!form.size && !!form.property_type;
+      case 4:
+        return !!form.address && !!form.timeframe;
+      case 5:
+        return true; // notes + photos optional
+      default:
+        return false;
+    }
+  }, [step, form]);
 
-    const handleSubmit = async () => {
-        if (!validateStep(3)) return;
+  /* ── Step navigation ───────────────────────────────────── */
+  const goNext = useCallback(() => {
+    if (!stepValid) {
+      Alert.alert('Almost there', 'Please complete the required fields.');
+      return;
+    }
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    if (step < TOTAL_STEPS) {
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
+  }, [stepValid, step]);
 
-        setSubmitting(true);
+  const goBack = useCallback(() => {
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    if (step > 1) setStep(step - 1);
+    else navigation.goBack();
+  }, [step, navigation]);
+
+  /* ── Submit ────────────────────────────────────────────── */
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      // Upload photos first if API supports it; otherwise pass local URIs through
+      let photoUrls = form.photos;
+      if (form.photos.length > 0 && typeof api.uploadPhoto === 'function') {
         try {
-            // Create job request using the new store method (integrated with shared types)
-            const jobData = {
-                services: selectedServices,
-                size: size || null,
-                wood_type: woodType || null,
-                width: width || null,
-                thickness: thickness || null,
-                color: color || null,
-                property_type: propertyType || null,
-                home_levels: homeLevels || null,
-                demolition_required: demolition || null,
-                subfloor_type: subfloorType || null,
-                timeframe: timeframe || null,
-                additional_details: additionalDetails || null,
-                contact_name: contactName || user?.full_name || null,
-                contact_email: contactEmail || user?.email || null,
-                contact_phone: contactPhone || user?.phone || null,
-            };
-
-            await createJobRequest(jobData);
-
-            // Also submit as Lead for website consistency (optional dual flow)
-            try {
-                await submitLead({
-                    name: contactName || user?.full_name,
-                    email: contactEmail || user?.email,
-                    phone: contactPhone || user?.phone,
-                    postal: '', // Add postal if you have it in form
-                    service: selectedServices[0] || 'installation',
-                    sqft: parseInt(size) || 0,
-                    timeline: timeframe?.toLowerCase().replace(/\s+/g, '_') || 'flexible',
-                    message: additionalDetails,
-                });
-            } catch (leadError) {
-                console.log('Lead submission skipped (non-critical):', leadError.message);
-            }
-
-            Alert.alert(
-                'Success! 🎉',
-                'Your job request has been submitted. Our team will contact you within 24 hours.',
-                [
-                    {
-                        text: 'View My Requests',
-                        onPress: () => navigation.navigate('PlacedOrders'),
-                    },
-                    {
-                        text: 'Done',
-                        onPress: () => navigation.goBack(),
-                        style: 'cancel',
-                    },
-                ]
-            );
+          photoUrls = await Promise.all(
+            form.photos.map((uri) => api.uploadPhoto(uri))
+          );
         } catch (e) {
-            Alert.alert('Error', e.message || 'Failed to submit job request. Please try again.');
-        } finally {
-            setSubmitting(false);
+          // If uploads fail, submit without photos so the user isn't blocked
+          photoUrls = [];
         }
-    };
+      }
 
-    const OptionButton = ({ label, selected, onPress }) => (
+      const payload = {
+        services: form.services,
+        wood_type: form.wood_type,
+        size: form.size ? parseFloat(form.size) : null,
+        property_type: form.property_type,
+        address: form.address,
+        timeframe: form.timeframe,
+        notes: form.notes || null,
+        photos: photoUrls,
+      };
+      await submitMutation.mutateAsync(payload);
+    } catch (e) {
+      // handled by onError
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ── Render ────────────────────────────────────────────── */
+  return (
+    <KeyboardAvoidingView
+      style={s.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    >
+      {/* Progress */}
+      <View style={s.progressBar}>
+        <View
+          style={[s.progressFill, { width: `${(step / TOTAL_STEPS) * 100}%` }]}
+        />
+      </View>
+      <View style={s.progressLabel}>
+        <Text style={s.progressText}>
+          Step {step} of {TOTAL_STEPS}
+        </Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {step === 1 && <Step1 form={form} toggleService={toggleService} />}
+        {step === 2 && <Step2 form={form} update={update} />}
+        {step === 3 && <Step3 form={form} update={update} />}
+        {step === 4 && <Step4 form={form} update={update} />}
+        {step === 5 && (
+          <Step5
+            form={form}
+            update={update}
+            pickImage={pickImage}
+            takePhoto={takePhoto}
+            removePhoto={removePhoto}
+          />
+        )}
+      </ScrollView>
+
+      {/* Footer */}
+      <View style={s.footer}>
         <TouchableOpacity
-            style={[s.optionBtn, selected && s.optionBtnSelected]}
-            onPress={onPress}
-            activeOpacity={0.7}
+          style={s.backBtn}
+          onPress={goBack}
+          activeOpacity={0.7}
         >
-            <Text style={[s.optionText, selected && s.optionTextSelected]}>{label}</Text>
+          <Ionicons name="arrow-back" size={18} color={COLORS.text} />
+          <Text style={s.backBtnText}>{step === 1 ? 'Cancel' : 'Back'}</Text>
         </TouchableOpacity>
-    );
 
-    const renderStep = () => {
-        switch (step) {
-            case 0:
-                return (
-                    <View>
-                        <Text style={s.stepTitle}>What services do you need?</Text>
-                        <Text style={s.stepDesc}>Select all that apply. You can change this later.</Text>
-                        <View style={s.optionGrid}>
-                            {SERVICES.map((svc) => (
-                                <OptionButton
-                                    key={svc}
-                                    label={svc}
-                                    selected={selectedServices.includes(svc)}
-                                    onPress={() => toggleService(svc)}
-                                />
-                            ))}
-                        </View>
-                    </View>
-                );
-            case 1:
-                return (
-                    <View>
-                        <Text style={s.stepTitle}>Flooring Details</Text>
-                        <Text style={s.stepDesc}>Help us prepare an accurate estimate.</Text>
-
-                        <Text style={s.label}>Approximate Size (sq ft)</Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder="e.g. 850"
-                            value={size}
-                            onChangeText={setSize}
-                            keyboardType="numeric"
-                        />
-
-                        <Text style={s.label}>Wood Type</Text>
-                        <View style={s.optionGrid}>
-                            {WOOD_TYPES.map((w) => (
-                                <OptionButton key={w} label={w} selected={woodType === w} onPress={() => setWoodType(w)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Plank Width</Text>
-                        <View style={s.optionGrid}>
-                            {WIDTHS.map((w) => (
-                                <OptionButton key={w} label={w} selected={width === w} onPress={() => setWidth(w)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Thickness</Text>
-                        <View style={s.optionGrid}>
-                            {THICKNESSES.map((t) => (
-                                <OptionButton key={t} label={t} selected={thickness === t} onPress={() => setThickness(t)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Preferred Color / Stain</Text>
-                        <View style={s.optionGrid}>
-                            {COLORS_LIST.map((c) => (
-                                <OptionButton key={c} label={c} selected={color === c} onPress={() => setColor(c)} />
-                            ))}
-                        </View>
-                    </View>
-                );
-            case 2:
-                return (
-                    <View>
-                        <Text style={s.stepTitle}>Property Information</Text>
-
-                        <Text style={s.label}>Property Type</Text>
-                        <View style={s.optionGrid}>
-                            {PROPERTY_TYPES.map((p) => (
-                                <OptionButton key={p} label={p} selected={propertyType === p} onPress={() => setPropertyType(p)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Home Levels</Text>
-                        <View style={s.optionGrid}>
-                            {HOME_LEVELS.map((h) => (
-                                <OptionButton key={h} label={h} selected={homeLevels === h} onPress={() => setHomeLevels(h)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Demolition Required?</Text>
-                        <View style={s.optionGrid}>
-                            {['Yes', 'No', 'Not Sure'].map((d) => (
-                                <OptionButton key={d} label={d} selected={demolition === d} onPress={() => setDemolition(d)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Subfloor Type</Text>
-                        <View style={s.optionGrid}>
-                            {SUBFLOOR_TYPES.map((sf) => (
-                                <OptionButton key={sf} label={sf} selected={subfloorType === sf} onPress={() => setSubfloorType(sf)} />
-                            ))}
-                        </View>
-
-                        <Text style={s.label}>Preferred Timeframe</Text>
-                        <View style={s.optionGrid}>
-                            {TIMEFRAMES.map((tf) => (
-                                <OptionButton key={tf} label={tf} selected={timeframe === tf} onPress={() => setTimeframe(tf)} />
-                            ))}
-                        </View>
-                    </View>
-                );
-            case 3:
-                return (
-                    <View>
-                        <Text style={s.stepTitle}>Contact Information</Text>
-                        <Text style={s.stepDesc}>We’ll use this to send your estimate and schedule the work.</Text>
-
-                        <Text style={s.label}>Full Name</Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder={user?.full_name || 'Your full name'}
-                            value={contactName}
-                            onChangeText={setContactName}
-                        />
-
-                        <Text style={s.label}>Email Address</Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder={user?.email || 'you@email.com'}
-                            value={contactEmail}
-                            onChangeText={setContactEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-
-                        <Text style={s.label}>Phone Number</Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder="(416) 555-0123"
-                            value={contactPhone}
-                            onChangeText={setContactPhone}
-                            keyboardType="phone-pad"
-                        />
-
-                        <Text style={s.label}>Additional Details or Special Requests</Text>
-                        <TextInput
-                            style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]}
-                            placeholder="e.g. Pets in the house, access instructions, etc."
-                            value={additionalDetails}
-                            onChangeText={setAdditionalDetails}
-                            multiline
-                            numberOfLines={4}
-                        />
-
-                        {/* Summary Card */}
-                        <View style={s.summaryCard}>
-                            <Text style={s.summaryTitle}>Request Summary</Text>
-                            <Text style={s.summaryItem}>Services: {selectedServices.join(', ') || 'None selected'}</Text>
-                            {woodType && <Text style={s.summaryItem}>Wood: {woodType}</Text>}
-                            {size && <Text style={s.summaryItem}>Size: {size} sq ft</Text>}
-                            {propertyType && <Text style={s.summaryItem}>Property: {propertyType}</Text>}
-                            {timeframe && <Text style={s.summaryItem}>Timeframe: {timeframe}</Text>}
-                        </View>
-                    </View>
-                );
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
+        <TouchableOpacity
+          style={[s.nextBtn, (!stepValid || submitting) && s.btnDisabled]}
+          onPress={goNext}
+          disabled={!stepValid || submitting}
+          activeOpacity={0.85}
         >
-            <View style={s.container}>
-                {/* Progress Bar */}
-                <View style={s.progressContainer}>
-                    {STEPS.map((label, i) => (
-                        <View key={i} style={s.progressStep}>
-                            <View style={[s.progressDot, i <= step && s.progressDotActive]}>
-                                {i < step ? (
-                                    <Ionicons name="checkmark" size={14} color={COLORS.white} />
-                                ) : (
-                                    <Text style={[s.progressNum, i <= step && s.progressNumActive]}>{i + 1}</Text>
-                                )}
-                            </View>
-                            <Text style={[s.progressLabel, i <= step && s.progressLabelActive]}>{label}</Text>
-                        </View>
-                    ))}
-                </View>
+          {submitting ? (
+            <ActivityIndicator color={COLORS.white} />
+          ) : (
+            <>
+              <Text style={s.nextBtnText}>
+                {step === TOTAL_STEPS ? 'Submit Request' : 'Continue'}
+              </Text>
+              <Ionicons
+                name={step === TOTAL_STEPS ? 'checkmark' : 'arrow-forward'}
+                size={18}
+                color={COLORS.white}
+              />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
 
-                <ScrollView
-                    contentContainerStyle={s.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {renderStep()}
-                </ScrollView>
-
-                {/* Navigation Buttons */}
-                <View style={s.navRow}>
-                    {step > 0 ? (
-                        <TouchableOpacity style={s.navBtnOutline} onPress={prevStep}>
-                            <Ionicons name="arrow-back" size={18} color={COLORS.accent} />
-                            <Text style={s.navBtnOutlineText}>Back</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <View />
-                    )}
-
-                    {step < STEPS.length - 1 ? (
-                        <TouchableOpacity style={s.navBtn} onPress={nextStep}>
-                            <Text style={s.navBtnText}>Next</Text>
-                            <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity
-                            style={[s.navBtn, submitting && { backgroundColor: COLORS.lightGray }]}
-                            onPress={handleSubmit}
-                            disabled={submitting}
-                        >
-                            {submitting ? (
-                                <ActivityIndicator color={COLORS.white} />
-                            ) : (
-                                <>
-                                    <Text style={s.navBtnText}>Submit Request</Text>
-                                    <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    )}
-                </View>
+/* ============================================================
+   Step components
+   ============================================================ */
+function Step1({ form, toggleService }) {
+  return (
+    <View>
+      <Text style={s.stepTitle}>What services do you need?</Text>
+      <Text style={s.stepSubtitle}>Select all that apply</Text>
+      {SERVICES.map((svc) => {
+        const selected = form.services.includes(svc.key);
+        return (
+          <TouchableOpacity
+            key={svc.key}
+            style={[s.selectableCard, selected && s.selectableCardActive]}
+            onPress={() => toggleService(svc.key)}
+            activeOpacity={0.85}
+          >
+            <View
+              style={[
+                s.selectableIcon,
+                selected && { backgroundColor: COLORS.accent + '20' },
+              ]}
+            >
+              <Ionicons
+                name={svc.icon}
+                size={22}
+                color={selected ? COLORS.accent : COLORS.textLight}
+              />
             </View>
-        </KeyboardAvoidingView>
-    );
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  s.selectableTitle,
+                  selected && { color: COLORS.accent },
+                ]}
+              >
+                {svc.label}
+              </Text>
+              <Text style={s.selectableDesc}>{svc.desc}</Text>
+            </View>
+            <View style={[s.checkbox, selected && s.checkboxActive]}>
+              {selected ? (
+                <Ionicons name="checkmark" size={16} color={COLORS.white} />
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function Step2({ form, update }) {
+  return (
+    <View>
+      <Text style={s.stepTitle}>What type of wood?</Text>
+      <Text style={s.stepSubtitle}>Choose your floor material</Text>
+      <View style={s.gridWrap}>
+        {WOOD_TYPES.map((w) => {
+          const selected = form.wood_type === w.key;
+          return (
+            <TouchableOpacity
+              key={w.key}
+              style={[s.gridCard, selected && s.gridCardActive]}
+              onPress={() => {
+                if (Platform.OS !== 'web')
+                  Haptics.selectionAsync().catch(() => {});
+                update({ wood_type: w.key });
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name={w.icon}
+                size={28}
+                color={selected ? COLORS.white : COLORS.accent}
+              />
+              <Text
+                style={[s.gridCardLabel, selected && { color: COLORS.white }]}
+              >
+                {w.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function Step3({ form, update }) {
+  return (
+    <View>
+      <Text style={s.stepTitle}>Project size & type</Text>
+      <Text style={s.stepSubtitle}>Helps us estimate accurately</Text>
+
+      <Text style={s.label}>Approximate size (sq ft)</Text>
+      <View style={s.inputWithUnit}>
+        <TextInput
+          style={[s.input, { flex: 1 }]}
+          placeholder="e.g. 500"
+          placeholderTextColor={COLORS.lightGray}
+          value={form.size}
+          onChangeText={(v) => update({ size: v.replace(/[^0-9.]/g, '') })}
+          keyboardType="numeric"
+        />
+        <Text style={s.inputUnit}>sq ft</Text>
+      </View>
+
+      <Text style={s.label}>Property type</Text>
+      <View style={s.gridWrap}>
+        {PROPERTY_TYPES.map((p) => {
+          const selected = form.property_type === p.key;
+          return (
+            <TouchableOpacity
+              key={p.key}
+              style={[s.gridCard, selected && s.gridCardActive]}
+              onPress={() => {
+                if (Platform.OS !== 'web')
+                  Haptics.selectionAsync().catch(() => {});
+                update({ property_type: p.key });
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name={p.icon}
+                size={26}
+                color={selected ? COLORS.white : COLORS.accent}
+              />
+              <Text
+                style={[s.gridCardLabel, selected && { color: COLORS.white }]}
+              >
+                {p.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function Step4({ form, update }) {
+  return (
+    <View>
+      <Text style={s.stepTitle}>When & where?</Text>
+      <Text style={s.stepSubtitle}>Address and timeframe</Text>
+
+      <Text style={s.label}>Project address</Text>
+      <TextInput
+        style={s.input}
+        placeholder="123 Main St, City, State"
+        placeholderTextColor={COLORS.lightGray}
+        value={form.address}
+        onChangeText={(v) => update({ address: v })}
+        autoCorrect={false}
+      />
+
+      <Text style={s.label}>When do you need it done?</Text>
+      {TIMEFRAMES.map((t) => {
+        const selected = form.timeframe === t.key;
+        return (
+          <TouchableOpacity
+            key={t.key}
+            style={[s.selectableCard, selected && s.selectableCardActive]}
+            onPress={() => {
+              if (Platform.OS !== 'web')
+                Haptics.selectionAsync().catch(() => {});
+              update({ timeframe: t.key });
+            }}
+            activeOpacity={0.85}
+          >
+            <View
+              style={[
+                s.selectableIcon,
+                selected && { backgroundColor: COLORS.accent + '20' },
+              ]}
+            >
+              <Ionicons
+                name="time"
+                size={20}
+                color={selected ? COLORS.accent : COLORS.textLight}
+              />
+            </View>
+            <Text
+              style={[
+                s.selectableTitle,
+                selected && { color: COLORS.accent },
+                { flex: 1 },
+              ]}
+            >
+              {t.label}
+            </Text>
+            <View style={[s.radio, selected && s.radioActive]}>
+              {selected ? <View style={s.radioInner} /> : null}
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function Step5({ form, update, pickImage, takePhoto, removePhoto }) {
+  return (
+    <View>
+      <Text style={s.stepTitle}>Photos & notes</Text>
+      <Text style={s.stepSubtitle}>
+        Optional — but photos help us bid accurately
+      </Text>
+
+      <Text style={s.label}>Photos of the project area</Text>
+      <View style={s.photoActions}>
+        <TouchableOpacity
+          style={s.photoActionBtn}
+          onPress={takePhoto}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="camera" size={22} color={COLORS.accent} />
+          <Text style={s.photoActionText}>Take Photo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={s.photoActionBtn}
+          onPress={pickImage}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="images" size={22} color={COLORS.accent} />
+          <Text style={s.photoActionText}>From Library</Text>
+        </TouchableOpacity>
+      </View>
+
+      {form.photos.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.photoStrip}
+        >
+          {form.photos.map((uri, idx) => (
+            <View key={`${uri}-${idx}`} style={s.photoThumb}>
+              <Image source={{ uri }} style={s.photoImg} />
+              <TouchableOpacity
+                style={s.photoRemove}
+                onPress={() => removePhoto(idx)}
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={22}
+                  color={COLORS.red || '#DC3545'}
+                />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      <Text style={s.label}>Additional notes</Text>
+      <TextInput
+        style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]}
+        placeholder="Room layout, special requests, anything else we should know…"
+        placeholderTextColor={COLORS.lightGray}
+        value={form.notes}
+        onChangeText={(v) => update({ notes: v })}
+        multiline
+        maxLength={1000}
+      />
+      <Text style={s.charCount}>{form.notes.length} / 1000</Text>
+
+      {/* Summary */}
+      <View style={s.summary}>
+        <Text style={s.summaryTitle}>Quick Summary</Text>
+        <View style={s.summaryDivider} />
+        <SummaryRow
+          label="Services"
+          value={
+            form.services
+              .map((k) => SERVICES.find((sv) => sv.key === k)?.label)
+              .filter(Boolean)
+              .join(', ') || '—'
+          }
+        />
+        <SummaryRow
+          label="Wood type"
+          value={
+            WOOD_TYPES.find((w) => w.key === form.wood_type)?.label || '—'
+          }
+        />
+        <SummaryRow
+          label="Size"
+          value={form.size ? `${form.size} sq ft` : '—'}
+        />
+        <SummaryRow
+          label="Property"
+          value={
+            PROPERTY_TYPES.find((p) => p.key === form.property_type)?.label ||
+            '—'
+          }
+        />
+        <SummaryRow
+          label="Timeframe"
+          value={
+            TIMEFRAMES.find((t) => t.key === form.timeframe)?.label || '—'
+          }
+        />
+        <SummaryRow label="Address" value={form.address || '—'} />
+        <SummaryRow
+          label="Photos"
+          value={
+            form.photos.length > 0
+              ? `${form.photos.length} attached`
+              : 'None'
+          }
+        />
+      </View>
+    </View>
+  );
+}
+
+function SummaryRow({ label, value }) {
+  return (
+    <View style={s.summaryRow}>
+      <Text style={s.summaryLabel}>{label}</Text>
+      <Text style={s.summaryValue} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
 }
 
 const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.offWhite },
-    progressContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 16,
-        paddingHorizontal: 10,
-        backgroundColor: COLORS.white,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.lightGray,
-    },
-    progressStep: { alignItems: 'center', flex: 1 },
-    progressDot: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: COLORS.lightGray,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    progressDotActive: { backgroundColor: COLORS.accent },
-    progressNum: { fontSize: 12, fontWeight: '600', color: COLORS.gray },
-    progressNumActive: { color: COLORS.white },
-    progressLabel: { fontSize: 10, color: COLORS.gray, textAlign: 'center' },
-    progressLabelActive: { color: COLORS.accent, fontWeight: '600' },
-    scrollContent: { padding: 20, paddingBottom: 120 },
-    stepTitle: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
-    stepDesc: { fontSize: 15, color: COLORS.textLight, marginBottom: 20 },
-    label: { fontSize: 14, fontWeight: '600', color: COLORS.textLight, marginTop: 18, marginBottom: 8 },
-    input: {
-        backgroundColor: COLORS.white,
-        borderWidth: 1,
-        borderColor: COLORS.lightGray,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        fontSize: 16,
-        color: COLORS.text,
-    },
-    optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    optionBtn: {
-        paddingHorizontal: 16,
-        paddingVertical: 11,
-        borderRadius: 999,
-        borderWidth: 1.5,
-        borderColor: COLORS.lightGray,
-        backgroundColor: COLORS.white,
-    },
-    optionBtnSelected: { borderColor: COLORS.accent, backgroundColor: '#E8F5E9' },
-    optionText: { fontSize: 14, color: COLORS.textLight },
-    optionTextSelected: { color: COLORS.accent, fontWeight: '700' },
-    summaryCard: {
-        backgroundColor: '#F8F9FA',
-        borderRadius: 16,
-        padding: 20,
-        marginTop: 24,
-        borderWidth: 1,
-        borderColor: COLORS.lightGray,
-    },
-    summaryTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-    summaryItem: { fontSize: 15, color: COLORS.textLight, marginBottom: 6 },
-    navRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: 16,
-        backgroundColor: COLORS.white,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.lightGray,
-    },
-    navBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.accent,
-        paddingHorizontal: 28,
-        paddingVertical: 14,
-        borderRadius: 12,
-        gap: 8,
-    },
-    navBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
-    navBtnOutline: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: COLORS.accent,
-        gap: 8,
-    },
-    navBtnOutlineText: { color: COLORS.accent, fontSize: 16, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: COLORS.offWhite },
+
+  /* Progress */
+  progressBar: { height: 4, backgroundColor: COLORS.lightGray },
+  progressFill: { height: 4, backgroundColor: COLORS.accent },
+  progressLabel: { paddingHorizontal: 20, paddingTop: 10 },
+  progressText: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
+
+  scroll: { padding: 20, paddingBottom: 40 },
+
+  stepTitle: { fontSize: 24, fontWeight: '800', color: COLORS.text },
+  stepSubtitle: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 10,
+    marginTop: 18,
+  },
+
+  /* Selectable list card */
+  selectableCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  selectableCardActive: {
+    borderColor: COLORS.accent,
+    backgroundColor: COLORS.accent + '08',
+  },
+  selectableIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite,
+    marginRight: 12,
+  },
+  selectableTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  selectableDesc: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioActive: { borderColor: COLORS.accent },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.accent,
+  },
+
+  /* Grid */
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  gridCard: {
+    width: '31%',
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  gridCardActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  gridCardLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  /* Input */
+  input: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+  },
+  inputWithUnit: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  inputUnit: { fontSize: 14, color: COLORS.textLight, fontWeight: '600' },
+  charCount: {
+    textAlign: 'right',
+    fontSize: 11,
+    color: COLORS.textLight,
+    marginTop: 4,
+  },
+
+  /* Photos */
+  photoActions: { flexDirection: 'row', gap: 10 },
+  photoActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: COLORS.accent + '40',
+  },
+  photoActionText: { fontSize: 13, fontWeight: '700', color: COLORS.accent },
+  photoStrip: { paddingVertical: 12, gap: 10 },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 10,
+    position: 'relative',
+  },
+  photoImg: { width: '100%', height: '100%', borderRadius: 12 },
+  photoRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+  },
+
+  /* Summary */
+  summary: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: COLORS.lightGray,
+    marginVertical: 10,
+  },
+  summaryRow: { flexDirection: 'row', marginBottom: 8 },
+  summaryLabel: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '600',
+    width: 90,
+  },
+  summaryValue: { fontSize: 13, color: COLORS.text, flex: 1 },
+
+  /* Footer */
+  footer: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.lightGray,
+    gap: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.offWhite,
+  },
+  backBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  nextBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  nextBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 15 },
+  btnDisabled: { opacity: 0.5 },
 });
