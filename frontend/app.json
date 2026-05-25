@@ -2,32 +2,106 @@
   "expo": {
     "name": "EcoWoods Hardwood",
     "slug": "ecowoods-app",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "ecowoods",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2C3E50"
+      "backgroundColor": "#0A3D2E"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ecowoods.hardwood"
+      "bundleIdentifier": "com.ecowoods.hardwood",
+      "buildNumber": "2.0.0",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "NSCameraUsageDescription": "EcoWoods uses your camera so you can photograph your floors for accurate estimates.",
+        "NSPhotoLibraryUsageDescription": "EcoWoods accesses your photo library to attach floor photos to your job requests.",
+        "NSPhotoLibraryAddUsageDescription": "EcoWoods saves estimate documents to your photo library when you choose to export them.",
+        "NSLocationWhenInUseUsageDescription": "EcoWoods uses your location to match you with nearby installers and accurate scheduling.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:ecowoodshardwood.com",
+        "applinks:www.ecowoodshardwood.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2C3E50"
+        "backgroundColor": "#0A3D2E"
       },
-      "package": "com.ecowoods.hardwood"
+      "package": "com.ecowoods.hardwood",
+      "versionCode": 2,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "ecowoodshardwood.com" },
+            { "scheme": "https", "host": "www.ecowoodshardwood.com" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0A3D2E",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EcoWoods accesses your photos so you can attach them to job requests.",
+          "cameraPermission": "EcoWoods uses your camera so you can capture floor photos for estimates."
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.ecowoods.hardwood",
+          "enableGooglePay": true
+        }
+      ]
+    ],
     "extra": {
-      "apiUrl": "http://localhost:8000"
+      "apiUrl": "https://api.ecowoodshardwood.com",
+      "wsUrl": "wss://api.ecowoodshardwood.com",
+      "eas": {
+        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "ecowoods",
+    "updates": {
+      "url": "https://u.expo.dev/REPLACE_WITH_YOUR_EAS_PROJECT_ID",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
