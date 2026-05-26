@@ -1,0 +1,11 @@
+import { z } from 'zod';
+export const UserSchema = z.object({ id: z.string(), email: z.string().email(), full_name: z.string(), role: z.enum(['customer','pro','admin']), created_at: z.string() });
+export const JobSchema = z.object({ id: z.string(), title: z.string(), description: z.string(), address: z.string(), status: z.enum(['pending','bidding','assigned','in_progress','completed']), budget_min: z.number(), budget_max: z.number(), photos: z.array(z.string()).default([]) });
+export const BidSchema = z.object({ id: z.string(), job_id: z.string(), pro_id: z.string(), amount: z.number(), status: z.enum(['pending','accepted','rejected']) });
+export const ProductSchema = z.object({ id: z.string(), name: z.string(), price: z.number(), category: z.enum(['flooring','tools']), image_url: z.string() });
+export const MessageSchema = z.object({ id: z.string(), job_id: z.string(), content: z.string(), created_at: z.string() });
+export type User = z.infer<typeof UserSchema>;
+export type Job = z.infer<typeof JobSchema>;
+export type Bid = z.infer<typeof BidSchema>;
+export type Product = z.infer<typeof ProductSchema>;
+export type Message = z.infer<typeof MessageSchema>;

@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #0A3D2E;
+  --accent: #C5A26F;
+  --light: #F8F5F0;
+}
+
+body {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}

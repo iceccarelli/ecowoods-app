@@ -3,10 +3,7 @@ import { api } from '../client';
 import { Job, CreateJobInput, createJobSchema } from '@ecowoods/shared';
 
 export const useJobs = () =>
-  useQuery<Job[]>({
-    queryKey: ['jobs'],
-    queryFn: () => api.get<Job[]>('/jobs'),
-  });
+  useQuery<Job[]>({ queryKey: ['jobs'], queryFn: () => api.get<Job[]>('/jobs') });
 
 export const useCreateJob = () => {
   const qc = useQueryClient();
