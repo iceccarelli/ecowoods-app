@@ -1,0 +1,11 @@
+# Ignore heavy folders for web build
+backend/
+frontend/
+admin-dashboard/
+packages/
+scripts/
+.git/
+node_modules/
+*.md
+!README.md
+.env*

@@ -5,19 +5,17 @@
   "packageManager": "pnpm@9.15.0",
   "workspaces": [
     "packages/*",
-    "frontend"
+    "apps/*"
   ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "turbo dev",
+    "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
-    "dev:packages": "turbo dev",
-    "build:packages": "turbo build",
-    "dev:mobile": "cd frontend && pnpm install && pnpm dev",
-    "dev:admin": "echo 'Admin dashboard is static Vanilla JS — open admin-dashboard/index.html'",
+    "dev:web": "turbo run dev --filter=@ecowoods/web",
+    "dev:mobile": "turbo run dev --filter=@ecowoods/mobile",
+    "dev:admin": "turbo run dev --filter=@ecowoods/admin",
     "dev:backend": "cd backend && uvicorn app.main:app --reload"
   },
   "devDependencies": {
@@ -25,10 +23,6 @@
     "prettier": "^3.3.2",
     "@types/node": "20.16.10",
     "next": "^15.5.18"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
   },
   "engines": {
     "node": ">=18.18.0"
