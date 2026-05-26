@@ -1,49 +1,27 @@
 {
   "name": "ecowoods-monorepo",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Ecowoods — premium Toronto hardwood flooring platform",
   "packageManager": "pnpm@11.3.0",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
-  },
   "workspaces": [
     "packages/*",
-    "frontend"
+    "apps/*"
   ],
-  "dependencies": {
-    "next": "^14.2.26",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "@tanstack/react-query": "^5.45.0",
-    "zod": "^3.23.8",
-    "react-hook-form": "^7.51.5",
-    "@hookform/resolvers": "^3.9.0",
-    "framer-motion": "^11.2.10",
-    "sonner": "^1.5.0",
-    "lucide-react": "^0.378.0",
-    "date-fns": "^3.6.0"
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "dev:web": "turbo run dev --filter=@ecowoods/web",
+    "dev:mobile": "turbo run dev --filter=@ecowoods/mobile",
+    "dev:admin": "turbo run dev --filter=@ecowoods/admin",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload"
   },
   "devDependencies": {
-    "@types/node": "20.16.10",
-    "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
-    "autoprefixer": "10.4.20",
-    "eslint": "8.57.1",
-    "eslint-config-next": "14.2.15",
-    "postcss": "8.4.47",
-    "tailwindcss": "3.4.13",
-    "typescript": "5.6.3",
+    "turbo": "^2.4.4",
     "prettier": "^3.3.2",
-    "@tanstack/react-query-devtools": "^5.45.0",
-    "turbo": "^2.4.4"
+    "@types/node": "20.16.10"
   },
-  "engines": {
-    "node": ">=18.18.0"
-  }
+  "engines": { "node": ">=18.18.0" }
 }

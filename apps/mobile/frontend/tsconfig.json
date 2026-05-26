@@ -1,0 +1,12 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@ecowoods/shared": ["../packages/shared"],
+      "@ecowoods/shared/*": ["../packages/shared/*"],
+      "@ecowoods/api-client": ["../packages/api-client/src"],
+      "@ecowoods/api-client/*": ["../packages/api-client/src/*"]
+    }
+  }
+}

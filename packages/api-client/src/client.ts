@@ -1,9 +1,7 @@
 import { API_BASE } from '@ecowoods/shared/constants';
 
 const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('ecowoods_token') || '';
-  }
+  if (typeof window !== 'undefined') return localStorage.getItem('ecowoods_token') || '';
   return '';
 };
 
@@ -24,6 +22,4 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: any) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(path: string, body: any) => apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-  delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
 };
