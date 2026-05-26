@@ -19,6 +19,5 @@
     }
   ],
   "cleanUrls": true,
-  "trailingSlash": false,
-  "regions": ["auto"]
+  "trailingSlash": false
 }
