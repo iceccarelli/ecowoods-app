@@ -5,6 +5,7 @@ const nextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
+  // === CRITICAL: Transpile all workspace packages for Vercel production build ===
   transpilePackages: [
     '@ecowoods/ui',
     '@ecowoods/api-client',
@@ -19,4 +20,5 @@ const nextConfig = {
   },
   webpack: (config) => config,
 };
+
 module.exports = nextConfig;

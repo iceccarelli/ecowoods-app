@@ -3,6 +3,10 @@
   "version": "2.0.0",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo dev --filter=@ecowoods/web",
     "build": "turbo build --filter=@ecowoods/web",
