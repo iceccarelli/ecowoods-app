@@ -9,7 +9,7 @@
   ],
 "scripts": {
   "dev": "turbo dev --filter=@ecowoods/web",
-  "build": "turbo build",
+  "build": "turbo build --filter='@ecowoods/*'",
   "build:web": "turbo build --filter=@ecowoods/web",
   "build:packages": "turbo build --filter='@ecowoods/*' --filter='!@ecowoods/web'",
   "lint": "turbo lint",
