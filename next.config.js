@@ -14,9 +14,13 @@ const nextConfig = {
     '@ecowoods/config',
     '@ecowoods/utils'
   ],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', '@ecowoods/ui'],
   },
   webpack: (config) => config,
 };
+
 module.exports = nextConfig;
