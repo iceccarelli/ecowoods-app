@@ -16,9 +16,10 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "turbo": "^2.9.14",
+    "@types/node": "20.16.10",
+    "next": "^15.5.18",
     "prettier": "^3.3.2",
-    "@types/node": "20.16.10"
+    "turbo": "^2.9.14"
   },
   "engines": {
     "node": ">=18.18.0"
