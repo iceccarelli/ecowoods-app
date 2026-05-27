@@ -7,17 +7,17 @@
     "apps/*",
     "packages/*"
   ],
-"scripts": {
-  "dev": "turbo dev --filter=@ecowoods/web",
-  "build": "turbo build --filter='@ecowoods/ui' --filter='@ecowoods/mobile' --filter='@ecowoods/web'"
-  "build:web": "turbo build --filter=@ecowoods/web",
-  "build:packages": "turbo build --filter='@ecowoods/*' --filter='!@ecowoods/web'",
-  "lint": "turbo lint",
-  "typecheck": "turbo typecheck",
-  "format": "prettier --write .",
-  "dev:mobile": "turbo dev --filter=@ecowoods/mobile",
-  "dev:backend": "cd backend && uvicorn app.main:app --reload"
-},
+  "scripts": {
+    "dev": "turbo dev --filter=@ecowoods/web",
+    "build": "turbo build --filter='@ecowoods/ui' --filter='@ecowoods/mobile' --filter='@ecowoods/web'",
+    "build:web": "turbo build --filter=@ecowoods/web",
+    "build:packages": "turbo build --filter='@ecowoods/*' --filter='!@ecowoods/web'",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write .",
+    "dev:mobile": "turbo dev --filter=@ecowoods/mobile",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload"
+  },
   "devDependencies": {
     "turbo": "^2.4.4",
     "prettier": "^3.3.2",
