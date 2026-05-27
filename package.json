@@ -9,24 +9,16 @@
   ],
   "scripts": {
     "dev": "turbo dev --filter=@ecowoods/web",
-    "build": "turbo build --filter='@ecowoods/ui' --filter='@ecowoods/mobile' --filter='@ecowoods/web'",
+    "build": "turbo build --filter=@ecowoods/web",
     "build:web": "turbo build --filter=@ecowoods/web",
-    "build:packages": "turbo build --filter='@ecowoods/*' --filter='!@ecowoods/web'",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "format": "prettier --write .",
-    "dev:mobile": "turbo dev --filter=@ecowoods/mobile",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload"
+    "format": "prettier --write ."
   },
   "devDependencies": {
-    "turbo": "^2.4.4",
+    "turbo": "^2.9.14",
     "prettier": "^3.3.2",
-    "@types/node": "20.16.10",
-    "next": "^15.5.18"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@types/node": "20.16.10"
   },
   "engines": {
     "node": ">=18.18.0"
