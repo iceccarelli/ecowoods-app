@@ -4,21 +4,20 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "workspaces": [
-    "packages/*",
-    "frontend"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "turbo dev --filter=@ecowoods/web",
+    "build": "turbo build --filter=@ecowoods/web",
+    "build:packages": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
-    "dev:packages": "turbo dev",
-    "build:packages": "turbo build",
-    "dev:mobile": "cd frontend && pnpm install && pnpm dev",
-    "dev:admin": "echo 'Admin dashboard is static Vanilla JS — open admin-dashboard/index.html'",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload"
+    "dev:web": "turbo dev --filter=@ecowoods/web",
+    "dev:mobile": "turbo dev --filter=@ecowoods/mobile",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload",
+    "dev:admin": "echo 'Admin dashboard is static Vanilla JS — open admin-dashboard/index.html'"
   },
   "devDependencies": {
     "turbo": "^2.4.4",
