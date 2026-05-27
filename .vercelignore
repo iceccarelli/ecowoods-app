@@ -1,11 +1,27 @@
-# Ignore heavy folders for web build
+# .vercelignore — only exclude things that genuinely don't belong in the web deploy
+
+# Other apps (mobile, admin) that aren't part of the web build
+apps/mobile/
+apps/admin/
+
+# Python backend
 backend/
+
+# Legacy folders not consumed by web
 frontend/
 admin-dashboard/
-packages/
 scripts/
+
+# Standard exclusions
 .git/
 node_modules/
+.turbo/
+.next/
+
+# Docs (keep README so Vercel preview cards work)
 *.md
 !README.md
+
+# Env files
 .env*
+!.env.example
