@@ -786,6 +786,7 @@ p {
   box-shadow: 0 0 0 4px rgba(200, 126, 79, 0.25);
 }
 
+/* ==================== ESTIMATOR OPTIONS — PROFESSIONAL FIX ==================== */
 .estimator-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -795,27 +796,32 @@ p {
 .estimator-option {
   padding: 0.75rem 0.5rem;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(245, 239, 230, 0.18);
-  background: rgba(245, 239, 230, 0.04);
-  color: rgba(245, 239, 230, 0.78);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);                    /* ← FIXED: High contrast dark text */
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
   cursor: pointer;
   transition: all 220ms var(--ease-out-quart);
+  box-shadow: var(--shadow-sm);
 }
 
 .estimator-option:hover {
-  border-color: rgba(200, 126, 79, 0.5);
-  color: var(--cream-50);
+  border-color: var(--copper);
+  color: var(--walnut-900);
+  background: var(--cream-50);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .estimator-option.active {
   background: var(--copper);
   border-color: var(--copper);
   color: var(--cream-50);
+  font-weight: 700;
   box-shadow: var(--shadow-warm);
+  transform: none;
 }
 
 .estimator-result {
