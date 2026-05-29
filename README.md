@@ -1327,37 +1327,59 @@ logger.error({ err, orderId }, 'order.create.failed');
 
 ---
 
-## 🛣 Roadmap & Open Decisions
+## 🛣 Roadmap & Current Status (May 29, 2026)
 
-### Roadmap by phase
+### Current Progress Overview
+**Overall Status:** Phase 1 (Commerce Core) is **~65% complete**. The foundation (shared packages) is solid, but `apps/web` still has build issues that are blocking full integration.
+
+### Roadmap by Phase (Updated)
 
 ```mermaid
 gantt
-    title EcoWoods Build Timeline
+    title EcoWoods Build Timeline - Updated May 29, 2026
     dateFormat YYYY-MM-DD
-    section Phase 1
-    Commerce core              :p1, 2026-05-28, 7d
-    section Phase 2
-    Mobile + email             :p2, after p1, 14d
-    section Phase 3
-    Social layer               :p3, after p2, 21d
-    section Phase 4
-    Admin + observability      :p4, after p3, 14d
-    section Phase 5
-    Heavy workloads + n8n      :p5, after p4, 28d
+    section Phase 0 - Foundation
+    Monorepo + Vercel Setup :done, 2026-05-20, 2026-05-28
+    section Phase 1 - Commerce Core
+    Shared Packages (shared, db, auth) :done, 2026-05-28, 2026-05-29
+    Shop + Cart + Stripe Checkout :active, 2026-05-29, 7d
+    User Accounts + Orders :done, 2026-05-29, 2026-05-29
+    Full End-to-End Testing + Emails :crit, 2026-05-30, 3d
+    section Phase 2 - Mobile + Email
+    Mobile App (Expo) + Push Notifications :2026-06-02, 14d
+    section Phase 3 - Social Layer
+    Instagram-style Feed + Real-time :2026-06-16, 21d
+    section Phase 4 - Admin + Observability
+    Admin Dashboard + Sentry + PostHog :2026-07-07, 14d
+    section Phase 5 - Heavy Workloads
+    FastAPI + Vector Search + n8n Workflows :2026-07-21, 28d
 ```
 
-### Open decisions (need owner + deadline)
+**Legend:**
+- 🟢 **done** = Completed
+- 🔵 **active** = Currently in progress (blocking issues being fixed)
+- 🔴 **crit** = Critical path (must be completed before moving forward)
+- Gray = Planned / Not started
 
-| Decision | Options | Owner | Deadline |
-|---|---|---|---|
-| Mobile component library | NativeWind + custom **vs** Tamagui everywhere | TBD | Before Phase 2 |
-| Search engine | Postgres FTS → Typesense → Algolia | TBD | Before Phase 5 |
-| Subscription model | One-time only **vs** subscriptions (Stripe Billing) | Product | Before Phase 5 |
-| Image CDN | Vercel Image **vs** Cloudinary **vs** Cloudflare Images | TBD | Before Phase 3 |
-| Region | Vercel global edge **vs** EU-only (GDPR locked) | Legal | Before Phase 4 |
+### Current Reality Check (May 29, 2026)
+- ✅ **Phase 0** — Fully complete
+- ✅ **Phase 1 Core Packages** — Fully built and working
+- 🔵 **Phase 1 Frontend** — 65% complete (build errors blocking full functionality)
+- ❌ **Phase 2–5** — Not started yet
+
+### Open Decisions (Need Owner + Deadline)
+
+| Decision                    | Options                                      | Owner   | Deadline          |
+|----------------------------|----------------------------------------------|---------|-------------------|
+| Mobile component library   | NativeWind + custom **vs** Tamagui everywhere | TBD     | Before Phase 2    |
+| Search engine              | Postgres FTS → Typesense → Algolia           | TBD     | Before Phase 5    |
+| Subscription model         | One-time only **vs** subscriptions (Stripe)  | Product | Before Phase 5    |
+| Image CDN                  | Vercel Image **vs** Cloudinary **vs** Cloudflare | TBD  | Before Phase 3    |
+| Region                     | Vercel global edge **vs** EU-only (GDPR)     | Legal   | Before Phase 4    |
 
 ---
+
+
 
 ## 🤝 Contributing
 
