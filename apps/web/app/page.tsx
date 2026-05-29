@@ -678,7 +678,7 @@ const mutation = useMutation({
   },
   onError: (error: Error) => {
     toast.error("Something went wrong", {
-      description: error.message || "Please try again or call (416) 555-WOOD",
+      description: error.message || "Please try again or call (416) 249 1276",
     });
   },
 });
@@ -1441,11 +1441,11 @@ const onSubmit = (data: LeadFormData) => {
                       Call us
                     </div>
                     <a
-                      href="tel:+14165559663"
+                      href="tel:+14162491276"
                       className="value"
                       style={{ color: 'var(--cream-50)' }}
                     >
-                      (416) 555-WOOD
+                      (416) 249-1276
                     </a>
                   </div>
                 </div>
@@ -1695,8 +1695,8 @@ const onSubmit = (data: LeadFormData) => {
                 Get a Free Estimate
                 <span className="btn-arrow">{Icon.arrow}</span>
               </a>
-              <a className="btn btn-ghost-light btn-lg" href="tel:+14165559663">
-                Or call (416) 555-WOOD
+              <a className="btn btn-ghost-light btn-lg" href="tel:+14162491276">
+                Or call (416) 249-1276
               </a>
             </div>
           </div>
