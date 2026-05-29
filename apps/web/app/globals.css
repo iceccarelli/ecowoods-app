@@ -868,6 +868,64 @@ p {
   font-weight: 600;
 }
 
+/* --------------------- Species List (Perfect match to design specs) --------------------- */
+.species-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 580px;
+  margin: 2.75rem auto 0;
+  padding: 0 0.5rem;
+}
+
+.species-item {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+  transition: all 200ms var(--ease-out-quart);
+}
+
+.species-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.species-item:hover {
+  transform: translateX(4px);
+  border-bottom-color: var(--copper);
+}
+
+.species-name {
+  font-family: var(--font-display);
+  font-size: 1.38rem;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 0.35rem;
+  line-height: 1.15;
+}
+
+.species-meta {
+  font-size: 0.96rem;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+
+/* Custom sample CTA box - exact visual match */
+.custom-sample-box {
+  margin-top: 3rem;
+  padding: 2rem 2.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--cream-50);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
 /* --------------------- FAQ Accordion (Premium) --------------------- */
 .faq-list {
   display: flex;
