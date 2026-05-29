@@ -142,15 +142,15 @@ const localBusinessSchema = {
       url: SITE_URL,
       image: `${SITE_URL}/og-image.jpg`,
       logo: `${SITE_URL}/logo.png`,
-      telephone: '+1-416-555-9663',
-      email: 'hello@ecowoods.ca',
+      telephone: '+1-416-249-1276',
+      email: 'services@ecowoods.ca',
       priceRange: '$$',
       foundingDate: '1998',
       slogan: TAGLINE,
       description: SHORT_DESC,
       address: {
         '@type': 'PostalAddress',
-        streetAddress: '2899 Steeles Avenue West',
+        streetAddress: '32 Norfield Crsnt.',
         addressLocality: 'Toronto',
         addressRegion: 'ON',
         postalCode: 'M3J 3A1',
@@ -312,7 +312,7 @@ function SiteFooter() {
               Toronto, ON M3J 3A1
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>
-              <a href="tel:+14165559663" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
+              <a href="tel:+14162491276" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
                 (416) 249 1276
               </a>
               <a href="mailto:services@ecowoods.ca">services@ecowoods.ca</a>
