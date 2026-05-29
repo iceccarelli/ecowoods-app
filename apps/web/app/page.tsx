@@ -850,7 +850,7 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* SPECIES SELECTOR */}
+      {/* SPECIES SELECTOR — Premium Clean List (Perfect Screenshot Match + Elevated UX) */}
       <section className="section" id="species">
         <div className="shell">
           <div className="section-head centered reveal">
@@ -864,41 +864,27 @@ const onSubmit = (data: LeadFormData) => {
             </p>
           </div>
 
-          <div className="species-grid">
+          <div className="species-list reveal" aria-label="Available hardwood species">
             {speciesList.map((sp, i) => (
               <a
                 key={sp.id}
                 href="#quote"
-                className="species-card reveal"
-                data-delay={(i % 4) + 1}
-                style={{ backgroundImage: `url(${sp.image})` }}
-                aria-label={`Discuss a project with ${sp.name}`}
+                className="species-item"
+                style={{ animationDelay: `${(i % 6) * 65}ms` }}
+                aria-label={`Request a quote or custom sample for ${sp.name}`}
               >
-                <div className="species-card-label">
-                  <div className="name">{sp.name}</div>
-                  <div className="meta">
-                    {sp.hardness} · {sp.origin}
-                  </div>
+                <div className="species-name">{sp.name}</div>
+                <div className="species-meta">
+                  {sp.hardness} · {sp.origin}
+                </div>
+                <div className="species-cta-hint">
+                  Discuss this species <span className="arrow">→</span>
                 </div>
               </a>
             ))}
           </div>
 
-          <div
-            className="reveal"
-            style={{
-              marginTop: '3rem',
-              padding: '2rem',
-              borderRadius: 'var(--radius-lg)',
-              background: 'var(--cream-50)',
-              border: '1px solid var(--line)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1.5rem',
-            }}
-          >
+          <div className="custom-sample-box reveal">
             <div style={{ maxWidth: '520px' }}>
               <h4 style={{ marginBottom: '0.5rem' }}>Don&apos;t see your species?</h4>
               <p style={{ color: 'var(--muted)' }}>
@@ -906,7 +892,11 @@ const onSubmit = (data: LeadFormData) => {
                 if it exists, we can source it.
               </p>
             </div>
-            <a className="btn btn-primary" href="#quote">
+            <a 
+              className="btn btn-primary btn-lg" 
+              href="#quote"
+              style={{ whiteSpace: 'nowrap' }}
+            >
               Request a Custom Sample
               <span className="btn-arrow">{Icon.arrow}</span>
             </a>
