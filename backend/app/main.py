@@ -14,6 +14,7 @@ from app.api.auth import router as auth_router
 from app.api.bids import router as bids_router
 from app.api.calendar_events import router as calendar_router
 from app.api.job_requests import router as job_requests_router
+from app.api.products import router as products_router
 from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -21,6 +22,7 @@ from app.core.security import get_password_hash
 from app.models.bid import Bid  # noqa: F401
 from app.models.calendar_event import CalendarEvent  # noqa: F401
 from app.models.job_request import JobRequest  # noqa: F401
+from app.models.product import Product  # noqa: F401
 
 # Import all models so they are registered with Base.metadata
 from app.models.user import User  # noqa: F401
@@ -90,6 +92,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(job_requests_router, prefix="/api/v1")
+app.include_router(products_router, prefix="/api/v1")
 app.include_router(bids_router, prefix="/api/v1")
 app.include_router(calendar_router, prefix="/api/v1")
 
