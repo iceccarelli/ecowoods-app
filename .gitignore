@@ -47,3 +47,6 @@ next-env.d.ts.bak
 
 # Turborepo
 .turbo/
+
+__pycache__/
+*.pyc
