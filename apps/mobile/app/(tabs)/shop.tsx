@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api } from '@ecowoods/api-client';
 import { ProductCard } from '@ecowoods/ui';
 import type { Product } from '@ecowoods/types';
+
 export default function ShopScreen() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +17,7 @@ export default function ShopScreen() {
     <FlatList style={s.screen} contentContainerStyle={s.content} data={products}
       keyExtractor={p => String(p.id)}
       ListHeaderComponent={<Text style={s.title}>Shop Hardwood</Text>}
-      renderItem={({ item }) => <ProductCard product={item} />} />
+      renderItem={({ item }) => <ProductCard product={item} onPress={() => router.push(`/product/${item.id}`)} />} />
   );
 }
 const s = StyleSheet.create({
