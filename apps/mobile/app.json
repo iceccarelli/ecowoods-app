@@ -1,6 +1,14 @@
 {
-  "plugins": [
-    "expo-router",
-    "@stripe/stripe-react-native"
-  ]
+  "expo": {
+    "name": "EcoWoods",
+    "slug": "ecowoods-mobile",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "scheme": "ecowoods",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": {},
+    "plugins": ["expo-router"]
+  }
 }
