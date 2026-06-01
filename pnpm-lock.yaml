@@ -223,7 +223,11 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
 
-  packages/api-client: {}
+  packages/api-client:
+    dependencies:
+      '@ecowoods/shared':
+        specifier: workspace:^
+        version: link:../shared
 
   packages/auth: {}
 
