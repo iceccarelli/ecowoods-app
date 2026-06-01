@@ -11,6 +11,7 @@
   "dependencies": {
     "@ecowoods/api-client": "workspace:*",
     "@ecowoods/auth": "workspace:*",
+    "@ecowoods/shared": "workspace:*",
     "@ecowoods/types": "workspace:*",
     "@ecowoods/ui": "workspace:*",
     "@hookform/resolvers": "^3.9.0",
