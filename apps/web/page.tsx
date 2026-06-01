@@ -664,7 +664,7 @@ const {
 });
 
 const mutation = useMutation({
-  mutationFn: (data: LeadFormData) => submitLead(data, 'website'),
+  mutationFn: (data: LeadFormData) => submitLead(data),
   onSuccess: () => {
     toast.success("Estimate request received!", {
       description: "A senior estimator will contact you within 1 business day.",
