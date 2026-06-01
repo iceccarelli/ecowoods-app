@@ -143,6 +143,9 @@ importers:
       '@ecowoods/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@ecowoods/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@ecowoods/types':
         specifier: workspace:*
         version: link:../../packages/types
