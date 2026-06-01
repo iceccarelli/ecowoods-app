@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
-import { Button } from '@ecowoods/ui';
-import { X, Calculator, Leaf, Clock, Award, Info, Save } from 'lucide-react';
+import { X, Calculator, Leaf, Clock, Award, Info } from 'lucide-react';
 
 interface QuoteFormProps {
   isOpen: boolean;
@@ -355,10 +354,10 @@ export function QuoteForm({ isOpen, onClose, prefilledMaterial, prefilledSqft, o
                 Your information is secure. We never share it. <span className="text-emerald-600 font-medium">SSL encrypted</span> • 10-year warranty included
               </div>
 
-              <Button
+              <button
                 type="submit"
                 disabled={isSubmitting || Object.keys(errors).length > 0}
-                className="w-full h-16 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-70 rounded-3xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-3 text-white"
+                className="w-full h-16 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-70 rounded-3xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-3 text-white transition-all"
               >
                 {isSubmitting ? (
                   <>Processing your personalized quote...</>
@@ -368,7 +367,7 @@ export function QuoteForm({ isOpen, onClose, prefilledMaterial, prefilledSqft, o
                     GET MY FREE MEASURE + EXACT QUOTE
                   </>
                 )}
-              </Button>
+              </button>
 
               <p className="text-center text-[10px] text-zinc-400 mt-3">No credit card required • Cancel anytime • 2-hour callback guarantee</p>
             </div>
