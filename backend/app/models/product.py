@@ -1,7 +1,11 @@
 """Product ORM model."""
+
 from datetime import UTC, datetime
+
 from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text
+
 from app.core.database import Base
+
 
 class Product(Base):
     __tablename__ = "products"
