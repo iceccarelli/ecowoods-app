@@ -1,6 +1,9 @@
 """Pydantic schemas for Product endpoints."""
+
 from datetime import datetime
+
 from pydantic import BaseModel
+
 
 class ProductCreate(BaseModel):
     name: str
@@ -10,6 +13,7 @@ class ProductCreate(BaseModel):
     image_url: str | None = None
     in_stock: bool = True
 
+
 class ProductUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
@@ -17,6 +21,7 @@ class ProductUpdate(BaseModel):
     category: str | None = None
     image_url: str | None = None
     in_stock: bool | None = None
+
 
 class ProductResponse(BaseModel):
     id: int
