@@ -1,13 +1,9 @@
 {
   "name": "ecowoods",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
-  "features": {
-    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
-  },
-  "postCreateCommand": "corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install && pip install -r backend/requirements.txt aiosqlite",
-  "postStartCommand": "bash .devcontainer/start.sh",
-  "forwardPorts": [8000, 8081],
+  "image": "node:20-bookworm",
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install",
+  "forwardPorts": [3000],
   "portsAttributes": {
-    "8000": { "label": "backend", "visibility": "public" }
+    "3000": { "label": "web" }
   }
 }
