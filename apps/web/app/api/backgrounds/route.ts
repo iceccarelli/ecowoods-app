@@ -24,7 +24,7 @@ export async function GET() {
     const q1 = QUERIES[seed % QUERIES.length];
     const q2 = QUERIES[(seed + 3) % QUERIES.length];
 
-    const fetchQ = (q) =>
+    const fetchQ = (q: string) =>
       fetch(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=10&content_filter=high`,
         { headers: { Authorization: `Client-ID ${key}` }, next: { revalidate: TTL_SECONDS } }
