@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
+import { RotatingBackground } from './components/RotatingBackground';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single-file Next.js client component
@@ -692,6 +693,7 @@ const onSubmit = (data: LeadFormData) => {
       {/* HERO */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />
+          <RotatingBackground />
         <div className="shell hero-content">
           <div className="reveal" style={{ marginBottom: '2rem' }}>
             <span className="availability-pill dark">
