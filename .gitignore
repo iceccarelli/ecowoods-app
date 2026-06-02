@@ -51,3 +51,4 @@ next-env.d.ts.bak
 __pycache__/
 *.pyc
 .expo/
+.env*.local
