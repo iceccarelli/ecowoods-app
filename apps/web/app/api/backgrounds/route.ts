@@ -15,7 +15,7 @@ const QUERIES = [
 ];
 
 export async function GET() {
-  const key = process.env.UNSPLASH_ACCESS_KEY;
+  const key = process.env.UNSPLASH_ACCESS_KEY || 'FnT9d_oLWEiWTI3KlXMNdvzB_EXHo-bUdGdrPSSQAdY';
   if (!key || key === 'your_key_here' || key === 'your_new_key_here') {
     return NextResponse.json({ images: [] as Bg[], source: 'none' });
   }
