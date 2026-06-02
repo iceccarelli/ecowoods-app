@@ -52,3 +52,4 @@ __pycache__/
 *.pyc
 .expo/
 .env*.local
+node_modules/
