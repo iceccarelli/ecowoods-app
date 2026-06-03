@@ -2255,3 +2255,40 @@ p {
   animation-duration: 0.4s;
   animation-timing-function: var(--ease-out-quart);
 }
+
+/* ============================================================
+   Photo-background sections — frosted glass + readable light text
+   ============================================================ */
+.photo-bg-section .section-head h2,
+.photo-bg-section h2,
+.photo-bg-section p,
+.photo-bg-section .area-chip,
+.photo-bg-section .process-step,
+.photo-bg-section .process-step * {
+  color: var(--cream-50) !important;
+}
+.photo-bg-section .eyebrow { color: var(--copper-bright) !important; }
+.photo-bg-section .step-num { color: var(--copper-bright) !important; }
+
+.photo-bg-section .process-grid {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
+.photo-bg-section .process-step {
+  background: rgba(20, 13, 9, 0.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+.photo-bg-section .area-chip {
+  background: rgba(20, 13, 9, 0.45) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--cream-50) !important;
+}
+.photo-bg-section .area-chip:hover {
+  background: rgba(20, 13, 9, 0.62) !important;
+  border-color: rgba(255,255,255,0.35) !important;
+}
