@@ -586,30 +586,29 @@ p {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--surface);
+  border: none;
+  background: var(--copper);
   transition: all 200ms var(--ease-out-quart);
 }
 
 .hamburger:hover {
-  background: var(--cream-100);
+  background: var(--copper-deep);
 }
 
 .hamburger .bar {
-  width: 18px;
-  height: 1.5px;
-  background: var(--ink);
+  width: 22px;
+  height: 2px;
+  background: #fff;
   border-radius: 2px;
-  transition: transform 220ms var(--ease-out-quart),
-              opacity 180ms ease;
+  transition: transform 260ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease;
 }
 
 .hamburger .bar + .bar {
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .hamburger.open .bar:nth-child(1) {
-  transform: translateY(5.5px) rotate(45deg);
+  transform: translateY(7px) rotate(45deg);
 }
 
 .hamburger.open .bar:nth-child(2) {
@@ -617,7 +616,7 @@ p {
 }
 
 .hamburger.open .bar:nth-child(3) {
-  transform: translateY(-5.5px) rotate(-45deg);
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 /* --------------------- Mobile Menu --------------------- */
@@ -690,7 +689,7 @@ p {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(115deg, rgba(26, 15, 8, 0.92) 0%, rgba(26, 15, 8, 0.6) 45%, rgba(26, 15, 8, 0.85) 100%),
+    linear-gradient(115deg, rgba(26, 15, 8, 0.55) 0%, rgba(26, 15, 8, 0.25) 45%, rgba(26, 15, 8, 0.6) 100%),
     url('https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=2400&q=80');
   background-size: cover;
   background-position: center;
