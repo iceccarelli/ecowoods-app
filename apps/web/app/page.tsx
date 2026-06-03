@@ -815,8 +815,9 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* PILLARS */}
-      <section className="section wood-grain-dark noise-overlay" style={{ color: 'var(--cream-50)' }}>
-        <div className="shell">
+      <section className="section photo-bg-section" style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}>
+        <RotatingBackground theme="craft" interval={9000} />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
             <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
               Why Ecowoods
@@ -907,8 +908,9 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* PROCESS */}
-      <section className="section" style={{ background: 'var(--cream-50)' }} id="process">
-        <div className="shell">
+      <section className="section photo-bg-section" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }} id="process">
+        <RotatingBackground theme="finish" interval={10000} />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal">
             <span className="eyebrow">Our Process</span>
             <h2>
@@ -1296,8 +1298,9 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* SERVICE AREAS */}
-      <section className="section" id="areas">
-        <div className="shell">
+      <section className="section photo-bg-section" id="areas" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }}>
+        <RotatingBackground theme="homes" interval={11000} />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
             <span className="eyebrow">Coverage</span>
             <h2>
@@ -1651,13 +1654,14 @@ const onSubmit = (data: LeadFormData) => {
       {/* FINAL BAND / CLOSING */}
       <section
         className="section-tight"
-        style={{
+        style={{ position: 'relative', overflow: 'hidden',
           background: 'linear-gradient(135deg, var(--copper-deep), var(--copper))',
           color: 'var(--cream-50)',
           textAlign: 'center',
         }}
       >
-        <div className="shell">
+        <RotatingBackground theme="finish" interval={8000} scrim="linear-gradient(135deg, rgba(138,72,42,0.82), rgba(176,109,58,0.7))" />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="reveal" style={{ maxWidth: '760px', margin: '0 auto' }}>
             <h2
               style={{
