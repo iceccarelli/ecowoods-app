@@ -1548,7 +1548,7 @@ const onSubmit = (data: LeadFormData) => {
                     <input
                       id="f-phone"
                       {...register('phone')}
-                      placeholder="(416) 555-0123"
+                      placeholder="(416) 249-1276"
                       className={errors.phone ? 'field-error' : ''}
                     />
                     {errors.phone && <p className="error-message">{errors.phone.message}</p>}
