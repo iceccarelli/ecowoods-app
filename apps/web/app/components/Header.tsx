@@ -42,8 +42,8 @@ const navigation = [
   { label: 'FAQ', href: '#faq' },
 ];
 
-const PHONE_DISPLAY = '(416) 555-WOOD';
-const PHONE_HREF = 'tel:+14165559663';
+const PHONE_DISPLAY = '(416) 249-1276';
+const PHONE_HREF = 'tel:+14162491276';
 
 /* ---------------------- Component ---------------------- */
 export default function Header() {
