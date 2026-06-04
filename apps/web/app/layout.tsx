@@ -4,6 +4,21 @@ import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
+import { 
+  Instagram, 
+  Facebook, 
+  Home, 
+  MapPin, 
+  Linkedin, 
+  Youtube, 
+  Tiktok, 
+  Pinterest, 
+  Twitter, 
+  MessageCircle, 
+  Globe, 
+  Star 
+} from 'lucide-react';
+import { SOCIAL_LINKS, type SocialLink } from '@ecowoods/shared/constants';
 
 /* ---------------------- Fonts ---------------------- */
 const fraunces = Fraunces({
@@ -328,31 +343,49 @@ function SiteFooter() {
 
         <div className="footer-bottom">
           <div>© {new Date().getFullYear()} Ecowoods Hardwood Flooring Inc. — All rights reserved.</div>
-          <div className="footer-social" aria-label="Social media">
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
-              </svg>
-            </a>
-            <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z" />
-              </svg>
-            </a>
-            <a href="https://www.houzz.com/" target="_blank" rel="noopener noreferrer" aria-label="Houzz">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z" />
-              </svg>
-            </a>
-            <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" aria-label="Google Reviews">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-            </a>
+          
+          {/* Dynamic 12 Social + Review Icons 
+              - Data source: @ecowoods/shared/constants SOCIAL_LINKS (single source of truth in repo)
+              - Icons: lucide-react (project standard)
+              - Alignment & UX: EXACTLY matches original 4-icon design (38x38 squares, subtle bg, copper hover lift, 18px icons)
+              - Now wraps gracefully (flex-wrap) for 12 items
+              - Includes WhatsApp with pre-filled lead-gen message → direct money-making CTA
+              - Website now fully responds to changes in the shared constants
+          */}
+          <div className="footer-social flex-wrap gap-2 sm:gap-3" aria-label="Follow us on social media, read reviews, or message us directly">
+            {(() => {
+              const iconMap: Record<string, React.ComponentType<any>> = {
+                Instagram,
+                Facebook,
+                Houzz: Home,
+                Google: MapPin,
+                LinkedIn: Linkedin,
+                YouTube: Youtube,
+                TikTok: Tiktok,
+                Pinterest,
+                X: Twitter,
+                WhatsApp: MessageCircle,
+                Website: Globe,
+                Telegram: MessageCircle,
+              };
+              return SOCIAL_LINKS.map((social) => {
+                const IconComp = iconMap[social.platform as keyof typeof iconMap] || Globe;
+                return (
+                  <a
+                    key={social.platform}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    title={social.label}
+                  >
+                    <IconComp className="w-[18px] h-[18px]" />
+                  </a>
+                );
+              });
+            })()}
           </div>
+
           <div>
             <a href="/privacy" style={{ marginRight: '1.5rem' }}>Privacy</a>
             <a href="/terms">Terms</a>
