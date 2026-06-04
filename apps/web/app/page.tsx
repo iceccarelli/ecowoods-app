@@ -1470,11 +1470,11 @@ const onSubmit = (data: LeadFormData) => {
                       Email
                     </div>
                     <a
-                      href="mailto:hello@ecowoods.ca"
+                      href="mailto:services@ecowoods.ca"
                       className="value"
                       style={{ color: 'var(--cream-50)' }}
                     >
-                      hello@ecowoods.ca
+                      services@ecowoods.ca
                     </a>
                   </div>
                 </div>
@@ -1494,7 +1494,7 @@ const onSubmit = (data: LeadFormData) => {
                       Showroom
                     </div>
                     <div className="value" style={{ color: 'var(--cream-50)' }}>
-                      2899 Steeles Ave W, Toronto
+                      32 Norfield Cresent, Toronto
                     </div>
                   </div>
                 </div>
