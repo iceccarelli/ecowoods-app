@@ -403,8 +403,8 @@ p {
   background: rgba(245, 239, 230, 0.06);
   color: var(--cream-50);
   border: 1px solid rgba(245, 239, 230, 0.22);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .btn-ghost-light:hover {
@@ -2257,38 +2257,53 @@ p {
 }
 
 /* ============================================================
-   Photo-background sections — frosted glass + readable light text
+   PHOTO-BACKGROUND SECTIONS — single authoritative block
    ============================================================ */
 .photo-bg-section .section-head h2,
 .photo-bg-section h2,
 .photo-bg-section p,
-.photo-bg-section .area-chip,
 .photo-bg-section .process-step,
-.photo-bg-section .process-step * {
+.photo-bg-section .process-step *,
+.photo-bg-section .area-chip {
   color: var(--cream-50) !important;
 }
-.photo-bg-section .eyebrow { color: var(--copper-bright) !important; }
+.photo-bg-section .eyebrow,
 .photo-bg-section .step-num { color: var(--copper-bright) !important; }
+
+.photo-bg-section .section-head h2,
+.photo-bg-section .section-head p {
+  text-shadow: 0 2px 16px rgba(0,0,0,0.6);
+}
 
 .photo-bg-section .process-grid {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.18) !important;
-}
-.photo-bg-section .process-step {
-  background: rgba(20, 13, 9, 0.55) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-color: rgba(255,255,255,0.12) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
 }
 
+.photo-bg-section .process-step,
 .photo-bg-section .area-chip {
-  background: rgba(20, 13, 9, 0.45) !important;
-  border: 1px solid rgba(255,255,255,0.22) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--cream-50) !important;
+  background: rgba(20, 13, 9, 0.08) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  transition: none !important;
+}
+.photo-bg-section .process-step,
+.photo-bg-section .process-step *,
+.photo-bg-section .area-chip {
+  text-shadow: 0 1px 8px rgba(0,0,0,0.7);
 }
 .photo-bg-section .area-chip:hover {
-  background: rgba(20, 13, 9, 0.62) !important;
-  border-color: rgba(255,255,255,0.35) !important;
+  background: rgba(20, 13, 9, 0.18) !important;
+}
+
+/* Glass cards must NOT run the reveal animation — it re-composites the backdrop
+   and makes them look opaque after settling. Force them stable & transparent always. */
+.photo-bg-section .process-step.reveal,
+.photo-bg-section .reveal .process-step,
+.photo-bg-section .area-chip {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
 }
