@@ -63,6 +63,19 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 import SiteFooter from "./components/SiteFooter";
 
 /* ---------------------- Root Layout ---------------------- */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://ecowoods-app.vercel.app'),
+  title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
+  description:
+    'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.',
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-CA" className={`${fraunces.variable} ${jakarta.variable} ${mono.variable}`}>

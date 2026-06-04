@@ -18,20 +18,23 @@ export const messageSchema = z.object({
   content: z.string().min(1).max(1000),
 });
 
-export const leadSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  address: z.string().min(5),
-  postal: z.string().optional(),
-  woodType: z.string().min(2),
-  size: z.string().min(1),
-  timeframe: z.string().min(3),
-  message: z.string().optional(),
-  source: z.string().optional(),
-  service: z.string().optional(),
-  timeline: z.string().optional(),
-}).passthrough();   // ← This allows extra fields like 'sqft'
+export const leadSchema = z
+  .object({
+    name: z.string().min(2, 'Please enter your full name'),
+    email: z.string().email('Please enter a valid email'),
+    phone: z.string().min(7, 'Please enter a valid phone number'),
+    postal: z.string().min(3, 'Please enter your postal code'),
+    service: z.string().optional(),
+    timeline: z.string().optional(),
+    message: z.string().max(2000).optional(),
+    source: z.string().optional(),
+    // sqft comes in as a number (valueAsNumber) or NaN when left blank
+    sqft: z.preprocess(
+      (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : v),
+      z.number().positive().optional(),
+    ),
+  })
+  .passthrough();
 
 export type LeadFormData = z.infer<typeof leadSchema>;
 export type CreateJobInput = z.infer<typeof createJobSchema>;

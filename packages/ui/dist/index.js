@@ -30,77 +30,16 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
-  Button: () => Button,
-  JobCard: () => JobCard,
   ProductCard: () => ProductCard
 });
 module.exports = __toCommonJS(index_exports);
 
-// src/Button.tsx
-var import_react = __toESM(require("react"));
-var import_class_variance_authority = require("class-variance-authority");
-
-// src/lib/utils.ts
-var import_clsx = require("clsx");
-var import_tailwind_merge = require("tailwind-merge");
-function cn(...inputs) {
-  return (0, import_tailwind_merge.twMerge)((0, import_clsx.clsx)(inputs));
-}
-
-// src/Button.tsx
-var import_jsx_runtime = require("react/jsx-runtime");
-var buttonVariants = (0, import_class_variance_authority.cva)(
-  "inline-flex items-center justify-center rounded-2xl font-semibold transition-all active:scale-[0.985] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none",
-  {
-    variants: {
-      variant: {
-        primary: "bg-[#0A3D2E] text-white hover:bg-[#C5A26F] hover:text-white focus:ring-[#0A3D2E]",
-        outline: "border-2 border-[#0A3D2E] text-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-white focus:ring-[#0A3D2E]",
-        ghost: "hover:bg-[#0A3D2E]/10 text-[#0A3D2E]"
-      },
-      size: {
-        default: "px-8 py-4 text-base",
-        lg: "px-12 py-6 text-lg",
-        xl: "px-16 py-8 text-2xl"
-      }
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "default"
-    }
-  }
-);
-var Button = import_react.default.forwardRef(
-  ({ className, variant, size, ...props }, ref) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-      "button",
-      {
-        className: cn(buttonVariants({ variant, size, className })),
-        ref,
-        ...props
-      }
-    );
-  }
-);
-Button.displayName = "Button";
-
-// src/JobCard.tsx
-var import_jsx_runtime2 = require("react/jsx-runtime");
-var JobCard = ({ job }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "bg-white rounded-3xl p-6 border hover:shadow-xl transition-all", children: [
-  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { className: "font-semibold text-xl text-[#0A3D2E]", children: job.title }),
-  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "text-sm text-gray-500", children: job.address }),
-  /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "mt-4 text-2xl font-bold text-[#0A3D2E]", children: [
-    "$",
-    job.budget_min
-  ] })
-] });
-
 // ../../node_modules/sonner/dist/index.mjs
-var import_react2 = __toESM(require("react"), 1);
+var import_react = __toESM(require("react"), 1);
 var import_react_dom = __toESM(require("react-dom"), 1);
+var import_react2 = __toESM(require("react"), 1);
 var import_react3 = __toESM(require("react"), 1);
 var import_react4 = __toESM(require("react"), 1);
-var import_react5 = __toESM(require("react"), 1);
 var jt = (n) => {
   switch (n) {
     case "success":
@@ -116,15 +55,15 @@ var jt = (n) => {
   }
 };
 var te = Array(12).fill(0);
-var Yt = ({ visible: n, className: e }) => import_react3.default.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, import_react3.default.createElement("div", { className: "sonner-spinner" }, te.map((t, a) => import_react3.default.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a}` }))));
-var ee = import_react3.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react3.default.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" }));
-var oe = import_react3.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, import_react3.default.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" }));
-var ae = import_react3.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react3.default.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" }));
-var se = import_react3.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react3.default.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" }));
-var Ot = import_react3.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, import_react3.default.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), import_react3.default.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
+var Yt = ({ visible: n, className: e }) => import_react2.default.createElement("div", { className: ["sonner-loading-wrapper", e].filter(Boolean).join(" "), "data-visible": n }, import_react2.default.createElement("div", { className: "sonner-spinner" }, te.map((t, a) => import_react2.default.createElement("div", { className: "sonner-loading-bar", key: `spinner-bar-${a}` }))));
+var ee = import_react2.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react2.default.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z", clipRule: "evenodd" }));
+var oe = import_react2.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", height: "20", width: "20" }, import_react2.default.createElement("path", { fillRule: "evenodd", d: "M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z", clipRule: "evenodd" }));
+var ae = import_react2.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react2.default.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z", clipRule: "evenodd" }));
+var se = import_react2.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 20 20", fill: "currentColor", height: "20", width: "20" }, import_react2.default.createElement("path", { fillRule: "evenodd", d: "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z", clipRule: "evenodd" }));
+var Ot = import_react2.default.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }, import_react2.default.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), import_react2.default.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
 var Ft = () => {
-  let [n, e] = import_react4.default.useState(document.hidden);
-  return import_react4.default.useEffect(() => {
+  let [n, e] = import_react3.default.useState(document.hidden);
+  return import_react3.default.useEffect(() => {
     let t = () => {
       e(document.hidden);
     };
@@ -163,7 +102,7 @@ var yt = class {
       let a;
       t.loading !== void 0 && (a = this.create({ ...t, promise: e, type: "loading", message: t.loading, description: typeof t.description != "function" ? t.description : void 0 }));
       let u = e instanceof Promise ? e : e(), f = a !== void 0, w, S = u.then(async (i) => {
-        if (w = ["resolve", i], import_react5.default.isValidElement(i)) f = false, this.create({ id: a, type: "default", message: i });
+        if (w = ["resolve", i], import_react4.default.isValidElement(i)) f = false, this.create({ id: a, type: "default", message: i });
         else if (ie(i) && !i.ok) {
           f = false;
           let T = typeof t.error == "function" ? await t.error(`HTTP error! status: ${i.status}`) : t.error, F = typeof t.description == "function" ? await t.description(`HTTP error! status: ${i.status}`) : t.description;
@@ -230,33 +169,33 @@ function xe(n) {
 }
 var ve = (n) => {
   var Dt, Pt, Nt, Bt, Ct, kt, It, Mt, Ht, At, Lt;
-  let { invert: e, toast: t, unstyled: a, interacting: u, setHeights: f, visibleToasts: w, heights: S, index: g, toasts: i, expanded: D, removeToast: T, defaultRichColors: F, closeButton: et, style: ut, cancelButtonStyle: ft, actionButtonStyle: l, className: ot = "", descriptionClassName: at = "", duration: X, position: st, gap: pt, loadingIcon: rt, expandByDefault: B, classNames: s, icons: P, closeButtonAriaLabel: nt = "Close toast", pauseWhenPageIsHidden: it } = n, [Y, C] = import_react2.default.useState(null), [lt, J] = import_react2.default.useState(null), [W, H] = import_react2.default.useState(false), [A, mt] = import_react2.default.useState(false), [L, z] = import_react2.default.useState(false), [ct, d] = import_react2.default.useState(false), [h, y] = import_react2.default.useState(false), [R, j] = import_react2.default.useState(0), [p, _] = import_react2.default.useState(0), O = import_react2.default.useRef(t.duration || X || Wt), G = import_react2.default.useRef(null), k = import_react2.default.useRef(null), Vt = g === 0, Ut = g + 1 <= w, N = t.type, V = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = import_react2.default.useMemo(() => S.findIndex((r) => r.toastId === t.id) || 0, [S, t.id]), Jt = import_react2.default.useMemo(() => {
+  let { invert: e, toast: t, unstyled: a, interacting: u, setHeights: f, visibleToasts: w, heights: S, index: g, toasts: i, expanded: D, removeToast: T, defaultRichColors: F, closeButton: et, style: ut, cancelButtonStyle: ft, actionButtonStyle: l, className: ot = "", descriptionClassName: at = "", duration: X, position: st, gap: pt, loadingIcon: rt, expandByDefault: B, classNames: s, icons: P, closeButtonAriaLabel: nt = "Close toast", pauseWhenPageIsHidden: it } = n, [Y, C] = import_react.default.useState(null), [lt, J] = import_react.default.useState(null), [W, H] = import_react.default.useState(false), [A, mt] = import_react.default.useState(false), [L, z] = import_react.default.useState(false), [ct, d] = import_react.default.useState(false), [h, y] = import_react.default.useState(false), [R, j] = import_react.default.useState(0), [p, _] = import_react.default.useState(0), O = import_react.default.useRef(t.duration || X || Wt), G = import_react.default.useRef(null), k = import_react.default.useRef(null), Vt = g === 0, Ut = g + 1 <= w, N = t.type, V = t.dismissible !== false, Kt = t.className || "", Xt = t.descriptionClassName || "", dt = import_react.default.useMemo(() => S.findIndex((r) => r.toastId === t.id) || 0, [S, t.id]), Jt = import_react.default.useMemo(() => {
     var r;
     return (r = t.closeButton) != null ? r : et;
-  }, [t.closeButton, et]), Tt = import_react2.default.useMemo(() => t.duration || X || Wt, [t.duration, X]), gt = import_react2.default.useRef(0), U = import_react2.default.useRef(0), St = import_react2.default.useRef(0), K = import_react2.default.useRef(null), [Gt, Qt] = st.split("-"), Rt = import_react2.default.useMemo(() => S.reduce((r, m, c) => c >= dt ? r : r + m.height, 0), [S, dt]), Et = Ft(), qt = t.invert || e, ht = N === "loading";
-  U.current = import_react2.default.useMemo(() => dt * pt + Rt, [dt, Rt]), import_react2.default.useEffect(() => {
+  }, [t.closeButton, et]), Tt = import_react.default.useMemo(() => t.duration || X || Wt, [t.duration, X]), gt = import_react.default.useRef(0), U = import_react.default.useRef(0), St = import_react.default.useRef(0), K = import_react.default.useRef(null), [Gt, Qt] = st.split("-"), Rt = import_react.default.useMemo(() => S.reduce((r, m, c) => c >= dt ? r : r + m.height, 0), [S, dt]), Et = Ft(), qt = t.invert || e, ht = N === "loading";
+  U.current = import_react.default.useMemo(() => dt * pt + Rt, [dt, Rt]), import_react.default.useEffect(() => {
     O.current = Tt;
-  }, [Tt]), import_react2.default.useEffect(() => {
+  }, [Tt]), import_react.default.useEffect(() => {
     H(true);
-  }, []), import_react2.default.useEffect(() => {
+  }, []), import_react.default.useEffect(() => {
     let r = k.current;
     if (r) {
       let m = r.getBoundingClientRect().height;
       return _(m), f((c) => [{ toastId: t.id, height: m, position: t.position }, ...c]), () => f((c) => c.filter((b) => b.toastId !== t.id));
     }
-  }, [f, t.id]), import_react2.default.useLayoutEffect(() => {
+  }, [f, t.id]), import_react.default.useLayoutEffect(() => {
     if (!W) return;
     let r = k.current, m = r.style.height;
     r.style.height = "auto";
     let c = r.getBoundingClientRect().height;
     r.style.height = m, _(c), f((b) => b.find((x) => x.toastId === t.id) ? b.map((x) => x.toastId === t.id ? { ...x, height: c } : x) : [{ toastId: t.id, height: c, position: t.position }, ...b]);
   }, [W, t.title, t.description, f, t.id]);
-  let $ = import_react2.default.useCallback(() => {
+  let $ = import_react.default.useCallback(() => {
     mt(true), j(U.current), f((r) => r.filter((m) => m.toastId !== t.id)), setTimeout(() => {
       T(t);
     }, we);
   }, [t, T, f, U]);
-  import_react2.default.useEffect(() => {
+  import_react.default.useEffect(() => {
     if (t.promise && N === "loading" || t.duration === 1 / 0 || t.type === "loading") return;
     let r;
     return D || u || it && Et ? (() => {
@@ -271,14 +210,14 @@ var ve = (n) => {
         (b = t.onAutoClose) == null || b.call(t, t), $();
       }, O.current));
     })(), () => clearTimeout(r);
-  }, [D, u, t, N, it, Et, $]), import_react2.default.useEffect(() => {
+  }, [D, u, t, N, it, Et, $]), import_react.default.useEffect(() => {
     t.delete && $();
   }, [$, t.delete]);
   function Zt() {
     var r, m, c;
-    return P != null && P.loading ? import_react2.default.createElement("div", { className: M(s == null ? void 0 : s.loader, (r = t == null ? void 0 : t.classNames) == null ? void 0 : r.loader, "sonner-loader"), "data-visible": N === "loading" }, P.loading) : rt ? import_react2.default.createElement("div", { className: M(s == null ? void 0 : s.loader, (m = t == null ? void 0 : t.classNames) == null ? void 0 : m.loader, "sonner-loader"), "data-visible": N === "loading" }, rt) : import_react2.default.createElement(Yt, { className: M(s == null ? void 0 : s.loader, (c = t == null ? void 0 : t.classNames) == null ? void 0 : c.loader), visible: N === "loading" });
+    return P != null && P.loading ? import_react.default.createElement("div", { className: M(s == null ? void 0 : s.loader, (r = t == null ? void 0 : t.classNames) == null ? void 0 : r.loader, "sonner-loader"), "data-visible": N === "loading" }, P.loading) : rt ? import_react.default.createElement("div", { className: M(s == null ? void 0 : s.loader, (m = t == null ? void 0 : t.classNames) == null ? void 0 : m.loader, "sonner-loader"), "data-visible": N === "loading" }, rt) : import_react.default.createElement(Yt, { className: M(s == null ? void 0 : s.loader, (c = t == null ? void 0 : t.classNames) == null ? void 0 : c.loader), visible: N === "loading" });
   }
-  return import_react2.default.createElement("li", { tabIndex: 0, ref: k, className: M(ot, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F, "data-styled": !(t.jsx || t.unstyled || a), "data-mounted": W, "data-promise": !!t.promise, "data-swiped": h, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g, "data-front": Vt, "data-swiping": L, "data-dismissible": V, "data-type": N, "data-invert": qt, "data-swipe-out": ct, "data-swipe-direction": lt, "data-expanded": !!(D || B && W), style: { "--index": g, "--toasts-before": g, "--z-index": i.length - g, "--offset": `${A ? R : U.current}px`, "--initial-height": B ? "auto" : `${p}px`, ...ut, ...t.style }, onDragEnd: () => {
+  return import_react.default.createElement("li", { tabIndex: 0, ref: k, className: M(ot, Kt, s == null ? void 0 : s.toast, (Dt = t == null ? void 0 : t.classNames) == null ? void 0 : Dt.toast, s == null ? void 0 : s.default, s == null ? void 0 : s[N], (Pt = t == null ? void 0 : t.classNames) == null ? void 0 : Pt[N]), "data-sonner-toast": "", "data-rich-colors": (Nt = t.richColors) != null ? Nt : F, "data-styled": !(t.jsx || t.unstyled || a), "data-mounted": W, "data-promise": !!t.promise, "data-swiped": h, "data-removed": A, "data-visible": Ut, "data-y-position": Gt, "data-x-position": Qt, "data-index": g, "data-front": Vt, "data-swiping": L, "data-dismissible": V, "data-type": N, "data-invert": qt, "data-swipe-out": ct, "data-swipe-direction": lt, "data-expanded": !!(D || B && W), style: { "--index": g, "--toasts-before": g, "--z-index": i.length - g, "--offset": `${A ? R : U.current}px`, "--initial-height": B ? "auto" : `${p}px`, ...ut, ...t.style }, onDragEnd: () => {
     z(false), C(null), K.current = null;
   }, onPointerDown: (r) => {
     ht || !V || (G.current = /* @__PURE__ */ new Date(), j(U.current), r.target.setPointerCapture(r.pointerId), r.target.tagName !== "BUTTON" && (z(true), K.current = { x: r.clientX, y: r.clientY }));
@@ -299,14 +238,14 @@ var ve = (n) => {
     !Y && (Math.abs(b) > 1 || Math.abs(c) > 1) && C(Math.abs(b) > Math.abs(c) ? "x" : "y");
     let x = { x: 0, y: 0 };
     Y === "y" ? (I.includes("top") || I.includes("bottom")) && (I.includes("top") && c < 0 || I.includes("bottom") && c > 0) && (x.y = c) : Y === "x" && (I.includes("left") || I.includes("right")) && (I.includes("left") && b < 0 || I.includes("right") && b > 0) && (x.x = b), (Math.abs(x.x) > 0 || Math.abs(x.y) > 0) && y(true), (Z = k.current) == null || Z.style.setProperty("--swipe-amount-x", `${x.x}px`), (zt = k.current) == null || zt.style.setProperty("--swipe-amount-y", `${x.y}px`);
-  } }, Jt && !t.jsx ? import_react2.default.createElement("button", { "aria-label": nt, "data-disabled": ht, "data-close-button": true, onClick: ht || !V ? () => {
+  } }, Jt && !t.jsx ? import_react.default.createElement("button", { "aria-label": nt, "data-disabled": ht, "data-close-button": true, onClick: ht || !V ? () => {
   } : () => {
     var r;
     $(), (r = t.onDismiss) == null || r.call(t, t);
-  }, className: M(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P == null ? void 0 : P.close) != null ? Ct : Ot) : null, t.jsx || (0, import_react2.isValidElement)(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : import_react2.default.createElement(import_react2.default.Fragment, null, N || t.icon || t.promise ? import_react2.default.createElement("div", { "data-icon": "", className: M(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P == null ? void 0 : P[N]) || jt(N) : null) : null, import_react2.default.createElement("div", { "data-content": "", className: M(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, import_react2.default.createElement("div", { "data-title": "", className: M(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? import_react2.default.createElement("div", { "data-description": "", className: M(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), (0, import_react2.isValidElement)(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? import_react2.default.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft, onClick: (r) => {
+  }, className: M(s == null ? void 0 : s.closeButton, (Bt = t == null ? void 0 : t.classNames) == null ? void 0 : Bt.closeButton) }, (Ct = P == null ? void 0 : P.close) != null ? Ct : Ot) : null, t.jsx || (0, import_react.isValidElement)(t.title) ? t.jsx ? t.jsx : typeof t.title == "function" ? t.title() : t.title : import_react.default.createElement(import_react.default.Fragment, null, N || t.icon || t.promise ? import_react.default.createElement("div", { "data-icon": "", className: M(s == null ? void 0 : s.icon, (kt = t == null ? void 0 : t.classNames) == null ? void 0 : kt.icon) }, t.promise || t.type === "loading" && !t.icon ? t.icon || Zt() : null, t.type !== "loading" ? t.icon || (P == null ? void 0 : P[N]) || jt(N) : null) : null, import_react.default.createElement("div", { "data-content": "", className: M(s == null ? void 0 : s.content, (It = t == null ? void 0 : t.classNames) == null ? void 0 : It.content) }, import_react.default.createElement("div", { "data-title": "", className: M(s == null ? void 0 : s.title, (Mt = t == null ? void 0 : t.classNames) == null ? void 0 : Mt.title) }, typeof t.title == "function" ? t.title() : t.title), t.description ? import_react.default.createElement("div", { "data-description": "", className: M(at, Xt, s == null ? void 0 : s.description, (Ht = t == null ? void 0 : t.classNames) == null ? void 0 : Ht.description) }, typeof t.description == "function" ? t.description() : t.description) : null), (0, import_react.isValidElement)(t.cancel) ? t.cancel : t.cancel && tt(t.cancel) ? import_react.default.createElement("button", { "data-button": true, "data-cancel": true, style: t.cancelButtonStyle || ft, onClick: (r) => {
     var m, c;
     tt(t.cancel) && V && ((c = (m = t.cancel).onClick) == null || c.call(m, r), $());
-  }, className: M(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, (0, import_react2.isValidElement)(t.action) ? t.action : t.action && tt(t.action) ? import_react2.default.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l, onClick: (r) => {
+  }, className: M(s == null ? void 0 : s.cancelButton, (At = t == null ? void 0 : t.classNames) == null ? void 0 : At.cancelButton) }, t.cancel.label) : null, (0, import_react.isValidElement)(t.action) ? t.action : t.action && tt(t.action) ? import_react.default.createElement("button", { "data-button": true, "data-action": true, style: t.actionButtonStyle || l, onClick: (r) => {
     var m, c;
     tt(t.action) && ((c = (m = t.action).onClick) == null || c.call(m, r), !r.defaultPrevented && $());
   }, className: M(s == null ? void 0 : s.actionButton, (Lt = t == null ? void 0 : t.classNames) == null ? void 0 : Lt.actionButton) }, t.action.label) : null));
@@ -330,14 +269,14 @@ function Te(n, e) {
     }) : g(S);
   }), t;
 }
-var $e = (0, import_react2.forwardRef)(function(e, t) {
-  let { invert: a, position: u = "bottom-right", hotkey: f = ["altKey", "KeyT"], expand: w, closeButton: S, className: g, offset: i, mobileOffset: D, theme: T = "light", richColors: F, duration: et, style: ut, visibleToasts: ft = pe, toastOptions: l, dir: ot = _t(), gap: at = be, loadingIcon: X, icons: st, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt } = e, [B, s] = import_react2.default.useState([]), P = import_react2.default.useMemo(() => Array.from(new Set([u].concat(B.filter((d) => d.position).map((d) => d.position)))), [B, u]), [nt, it] = import_react2.default.useState([]), [Y, C] = import_react2.default.useState(false), [lt, J] = import_react2.default.useState(false), [W, H] = import_react2.default.useState(T !== "system" ? T : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = import_react2.default.useRef(null), mt = f.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L = import_react2.default.useRef(null), z = import_react2.default.useRef(false), ct = import_react2.default.useCallback((d) => {
+var $e = (0, import_react.forwardRef)(function(e, t) {
+  let { invert: a, position: u = "bottom-right", hotkey: f = ["altKey", "KeyT"], expand: w, closeButton: S, className: g, offset: i, mobileOffset: D, theme: T = "light", richColors: F, duration: et, style: ut, visibleToasts: ft = pe, toastOptions: l, dir: ot = _t(), gap: at = be, loadingIcon: X, icons: st, containerAriaLabel: pt = "Notifications", pauseWhenPageIsHidden: rt } = e, [B, s] = import_react.default.useState([]), P = import_react.default.useMemo(() => Array.from(new Set([u].concat(B.filter((d) => d.position).map((d) => d.position)))), [B, u]), [nt, it] = import_react.default.useState([]), [Y, C] = import_react.default.useState(false), [lt, J] = import_react.default.useState(false), [W, H] = import_react.default.useState(T !== "system" ? T : typeof window != "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), A = import_react.default.useRef(null), mt = f.join("+").replace(/Key/g, "").replace(/Digit/g, ""), L = import_react.default.useRef(null), z = import_react.default.useRef(false), ct = import_react.default.useCallback((d) => {
     s((h) => {
       var y;
       return (y = h.find((R) => R.id === d.id)) != null && y.delete || v.dismiss(d.id), h.filter(({ id: R }) => R !== d.id);
     });
   }, []);
-  return import_react2.default.useEffect(() => v.subscribe((d) => {
+  return import_react.default.useEffect(() => v.subscribe((d) => {
     if (d.dismiss) {
       s((h) => h.map((y) => y.id === d.id ? { ...y, delete: true } : y));
       return;
@@ -350,7 +289,7 @@ var $e = (0, import_react2.forwardRef)(function(e, t) {
         });
       });
     });
-  }), []), import_react2.default.useEffect(() => {
+  }), []), import_react.default.useEffect(() => {
     if (T !== "system") {
       H(T);
       return;
@@ -370,22 +309,22 @@ var $e = (0, import_react2.forwardRef)(function(e, t) {
         }
       });
     }
-  }, [T]), import_react2.default.useEffect(() => {
+  }, [T]), import_react.default.useEffect(() => {
     B.length <= 1 && C(false);
-  }, [B]), import_react2.default.useEffect(() => {
+  }, [B]), import_react.default.useEffect(() => {
     let d = (h) => {
       var R, j;
       f.every((p) => h[p] || h.code === p) && (C(true), (R = A.current) == null || R.focus()), h.code === "Escape" && (document.activeElement === A.current || (j = A.current) != null && j.contains(document.activeElement)) && C(false);
     };
     return document.addEventListener("keydown", d), () => document.removeEventListener("keydown", d);
-  }, [f]), import_react2.default.useEffect(() => {
+  }, [f]), import_react.default.useEffect(() => {
     if (A.current) return () => {
       L.current && (L.current.focus({ preventScroll: true }), L.current = null, z.current = false);
     };
-  }, [A.current]), import_react2.default.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P.map((d, h) => {
+  }, [A.current]), import_react.default.createElement("section", { ref: t, "aria-label": `${pt} ${mt}`, tabIndex: -1, "aria-live": "polite", "aria-relevant": "additions text", "aria-atomic": "false", suppressHydrationWarning: true }, P.map((d, h) => {
     var j;
     let [y, R] = d.split("-");
-    return B.length ? import_react2.default.createElement("ol", { key: d, dir: ot === "auto" ? _t() : ot, tabIndex: -1, ref: A, className: g, "data-sonner-toaster": true, "data-theme": W, "data-y-position": y, "data-lifted": Y && B.length > 1 && !w, "data-x-position": R, style: { "--front-toast-height": `${((j = nt[0]) == null ? void 0 : j.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut, ...Te(i, D) }, onBlur: (p) => {
+    return B.length ? import_react.default.createElement("ol", { key: d, dir: ot === "auto" ? _t() : ot, tabIndex: -1, ref: A, className: g, "data-sonner-toaster": true, "data-theme": W, "data-y-position": y, "data-lifted": Y && B.length > 1 && !w, "data-x-position": R, style: { "--front-toast-height": `${((j = nt[0]) == null ? void 0 : j.height) || 0}px`, "--width": `${he}px`, "--gap": `${at}px`, ...ut, ...Te(i, D) }, onBlur: (p) => {
       z.current && !p.currentTarget.contains(p.relatedTarget) && (z.current = false, L.current && (L.current.focus({ preventScroll: true }), L.current = null));
     }, onFocus: (p) => {
       p.target instanceof HTMLElement && p.target.dataset.dismissible === "false" || z.current || (z.current = true, L.current = p.relatedTarget);
@@ -395,13 +334,13 @@ var $e = (0, import_react2.forwardRef)(function(e, t) {
       p.target instanceof HTMLElement && p.target.dataset.dismissible === "false" || J(true);
     }, onPointerUp: () => J(false) }, B.filter((p) => !p.position && h === 0 || p.position === d).map((p, _) => {
       var O, G;
-      return import_react2.default.createElement(ve, { key: p.id, icons: st, index: _, toast: p, defaultRichColors: F, duration: (O = l == null ? void 0 : l.duration) != null ? O : et, className: l == null ? void 0 : l.className, descriptionClassName: l == null ? void 0 : l.descriptionClassName, invert: a, visibleToasts: ft, closeButton: (G = l == null ? void 0 : l.closeButton) != null ? G : S, interacting: lt, position: d, style: l == null ? void 0 : l.style, unstyled: l == null ? void 0 : l.unstyled, classNames: l == null ? void 0 : l.classNames, cancelButtonStyle: l == null ? void 0 : l.cancelButtonStyle, actionButtonStyle: l == null ? void 0 : l.actionButtonStyle, removeToast: ct, toasts: B.filter((k) => k.position == p.position), heights: nt.filter((k) => k.position == p.position), setHeights: it, expandByDefault: w, gap: at, loadingIcon: X, expanded: Y, pauseWhenPageIsHidden: rt, swipeDirections: e.swipeDirections });
+      return import_react.default.createElement(ve, { key: p.id, icons: st, index: _, toast: p, defaultRichColors: F, duration: (O = l == null ? void 0 : l.duration) != null ? O : et, className: l == null ? void 0 : l.className, descriptionClassName: l == null ? void 0 : l.descriptionClassName, invert: a, visibleToasts: ft, closeButton: (G = l == null ? void 0 : l.closeButton) != null ? G : S, interacting: lt, position: d, style: l == null ? void 0 : l.style, unstyled: l == null ? void 0 : l.unstyled, classNames: l == null ? void 0 : l.classNames, cancelButtonStyle: l == null ? void 0 : l.cancelButtonStyle, actionButtonStyle: l == null ? void 0 : l.actionButtonStyle, removeToast: ct, toasts: B.filter((k) => k.position == p.position), heights: nt.filter((k) => k.position == p.position), setHeights: it, expandByDefault: w, gap: at, loadingIcon: X, expanded: Y, pauseWhenPageIsHidden: rt, swipeDirections: e.swipeDirections });
     })) : null;
   }));
 });
 
 // ../../node_modules/lucide-react/dist/esm/createLucideIcon.js
-var import_react7 = require("react");
+var import_react6 = require("react");
 
 // ../../node_modules/lucide-react/dist/esm/shared/src/utils.js
 var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
@@ -410,7 +349,7 @@ var mergeClasses = (...classes) => classes.filter((className, index, array) => {
 }).join(" ");
 
 // ../../node_modules/lucide-react/dist/esm/Icon.js
-var import_react6 = require("react");
+var import_react5 = require("react");
 
 // ../../node_modules/lucide-react/dist/esm/defaultAttributes.js
 var defaultAttributes = {
@@ -426,7 +365,7 @@ var defaultAttributes = {
 };
 
 // ../../node_modules/lucide-react/dist/esm/Icon.js
-var Icon = (0, import_react6.forwardRef)(
+var Icon = (0, import_react5.forwardRef)(
   ({
     color = "currentColor",
     size = 24,
@@ -437,7 +376,7 @@ var Icon = (0, import_react6.forwardRef)(
     iconNode,
     ...rest
   }, ref) => {
-    return (0, import_react6.createElement)(
+    return (0, import_react5.createElement)(
       "svg",
       {
         ref,
@@ -450,7 +389,7 @@ var Icon = (0, import_react6.forwardRef)(
         ...rest
       },
       [
-        ...iconNode.map(([tag, attrs]) => (0, import_react6.createElement)(tag, attrs)),
+        ...iconNode.map(([tag, attrs]) => (0, import_react5.createElement)(tag, attrs)),
         ...Array.isArray(children) ? children : [children]
       ]
     );
@@ -459,8 +398,8 @@ var Icon = (0, import_react6.forwardRef)(
 
 // ../../node_modules/lucide-react/dist/esm/createLucideIcon.js
 var createLucideIcon = (iconName, iconNode) => {
-  const Component = (0, import_react7.forwardRef)(
-    ({ className, ...props }, ref) => (0, import_react7.createElement)(Icon, {
+  const Component = (0, import_react6.forwardRef)(
+    ({ className, ...props }, ref) => (0, import_react6.createElement)(Icon, {
       ref,
       iconNode,
       className: mergeClasses(`lucide-${toKebabCase(iconName)}`, className),
@@ -485,7 +424,7 @@ var ShoppingCart = createLucideIcon("ShoppingCart", [
 ]);
 
 // src/ProductCard.tsx
-var import_jsx_runtime3 = require("react/jsx-runtime");
+var import_jsx_runtime = require("react/jsx-runtime");
 var ProductCard = ({ product }) => {
   const handleAddToQuote = () => {
     ue.success(`${product.name} added to your quote!`, {
@@ -496,9 +435,9 @@ var ProductCard = ({ product }) => {
       }
     });
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "group bg-white rounded-3xl overflow-hidden border border-[#E5E5E5] hover:border-[#C5A26F] transition-all hover:shadow-2xl flex flex-col", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "relative h-72 bg-[#F8F5F0] overflow-hidden", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "group bg-white rounded-3xl overflow-hidden border border-[#E5E5E5] hover:border-[#C5A26F] transition-all hover:shadow-2xl flex flex-col", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "relative h-72 bg-[#F8F5F0] overflow-hidden", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "img",
         {
           src: product.image_url || "https://picsum.photos/id/1015/600/400",
@@ -506,29 +445,29 @@ var ProductCard = ({ product }) => {
           className: "w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "absolute top-4 right-4 bg-white/95 px-4 py-1.5 rounded-full text-xs font-semibold text-[#0A3D2E] shadow-sm flex items-center gap-1.5", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "w-1.5 h-1.5 bg-[#C5A26F] rounded-full" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "absolute top-4 right-4 bg-white/95 px-4 py-1.5 rounded-full text-xs font-semibold text-[#0A3D2E] shadow-sm flex items-center gap-1.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-1.5 h-1.5 bg-[#C5A26F] rounded-full" }),
         product.category
       ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "p-8 flex flex-col flex-1", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex-1", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { className: "font-semibold text-3xl tracking-[-0.5px] mb-4 leading-none pr-8", children: product.name }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "flex items-baseline gap-2 mb-6", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "text-5xl font-semibold text-[#0A3D2E] tracking-tighter", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "p-8 flex flex-col flex-1", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex-1", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "font-semibold text-3xl tracking-[-0.5px] mb-4 leading-none pr-8", children: product.name }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flex items-baseline gap-2 mb-6", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "text-5xl font-semibold text-[#0A3D2E] tracking-tighter", children: [
             "$",
             product.price
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "text-lg text-[#666]", children: "CAD" })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "text-lg text-[#666]", children: "CAD" })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "button",
         {
           onClick: handleAddToQuote,
           className: "w-full py-4 bg-[#0A3D2E] hover:bg-[#C5A26F] active:bg-[#0A3D2E] text-white font-semibold text-lg rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-[0.985] shadow-lg hover:shadow-xl group-hover:bg-[#C5A26F]",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(ShoppingCart, { className: "w-5 h-5" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShoppingCart, { className: "w-5 h-5" }),
             "Add to Quote"
           ]
         }
@@ -538,8 +477,6 @@ var ProductCard = ({ product }) => {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  Button,
-  JobCard,
   ProductCard
 });
 /*! Bundled license information:

@@ -63,7 +63,7 @@ export default function SiteFooter() {
           <div>
             <h5>Showroom & Office</h5>
             <p style={{ marginBottom: '1.25rem', lineHeight: 1.7 }}>
-              32 Norfield Crescent, Toronto, ON<br />
+              32 Norfield Crescent, Toronto, Ontario<br />
               Toronto, ON M3J 3A1
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>

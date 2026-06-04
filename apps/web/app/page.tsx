@@ -679,7 +679,7 @@ const mutation = useMutation({
   },
   onError: (error: Error) => {
     toast.error("Something went wrong", {
-      description: error.message || "Please try again or call (416) 249 1276",
+      description: error.message || "Please try again or call (416) 249-1276",
     });
   },
 });
@@ -1063,7 +1063,7 @@ const onSubmit = (data: LeadFormData) => {
 
           <div className="app-promo reveal" style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
             gap: '3rem',
             alignItems: 'center',
             maxWidth: '1100px',
@@ -1494,7 +1494,7 @@ const onSubmit = (data: LeadFormData) => {
                       Showroom
                     </div>
                     <div className="value" style={{ color: 'var(--cream-50)' }}>
-                      32 Norfield Cresent, Toronto
+                      32 Norfield Crescent, Toronto, Ontario
                     </div>
                   </div>
                 </div>

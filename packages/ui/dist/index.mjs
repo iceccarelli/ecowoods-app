@@ -1,62 +1,3 @@
-// src/Button.tsx
-import React from "react";
-import { cva } from "class-variance-authority";
-
-// src/lib/utils.ts
-import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
-
-// src/Button.tsx
-import { jsx } from "react/jsx-runtime";
-var buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-2xl font-semibold transition-all active:scale-[0.985] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none",
-  {
-    variants: {
-      variant: {
-        primary: "bg-[#0A3D2E] text-white hover:bg-[#C5A26F] hover:text-white focus:ring-[#0A3D2E]",
-        outline: "border-2 border-[#0A3D2E] text-[#0A3D2E] hover:bg-[#0A3D2E] hover:text-white focus:ring-[#0A3D2E]",
-        ghost: "hover:bg-[#0A3D2E]/10 text-[#0A3D2E]"
-      },
-      size: {
-        default: "px-8 py-4 text-base",
-        lg: "px-12 py-6 text-lg",
-        xl: "px-16 py-8 text-2xl"
-      }
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "default"
-    }
-  }
-);
-var Button = React.forwardRef(
-  ({ className, variant, size, ...props }, ref) => {
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        className: cn(buttonVariants({ variant, size, className })),
-        ref,
-        ...props
-      }
-    );
-  }
-);
-Button.displayName = "Button";
-
-// src/JobCard.tsx
-import { jsx as jsx2, jsxs } from "react/jsx-runtime";
-var JobCard = ({ job }) => /* @__PURE__ */ jsxs("div", { className: "bg-white rounded-3xl p-6 border hover:shadow-xl transition-all", children: [
-  /* @__PURE__ */ jsx2("h3", { className: "font-semibold text-xl text-[#0A3D2E]", children: job.title }),
-  /* @__PURE__ */ jsx2("p", { className: "text-sm text-gray-500", children: job.address }),
-  /* @__PURE__ */ jsxs("div", { className: "mt-4 text-2xl font-bold text-[#0A3D2E]", children: [
-    "$",
-    job.budget_min
-  ] })
-] });
-
 // ../../node_modules/sonner/dist/index.mjs
 import o, { forwardRef as fe, isValidElement as xt } from "react";
 import vt from "react-dom";
@@ -447,7 +388,7 @@ var ShoppingCart = createLucideIcon("ShoppingCart", [
 ]);
 
 // src/ProductCard.tsx
-import { jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
+import { jsx, jsxs } from "react/jsx-runtime";
 var ProductCard = ({ product }) => {
   const handleAddToQuote = () => {
     ue.success(`${product.name} added to your quote!`, {
@@ -458,9 +399,9 @@ var ProductCard = ({ product }) => {
       }
     });
   };
-  return /* @__PURE__ */ jsxs2("div", { className: "group bg-white rounded-3xl overflow-hidden border border-[#E5E5E5] hover:border-[#C5A26F] transition-all hover:shadow-2xl flex flex-col", children: [
-    /* @__PURE__ */ jsxs2("div", { className: "relative h-72 bg-[#F8F5F0] overflow-hidden", children: [
-      /* @__PURE__ */ jsx3(
+  return /* @__PURE__ */ jsxs("div", { className: "group bg-white rounded-3xl overflow-hidden border border-[#E5E5E5] hover:border-[#C5A26F] transition-all hover:shadow-2xl flex flex-col", children: [
+    /* @__PURE__ */ jsxs("div", { className: "relative h-72 bg-[#F8F5F0] overflow-hidden", children: [
+      /* @__PURE__ */ jsx(
         "img",
         {
           src: product.image_url || "https://picsum.photos/id/1015/600/400",
@@ -468,29 +409,29 @@ var ProductCard = ({ product }) => {
           className: "w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         }
       ),
-      /* @__PURE__ */ jsxs2("div", { className: "absolute top-4 right-4 bg-white/95 px-4 py-1.5 rounded-full text-xs font-semibold text-[#0A3D2E] shadow-sm flex items-center gap-1.5", children: [
-        /* @__PURE__ */ jsx3("div", { className: "w-1.5 h-1.5 bg-[#C5A26F] rounded-full" }),
+      /* @__PURE__ */ jsxs("div", { className: "absolute top-4 right-4 bg-white/95 px-4 py-1.5 rounded-full text-xs font-semibold text-[#0A3D2E] shadow-sm flex items-center gap-1.5", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-1.5 h-1.5 bg-[#C5A26F] rounded-full" }),
         product.category
       ] })
     ] }),
-    /* @__PURE__ */ jsxs2("div", { className: "p-8 flex flex-col flex-1", children: [
-      /* @__PURE__ */ jsxs2("div", { className: "flex-1", children: [
-        /* @__PURE__ */ jsx3("h3", { className: "font-semibold text-3xl tracking-[-0.5px] mb-4 leading-none pr-8", children: product.name }),
-        /* @__PURE__ */ jsxs2("div", { className: "flex items-baseline gap-2 mb-6", children: [
-          /* @__PURE__ */ jsxs2("span", { className: "text-5xl font-semibold text-[#0A3D2E] tracking-tighter", children: [
+    /* @__PURE__ */ jsxs("div", { className: "p-8 flex flex-col flex-1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+        /* @__PURE__ */ jsx("h3", { className: "font-semibold text-3xl tracking-[-0.5px] mb-4 leading-none pr-8", children: product.name }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-baseline gap-2 mb-6", children: [
+          /* @__PURE__ */ jsxs("span", { className: "text-5xl font-semibold text-[#0A3D2E] tracking-tighter", children: [
             "$",
             product.price
           ] }),
-          /* @__PURE__ */ jsx3("span", { className: "text-lg text-[#666]", children: "CAD" })
+          /* @__PURE__ */ jsx("span", { className: "text-lg text-[#666]", children: "CAD" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs2(
+      /* @__PURE__ */ jsxs(
         "button",
         {
           onClick: handleAddToQuote,
           className: "w-full py-4 bg-[#0A3D2E] hover:bg-[#C5A26F] active:bg-[#0A3D2E] text-white font-semibold text-lg rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-[0.985] shadow-lg hover:shadow-xl group-hover:bg-[#C5A26F]",
           children: [
-            /* @__PURE__ */ jsx3(ShoppingCart, { className: "w-5 h-5" }),
+            /* @__PURE__ */ jsx(ShoppingCart, { className: "w-5 h-5" }),
             "Add to Quote"
           ]
         }
@@ -499,8 +440,6 @@ var ProductCard = ({ product }) => {
   ] });
 };
 export {
-  Button,
-  JobCard,
   ProductCard
 };
 /*! Bundled license information:

@@ -220,7 +220,7 @@ export default function Header() {
           </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
             Mon–Sat · 8:00 AM – 7:00 PM<br />
-            Showroom: 2899 Steeles Ave W, Toronto, ON
+            Showroom: 32 Norfield Crescent, Toronto, Ontario
           </p>
         </div>
       </div>
