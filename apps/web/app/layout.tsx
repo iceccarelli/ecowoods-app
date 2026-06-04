@@ -51,7 +51,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Google: Star,
   LinkedIn: Linkedin,
   YouTube: Youtube,
-  TikTok: Globe: Globe,
+    TikTok: Globe,
   X: Twitter,
   WhatsApp: MessageCircle,
   Website: Globe,
