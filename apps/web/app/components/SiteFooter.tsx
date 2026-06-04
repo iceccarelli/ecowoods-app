@@ -68,7 +68,7 @@ export default function SiteFooter() {
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>
               <a href="tel:+14165559663" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
-                (416) 555-WOOD
+                (416) 249-1276
               </a>
               <a href="mailto:services@ecowoods.ca">services@ecowoods.ca</a>
             </div>
