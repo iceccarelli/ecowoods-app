@@ -43,6 +43,7 @@ const mono = JetBrains_Mono({
 });
 
 /* ---------------------- Icon Map (Single Source of Truth) ---------------------- */
+
 const iconMap: Record<string, React.ComponentType<any>> = {
   Instagram,
   Facebook,
@@ -50,12 +51,13 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Google: Star,
   LinkedIn: Linkedin,
   YouTube: Youtube,
-  TikTok: Globe,        // Fallback - lucide-react has no TikTok
-  : Globe,     // Fallback - lucide-react has no X: Twitter,
+  TikTok: Globe: Globe,
+  X: Twitter,
   WhatsApp: MessageCircle,
   Website: Globe,
   Telegram: MessageCircle,
 };
+
 
 /* ---------------------- Site Footer ---------------------- */
 import SiteFooter from "./components/SiteFooter";
