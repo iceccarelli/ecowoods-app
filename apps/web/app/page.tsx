@@ -909,7 +909,7 @@ const onSubmit = (data: LeadFormData) => {
 
       {/* PROCESS */}
       <section className="section photo-bg-section" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }} id="process">
-        <RotatingBackground theme="finish" interval={10000} />
+        <RotatingBackground theme="finish" interval={10000} scrim="linear-gradient(115deg, rgba(20,13,9,0.8), rgba(20,13,9,0.7))" />
         <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal">
             <span className="eyebrow">Our Process</span>
@@ -1299,7 +1299,7 @@ const onSubmit = (data: LeadFormData) => {
 
       {/* SERVICE AREAS */}
       <section className="section photo-bg-section" id="areas" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }}>
-        <RotatingBackground theme="homes" interval={11000} />
+        <RotatingBackground theme="homes" interval={11000} scrim="linear-gradient(115deg, rgba(20,13,9,0.8), rgba(20,13,9,0.7))" />
         <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
             <span className="eyebrow">Coverage</span>
