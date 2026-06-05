@@ -389,7 +389,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Rosedale Victorian Restoration',
     sub: '1,800 sq ft · Red Oak · Period-accurate refinish',
     image:
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=75',
+      'https://images.unsplash.com/photo-1560449752-3fd4bdbe7df0?auto=format&fit=crop&w=1400&q=80',
     span: 'span-8',
   },
   {
@@ -397,7 +397,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Leslieville Loft',
     sub: '900 sq ft · White Oak · Wide plank',
     image:
-      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=75',
+      'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80',
     span: 'span-4',
   },
   {
@@ -405,7 +405,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Forest Hill Estate',
     sub: 'Herringbone · Walnut · Custom border',
     image:
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=75',
+      'https://images.unsplash.com/photo-1580398814575-816cf5faebad?auto=format&fit=crop&w=900&q=80',
     span: 'span-4',
   },
   {
@@ -413,7 +413,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Distillery District Penthouse',
     sub: 'Chevron · Smoked Oak · 2,400 sq ft',
     image:
-      'https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=1400&q=75',
+      'https://images.unsplash.com/photo-1723897917319-3958c7b4aaa1?auto=format&fit=crop&w=1400&q=80',
     span: 'span-8',
   },
   {
@@ -421,7 +421,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Cabbagetown Townhouse',
     sub: 'Refinish · Stair re-capping',
     image:
-      'https://images.unsplash.com/photo-1567016432779-094069958ea5?auto=format&fit=crop&w=900&q=75',
+      'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
     span: 'span-6',
   },
   {
@@ -429,7 +429,7 @@ const galleryItems: GalleryItem[] = [
     title: 'Yorkville Condo Conversion',
     sub: 'Engineered wide plank · Quiet underlayment',
     image:
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=75',
+      'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&w=900&q=80',
     span: 'span-6',
   },
 ];
@@ -546,7 +546,7 @@ const tips: Tip[] = [
     body: 'Why every Toronto homeowner needs a humidifier, what 35% humidity actually means at the floorboard level, and the cracks you should ignore.',
     meta: 'Updated January 2026',
     image:
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=70',
+      'https://images.unsplash.com/32/Mc8kW4x9Q3aRR3RkP5Im_IMG_4417.jpg?auto=format&fit=crop&w=900&q=80',
   },
   {
     tag: 'Buying Guide · 9 min read',
@@ -554,7 +554,7 @@ const tips: Tip[] = [
     body: 'The condo loophole nobody mentions, where engineered actually wins, and the two situations where solid is still the only right answer.',
     meta: 'Updated December 2025',
     image:
-      'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=900&q=70',
+      'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
   },
   {
     tag: 'Design · 4 min read',
@@ -562,7 +562,7 @@ const tips: Tip[] = [
     body: 'Eight-inch planks photograph beautifully on Instagram but they fail spectacularly in some Toronto homes. Here is the moisture math that decides.',
     meta: 'Updated November 2025',
     image:
-      'https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&w=900&q=70',
+      'https://images.unsplash.com/photo-1721838449374-722202a68197?auto=format&fit=crop&w=900&q=80',
   },
 ];
 
