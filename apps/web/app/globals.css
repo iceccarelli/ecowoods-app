@@ -464,10 +464,10 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem var(--shell-pad);
+  padding: 1rem clamp(1rem, 2.5vw, 2rem);
   max-width: var(--shell-max);
   margin: 0 auto;
-  gap: 2rem;
+  gap: 1.25rem;
 }
 
 .brand-lockup {
@@ -527,12 +527,12 @@ p {
 .topbar-nav {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.1rem;
 }
 
 .topbar-nav a {
-  padding: 0.55rem 0.95rem;
-  font-size: 0.92rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--ink-soft);
   border-radius: var(--radius-full);
@@ -566,6 +566,7 @@ p {
   border-radius: var(--radius-full);
   transition: all 200ms var(--ease-out-quart);
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .phone-pill:hover {
