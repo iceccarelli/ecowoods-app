@@ -11,9 +11,10 @@ function formatCAD(n: number) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
 }
 
-export default async function AdminProjectDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const project = await db.project.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       user: true,
       invoices: {

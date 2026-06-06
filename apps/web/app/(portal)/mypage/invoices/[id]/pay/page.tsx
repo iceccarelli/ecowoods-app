@@ -16,13 +16,14 @@ function formatCAD(amount: number) {
 export default async function InvoicePayPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) redirect('/login');
 
   const invoice = await db.invoice.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { project: { include: { user: true } } },
   });
 

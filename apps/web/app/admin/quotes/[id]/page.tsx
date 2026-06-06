@@ -5,9 +5,10 @@ import { format } from 'date-fns';
 import EstimateBuilder from './EstimateBuilder';
 import ConvertToProjectForm from './ConvertToProjectForm';
 
-export default async function AdminQuoteDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminQuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const quote = await db.quoteRequest.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       user: true,
       project: { select: { id: true, title: true, status: true } },
