@@ -5,9 +5,10 @@ import InquiryReplyForm from './InquiryReplyForm';
 export default async function AdminInquiriesPage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 }) {
-  const statusFilter = searchParams.status;
+  const { status } = await searchParams;
+  const statusFilter = status;
 
   const inquiries = await db.inquiry.findMany({
     where: statusFilter ? { status: statusFilter as never } : { status: { in: ['OPEN', 'IN_PROGRESS'] } },

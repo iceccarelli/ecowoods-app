@@ -2,7 +2,6 @@
  * /verify-email?token=xxx
  * Verifies the email token, creates the user account, then auto-signs in.
  */
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { verifyEmailToken } from '@/lib/actions/auth';
 import VerifyEmailClient from './VerifyEmailClient';
@@ -10,9 +9,9 @@ import VerifyEmailClient from './VerifyEmailClient';
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Promise<{ token?: string }>;
 }) {
-  const token = searchParams.token;
+  const { token } = await searchParams;
 
   if (!token) {
     return (

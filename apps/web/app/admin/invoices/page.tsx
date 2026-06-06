@@ -18,9 +18,10 @@ const statusColor: Record<InvoiceStatus, string> = {
 export default async function AdminInvoicesPage({
   searchParams,
 }: {
-  searchParams: { status?: InvoiceStatus };
+  searchParams: Promise<{ status?: InvoiceStatus }>;
 }) {
-  const statusFilter = searchParams.status;
+  const { status } = await searchParams;
+  const statusFilter = status;
 
   const [invoices, pendingBankPayments] = await Promise.all([
     db.invoice.findMany({

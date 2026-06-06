@@ -20,9 +20,10 @@ function formatCAD(n: number) {
 export default async function AdminProjectsPage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 }) {
-  const statusFilter = searchParams.status as ProjectStatus | undefined;
+  const { status } = await searchParams;
+  const statusFilter = status as ProjectStatus | undefined;
 
   const projects = await db.project.findMany({
     where: statusFilter ? { status: statusFilter } : {},

@@ -15,10 +15,11 @@ const statusColor: Record<QuoteStatus, string> = {
 export default async function AdminQuotesPage({
   searchParams,
 }: {
-  searchParams: { status?: string; q?: string };
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const statusFilter = searchParams.status as QuoteStatus | undefined;
-  const searchQuery = searchParams.q;
+  const { status, q } = await searchParams;
+  const statusFilter = status as QuoteStatus | undefined;
+  const searchQuery = q;
 
   const quotes = await db.quoteRequest.findMany({
     where: {
