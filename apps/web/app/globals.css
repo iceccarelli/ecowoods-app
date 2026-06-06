@@ -579,6 +579,29 @@ p {
   color: var(--copper);
 }
 
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--walnut-800);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: transparent;
+  transition: all 200ms var(--ease-out-quart);
+  white-space: nowrap;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.login-btn:hover {
+  background: var(--cream-100);
+  border-color: var(--walnut-600);
+  color: var(--walnut-900);
+}
+
 .hamburger {
   display: none;
   position: relative;
@@ -1991,6 +2014,7 @@ p {
 @media (max-width: 768px) {
   .topbar-nav { display: none; }
   .phone-pill { display: none; }
+  .login-btn { display: none; }
   .hamburger { display: inline-flex; }
   .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 1.5rem 0; }
   .hero-stat { border-right: none; padding-right: 0; }

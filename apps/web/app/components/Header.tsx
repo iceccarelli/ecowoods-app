@@ -140,6 +140,13 @@ export default function Header() {
 
           {/* Right CTA cluster */}
           <div className="topbar-cta">
+            <a className="login-btn" href="/login" aria-label="Login to your account">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
+                <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
+                <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Login
+            </a>
             <a className="phone-pill" href={PHONE_HREF} aria-label={`Call ${PHONE_DISPLAY}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path
@@ -201,6 +208,10 @@ export default function Header() {
           <a href="#quote" onClick={() => setMobileOpen(false)}>
             Free Quote
             <span className="num">0{navigation.length + 1}</span>
+          </a>
+          <a href="/login" onClick={() => setMobileOpen(false)}>
+            Login
+            <span className="num">0{navigation.length + 2}</span>
           </a>
         </nav>
 
