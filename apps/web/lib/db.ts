@@ -31,7 +31,9 @@ export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: ['error'],
-    datasources: { db: { url: buildUrl(process.env.DATABASE_URL) } },
+    ...(process.env.DATABASE_URL
+      ? { datasources: { db: { url: buildUrl(process.env.DATABASE_URL) } } }
+      : {}),
   });
 
 if (process.env.NODE_ENV !== 'production') {
