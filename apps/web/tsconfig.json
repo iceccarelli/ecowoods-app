@@ -17,6 +17,7 @@
     "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./*"],
       "@ecowoods/shared": ["../../packages/shared/src"],
       "@ecowoods/shared/*": ["../../packages/shared/src/*"],
       "@ecowoods/api-client": ["../../packages/api-client/src"],
