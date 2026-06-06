@@ -121,6 +121,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
   pages: { signIn: '/login', error: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   debug: process.env.NODE_ENV === 'development',
 });
 
@@ -136,7 +137,7 @@ declare module 'next-auth' {
     };
   }
 }
-declare module 'next-auth/jwt' {
+declare module '@auth/core/jwt' {
   interface JWT {
     id: string;
     role: UserRole;

@@ -14,8 +14,9 @@ export const runtime = 'nodejs';
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,7 @@ export async function POST(
 
   const [invoice, settings] = await Promise.all([
     db.invoice.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { project: { include: { user: true } } },
     }),
     db.settings.findUnique({ where: { id: 'global' } }),
@@ -52,11 +53,11 @@ export async function POST(
 
   try {
     const element = createElement(InvoiceDocument, { invoice, settings: effectiveSettings });
-    const buffer = await renderToBuffer(element);
+    const buffer = await renderToBuffer(element as never);
     const filename = `invoice-${invoice.number}-${Date.now()}.pdf`;
     const url = await storePdf(Buffer.from(buffer), filename);
 
-    await db.invoice.update({ where: { id: params.id }, data: { pdfUrl: url } });
+    await db.invoice.update({ where: { id }, data: { pdfUrl: url } });
 
     return NextResponse.json({ url });
   } catch (err) {

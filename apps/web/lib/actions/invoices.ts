@@ -196,10 +196,10 @@ export async function generateStagedInvoices(projectId: string) {
   const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
   if (!project.contractValue) throw new Error('Project has no contract value set');
 
-  const stages: Array<{ stage: InvoiceStage; pct: number; label: string }> = [
-    { stage: 'DEPOSIT', pct: project.depositPct ?? 30, label: 'Deposit' },
-    { stage: 'MIDPOINT', pct: project.midpointPct ?? 40, label: 'Progress payment' },
-    { stage: 'FINAL', pct: project.finalPct ?? 30, label: 'Final balance' },
+  const stages = [
+    { stage: 'DEPOSIT' as const, pct: project.depositPct ?? 30, label: 'Deposit' },
+    { stage: 'MIDPOINT' as const, pct: project.midpointPct ?? 40, label: 'Progress payment' },
+    { stage: 'FINAL' as const, pct: project.finalPct ?? 30, label: 'Final balance' },
   ].filter((s) => s.pct > 0);
 
   const created: string[] = [];

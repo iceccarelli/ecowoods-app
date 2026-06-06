@@ -15,8 +15,9 @@ export const runtime = 'nodejs';
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function POST(
 
   const [project, settings] = await Promise.all([
     db.project.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: true },
     }),
     db.settings.findUnique({ where: { id: 'global' } }),
@@ -53,7 +54,7 @@ export async function POST(
 
   try {
     const element = createElement(ContractDocument, { project, settings: effectiveSettings });
-    const buffer = await renderToBuffer(element);
+    const buffer = await renderToBuffer(element as never);
     const filename = `contract-${project.id}-${Date.now()}.pdf`;
     const url = await storePdf(Buffer.from(buffer), filename);
 

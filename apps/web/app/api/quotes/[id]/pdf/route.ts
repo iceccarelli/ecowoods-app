@@ -12,14 +12,15 @@ import { createElement } from 'react';
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const [quote, settings] = await Promise.all([
-    db.quoteRequest.findUnique({ where: { id: params.id } }),
+    db.quoteRequest.findUnique({ where: { id } }),
     db.settings.findUnique({ where: { id: 'global' } }),
   ]);
 
@@ -52,7 +53,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const url = await storePdf(buffer, filename);
 
     await db.quoteRequest.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         quotePdfUrl: url,
         quoteIssuedAt: new Date(),

@@ -11,15 +11,16 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const invoice = await db.invoice.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { project: { include: { user: true } } },
   });
 
