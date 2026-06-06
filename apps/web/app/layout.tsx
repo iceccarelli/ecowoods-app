@@ -5,20 +5,6 @@ import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
 
-import {
-  Instagram,
-  Facebook,
-  Home,
-  Star,
-  Linkedin,
-  Youtube,
-  Twitter,
-  MessageCircle,
-  Globe,
-} from "lucide-react";
-
-import { SOCIAL_LINKS, type SocialLink } from '@ecowoods/shared/constants';
-
 /* ---------------------- Fonts ---------------------- */
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -42,24 +28,6 @@ const mono = JetBrains_Mono({
   weight: ['400', '700'],
 });
 
-/* ---------------------- Icon Map (Single Source of Truth) ---------------------- */
-
-const iconMap: Record<string, React.ComponentType<any>> = {
-  Instagram,
-  Facebook,
-  Houzz: Home,
-  Google: Star,
-  LinkedIn: Linkedin,
-  YouTube: Youtube,
-    TikTok: Globe,
-  X: Twitter,
-  WhatsApp: MessageCircle,
-  Website: Globe,
-  Telegram: MessageCircle,
-};
-
-
-/* ---------------------- Site Footer ---------------------- */
 import SiteFooter from "./components/SiteFooter";
 
 /* ---------------------- Root Layout ---------------------- */

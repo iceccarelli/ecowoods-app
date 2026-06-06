@@ -274,3 +274,121 @@ export async function updateInvoiceStatus(invoiceId: string, status: InvoiceStat
   revalidatePath('/admin/invoices');
   revalidatePath('/mypage/invoices');
 }
+
+// ─── Admin: resend existing invoice email (no changes) ───────────────────────
+export async function resendInvoice(invoiceId: string) {
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+  const invoice = await db.invoice.findUniqueOrThrow({
+    where: { id: invoiceId },
+    include: { project: { include: { user: true } } },
+  });
+
+  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const absolutePdfUrl = invoice.pdfUrl
+    ? (invoice.pdfUrl.startsWith('http') ? invoice.pdfUrl : `${baseUrl}${invoice.pdfUrl}`)
+    : null;
+
+  const { sendInvoiceEmail } = await import('@/lib/email');
+  await sendInvoiceEmail({
+    to: invoice.project.user.email,
+    name: invoice.project.user.name ?? 'Valued Customer',
+    invoiceNumber: invoice.number,
+    invoiceId: invoice.id,
+    total: invoice.total,
+    dueDate: invoice.dueDate ?? undefined,
+    projectTitle: invoice.project.title,
+    pdfUrl: absolutePdfUrl ?? undefined,
+  });
+
+  return { success: true };
+}
+
+// ─── Admin: edit invoice fields, regenerate PDF, re-send email ───────────────
+export async function reissueInvoice(
+  invoiceId: string,
+  changes: {
+    subtotal?: number;
+    discountPct?: number;
+    surchargePct?: number;
+    taxRate?: number;
+    description?: string;
+    dueDate?: string | null;
+  }
+) {
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+  const existing = await db.invoice.findUniqueOrThrow({
+    where: { id: invoiceId },
+    include: { project: { include: { user: true } } },
+  });
+
+  const subtotal = changes.subtotal ?? existing.subtotal;
+  const discountPct = changes.discountPct ?? existing.discountPct;
+  const surchargePct = changes.surchargePct ?? existing.surchargePct;
+  const taxRate = changes.taxRate ?? existing.taxRate;
+
+  const invoice = await db.invoice.update({
+    where: { id: invoiceId },
+    data: {
+      subtotal,
+      discountPct,
+      surchargePct,
+      taxRate,
+      total: computeTotal(subtotal, discountPct, surchargePct, taxRate),
+      description: changes.description !== undefined ? changes.description : existing.description,
+      dueDate: changes.dueDate === null ? null : changes.dueDate ? new Date(changes.dueDate) : existing.dueDate,
+      status: 'SENT',
+      issuedAt: existing.issuedAt ?? new Date(),
+      pdfUrl: null, // force regeneration
+    },
+    include: { project: { include: { user: true } } },
+  });
+
+  // Regenerate PDF
+  let pdfUrl: string | null = null;
+  try {
+    const [{ renderToBuffer }, { InvoiceDocument }, { storePdf }, { createElement }] =
+      await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdf/invoice-document'),
+        import('@/lib/pdf/storage'),
+        import('react'),
+      ]);
+    const settings = (await db.settings.findUnique({ where: { id: 'global' } })) ?? DEFAULT_SETTINGS;
+    const element = createElement(InvoiceDocument, { invoice, settings });
+    const buffer = await renderToBuffer(element as never);
+    const filename = `invoice-${invoice.number}-${Date.now()}.pdf`;
+    pdfUrl = await storePdf(Buffer.from(buffer), filename);
+    await db.invoice.update({ where: { id: invoiceId }, data: { pdfUrl } });
+  } catch (err: unknown) {
+    console.error('[reissueInvoice] PDF generation failed:', err);
+  }
+
+  // Re-send email (non-blocking)
+  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const absolutePdfUrl = pdfUrl
+    ? (pdfUrl.startsWith('http') ? pdfUrl : `${baseUrl}${pdfUrl}`)
+    : null;
+
+  import('@/lib/email').then(({ sendInvoiceEmail }) =>
+    sendInvoiceEmail({
+      to: invoice.project.user.email,
+      name: invoice.project.user.name ?? 'Valued Customer',
+      invoiceNumber: invoice.number,
+      invoiceId: invoice.id,
+      total: invoice.total,
+      dueDate: invoice.dueDate ?? undefined,
+      projectTitle: invoice.project.title,
+      pdfUrl: absolutePdfUrl ?? undefined,
+    })
+  ).catch((err: unknown) => console.error('[email] reissue send failed:', err));
+
+  revalidatePath('/admin/invoices');
+  revalidatePath(`/admin/projects/${invoice.projectId}`);
+  revalidatePath('/mypage/invoices');
+
+  return { success: true };
+}
