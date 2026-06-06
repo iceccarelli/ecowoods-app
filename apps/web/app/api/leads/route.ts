@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { leadSchema } from '@ecowoods/shared/schemas';
+import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import { sendAdminNewQuoteEmail } from '@/lib/email';
 
 /**
  * POST /api/leads — THE LEAD CAPTURE ENDPOINT
  *
- * This is the endpoint `submitLead` (in @ecowoods/api-client) posts to.
- * Before this existed, every quote submission 404'd and was lost.
+ * Upgraded to persist to Prisma DB (QuoteRequest table).
+ * Maintains backward compatibility with the existing client (submitLead).
+ * Also notifies admin via email.
  *
  * Design principle: A LEAD IS NEVER SILENTLY LOST.
  * - Validate against the SAME shared schema the client uses (defense in depth).
@@ -111,10 +115,37 @@ export async function POST(request: Request) {
   const lead = parsed.data as Record<string, unknown>;
   const leadId = generateLeadId();
 
-  // 3. Capture durably FIRST. If this throws, we fail loudly (500) rather than
-  //    pretend success — because an uncaptured lead is the one thing we refuse.
+  // 3. Capture durably FIRST — structured log + persist to DB.
   try {
     await persistLead(lead, leadId);
+
+    // Persist to Prisma DB (primary storage)
+    const session = await auth();
+    const quote = await db.quoteRequest.create({
+      data: {
+        name: String(lead.name ?? ''),
+        email: String(lead.email ?? ''),
+        phone: lead.phone ? String(lead.phone) : null,
+        city: lead.postal ? String(lead.postal) : null,
+        service: lead.service ? String(lead.service) : null,
+        squareFeet: lead.sqft ? Number(lead.sqft) : null,
+        timeline: lead.timeline ? String(lead.timeline) : null,
+        notes: lead.message ? String(lead.message) : null,
+        userId: session?.user?.id ?? null,
+      },
+    });
+
+    // Notify admin (non-blocking)
+    sendAdminNewQuoteEmail({
+      quoteId: quote.id,
+      name: String(lead.name ?? ''),
+      email: String(lead.email ?? ''),
+      phone: lead.phone ? String(lead.phone) : undefined,
+      service: lead.service ? String(lead.service) : undefined,
+      squareFeet: lead.sqft ? Number(lead.sqft) : undefined,
+      notes: lead.message ? String(lead.message) : undefined,
+    }).catch(() => {});
+
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -132,7 +163,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 4. Notify best-effort (never blocks success).
+  // 4. Notify via webhook best-effort (never blocks success).
   await notifyLead(lead, leadId);
 
   // 5. Acknowledge with the exact shape submitLead expects.
@@ -140,7 +171,7 @@ export async function POST(request: Request) {
     {
       success: true,
       leadId,
-      message: 'Quote request received! A specialist will call you within 2 hours.',
+      message: 'Quote request received! A specialist will call you within 1 business day.',
       ecoPointsEarned: 750,
     },
     { status: 201 },

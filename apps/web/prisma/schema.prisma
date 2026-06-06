@@ -1,0 +1,429 @@
+// ============================================================
+// ECOWOODS — Prisma Schema
+// Database: PostgreSQL (Supabase or Neon recommended)
+// ORM: Prisma 5.x
+//
+// 추천 인프라 / Recommended infrastructure:
+//   • Vercel (Next.js hosting) + Supabase (PostgreSQL + Storage)
+//   • Alternative: Neon Postgres + Vercel Blob
+//
+// Run migrations:
+//   pnpm --filter @ecowoods/web exec prisma migrate dev --name init
+//   pnpm --filter @ecowoods/web exec prisma generate
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Uncomment and set DIRECT_URL (session/direct connection) once you switch
+  // DATABASE_URL to the transaction-mode pooler (port 6543 on Supabase).
+  // directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum QuoteStatus {
+  NEW         // Just submitted
+  REVIEWING   // Admin has opened it
+  QUOTED      // Admin sent a quote back
+  CONVERTED   // Turned into a Project
+  CLOSED      // Dead lead
+}
+
+enum ProjectStatus {
+  DRAFT            // Not yet sent to customer
+  CONTRACT_SENT    // PDF sent, awaiting signature
+  SIGNED           // Signed contract uploaded
+  DEPOSIT_PAID     // First invoice settled
+  IN_PROGRESS      // Work has started
+  COMPLETED        // Work done, final invoice issued
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT     // Not yet sent to customer
+  SENT      // Emailed to customer
+  OVERDUE   // Past due date
+  PAID      // Confirmed paid (Stripe or manual)
+  CANCELLED
+}
+
+enum PaymentMethod {
+  STRIPE_CARD
+  STRIPE_APPLE_PAY
+  STRIPE_GOOGLE_PAY
+  BANK_TRANSFER  // E-Transfer / wire
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING    // Customer clicked "I have paid" or Stripe session created
+  CONFIRMED  // Admin confirmed (bank) or Stripe webhook received
+  FAILED
+  REFUNDED
+}
+
+enum InquiryStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum InvoiceStage {
+  DEPOSIT    // Stage 1 — typically 30–40%
+  MIDPOINT   // Stage 2 — typically 40–50%
+  FINAL      // Stage 3 — balance
+  CUSTOM     // One-off amount outside the staged schedule
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  passwordHash  String?   // null for OAuth users
+  role          UserRole  @default(CUSTOMER)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  quoteRequests QuoteRequest[]
+  projects      Project[]
+  inquiries     Inquiry[]
+  payments      Payment[]
+
+  // next-auth v5 adapter tables
+  accounts Account[]
+  sessions Session[]
+
+  @@index([email])
+}
+
+// Email verification tokens (used for registration email confirmation)
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  name      String
+  phone     String?
+  // Hashed password stored here until email is confirmed
+  passwordHash String
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+// next-auth adapter models (required for PrismaAdapter)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// QUOTE REQUEST (public form submission)
+// ─────────────────────────────────────────────
+
+model QuoteRequest {
+  id          String      @id @default(cuid())
+  // Submitter info (pre-auth)
+  name        String
+  email       String
+  phone       String?
+  // Project details
+  city        String?
+  province    String?     // ON, BC, AB, QC, etc.
+  address     String?
+  species     String[]    // ["White Oak", "Walnut"]
+  squareFeet  Float?
+  projectType String?     // "new_build" | "renovation"
+  timeline    String?     // "asap" | "1-2_weeks" | "1_month" | "flexible"
+  budgetRange String?     // "$5k-$10k" | "$10k-$20k" | ...
+  service     String?     // service type from homepage form
+  notes       String?     @db.Text
+  // File attachments (stored URLs)
+  attachments String[]
+  // Admin workflow
+  status      QuoteStatus @default(NEW)
+  adminNotes  String?     @db.Text
+  // ── Formal Estimate (견적서) fields ──────────────────────────────
+  // Populated when admin prepares a formal quote document
+  quotedAmount    Float?      // Total estimated amount (excl. tax)
+  quoteTaxRate    Float?      // Tax rate applied to this quote (default: 13 HST)
+  quoteLineItems  Json        @default("[]")  // [{description, qty, unit, unitPrice, amount}]
+  quoteNotes      String?     @db.Text        // Visible to customer on the quote PDF
+  quoteValidUntil DateTime?   // Quote expiry date (typically 30 days)
+  quoteIssuedAt   DateTime?   // When the quote PDF was sent to customer
+  quotePdfUrl     String?     // Stored PDF URL
+  // ─────────────────────────────────────────────────────────────────
+  // Link to registered user (set on registration if email matches)
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Converted to project
+  projectId   String?     @unique
+  project     Project?    @relation(fields: [projectId], references: [id])
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// PROJECT / CONTRACT
+// ─────────────────────────────────────────────
+
+model Project {
+  id          String        @id @default(cuid())
+  // Customer
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  // Origin quote (optional — admin can create projects without a quote)
+  quoteRequest QuoteRequest?
+
+  // Core project info
+  title       String        // e.g. "Rosedale Victorian — White Oak Installation"
+  description String?       @db.Text
+  address     String?
+  city        String?
+  province    String?
+  species     String[]
+  squareFeet  Float?
+  startDate   DateTime?
+  endDate     DateTime?
+
+  // Contract
+  status              ProjectStatus @default(DRAFT)
+  contractPdfUrl      String?       // generated PDF in storage
+  signedContractPdfUrl String?      // uploaded by admin after customer signs
+  contractSignedAt    DateTime?
+
+  // Invoice staging config (overrides global Settings)
+  depositPct    Float?  // e.g. 30.0
+  midpointPct   Float?  // e.g. 40.0
+  finalPct      Float?  // e.g. 30.0
+  taxRate       Float?  // e.g. 13.0 (Ontario HST)
+
+  // Contract total (before tax, before discounts at project level)
+  contractValue Float?
+
+  // Relations
+  invoices    Invoice[]
+  notes       ProjectNote[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// Internal notes on a project (admin use)
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// INVOICE
+// ─────────────────────────────────────────────
+
+model Invoice {
+  id          String        @id @default(cuid())
+  number      String        @unique // e.g. "INV-2026-001"
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id])
+
+  stage       InvoiceStage  @default(CUSTOM)
+  status      InvoiceStatus @default(DRAFT)
+
+  // Amounts (all in CAD, stored as plain Float)
+  subtotal    Float         // base amount before discount/surcharge/tax
+  discountPct Float         @default(0)   // e.g. 5.0 = 5%
+  surchargePct Float        @default(0)   // e.g. 2.5 = 2.5%
+  taxRate     Float         @default(13)  // Ontario HST default
+  total       Float         // computed: subtotal * (1 - discount + surcharge) * (1 + tax)
+
+  // Line items (JSON for flexibility)
+  // [{ description, qty, unitPrice, amount }]
+  lineItems   Json          @default("[]")
+
+  description String?       @db.Text
+  dueDate     DateTime?
+  issuedAt    DateTime?
+  paidAt      DateTime?
+
+  // PDF
+  pdfUrl      String?       // Supabase Storage / Vercel Blob URL
+
+  // Stripe
+  stripePaymentIntentId String?
+  stripeCheckoutSessionId String?
+
+  // Relations
+  payments    Payment[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([number])
+}
+
+// ─────────────────────────────────────────────
+// PAYMENT
+// ─────────────────────────────────────────────
+
+model Payment {
+  id          String        @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id])
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  amount      Float         // CAD
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+
+  // Stripe data
+  stripePaymentIntentId  String?
+  stripeChargeId         String?
+
+  // Bank transfer data
+  bankReference       String?   // customer-provided e-transfer ref
+  bankConfirmedAt     DateTime? // when admin confirmed receipt
+  bankConfirmedByNote String?   // admin notes
+
+  // Plaid (future integration — see comments in lib/plaid.ts)
+  plaidTransactionId  String?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([invoiceId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// INQUIRY (general contact form)
+// ─────────────────────────────────────────────
+
+model Inquiry {
+  id          String        @id @default(cuid())
+  // Can come from anonymous visitors or logged-in users
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  email       String
+  phone       String?
+  subject     String
+  message     String        @db.Text
+  status      InquiryStatus @default(OPEN)
+
+  // Replies (stored as ordered messages)
+  replies     InquiryReply[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([userId])
+}
+
+model InquiryReply {
+  id          String   @id @default(cuid())
+  inquiryId   String
+  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  // fromAdmin = true means Ecowoods staff replied, false = customer follow-up
+  fromAdmin   Boolean  @default(true)
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// GLOBAL SETTINGS (single row, id = "global")
+// ─────────────────────────────────────────────
+
+model Settings {
+  id String @id @default("global")
+
+  // Invoice staging defaults (percentages, must sum to 100)
+  defaultDepositPct   Float @default(30)
+  defaultMidpointPct  Float @default(40)
+  defaultFinalPct     Float @default(30)
+
+  // Tax
+  defaultTaxRate      Float @default(13) // Ontario HST
+
+  // Company info (used in PDF headers)
+  companyName         String @default("Ecowoods Hardwood Flooring Inc.")
+  companyAddress      String @default("32 Norfield Crsnt., Toronto, ON M3J 3A1")
+  companyPhone        String @default("(416) 249-1276")
+  companyEmail        String @default("hello@ecowoods.ca")
+  companyHstNumber    String @default("") // HST registration #
+  companyLogoUrl      String?
+
+  // Feature toggles
+  aiEnabled           Boolean @default(false) // requires OPENAI_API_KEY in env
+
+  // Bank transfer instructions (shown to customer on MyPage)
+  bankTransferInstructions String @default("Please e-transfer payment to accounting@ecowoods.ca with your invoice number as the memo. You will receive a confirmation within 1 business day.") @db.Text
+
+  updatedAt           DateTime @updatedAt
+}

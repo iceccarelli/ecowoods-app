@@ -50,6 +50,11 @@ export default function Header() {
   const { direction, scrolled } = useScrollState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [baseUrl, setBaseUrl] = useState('/');
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin + '/');
+  }, []);
 
   const isHidden = direction === 'down' && !mobileOpen;
 
@@ -102,7 +107,7 @@ export default function Header() {
       >
         <div className="topbar-inner">
           {/* Brand Lockup */}
-          <a className="brand-lockup" href="#top" aria-label="Ecowoods home">
+          <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
             <span className="brand-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path
@@ -128,7 +133,7 @@ export default function Header() {
               return (
                 <a
                   key={item.href}
-                  href={item.href}
+                  href={`${baseUrl}${item.href}`}
                   className={isActive ? 'active' : ''}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -140,6 +145,13 @@ export default function Header() {
 
           {/* Right CTA cluster */}
           <div className="topbar-cta">
+            <a className="login-btn" href="/login" aria-label="Login to your account">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
+                <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
+                <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Login
+            </a>
             <a className="phone-pill" href={PHONE_HREF} aria-label={`Call ${PHONE_DISPLAY}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path
@@ -150,7 +162,7 @@ export default function Header() {
               </svg>
               {PHONE_DISPLAY}
             </a>
-            <a className="btn btn-copper btn-sm" href="#quote">
+            <a className="btn btn-copper btn-sm" href={`${baseUrl}#quote`}>
               Free Quote
               <svg
                 className="btn-arrow"
@@ -191,16 +203,20 @@ export default function Header() {
           {navigation.map((item, idx) => (
             <a
               key={item.href}
-              href={item.href}
+              href={`${baseUrl}${item.href}`}
               onClick={() => setMobileOpen(false)}
             >
               {item.label}
               <span className="num">0{idx + 1}</span>
             </a>
           ))}
-          <a href="#quote" onClick={() => setMobileOpen(false)}>
+          <a href={`${baseUrl}#quote`} onClick={() => setMobileOpen(false)}>
             Free Quote
             <span className="num">0{navigation.length + 1}</span>
+          </a>
+          <a href="/login" onClick={() => setMobileOpen(false)}>
+            Login
+            <span className="num">0{navigation.length + 2}</span>
           </a>
         </nav>
 
@@ -215,7 +231,7 @@ export default function Header() {
             </svg>
             Call {PHONE_DISPLAY}
           </a>
-          <a className="btn btn-ghost btn-lg" href="#quote" onClick={() => setMobileOpen(false)}>
+          <a className="btn btn-ghost btn-lg" href={`${baseUrl}#quote`} onClick={() => setMobileOpen(false)}>
             Request a free in-home estimate
           </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
@@ -237,7 +253,7 @@ export default function Header() {
           </svg>
           Call
         </a>
-        <a className="btn btn-copper btn-sm" href="#quote" style={{ flex: 2 }}>
+        <a className="btn btn-copper btn-sm" href={`${baseUrl}#quote`} style={{ flex: 2 }}>
           Get Free Quote
         </a>
       </div>
