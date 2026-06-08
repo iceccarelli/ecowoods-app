@@ -2,1408 +2,478 @@
 
 # 🌳 EcoWoods
 
-### **The Unified Commerce, Social & Operations Platform for Hardwood Flooring**
+### Toronto Hardwood Flooring — Lead-Generation Site + Marketplace Backend (Monorepo)
 
-*One codebase. One source of truth. Web + Mobile + Admin + Backend in perfect sync.*
+*A production marketing/lead-capture website, plus a separate (not-yet-deployed) API and client scaffolds, in one Turborepo.*
 
-[![CI](https://github.com/iceccarelli/ecowoods-app/actions/workflows/ci.yml/badge.svg)](https://github.com/iceccarelli/ecowoods-app/actions/workflows/ci.yml)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?logo=vercel)](https://ecowoods-app.vercel.app)
-[![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220?logo=pnpm)](https://pnpm.io)
-[![Turborepo](https://img.shields.io/badge/Monorepo-Turborepo-EF4444?logo=turborepo)](https://turborepo.com)
+[![Deployed on Vercel](https://img.shields.io/badge/Web%20live%20on-Vercel-000000?logo=vercel)](https://ecowoods-app.vercel.app)
 [![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?logo=next.js)](https://nextjs.org)
-[![Expo](https://img.shields.io/badge/Mobile-Expo%20SDK%2051-000020?logo=expo)](https://expo.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Turborepo](https://img.shields.io/badge/Monorepo-Turborepo-EF4444?logo=turborepo)](https://turborepo.com)
+[![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220?logo=pnpm)](https://pnpm.io)
+[![Tailwind](https://img.shields.io/badge/Styling-Tailwind-06B6D4?logo=tailwindcss)](https://tailwindcss.com)
 [![Zod](https://img.shields.io/badge/Validation-Zod-3068B7)](https://zod.dev)
-[![Drizzle](https://img.shields.io/badge/ORM-Drizzle-C5F74F?logo=drizzle)](https://orm.drizzle.team)
-[![Supabase](https://img.shields.io/badge/DB-Supabase%20Postgres-3FCF8E?logo=supabase)](https://supabase.com)
-[![Stripe](https://img.shields.io/badge/Payments-Stripe-635BFF?logo=stripe)](https://stripe.com)
-[![Auth.js](https://img.shields.io/badge/Auth-Auth.js%20v5-EB5424)](https://authjs.dev)
-[![Resend](https://img.shields.io/badge/Email-Resend-000000)](https://resend.com)
-[![Sentry](https://img.shields.io/badge/Errors-Sentry-362D59?logo=sentry)](https://sentry.io)
-[![PostHog](https://img.shields.io/badge/Analytics-PostHog-1D4AFF?logo=posthog)](https://posthog.com)
-[![FastAPI](https://img.shields.io/badge/Heavy%20workloads-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://python.org)
-[![Docker](https://img.shields.io/badge/Containers-Docker-2496ED?logo=docker)](https://docker.com)
+[![FastAPI](https://img.shields.io/badge/Backend%20(undeployed)-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Backend-Docker-2496ED?logo=docker)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Live Production →** [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app)
+**Live production (web) →** [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app)
 
 </div>
 
 ---
 
+> ### ⚠️ Read this first — what EcoWoods actually is today
+>
+> **EcoWoods is a single-page lead-generation marketing website for a Toronto hardwood-flooring
+> company, deployed on Vercel.** Its job is to convert visitors into quote requests. That path —
+> the form → `POST /api/leads` → validated, captured, acknowledged — is the one thing that is
+> fully built, tested, and live.
+>
+> The repository *also* contains a separate, well-structured **FastAPI marketplace backend**, two
+> **demo-grade Expo mobile apps**, and a **static HTML admin dashboard**. These are real code, but
+> they are **not deployed, not connected to the live website, and not part of the production
+> build.** They describe a *future* product (a contractor job/bid marketplace) that does not ship
+> today.
+>
+> This README documents reality, separates "live" from "scaffolded," and lists the highest-impact
+> next steps. Earlier versions of this file described a Supabase/Drizzle/Stripe/Resend/Sentry/
+> PostHog commerce-and-social platform — **none of that is implemented.** It has been removed.
+
+---
+
 ## 📑 Table of Contents
 
-1. [Vision & Promise](#-vision--promise)
-2. [Architecture at a Glance](#-architecture-at-a-glance)
-3. [The Five-Phase Build Plan](#-the-five-phase-build-plan)
-4. [Current Status — Honest Reality Check](#-current-status--honest-reality-check)
-5. [Definitive Tech Stack](#-definitive-tech-stack)
-6. [Repository Structure](#-repository-structure)
-7. [End-to-End Data & Event Flow](#-end-to-end-data--event-flow)
-8. [Authentication Flow (Web + Mobile)](#-authentication-flow-web--mobile)
-9. [Payments Flow (Stripe)](#-payments-flow-stripe)
-10. [The Event Catalog](#-the-event-catalog)
-11. [Database Schema (Logical View)](#-database-schema-logical-view)
-12. [Local Development Setup](#-local-development-setup)
-13. [Environment Variables Reference](#-environment-variables-reference)
-14. [Deployment](#-deployment)
-15. [Developer Workflow & Conventions](#-developer-workflow--conventions)
-16. [Quality Gates & CI/CD](#-quality-gates--cicd)
-17. [Observability & Operations](#-observability--operations)
-18. [Security Posture](#-security-posture)
-19. [Roadmap & Open Decisions](#-roadmap--open-decisions)
-20. [Contributing](#-contributing)
-21. [License](#-license)
+1. [Status at a Glance](#-status-at-a-glance)
+2. [What the Live Site Does](#-what-the-live-site-does)
+3. [The Lead-Capture Flow (the one real revenue path)](#-the-lead-capture-flow-the-one-real-revenue-path)
+4. [Architecture — What Actually Runs](#-architecture--what-actually-runs)
+5. [Real Tech Stack](#-real-tech-stack)
+6. [Repository Structure (annotated)](#-repository-structure-annotated)
+7. [The FastAPI Backend (real, undeployed)](#-the-fastapi-backend-real-undeployed)
+8. [Mobile & Admin (scaffolds)](#-mobile--admin-scaffolds)
+9. [Local Development](#-local-development)
+10. [Environment Variables](#-environment-variables)
+11. [Deployment](#-deployment)
+12. [Security Posture (honest)](#-security-posture-honest)
+13. [CI/CD (what it really tests)](#-cicd-what-it-really-tests)
+14. [Roadmap — Ranked by Business Impact](#-roadmap--ranked-by-business-impact)
+15. [Known Gaps & Tech Debt](#-known-gaps--tech-debt)
+16. [Contributing](#-contributing)
+17. [License](#-license)
 
 ---
 
-## 🎯 Vision & Promise
+## 🚦 Status at a Glance
 
-EcoWoods is **not three apps stitched together**. It is one product surface delivered through three clients:
-
-| Client | What it is | Built with |
+| Surface / Feature | State | Reality |
 |---|---|---|
-| **Web** | Marketing, catalog, social feed, checkout, account, admin | Next.js 15 (App Router) on Vercel |
-| **Mobile** | Identical commerce + social on iOS/Android, native payments, push | Expo + React Native + expo-router |
-| **Admin** | Staff dashboard for orders, products, feed moderation, refunds | Next.js 15 (separate app, same monorepo) |
+| **`apps/web` marketing site** | 🟢 **Live** | Next.js 15 single-page site on Vercel, auto-deployed from `main`. |
+| **`POST /api/leads`** | 🟢 **Live & working** | Zod-validated, durable capture-only persistence, optional webhook. Verified in prod. |
+| **`GET /api/backgrounds`** | 🟢 **Live** | Calls the Unsplash **Search API** at runtime for rotating section backdrops. ⚠️ see security notes. |
+| **Recent Work + Field Notes imagery** | 🟢 **Live** | Curated fixed Unsplash photos wired into `page.tsx`. |
+| **Security headers (HSTS, X-Frame-Options, etc.)** | 🟢 **Live** | Set in `vercel.json`. |
+| **Auth (`/api/auth/[...nextauth]`)** | 🟠 **Scaffold only** | NextAuth route exists but `providers: []` → **no one can log in.** Insecure default secret. |
+| **Payments (Stripe)** | 🔴 **Not implemented** | `stripe` + `@stripe/stripe-js` installed; **zero** checkout/webhook routes. |
+| **Lead → CRM / DB / email** | 🔴 **Not wired** | Leads currently land in Vercel runtime logs only (unless `LEADS_WEBHOOK_URL` is set). |
+| **`backend/` FastAPI marketplace** | 🟠 **Real, undeployed** | Jobs/bids/products/calendar/users/auth API. Runs locally; not hosted; not called by the live site. |
+| **`apps/mobile` (Expo)** | 🟠 **Demo / fragmented** | Two overlapping apps (`app/` router + legacy `frontend/`). Not built or shipped. |
+| **`apps/admin`** | 🟠 **Static demo** | Vanilla HTML/CSS/JS dashboard mounted by FastAPI at `/admin`. Not a Next.js app. |
+| **Web tests / web CI** | 🔴 **None** | No Vitest/Playwright; CI tests **only** the Python backend. |
+| **Sentry / PostHog / analytics / rate limiting / n8n** | 🔴 **Not present** | Referenced in old docs; no code exists. |
 
-All three clients consume the **same Zod schemas, the same API endpoints, the same database, the same event bus**. A product edit in Admin appears in the Web shop and Mobile app within milliseconds. An order placed on Mobile triggers the same email, push notification, and analytics events as one placed on Web.
-
-### The four non-negotiables
-
-> 1. **Single source of truth** — every type lives in `packages/shared` exactly once.
-> 2. **Server authority** — the database is the truth; clients reconcile against it.
-> 3. **Append-only event contracts** — `order.created` never gets renamed; if its shape must change, `order.created.v2` is born alongside it.
-> 4. **Ship in phases** — every phase deploys to production. No big-bang releases.
+Legend: 🟢 live · 🟠 in repo, not production-wired · 🔴 not implemented
 
 ---
 
-## 🏛 Architecture at a Glance
+## 🧭 What the Live Site Does
+
+`apps/web` is a single, long, animated landing page (`app/page.tsx`) for **EcoWoods**, a Toronto
+hardwood-flooring company (brand voice: *"Est. 1998 · 25+ years · 5,200+ homes refinished · lifetime
+workmanship warranty"*). Section by section:
+
+- **Hero** — headline, primary CTAs (*Get a Free Estimate* / *View Our Work*), trust stats, and a
+  rotating certification marquee (NWFA, Bona, BBB A+, WSIB, Loba, FSC, GreenGuard, HomeStars, Houzz).
+- **Our Craft** — six service cards (Installation, Refinishing, Dust-Free Sanding, Stair Refinishing,
+  Custom Inlays & Borders, Commercial).
+- **Why EcoWoods** — four differentiators (salaried craftsmen, lifetime warranty, eco finishes,
+  fixed written pricing).
+- **Species & Stains** — wood species with Janka hardness ratings.
+- **Recent Work** — project gallery (the *"our daily portfolio"* grid; curated fixed images).
+- **Our Process** — five-step consultation-to-signoff timeline.
+- **Reviews / FAQ** — social proof and objection handling.
+- **Field Notes** — three editorial cards (practical hardwood guides; curated fixed images).
+- **Quote form** — the conversion surface that posts to `POST /api/leads`.
+
+Several full-bleed section backdrops (`hero`, `craft`, `homes`, `finish`) are served by the
+`RotatingBackground` component, which fetches from `GET /api/backgrounds?theme=…` at runtime
+(see [security notes](#-security-posture-honest)).
+
+---
+
+## 🎯 The Lead-Capture Flow (the one real revenue path)
+
+This is the most important — and most carefully engineered — code in the repo. Its guiding
+principle, stated in the source, is **"a lead is never silently lost."**
+
+```mermaid
+sequenceDiagram
+    participant U as Visitor
+    participant F as Quote Form (react-hook-form + Zod)
+    participant C as submitLead (@ecowoods/api-client)
+    participant A as POST /api/leads (Next.js, nodejs runtime)
+    participant L as Durable capture (structured log)
+    participant W as Optional webhook (LEADS_WEBHOOK_URL)
+
+    U->>F: Fill name, email, phone, postal, service…
+    F->>C: validate via shared leadSchema
+    C->>A: POST { ...lead, source, createdAt }
+    A->>A: re-validate via SAME shared leadSchema (defense in depth)
+    alt invalid
+        A-->>C: 400 { success:false, fieldErrors }
+    else valid
+        A->>L: persist FIRST (console JSON → Vercel logs)
+        alt capture throws
+            A-->>C: 500 (refuse to fake success)
+        else captured
+            A->>W: best-effort notify (failure ≠ request failure)
+            A-->>C: 201 { success:true, leadId, ecoPointsEarned:750 }
+            C->>U: toast + localStorage EcoPoints
+        end
+    end
+```
+
+**Why it's robust**
+
+- **One schema, both sides.** `leadSchema` lives in `@ecowoods/shared` and validates on the client
+  *and* re-validates on the server — the contract can't drift.
+- **Capture before notify.** The lead is persisted before any downstream send; a flaky webhook
+  never costs you a lead.
+- **Honest persistence.** Today persistence = a structured `lead.captured` JSON line in Vercel
+  runtime logs (queryable/exportable). It is **not** a database or CRM yet. Setting
+  `LEADS_WEBHOOK_URL` forwards leads to n8n / Zapier / a CRM with a one-line change.
+
+> 🔴 **The #1 reliability gap:** logs are recoverable but not a system of record. Wiring a durable
+> destination (email + DB/CRM) is the single highest-value next step — see the
+> [roadmap](#-roadmap--ranked-by-business-impact).
+
+---
+
+## 🏛 Architecture — What Actually Runs
 
 ```mermaid
 graph TB
-    subgraph Clients["🖥 Clients"]
-        Web["apps/web<br/>Next.js 15"]
-        Mobile["apps/mobile<br/>Expo + RN"]
-        Admin["apps/admin<br/>Next.js 15"]
+    subgraph Prod["🟢 Production (Vercel)"]
+        Web["apps/web — Next.js 15 (App Router)<br/>marketing page + API routes"]
+        Leads["POST /api/leads<br/>(Zod validate → log capture)"]
+        BG["GET /api/backgrounds<br/>(Unsplash Search API)"]
+        AuthR["/api/auth/[...nextauth]<br/>(NextAuth, providers: [] — inert)"]
+        Web --> Leads
+        Web --> BG
+        Web --> AuthR
     end
 
-    subgraph Shared["📦 Shared Packages (the backbone)"]
-        SharedPkg["@ecowoods/shared<br/>Zod schemas, events, constants"]
-        UI["@ecowoods/ui<br/>Cross-platform components"]
-        ApiClient["@ecowoods/api-client<br/>Fetch + TanStack Query hooks"]
-        Auth["@ecowoods/auth<br/>Auth.js v5 wrapper"]
-        Payments["@ecowoods/payments<br/>Stripe SDK + webhooks"]
-        DB["@ecowoods/db<br/>Drizzle ORM + repositories"]
-        Notif["@ecowoods/notifications<br/>Email • Push • SMS"]
-        Obs["@ecowoods/observability<br/>Logger • Sentry"]
+    subgraph Pkgs["📦 Shared packages (consumed by web)"]
+        Shared["@ecowoods/shared<br/>Zod schemas · tokens · constants"]
+        ApiClient["@ecowoods/api-client<br/>submitLead (used) · useJobs (unused)"]
+        UI["@ecowoods/ui"]
+        AuthPkg["@ecowoods/auth (config shell)"]
     end
 
-    subgraph Edge["🌐 Edge & Server"]
-        NextAPI["Next.js API Routes<br/>/api/*"]
-        Middleware["Edge Middleware<br/>auth gate • rate limit"]
+    subgraph NotProd["🟠 In repo, NOT deployed / NOT connected"]
+        FastAPI["backend/ — FastAPI marketplace<br/>auth · users · job-requests · products · bids · calendar"]
+        DB[("SQLite/Postgres via SQLAlchemy<br/>(local only)")]
+        Mobile["apps/mobile — Expo (demo, x2)"]
+        Admin["apps/admin — static HTML dashboard<br/>(mounted by FastAPI at /admin)"]
     end
 
-    subgraph Data["🗄 Data & Heavy Workloads"]
-        Postgres[("Supabase Postgres<br/>+ Realtime + Storage")]
-        FastAPI["backend/<br/>FastAPI: search, recs, AI"]
-        N8N["n8n<br/>Workflows-as-code"]
-    end
-
-    subgraph External["🔌 Third-Party"]
-        Stripe["Stripe<br/>Checkout + PaymentSheet"]
-        Resend["Resend<br/>Transactional email"]
-        Expo["Expo Push<br/>FCM + APNs"]
-        Sentry["Sentry"]
-        PostHog["PostHog"]
-    end
-
+    Ext["Unsplash Search API"]
+    BG --> Ext
+    Web --> Shared
     Web --> ApiClient
-    Mobile --> ApiClient
-    Admin --> ApiClient
-    ApiClient --> NextAPI
-    NextAPI --> Middleware
-    NextAPI --> DB
-    DB --> Postgres
-    NextAPI --> Auth
-    NextAPI --> Payments
-    Payments --> Stripe
-    NextAPI --> Notif
-    Notif --> Resend
-    Notif --> Expo
-    Postgres -->|Triggers + Realtime| N8N
-    N8N --> Notif
-    Stripe -->|Webhooks| NextAPI
-    FastAPI --> Postgres
-    Web -.->|Search, recs| FastAPI
-    Mobile -.->|Search, recs| FastAPI
-    Web --> Obs
-    Mobile --> Obs
-    Admin --> Obs
-    NextAPI --> Obs
-    Obs --> Sentry
-    Obs --> PostHog
     Web --> UI
-    Mobile --> UI
-    Admin --> UI
-    UI --> SharedPkg
-    ApiClient --> SharedPkg
-    DB --> SharedPkg
+    AuthR --> AuthPkg
+    ApiClient -. "useJobs → localhost:8000 (unused on web)" .-> FastAPI
+    FastAPI --> DB
+    FastAPI --> Admin
+
+    style FastAPI stroke-dasharray: 5 5
+    style DB stroke-dasharray: 5 5
+    style Mobile stroke-dasharray: 5 5
+    style Admin stroke-dasharray: 5 5
 ```
 
-**Key principle:** Every arrow in this diagram is a typed contract. Clients never speak directly to Stripe, the database, or third-party APIs — they speak to `@ecowoods/api-client`, which speaks to Next.js API routes, which speak to the typed packages. This is what makes drift impossible.
+**Two important truths the diagram makes explicit:**
+
+1. The live web app is **self-contained** — it does not call the FastAPI backend in production.
+   The only client→backend link (`useJobs`/`apiFetch`) targets `NEXT_PUBLIC_API_URL ||
+   http://localhost:8000` and is **not used** anywhere in the live page.
+2. The FastAPI backend and the static admin dashboard model a **different product** (a
+   job/bid marketplace) than the marketing site. They're a parallel track, not the site's backend.
 
 ---
 
-## 🗺 The Five-Phase Build Plan
+## 🧱 Real Tech Stack
 
-The path from "monorepo builds on Vercel" to "Instagram-grade product." Each phase ships independently to production.
-
-```mermaid
-flowchart LR
-    P0([Phase 0<br/>✅ DONE]) --> P1([Phase 1<br/>Commerce Core])
-    P1 --> P2([Phase 2<br/>Mobile + Email])
-    P2 --> P3([Phase 3<br/>Social Layer])
-    P3 --> P4([Phase 4<br/>Admin + Observability])
-    P4 --> P5([Phase 5<br/>Heavy Workloads + n8n])
-
-    style P0 fill:#10b981,stroke:#059669,color:#fff
-    style P1 fill:#3b82f6,stroke:#1d4ed8,color:#fff
-    style P2 fill:#8b5cf6,stroke:#6d28d9,color:#fff
-    style P3 fill:#ec4899,stroke:#be185d,color:#fff
-    style P4 fill:#f59e0b,stroke:#b45309,color:#fff
-    style P5 fill:#64748b,stroke:#334155,color:#fff
-```
-
-### Phase 0 — Foundation ✅ DONE
-- Turborepo + pnpm workspaces resolve cleanly on Vercel
-- `@ecowoods/ui` package builds with `tsup` and is consumed by `apps/web`
-- `.vercelignore` no longer excludes `packages/`
-- `vercel.json` points `outputDirectory` to `apps/web/.next`
-
-### Phase 1 — Commerce Core (Week 1)
-**Goal:** A logged-in user can browse → cart → pay → receive an order email.
-**Packages built:** `shared`, `db`, `auth`, `payments`, `notifications` (email only), `ui` (expanded).
-**Apps built:** `apps/web` only.
-
-### Phase 2 — Mobile Parity (Weeks 2–3)
-**Goal:** Identical experience on iOS/Android with native Stripe PaymentSheet.
-**New packages:** `api-client` (now justified — 2 consumers).
-**New apps:** `apps/mobile`.
-
-### Phase 3 — Social Layer (Weeks 4–6)
-**Goal:** Instagram-style feed, optimistic UI, real-time fan-out.
-**New schemas:** `post`, `comment`, `like`, `notification`.
-**New package surfaces:** `shared/events/`, `notifications/push`, `notifications/in-app`.
-
-### Phase 4 — Admin + Observability (Weeks 7–8)
-**Goal:** Operational maturity. Non-engineers can run the business.
-**New apps:** `apps/admin` (Next.js, replacing vanilla HTML).
-**New packages:** `observability`, `analytics`, `auth/permissions`.
-
-### Phase 5 — Heavy Workloads + Orchestration (Week 9+)
-**Goal:** Vector search, recommendations, automated workflows.
-**New apps:** `backend/` (FastAPI), `n8n/` workflows-as-code.
-**New packages:** `feature-flags`, `infrastructure/` IaC.
-
-> **Why this order?** Each phase delivers user-visible value. A user-facing product without auth + payments is useless; a social feed without users is empty; an admin without data is pointless; n8n without workflows is wasted. Stack the dominoes correctly.
+| Layer | What's actually used |
+|---|---|
+| **Monorepo** | Turborepo 2.9 + pnpm 9.15 workspaces (`apps/*`, `packages/*`); root build/dev scoped to `@ecowoods/web`. |
+| **Web** | Next.js 15.5 (App Router), React 19, TypeScript 5.6, Tailwind CSS 3.4, framer-motion, lucide-react, sonner, react-hook-form, `@hookform/resolvers`, TanStack Query, Zod. |
+| **Web APIs** | Next.js Route Handlers (Node.js runtime): `/api/leads`, `/api/backgrounds`, `/api/auth/[...nextauth]` (NextAuth v4). |
+| **Shared** | `@ecowoods/shared` (Zod schemas, theme tokens, constants), `@ecowoods/api-client`, `@ecowoods/ui`, `@ecowoods/auth`, plus `types`/`config`/`utils`. |
+| **Backend** *(undeployed)* | FastAPI, SQLAlchemy 2 (async), SQLite/Postgres, JWT auth, Pydantic schemas; Dockerfile + `docker-compose.yml`. |
+| **Mobile** *(demo)* | Expo SDK 54, expo-router, React Native 0.81, `@stripe/stripe-react-native`, expo-notifications. |
+| **Hosting** | Vercel (web). Backend is local/containerized only. |
+| **Installed but unused** | `stripe`, `@stripe/stripe-js` (no payment code). |
 
 ---
 
-## 📊 Current Status — June 2, 2026 (PRODUCTION VERIFIED)
+## 🗂 Repository Structure (annotated)
 
-**Overall Progress: Phase 1 (Commerce Core) — 100% COMPLETE + LIVE IN PRODUCTION**
-
-| Layer                              | Status      | Notes |
-|------------------------------------|-------------|-------|
-| Turborepo + pnpm workspace         | ✅ Done     | Fully working |
-| `@ecowoods/shared` (Zod schemas + events) | ✅ Complete | Fully built and functional |
-| `@ecowoods/db` (Drizzle + Supabase)| ✅ Complete | Fully built with schema + repositories |
-| `@ecowoods/auth` (Auth.js v5)      | ✅ Complete | Fully built and functional |
-| `@ecowoods/ui` + `@ecowoods/payments` | ✅ Complete | Fully built and functional |
-| `apps/web` Build                   | ✅ **CLEAN** | Turbo build passes (React 19 types fixed) |
-| Shop + Product Catalog             | ✅ Working  | Real data from database |
-| Cart System                        | ✅ Working  | Zustand + localStorage |
-| Stripe Checkout Flow               | ✅ Working  | API + Checkout page + Success page |
-| User Account System                | ✅ Working  | Dashboard, Orders, Order Detail, Profile |
-| **Leads Capture (`/api/leads`)**   | ✅ **PROVEN** | Live in production — successful lead created (`leadId` returned) |
-| Production Deployment              | ✅ **LIVE**   | https://ecowoods-app.vercel.app |
-| End-to-End User Journey            | ✅ Working  | Full flow verified in production |
-| Admin Dashboard                    | ❌ Not Started | Phase 4 |
-| Mobile App (Expo)                  | ❌ Not Started | Phase 2 |
-| Social Layer                       | ❌ Not Started | Phase 3 |
-| Order Confirmation Emails          | ❌ Not Started | Critical missing feature (Phase 1 remaining) |
-
-**Honest Assessment (June 2, 2026):**  
-The monorepo is **production-ready** for Phase 1. All core packages build cleanly. The web app is deployed and **successfully capturing leads** in production. The only remaining Phase 1 item is order confirmation emails (Resend). Phases 2–5 are untouched.
-
-**Major Fixes Completed (June 2, 2026):**
-- React 19 type bump (`@types/react@^19`)
-- `JSX.Element` → `React.ReactElement` fix in `apps/web/app/page.tsx`
-- `ShoppingCart` icon type cast in `@ecowoods/ui/src/ProductCard.tsx`
-- Full turbo build now passes on Vercel
-
----
-## 🛠 Current Implementation Status (June 2, 2026)
-
-### What is Fully Working & Production-Verified
-- ✅ All core packages build successfully via `turbo build`
-- ✅ `apps/web` clean production build (Next.js 15.5.18 + React 19)
-- ✅ Shop with real product data from Supabase
-- ✅ Product Detail Page (PDP)
-- ✅ Cart system (Zustand + persistence)
-- ✅ Stripe Checkout flow (Embedded + webhooks)
-- ✅ User Account system (Dashboard, Orders, Order Detail, Profile)
-- ✅ Protected routes via middleware
-- ✅ **Leads capture endpoint live** (`/api/leads` returns `success: true` + `leadId`)
-- ✅ Professional design system + Tailwind + shadcn/ui
-- ✅ Full production deployment on Vercel
-
-### What Still Needs Implementation (Phase 1 Remaining)
-- ❌ Order confirmation emails via Resend
-- ❌ Server-side cart/session handling (currently client-only)
-- ❌ Complete end-to-end testing suite
-- ❌ Proper error boundaries + loading states across all flows
-
-### What is Still Not Started
-- Mobile App (Expo) — Phase 2
-- Social Layer (Feed, Posts, Comments, Likes) — Phase 3
-- Admin Dashboard — Phase 4
-- Heavy workloads (FastAPI + n8n) — Phase 5
-
----
-
-
-## 🧱 Definitive Tech Stack
-
-These choices are **final** unless a critical limitation forces a change. Avoid bikeshedding.
-
-| Concern | Chosen Tech | Why this, not the alternatives |
-|---|---|---|
-| **Monorepo** | Turborepo + pnpm workspaces | Best caching, smallest disk footprint, Vercel-native |
-| **Language** | TypeScript 5.5 (strict) | Type-safe end-to-end; same language client→server |
-| **Web framework** | Next.js 15 App Router | RSC for fast pages, edge middleware, API routes |
-| **Mobile framework** | Expo SDK 51 + expo-router | File-based routing matching Next.js mental model |
-| **Validation** | Zod | Schemas double as TypeScript types AND runtime guards |
-| **Database** | Supabase Postgres | Managed Postgres + Realtime + Storage + Auth user table in one |
-| **ORM** | Drizzle ORM | TypeScript-first, no codegen, SQL-shaped, edge-compatible |
-| **Auth** | Auth.js v5 (NextAuth) + Drizzle adapter | Owns user data, supports Google/GitHub/Microsoft/Apple/Email/Passkeys; Expo bridge via `expo-auth-session` |
-| **Payments** | Stripe (Embedded Checkout web, PaymentSheet mobile) | PCI handled by Stripe; one webhook handles all surfaces |
-| **Email** | Resend + React Email | React components for templates; clean DX, deliverability |
-| **Push notifications** | Expo Push (FCM + APNs) | One API, free, abstracts both stores |
-| **SMS** | Twilio (added in Phase 5 if needed) | Industry standard, easy fallback |
-| **Real-time** | Supabase Realtime | Already paid for via Supabase, Postgres-native |
-| **File storage** | Supabase Storage → R2/S3 at scale | Bundled with DB; migrate when egress costs justify |
-| **State (server)** | TanStack Query v5 | The right tool. Use everywhere. |
-| **State (client)** | Zustand (only when truly needed) | No Redux, no Recoil, no Context-juggling |
-| **Forms** | react-hook-form + `@hookform/resolvers/zod` | Same Zod schema validates client + server + DB |
-| **Styling (web)** | Tailwind CSS 3 + shadcn/ui | Industry baseline; copy-paste components you own |
-| **Styling (mobile)** | NativeWind | Same Tailwind class names work in React Native |
-| **Cross-platform components** | `.web.tsx` + `.native.tsx` file splitting | Bundlers resolve automatically; cleanest abstraction |
-| **Animation** | Framer Motion (web) + Reanimated 3 (mobile) | Best-in-class on each platform |
-| **Observability** | Sentry (errors) + PostHog (product) + Vercel Analytics (web vitals) | Three concerns, three best-in-class tools |
-| **Logging** | pino (structured JSON) | Fast, ecosystem-standard |
-| **Heavy workloads** | FastAPI + SQLAlchemy 2 + pgvector | Python for ML/search/AI; only added when needed |
-| **Orchestration** | n8n (self-hosted via Docker) | Workflows-as-code, version-controlled JSON |
-| **CI/CD** | GitHub Actions + Vercel + EAS Build | Test on push, deploy on merge |
-| **Containers** | Docker + Docker Compose | Local FastAPI + n8n + Postgres reproducibility |
-| **Code quality** | ESLint + Prettier + Husky + lint-staged + commitlint | Pre-commit gates; conventional commits |
-| **Testing** | Vitest (unit) + Playwright (e2e web) + Detox (e2e mobile) + pytest (backend) | Right tool per surface |
-| **Versioning** | Changesets | Disciplined releases for internal packages |
-
----
-
-## 📁 Repository Structure
-
-This is the **destination** structure. Build it phase by phase — don't scaffold empty packages.
-
-```
+```text
 ecowoods-app/
 ├── apps/
-│   ├── web/                                  # Next.js 15 — marketing + shop + feed + cart + account
-│   │   ├── app/
-│   │   │   ├── (marketing)/                  # landing, about, contact — public routes
-│   │   │   │   ├── page.tsx
-│   │   │   │   ├── about/page.tsx
-│   │   │   │   └── contact/page.tsx
-│   │   │   ├── (shop)/
-│   │   │   │   ├── shop/page.tsx             # product grid + filters
-│   │   │   │   ├── shop/[slug]/page.tsx      # PDP (product detail page)
-│   │   │   │   ├── cart/page.tsx
-│   │   │   │   └── checkout/page.tsx         # Stripe Embedded Checkout
-│   │   │   ├── (social)/                     # Phase 3
-│   │   │   │   ├── feed/page.tsx             # Instagram-style infinite scroll
-│   │   │   │   ├── post/[id]/page.tsx
-│   │   │   │   └── profile/[handle]/page.tsx
-│   │   │   ├── (account)/
-│   │   │   │   ├── account/page.tsx
-│   │   │   │   ├── orders/page.tsx
-│   │   │   │   ├── orders/[id]/page.tsx
-│   │   │   │   └── settings/page.tsx
-│   │   │   ├── api/
-│   │   │   │   ├── auth/[...nextauth]/route.ts
-│   │   │   │   ├── stripe/
-│   │   │   │   │   ├── checkout/route.ts     # create checkout session
-│   │   │   │   │   ├── webhook/route.ts      # Stripe → us (signature-verified)
-│   │   │   │   │   └── portal/route.ts       # customer portal
-│   │   │   │   ├── products/route.ts
-│   │   │   │   ├── cart/route.ts
-│   │   │   │   ├── orders/route.ts
-│   │   │   │   ├── feed/route.ts             # Phase 3
-│   │   │   │   └── og/route.tsx              # dynamic OG images
-│   │   │   ├── layout.tsx
-│   │   │   └── global-error.tsx
-│   │   ├── components/                       # web-only components
-│   │   ├── lib/                              # web-only utilities, hooks
-│   │   ├── middleware.ts                     # auth gating, rate limiting
-│   │   ├── next.config.js
-│   │   ├── tailwind.config.ts
-│   │   └── package.json
-│   │
-│   ├── mobile/                               # React Native (Expo) — Phase 2
-│   │   ├── app/                              # expo-router file-based routes
-│   │   │   ├── (tabs)/
-│   │   │   │   ├── feed.tsx                  # Phase 3
-│   │   │   │   ├── shop.tsx
-│   │   │   │   ├── cart.tsx
-│   │   │   │   └── profile.tsx
-│   │   │   ├── product/[slug].tsx
-│   │   │   ├── checkout.tsx                  # @stripe/stripe-react-native PaymentSheet
-│   │   │   ├── orders/[id].tsx
-│   │   │   └── _layout.tsx
-│   │   ├── components/                       # mobile-only (RN primitives)
-│   │   ├── lib/
-│   │   ├── app.config.ts                     # Expo config
-│   │   ├── eas.json                          # EAS Build config
-│   │   └── package.json
-│   │
-│   └── admin/                                # Next.js admin dashboard — Phase 4
-│       ├── app/
-│       │   ├── (dashboard)/
-│       │   │   ├── dashboard/page.tsx
-│       │   │   ├── orders/page.tsx
-│       │   │   ├── orders/[id]/page.tsx
-│       │   │   ├── products/page.tsx         # CRUD with image upload
-│       │   │   ├── products/new/page.tsx
-│       │   │   ├── feed/page.tsx             # moderation
-│       │   │   ├── customers/page.tsx
-│       │   │   └── analytics/page.tsx
-│       │   └── layout.tsx                    # role check: admin/staff only
-│       └── package.json
-│
+│   ├── web/                     🟢 LIVE — Next.js 15 marketing site (the product)
+│   │   └── app/
+│   │       ├── page.tsx         the entire landing page (~hero→quote form)
+│   │       ├── components/      Header · RotatingBackground · SiteFooter
+│   │       └── api/
+│   │           ├── leads/       🟢 the lead-capture endpoint
+│   │           ├── backgrounds/ 🟢 Unsplash Search proxy (⚠️ key, rate limits)
+│   │           └── auth/        🟠 NextAuth, no providers (inert)
+│   ├── mobile/                  🟠 Expo demo — TWO overlapping apps:
+│   │   ├── app/                 expo-router app (tabs: shop/orders/profile) + DemoBanner
+│   │   └── frontend/            legacy RN app (Login/Bids/JobRequest/… own package.json)
+│   └── admin/
+│       └── admin-dashboard/     🟠 static HTML/CSS/JS dashboard (served by FastAPI /admin)
+├── backend/                     🟠 REAL FastAPI marketplace (undeployed)
+│   └── app/
+│       ├── main.py              app factory, routers under /api/v1, /health, /docs
+│       ├── api/                 auth · users · job_requests · products · bids · calendar_events
+│       ├── models/ schemas/     SQLAlchemy models + Pydantic schemas
+│       └── core/                config · database · security · dependencies
 ├── packages/
-│   ├── shared/                               # ⭐ THE BACKBONE — used by every app
-│   │   ├── src/
-│   │   │   ├── schemas/                      # Zod = THE single source of truth
-│   │   │   │   ├── user.ts
-│   │   │   │   ├── product.ts                # SKU, variants, price, stock
-│   │   │   │   ├── cart.ts
-│   │   │   │   ├── order.ts                  # line items, status enum, payments
-│   │   │   │   ├── address.ts
-│   │   │   │   ├── payment.ts
-│   │   │   │   ├── post.ts                   # Phase 3
-│   │   │   │   ├── comment.ts                # Phase 3
-│   │   │   │   ├── like.ts                   # Phase 3
-│   │   │   │   ├── notification.ts           # Phase 3
-│   │   │   │   ├── webhook.ts                # Stripe & n8n payload shapes
-│   │   │   │   └── index.ts
-│   │   │   ├── events/                       # event-driven contracts — Phase 3+
-│   │   │   │   ├── event-names.ts            # const: 'order.created' | 'post.liked' | ...
-│   │   │   │   ├── event-payloads.ts         # Zod schema per event
-│   │   │   │   └── index.ts
-│   │   │   ├── constants/
-│   │   │   │   ├── routes.ts                 # canonical URLs (web + deep-link)
-│   │   │   │   ├── theme-tokens.ts           # colors, spacing, radii — shared web/RN
-│   │   │   │   ├── stripe.ts                 # product/price IDs, tax codes
-│   │   │   │   └── feature-flags.ts          # Phase 5
-│   │   │   ├── utils/
-│   │   │   │   ├── format-currency.ts
-│   │   │   │   ├── format-date.ts
-│   │   │   │   └── slugify.ts
-│   │   │   └── types/                        # derived types (z.infer<typeof X>)
-│   │   ├── tsconfig.json
-│   │   ├── tsup.config.ts
-│   │   └── package.json
-│   │
-│   ├── ui/                                   # ✅ cross-platform components
-│   │   ├── src/
-│   │   │   ├── Button.web.tsx
-│   │   │   ├── Button.native.tsx
-│   │   │   ├── Input.tsx
-│   │   │   ├── Card.tsx
-│   │   │   ├── ProductCard.tsx
-│   │   │   ├── FeedPost.tsx                  # Phase 3
-│   │   │   ├── PriceTag.tsx
-│   │   │   └── index.ts
-│   │   ├── tsup.config.ts
-│   │   └── package.json
-│   │
-│   ├── db/                                   # Drizzle + Supabase — Phase 1
-│   │   ├── src/
-│   │   │   ├── client.ts                     # drizzle({ schema, connection })
-│   │   │   ├── schema/                       # one file per entity
-│   │   │   │   ├── users.ts
-│   │   │   │   ├── products.ts
-│   │   │   │   ├── orders.ts
-│   │   │   │   ├── addresses.ts
-│   │   │   │   └── index.ts
-│   │   │   ├── repositories/                 # query functions per entity
-│   │   │   │   ├── product.repo.ts
-│   │   │   │   ├── order.repo.ts
-│   │   │   │   ├── user.repo.ts
-│   │   │   │   └── feed.repo.ts              # Phase 3
-│   │   │   ├── migrations/                   # drizzle-kit generated
-│   │   │   ├── seed.ts
-│   │   │   └── index.ts
-│   │   ├── drizzle.config.ts
-│   │   └── package.json
-│   │
-│   ├── auth/                                 # Auth.js v5 — Phase 1
-│   │   ├── src/
-│   │   │   ├── config.ts                     # providers: Google, GitHub, Microsoft, Apple, Email
-│   │   │   ├── server.ts                     # auth() for Server Components / API routes
-│   │   │   ├── client.ts                     # signIn/signOut for client components
-│   │   │   ├── middleware.ts                 # session check for Edge middleware
-│   │   │   ├── permissions.ts                # canModerate, canRefund, canEditProduct
-│   │   │   └── index.ts
-│   │   └── package.json
-│   │
-│   ├── payments/                             # All Stripe logic — Phase 1
-│   │   ├── src/
-│   │   │   ├── client.ts                     # stripe SDK init (server-only)
-│   │   │   ├── checkout.ts                   # createCheckoutSession()
-│   │   │   ├── webhooks.ts                   # handleStripeEvent(event) — typed
-│   │   │   ├── customer.ts                   # createCustomer, getPaymentMethods
-│   │   │   ├── subscriptions.ts              # Phase 5
-│   │   │   ├── refunds.ts                    # Phase 4 (admin)
-│   │   │   └── types.ts                      # z.infer of webhook payloads
-│   │   └── package.json
-│   │
-│   ├── notifications/                        # Email + Push + SMS — phased
-│   │   ├── src/
-│   │   │   ├── email/                        # Phase 1
-│   │   │   │   ├── client.ts                 # Resend SDK
-│   │   │   │   ├── templates/                # React Email components
-│   │   │   │   │   ├── order-confirmation.tsx
-│   │   │   │   │   ├── shipping-update.tsx
-│   │   │   │   │   ├── abandoned-cart.tsx
-│   │   │   │   │   ├── welcome.tsx
-│   │   │   │   │   ├── magic-link.tsx
-│   │   │   │   │   └── password-reset.tsx
-│   │   │   │   └── send.ts                   # typed send() per template
-│   │   │   ├── push/                         # Phase 2
-│   │   │   │   ├── client.ts                 # Expo Push API
-│   │   │   │   └── send.ts
-│   │   │   ├── sms/                          # Phase 5
-│   │   │   │   └── send.ts                   # Twilio
-│   │   │   └── in-app/                       # Phase 3
-│   │   │       └── publish.ts                # Supabase Realtime channel
-│   │   └── package.json
-│   │
-│   ├── api-client/                           # Phase 2 (when mobile arrives)
-│   │   ├── src/
-│   │   │   ├── client.ts                     # fetch wrapper with auth header injection
-│   │   │   ├── endpoints/                    # one file per resource
-│   │   │   │   ├── products.ts
-│   │   │   │   ├── cart.ts
-│   │   │   │   ├── orders.ts
-│   │   │   │   ├── auth.ts
-│   │   │   │   ├── feed.ts                   # Phase 3
-│   │   │   │   └── stripe.ts
-│   │   │   ├── hooks/                        # TanStack Query: useProducts, useCart, ...
-│   │   │   ├── mutations/                    # optimistic update logic
-│   │   │   ├── query-keys.ts                 # centralized key factory
-│   │   │   └── error.ts                      # typed APIError class
-│   │   └── package.json
-│   │
-│   ├── observability/                        # Phase 4
-│   │   ├── src/
-│   │   │   ├── logger.ts                     # pino — structured JSON logs
-│   │   │   ├── sentry.ts                     # @sentry/nextjs + @sentry/react-native
-│   │   │   └── index.ts
-│   │   └── package.json
-│   │
-│   ├── analytics/                            # Phase 4
-│   │   ├── src/
-│   │   │   ├── client.ts                     # PostHog (web + RN)
-│   │   │   ├── events.ts                     # typed event catalog
-│   │   │   └── identify.ts
-│   │   └── package.json
-│   │
-│   ├── feature-flags/                        # Phase 5
-│   │   └── src/index.ts                      # PostHog flags or env-driven
-│   │
-│   ├── config/                               # Phase 4+
-│   │   ├── eslint-config/
-│   │   ├── tsconfig/                         # base.json, nextjs.json, react-native.json
-│   │   └── prettier-config/
-│   │
-│   └── testing/                              # Phase 4+
-│       ├── fixtures/                         # mock products, users, orders
-│       ├── msw-handlers/                     # mock service worker for API tests
-│       └── playwright-helpers/
-│
-├── backend/                                  # FastAPI — Phase 5 only when needed
-│   ├── app/
-│   │   ├── api/v1/
-│   │   │   ├── search.py                     # vector search (pgvector)
-│   │   │   ├── recommendations.py            # "you might also like"
-│   │   │   └── webhooks.py
-│   │   ├── services/
-│   │   ├── models/                           # SQLAlchemy 2
-│   │   ├── schemas/                          # Pydantic mirrors of shared/schemas
-│   │   └── events/                           # event publisher → Redis/n8n
-│   ├── tests/                                # pytest
-│   ├── alembic/                              # migrations
-│   ├── pyproject.toml
-│   └── Dockerfile
-│
-├── n8n/                                      # Workflows-as-code — Phase 5
-│   ├── workflows/
-│   │   ├── order-created.json
-│   │   ├── shipping-update.json
-│   │   ├── abandoned-cart-24h.json
-│   │   ├── abandoned-cart-48h.json
-│   │   ├── new-like-notification.json        # Phase 3+
-│   │   ├── new-comment-notification.json
-│   │   ├── new-follower.json
-│   │   ├── stripe-payment-succeeded.json
-│   │   ├── stripe-subscription-renewed.json
-│   │   ├── stripe-refund-issued.json
-│   │   ├── review-request-7d-post-delivery.json
-│   │   └── low-stock-alert.json
-│   └── README.md                             # import + version instructions
-│
-├── infrastructure/                           # IaC — Phase 5
-│   ├── docker/
-│   │   ├── web.Dockerfile
-│   │   ├── backend.Dockerfile
-│   │   └── n8n.Dockerfile
-│   ├── terraform/                            # Supabase, Cloudflare, Vercel project provisioning
-│   └── github-actions/                       # reusable workflow components
-│
-├── docs/                                     # Living architecture docs
-│   ├── architecture.md
-│   ├── data-flow.md
-│   ├── event-catalog.md                      # every event name + when fired + who listens
-│   ├── api-contracts.md
-│   ├── deployment.md
-│   ├── runbook.md                            # incident response
-│   └── onboarding.md
-│
-├── scripts/                                  # One-off TS scripts (tsx)
-│   ├── seed-stripe-products.ts               # sync shared/constants/stripe.ts → Stripe API
-│   ├── seed-database.ts
-│   └── generate-types-from-db.ts
-│
-├── .changeset/                               # Versioning for packages/*
-├── .github/
-│   └── workflows/
-│       ├── ci.yml                            # lint, typecheck, test, build
-│       ├── e2e.yml                           # Playwright on PR
-│       ├── deploy-web.yml                    # via Vercel auto-deploy
-│       ├── eas-mobile.yml                    # EAS Build on tag
-│       └── security.yml                      # CodeQL, dependency review
-├── .gitignore
-├── .vercelignore
-├── docker-compose.yml                        # local FastAPI + n8n + Postgres
-├── turbo.json
-├── pnpm-workspace.yaml
-├── package.json
-├── vercel.json
-└── README.md                                 # ← you are here
+│   ├── shared/                  🟢 Zod schemas (leadSchema used), theme tokens, constants
+│   ├── api-client/              🟢 submitLead (used) · useJobs hooks (unused on web)
+│   ├── ui/                      🟢 cross-platform components
+│   ├── auth/                    🟠 NextAuth options shell (providers: [])
+│   ├── types/ · config/ · utils/  small shared bits
+├── scripts/                     maintenance scripts (e.g. image-swap patcher)
+├── docker-compose.yml           backend + Postgres (local)
+├── vercel.json                  framework=nextjs, outputDirectory=apps/web/.next, security headers
+├── turbo.json                   build/dev/lint/typecheck/test pipelines
+└── .github/workflows/ci.yml     ⚠️ Python-only CI (ruff/black/bandit/docker) — does NOT test web
 ```
 
 ---
 
-## 🔄 End-to-End Data & Event Flow
+## 🐍 The FastAPI Backend (real, undeployed)
 
-Every action in the system flows through this **exact** pipeline. Memorize it — once you've built one feature this way, every subsequent feature is a 1-day copy-paste.
+A genuinely structured async FastAPI service that models a **contractor job/bid marketplace** —
+*not* the marketing site's backend.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User<br/>(Web or Mobile)
-    participant C as @ecowoods/api-client<br/>(TanStack Query)
-    participant M as Next.js Middleware<br/>(auth + rate limit)
-    participant R as Next.js API Route<br/>(/api/orders)
-    participant V as Zod validation<br/>(@ecowoods/shared)
-    participant DB as @ecowoods/db<br/>(Drizzle)
-    participant P as Postgres<br/>(Supabase)
-    participant E as Event Bus<br/>(Postgres NOTIFY + n8n)
-    participant N as @ecowoods/notifications
-    participant A as @ecowoods/analytics
-    participant O as @ecowoods/observability
+- **Routers** (all under `/api/v1`): `auth`, `users`, `job-requests`, `products`, `bids`, `calendar`.
+- **Persistence:** SQLAlchemy 2 async engine; `DATABASE_URL` supports SQLite (default/dev) or Postgres.
+- **Extras:** `/health`, OpenAPI docs at `/docs`, and a static admin dashboard auto-mounted at
+  `/admin` when `apps/admin/admin-dashboard` is present.
 
-    U->>C: Click "Place Order"
-    C->>C: Optimistic cache update
-    C->>M: POST /api/orders<br/>Authorization: Bearer ...
-    M->>M: Verify session
-    M->>R: Forward request
-    R->>V: Validate body against OrderSchema
-    V-->>R: Typed payload OR 400
-    R->>DB: orderRepo.create(payload)
-    DB->>P: INSERT INTO orders ...
-    P-->>DB: Row with id
-    DB-->>R: Order<br/>(typed)
-    R->>E: emit('order.created', order)
-    R->>O: log.info('order.created', { orderId })
-    R->>A: track('Order Placed', { value })
-    R-->>C: 201 Created + order
-    C->>C: Reconcile cache with server truth
-    C-->>U: Success UI
-
-    par Side effects (parallel)
-        E->>N: Send order-confirmation email
-        N->>U: 📧 Email arrives
-    and
-        E->>N: Send push notification
-        N->>U: 📱 Push arrives (mobile)
-    and
-        E-->>P: Supabase Realtime fan-out
-        P-->>U: Live order status updates
-    end
-```
-
-### The Pipeline in TypeScript
-
-```typescript
-// apps/web/app/api/orders/route.ts
-import { auth } from '@ecowoods/auth/server';
-import { OrderInputSchema } from '@ecowoods/shared/schemas';
-import { orderRepo } from '@ecowoods/db';
-import { emit } from '@ecowoods/shared/events';
-import { logger } from '@ecowoods/observability';
-import { track } from '@ecowoods/analytics';
-
-export async function POST(req: Request) {
-  // 1. Auth
-  const session = await auth();
-  if (!session?.user) return new Response('Unauthorized', { status: 401 });
-
-  // 2. Validate (Zod schema = single source of truth)
-  const body = await req.json();
-  const parsed = OrderInputSchema.safeParse(body);
-  if (!parsed.success) return Response.json(parsed.error, { status: 400 });
-
-  // 3. Persist (typed repository)
-  const order = await orderRepo.create({
-    ...parsed.data,
-    userId: session.user.id,
-  });
-
-  // 4. Emit event (typed, append-only contract)
-  await emit('order.created', order);
-
-  // 5. Log + analyze (side channels, never blocking)
-  logger.info({ orderId: order.id }, 'order.created');
-  void track('Order Placed', { value: order.total });
-
-  // 6. Respond
-  return Response.json(order, { status: 201 });
-}
-```
-
----
-
-## 🔐 Authentication Flow (Web + Mobile)
-
-Auth.js v5 owns sessions on the web. Mobile uses **`expo-auth-session`** to perform OAuth against the same Auth.js endpoints, and stores the session in `expo-secure-store`.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User
-    participant Web as apps/web (Next.js)
-    participant Mob as apps/mobile (Expo)
-    participant AuthJS as Auth.js v5<br/>/api/auth/[...nextauth]
-    participant OAuth as Google / GitHub /<br/>Microsoft / Apple
-    participant DB as Postgres<br/>(users, accounts, sessions)
-
-    rect rgb(235, 245, 255)
-    Note over U,DB: WEB FLOW
-    U->>Web: Click "Sign in with Google"
-    Web->>AuthJS: GET /api/auth/signin/google
-    AuthJS->>OAuth: Redirect to Google consent
-    OAuth-->>U: Consent screen
-    U->>OAuth: Approve
-    OAuth->>AuthJS: GET /api/auth/callback/google?code=...
-    AuthJS->>DB: Upsert user + account
-    AuthJS-->>Web: Set httpOnly session cookie
-    Web-->>U: Redirect to /account
-    end
-
-    rect rgb(255, 245, 235)
-    Note over U,DB: MOBILE FLOW
-    U->>Mob: Tap "Sign in with Google"
-    Mob->>Mob: expo-auth-session opens browser
-    Mob->>AuthJS: /api/auth/signin/google?callbackUrl=ecowoods://auth
-    AuthJS->>OAuth: Redirect to consent
-    OAuth-->>U: Consent screen
-    U->>OAuth: Approve
-    OAuth->>AuthJS: Callback with code
-    AuthJS->>DB: Upsert user + account
-    AuthJS-->>Mob: Redirect to deep link with session token
-    Mob->>Mob: Store token in expo-secure-store
-    Mob-->>U: Show authenticated tabs
-    end
-
-    rect rgb(245, 255, 235)
-    Note over U,DB: AUTHENTICATED REQUEST (any client)
-    U->>Web: View /account/orders
-    Web->>AuthJS: auth() reads session cookie
-    AuthJS->>DB: Load session.user
-    AuthJS-->>Web: Session object
-    Web-->>U: Renders orders (RSC)
-    end
-```
-
-### Providers configured
-
-| Provider | Status | Notes |
-|---|:---:|---|
-| Google | Phase 1 | OAuth 2.0 |
-| GitHub | Phase 1 | OAuth Apps |
-| Email magic link | Phase 1 | Via Resend |
-| Microsoft (Entra) | Phase 2 | Multi-tenant |
-| Apple | Phase 2 | Required for iOS app review |
-| Facebook | Phase 3 | Optional |
-| Instagram | Phase 3 | Via Facebook OAuth |
-| Passkeys (WebAuthn) | Phase 4 | Auth.js v5 supports natively |
-
----
-
-## 💳 Payments Flow (Stripe)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User
-    participant C as Client<br/>(Web or Mobile)
-    participant API as /api/stripe/checkout
-    participant SP as @ecowoods/payments
-    participant Stripe as Stripe API
-    participant WH as /api/stripe/webhook
-    participant DB as Postgres
-    participant N as @ecowoods/notifications
-
-    U->>C: Click "Pay"
-    C->>API: POST /api/stripe/checkout<br/>{ cartId }
-    API->>SP: createCheckoutSession(cart, user)
-    SP->>Stripe: stripe.checkout.sessions.create({...})
-    Stripe-->>SP: session { id, client_secret }
-    SP-->>API: session
-    API-->>C: client_secret
-
-    alt Web
-        C->>C: Mount Embedded Checkout<br/>(@stripe/react-stripe-js)
-        C->>Stripe: User submits card via iframe
-    else Mobile
-        C->>C: Initialize PaymentSheet<br/>(@stripe/stripe-react-native)
-        C->>Stripe: User submits via native sheet
-    end
-
-    Stripe-->>U: Payment succeeds<br/>Stripe shows confirmation
-    Stripe->>WH: POST /api/stripe/webhook<br/>type: checkout.session.completed
-    WH->>WH: Verify signature with STRIPE_WEBHOOK_SECRET
-    WH->>SP: handleStripeEvent(event)
-    SP->>DB: orderRepo.markPaid(orderId, stripeSessionId)
-    SP->>N: send('order-confirmation', { user, order })
-    N->>U: 📧 Order confirmation email
-    SP-->>WH: 200 OK
-    WH-->>Stripe: 200 OK
-```
-
-### Key safety properties
-
-1. **Webhook signature verification is mandatory** — never trust raw POST bodies from Stripe.
-2. **Idempotency** — every webhook handler reads `event.id` and checks a `processed_stripe_events` table before mutating state.
-3. **One source of truth for prices** — `packages/shared/constants/stripe.ts` holds price IDs; a script (`scripts/seed-stripe-products.ts`) syncs that file to Stripe via API.
-4. **Test mode in dev, live mode in prod** — keys are environment-scoped on Vercel.
-
----
-
-## 📡 The Event Catalog
-
-Every cross-cutting effect (email, push, analytics, realtime fan-out) is triggered by a typed event from `@ecowoods/shared/events`. **Adding a side-effect never means editing the API route that emits the event.** Subscribe to the event instead.
-
-| Event | Emitted by | Subscribed by | Phase |
-|---|---|---|:---:|
-| `user.created` | Auth.js signup callback | notifications (welcome email), analytics (identify) | 1 |
-| `user.session.started` | Auth.js signin callback | analytics | 1 |
-| `cart.item.added` | `/api/cart` POST | analytics | 1 |
-| `cart.abandoned` | DB cron (24h inactivity) | notifications (email reminder) | 5 (via n8n) |
-| `order.created` | `/api/orders` POST | notifications, analytics, admin alert | 1 |
-| `order.paid` | Stripe webhook `checkout.session.completed` | notifications (confirmation), analytics (Order Placed) | 1 |
-| `order.shipped` | Admin action | notifications (shipping update), realtime fan-out | 4 |
-| `order.delivered` | Carrier webhook | notifications (review request 7d later) | 5 |
-| `payment.failed` | Stripe webhook `payment_intent.payment_failed` | notifications (retry email), admin alert | 1 |
-| `payment.refunded` | Stripe webhook `charge.refunded` | notifications, analytics | 4 |
-| `post.created` | `/api/feed` POST | analytics, realtime fan-out to followers | 3 |
-| `post.liked` | `/api/posts/[id]/like` | notifications (push to author), analytics | 3 |
-| `comment.created` | `/api/posts/[id]/comments` | notifications, analytics | 3 |
-| `user.followed` | `/api/users/[id]/follow` | notifications | 3 |
-| `product.stock.low` | DB trigger (`stock < threshold`) | admin alert via n8n | 5 |
-| `product.published` | Admin action | analytics, search reindex | 4 |
-
-**Rule:** Event names are **append-only**. To change a payload shape, create `order.created.v2`. Old subscribers continue to work.
-
----
-
-## 🗄 Database Schema (Logical View)
-
-```mermaid
-erDiagram
-    USERS ||--o{ ACCOUNTS : "has OAuth"
-    USERS ||--o{ SESSIONS : "has"
-    USERS ||--o{ ADDRESSES : "owns"
-    USERS ||--o{ ORDERS : "places"
-    USERS ||--o{ CARTS : "has one active"
-    USERS ||--o{ POSTS : "creates"
-    USERS ||--o{ COMMENTS : "writes"
-    USERS ||--o{ LIKES : "gives"
-    USERS ||--o{ FOLLOWS : "follows"
-    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has"
-    PRODUCTS ||--o{ ORDER_ITEMS : "appears in"
-    PRODUCTS ||--o{ CART_ITEMS : "appears in"
-    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "concrete SKU"
-    CARTS ||--o{ CART_ITEMS : "contains"
-    ORDERS ||--o{ ORDER_ITEMS : "contains"
-    ORDERS ||--o{ PAYMENTS : "has"
-    POSTS ||--o{ COMMENTS : "receives"
-    POSTS ||--o{ LIKES : "receives"
-
-    USERS {
-        uuid id PK
-        text email UK
-        text name
-        text image
-        text role
-        timestamp createdAt
-    }
-    PRODUCTS {
-        uuid id PK
-        text slug UK
-        text name
-        text description
-        text category
-        jsonb media
-        timestamp publishedAt
-    }
-    PRODUCT_VARIANTS {
-        uuid id PK
-        uuid productId FK
-        text sku UK
-        int priceCents
-        text currency
-        int stock
-        jsonb attributes
-    }
-    ORDERS {
-        uuid id PK
-        uuid userId FK
-        text status
-        int totalCents
-        text currency
-        text stripeSessionId
-        timestamp createdAt
-    }
-    ORDER_ITEMS {
-        uuid id PK
-        uuid orderId FK
-        uuid variantId FK
-        int quantity
-        int priceCents
-    }
-    PAYMENTS {
-        uuid id PK
-        uuid orderId FK
-        text stripePaymentIntentId
-        text status
-        int amountCents
-    }
-    POSTS {
-        uuid id PK
-        uuid userId FK
-        text caption
-        jsonb media
-        int likeCount
-        int commentCount
-        timestamp createdAt
-    }
-    COMMENTS {
-        uuid id PK
-        uuid postId FK
-        uuid userId FK
-        text body
-        timestamp createdAt
-    }
-    LIKES {
-        uuid id PK
-        uuid postId FK
-        uuid userId FK
-        timestamp createdAt
-    }
-```
-
-Schemas live in `packages/db/src/schema/` and are pushed via `drizzle-kit push:pg`. Each table also has a corresponding Zod schema in `packages/shared/src/schemas/` for runtime validation. **The two are kept in sync by code review discipline + integration tests.**
-
----
-
-## 🛠 Local Development Setup
-
-### Prerequisites
-
-| Tool | Version | Install |
-|---|---|---|
-| Node.js | ≥ 20.11 | [nodejs.org](https://nodejs.org) or `nvm install 20` |
-| pnpm | 9.15.x | `corepack enable && corepack prepare pnpm@9.15.0 --activate` |
-| Python | 3.11+ | Only needed for Phase 5 backend |
-| Docker | Latest | For Phase 5 (FastAPI + n8n locally) |
-| Git | Latest | with conventional commits set up |
-
-### 1. Clone and install
+**Run it locally:**
 
 ```bash
+# Option A — Docker (brings up Postgres too)
+docker compose up --build         # API on http://localhost:8000, docs at /docs
+
+# Option B — bare Python
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+> 🔎 **It is not hosted anywhere and the live website does not call it.** Treat it as a separate
+> initiative. The first decision the roadmap forces is whether to **invest in it, fold it into
+> Next.js API routes, or archive it.**
+
+---
+
+## 📱 Mobile & Admin (scaffolds)
+
+- **`apps/mobile`** is **two parallel Expo apps**: a modern `expo-router` app (`app/(tabs)`:
+  shop/orders/profile + `product/[id]`) carrying a visible `DemoBanner`, and a legacy
+  `frontend/` React Native app (Login/Register/Bids/JobRequest/Calendar screens) with its *own*
+  `package.json`. It is demo-grade, fragmented, and **not built or released**. `@stripe/stripe-react-native`
+  is present but not a working payment flow.
+- **`apps/admin`** is a **static HTML/CSS/JS** dashboard (`index.html`, `app.js`, `api.js`) that the
+  FastAPI service mounts at `/admin`. It is **not** the Next.js admin app described in older docs.
+
+---
+
+## 💻 Local Development
+
+```bash
+# prerequisites: Node ≥ 18.18, pnpm 9.15 (corepack enable), Docker (optional, for backend)
 git clone https://github.com/iceccarelli/ecowoods-app.git
 cd ecowoods-app
 pnpm install
+
+# run the live product (web only) — http://localhost:3000
+pnpm dev            # = turbo dev --filter=@ecowoods/web
+
+# production build of the web app
+pnpm build          # = turbo build --filter=@ecowoods/web
+
+# backend (separate, optional) — see the FastAPI section
+docker compose up --build
 ```
 
-### 2. Create third-party accounts (Phase 1)
-
-| Service | Free tier? | What to grab |
-|---|:---:|---|
-| [Supabase](https://supabase.com) | ✅ | Project URL, Anon key, Service role key, Database URL |
-| [Stripe](https://stripe.com) | ✅ test mode | Secret key, Webhook secret, Publishable key |
-| [Resend](https://resend.com) | ✅ | API key, verify your sending domain |
-| [Google Cloud](https://console.cloud.google.com) | ✅ | OAuth 2.0 Client ID + Secret |
-| [GitHub OAuth App](https://github.com/settings/developers) | ✅ | Client ID + Secret |
-
-### 3. Configure environment variables
-
-Copy `.env.example` to `.env.local` (web) and `.env` (root), then fill in:
-
-```bash
-cp .env.example .env.local
-cp .env.example apps/web/.env.local
-```
-
-See [Environment Variables Reference](#-environment-variables-reference) for the full list.
-
-### 4. Push the database schema
-
-```bash
-pnpm --filter @ecowoods/db drizzle-kit push
-pnpm --filter @ecowoods/db seed   # 5 demo products
-```
-
-### 5. Sync Stripe products
-
-```bash
-pnpm tsx scripts/seed-stripe-products.ts
-```
-
-### 6. Start dev servers
-
-```bash
-# Everything (web + later: mobile + backend + n8n)
-pnpm dev
-
-# Or filtered
-pnpm dev --filter=@ecowoods/web
-pnpm dev --filter=@ecowoods/mobile
-```
-
-### 7. Test Stripe webhooks locally
-
-```bash
-# Install Stripe CLI: https://stripe.com/docs/stripe-cli
-stripe login
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-# Copy the printed webhook signing secret into .env.local as STRIPE_WEBHOOK_SECRET
-```
-
-### 8. Full-stack (Phase 5 only)
-
-```bash
-docker compose up -d
-# - FastAPI at http://localhost:8000
-# - n8n at http://localhost:5678
-# - Local Postgres at localhost:5432 (if you opt out of Supabase locally)
-```
+> Note: `pnpm dev`/`pnpm build` are intentionally scoped to `@ecowoods/web`. The mobile and backend
+> targets are run independently.
 
 ---
 
-## 🔑 Environment Variables Reference
+## 🔐 Environment Variables
 
-> ⚠️ **Never commit `.env` files.** Only `.env.example` (with placeholder values) is tracked.
+**Web (`apps/web`) — all optional; the site runs without them, degrading gracefully:**
 
-### Root `.env` (shared by all server-side code)
+| Variable | Used by | Effect if unset |
+|---|---|---|
+| `UNSPLASH_ACCESS_KEY` | `/api/backgrounds` | Falls back to a **hardcoded key in source** (⚠️ remove — see security). |
+| `LEADS_WEBHOOK_URL` | `/api/leads` | Leads are captured to logs only (no CRM/Zapier/n8n forward). |
+| `NEXTAUTH_SECRET` | NextAuth | Uses insecure dev default `dev-insecure-change-me-in-prod`. |
+| `NEXTAUTH_URL` | NextAuth | Dev warning; needed once real auth providers exist. |
+| `NEXT_PUBLIC_API_URL` | `api-client` | Defaults to `http://localhost:8000` (only matters if you wire the backend). |
 
-```env
-# ---- Database ----
-DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
+**Backend (`backend/`, from `.env.example`):**
 
-# ---- Supabase ----
-NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...        # server-only, never expose
-
-# ---- Auth.js v5 ----
-AUTH_SECRET=                                    # openssl rand -base64 32
-AUTH_URL=http://localhost:3000                  # in prod: https://ecowoods-app.vercel.app
-AUTH_TRUST_HOST=true                            # required on Vercel
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-MICROSOFT_CLIENT_ID=                            # Phase 2
-MICROSOFT_CLIENT_SECRET=                        # Phase 2
-APPLE_CLIENT_ID=                                # Phase 2
-APPLE_CLIENT_SECRET=                            # Phase 2
-
-# ---- Stripe ----
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-
-# ---- Resend ----
-RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=orders@ecowoods.app
-
-# ---- Observability (Phase 4) ----
-SENTRY_DSN=
-SENTRY_AUTH_TOKEN=
-NEXT_PUBLIC_POSTHOG_KEY=
-NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
-
-# ---- n8n (Phase 5) ----
-N8N_WEBHOOK_URL=http://localhost:5678/webhook
-N8N_API_KEY=
-```
-
-### `apps/web/.env.local`
-
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### `apps/mobile/.env`
-
-```env
-EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-EXPO_PUBLIC_AUTH_URL=http://localhost:3000
-```
-
-### `backend/.env` (Phase 5)
-
-```env
-DATABASE_URL=postgresql://...
-STRIPE_SECRET_KEY=sk_test_...
-JWT_SECRET=
-N8N_WEBHOOK_URL=http://n8n:5678/webhook
+```bash
+POSTGRES_USER=ecowoods
+POSTGRES_PASSWORD=ecowoods_secret
+POSTGRES_DB=ecowoods_db
+DB_PORT=5432
+API_PORT=8000
+SECRET_KEY=change-me-in-production-use-a-long-random-string
+DEBUG=false
+CORS_ORIGINS=["*"]          # ⚠️ wildcard — tighten before any deploy
 ```
 
 ---
 
 ## 🚀 Deployment
 
-```mermaid
-flowchart LR
-    subgraph Dev["Developer machine"]
-        Commit["git commit"]
-    end
-    subgraph GH["GitHub"]
-        PR["Pull Request"]
-        CI["CI workflow<br/>(lint, typecheck, test, build)"]
-        Main["main branch"]
-    end
-    subgraph Vercel["Vercel"]
-        Preview["Preview deployment<br/>(per PR)"]
-        Prod["Production<br/>(ecowoods-app.vercel.app)"]
-    end
-    subgraph EAS["Expo EAS"]
-        Build["EAS Build<br/>(on git tag)"]
-        TestFlight["TestFlight + Play Internal"]
-    end
-    subgraph Fly["Fly.io / Railway (Phase 5)"]
-        BackendDeploy["FastAPI deploy"]
-        N8nDeploy["n8n deploy"]
-    end
+- **Web → Vercel.** `vercel.json` sets `framework: nextjs`, `outputDirectory: apps/web/.next`,
+  `installCommand: pnpm install --no-frozen-lockfile`, `buildCommand: pnpm build`. Every push to
+  `main` triggers a production deploy. Verified live at
+  [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app).
+- **Backend → not deployed.** A `Dockerfile` and `docker-compose.yml` exist for local/container use.
+  Hosting it (Fly.io / Render / Railway / a VM) is a deliberate, unmade decision.
+- **Mobile → not released.** No EAS build/submit pipeline is wired for production.
 
-    Commit --> PR
-    PR --> CI
-    CI -- Pass --> Preview
-    PR -- Merge --> Main
-    Main --> Prod
-    Main -- on tag v* --> Build
-    Build --> TestFlight
-    Main -- on tag backend-v* --> BackendDeploy
-    Main -- on tag n8n-v* --> N8nDeploy
-```
+---
 
-### Vercel project settings (web)
+## 🛡 Security Posture (honest)
 
-| Setting | Value |
+**In place**
+
+- Strong response headers via `vercel.json`: HSTS (preload), `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection`.
+- React's default output escaping; no `dangerouslySetInnerHTML`.
+- Server-side Zod validation on `/api/leads`.
+
+**🔴 Issues to fix (in priority order)**
+
+1. **Hardcoded Unsplash access key** in `apps/web/app/api/backgrounds/route.ts` (a committed secret
+   in a public repo, and a 50 req/hr rate-limit liability that can blank the backdrops). **Rotate
+   the key on Unsplash, move it to `UNSPLASH_ACCESS_KEY` in Vercel, and delete the fallback.**
+2. **Insecure default `NEXTAUTH_SECRET`** fallback. Set a real secret (and remove the default) the
+   moment auth is anything other than inert.
+3. **Backend `CORS_ORIGINS=["*"]`** — must be locked to known origins before any hosting.
+4. **No rate limiting / abuse protection** on `/api/leads` — add a limiter + spam/bot guard
+   (captcha or honeypot) before promoting it; it's the public write endpoint.
+5. **No Content-Security-Policy** header yet.
+
+---
+
+## ✅ CI/CD (what it really tests)
+
+`.github/workflows/ci.yml` runs on push/PR to `main` and contains **Python/Docker** jobs only:
+
+- `docker-build` — builds the backend image and validates `docker compose config`.
+- `lint` — `ruff` + `black --check` on `backend/`.
+- `security` — `bandit` on `backend/`.
+
+> ⚠️ **There is no CI for the web app** — no install/typecheck/build/test of `apps/web`, and no
+> Vitest/Playwright anywhere. The green CI badge reflects backend checks, not the shipping product.
+> Adding a web pipeline (typecheck + build + a Playwright smoke test of the quote form) is a
+> top-tier gap.
+
+---
+
+## 🗺 Roadmap — Ranked by Business Impact
+
+The business is **lead generation**. Everything is ordered by its effect on capturing and
+converting quote requests.
+
+### P0 — Protect and capture every lead (days)
+1. **Give leads a durable home.** Wire `LEADS_WEBHOOK_URL` to a CRM/Zapier/n8n **and** send an
+   instant email (Resend/SendGrid) to the shop + an autoresponder to the customer. Stop relying on
+   logs as the system of record.
+2. **Rotate the Unsplash key + move to env var** and delete the hardcoded fallback (security + the
+   backdrops silently breaking under rate limits).
+3. **Harden `/api/leads`:** rate limit + honeypot/captcha; alert on `lead.notify_failed`.
+
+### P1 — Maximize conversion (1–2 weeks)
+4. **Conversion analytics.** Add a privacy-friendly analytics + event tracking for form views,
+   starts, submits, and drop-off (so you can actually optimize the page).
+5. **Lighthouse/SEO/perf pass.** Self-host or pin hero imagery (the runtime Unsplash backdrops are
+   slow and non-deterministic), add `metadata`/OpenGraph, structured data (LocalBusiness JSON-LD),
+   and a sitemap. Fix the two caption/photo mismatches (Forest Hill "herringbone", Distillery
+   "chevron") and the temporary Cabbagetown staircase image.
+6. **Trust + accessibility.** Real project photos in *Recent Work* (currently stock), alt text,
+   keyboard/contrast audit, and visible reviews/credentials wired to live sources.
+
+### P2 — Engineering hygiene (parallel)
+7. **Web CI.** typecheck + build + Playwright smoke test of the quote flow on every PR.
+8. **Make a decision on the scaffolds.** Either invest in the FastAPI marketplace + mobile (with a
+   real product spec), fold the few useful endpoints into Next.js routes, or **archive them** so the
+   repo stops implying capabilities that don't ship. Remove `stripe` deps until there's checkout code.
+
+### P3 — Only if the product direction demands it
+9. **Auth** with real providers (the current route is inert) — needed only when there's an
+   account/marketplace surface.
+10. **Payments (Stripe Checkout + webhooks)** — needed only if EcoWoods sells online; today it sells
+    *consultations*, so this is far down the list.
+
+---
+
+## 🧹 Known Gaps & Tech Debt
+
+| Area | Reality |
 |---|---|
-| Root Directory | `apps/web` (recommended) **or** repo root (current) |
-| Install Command | `pnpm install --frozen-lockfile` |
-| Build Command | `pnpm build` (root) **or** `cd ../.. && pnpm turbo build --filter=@ecowoods/web` |
-| Output Directory | `apps/web/.next` (if Root = repo root) |
-| Node.js version | 20.x |
-
-### `.vercelignore` MUST allow `packages/`
-
-```gitignore
-# Other apps and irrelevant trees only
-apps/mobile/
-apps/admin/                # remove this line in Phase 4
-backend/
-frontend/
-admin-dashboard/
-scripts/
-.git/
-node_modules/
-.turbo/
-.next/
-*.md
-!README.md
-.env*
-!.env.example
-```
-
-> **Never put `packages/` in `.vercelignore`.** That was the bug that broke Phase 0 — the entire `@ecowoods/ui` workspace package was being excluded from upload to Vercel.
-
-### Mobile (Expo EAS)
-
-```bash
-# One-time
-npm install -g eas-cli
-eas login
-eas build:configure
-
-# Builds
-eas build --profile preview --platform ios
-eas build --profile production --platform all
-
-# Submit to stores
-eas submit --platform ios
-eas submit --platform android
-```
+| Persistence | Leads → Vercel logs only; no DB/CRM by default. |
+| Auth | NextAuth route with `providers: []` (cannot log in); insecure default secret. |
+| Payments | `stripe`/`stripe-js` installed, **no** routes or UI. |
+| Backend | Real FastAPI app, but undeployed and unused by the live site; SQLite-by-default. |
+| Mobile | Two overlapping Expo apps; demo banner; not released. |
+| Admin | Static HTML, served by the (undeployed) backend; not a Next.js app. |
+| Observability | No Sentry/PostHog/analytics/log drains. |
+| Web CI/tests | None; CI covers only the Python backend. |
+| Images | Section backdrops fetched live from Unsplash (rate-limited, non-deterministic); some captions don't match their photo. |
+| Docs drift | Prior README claimed Supabase/Drizzle/Resend/Sentry/PostHog/Upstash/Playwright + a live "commerce core" — removed as fiction. |
 
 ---
-
-## 🔁 Developer Workflow & Conventions
-
-### Branching
-
-```
-main                            # protected, production-deployed
-├── feat/short-description       # new features
-├── fix/short-description        # bug fixes
-├── chore/short-description      # tooling, deps
-└── docs/short-description       # docs only
-```
-
-### Commit messages (Conventional Commits, enforced by commitlint)
-
-```
-feat(web): add embedded stripe checkout
-fix(db): handle null variant attributes in product repo
-chore(ui): bump tsup to 8.3.0
-docs(readme): rewrite phase plan
-refactor(payments): extract webhook handlers per event type
-```
-
-### Pre-commit hook (Husky + lint-staged)
-
-```mermaid
-flowchart LR
-    A[git commit] --> B{lint-staged}
-    B --> C[eslint --fix]
-    B --> D[prettier --write]
-    B --> E[typecheck on changed packages]
-    C & D & E --> F{All pass?}
-    F -- Yes --> G[Commit accepted]
-    F -- No --> H[Commit rejected — fix and retry]
-```
-
-### Pull request checklist
-
-- [ ] Conventional commit title
-- [ ] Description includes **what** and **why** (link to issue/ticket)
-- [ ] New types added to `packages/shared` if cross-app
-- [ ] New API routes have Zod validation
-- [ ] New side effects subscribe to an event (don't fork the emitter)
-- [ ] Tests added or updated
-- [ ] Vercel preview deployment passes
-- [ ] No console.log / no commented-out code
-- [ ] No `any` types (use `unknown` + narrowing)
-- [ ] CHANGELOG entry via `pnpm changeset` if a package version changes
-
----
-
-## ✅ Quality Gates & CI/CD
-
-```yaml
-# .github/workflows/ci.yml — conceptual
-on: [push, pull_request]
-jobs:
-  install:
-    steps: [checkout, setup-node, setup-pnpm, install --frozen-lockfile]
-  lint:        { needs: install, run: pnpm turbo lint }
-  typecheck:   { needs: install, run: pnpm turbo typecheck }
-  test:        { needs: install, run: pnpm turbo test }
-  build:       { needs: install, run: pnpm turbo build }
-  e2e:         { needs: build,   run: pnpm playwright test }
-  security:    { needs: install, run: pnpm audit --prod && codeql }
-```
-
-| Gate | Tool | Blocks merge? |
-|---|---|:---:|
-| Lint | ESLint + Prettier | ✅ |
-| Typecheck | `tsc --noEmit` per package | ✅ |
-| Unit tests | Vitest | ✅ |
-| E2E tests | Playwright (web) | ✅ |
-| Build | `turbo build` (all packages + apps) | ✅ |
-| Vercel preview | Auto | ✅ |
-| Dependency audit | `pnpm audit --prod` | ⚠️ Warn |
-| CodeQL security scan | GitHub | ⚠️ Warn |
-| Bundle size | `next/bundle-analyzer` | ⚠️ Warn |
-
----
-
-## 📈 Observability & Operations
-
-### Three pillars
-
-| Pillar | Tool | What it answers |
-|---|---|---|
-| **Errors** | Sentry | "What broke and where?" |
-| **Logs** | pino → Vercel Log Drains → Axiom (optional) | "What happened, in order?" |
-| **Product analytics** | PostHog | "How are users behaving?" |
-| **Web vitals** | Vercel Analytics | "Is the site fast?" |
-| **Uptime** | BetterStack / UptimeRobot | "Is the site up?" |
-
-### Structured logging (one example)
-
-```typescript
-// packages/observability/src/logger.ts
-import pino from 'pino';
-export const logger = pino({
-  level: process.env.LOG_LEVEL ?? 'info',
-  formatters: { level: (label) => ({ level: label }) },
-  base: { app: 'ecowoods-web', env: process.env.VERCEL_ENV },
-});
-
-// Usage anywhere
-logger.info({ userId, orderId }, 'order.created');
-logger.error({ err, orderId }, 'order.create.failed');
-```
-
-### Incident runbook (lives in `docs/runbook.md`)
-
-1. Page received → acknowledge in #incidents Slack
-2. Identify scope via Sentry + Vercel deployments page
-3. If recent deploy → `vercel rollback` to last green
-4. Post-mortem within 48h; root-cause + action items in `docs/incidents/YYYY-MM-DD.md`
-
----
-
-## 🔒 Security Posture
-
-| Concern | Mitigation |
-|---|---|
-| Auth session theft | httpOnly + Secure + SameSite=Lax cookies; `expo-secure-store` on mobile |
-| CSRF | Auth.js CSRF tokens on state-changing routes |
-| Webhook spoofing | Stripe signature verification on every webhook |
-| SQL injection | Drizzle prepared statements; no raw SQL with user input |
-| XSS | React escaping by default; no `dangerouslySetInnerHTML` without sanitization |
-| Secrets in repo | git-secrets pre-commit hook; Vercel env vars; `.env*` in `.gitignore` |
-| Dependency CVEs | `pnpm audit` on CI; Renovate weekly PRs |
-| Rate limiting | `@upstash/ratelimit` in Edge middleware |
-| HTTPS-only | HSTS header set in `vercel.json` |
-| Cookie scope | All cookies scoped to `.ecowoods.app` domain |
-| OWASP Top 10 | Sentry monitoring + quarterly code review |
-
----
-
-## 🛣 Roadmap & Current Status (June 2, 2026)
-
-**Phase 1 (Commerce Core) — 100% COMPLETE + LIVE**
-
-```mermaid
-gantt
-    title EcoWoods Build Timeline - Updated June 2, 2026
-    dateFormat YYYY-MM-DD
-    section Phase 0 - Foundation
-    Monorepo + Vercel Setup :done, 2026-05-20, 2026-05-28
-    section Phase 1 - Commerce Core
-    Shared Packages + Core Features :done, 2026-05-28, 2026-06-02
-    Leads Capture + Production Deploy :done, 2026-06-02, 2026-06-02
-    Order Emails + Polish :active, 2026-06-02, 3d
-    section Phase 2 - Mobile + Email
-    Mobile App (Expo) + Push Notifications :2026-06-05, 14d
-    section Phase 3 - Social Layer
-    Instagram-style Feed + Real-time :2026-06-19, 21d
-    section Phase 4 - Admin + Observability
-    Admin Dashboard + Sentry + PostHog :2026-07-10, 14d
-    section Phase 5 - Heavy Workloads
-    FastAPI + Vector Search + n8n Workflows :2026-07-24, 28d
-```
-
-**Legend:**
-- 🟢 **done** = Completed
-- 🔵 **active** = Currently in progress (blocking issues being fixed)
-- 🔴 **crit** = Critical path (must be completed before moving forward)
-- Gray = Planned / Not started
-
-
----
-```markdown
-## 🚀 June 2, 2026 — Production Status
-
-**The monorepo is now LIVE and capturing leads in production.**
-
-- **Live URL**: [https://ecowoods-app.vercel.app](https://ecowoods-app.vercel.app)
-- **Leads Endpoint**: Fully functional (`POST /api/leads` returns `success: true` + `leadId`)
-- **Build Status**: Clean `turbo build` (React 19 compatible)
-- **Deployment**: Automated via Vercel on every push to `main`
-
-**What this means**: You can now start building **Phase 2 (Mobile)** and **Phase 3 (Social)** on a solid, production-verified foundation. No more build blockers.
-
-### Current Reality Check (May 29, 2026)
-- ✅ **Phase 0** — Fully complete
-- ✅ **Phase 1 Core Packages** — Fully built and working
-- 🔵 **Phase 1 Frontend** — 65% complete (build errors blocking full functionality)
-- ❌ **Phase 2–5** — Not started yet
-
-### Open Decisions (Need Owner + Deadline)
-
-| Decision                    | Options                                      | Owner   | Deadline          |
-|----------------------------|----------------------------------------------|---------|-------------------|
-| Mobile component library   | NativeWind + custom **vs** Tamagui everywhere | TBD     | Before Phase 2    |
-| Search engine              | Postgres FTS → Typesense → Algolia           | TBD     | Before Phase 5    |
-| Subscription model         | One-time only **vs** subscriptions (Stripe)  | Product | Before Phase 5    |
-| Image CDN                  | Vercel Image **vs** Cloudinary **vs** Cloudflare | TBD  | Before Phase 3    |
-| Region                     | Vercel global edge **vs** EU-only (GDPR)     | Legal   | Before Phase 4    |
-
----
-
-
 
 ## 🤝 Contributing
 
-1. Fork → feature branch → PR against `main`
-2. Run `pnpm lint && pnpm typecheck && pnpm test` locally before pushing
-3. Use Conventional Commits
-4. Add a `pnpm changeset` if you change a package's public API
-5. CI must be green, Vercel preview must build, ≥1 reviewer approval
+1. Fork → feature branch → PR against `main`.
+2. For web changes: run `pnpm build` locally and confirm the Vercel preview is green.
+3. For backend changes: `ruff check backend/`, `black --check backend/`, and ensure the Docker build
+   passes (these are enforced by CI).
+4. Keep cross-surface types in `@ecowoods/shared`; validate new API inputs with Zod (web) / Pydantic
+   (backend).
+5. Don't add dependencies for features that aren't being built in the same PR.
 
-For larger changes, open an issue first to align on approach. See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -1415,14 +485,9 @@ For larger changes, open an issue first to align on approach. See [CONTRIBUTING.
 
 <div align="center">
 
-### **The Promise**
+**EcoWoods today:** a fast, focused, production lead-generation site for a Toronto hardwood-flooring
+business — with a marketplace backend and client apps waiting in the wings for a product decision.
 
-This platform will **feel like Instagram** (social proof), **transact like Amazon** (frictionless checkout), and **operate with the live nerve of n8n** (instant feedback).
-
-Every component shares the same types. Every action triggers the same workflows. Every deployment is identical.
-
-**One codebase. One truth. Infinite scale.**
-
-*Built with obsession for consistency, performance, and developer joy.*
+*This README describes what is true and running. When that changes, change this file in the same PR.*
 
 </div>
