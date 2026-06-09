@@ -15,12 +15,13 @@
     "@types/node": "20.16.10",
     "next": "^15.5.18",
     "prettier": "^3.3.2",
-    "turbo": "^2.9.14"
+    "turbo": "^2.9.14",
+    "vitest": "^2.1.0"
   },
   "engines": {
     "node": ">=18.18.0"
   },
-"pnpm": {
+  "pnpm": {
     "overrides": {
       "react": "19.1.0",
       "react-native": "0.81.5",
@@ -28,6 +29,10 @@
       "@types/react": "19.2.16",
       "@types/react-dom": "19.2.3"
     },
-    "onlyBuiltDependencies": ["bcryptjs", "@prisma/client", "prisma"]
+    "onlyBuiltDependencies": [
+      "bcryptjs",
+      "@prisma/client",
+      "prisma"
+    ]
   }
 }

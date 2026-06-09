@@ -17,8 +17,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   // Uncomment and set DIRECT_URL (session/direct connection) once you switch
   // DATABASE_URL to the transaction-mode pooler (port 6543 on Supabase).
   // directUrl = env("DIRECT_URL")
@@ -34,28 +34,28 @@ enum UserRole {
 }
 
 enum QuoteStatus {
-  NEW         // Just submitted
-  REVIEWING   // Admin has opened it
-  QUOTED      // Admin sent a quote back
-  CONVERTED   // Turned into a Project
-  CLOSED      // Dead lead
+  NEW // Just submitted
+  REVIEWING // Admin has opened it
+  QUOTED // Admin sent a quote back
+  CONVERTED // Turned into a Project
+  CLOSED // Dead lead
 }
 
 enum ProjectStatus {
-  DRAFT            // Not yet sent to customer
-  CONTRACT_SENT    // PDF sent, awaiting signature
-  SIGNED           // Signed contract uploaded
-  DEPOSIT_PAID     // First invoice settled
-  IN_PROGRESS      // Work has started
-  COMPLETED        // Work done, final invoice issued
+  DRAFT // Not yet sent to customer
+  CONTRACT_SENT // PDF sent, awaiting signature
+  SIGNED // Signed contract uploaded
+  DEPOSIT_PAID // First invoice settled
+  IN_PROGRESS // Work has started
+  COMPLETED // Work done, final invoice issued
   CANCELLED
 }
 
 enum InvoiceStatus {
-  DRAFT     // Not yet sent to customer
-  SENT      // Emailed to customer
-  OVERDUE   // Past due date
-  PAID      // Confirmed paid (Stripe or manual)
+  DRAFT // Not yet sent to customer
+  SENT // Emailed to customer
+  OVERDUE // Past due date
+  PAID // Confirmed paid (Stripe or manual)
   CANCELLED
 }
 
@@ -63,13 +63,13 @@ enum PaymentMethod {
   STRIPE_CARD
   STRIPE_APPLE_PAY
   STRIPE_GOOGLE_PAY
-  BANK_TRANSFER  // E-Transfer / wire
+  BANK_TRANSFER // E-Transfer / wire
   CASH
 }
 
 enum PaymentStatus {
-  PENDING    // Customer clicked "I have paid" or Stripe session created
-  CONFIRMED  // Admin confirmed (bank) or Stripe webhook received
+  PENDING // Customer clicked "I have paid" or Stripe session created
+  CONFIRMED // Admin confirmed (bank) or Stripe webhook received
   FAILED
   REFUNDED
 }
@@ -81,10 +81,10 @@ enum InquiryStatus {
 }
 
 enum InvoiceStage {
-  DEPOSIT    // Stage 1 — typically 30–40%
-  MIDPOINT   // Stage 2 — typically 40–50%
-  FINAL      // Stage 3 — balance
-  CUSTOM     // One-off amount outside the staged schedule
+  DEPOSIT // Stage 1 — typically 30–40%
+  MIDPOINT // Stage 2 — typically 40–50%
+  FINAL // Stage 3 — balance
+  CUSTOM // One-off amount outside the staged schedule
 }
 
 // ─────────────────────────────────────────────
@@ -96,7 +96,7 @@ model User {
   email         String    @unique
   name          String?
   phone         String?
-  passwordHash  String?   // null for OAuth users
+  passwordHash  String? // null for OAuth users
   role          UserRole  @default(CUSTOMER)
   emailVerified DateTime?
   image         String?
@@ -118,15 +118,15 @@ model User {
 
 // Email verification tokens (used for registration email confirmation)
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  email     String
-  name      String
-  phone     String?
+  id           String   @id @default(cuid())
+  email        String
+  name         String
+  phone        String?
   // Hashed password stored here until email is confirmed
   passwordHash String
-  token     String   @unique @default(cuid())
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  token        String   @unique @default(cuid())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 
   @@index([token])
   @@index([email])
@@ -174,46 +174,48 @@ model VerificationToken {
 // ─────────────────────────────────────────────
 
 model QuoteRequest {
-  id          String      @id @default(cuid())
+  id              String      @id @default(cuid())
   // Submitter info (pre-auth)
-  name        String
-  email       String
-  phone       String?
+  name            String
+  email           String
+  phone           String?
   // Project details
-  city        String?
-  province    String?     // ON, BC, AB, QC, etc.
-  address     String?
-  species     String[]    // ["White Oak", "Walnut"]
-  squareFeet  Float?
-  projectType String?     // "new_build" | "renovation"
-  timeline    String?     // "asap" | "1-2_weeks" | "1_month" | "flexible"
-  budgetRange String?     // "$5k-$10k" | "$10k-$20k" | ...
-  service     String?     // service type from homepage form
-  notes       String?     @db.Text
+  city            String?
+  province        String? // ON, BC, AB, QC, etc.
+  address         String?
+  species         String[] // ["White Oak", "Walnut"]
+  squareFeet      Float?
+  projectType     String? // "new_build" | "renovation"
+  timeline        String? // "asap" | "1-2_weeks" | "1_month" | "flexible"
+  budgetRange     String? // "$5k-$10k" | "$10k-$20k" | ...
+  service         String? // service type from homepage form
+  notes           String?     @db.Text
   // File attachments (stored URLs)
-  attachments String[]
+  attachments     String[]
   // Admin workflow
-  status      QuoteStatus @default(NEW)
-  adminNotes  String?     @db.Text
+  status          QuoteStatus @default(NEW)
+  adminNotes      String?     @db.Text
   // ── Formal Estimate (견적서) fields ──────────────────────────────
   // Populated when admin prepares a formal quote document
-  quotedAmount    Float?      // Total estimated amount (excl. tax)
-  quoteTaxRate    Float?      // Tax rate applied to this quote (default: 13 HST)
-  quoteLineItems  Json        @default("[]")  // [{description, qty, unit, unitPrice, amount}]
-  quoteNotes      String?     @db.Text        // Visible to customer on the quote PDF
-  quoteValidUntil DateTime?   // Quote expiry date (typically 30 days)
-  quoteIssuedAt   DateTime?   // When the quote PDF was sent to customer
-  quotePdfUrl     String?     // Stored PDF URL
+  quotedAmount    Float? // Total estimated amount (excl. tax)
+  quoteTaxRate    Float? // Tax rate applied to this quote (default: 13 HST)
+  quoteLineItems  Json        @default("[]") // [{description, qty, unit, unitPrice, amount}]
+  quoteNotes      String?     @db.Text // Visible to customer on the quote PDF
+  quoteValidUntil DateTime? // Quote expiry date (typically 30 days)
+  quoteIssuedAt   DateTime? // When the quote PDF was sent to customer
+  quotePdfUrl     String? // Stored PDF URL
   // ─────────────────────────────────────────────────────────────────
   // Link to registered user (set on registration if email matches)
-  userId      String?
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   // Converted to project
-  projectId   String?     @unique
-  project     Project?    @relation(fields: [projectId], references: [id])
+  projectId       String?     @unique
+  project         Project?    @relation(fields: [projectId], references: [id])
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  // Scheduled in-home estimates for this lead
+  appointments Appointment[]
 
   @@index([email])
   @@index([status])
@@ -225,16 +227,16 @@ model QuoteRequest {
 // ─────────────────────────────────────────────
 
 model Project {
-  id          String        @id @default(cuid())
+  id           String        @id @default(cuid())
   // Customer
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
   // Origin quote (optional — admin can create projects without a quote)
   quoteRequest QuoteRequest?
 
   // Core project info
-  title       String        // e.g. "Rosedale Victorian — White Oak Installation"
-  description String?       @db.Text
+  title       String // e.g. "Rosedale Victorian — White Oak Installation"
+  description String?   @db.Text
   address     String?
   city        String?
   province    String?
@@ -244,26 +246,26 @@ model Project {
   endDate     DateTime?
 
   // Contract
-  status              ProjectStatus @default(DRAFT)
-  contractPdfUrl      String?       // generated PDF in storage
-  signedContractPdfUrl String?      // uploaded by admin after customer signs
-  contractSignedAt    DateTime?
+  status               ProjectStatus @default(DRAFT)
+  contractPdfUrl       String? // generated PDF in storage
+  signedContractPdfUrl String? // uploaded by admin after customer signs
+  contractSignedAt     DateTime?
 
   // Invoice staging config (overrides global Settings)
-  depositPct    Float?  // e.g. 30.0
-  midpointPct   Float?  // e.g. 40.0
-  finalPct      Float?  // e.g. 30.0
-  taxRate       Float?  // e.g. 13.0 (Ontario HST)
+  depositPct  Float? // e.g. 30.0
+  midpointPct Float? // e.g. 40.0
+  finalPct    Float? // e.g. 30.0
+  taxRate     Float? // e.g. 13.0 (Ontario HST)
 
   // Contract total (before tax, before discounts at project level)
   contractValue Float?
 
   // Relations
-  invoices    Invoice[]
-  notes       ProjectNote[]
+  invoices Invoice[]
+  notes    ProjectNote[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -283,42 +285,42 @@ model ProjectNote {
 // ─────────────────────────────────────────────
 
 model Invoice {
-  id          String        @id @default(cuid())
-  number      String        @unique // e.g. "INV-2026-001"
-  projectId   String
-  project     Project       @relation(fields: [projectId], references: [id])
+  id        String  @id @default(cuid())
+  number    String  @unique // e.g. "INV-2026-001"
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
 
-  stage       InvoiceStage  @default(CUSTOM)
-  status      InvoiceStatus @default(DRAFT)
+  stage  InvoiceStage  @default(CUSTOM)
+  status InvoiceStatus @default(DRAFT)
 
   // Amounts (all in CAD, stored as plain Float)
-  subtotal    Float         // base amount before discount/surcharge/tax
-  discountPct Float         @default(0)   // e.g. 5.0 = 5%
-  surchargePct Float        @default(0)   // e.g. 2.5 = 2.5%
-  taxRate     Float         @default(13)  // Ontario HST default
-  total       Float         // computed: subtotal * (1 - discount + surcharge) * (1 + tax)
+  subtotal     Float // base amount before discount/surcharge/tax
+  discountPct  Float @default(0) // e.g. 5.0 = 5%
+  surchargePct Float @default(0) // e.g. 2.5 = 2.5%
+  taxRate      Float @default(13) // Ontario HST default
+  total        Float // computed: subtotal * (1 - discount + surcharge) * (1 + tax)
 
   // Line items (JSON for flexibility)
   // [{ description, qty, unitPrice, amount }]
-  lineItems   Json          @default("[]")
+  lineItems Json @default("[]")
 
-  description String?       @db.Text
+  description String?   @db.Text
   dueDate     DateTime?
   issuedAt    DateTime?
   paidAt      DateTime?
 
   // PDF
-  pdfUrl      String?       // Supabase Storage / Vercel Blob URL
+  pdfUrl String? // Supabase Storage / Vercel Blob URL
 
   // Stripe
-  stripePaymentIntentId String?
+  stripePaymentIntentId   String?
   stripeCheckoutSessionId String?
 
   // Relations
-  payments    Payment[]
+  payments Payment[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -330,30 +332,30 @@ model Invoice {
 // ─────────────────────────────────────────────
 
 model Payment {
-  id          String        @id @default(cuid())
-  invoiceId   String
-  invoice     Invoice       @relation(fields: [invoiceId], references: [id])
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  amount      Float         // CAD
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
+  amount Float // CAD
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
 
   // Stripe data
-  stripePaymentIntentId  String?
-  stripeChargeId         String?
+  stripePaymentIntentId String?
+  stripeChargeId        String?
 
   // Bank transfer data
-  bankReference       String?   // customer-provided e-transfer ref
+  bankReference       String? // customer-provided e-transfer ref
   bankConfirmedAt     DateTime? // when admin confirmed receipt
-  bankConfirmedByNote String?   // admin notes
+  bankConfirmedByNote String? // admin notes
 
   // Plaid (future integration — see comments in lib/plaid.ts)
-  plaidTransactionId  String?
+  plaidTransactionId String?
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([invoiceId])
   @@index([status])
@@ -364,22 +366,22 @@ model Payment {
 // ─────────────────────────────────────────────
 
 model Inquiry {
-  id          String        @id @default(cuid())
+  id      String        @id @default(cuid())
   // Can come from anonymous visitors or logged-in users
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name        String
-  email       String
-  phone       String?
-  subject     String
-  message     String        @db.Text
-  status      InquiryStatus @default(OPEN)
+  userId  String?
+  user    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name    String
+  email   String
+  phone   String?
+  subject String
+  message String        @db.Text
+  status  InquiryStatus @default(OPEN)
 
   // Replies (stored as ordered messages)
-  replies     InquiryReply[]
+  replies InquiryReply[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([status])
@@ -387,13 +389,13 @@ model Inquiry {
 }
 
 model InquiryReply {
-  id          String   @id @default(cuid())
-  inquiryId   String
-  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
   // fromAdmin = true means Ecowoods staff replied, false = customer follow-up
-  fromAdmin   Boolean  @default(true)
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
+  fromAdmin Boolean  @default(true)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────
@@ -404,26 +406,67 @@ model Settings {
   id String @id @default("global")
 
   // Invoice staging defaults (percentages, must sum to 100)
-  defaultDepositPct   Float @default(30)
-  defaultMidpointPct  Float @default(40)
-  defaultFinalPct     Float @default(30)
+  defaultDepositPct  Float @default(30)
+  defaultMidpointPct Float @default(40)
+  defaultFinalPct    Float @default(30)
 
   // Tax
-  defaultTaxRate      Float @default(13) // Ontario HST
+  defaultTaxRate Float @default(13) // Ontario HST
 
   // Company info (used in PDF headers)
-  companyName         String @default("Ecowoods Hardwood Flooring Inc.")
-  companyAddress      String @default("32 Norfield Crsnt., Toronto, ON M3J 3A1")
-  companyPhone        String @default("(416) 249-1276")
-  companyEmail        String @default("hello@ecowoods.ca")
-  companyHstNumber    String @default("") // HST registration #
-  companyLogoUrl      String?
+  companyName      String  @default("Ecowoods Hardwood Flooring Inc.")
+  companyAddress   String  @default("32 Norfield Crsnt., Toronto, ON M3J 3A1")
+  companyPhone     String  @default("(416) 249-1276")
+  companyEmail     String  @default("hello@ecowoods.ca")
+  companyHstNumber String  @default("") // HST registration #
+  companyLogoUrl   String?
 
   // Feature toggles
-  aiEnabled           Boolean @default(false) // requires OPENAI_API_KEY in env
+  aiEnabled Boolean @default(false) // requires OPENAI_API_KEY in env
 
   // Bank transfer instructions (shown to customer on MyPage)
   bankTransferInstructions String @default("Please e-transfer payment to accounting@ecowoods.ca with your invoice number as the memo. You will receive a confirmation within 1 business day.") @db.Text
 
-  updatedAt           DateTime @updatedAt
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// APPOINTMENT — a scheduled in-home estimate (the "booking")
+// An Appointment is a lifecycle event on a QuoteRequest (lead): the customer
+// has reserved a concrete consultation slot. Per-slot capacity is enforced in
+// the POST /api/appointments transaction, not by a DB constraint — Postgres
+// can't declaratively express "at most N rows per timestamp".
+// ─────────────────────────────────────────────
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model Appointment {
+  id String @id @default(cuid())
+
+  // Lead linkage — every appointment belongs to a QuoteRequest
+  quoteRequestId String
+  quoteRequest   QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+
+  // Scheduling (startsAt stored UTC; rendered in America/Toronto by the app)
+  startsAt        DateTime
+  durationMinutes Int               @default(60)
+  status          AppointmentStatus @default(CONFIRMED)
+
+  // Denormalized contact snapshot so the admin calendar reads without joins
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  notes         String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsAt])
+  @@index([status])
+  @@index([quoteRequestId])
 }

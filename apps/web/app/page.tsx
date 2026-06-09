@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
+import { BookingScheduler } from './components/BookingScheduler';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single-file Next.js client component
@@ -1522,6 +1523,9 @@ const onSubmit = (data: LeadFormData) => {
             </div>
 
             {/* Form - PERFECTLY INTEGRATED */}
+            <div style={{ marginBottom: '2rem' }}>
+              <BookingScheduler />
+            </div>
             <div className="contact-form reveal">
               <form 
                 onSubmit={handleSubmit(onSubmit)} 

@@ -410,3 +410,32 @@ export async function sendContractEmail({
     text: `Hi ${name},\n\nYour contract for "${projectTitle}" is ready.\n\nDownload PDF: ${contractPdfUrl}\nView in portal: ${portalProjectUrl}\n\nQuestions? Call (416) 249-1276.\n\nEcowoods Hardwood Flooring Inc.`,
   });
 }
+
+
+// ─── Customer: in-home estimate confirmation ─────────────────────────────────
+export async function sendAppointmentConfirmationEmail(data: {
+  to: string;
+  name: string;
+  whenLabel: string;     // e.g. "Thursday, June 18, 2026 at 2:00 PM"
+  durationMinutes: number;
+  service?: string;
+}) {
+  await sendEmail({
+    to: data.to,
+    subject: `Your Ecowoods in-home estimate — ${data.whenLabel}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
+        <h2 style="color:#1a0f08;">Your estimate is confirmed</h2>
+        <p>Hi ${data.name}, thanks for booking a free in-home estimate with Ecowoods.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">When</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.whenLabel}</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Duration</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.durationMinutes} minutes</td></tr>
+          ${data.service ? `<tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Service</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.service}</td></tr>` : ''}
+        </table>
+        <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="tel:+14162491276">(416) 249-1276</a>.</p>
+        <p style="color:#6b5d52;font-size:13px;">Ecowoods Hardwood Flooring · 32 Norfield Crescent, Toronto</p>
+      </div>
+    `,
+    text: `Your Ecowoods in-home estimate is confirmed for ${data.whenLabel} (${data.durationMinutes} min). Questions? Call (416) 249-1276.`,
+  });
+}

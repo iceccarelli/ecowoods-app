@@ -72,3 +72,68 @@ export const apiClient = {
   submitLead,
   // TODO (next sprint): useGetFeed, useCreateInstallation, useGetInstallerJobs, etc.
 } as const;
+
+
+// ─────────────────────────────────────────────────────────────────
+// APPOINTMENT SCHEDULING CLIENT
+// Mirrors submitLead's contract (client-side Zod validation, useful errors)
+// but stays focused on booking — no gamification side effects.
+// ─────────────────────────────────────────────────────────────────
+import {
+  appointmentSchema,
+  type AppointmentFormData,
+  type AvailabilityQuery,
+} from '@ecowoods/shared';
+
+export { appointmentSchema } from '@ecowoods/shared';
+export type { AppointmentFormData, AvailabilityQuery } from '@ecowoods/shared';
+
+export interface AvailabilitySlot {
+  start: string;
+  durationMinutes: number;
+  remaining: number;
+  available: boolean;
+}
+export interface AvailabilityDay {
+  date: string;
+  slots: AvailabilitySlot[];
+}
+export interface AvailabilityResult {
+  timezone: string;
+  days: AvailabilityDay[];
+}
+
+/** GET open consultation slots. Range is optional; server clamps to its window. */
+export async function fetchAvailability(q: AvailabilityQuery = {}): Promise<AvailabilityResult> {
+  const params = new URLSearchParams();
+  if (q.from) params.set('from', q.from);
+  if (q.to) params.set('to', q.to);
+  const qs = params.toString();
+  const res = await fetch(`/api/availability${qs ? '?' + qs : ''}`, { cache: 'no-store' });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || 'Could not load availability. Please call (416) 249-1276.');
+  }
+  return res.json();
+}
+
+/** Book an in-home estimate slot. */
+export async function submitAppointment(
+  data: AppointmentFormData,
+): Promise<{ id: string; startsAt: string; durationMinutes: number; service: string }> {
+  const validated = appointmentSchema.parse(data); // never trust the form
+  const res = await fetch('/api/appointments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Client-Version': '2.0.0' },
+    body: JSON.stringify({ ...validated, source: validated.source || 'web_scheduler' }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    const err = new Error(
+      e.error || 'Could not confirm that time. Please try another or call (416) 249-1276.',
+    );
+    (err as any).status = res.status;
+    throw err;
+  }
+  return res.json();
+}
