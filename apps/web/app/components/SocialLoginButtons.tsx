@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SocialLoginButtons — Google, Facebook, Apple OAuth 로그인 버튼
+ * SocialLoginButtons — Google, Facebook, X(Twitter) OAuth 로그인 버튼
  *
  * 어떤 provider가 환경변수에 설정되어 있는지 서버에서 prop으로 받아
  * 활성화된 버튼만 렌더링합니다.
@@ -9,7 +9,7 @@
  * 사용 예시:
  *   <SocialLoginButtons
  *     callbackUrl="/mypage"
- *     enabledProviders={['google', 'facebook', 'apple']}
+ *     enabledProviders={['google', 'facebook', 'twitter']}
  *   />
  */
 
@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 
-type Provider = 'google' | 'facebook' | 'apple';
+type Provider = 'google' | 'facebook' | 'twitter';
 
 const PROVIDER_CONFIG: Record<Provider, { label: string; icon: React.ReactNode; style: React.CSSProperties }> = {
   google: {
@@ -44,22 +44,22 @@ const PROVIDER_CONFIG: Record<Provider, { label: string; icon: React.ReactNode; 
       </svg>
     ),
     style: {
-      background: '#1877F2',
-      color: '#ffffff',
-      border: '1px solid #1877F2',
+      background: '#ffffff',
+      color: '#3c4043',
+      border: '1px solid #dadce0',
     },
   },
-  apple: {
-    label: 'Continue with Apple',
+  twitter: {
+    label: 'Continue with X',
     icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#0f1419" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.261 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
       </svg>
     ),
     style: {
-      background: '#000000',
-      color: '#ffffff',
-      border: '1px solid #000000',
+      background: '#ffffff',
+      color: '#3c4043',
+      border: '1px solid #dadce0',
     },
   },
 };

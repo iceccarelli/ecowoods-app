@@ -57,7 +57,13 @@ function buildProviders(): any[] {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const Google = require('next-auth/providers/google').default;
-      list.push(Google({ clientId: process.env.AUTH_GOOGLE_ID, clientSecret: process.env.AUTH_GOOGLE_SECRET }));
+      list.push(Google({
+        clientId: process.env.AUTH_GOOGLE_ID,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        // Allow linking with an existing email/password account.
+        // Safe for Google because Google verifies email ownership.
+        allowDangerousEmailAccountLinking: true,
+      }));
     } catch { /* provider unavailable */ }
   }
 
@@ -65,15 +71,46 @@ function buildProviders(): any[] {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const Facebook = require('next-auth/providers/facebook').default;
-      list.push(Facebook({ clientId: process.env.AUTH_FACEBOOK_ID, clientSecret: process.env.AUTH_FACEBOOK_SECRET }));
+      list.push(Facebook({
+        clientId: process.env.AUTH_FACEBOOK_ID,
+        clientSecret: process.env.AUTH_FACEBOOK_SECRET,
+        allowDangerousEmailAccountLinking: true,
+        // Explicitly request public_profile + email.
+        // Requires the 'email' permission to be added in Meta for Developers
+        // → App Review → Permissions and Features → email → Add.
+        authorization: { params: { scope: 'public_profile,email' } },
+        // Fallback in case Facebook doesn't return email (e.g. permission not approved yet).
+        profile(profile: { id: string; name?: string; email?: string; picture?: { data?: { url?: string } } }) {
+          return {
+            id: profile.id,
+            name: profile.name ?? null,
+            email: profile.email ?? `fb_${profile.id}@facebook.placeholder`,
+            image: profile.picture?.data?.url ?? null,
+          };
+        },
+      }));
     } catch { /* provider unavailable */ }
   }
 
-  if (process.env.AUTH_APPLE_ID) {
+  if (process.env.AUTH_TWITTER_ID) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const Apple = require('next-auth/providers/apple').default;
-      list.push(Apple({ clientId: process.env.AUTH_APPLE_ID, clientSecret: process.env.AUTH_APPLE_SECRET }));
+      const Twitter = require('next-auth/providers/twitter').default;
+      list.push(Twitter({
+        clientId: process.env.AUTH_TWITTER_ID,
+        clientSecret: process.env.AUTH_TWITTER_SECRET,
+        // Twitter/X OAuth 2.0 does not return an email address.
+        // Generate a stable placeholder so Prisma's non-null email field is satisfied.
+        // The user can update their real email later via profile settings.
+        profile(profile: { data: { id: string; name: string; profile_image_url?: string } }) {
+          return {
+            id: profile.data.id,
+            name: profile.data.name,
+            email: `x_${profile.data.id}@twitter.placeholder`,
+            image: profile.data.profile_image_url ?? null,
+          };
+        },
+      }));
     } catch { /* provider unavailable */ }
   }
 
