@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -42,6 +43,24 @@ const navigation = [
   { label: 'FAQ', href: '#faq' },
 ];
 
+const MYPAGE_NAV = [
+  { href: '/mypage', label: 'Dashboard' },
+  { href: '/mypage/quotes', label: 'My Quotes' },
+  { href: '/mypage/projects', label: 'My Projects' },
+  { href: '/mypage/invoices', label: 'Invoices & Payments' },
+  { href: '/mypage/inquiries', label: 'Inquiries' },
+];
+
+const ADMIN_NAV = [
+  { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/quotes', label: 'Quotes & Leads' },
+  { href: '/admin/projects', label: 'Projects' },
+  { href: '/admin/invoices', label: 'Invoices' },
+  { href: '/admin/users', label: 'Customers' },
+  { href: '/admin/inquiries', label: 'Inquiries' },
+  { href: '/admin/settings', label: 'Settings' },
+];
+
 const PHONE_DISPLAY = '(416) 249-1276';
 const PHONE_HREF = 'tel:+14162491276';
 
@@ -49,8 +68,10 @@ const PHONE_HREF = 'tel:+14162491276';
 export default function Header() {
   const { direction, scrolled } = useScrollState();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [portalExpanded, setPortalExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [baseUrl, setBaseUrl] = useState('/');
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     setBaseUrl(window.location.origin + '/');
@@ -68,6 +89,11 @@ export default function Header() {
     return () => {
       document.body.style.overflow = '';
     };
+  }, [mobileOpen]);
+
+  // Reset portal sub-menu when mobile sheet closes
+  useEffect(() => {
+    if (!mobileOpen) setPortalExpanded(false);
   }, [mobileOpen]);
 
   // Track active section on scroll
@@ -98,6 +124,12 @@ export default function Header() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const isLoggedIn = status === 'authenticated';
+  const portalLabel = isAdmin ? 'Admin' : 'My Page';
+  const portalNav = isAdmin ? ADMIN_NAV : MYPAGE_NAV;
+  const portalIndex = navigation.length + 2;
 
   return (
     <>
@@ -145,12 +177,12 @@ export default function Header() {
 
           {/* Right CTA cluster */}
           <div className="topbar-cta">
-            <a className="login-btn" href="/login" aria-label="Login to your account">
+            <a className="login-btn" href={isLoggedIn ? (isAdmin ? '/admin' : '/mypage') : '/login'} aria-label={isLoggedIn ? portalLabel : 'Login to your account'}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
                 <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
                 <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Login
+              {isLoggedIn ? portalLabel : 'Login'}
             </a>
             <a className="phone-pill" href={PHONE_HREF} aria-label={`Call ${PHONE_DISPLAY}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -214,10 +246,48 @@ export default function Header() {
             Free Quote
             <span className="num">0{navigation.length + 1}</span>
           </a>
-          <a href="/login" onClick={() => setMobileOpen(false)}>
-            Login
-            <span className="num">0{navigation.length + 2}</span>
-          </a>
+
+          {/* Portal section — Login or My Page / Admin */}
+          {!isLoggedIn && status !== 'loading' ? (
+            <a href="/login" onClick={() => setMobileOpen(false)}>
+              Login
+              <span className="num">0{portalIndex}</span>
+            </a>
+          ) : isLoggedIn ? (
+            <div className="mobile-portal-section">
+              <button
+                className="mobile-portal-trigger"
+                onClick={() => setPortalExpanded((v) => !v)}
+                aria-expanded={portalExpanded}
+              >
+                <span>{portalLabel}</span>
+                <span className="mobile-portal-right">
+                  <span
+                    className="mobile-portal-arrow"
+                    style={{ transform: portalExpanded ? 'rotate(180deg)' : 'none' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </span>
+                  <span className="num" style={{ position: 'static' }}>0{portalIndex}</span>
+                </span>
+              </button>
+              {portalExpanded && (
+                <div className="mobile-portal-submenu">
+                  {portalNav.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
         </nav>
 
         <div className="mobile-sheet-foot">
