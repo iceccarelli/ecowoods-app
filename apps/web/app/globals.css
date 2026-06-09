@@ -2902,16 +2902,65 @@ p {
 
 /* Responsive portal */
 @media (max-width: 900px) {
+  .portal-sidebar { display: none; }
   .portal-layout { flex-direction: column; }
-  .portal-sidebar { width: 100%; min-height: auto; position: static; flex-direction: row; flex-wrap: wrap; }
   .portal-main { width: 100%; }
-  .portal-nav { flex-direction: row; flex-wrap: wrap; padding: 0.5rem; }
-  .portal-nav-item { padding: 0.5rem 0.75rem; font-size: 0.82rem; border-left: none; border-bottom: 3px solid transparent; }
-  .portal-nav-item:hover { border-left-color: transparent; border-bottom-color: var(--copper); }
-  .portal-sidebar-brand,
-  .portal-sidebar-footer { padding: 0.75rem 1rem; }
-  .portal-sidebar-footer { border-top: none; border-left: 1px solid rgba(255,255,255,0.08); }
   .portal-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Mobile portal sub-menu in hamburger sheet */
+.mobile-portal-section {
+  border-bottom: 1px solid var(--line);
+}
+.mobile-portal-trigger {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  padding: 1.1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.mobile-portal-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mobile-portal-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--muted-soft);
+  transition: transform 0.2s ease;
+}
+.mobile-portal-submenu {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.5rem;
+}
+.mobile-portal-submenu a {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 0.65rem 0 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+.mobile-portal-submenu a:last-child {
+  border-bottom: none;
+}
+.mobile-portal-submenu a:hover {
+  color: var(--copper-deep);
 }
 
 @media (max-width: 600px) {

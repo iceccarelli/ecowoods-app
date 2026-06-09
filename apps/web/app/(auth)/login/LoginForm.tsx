@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
@@ -10,6 +10,16 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import SocialLoginButtons from '@/app/components/SocialLoginButtons';
 import type { OAuthProvider } from '@/lib/auth-providers';
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked: 'This email is already registered. Sign in with email & password, or use the same social login you originally used.',
+  OAuthSignin: 'Could not start social login. Please try again.',
+  OAuthCallback: 'Social login failed during callback. Please try again.',
+  OAuthCreateAccount: 'Could not create account via social login. Please try again.',
+  Configuration: 'A server configuration error occurred. Please try again later.',
+  AccessDenied: 'Access was denied. Please try again.',
+  Verification: 'The sign-in link has expired or already been used.',
+};
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -21,7 +31,16 @@ export default function LoginForm({ enabledProviders }: { enabledProviders: OAut
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
+  const oauthError = searchParams.get('error');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (oauthError) {
+      const message = OAUTH_ERROR_MESSAGES[oauthError] ?? `Sign-in error: ${oauthError}`;
+      toast.error(message, { duration: 6000 });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     register,
@@ -130,17 +149,6 @@ export default function LoginForm({ enabledProviders }: { enabledProviders: OAut
           Don&apos;t have an account?{' '}
           <Link href="/register">Create one — it&apos;s free</Link>
         </p>
-
-        {/* Demo credentials (dev only) */}
-        {process.env.NODE_ENV === 'development' && (
-          <>
-            <div className="auth-divider"><span>Demo credentials</span></div>
-            <div className="auth-demo-creds">
-              <p><strong>Customer:</strong> sarah.miller@gmail.com / Customer2026!</p>
-              <p><strong>Admin:</strong> admin@ecowoods.ca / Admin2026!</p>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

@@ -7,12 +7,12 @@
  * social login buttons to render.
  */
 
-export type OAuthProvider = 'google' | 'facebook' | 'apple';
+export type OAuthProvider = 'google' | 'facebook' | 'twitter';
 
 export function getEnabledProviders(): OAuthProvider[] {
   const providers: OAuthProvider[] = [];
   if (process.env.AUTH_GOOGLE_ID)   providers.push('google');
   if (process.env.AUTH_FACEBOOK_ID) providers.push('facebook');
-  if (process.env.AUTH_APPLE_ID)    providers.push('apple');
+  if (process.env.AUTH_TWITTER_ID)  providers.push('twitter');
   return providers;
 }
