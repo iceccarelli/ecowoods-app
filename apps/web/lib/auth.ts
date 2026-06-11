@@ -117,8 +117,22 @@ function buildProviders(): any[] {
   return list;
 }
 
+// PrismaAdapter expects emailVerified to be DateTime? but our schema uses Boolean.
+// Cast through unknown to satisfy Auth.js types while passing a real boolean to Prisma.
+function buildAdapter() {
+  const base = PrismaAdapter(db);
+  type CreateUserArg = Parameters<NonNullable<typeof base.createUser>>[0];
+  return {
+    ...base,
+    createUser: (data: CreateUserArg) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      base.createUser!({ ...data, emailVerified: (data.emailVerified != null) as unknown as any }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+}
+
 export const { auth, signIn, signOut, handlers } = NextAuth({
-  adapter: PrismaAdapter(db),
+  adapter: buildAdapter(),
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   providers: buildProviders(),
 
@@ -151,7 +165,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     async createUser({ user }) {
       if (!user.id || !user.email) return;
       const linked = await linkOrphanQuotes(user.id, user.email);
-      await db.user.update({ where: { id: user.id }, data: { emailVerified: true } }).catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db.user.update as any)({ where: { id: user.id }, data: { emailVerified: true } }).catch(() => {});
       if (linked > 0) console.log(`[auth] linked ${linked} quote(s) to ${user.email}`);
     },
   },
