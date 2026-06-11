@@ -13,8 +13,11 @@ const statusColor: Record<ProjectStatus, string> = {
   CANCELLED: 'danger',
 };
 
-function formatCAD(n: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
+function formatCAD(n: number | { toNumber(): number } | null | undefined) {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof n === 'number' ? n : n.toNumber()
+  );
 }
 
 export default async function AdminProjectsPage({
@@ -79,7 +82,7 @@ export default async function AdminProjectsPage({
               <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: '2rem' }}>No projects found.</td></tr>
             )}
             {projects.map((proj) => {
-              const paid = proj.invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + i.total, 0);
+              const paid = proj.invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + Number(i.total), 0);
               return (
                 <tr key={proj.id}>
                   <td>
@@ -90,7 +93,7 @@ export default async function AdminProjectsPage({
                     <div>{proj.user.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{proj.user.email}</div>
                   </td>
-                  <td>{proj.contractValue ? formatCAD(proj.contractValue) : '—'}</td>
+                  <td>{formatCAD(proj.contractValue)}</td>
                   <td style={{ color: paid > 0 ? 'var(--success)' : undefined }}>{paid > 0 ? formatCAD(paid) : '—'}</td>
                   <td>
                     <span className={`portal-badge portal-badge-${statusColor[proj.status]}`}>

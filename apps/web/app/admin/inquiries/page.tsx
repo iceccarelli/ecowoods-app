@@ -11,7 +11,7 @@ export default async function AdminInquiriesPage({
   const statusFilter = status;
 
   const inquiries = await db.inquiry.findMany({
-    where: statusFilter ? { status: statusFilter as never } : { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+    where: statusFilter ? { status: statusFilter as never } : { status: { in: ['NEW', 'IN_PROGRESS'] } },
     orderBy: { createdAt: 'desc' },
     include: {
       replies: { orderBy: { createdAt: 'asc' } },
@@ -32,10 +32,10 @@ export default async function AdminInquiriesPage({
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        {[['', 'Open + In Progress'], ['OPEN', 'Open'], ['IN_PROGRESS', 'In Progress'], ['RESOLVED', 'Resolved']].map(([val, label]) => (
+        {[['', 'New + In Progress'], ['NEW', 'New'], ['IN_PROGRESS', 'In Progress'], ['RESOLVED', 'Resolved']].map(([val, label]) => (
           <a key={val} href={val ? `/admin/inquiries?status=${val}` : '/admin/inquiries'}
             className={`btn btn-sm ${statusFilter === val || (!statusFilter && !val) ? 'btn-copper' : 'btn-ghost'}`}>
-            {label} ({val ? countMap[val] ?? 0 : (countMap['OPEN'] ?? 0) + (countMap['IN_PROGRESS'] ?? 0)})
+            {label} ({val ? countMap[val] ?? 0 : (countMap['NEW'] ?? 0) + (countMap['IN_PROGRESS'] ?? 0)})
           </a>
         ))}
       </div>
@@ -55,7 +55,7 @@ export default async function AdminInquiriesPage({
                     {' · '}{format(inq.createdAt, 'MMM d, yyyy')}
                   </div>
                 </div>
-                <span className={`portal-badge portal-badge-${inq.status === 'OPEN' ? 'info' : inq.status === 'IN_PROGRESS' ? 'warning' : 'success'}`}>
+                <span className={`portal-badge portal-badge-${inq.status === 'NEW' ? 'info' : inq.status === 'IN_PROGRESS' ? 'warning' : 'success'}`}>
                   {inq.status.replace('_', ' ')}
                 </span>
               </div>
@@ -77,7 +77,7 @@ export default async function AdminInquiriesPage({
               </div>
 
               {inq.status !== 'RESOLVED' && (
-                <InquiryReplyForm inquiryId={inq.id} customerName={inq.name} subject={inq.subject} />
+                <InquiryReplyForm inquiryId={inq.id} customerName={inq.name} subject={inq.subject ?? ''} />
               )}
             </div>
           ))}

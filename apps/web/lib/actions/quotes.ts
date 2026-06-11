@@ -105,7 +105,7 @@ export async function saveEstimate(
         quoteLineItems:  lineItemsJson as any,
         quoteNotes:      data.quoteNotes ?? null,
         quoteValidUntil: validUntil,
-        status:          'REVIEWING' as const,
+        status:          'PENDING' as const,
       },
     });
   } catch (err: unknown) {
@@ -130,7 +130,7 @@ export async function sendEstimateEmail(quoteId: string) {
   }
 
   const { sendEmail } = await import('@/lib/email');
-  const settings = await db.settings.findUnique({ where: { id: 'global' } });
+  const settings = await db.settings.findFirst();
 
   // Build absolute URL (required for email links)
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -139,7 +139,7 @@ export async function sendEstimateEmail(quoteId: string) {
     : `${baseUrl}${quote.quotePdfUrl}`;
 
   const totalFormatted = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
-    .format((quote.quotedAmount ?? 0) * (1 + (quote.quoteTaxRate ?? 13) / 100));
+    .format(Number(quote.quotedAmount ?? 0) * (1 + Number(quote.quoteTaxRate ?? 13) / 100));
 
   await sendEmail({
     to: quote.email,
@@ -219,7 +219,7 @@ export async function convertQuoteToProject(
 
   const [quote, settings] = await Promise.all([
     db.quoteRequest.findUniqueOrThrow({ where: { id: quoteId } }),
-    db.settings.findUnique({ where: { id: 'global' } }),
+    db.settings.findFirst(),
   ]);
 
   const project = await db.project.create({
@@ -230,7 +230,7 @@ export async function convertQuoteToProject(
       address: quote.address,
       city: quote.city,
       province: quote.province,
-      species: quote.species,
+      species: quote.species as import('@prisma/client').Prisma.InputJsonValue | undefined ?? undefined,
       squareFeet: quote.squareFeet,
       contractValue: projectData.contractValue,
       depositPct: projectData.depositPct ?? settings?.defaultDepositPct ?? 30,
@@ -244,7 +244,7 @@ export async function convertQuoteToProject(
   // Link quote to project and mark as converted
   await db.quoteRequest.update({
     where: { id: quoteId },
-    data: { projectId: project.id, status: 'CONVERTED' },
+    data: { projectId: project.id, status: 'ACCEPTED' },
   });
 
   revalidatePath('/admin/quotes');

@@ -1,47 +1,47 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('CUSTOMER', 'ADMIN');
+CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "QuoteStatus" AS ENUM ('NEW', 'REVIEWING', 'QUOTED', 'CONVERTED', 'CLOSED');
+CREATE TYPE "QuoteStatus" AS ENUM ('PENDING', 'QUOTED', 'ACCEPTED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "ProjectStatus" AS ENUM ('DRAFT', 'CONTRACT_SENT', 'SIGNED', 'DEPOSIT_PAID', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'OVERDUE', 'PAID', 'CANCELLED');
-
--- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('STRIPE_CARD', 'STRIPE_APPLE_PAY', 'STRIPE_GOOGLE_PAY', 'BANK_TRANSFER', 'CASH');
-
--- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'FAILED', 'REFUNDED');
-
--- CreateEnum
-CREATE TYPE "InquiryStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED');
+CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'PAID', 'OVERDUE', 'VOID');
 
 -- CreateEnum
 CREATE TYPE "InvoiceStage" AS ENUM ('DEPOSIT', 'MIDPOINT', 'FINAL', 'CUSTOM');
 
+-- CreateEnum
+CREATE TYPE "PaymentMethod" AS ENUM ('STRIPE', 'BANK_TRANSFER', 'PLAID', 'CASH');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "InquiryStatus" AS ENUM ('NEW', 'IN_PROGRESS', 'RESOLVED', 'CLOSED');
+
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" TEXT NOT NULL,
     "name" TEXT,
     "phone" TEXT,
     "passwordHash" TEXT,
-    "role" "UserRole" NOT NULL DEFAULT 'CUSTOMER',
-    "emailVerified" TIMESTAMP(3),
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "image" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Account" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
     "type" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
     "providerAccountId" TEXT NOT NULL,
@@ -52,16 +52,20 @@ CREATE TABLE "Account" (
     "scope" TEXT,
     "id_token" TEXT,
     "session_state" TEXT,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "sessionToken" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL,
+    "userId" UUID NOT NULL,
+    "expires" TIMESTAMPTZ NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
@@ -70,163 +74,162 @@ CREATE TABLE "Session" (
 CREATE TABLE "VerificationToken" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL
+    "expires" TIMESTAMPTZ NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "QuoteRequest" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT,
     "city" TEXT,
     "province" TEXT,
     "address" TEXT,
-    "species" TEXT[],
-    "squareFeet" DOUBLE PRECISION,
+    "species" JSONB,
+    "squareFeet" INTEGER,
     "projectType" TEXT,
     "timeline" TEXT,
     "budgetRange" TEXT,
     "service" TEXT,
     "notes" TEXT,
-    "attachments" TEXT[],
-    "status" "QuoteStatus" NOT NULL DEFAULT 'NEW',
+    "attachments" JSONB,
+    "status" "QuoteStatus" NOT NULL DEFAULT 'PENDING',
     "adminNotes" TEXT,
-    "userId" TEXT,
-    "projectId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" UUID,
+    "projectId" UUID,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "QuoteRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Project" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "address" TEXT,
     "city" TEXT,
     "province" TEXT,
-    "species" TEXT[],
-    "squareFeet" DOUBLE PRECISION,
-    "startDate" TIMESTAMP(3),
-    "endDate" TIMESTAMP(3),
+    "species" JSONB,
+    "squareFeet" INTEGER,
+    "startDate" TIMESTAMPTZ,
+    "endDate" TIMESTAMPTZ,
     "status" "ProjectStatus" NOT NULL DEFAULT 'DRAFT',
     "contractPdfUrl" TEXT,
     "signedContractPdfUrl" TEXT,
-    "contractSignedAt" TIMESTAMP(3),
-    "depositPct" DOUBLE PRECISION,
-    "midpointPct" DOUBLE PRECISION,
-    "finalPct" DOUBLE PRECISION,
-    "taxRate" DOUBLE PRECISION,
-    "contractValue" DOUBLE PRECISION,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "contractSignedAt" TIMESTAMPTZ,
+    "depositPct" NUMERIC(5,2) DEFAULT 30.00,
+    "midpointPct" NUMERIC(5,2) DEFAULT 40.00,
+    "finalPct" NUMERIC(5,2) DEFAULT 30.00,
+    "taxRate" NUMERIC(5,2) DEFAULT 13.00,
+    "contractValue" NUMERIC(12,2),
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ProjectNote" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "projectId" UUID NOT NULL,
     "content" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ProjectNote_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Invoice" (
-    "id" TEXT NOT NULL,
-    "number" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "stage" "InvoiceStage" NOT NULL DEFAULT 'CUSTOM',
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "number" TEXT,
+    "projectId" UUID NOT NULL,
+    "stage" "InvoiceStage",
     "status" "InvoiceStatus" NOT NULL DEFAULT 'DRAFT',
-    "subtotal" DOUBLE PRECISION NOT NULL,
-    "discountPct" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "surchargePct" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "taxRate" DOUBLE PRECISION NOT NULL DEFAULT 13,
-    "total" DOUBLE PRECISION NOT NULL,
+    "subtotal" NUMERIC(12,2) NOT NULL DEFAULT 0,
+    "discountPct" NUMERIC(5,2) NOT NULL DEFAULT 0,
+    "surchargePct" NUMERIC(5,2) NOT NULL DEFAULT 0,
+    "taxRate" NUMERIC(5,2) NOT NULL DEFAULT 0,
+    "total" NUMERIC(12,2) NOT NULL DEFAULT 0,
     "lineItems" JSONB NOT NULL DEFAULT '[]',
     "description" TEXT,
-    "dueDate" TIMESTAMP(3),
-    "issuedAt" TIMESTAMP(3),
-    "paidAt" TIMESTAMP(3),
+    "dueDate" TIMESTAMPTZ,
+    "issuedAt" TIMESTAMPTZ,
+    "paidAt" TIMESTAMPTZ,
     "pdfUrl" TEXT,
     "stripePaymentIntentId" TEXT,
-    "stripeCheckoutSessionId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Payment" (
-    "id" TEXT NOT NULL,
-    "invoiceId" TEXT NOT NULL,
-    "userId" TEXT,
-    "amount" DOUBLE PRECISION NOT NULL,
-    "method" "PaymentMethod" NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "invoiceId" UUID NOT NULL,
+    "userId" UUID,
+    "amount" NUMERIC(12,2) NOT NULL,
+    "method" "PaymentMethod",
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "stripePaymentIntentId" TEXT,
-    "stripeChargeId" TEXT,
+    "stripeCharged" BOOLEAN NOT NULL DEFAULT false,
     "bankReference" TEXT,
-    "bankConfirmedAt" TIMESTAMP(3),
+    "bankConfirmedAt" TIMESTAMPTZ,
     "bankConfirmedByNote" TEXT,
     "plaidTransactionId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Inquiry" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT,
-    "subject" TEXT NOT NULL,
+    "subject" TEXT,
     "message" TEXT NOT NULL,
-    "status" "InquiryStatus" NOT NULL DEFAULT 'OPEN',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "status" "InquiryStatus" NOT NULL DEFAULT 'NEW',
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Inquiry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "InquiryReply" (
-    "id" TEXT NOT NULL,
-    "inquiryId" TEXT NOT NULL,
-    "fromAdmin" BOOLEAN NOT NULL DEFAULT true,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "inquiryId" UUID NOT NULL,
+    "fromAdmin" BOOLEAN NOT NULL DEFAULT false,
     "content" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "InquiryReply_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Settings" (
-    "id" TEXT NOT NULL DEFAULT 'global',
-    "defaultDepositPct" DOUBLE PRECISION NOT NULL DEFAULT 30,
-    "defaultMidpointPct" DOUBLE PRECISION NOT NULL DEFAULT 40,
-    "defaultFinalPct" DOUBLE PRECISION NOT NULL DEFAULT 30,
-    "defaultTaxRate" DOUBLE PRECISION NOT NULL DEFAULT 13,
-    "companyName" TEXT NOT NULL DEFAULT 'Ecowoods Hardwood Flooring Inc.',
-    "companyAddress" TEXT NOT NULL DEFAULT '32 Norfield Crsnt., Toronto, ON M3J 3A1',
-    "companyPhone" TEXT NOT NULL DEFAULT '(416) 249-1276',
-    "companyEmail" TEXT NOT NULL DEFAULT 'hello@ecowoods.ca',
-    "companyHstNumber" TEXT NOT NULL DEFAULT '',
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "defaultDepositPct" NUMERIC(5,2) NOT NULL DEFAULT 30,
+    "defaultMidpointPct" NUMERIC(5,2) NOT NULL DEFAULT 40,
+    "defaultFinalPct" NUMERIC(5,2) NOT NULL DEFAULT 30,
+    "defaultTaxRate" NUMERIC(5,2) NOT NULL DEFAULT 13,
+    "companyName" TEXT,
+    "companyAddress" TEXT,
+    "companyPhone" TEXT,
+    "companyEmail" TEXT,
+    "companyNumberHst" TEXT,
     "companyLogoUrl" TEXT,
-    "aiEnabled" BOOLEAN NOT NULL DEFAULT false,
-    "bankTransferInstructions" TEXT NOT NULL DEFAULT 'Please e-transfer payment to accounting@ecowoods.ca with your invoice number as the memo. You will receive a confirmation within 1 business day.',
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "aiEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "aiBankTransferInstructions" TEXT,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Settings_pkey" PRIMARY KEY ("id")
 );

@@ -17,18 +17,18 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
   if (!quote) notFound();
 
   const customers = await db.user.findMany({
-    where: { role: 'CUSTOMER' },
+    where: { role: 'USER' },
     select: { id: true, name: true, email: true },
     orderBy: { name: 'asc' },
   });
 
-  const settings = await db.settings.findUnique({ where: { id: 'global' } });
+  const settings = await db.settings.findFirst();
 
   // Determine current step
   const step =
-    quote.status === 'CONVERTED' ? 4 :
-    quote.quotePdfUrl            ? 3 :
-    quote.quotedAmount           ? 2 : 1;
+    quote.status === 'ACCEPTED' ? 4 :
+    quote.quotePdfUrl           ? 3 :
+    quote.quotedAmount          ? 2 : 1;
 
   const stepLabels = [
     { n: 1, label: 'Review Request',    desc: 'Review the customer\'s request and gather details' },
@@ -50,7 +50,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
       </div>
 
       {/* ── Step progress indicator ── */}
-      {quote.status !== 'CLOSED' && (
+      {quote.status !== 'REJECTED' && (
         <div className="quote-steps">
           {stepLabels.map((s) => (
             <div key={s.n} className={`quote-step ${step >= s.n ? 'active' : ''} ${step === s.n ? 'current' : ''}`}>
@@ -90,7 +90,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
               {quote.address && <div className="detail-row"><dt>Address</dt><dd>{quote.address}</dd></div>}
               {quote.service && <div className="detail-row"><dt>Service</dt><dd>{quote.service}</dd></div>}
               {quote.projectType && <div className="detail-row"><dt>Type</dt><dd>{quote.projectType.replace('_', ' ')}</dd></div>}
-              {quote.species?.length > 0 && <div className="detail-row"><dt>Species</dt><dd>{quote.species.join(', ')}</dd></div>}
+              {Array.isArray(quote.species) && (quote.species as string[]).length > 0 && <div className="detail-row"><dt>Species</dt><dd>{(quote.species as string[]).join(', ')}</dd></div>}
               {quote.squareFeet && <div className="detail-row"><dt>Sq Ft</dt><dd>{quote.squareFeet.toLocaleString()} sq ft</dd></div>}
               {quote.timeline && <div className="detail-row"><dt>Timeline</dt><dd>{quote.timeline.replace(/_/g, ' ')}</dd></div>}
               {quote.budgetRange && <div className="detail-row"><dt>Budget</dt><dd>{quote.budgetRange}</dd></div>}
@@ -125,12 +125,12 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
           {/* STEP 2–3: Estimate builder */}
-          {quote.status !== 'CONVERTED' && quote.status !== 'CLOSED' && (
+          {quote.status !== 'ACCEPTED' && quote.status !== 'REJECTED' && (
             <EstimateBuilder
               quoteId={quote.id}
               existingLineItems={quote.quoteLineItems as never}
-              existingAmount={quote.quotedAmount}
-              existingTaxRate={quote.quoteTaxRate ?? settings?.defaultTaxRate ?? 13}
+              existingAmount={quote.quotedAmount !== null ? Number(quote.quotedAmount) : null}
+              existingTaxRate={Number(quote.quoteTaxRate ?? settings?.defaultTaxRate ?? 13)}
               existingNotes={quote.quoteNotes ?? ''}
               quotePdfUrl={quote.quotePdfUrl}
               quoteIssuedAt={quote.quoteIssuedAt}
@@ -153,27 +153,27 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
                 Manage Project →
               </Link>
             </div>
-          ) : quote.quotePdfUrl && quote.status !== 'CLOSED' ? (
+          ) : quote.quotePdfUrl && quote.status !== 'REJECTED' ? (
             /* Estimate sent — ready to convert */
             <ConvertToProjectForm
               quoteId={quote.id}
               customers={customers}
               defaultTitle={`${quote.service ?? 'Project'} — ${quote.name}`}
               defaultUserId={quote.userId ?? ''}
-              quotedAmount={quote.quotedAmount}
-              defaultTaxRate={quote.quoteTaxRate ?? settings?.defaultTaxRate ?? 13}
-              defaultDepositPct={settings?.defaultDepositPct ?? 30}
-              defaultMidpointPct={settings?.defaultMidpointPct ?? 40}
-              defaultFinalPct={settings?.defaultFinalPct ?? 30}
+              quotedAmount={quote.quotedAmount !== null ? Number(quote.quotedAmount) : null}
+              defaultTaxRate={Number(quote.quoteTaxRate ?? settings?.defaultTaxRate ?? 13)}
+              defaultDepositPct={Number(settings?.defaultDepositPct ?? 30)}
+              defaultMidpointPct={Number(settings?.defaultMidpointPct ?? 40)}
+              defaultFinalPct={Number(settings?.defaultFinalPct ?? 30)}
             />
           ) : null}
 
           {/* Close quote option */}
-          {quote.status !== 'CONVERTED' && quote.status !== 'CLOSED' && (
+          {quote.status !== 'ACCEPTED' && quote.status !== 'REJECTED' && (
             <form action={async () => {
               'use server';
               const { updateQuoteStatus } = await import('@/lib/actions/quotes');
-              await updateQuoteStatus(quote.id, 'CLOSED');
+              await updateQuoteStatus(quote.id, 'REJECTED');
             }}>
               <button type="submit" className="btn btn-ghost btn-sm" style={{ opacity: 0.6 }}>
                 Close / Archive this quote

@@ -223,8 +223,9 @@ type InvoiceWithRelations = Invoice & {
   project: Project & { user: User };
 };
 
-function cad(amount: number) {
-  return `CA$${amount.toFixed(2)}`;
+function cad(amount: number | { toNumber(): number }) {
+  const n = typeof amount === 'number' ? amount : amount.toNumber();
+  return `CA$${n.toFixed(2)}`;
 }
 
 export function InvoiceDocument({
@@ -241,17 +242,17 @@ export function InvoiceDocument({
   const customer = invoice.project.user;
 
   return (
-    <Document title={`Invoice ${invoice.number}`} author={settings.companyName}>
+    <Document title={`Invoice ${invoice.number ?? ''}`} author={settings.companyName ?? ''}>
       <Page size="LETTER" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.brandName}>{settings.companyName.toUpperCase()}</Text>
+            <Text style={styles.brandName}>{(settings.companyName ?? '').toUpperCase()}</Text>
             <Text style={styles.brandTagline}>Premium Hardwood Flooring · Toronto, Canada</Text>
           </View>
           <View>
             <Text style={styles.invoiceLabel}>INVOICE</Text>
-            <Text style={styles.invoiceNumber}>#{invoice.number}</Text>
+            <Text style={styles.invoiceNumber}>#{invoice.number ?? ''}</Text>
           </View>
         </View>
 
@@ -259,12 +260,12 @@ export function InvoiceDocument({
         <View style={styles.addresses}>
           <View style={styles.addressBlock}>
             <Text style={styles.addressLabel}>From</Text>
-            <Text style={styles.addressLine}>{settings.companyName}</Text>
-            <Text style={styles.addressLine}>{settings.companyAddress}</Text>
-            <Text style={styles.addressLine}>Tel: {settings.companyPhone}</Text>
-            <Text style={styles.addressLine}>{settings.companyEmail}</Text>
-            {settings.companyHstNumber && (
-              <Text style={styles.addressLine}>HST #: {settings.companyHstNumber}</Text>
+            <Text style={styles.addressLine}>{settings.companyName ?? ''}</Text>
+            <Text style={styles.addressLine}>{settings.companyAddress ?? ''}</Text>
+            <Text style={styles.addressLine}>Tel: {settings.companyPhone ?? ''}</Text>
+            <Text style={styles.addressLine}>{settings.companyEmail ?? ''}</Text>
+            {settings.companyNumberHst && (
+              <Text style={styles.addressLine}>HST #: {settings.companyNumberHst}</Text>
             )}
           </View>
           <View style={styles.addressBlock}>
@@ -295,7 +296,7 @@ export function InvoiceDocument({
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaLabel}>Stage</Text>
-            <Text style={styles.metaValue}>{invoice.stage}</Text>
+            <Text style={styles.metaValue}>{invoice.stage ?? ''}</Text>
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaLabel}>Status</Text>
@@ -330,34 +331,42 @@ export function InvoiceDocument({
         ))}
 
         {/* Totals */}
-        <View style={styles.totals}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalValue}>{cad(invoice.subtotal)}</Text>
-          </View>
-          {invoice.discountPct > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Discount ({invoice.discountPct}%)</Text>
-              <Text style={[styles.totalValue, { color: '#4a7c59' }]}>−{cad(invoice.subtotal * invoice.discountPct / 100)}</Text>
+        {(() => {
+          const sub = Number(invoice.subtotal);
+          const disc = Number(invoice.discountPct);
+          const sur = Number(invoice.surchargePct);
+          const tax = Number(invoice.taxRate);
+          return (
+            <View style={styles.totals}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal</Text>
+                <Text style={styles.totalValue}>{cad(sub)}</Text>
+              </View>
+              {disc > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Discount ({disc}%)</Text>
+                  <Text style={[styles.totalValue, { color: '#4a7c59' }]}>−{cad(sub * disc / 100)}</Text>
+                </View>
+              )}
+              {sur > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Surcharge ({sur}%)</Text>
+                  <Text style={styles.totalValue}>+{cad(sub * sur / 100)}</Text>
+                </View>
+              )}
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>HST ({tax}%)</Text>
+                <Text style={styles.totalValue}>
+                  {cad((sub * (1 - disc / 100) * (1 + sur / 100)) * tax / 100)}
+                </Text>
+              </View>
+              <View style={styles.grandTotalRow}>
+                <Text style={styles.grandTotalLabel}>TOTAL (CAD)</Text>
+                <Text style={styles.grandTotalValue}>{cad(Number(invoice.total))}</Text>
+              </View>
             </View>
-          )}
-          {invoice.surchargePct > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Surcharge ({invoice.surchargePct}%)</Text>
-              <Text style={styles.totalValue}>+{cad(invoice.subtotal * invoice.surchargePct / 100)}</Text>
-            </View>
-          )}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>HST ({invoice.taxRate}%)</Text>
-            <Text style={styles.totalValue}>
-              {cad((invoice.subtotal * (1 - invoice.discountPct / 100) * (1 + invoice.surchargePct / 100)) * invoice.taxRate / 100)}
-            </Text>
-          </View>
-          <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>TOTAL (CAD)</Text>
-            <Text style={styles.grandTotalValue}>{cad(invoice.total)}</Text>
-          </View>
-        </View>
+          );
+        })()}
 
         {/* Payment instructions */}
         {invoice.status !== 'PAID' && (
@@ -365,8 +374,8 @@ export function InvoiceDocument({
             <Text style={styles.payLabel}>Payment Instructions</Text>
             <Text style={styles.payText}>
               Pay online at: ecowoods.ca/mypage/invoices{'\n'}
-              Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number}){'\n'}
-              Questions? Call (416) 249-1276 or email {settings.companyEmail}
+              Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number ?? ''}){'\n'}
+              Questions? Call (416) 249-1276 or email {settings.companyEmail ?? ''}
             </Text>
           </View>
         )}
@@ -374,11 +383,11 @@ export function InvoiceDocument({
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            {settings.companyName} · {settings.companyAddress}
-            {settings.companyHstNumber ? `\nHST Registration #: ${settings.companyHstNumber}` : ''}
+            {settings.companyName ?? ''} · {settings.companyAddress ?? ''}
+            {settings.companyNumberHst ? `\nHST Registration #: ${settings.companyNumberHst}` : ''}
           </Text>
           <Text style={styles.footerText}>
-            Invoice #{invoice.number} · Page 1{'\n'}
+            Invoice #{invoice.number ?? ''} · Page 1{'\n'}
             Generated {format(new Date(), 'MMMM d, yyyy')}
           </Text>
         </View>

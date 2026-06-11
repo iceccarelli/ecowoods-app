@@ -4,8 +4,11 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatDistanceToNow } from 'date-fns';
 
-function formatCAD(amount: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
+function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
+  if (amount == null) return '—';
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof amount === 'number' ? amount : amount.toNumber()
+  );
 }
 
 export default async function MyPageDashboard() {
@@ -38,7 +41,7 @@ export default async function MyPageDashboard() {
 
   const totalOwed = invoices
     .filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')
-    .reduce((sum, i) => sum + i.total, 0);
+    .reduce((sum, i) => sum + Number(i.total), 0);
 
   const activeProjects = projects.filter(
     (p) => p.status !== 'COMPLETED' && p.status !== 'CANCELLED'

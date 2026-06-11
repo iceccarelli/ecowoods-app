@@ -3,13 +3,12 @@ import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import type { QuoteStatus } from '@prisma/client';
 
-const STATUS_ORDER: QuoteStatus[] = ['NEW', 'REVIEWING', 'QUOTED', 'CONVERTED', 'CLOSED'];
+const STATUS_ORDER: QuoteStatus[] = ['PENDING', 'QUOTED', 'ACCEPTED', 'REJECTED'];
 const statusColor: Record<QuoteStatus, string> = {
-  NEW: 'info',
-  REVIEWING: 'warning',
-  QUOTED: 'active',
-  CONVERTED: 'success',
-  CLOSED: 'neutral',
+  PENDING: 'info',
+  QUOTED: 'warning',
+  ACCEPTED: 'success',
+  REJECTED: 'neutral',
 };
 
 export default async function AdminQuotesPage({

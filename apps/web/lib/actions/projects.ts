@@ -31,7 +31,7 @@ export async function createProject(input: {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
-  const settings = await db.settings.findUnique({ where: { id: 'global' } });
+  const settings = await db.settings.findFirst();
 
   const project = await db.project.create({
     data: {
@@ -41,7 +41,7 @@ export async function createProject(input: {
       address: input.address,
       city: input.city,
       province: input.province,
-      species: input.species ?? [],
+      species: (input.species ?? undefined) as import('@prisma/client').Prisma.InputJsonValue | undefined,
       squareFeet: input.squareFeet,
       contractValue: input.contractValue,
       depositPct: input.depositPct ?? settings?.defaultDepositPct ?? 30,

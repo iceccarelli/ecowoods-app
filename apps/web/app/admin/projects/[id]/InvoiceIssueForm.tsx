@@ -113,7 +113,7 @@ export default function InvoiceIssueForm({
     }
   };
 
-  if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
+  if (invoice.status === 'PAID' || invoice.status === 'VOID') {
     return (
       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
         <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>—</span>

@@ -9,8 +9,10 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import StripeCheckoutButton from './StripeCheckoutButton';
 
-function formatCAD(amount: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
+function formatCAD(amount: number | { toNumber(): number }) {
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof amount === 'number' ? amount : amount.toNumber()
+  );
 }
 
 export default async function InvoicePayPage({
@@ -84,7 +86,7 @@ export default async function InvoicePayPage({
           </div>
         </div>
 
-        <StripeCheckoutButton invoiceId={invoice.id} amount={invoice.total} invoiceNumber={invoice.number} />
+        <StripeCheckoutButton invoiceId={invoice.id} amount={Number(invoice.total)} invoiceNumber={invoice.number ?? ''} />
 
         <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '1rem', textAlign: 'center' }}>
           Secured by Stripe. Accepts Visa, Mastercard, Amex, Apple Pay, Google Pay.

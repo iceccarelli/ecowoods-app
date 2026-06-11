@@ -9,6 +9,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoiceDocument } from '@/lib/pdf/invoice-document';
 import { storePdf } from '@/lib/pdf/storage';
 import { createElement } from 'react';
+import type { Settings } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -27,29 +28,29 @@ export async function POST(
       where: { id },
       include: { project: { include: { user: true } } },
     }),
-    db.settings.findUnique({ where: { id: 'global' } }),
+    db.settings.findFirst(),
   ]);
 
   if (!invoice) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
 
-  const effectiveSettings = settings ?? {
-    id: 'global',
-    companyName: 'Ecowoods Hardwood Flooring Inc.',
-    companyAddress: '32 Norfield Crsnt., Toronto, ON M3J 3A1',
-    companyPhone: '(416) 249-1276',
-    companyEmail: 'hello@ecowoods.ca',
-    companyHstNumber: '',
-    companyLogoUrl: null,
+  const effectiveSettings = (settings ?? {
+    id: '00000000-0000-0000-0000-000000000001',
+    companyName: 'Ecowoods Hardwood Flooring Inc.' as string | null,
+    companyAddress: '32 Norfield Crsnt., Toronto, ON M3J 3A1' as string | null,
+    companyPhone: '(416) 249-1276' as string | null,
+    companyEmail: 'hello@ecowoods.ca' as string | null,
+    companyNumberHst: null as string | null,
+    companyLogoUrl: null as string | null,
     defaultDepositPct: 30,
     defaultMidpointPct: 40,
     defaultFinalPct: 30,
     defaultTaxRate: 13,
-    aiEnabled: false,
-    bankTransferInstructions: '',
+    aiEnabled: true,
+    aiBankTransferInstructions: null as string | null,
     updatedAt: new Date(),
-  };
+  }) as unknown as Settings;
 
   try {
     const element = createElement(InvoiceDocument, { invoice, settings: effectiveSettings });

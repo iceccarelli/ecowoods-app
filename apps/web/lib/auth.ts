@@ -133,7 +133,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           where: { id: user.id },
           select: { role: true },
         });
-        token.role = (dbUser?.role ?? 'CUSTOMER') as UserRole;
+        token.role = (dbUser?.role ?? 'USER') as UserRole;
       }
       return token;
     },
@@ -151,7 +151,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     async createUser({ user }) {
       if (!user.id || !user.email) return;
       const linked = await linkOrphanQuotes(user.id, user.email);
-      await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } }).catch(() => {});
+      await db.user.update({ where: { id: user.id }, data: { emailVerified: true } }).catch(() => {});
       if (linked > 0) console.log(`[auth] linked ${linked} quote(s) to ${user.email}`);
     },
   },

@@ -1,19 +1,19 @@
 -- CreateEnum
-CREATE TYPE "AppointmentStatus" AS ENUM ('CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW');
+CREATE TYPE "AppointmentStatus" AS ENUM ('SCHEDULED', 'COMPLETED', 'CANCELLED');
 
 -- CreateTable
 CREATE TABLE "Appointment" (
-    "id" TEXT NOT NULL,
-    "quoteRequestId" TEXT NOT NULL,
-    "startsAt" TIMESTAMP(3) NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "quoteRequestId" UUID NOT NULL,
+    "startsAt" TIMESTAMPTZ NOT NULL,
     "durationMinutes" INTEGER NOT NULL DEFAULT 60,
-    "status" "AppointmentStatus" NOT NULL DEFAULT 'CONFIRMED',
-    "customerName" TEXT NOT NULL,
-    "customerEmail" TEXT NOT NULL,
+    "status" "AppointmentStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "customerName" TEXT,
+    "customerEmail" TEXT,
     "customerPhone" TEXT,
     "notes" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Appointment_pkey" PRIMARY KEY ("id")
 );

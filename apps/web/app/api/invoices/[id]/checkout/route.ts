@@ -52,7 +52,7 @@ export async function POST(
               description: invoice.description ?? `${invoice.project.title} — ${invoice.stage} payment`,
               metadata: { invoiceId: invoice.id },
             },
-            unit_amount: Math.round(invoice.total * 100), // Stripe requires cents
+            unit_amount: Math.round(Number(invoice.total) * 100), // Stripe requires cents
           },
           quantity: 1,
         },
@@ -69,12 +69,6 @@ export async function POST(
       // Enable Apple Pay / Google Pay automatically
       payment_method_types: ['card'],
       // Stripe's automatic tax is optional — we manage tax on our side
-    });
-
-    // Save the Stripe session ID to the invoice
-    await db.invoice.update({
-      where: { id: invoice.id },
-      data: { stripeCheckoutSessionId: checkoutSession.id },
     });
 
     return NextResponse.json({ url: checkoutSession.url });

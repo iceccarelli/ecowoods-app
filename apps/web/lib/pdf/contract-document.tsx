@@ -171,21 +171,21 @@ export function ContractDocument({
   const contractDate = format(new Date(), 'MMMM d, yyyy');
   const contractRef = `ECW-${format(new Date(), 'yyyy')}-${project.id.slice(0, 6).toUpperCase()}`;
 
-  const taxRate = project.taxRate ?? settings.defaultTaxRate ?? 13;
+  const taxRate = Number(project.taxRate ?? settings.defaultTaxRate ?? 13);
   const contractValuePlusTax = project.contractValue
-    ? project.contractValue * (1 + taxRate / 100)
+    ? Number(project.contractValue) * (1 + taxRate / 100)
     : null;
 
   return (
-    <Document title={`Contract — ${project.title}`} author={settings.companyName}>
+    <Document title={`Contract — ${project.title}`} author={settings.companyName ?? ''}>
       <Page size="LETTER" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.brandName}>{settings.companyName.toUpperCase()}</Text>
+            <Text style={styles.brandName}>{(settings.companyName ?? '').toUpperCase()}</Text>
             <Text style={styles.brandSub}>Premium Hardwood Flooring — Toronto, Ontario, Canada</Text>
             <Text style={[styles.brandSub, { marginTop: 2 }]}>
-              {settings.companyPhone} · {settings.companyEmail}
+              {settings.companyPhone ?? ''} · {settings.companyEmail ?? ''}
             </Text>
           </View>
           <View>
@@ -200,7 +200,7 @@ export function ContractDocument({
           <Text style={styles.sectionTitle}>1. PARTIES</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Contractor:</Text>
-            <Text style={styles.value}>{settings.companyName}, {settings.companyAddress}</Text>
+            <Text style={styles.value}>{settings.companyName ?? ''}, {settings.companyAddress ?? ''}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Client:</Text>
@@ -231,10 +231,10 @@ export function ContractDocument({
               <Text style={styles.value}>{[project.address, project.city, project.province].filter(Boolean).join(', ')}</Text>
             </View>
           )}
-          {project.species?.length > 0 && (
+          {Array.isArray(project.species) && (project.species as string[]).length > 0 && (
             <View style={styles.row}>
               <Text style={styles.label}>Species:</Text>
-              <Text style={styles.value}>{project.species.join(', ')}</Text>
+              <Text style={styles.value}>{(project.species as string[]).join(', ')}</Text>
             </View>
           )}
           {project.squareFeet && (
@@ -270,11 +270,11 @@ export function ContractDocument({
             <>
               <View style={styles.row}>
                 <Text style={styles.label}>Contract Value (excl. tax):</Text>
-                <Text style={styles.value}>{cad(project.contractValue)}</Text>
+                <Text style={styles.value}>{cad(Number(project.contractValue))}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>HST ({taxRate}%):</Text>
-                <Text style={styles.value}>{cad(project.contractValue * taxRate / 100)}</Text>
+                <Text style={styles.value}>{cad(Number(project.contractValue) * taxRate / 100)}</Text>
               </View>
               <View style={styles.highlight}>
                 <Text style={styles.highlightText}>
@@ -282,15 +282,15 @@ export function ContractDocument({
                 </Text>
               </View>
               <Text style={[styles.bodyText, { marginTop: 6 }]}>
-                Payment Schedule: Deposit {project.depositPct ?? settings.defaultDepositPct}% upon signing ·
-                Progress payment {project.midpointPct ?? settings.defaultMidpointPct}% at project midpoint ·
-                Final balance {project.finalPct ?? settings.defaultFinalPct}% upon completion
+                Payment Schedule: Deposit {Number(project.depositPct ?? settings.defaultDepositPct)}% upon signing ·
+                Progress payment {Number(project.midpointPct ?? settings.defaultMidpointPct)}% at project midpoint ·
+                Final balance {Number(project.finalPct ?? settings.defaultFinalPct)}% upon completion
               </Text>
             </>
           )}
-          {settings.companyHstNumber && (
+          {settings.companyNumberHst && (
             <Text style={styles.bodyText}>
-              HST Registration Number: {settings.companyHstNumber}
+              HST Registration Number: {settings.companyNumberHst}
             </Text>
           )}
         </View>
@@ -330,7 +330,7 @@ export function ContractDocument({
           <View style={styles.signatureBlock}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>
-              Authorized by: {settings.companyName}{'\n'}
+              Authorized by: {settings.companyName ?? ''}{'\n'}
               Name: ____________________________{'\n'}
               Title: ____________________________{'\n'}
               Date: ____________________________
@@ -349,7 +349,7 @@ export function ContractDocument({
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            Contract #{contractRef} · {settings.companyName}
+            Contract #{contractRef} · {settings.companyName ?? ''}
           </Text>
           <Text style={styles.footerText}>
             Page 1 of 1 · Generated {contractDate}

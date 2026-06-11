@@ -7,8 +7,11 @@ import InvoiceIssueForm from './InvoiceIssueForm';
 import GenerateInvoicesButton from './GenerateInvoicesButton';
 import GenerateContractButton from './GenerateContractButton';
 
-function formatCAD(n: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
+function formatCAD(n: number | { toNumber(): number } | null | undefined) {
+  if (n == null) return '—';
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof n === 'number' ? n : n.toNumber()
+  );
 }
 
 export default async function AdminProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,8 +31,8 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
 
   if (!project) notFound();
 
-  const totalPaid = project.invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + i.total, 0);
-  const totalOutstanding = project.invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE').reduce((s, i) => s + i.total, 0);
+  const totalPaid = project.invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + Number(i.total), 0);
+  const totalOutstanding = project.invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE').reduce((s, i) => s + Number(i.total), 0);
   const hasGeneratedInvoices = project.invoices.length > 0;
 
   return (
@@ -65,17 +68,17 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
             <dl className="detail-list">
               <div className="detail-row"><dt>Customer</dt><dd>{project.user.name} ({project.user.email})</dd></div>
               <div className="detail-row"><dt>Address</dt><dd>{[project.address, project.city, project.province].filter(Boolean).join(', ')}</dd></div>
-              {project.species?.length > 0 && (
-                <div className="detail-row"><dt>Species</dt><dd>{project.species.join(', ')}</dd></div>
+              {Array.isArray(project.species) && (project.species as string[]).length > 0 && (
+                <div className="detail-row"><dt>Species</dt><dd>{(project.species as string[]).join(', ')}</dd></div>
               )}
               {project.squareFeet && (
                 <div className="detail-row"><dt>Square Footage</dt><dd>{project.squareFeet.toLocaleString()} sq ft</dd></div>
               )}
-              <div className="detail-row"><dt>Contract Value</dt><dd>{project.contractValue ? formatCAD(project.contractValue) : '—'}</dd></div>
-              <div className="detail-row"><dt>Tax Rate</dt><dd>{project.taxRate}%</dd></div>
+              <div className="detail-row"><dt>Contract Value</dt><dd>{formatCAD(project.contractValue)}</dd></div>
+              <div className="detail-row"><dt>Tax Rate</dt><dd>{Number(project.taxRate)}%</dd></div>
               <div className="detail-row">
                 <dt>Invoice Schedule</dt>
-                <dd>Deposit {project.depositPct}% / Midpoint {project.midpointPct}% / Final {project.finalPct}%</dd>
+                <dd>Deposit {Number(project.depositPct)}% / Midpoint {Number(project.midpointPct)}% / Final {Number(project.finalPct)}%</dd>
               </div>
               {project.startDate && (
                 <div className="detail-row"><dt>Start</dt><dd>{format(project.startDate, 'MMMM d, yyyy')}</dd></div>
@@ -118,7 +121,7 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
               <div style={{ textAlign: 'center', padding: '0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Total Contract</div>
-                <div style={{ fontWeight: 700 }}>{project.contractValue ? formatCAD(project.contractValue) : '—'}</div>
+                <div style={{ fontWeight: 700 }}>{formatCAD(project.contractValue)}</div>
               </div>
               <div style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(74,124,89,0.08)', borderRadius: 'var(--radius)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Paid</div>

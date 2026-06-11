@@ -18,9 +18,10 @@ export default async function MyInquiriesPage() {
   });
 
   const statusColor: Record<string, string> = {
-    OPEN: 'info',
+    NEW: 'info',
     IN_PROGRESS: 'warning',
     RESOLVED: 'success',
+    CLOSED: 'neutral',
   };
 
   return (

@@ -25,7 +25,7 @@ async function getOpenAI() {
 
   try {
     // Check DB setting
-    const settings = await db.settings.findUnique({ where: { id: 'global' } });
+    const settings = await db.settings.findFirst();
     if (!settings?.aiEnabled) return null;
 
     const { default: OpenAI } = await import('openai');
