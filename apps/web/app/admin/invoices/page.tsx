@@ -3,8 +3,10 @@ import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import type { InvoiceStatus } from '@prisma/client';
 
-function formatCAD(n: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
+function formatCAD(n: number | { toNumber(): number }) {
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof n === 'number' ? n : n.toNumber()
+  );
 }
 
 const statusColor: Record<InvoiceStatus, string> = {
@@ -12,7 +14,7 @@ const statusColor: Record<InvoiceStatus, string> = {
   SENT: 'warning',
   OVERDUE: 'danger',
   PAID: 'success',
-  CANCELLED: 'neutral',
+  VOID: 'neutral',
 };
 
 export default async function AdminInvoicesPage({
@@ -45,7 +47,7 @@ export default async function AdminInvoicesPage({
 
   const counts = await db.invoice.groupBy({ by: ['status'], _count: true });
   const countMap = Object.fromEntries(counts.map((c) => [c.status, c._count]));
-  const statuses: InvoiceStatus[] = ['DRAFT', 'SENT', 'OVERDUE', 'PAID', 'CANCELLED'];
+  const statuses: InvoiceStatus[] = ['DRAFT', 'SENT', 'OVERDUE', 'PAID', 'VOID'];
 
   return (
     <div className="portal-page">

@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import SettingsForm from './SettingsForm';
 
 export default async function AdminSettingsPage() {
-  const settings = await db.settings.findUnique({ where: { id: 'global' } });
+  const settings = await db.settings.findFirst();
 
   return (
     <div className="portal-page">

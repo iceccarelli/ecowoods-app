@@ -36,7 +36,6 @@ async function main() {
   // ── Global Settings ───────────────────────────────────────────────────
   await db.settings.create({
     data: {
-      id: 'global',
       defaultDepositPct: 30,
       defaultMidpointPct: 40,
       defaultFinalPct: 30,
@@ -45,7 +44,7 @@ async function main() {
       companyAddress: '32 Norfield Crsnt., Toronto, ON M3J 3A1',
       companyPhone: '(416) 249-1276',
       companyEmail: 'hello@ecowoods.ca',
-      companyHstNumber: 'RT 1234 5678',
+      companyNumberHst: 'RT 1234 5678',
       aiEnabled: false,
     },
   });
@@ -62,7 +61,7 @@ async function main() {
       phone: '(416) 249-1276',
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
-      emailVerified: new Date(),
+      emailVerified: true,
     },
   });
 
@@ -72,8 +71,8 @@ async function main() {
       name: 'Sarah Miller',
       phone: '(416) 555-0100',
       passwordHash: customerPasswordHash,
-      role: UserRole.CUSTOMER,
-      emailVerified: new Date(),
+      role: UserRole.USER,
+      emailVerified: true,
     },
   });
 
@@ -83,8 +82,8 @@ async function main() {
       name: 'David Kim',
       phone: '(647) 555-0201',
       passwordHash: customerPasswordHash,
-      role: UserRole.CUSTOMER,
-      emailVerified: new Date(),
+      role: UserRole.USER,
+      emailVerified: true,
     },
   });
 
@@ -94,8 +93,8 @@ async function main() {
       name: 'Priya Tomas',
       phone: '(905) 555-0312',
       passwordHash: customerPasswordHash,
-      role: UserRole.CUSTOMER,
-      emailVerified: new Date(),
+      role: UserRole.USER,
+      emailVerified: true,
     },
   });
 
@@ -117,7 +116,7 @@ async function main() {
       budgetRange: '$15k-$25k',
       service: 'refinishing',
       notes: 'We have 100-year-old red oak floors throughout the main level. Looking for a full refinish with a Scandinavian white stain. Also interested in stair refinishing.',
-      status: QuoteStatus.CONVERTED,
+      status: QuoteStatus.ACCEPTED,
       userId: sarah.id,
     },
   });
@@ -137,7 +136,7 @@ async function main() {
       budgetRange: '$25k-$40k',
       service: 'installation',
       notes: 'New construction home, need wide-plank white oak installed throughout main and second floor. Kitchen in Hard Maple.',
-      status: QuoteStatus.CONVERTED,
+      status: QuoteStatus.ACCEPTED,
       userId: david.id,
     },
   });
@@ -157,7 +156,7 @@ async function main() {
       budgetRange: '$10k-$15k',
       service: 'installation',
       notes: 'Custom walnut herringbone pattern for the living and dining room. Want something distinctive.',
-      status: QuoteStatus.NEW,
+      status: QuoteStatus.PENDING,
       userId: priya.id,
     },
   });
@@ -178,7 +177,7 @@ async function main() {
       budgetRange: '$8k-$12k',
       service: 'refinishing',
       notes: 'Dog scratched the floors badly after another contractor\'s job. Need a full refinish with Bona Traffic.',
-      status: QuoteStatus.REVIEWING,
+      status: QuoteStatus.PENDING,
     },
   });
 
@@ -287,8 +286,8 @@ async function main() {
   // ── Invoices ──────────────────────────────────────────────────────────
 
   // Project 1 (IN_PROGRESS) — Deposit paid, midpoint issued
-  const inv1Subtotal = project1.contractValue! * (project1.depositPct! / 100);
-  const inv1Tax = inv1Subtotal * (project1.taxRate! / 100);
+  const inv1Subtotal = Number(project1.contractValue!) * (Number(project1.depositPct!) / 100);
+  const inv1Tax = inv1Subtotal * (Number(project1.taxRate!) / 100);
   const inv1 = await db.invoice.create({
     data: {
       number: 'INV-2026-001',
@@ -311,8 +310,8 @@ async function main() {
     },
   });
 
-  const inv2Subtotal = project1.contractValue! * (project1.midpointPct! / 100);
-  const inv2Tax = inv2Subtotal * (project1.taxRate! / 100);
+  const inv2Subtotal = Number(project1.contractValue!) * (Number(project1.midpointPct!) / 100);
+  const inv2Tax = inv2Subtotal * (Number(project1.taxRate!) / 100);
   const inv2 = await db.invoice.create({
     data: {
       number: 'INV-2026-002',
@@ -335,8 +334,8 @@ async function main() {
   });
 
   // Project 2 (CONTRACT_SENT) — Deposit draft
-  const inv3Subtotal = project2.contractValue! * (project2.depositPct! / 100);
-  const inv3Tax = inv3Subtotal * (project2.taxRate! / 100);
+  const inv3Subtotal = Number(project2.contractValue!) * (Number(project2.depositPct!) / 100);
+  const inv3Tax = inv3Subtotal * (Number(project2.taxRate!) / 100);
   await db.invoice.create({
     data: {
       number: 'INV-2026-003',
@@ -347,7 +346,7 @@ async function main() {
       discountPct: 5,   // 5% early signing discount
       surchargePct: 0,
       taxRate: project2.taxRate!,
-      total: (inv3Subtotal * 0.95) + (inv3Subtotal * 0.95 * project2.taxRate! / 100),
+      total: (inv3Subtotal * 0.95) + (inv3Subtotal * 0.95 * Number(project2.taxRate!) / 100),
       description: 'Deposit — 35% of contract. Includes 5% early signing discount.',
       lineItems: JSON.stringify([
         { description: 'Deposit (35% of contract value)', qty: 1, unitPrice: inv3Subtotal, amount: inv3Subtotal },
@@ -359,7 +358,7 @@ async function main() {
   });
 
   // Project 3 (COMPLETED) — Both invoices paid
-  const inv4Subtotal = project3.contractValue! * 0.50;
+  const inv4Subtotal = Number(project3.contractValue!) * 0.50;
   const inv4Tax = inv4Subtotal * 0.13;
   const inv4 = await db.invoice.create({
     data: {
@@ -381,7 +380,7 @@ async function main() {
     },
   });
 
-  const inv5Subtotal = project3.contractValue! * 0.50;
+  const inv5Subtotal = Number(project3.contractValue!) * 0.50;
   const inv5Tax = inv5Subtotal * 0.13;
   const inv5 = await db.invoice.create({
     data: {
@@ -412,17 +411,17 @@ async function main() {
         invoiceId: inv1.id,
         userId: sarah.id,
         amount: inv1.total,
-        method: PaymentMethod.STRIPE_CARD,
-        status: PaymentStatus.CONFIRMED,
+        method: PaymentMethod.STRIPE,
+        status: PaymentStatus.COMPLETED,
         stripePaymentIntentId: 'pi_3Abc123_test',
-        stripeChargeId: 'ch_3Abc123_test',
+        stripeCharged: true,
       },
       {
         invoiceId: inv4.id,
         userId: sarah.id,
         amount: inv4.total,
         method: PaymentMethod.BANK_TRANSFER,
-        status: PaymentStatus.CONFIRMED,
+        status: PaymentStatus.COMPLETED,
         bankReference: 'EW-2025-021',
         bankConfirmedAt: new Date('2025-09-28'),
         bankConfirmedByNote: 'E-transfer received $2,712.00. Matches INV-2025-021.',
@@ -432,7 +431,7 @@ async function main() {
         userId: sarah.id,
         amount: inv5.total,
         method: PaymentMethod.BANK_TRANSFER,
-        status: PaymentStatus.CONFIRMED,
+        status: PaymentStatus.COMPLETED,
         bankReference: 'EW-2025-022',
         bankConfirmedAt: new Date('2025-10-07'),
         bankConfirmedByNote: 'E-transfer received $2,712.00. Matches INV-2025-022.',
@@ -488,7 +487,7 @@ Mike @ Ecowoods`,
       phone: '(416) 555-0567',
       subject: 'Reclaimed barn wood — do you source it?',
       message: 'We\'re renovating a 1920s farmhouse in King City and want reclaimed barn board for the main floor. Do you source and install reclaimed wood? Approximately 1,800 sq ft.',
-      status: InquiryStatus.OPEN,
+      status: InquiryStatus.NEW,
     },
   });
 

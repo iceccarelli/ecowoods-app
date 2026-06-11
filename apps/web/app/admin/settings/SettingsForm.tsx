@@ -18,8 +18,8 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
     companyAddress: settings?.companyAddress ?? '',
     companyPhone: settings?.companyPhone ?? '',
     companyEmail: settings?.companyEmail ?? '',
-    companyHstNumber: settings?.companyHstNumber ?? '',
-    bankTransferInstructions: settings?.bankTransferInstructions ?? '',
+    companyNumberHst: settings?.companyNumberHst ?? '',
+    aiBankTransferInstructions: settings?.aiBankTransferInstructions ?? '',
     aiEnabled: settings?.aiEnabled ?? false,
   });
 
@@ -44,8 +44,8 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
         companyAddress: form.companyAddress,
         companyPhone: form.companyPhone,
         companyEmail: form.companyEmail,
-        companyHstNumber: form.companyHstNumber,
-        bankTransferInstructions: form.bankTransferInstructions,
+        companyNumberHst: form.companyNumberHst,
+        aiBankTransferInstructions: form.aiBankTransferInstructions,
         aiEnabled: form.aiEnabled as boolean,
       });
       toast.success('Settings saved.');
@@ -117,7 +117,7 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
           </div>
           <div className="field">
             <label>HST Registration #</label>
-            <input value={form.companyHstNumber} onChange={(e) => set('companyHstNumber', e.target.value)} placeholder="RT xxxx xxxx" />
+            <input value={form.companyNumberHst} onChange={(e) => set('companyNumberHst', e.target.value)} placeholder="RT xxxx xxxx" />
           </div>
         </div>
         <div className="field">
@@ -145,8 +145,8 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
         <div className="field">
           <textarea
             rows={4}
-            value={form.bankTransferInstructions}
-            onChange={(e) => set('bankTransferInstructions', e.target.value)}
+            value={form.aiBankTransferInstructions}
+            onChange={(e) => set('aiBankTransferInstructions', e.target.value)}
           />
         </div>
       </div>

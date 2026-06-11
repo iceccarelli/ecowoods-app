@@ -5,8 +5,10 @@ import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import BankPaymentForm from './BankPaymentForm';
 
-function formatCAD(amount: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
+function formatCAD(amount: number | { toNumber(): number }) {
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof amount === 'number' ? amount : amount.toNumber()
+  );
 }
 
 const statusLabel: Record<string, string> = {
@@ -14,7 +16,7 @@ const statusLabel: Record<string, string> = {
   SENT: 'Due',
   OVERDUE: 'Overdue',
   PAID: 'Paid',
-  CANCELLED: 'Cancelled',
+  VOID: 'Void',
 };
 
 export default async function MyInvoicesPage() {
@@ -30,7 +32,7 @@ export default async function MyInvoicesPage() {
         payments: { orderBy: { createdAt: 'desc' } },
       },
     }),
-    db.settings.findUnique({ where: { id: 'global' } }),
+    db.settings.findFirst(),
   ]);
 
   // Only show SENT/OVERDUE/PAID — DRAFT invoices are admin-only
@@ -111,9 +113,9 @@ export default async function MyInvoicesPage() {
                   </summary>
                   <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', fontSize: '0.88rem' }}>
                     <p style={{ marginBottom: '0.75rem' }}>
-                      {settings?.bankTransferInstructions ?? 'Please e-transfer payment to accounting@ecowoods.ca with your invoice number as the memo.'}
+                      {settings?.aiBankTransferInstructions ?? 'Please e-transfer payment to accounting@ecowoods.ca with your invoice number as the memo.'}
                     </p>
-                    <BankPaymentForm invoiceId={inv.id} invoiceNumber={inv.number} />
+                    <BankPaymentForm invoiceId={inv.id} invoiceNumber={inv.number ?? ''} />
                   </div>
                 </details>
 

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     // Pull existing confirmed appointments in range, count per slot start.
     const rows = await db.appointment.findMany({
       where: {
-        status: 'CONFIRMED',
+        status: 'SCHEDULED',
         startsAt: { gte: new Date(`${fromKey}T00:00:00Z`), lte: new Date(`${toKey}T23:59:59Z`) },
       },
       select: { startsAt: true },

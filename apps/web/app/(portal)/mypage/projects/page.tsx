@@ -4,8 +4,11 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { format } from 'date-fns';
 
-function formatCAD(amount: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
+function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
+  if (amount == null) return '—';
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    typeof amount === 'number' ? amount : amount.toNumber()
+  );
 }
 
 const statusColors: Record<string, string> = {
@@ -65,7 +68,7 @@ export default async function MyProjectsPage() {
             const currentStep = statusSteps.indexOf(proj.status);
             const paidTotal = proj.invoices
               .filter((i) => i.status === 'PAID')
-              .reduce((s, i) => s + i.total, 0);
+              .reduce((s, i) => s + Number(i.total), 0);
 
             return (
               <div key={proj.id} className="portal-card">

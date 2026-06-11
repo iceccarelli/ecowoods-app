@@ -69,7 +69,7 @@ export default function QuoteActions({ quote, customers }: Props) {
     }
   };
 
-  if (quote.status === 'CONVERTED') return null;
+  if (quote.status === 'ACCEPTED') return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -79,10 +79,10 @@ export default function QuoteActions({ quote, customers }: Props) {
         <div className="field">
           <label>Status</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as never)}>
-            <option value="NEW">New</option>
-            <option value="REVIEWING">Reviewing</option>
+            <option value="PENDING">Pending</option>
             <option value="QUOTED">Quoted</option>
-            <option value="CLOSED">Closed</option>
+            <option value="ACCEPTED">Accepted</option>
+            <option value="REJECTED">Rejected</option>
           </select>
         </div>
         <div className="field">
@@ -100,7 +100,7 @@ export default function QuoteActions({ quote, customers }: Props) {
       </div>
 
       {/* Convert to project */}
-      {quote.status !== 'CLOSED' && (
+      {quote.status !== 'REJECTED' && (
         <div className="portal-card" style={{ borderColor: 'var(--copper)', borderWidth: 2 }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--copper-deep)' }}>
             Convert to Project

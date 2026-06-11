@@ -72,7 +72,7 @@ export function QuoteDocument({
   quote,
   settings,
 }: {
-  quote: QuoteRequest & { quoteLineItems?: unknown; quotedAmount?: number | null; quoteTaxRate?: number | null; quoteNotes?: string | null; quoteValidUntil?: Date | null };
+  quote: QuoteRequest & { quoteLineItems?: unknown; quoteNotes?: string | null; quoteValidUntil?: Date | null };
   settings: Settings;
 }) {
   const items: LineItem[] = Array.isArray(quote.quoteLineItems)
@@ -81,22 +81,22 @@ export function QuoteDocument({
       ? JSON.parse(quote.quoteLineItems as string)
       : [];
 
-  const taxRate     = quote.quoteTaxRate ?? settings.defaultTaxRate ?? 13;
-  const subtotal    = quote.quotedAmount ?? items.reduce((s, i) => s + i.amount, 0);
+  const taxRate     = Number(quote.quoteTaxRate ?? settings.defaultTaxRate ?? 13);
+  const subtotal    = Number(quote.quotedAmount ?? items.reduce((s, i) => s + i.amount, 0));
   const taxAmt      = subtotal * taxRate / 100;
   const grandTotal  = subtotal + taxAmt;
   const validUntil  = quote.quoteValidUntil ?? addDays(new Date(), 30);
   const quoteRef    = `EST-${format(new Date(), 'yyyy')}-${quote.id.slice(0, 6).toUpperCase()}`;
 
   return (
-    <Document title={`Estimate — ${quote.name}`} author={settings.companyName}>
+    <Document title={`Estimate — ${quote.name}`} author={settings.companyName ?? ''}>
       <Page size="LETTER" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.brandName}>{settings.companyName.toUpperCase()}</Text>
+            <Text style={styles.brandName}>{(settings.companyName ?? '').toUpperCase()}</Text>
             <Text style={styles.brandSub}>Premium Hardwood Flooring · Toronto, Ontario, Canada</Text>
-            <Text style={[styles.brandSub, { marginTop: 2 }]}>{settings.companyPhone} · {settings.companyEmail}</Text>
+            <Text style={[styles.brandSub, { marginTop: 2 }]}>{settings.companyPhone ?? ''} · {settings.companyEmail ?? ''}</Text>
           </View>
           <View>
             <Text style={styles.docTitle}>ESTIMATE</Text>
@@ -124,7 +124,7 @@ export function QuoteDocument({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PROJECT SUMMARY</Text>
           {quote.service && <View style={styles.row}><Text style={styles.label}>Service</Text><Text style={styles.value}>{quote.service}</Text></View>}
-          {quote.species?.length > 0 && <View style={styles.row}><Text style={styles.label}>Species</Text><Text style={styles.value}>{quote.species.join(', ')}</Text></View>}
+          {Array.isArray(quote.species) && (quote.species as string[]).length > 0 && <View style={styles.row}><Text style={styles.label}>Species</Text><Text style={styles.value}>{(quote.species as string[]).join(', ')}</Text></View>}
           {quote.squareFeet && <View style={styles.row}><Text style={styles.label}>Area</Text><Text style={styles.value}>{quote.squareFeet.toLocaleString()} sq ft (approx.)</Text></View>}
           {quote.projectType && <View style={styles.row}><Text style={styles.label}>Project Type</Text><Text style={styles.value}>{quote.projectType.replace('_', ' ')}</Text></View>}
           {quote.timeline && <View style={styles.row}><Text style={styles.label}>Timeline</Text><Text style={styles.value}>{quote.timeline.replace(/_/g, ' ')}</Text></View>}
@@ -188,14 +188,14 @@ export function QuoteDocument({
             This document is an estimate only and does not constitute a contract.
             A formal contract will be issued upon mutual agreement of scope and pricing.
           </Text>
-          {settings.companyHstNumber && (
-            <Text style={[styles.bodyText, { marginTop: 4 }]}>HST Registration #: {settings.companyHstNumber}</Text>
+          {settings.companyNumberHst && (
+            <Text style={[styles.bodyText, { marginTop: 4 }]}>HST Registration #: {settings.companyNumberHst}</Text>
           )}
         </View>
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>{settings.companyName} · {settings.companyAddress}</Text>
+          <Text style={styles.footerText}>{settings.companyName ?? ''} · {settings.companyAddress ?? ''}</Text>
           <Text style={styles.footerText}>Estimate #{quoteRef} · {format(new Date(), 'MMMM d, yyyy')}</Text>
         </View>
       </Page>

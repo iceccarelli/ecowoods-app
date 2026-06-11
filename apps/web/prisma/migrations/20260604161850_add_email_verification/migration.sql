@@ -1,13 +1,13 @@
 -- CreateTable
 CREATE TABLE "EmailVerificationToken" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" TEXT,
     "phone" TEXT,
-    "passwordHash" TEXT NOT NULL,
-    "token" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "passwordHash" TEXT,
+    "token" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+    "expiresAt" TIMESTAMPTZ NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "EmailVerificationToken_pkey" PRIMARY KEY ("id")
 );

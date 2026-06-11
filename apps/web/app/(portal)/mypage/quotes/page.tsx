@@ -15,11 +15,10 @@ export default async function MyQuotesPage() {
   });
 
   const statusColor: Record<string, string> = {
-    NEW: 'info',
-    REVIEWING: 'warning',
+    PENDING: 'info',
     QUOTED: 'active',
-    CONVERTED: 'success',
-    CLOSED: 'neutral',
+    ACCEPTED: 'success',
+    REJECTED: 'neutral',
   };
 
   return (
@@ -54,7 +53,7 @@ export default async function MyQuotesPage() {
                   <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
                     Submitted {format(q.createdAt, 'MMMM d, yyyy')}
                     {q.squareFeet ? ` · ${q.squareFeet.toLocaleString()} sq ft` : ''}
-                    {q.species?.length ? ` · ${q.species.join(', ')}` : ''}
+                    {Array.isArray(q.species) && (q.species as string[]).length > 0 ? ` · ${(q.species as string[]).join(', ')}` : ''}
                   </div>
                 </div>
                 <span className={`portal-badge portal-badge-${statusColor[q.status] ?? 'neutral'}`}>
@@ -76,10 +75,10 @@ export default async function MyQuotesPage() {
                     <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>📋 Estimate Ready</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
                       Your formal estimate (견적서) is available.
-                      {(q as { quotedAmount?: number | null }).quotedAmount && (
+                      {q.quotedAmount && (
                         <> Total: <strong>
                           {new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
-                            (q as { quotedAmount: number }).quotedAmount * (1 + ((q as { quoteTaxRate?: number | null }).quoteTaxRate ?? 13) / 100)
+                            Number(q.quotedAmount) * (1 + Number(q.quoteTaxRate ?? 13) / 100)
                           )} CAD
                         </strong></>
                       )}

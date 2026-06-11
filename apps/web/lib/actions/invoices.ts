@@ -8,24 +8,24 @@
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import type { InvoiceStage, InvoiceStatus } from '@prisma/client';
+import type { InvoiceStage, InvoiceStatus, Settings } from '@prisma/client';
 
 const DEFAULT_SETTINGS = {
-  id: 'global',
-  companyName: 'Ecowoods Hardwood Flooring Inc.',
-  companyAddress: '32 Norfield Crsnt., Toronto, ON M3J 3A1',
-  companyPhone: '(416) 249-1276',
-  companyEmail: 'hello@ecowoods.ca',
-  companyHstNumber: '',
+  id: '00000000-0000-0000-0000-000000000001',
+  companyName: 'Ecowoods Hardwood Flooring Inc.' as string | null,
+  companyAddress: '32 Norfield Crsnt., Toronto, ON M3J 3A1' as string | null,
+  companyPhone: '(416) 249-1276' as string | null,
+  companyEmail: 'hello@ecowoods.ca' as string | null,
+  companyNumberHst: null as string | null,
   companyLogoUrl: null as string | null,
   defaultDepositPct: 30,
   defaultMidpointPct: 40,
   defaultFinalPct: 30,
   defaultTaxRate: 13,
-  aiEnabled: false,
-  bankTransferInstructions: '',
+  aiEnabled: true,
+  aiBankTransferInstructions: null as string | null,
   updatedAt: new Date(),
-};
+} as unknown as Settings;
 
 /** Compute invoice total from subtotal + discount + surcharge + tax */
 function computeTotal(subtotal: number, discountPct: number, surchargePct: number, taxRate: number) {
@@ -64,11 +64,11 @@ export async function createInvoice(input: {
     include: { user: true },
   });
 
-  const settings = await db.settings.findUnique({ where: { id: 'global' } });
+  const settings = await db.settings.findFirst();
 
   const discountPct = input.discountPct ?? 0;
   const surchargePct = input.surchargePct ?? 0;
-  const taxRate = input.taxRate ?? project.taxRate ?? settings?.defaultTaxRate ?? 13;
+  const taxRate = input.taxRate ?? Number(project.taxRate ?? settings?.defaultTaxRate ?? 13);
 
   const invoice = await db.invoice.create({
     data: {
@@ -115,7 +115,7 @@ export async function issueInvoice(invoiceId: string) {
           import('@/lib/pdf/storage'),
           import('react'),
         ]);
-      const settings = (await db.settings.findUnique({ where: { id: 'global' } })) ?? DEFAULT_SETTINGS;
+      const settings = (await db.settings.findFirst()) ?? DEFAULT_SETTINGS;
       const element = createElement(InvoiceDocument, { invoice, settings });
       const buffer = await renderToBuffer(element as never);
       const filename = `invoice-${invoice.number}-${Date.now()}.pdf`;
@@ -138,9 +138,9 @@ export async function issueInvoice(invoiceId: string) {
     sendInvoiceEmail({
       to: invoice.project.user.email,
       name: invoice.project.user.name ?? 'Valued Customer',
-      invoiceNumber: invoice.number,
+      invoiceNumber: invoice.number ?? '',
       invoiceId: invoice.id,
-      total: invoice.total,
+      total: Number(invoice.total),
       dueDate: invoice.dueDate ?? undefined,
       projectTitle: invoice.project.title,
       pdfUrl: absolutePdfUrl ?? undefined,
@@ -175,7 +175,7 @@ export async function markInvoicePaid(
       userId: invoice.project.userId,
       amount: invoice.total,
       method,
-      status: 'CONFIRMED',
+      status: 'COMPLETED',
       bankReference: reference,
       bankConfirmedAt: new Date(),
       bankConfirmedByNote: notes,
@@ -200,11 +200,14 @@ export async function generateStagedInvoices(projectId: string) {
     { stage: 'DEPOSIT' as const, pct: project.depositPct ?? 30, label: 'Deposit' },
     { stage: 'MIDPOINT' as const, pct: project.midpointPct ?? 40, label: 'Progress payment' },
     { stage: 'FINAL' as const, pct: project.finalPct ?? 30, label: 'Final balance' },
-  ].filter((s) => s.pct > 0);
+  ].filter((s) => Number(s.pct) > 0);
 
   const created: string[] = [];
   for (const s of stages) {
-    const subtotal = project.contractValue * (s.pct / 100);
+    const pct = Number(s.pct);
+    const contractVal = Number(project.contractValue);
+    const taxRate = Number(project.taxRate ?? 13);
+    const subtotal = contractVal * (pct / 100);
     const inv = await db.invoice.create({
       data: {
         number: await generateInvoiceNumber(),
@@ -214,11 +217,11 @@ export async function generateStagedInvoices(projectId: string) {
         subtotal,
         discountPct: 0,
         surchargePct: 0,
-        taxRate: project.taxRate ?? 13,
-        total: computeTotal(subtotal, 0, 0, project.taxRate ?? 13),
-        description: `${s.label} — ${s.pct}% of contract value`,
+        taxRate,
+        total: computeTotal(subtotal, 0, 0, taxRate),
+        description: `${s.label} — ${pct}% of contract value`,
         lineItems: [
-          { description: `${s.label} (${s.pct}% of $${project.contractValue.toFixed(2)})`, qty: 1, unitPrice: subtotal, amount: subtotal },
+          { description: `${s.label} (${pct}% of $${contractVal.toFixed(2)})`, qty: 1, unitPrice: subtotal, amount: subtotal },
         ] as never,
       },
     });
@@ -294,9 +297,9 @@ export async function resendInvoice(invoiceId: string) {
   await sendInvoiceEmail({
     to: invoice.project.user.email,
     name: invoice.project.user.name ?? 'Valued Customer',
-    invoiceNumber: invoice.number,
+    invoiceNumber: invoice.number ?? '',
     invoiceId: invoice.id,
-    total: invoice.total,
+    total: Number(invoice.total),
     dueDate: invoice.dueDate ?? undefined,
     projectTitle: invoice.project.title,
     pdfUrl: absolutePdfUrl ?? undefined,
@@ -325,10 +328,10 @@ export async function reissueInvoice(
     include: { project: { include: { user: true } } },
   });
 
-  const subtotal = changes.subtotal ?? existing.subtotal;
-  const discountPct = changes.discountPct ?? existing.discountPct;
-  const surchargePct = changes.surchargePct ?? existing.surchargePct;
-  const taxRate = changes.taxRate ?? existing.taxRate;
+  const subtotal = changes.subtotal ?? Number(existing.subtotal);
+  const discountPct = changes.discountPct ?? Number(existing.discountPct);
+  const surchargePct = changes.surchargePct ?? Number(existing.surchargePct);
+  const taxRate = changes.taxRate ?? Number(existing.taxRate);
 
   const invoice = await db.invoice.update({
     where: { id: invoiceId },
@@ -357,7 +360,7 @@ export async function reissueInvoice(
         import('@/lib/pdf/storage'),
         import('react'),
       ]);
-    const settings = (await db.settings.findUnique({ where: { id: 'global' } })) ?? DEFAULT_SETTINGS;
+    const settings = (await db.settings.findFirst()) ?? DEFAULT_SETTINGS;
     const element = createElement(InvoiceDocument, { invoice, settings });
     const buffer = await renderToBuffer(element as never);
     const filename = `invoice-${invoice.number}-${Date.now()}.pdf`;
@@ -377,9 +380,9 @@ export async function reissueInvoice(
     sendInvoiceEmail({
       to: invoice.project.user.email,
       name: invoice.project.user.name ?? 'Valued Customer',
-      invoiceNumber: invoice.number,
+      invoiceNumber: invoice.number ?? '',
       invoiceId: invoice.id,
-      total: invoice.total,
+      total: Number(invoice.total),
       dueDate: invoice.dueDate ?? undefined,
       projectTitle: invoice.project.title,
       pdfUrl: absolutePdfUrl ?? undefined,

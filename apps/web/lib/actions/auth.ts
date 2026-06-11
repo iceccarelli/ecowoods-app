@@ -144,14 +144,14 @@ export async function verifyEmailToken(token: string): Promise<{
       name: record.name,
       phone: record.phone,
       passwordHash: record.passwordHash,
-      emailVerified: new Date(),
+      emailVerified: true,
     },
     create: {
       email: record.email,
       name: record.name,
       phone: record.phone,
       passwordHash: record.passwordHash,
-      emailVerified: new Date(),
+      emailVerified: true,
     },
   });
 

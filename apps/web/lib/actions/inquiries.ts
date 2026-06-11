@@ -70,7 +70,7 @@ export async function replyToInquiry(inquiryId: string, content: string) {
   sendInquiryReplyEmail({
     to: inquiry.email,
     name: inquiry.name,
-    subject: inquiry.subject,
+    subject: inquiry.subject ?? '',
     replyContent: content,
     inquiryId,
   }).catch((err) => console.error('[email] inquiry reply send failed:', err));
@@ -91,7 +91,7 @@ export async function closeInquiry(inquiryId: string) {
 }
 
 // ─── Admin: update inquiry status ────────────────────────────────────────────
-export async function updateInquiryStatus(inquiryId: string, status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED') {
+export async function updateInquiryStatus(inquiryId: string, status: 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED') {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
@@ -109,18 +109,19 @@ export async function updateSettings(data: {
   companyAddress?: string;
   companyPhone?: string;
   companyEmail?: string;
-  companyHstNumber?: string;
-  bankTransferInstructions?: string;
+  companyNumberHst?: string;
+  aiBankTransferInstructions?: string;
   aiEnabled?: boolean;
 }) {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
-  await db.settings.upsert({
-    where: { id: 'global' },
-    update: data,
-    create: { id: 'global', ...data },
-  });
+  const existing = await db.settings.findFirst();
+  if (existing) {
+    await db.settings.update({ where: { id: existing.id }, data });
+  } else {
+    await db.settings.create({ data });
+  }
 
   revalidatePath('/admin/settings');
 }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
-import { signOutAction } from '@/lib/actions/auth';
+import SignOutButton from '@/app/components/SignOutButton';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
@@ -61,9 +61,7 @@ export default async function AdminLayout({
               <div style={{ fontSize: '0.78rem', color: 'var(--copper-bright)' }}>Administrator</div>
             </div>
           </div>
-          <form action={signOutAction}>
-            <button type="submit" className="portal-signout">Sign out</button>
-          </form>
+          <SignOutButton />
         </div>
       </aside>
 

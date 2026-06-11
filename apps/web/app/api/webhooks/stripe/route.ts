@@ -73,7 +73,6 @@ export async function POST(req: Request) {
           data: {
             status: 'PAID',
             paidAt: new Date(),
-            stripeCheckoutSessionId: session.id,
           },
         });
 
@@ -83,8 +82,9 @@ export async function POST(req: Request) {
             invoiceId,
             userId: userId ?? null,
             amount: (session.amount_total ?? 0) / 100, // cents → CAD
-            method: 'STRIPE_CARD',
-            status: 'CONFIRMED',
+            method: 'STRIPE',
+            status: 'COMPLETED',
+            stripeCharged: true,
             stripePaymentIntentId: typeof session.payment_intent === 'string'
               ? session.payment_intent
               : (session.payment_intent?.id ?? null),

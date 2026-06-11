@@ -8,7 +8,7 @@ function formatCAD(n: number) {
 
 export default async function AdminUsersPage() {
   const users = await db.user.findMany({
-    where: { role: 'CUSTOMER' },
+    where: { role: 'USER' },
     orderBy: { createdAt: 'desc' },
     include: {
       quoteRequests: { select: { id: true } },
@@ -52,7 +52,7 @@ export default async function AdminUsersPage() {
               const totalPaid = user.projects
                 .flatMap((p) => p.invoices)
                 .filter((i) => i.status === 'PAID')
-                .reduce((s, i) => s + i.total, 0);
+                .reduce((s, i) => s + Number(i.total), 0);
 
               return (
                 <tr key={user.id}>

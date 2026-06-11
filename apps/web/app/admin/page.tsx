@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { format, subDays } from 'date-fns';
 
-function formatCAD(amount: number) {
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
+function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
+    amount == null ? 0 : typeof amount === 'number' ? amount : amount.toNumber()
+  );
 }
 
 export default async function AdminDashboard() {
@@ -28,14 +30,14 @@ export default async function AdminDashboard() {
       _sum: { total: true },
     }),
     db.payment.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo }, status: 'CONFIRMED' },
+      where: { createdAt: { gte: thirtyDaysAgo }, status: 'COMPLETED' },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { invoice: { select: { number: true, project: { select: { title: true } } } } },
     }),
-    db.inquiry.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
+    db.inquiry.count({ where: { status: { in: ['NEW', 'IN_PROGRESS'] } } }),
     db.quoteRequest.findMany({
-      where: { status: { in: ['NEW', 'REVIEWING'] } },
+      where: { status: { in: ['PENDING'] } },
       orderBy: { createdAt: 'desc' },
       take: 6,
     }),
@@ -114,7 +116,7 @@ export default async function AdminDashboard() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span className={`portal-badge portal-badge-${q.status === 'NEW' ? 'info' : 'warning'}`}>
+                    <span className={`portal-badge portal-badge-${q.status === 'PENDING' ? 'info' : 'warning'}`}>
                       {q.status}
                     </span>
                     <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
@@ -148,7 +150,7 @@ export default async function AdminDashboard() {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, color: 'var(--success)' }}>{formatCAD(pay.amount)}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                      {pay.method.replace('_', ' ')}
+                      {pay.method?.replace('_', ' ') ?? ''}
                     </div>
                   </div>
                 </div>

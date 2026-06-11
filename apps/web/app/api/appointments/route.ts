@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const dayKey = localDateKey(startsAt);
     const sameDay = await db.appointment.findMany({
       where: {
-        status: 'CONFIRMED',
+        status: 'SCHEDULED',
         startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
       },
       select: { startsAt: true },
