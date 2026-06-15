@@ -93,16 +93,21 @@ export default async function MyInvoicesPage() {
                   >
                     Pay Now — Card / Apple Pay
                   </Link>
-                  {/* PDF download */}
+                  {/* View / download PDF */}
                   {inv.pdfUrl && !inv.pdfUrl.startsWith('data:') && (
-                    <a
-                      href={inv.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-ghost btn-sm"
-                    >
-                      Download PDF
-                    </a>
+                    <>
+                      <Link href={`/docs/invoice/${inv.id}`} className="btn btn-ghost btn-sm">
+                        View Invoice
+                      </Link>
+                      <a
+                        href={inv.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Download PDF
+                      </a>
+                    </>
                   )}
                 </div>
 
@@ -159,9 +164,14 @@ export default async function MyInvoicesPage() {
                     </td>
                     <td>
                       {inv.pdfUrl && !inv.pdfUrl.startsWith('data:') ? (
-                        <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--copper-deep)', fontWeight: 600, fontSize: '0.85rem' }}>
-                          Download
-                        </a>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <Link href={`/docs/invoice/${inv.id}`} style={{ color: 'var(--copper-deep)', fontWeight: 600, fontSize: '0.85rem' }}>
+                            View
+                          </Link>
+                          <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', fontWeight: 600, fontSize: '0.85rem' }}>
+                            PDF
+                          </a>
+                        </div>
                       ) : (
                         <span style={{ color: 'var(--muted-soft)', fontSize: '0.85rem' }}>—</span>
                       )}

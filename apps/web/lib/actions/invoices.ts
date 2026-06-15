@@ -127,11 +127,9 @@ export async function issueInvoice(invoiceId: string) {
     }
   }
 
-  // Build absolute PDF URL for email
+  // Use proxy URL for email (private Blob is server-only; proxy handles auth)
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const absolutePdfUrl = pdfUrl
-    ? pdfUrl.startsWith('http') ? pdfUrl : `${baseUrl}${pdfUrl}`
-    : null;
+  const emailPdfUrl = pdfUrl ? `${baseUrl}/api/docs/invoice/${invoiceId}?dl=1` : null;
 
   // Email customer (non-blocking, lazy import)
   import('@/lib/email').then(({ sendInvoiceEmail }) =>
@@ -143,7 +141,7 @@ export async function issueInvoice(invoiceId: string) {
       total: Number(invoice.total),
       dueDate: invoice.dueDate ?? undefined,
       projectTitle: invoice.project.title,
-      pdfUrl: absolutePdfUrl ?? undefined,
+      pdfUrl: emailPdfUrl ?? undefined,
     })
   ).catch((err: unknown) => console.error('[email] invoice send failed:', err));
 
@@ -289,9 +287,7 @@ export async function resendInvoice(invoiceId: string) {
   });
 
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const absolutePdfUrl = invoice.pdfUrl
-    ? (invoice.pdfUrl.startsWith('http') ? invoice.pdfUrl : `${baseUrl}${invoice.pdfUrl}`)
-    : null;
+  const emailPdfUrl = invoice.pdfUrl ? `${baseUrl}/api/docs/invoice/${invoiceId}?dl=1` : null;
 
   const { sendInvoiceEmail } = await import('@/lib/email');
   await sendInvoiceEmail({
@@ -302,7 +298,7 @@ export async function resendInvoice(invoiceId: string) {
     total: Number(invoice.total),
     dueDate: invoice.dueDate ?? undefined,
     projectTitle: invoice.project.title,
-    pdfUrl: absolutePdfUrl ?? undefined,
+    pdfUrl: emailPdfUrl ?? undefined,
   });
 
   return { success: true };
@@ -372,9 +368,7 @@ export async function reissueInvoice(
 
   // Re-send email (non-blocking)
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const absolutePdfUrl = pdfUrl
-    ? (pdfUrl.startsWith('http') ? pdfUrl : `${baseUrl}${pdfUrl}`)
-    : null;
+  const emailPdfUrl = pdfUrl ? `${baseUrl}/api/docs/invoice/${invoiceId}?dl=1` : null;
 
   import('@/lib/email').then(({ sendInvoiceEmail }) =>
     sendInvoiceEmail({
@@ -385,7 +379,7 @@ export async function reissueInvoice(
       total: Number(invoice.total),
       dueDate: invoice.dueDate ?? undefined,
       projectTitle: invoice.project.title,
-      pdfUrl: absolutePdfUrl ?? undefined,
+      pdfUrl: emailPdfUrl ?? undefined,
     })
   ).catch((err: unknown) => console.error('[email] reissue send failed:', err));
 

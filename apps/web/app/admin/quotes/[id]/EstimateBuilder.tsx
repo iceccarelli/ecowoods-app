@@ -116,9 +116,14 @@ export default function EstimateBuilder({
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {quotePdfUrl && !quotePdfUrl.startsWith('data:') && (
-            <a href={quotePdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-              📄 View PDF
-            </a>
+            <>
+              <a href={`/docs/quote/${quoteId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                🔗 Public Link
+              </a>
+              <a href={quotePdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                📄 View PDF
+              </a>
+            </>
           )}
           {!isEditing && existingAmount && (
             <button onClick={() => setIsEditing(true)} className="btn btn-ghost btn-sm">

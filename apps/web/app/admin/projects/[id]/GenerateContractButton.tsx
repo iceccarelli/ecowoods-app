@@ -54,6 +54,9 @@ export default function GenerateContractButton({ projectId, contractPdfUrl: init
 
       {pdfUrl && !pdfUrl.startsWith('data:') && (
         <>
+          <a href={`/docs/contract/${projectId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+            🔗 Public Link
+          </a>
           <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
             📄 View PDF
           </a>
