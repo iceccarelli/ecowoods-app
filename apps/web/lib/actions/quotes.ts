@@ -137,6 +137,7 @@ export async function sendEstimateEmail(quoteId: string) {
   const pdfUrl = quote.quotePdfUrl.startsWith('http')
     ? quote.quotePdfUrl
     : `${baseUrl}${quote.quotePdfUrl}`;
+  const viewUrl = `${baseUrl}/docs/quote/${quoteId}`;
 
   const totalFormatted = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
     .format(Number(quote.quotedAmount ?? 0) * (1 + Number(quote.quoteTaxRate ?? 13) / 100));
@@ -158,8 +159,13 @@ export async function sendEstimateEmail(quoteId: string) {
             ${quote.quoteValidUntil ? `<div style="font-size:12px;color:#9a8a7a;margin-top:4px;">Valid until ${new Date(quote.quoteValidUntil).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })}</div>` : ''}
           </div>
           <div style="text-align:center;margin:24px 0;">
-            <a href="${pdfUrl}" style="display:inline-block;background:#c87e4f;color:#fdfbf6;padding:13px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;">
-              Download Estimate PDF
+            <a href="${viewUrl}" style="display:inline-block;background:#c87e4f;color:#fdfbf6;padding:13px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;">
+              View Estimate Online
+            </a>
+          </div>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="${pdfUrl}" style="color:#6b5d52;font-size:13px;font-weight:600;text-decoration:underline;">
+              📄 Download PDF directly
             </a>
           </div>
           <p style="color:#6b5d52;font-size:13px;">
@@ -173,7 +179,7 @@ export async function sendEstimateEmail(quoteId: string) {
         </div>
       </div>
     `,
-    text: `Hi ${quote.name},\n\nYour Ecowoods estimate is ready.\nTotal: ${totalFormatted} CAD\n\nDownload PDF: ${pdfUrl}\n\nTo proceed, reply to this email or call ${settings?.companyPhone ?? '(416) 249-1276'}.`,
+    text: `Hi ${quote.name},\n\nYour Ecowoods estimate is ready.\nTotal: ${totalFormatted} CAD\n\nView online: ${viewUrl}\nDownload PDF: ${pdfUrl}\n\nTo proceed, reply to this email or call ${settings?.companyPhone ?? '(416) 249-1276'}.`,
   });
 
   await db.quoteRequest.update({

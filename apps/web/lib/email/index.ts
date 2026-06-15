@@ -198,6 +198,7 @@ export async function sendInvoiceEmail({
 
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/$/, '');
   const payUrl = `${baseUrl}/mypage/invoices/${invoiceId}/pay`;
+  const viewUrl = `${baseUrl}/docs/invoice/${invoiceId}`;
 
   await sendEmail({
     to,
@@ -221,12 +222,15 @@ export async function sendInvoiceEmail({
               Pay Now — Card / Apple Pay / Google Pay
             </a>
           </div>
-          ${pdfUrl ? `
-          <div style="text-align:center;margin:12px 0 24px;">
-            <a href="${pdfUrl}" style="color:#c87e4f;font-size:14px;font-weight:600;text-decoration:underline;">
-              📄 Download Invoice PDF
+          <div style="text-align:center;margin:12px 0 24px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <a href="${viewUrl}" style="color:#1a0f08;font-size:14px;font-weight:600;text-decoration:none;border:1px solid #1a0f08;padding:10px 20px;border-radius:6px;display:inline-block;">
+              🔍 View Invoice Online
             </a>
-          </div>` : ''}
+            ${pdfUrl ? `
+            <a href="${pdfUrl}" style="color:#6b5d52;font-size:14px;font-weight:600;text-decoration:underline;">
+              📄 Download PDF
+            </a>` : ''}
+          </div>
           <p style="color:#6b5d52;font-size:13px;">
             Prefer to pay by e-transfer? Send to <strong>accounting@ecowoods.ca</strong> with <strong>#${invoiceNumber}</strong> as the memo.<br/>
             Questions? Call (416) 249-1276.
@@ -237,7 +241,7 @@ export async function sendInvoiceEmail({
         </div>
       </div>
     `,
-    text: `Invoice #${invoiceNumber}\nAmount: ${totalStr}\n${dueDateStr}\n\nPay online: ${payUrl}${pdfUrl ? `\nDownload PDF: ${pdfUrl}` : ''}`,
+    text: `Invoice #${invoiceNumber}\nAmount: ${totalStr}\n${dueDateStr}\n\nView invoice: ${viewUrl}\nPay online: ${payUrl}${pdfUrl ? `\nDownload PDF: ${pdfUrl}` : ''}`,
   });
 }
 
@@ -362,12 +366,14 @@ export async function sendContractEmail({
   projectTitle,
   contractPdfUrl,
   portalProjectUrl,
+  viewUrl,
 }: {
   to: string;
   name: string;
   projectTitle: string;
   contractPdfUrl: string;
   portalProjectUrl: string;
+  viewUrl?: string;
 }) {
   await sendEmail({
     to,
@@ -385,15 +391,22 @@ export async function sendContractEmail({
             <div style="font-size:12px;color:#6b5d52;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Project</div>
             <div style="font-size:16px;font-weight:700;">${projectTitle}</div>
           </div>
-          <div style="text-align:center;margin:28px 0 16px;">
+          ${viewUrl ? `
+          <div style="text-align:center;margin:28px 0 12px;">
+            <a href="${viewUrl}"
+               style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
+              🔍 View Contract Online
+            </a>
+          </div>` : ''}
+          <div style="text-align:center;margin:${viewUrl ? '0' : '28px 0'} 0 16px;">
             <a href="${contractPdfUrl}"
-               style="background:#1a0f08;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;margin-bottom:12px;">
-              📄 Download Contract PDF
+               style="color:#6b5d52;font-size:13px;font-weight:600;text-decoration:underline;">
+              📄 Download PDF directly
             </a>
           </div>
-          <div style="text-align:center;margin-bottom:28px;">
+          <div style="text-align:center;margin:16px 0 28px;">
             <a href="${portalProjectUrl}"
-               style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
+               style="color:#c87e4f;font-size:13px;font-weight:600;text-decoration:underline;">
               View in My Account
             </a>
           </div>
@@ -407,7 +420,7 @@ export async function sendContractEmail({
         </div>
       </div>
     `,
-    text: `Hi ${name},\n\nYour contract for "${projectTitle}" is ready.\n\nDownload PDF: ${contractPdfUrl}\nView in portal: ${portalProjectUrl}\n\nQuestions? Call (416) 249-1276.\n\nEcowoods Hardwood Flooring Inc.`,
+    text: `Hi ${name},\n\nYour contract for "${projectTitle}" is ready.\n\n${viewUrl ? `View online: ${viewUrl}\n` : ''}Download PDF: ${contractPdfUrl}\nView in portal: ${portalProjectUrl}\n\nQuestions? Call (416) 249-1276.\n\nEcowoods Hardwood Flooring Inc.`,
   });
 }
 

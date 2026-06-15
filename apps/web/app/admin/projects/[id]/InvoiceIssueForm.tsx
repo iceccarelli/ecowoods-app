@@ -118,9 +118,14 @@ export default function InvoiceIssueForm({
       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
         <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>—</span>
         {invoice.pdfUrl && (
-          <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-            PDF
-          </a>
+          <>
+            <a href={`/docs/invoice/${invoice.id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+              🔗
+            </a>
+            <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+              PDF
+            </a>
+          </>
         )}
       </div>
     );
@@ -131,9 +136,14 @@ export default function InvoiceIssueForm({
       <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
         {/* View PDF */}
         {invoice.pdfUrl && (
-          <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-            PDF
-          </a>
+          <>
+            <a href={`/docs/invoice/${invoice.id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+              🔗 Public
+            </a>
+            <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+              PDF
+            </a>
+          </>
         )}
 
         {/* DRAFT: Issue */}

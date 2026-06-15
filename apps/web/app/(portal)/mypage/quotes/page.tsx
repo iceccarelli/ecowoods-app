@@ -84,9 +84,14 @@ export default async function MyQuotesPage() {
                       )}
                     </div>
                   </div>
-                  <a href={(q as { quotePdfUrl: string }).quotePdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-copper btn-sm">
-                    Download Estimate PDF
-                  </a>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <Link href={`/docs/quote/${q.id}`} className="btn btn-copper btn-sm">
+                      View Estimate
+                    </Link>
+                    <a href={(q as { quotePdfUrl: string }).quotePdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                      Download PDF
+                    </a>
+                  </div>
                 </div>
               )}
 

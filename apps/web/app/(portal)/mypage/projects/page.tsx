@@ -145,18 +145,26 @@ export default async function MyProjectsPage() {
                 </div>
 
                 {/* Contract PDFs */}
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {proj.contractPdfUrl && !proj.contractPdfUrl.startsWith('data:') && (
-                    <a href={proj.contractPdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                      📄 Download Contract
-                    </a>
-                  )}
-                  {proj.signedContractPdfUrl && !proj.signedContractPdfUrl.startsWith('data:') && (
-                    <a href={proj.signedContractPdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                      ✅ Signed Contract
-                    </a>
-                  )}
-                </div>
+                {(proj.contractPdfUrl || proj.signedContractPdfUrl) && (
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {(proj.contractPdfUrl && !proj.contractPdfUrl.startsWith('data:')) ||
+                     (proj.signedContractPdfUrl && !proj.signedContractPdfUrl.startsWith('data:')) ? (
+                      <Link href={`/docs/contract/${proj.id}`} className="btn btn-ghost btn-sm">
+                        📄 View Contract
+                      </Link>
+                    ) : null}
+                    {proj.contractPdfUrl && !proj.contractPdfUrl.startsWith('data:') && (
+                      <a href={proj.contractPdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '0.8rem' }}>
+                        Download PDF
+                      </a>
+                    )}
+                    {proj.signedContractPdfUrl && !proj.signedContractPdfUrl.startsWith('data:') && (
+                      <a href={proj.signedContractPdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '0.8rem' }}>
+                        ✅ Signed PDF
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {/* Invoices */}
                 {proj.invoices.length > 0 && (
@@ -179,9 +187,14 @@ export default async function MyProjectsPage() {
                               </Link>
                             )}
                             {inv.pdfUrl && !inv.pdfUrl.startsWith('data:') && (
-                              <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.3rem 0.75rem' }}>
-                                PDF
-                              </a>
+                              <>
+                                <Link href={`/docs/invoice/${inv.id}`} className="btn btn-ghost btn-sm" style={{ padding: '0.3rem 0.75rem' }}>
+                                  View
+                                </Link>
+                                <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.3rem 0.75rem' }}>
+                                  PDF
+                                </a>
+                              </>
                             )}
                           </div>
                         </div>

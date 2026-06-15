@@ -123,6 +123,7 @@ export async function sendContractToCustomer(projectId: string) {
     projectTitle: project.title,
     contractPdfUrl: pdfUrl,
     portalProjectUrl: `${baseUrl}/mypage/projects`,
+    viewUrl: `${baseUrl}/docs/contract/${projectId}`,
   });
 
   revalidatePath(`/admin/projects/${projectId}`);
