@@ -5,13 +5,15 @@
 // ============================================================
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["ecowoods"]
 }
 
 // ─────────────────────────────────────────────
@@ -21,6 +23,8 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+
+  @@schema("ecowoods")
 }
 
 enum QuoteStatus {
@@ -28,6 +32,8 @@ enum QuoteStatus {
   QUOTED
   ACCEPTED
   REJECTED
+
+  @@schema("ecowoods")
 }
 
 enum ProjectStatus {
@@ -38,6 +44,8 @@ enum ProjectStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+
+  @@schema("ecowoods")
 }
 
 enum InvoiceStatus {
@@ -46,6 +54,8 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   VOID
+
+  @@schema("ecowoods")
 }
 
 enum PaymentMethod {
@@ -53,6 +63,8 @@ enum PaymentMethod {
   BANK_TRANSFER
   PLAID
   CASH
+
+  @@schema("ecowoods")
 }
 
 enum PaymentStatus {
@@ -60,6 +72,8 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+
+  @@schema("ecowoods")
 }
 
 enum InquiryStatus {
@@ -67,6 +81,8 @@ enum InquiryStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+
+  @@schema("ecowoods")
 }
 
 enum InvoiceStage {
@@ -74,12 +90,16 @@ enum InvoiceStage {
   MIDPOINT
   FINAL
   CUSTOM
+
+  @@schema("ecowoods")
 }
 
 enum AppointmentStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -106,6 +126,7 @@ model User {
   sessions      Session[]
 
   @@index([email])
+  @@schema("ecowoods")
 }
 
 model EmailVerificationToken {
@@ -120,6 +141,7 @@ model EmailVerificationToken {
 
   @@index([token])
   @@index([email])
+  @@schema("ecowoods")
 }
 
 // next-auth adapter models
@@ -142,6 +164,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@schema("ecowoods")
 }
 
 model Session {
@@ -153,6 +176,8 @@ model Session {
   updatedAt    DateTime @updatedAt @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("ecowoods")
 }
 
 model VerificationToken {
@@ -161,6 +186,7 @@ model VerificationToken {
   expires    DateTime @db.Timestamptz
 
   @@unique([identifier, token])
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -209,6 +235,7 @@ model QuoteRequest {
   @@index([email])
   @@index([status])
   @@index([userId])
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -250,6 +277,7 @@ model Project {
 
   @@index([userId])
   @@index([status])
+  @@schema("ecowoods")
 }
 
 model ProjectNote {
@@ -258,6 +286,8 @@ model ProjectNote {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   content   String   @db.Text
   createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -296,6 +326,7 @@ model Invoice {
   @@index([projectId])
   @@index([status])
   @@index([number])
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -327,6 +358,7 @@ model Payment {
 
   @@index([invoiceId])
   @@index([status])
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -352,6 +384,7 @@ model Inquiry {
   @@index([email])
   @@index([status])
   @@index([userId])
+  @@schema("ecowoods")
 }
 
 model InquiryReply {
@@ -361,6 +394,8 @@ model InquiryReply {
   fromAdmin Boolean  @default(false)
   content   String   @db.Text
   createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -387,6 +422,8 @@ model Settings {
   aiBankTransferInstructions String? @db.Text
 
   updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@schema("ecowoods")
 }
 
 // ─────────────────────────────────────────────
@@ -414,4 +451,5 @@ model Appointment {
   @@index([startsAt])
   @@index([status])
   @@index([quoteRequestId])
+  @@schema("ecowoods")
 }
