@@ -43,6 +43,9 @@ export const metadata: Metadata = {
   title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
   description:
     'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.',
+  other: {
+    'facebook-domain-verification': 'rgg5z4cv8hfffm7343u3x9olclu7ne',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
