@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Header from './components/Header';
+import CookieConsentBanner from './components/CookieConsentBanner';
 import './globals.css';
 import Providers from './providers';
 
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Header />
           <main role="main">{children}</main>
           <SiteFooter />
+          <CookieConsentBanner />
         </Providers>
       </body>
     </html>

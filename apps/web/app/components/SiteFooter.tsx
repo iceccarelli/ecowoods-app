@@ -1,3 +1,5 @@
+import CookiePreferencesButton from './CookiePreferencesButton';
+
 export default function SiteFooter() {
   return (
     <footer className="site-footer" role="contentinfo">
@@ -115,6 +117,7 @@ export default function SiteFooter() {
 
 
           <div>
+            <CookiePreferencesButton />
             <a href="/privacy" style={{ marginRight: '1.5rem' }}>Privacy</a>
             <a href="/terms">Terms</a>
           </div>
