@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   description:
     'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.',
   other: {
-    'facebook-domain-verification': 'rgg5z4cv8hfffm7343u3x9olclu7ne',
+    'facebook-domain-verification': 'seqquk916v8ckrsffyhvgw2xk7u3y2',
   },
 };
 
