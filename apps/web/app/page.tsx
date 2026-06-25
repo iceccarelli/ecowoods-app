@@ -1211,6 +1211,11 @@ const onSubmit = (data: LeadFormData) => {
                     step={50}
                     value={sqft}
                     onChange={(e) => setSqft(Number(e.target.value))}
+                    style={{
+                      background: `linear-gradient(to right, var(--copper) 0%, var(--copper) ${
+                        ((sqft - 200) / (4000 - 200)) * 100
+                      }%, var(--line-strong) ${((sqft - 200) / (4000 - 200)) * 100}%, var(--line-strong) 100%)`,
+                    }}
                   />
                   <div className="range-readout">
                     <span>200 sq ft</span>

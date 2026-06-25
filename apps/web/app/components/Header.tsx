@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useRef } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -69,9 +69,11 @@ export default function Header() {
   const { direction, scrolled } = useScrollState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [portalExpanded, setPortalExpanded] = useState(false);
+  const [portalMenuOpen, setPortalMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [baseUrl, setBaseUrl] = useState('/');
   const { data: session, status } = useSession();
+  const portalMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setBaseUrl(window.location.origin + '/');
@@ -119,11 +121,26 @@ export default function Header() {
   // Close on escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        setPortalMenuOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Close portal dropdown when clicking outside of it
+  useEffect(() => {
+    if (!portalMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (portalMenuRef.current && !portalMenuRef.current.contains(e.target as Node)) {
+        setPortalMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [portalMenuOpen]);
 
   const isAdmin = session?.user?.role === 'ADMIN';
   const isLoggedIn = status === 'authenticated';
@@ -177,13 +194,86 @@ export default function Header() {
 
           {/* Right CTA cluster */}
           <div className="topbar-cta">
-            <a className="login-btn" href={isLoggedIn ? (isAdmin ? '/admin' : '/mypage') : '/login'} aria-label={isLoggedIn ? portalLabel : 'Login to your account'}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
-                <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
-                <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {isLoggedIn ? portalLabel : 'Login'}
-            </a>
+            {isLoggedIn ? (
+              <div className="portal-menu" ref={portalMenuRef}>
+                <button
+                  type="button"
+                  className="login-btn"
+                  onClick={() => setPortalMenuOpen((v) => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={portalMenuOpen}
+                  aria-label={portalLabel}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
+                    <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
+                    <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {portalLabel}
+                  <svg
+                    className="login-btn-chevron"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ transform: portalMenuOpen ? 'rotate(180deg)' : 'none' }}
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+
+                {portalMenuOpen && (
+                  <div className="portal-menu-panel" role="menu">
+                    <div className="portal-menu-user">
+                      <div className="portal-menu-name">{session?.user?.name ?? 'Account'}</div>
+                      <div className="portal-menu-email">{session?.user?.email}</div>
+                    </div>
+                    <div className="portal-menu-divider" />
+                    <a
+                      className="portal-menu-item"
+                      href={isAdmin ? '/admin' : '/mypage'}
+                      role="menuitem"
+                      onClick={() => setPortalMenuOpen(false)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
+                        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+                        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+                      </svg>
+                      Dashboard
+                    </a>
+                    <button
+                      type="button"
+                      className="portal-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setPortalMenuOpen(false);
+                        signOut({ callbackUrl: '/' });
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
+                        <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M16 16l4-4-4-4" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M20 12H9" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a className="login-btn" href="/login" aria-label="Login to your account">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="15" height="15">
+                  <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
+                  <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Login
+              </a>
+            )}
             <a className="phone-pill" href={PHONE_HREF} aria-label={`Call ${PHONE_DISPLAY}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path
