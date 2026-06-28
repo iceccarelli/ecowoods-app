@@ -3148,3 +3148,38 @@ p {
     font-size: 0.85rem;
   }
 }
+
+/* ── Booking section: single right-hand column (calendar → form) ── */
+.booking-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.booking-column .contact-form {
+  margin-top: 0;
+}
+.booking-step-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--cream-50);
+  margin-bottom: 0.25rem;
+}
+.booking-step-label span {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--copper);
+  color: var(--cream-50);
+  font-size: 0.95rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+@media (max-width: 1024px) {
+  /* stack to one column on tablet/mobile; step labels keep the flow legible */
+  .booking-step-label { font-size: 1.05rem; }
+}

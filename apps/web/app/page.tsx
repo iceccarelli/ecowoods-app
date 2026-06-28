@@ -1527,11 +1527,12 @@ const onSubmit = (data: LeadFormData) => {
               </div>
             </div>
 
-            {/* Form - PERFECTLY INTEGRATED */}
-            <div style={{ marginBottom: '2rem' }}>
+            {/* Right column: pick a day, then request — one flow */}
+            <div className="booking-column reveal">
+              <div className="booking-step-label"><span>1</span> Pick a day</div>
               <BookingScheduler />
-            </div>
-            <div className="contact-form reveal">
+              <div className="booking-step-label" style={{ marginTop: '2rem' }}><span>2</span> Tell us about the project</div>
+            <div className="contact-form">
               <form 
                 onSubmit={handleSubmit(onSubmit)} 
                 noValidate
@@ -1655,6 +1656,7 @@ const onSubmit = (data: LeadFormData) => {
                   By submitting, you agree to be contacted by Ecowoods about your project. We never share your information.
                 </p>
               </form>
+            </div>
             </div>
           </div>
         </div>
