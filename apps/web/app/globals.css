@@ -1571,12 +1571,14 @@ p {
   background: var(--surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-md);
 }
 
 .compare-table {
   width: 100%;
+  min-width: 540px;
   border-collapse: collapse;
 }
 
@@ -3110,4 +3112,39 @@ p {
   font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.4;
+}
+
+/* ── Mobile fixes: comparison table fit + estimate selection guard ── */
+.estimator-result,
+.estimator-result .est-value,
+.estimator-result .est-label {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* stop iOS long-press Copy/Search menu on the big number */
+}
+
+@media (max-width: 768px) {
+  .compare-table th,
+  .compare-table td {
+    padding: 0.85rem 0.9rem;
+    font-size: 0.9rem;
+  }
+  .compare-table thead th {
+    font-size: 0.95rem;
+  }
+  /* subtle hint that the table scrolls sideways */
+  .compare-wrapper {
+    position: relative;
+  }
+}
+
+@media (max-width: 480px) {
+  .compare-table {
+    min-width: 480px;
+  }
+  .compare-table th,
+  .compare-table td {
+    padding: 0.75rem 0.7rem;
+    font-size: 0.85rem;
+  }
 }
