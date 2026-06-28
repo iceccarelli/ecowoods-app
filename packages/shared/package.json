@@ -10,7 +10,8 @@
     "./schemas": "./schemas/index.ts",
     "./constants": "./constants/index.ts",
     "./theme": "./theme/tokens.ts",
-    "./theme/animations": "./theme/animations.ts"
+    "./theme/animations": "./theme/animations.ts",
+    "./ai": "./ai/index.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"

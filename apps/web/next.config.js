@@ -6,7 +6,7 @@ const nextConfig = {
 
   // Force webpack to transpile these packages through SWC.
   // Fixes ChunkLoadError with next-auth v5 beta (ESM/CJS interop issue).
-  transpilePackages: ['next-auth', '@auth/core', '@auth/prisma-adapter'],
+  transpilePackages: ['next-auth', '@auth/core', '@auth/prisma-adapter', 'ai', '@ai-sdk/anthropic', 'zod'],
 
   // Required for @react-pdf/renderer (uses canvas under the hood)
   serverExternalPackages: ['@react-pdf/renderer'],

@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Header from './components/Header';
-import CookieConsentBanner from './components/CookieConsentBanner';
 import './globals.css';
 import Providers from './providers';
 
@@ -38,14 +37,13 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+import ChatWidget from "./components/ChatWidget";
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://ecowoods-app.vercel.app'),
   title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
   description:
     'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.',
-  other: {
-    'facebook-domain-verification': 'seqquk916v8ckrsffyhvgw2xk7u3y2',
-  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -56,7 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Header />
           <main role="main">{children}</main>
           <SiteFooter />
-          <CookieConsentBanner />
+          <ChatWidget />
         </Providers>
       </body>
     </html>
