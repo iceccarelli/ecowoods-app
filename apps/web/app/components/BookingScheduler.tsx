@@ -98,7 +98,7 @@ export function BookingScheduler() {
     borderRadius: 'var(--radius-lg, 14px)', padding: '1.5rem', boxShadow: 'var(--shadow-warm)',
   };
   const cellBtn = (open: boolean): React.CSSProperties => ({
-    aspectRatio: '1', borderRadius: 'var(--radius-md, 10px)', border: '1px solid var(--line)',
+    height: '100%', minHeight: 44, borderRadius: 'var(--radius-md, 10px)', border: '1px solid var(--line)',
     background: open ? 'var(--paper, #fff)' : 'transparent',
     color: open ? 'var(--ink)' : 'var(--muted-soft, #bbb)',
     cursor: open ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: '0.9rem',
@@ -148,7 +148,7 @@ export function BookingScheduler() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, textAlign: 'center', fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                 {WEEKDAYS.map((w) => <div key={w}>{w}</div>)}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(6,1fr)', gap: 4, minHeight: 312 }}>
                 {grid.map((k, i) => k === null ? <div key={`p${i}`} /> : (
                   <button key={k} type="button" style={cellBtn(hasOpenings(k))} disabled={!hasOpenings(k)}
                     onClick={() => { setSelectedDate(k); setStep('time'); }}>

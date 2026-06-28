@@ -1158,12 +1158,15 @@ p {
   display: grid;
   grid-template-columns: 1fr 1.1fr;
   gap: 3rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .contact-info {
-  position: sticky;
-  top: 7rem;
+  display: flex;
+  flex-direction: column;
+}
+.contact-info .estimate-cta-card {
+  margin-top: auto;   /* pin card to bottom so it aligns with the calendar's lower edge */
 }
 
 .contact-info h2 {
@@ -3190,7 +3193,7 @@ p {
   align-items: center;
   gap: 1rem;
   width: 100%;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding: 1.1rem 1.25rem;
   border-radius: var(--radius-lg);
   background: rgba(245, 239, 230, 0.06);
