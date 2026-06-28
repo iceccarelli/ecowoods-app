@@ -646,6 +646,7 @@ export default function HomePage() {
 
   /* ---------- FAQ state ---------- */
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [estimateModalOpen, setEstimateModalOpen] = useState(false);
 
 /* ---------- Contact Form - PERFECT INTEGRATION ---------- */
 const queryClient = useQueryClient();
@@ -1525,13 +1526,30 @@ const onSubmit = (data: LeadFormData) => {
                   </div>
                 </div>
               </div>
+
+              <button type="button" className="estimate-cta-card" onClick={() => setEstimateModalOpen(true)}>
+                <span className="estimate-cta-icon">{Icon.mail}</span>
+                <span className="estimate-cta-text">
+                  <span className="estimate-cta-title">Request a free estimate</span>
+                  <span className="estimate-cta-sub">Takes 60 seconds — no pressure, no obligation.</span>
+                </span>
+                <span className="estimate-cta-arrow">{Icon.arrow}</span>
+              </button>
             </div>
 
-            {/* Right column: pick a day, then request — one flow */}
+            {/* Right column: the booking calendar */}
             <div className="booking-column reveal">
-              <div className="booking-step-label"><span>1</span> Pick a day</div>
+              <div className="booking-step-label"><span>{Icon.clock}</span> Bookings</div>
               <BookingScheduler />
-              <div className="booking-step-label" style={{ marginTop: '2rem' }}><span>2</span> Tell us about the project</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {estimateModalOpen && (
+        <div className="estimate-modal-overlay" onClick={() => setEstimateModalOpen(false)}>
+          <div className="estimate-modal" role="dialog" aria-modal="true" aria-label="Request a free estimate" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="estimate-modal-close" aria-label="Close" onClick={() => setEstimateModalOpen(false)}>×</button>
             <div className="contact-form">
               <form 
                 onSubmit={handleSubmit(onSubmit)} 
@@ -1657,10 +1675,9 @@ const onSubmit = (data: LeadFormData) => {
                 </p>
               </form>
             </div>
-            </div>
           </div>
         </div>
-      </section>
+      )}
 
       {/* FINAL BAND / CLOSING */}
       <section
