@@ -3157,6 +3157,12 @@ p {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  height: 100%;
+}
+.booking-column > .contact-form {
+  flex: 1;          /* calendar card grows to fill the column's full height */
+  display: flex;
+  flex-direction: column;
 }
 .booking-column .contact-form {
   margin-top: 0;

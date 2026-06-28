@@ -148,7 +148,7 @@ export function BookingScheduler() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, textAlign: 'center', fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                 {WEEKDAYS.map((w) => <div key={w}>{w}</div>)}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(6,1fr)', gap: 4, minHeight: 312 }}>
+              <div className="cal-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(6,1fr)', gap: 6, minHeight: 380, flex: 1 }}>
                 {grid.map((k, i) => k === null ? <div key={`p${i}`} /> : (
                   <button key={k} type="button" style={cellBtn(hasOpenings(k))} disabled={!hasOpenings(k)}
                     onClick={() => { setSelectedDate(k); setStep('time'); }}>
