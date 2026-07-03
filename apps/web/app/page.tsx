@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,39 +11,22 @@ import { RotatingBackground } from './components/RotatingBackground';
 import { BookingScheduler } from './components/BookingScheduler';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
-   Marketing landing page · single-file Next.js client component
-   STATE-OF-THE-ART 2026 PERFECT INTEGRATION EDITION
+   Marketing landing page · single conversion funnel
+   MARKET-LEADER EDITION — Tesla authority × AWS trust
    ============================================================ */
 
 /* ---------------------- Types ---------------------- */
-type Service = {
-  id: string;
-  title: string;
-  short: string;
-  icon: JSX.Element;
-  bullets: string[];
-};
-
 type Pillar = {
-  num: string;
   title: string;
-  body: string;
+  proof: string;
+  icon: keyof typeof Icon;
 };
 
-type Species = {
-  id: string;
-  name: string;
-  hardness: string;
-  origin: string;
-  vibe: string;
-  image: string;
-};
-
-type ProcessStep = {
+type FunnelStep = {
   num: string;
   title: string;
-  body: string;
-  duration: string;
+  line: string;
+  icon: keyof typeof Icon;
 };
 
 type GalleryItem = {
@@ -62,19 +45,17 @@ type Review = {
   stars: number;
 };
 
-type Area = { name: string };
+type Species = {
+  id: string;
+  name: string;
+  hardness: string;
+  origin: string;
+  vibe: string;
+};
 
 type FaqItem = { q: string; a: string };
 
-type Tip = {
-  tag: string;
-  title: string;
-  body: string;
-  meta: string;
-  image: string;
-};
-
-/* ---------------------- Inline Icons (All preserved + enhanced with consistent sizing) ---------------------- */
+/* ---------------------- Inline Icons ---------------------- */
 const Icon = {
   plank: (
     <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -189,198 +170,110 @@ const Icon = {
   ),
 };
 
-/* ---------------------- Content data (100% preserved) ---------------------- */
-const services: Service[] = [
+/* ---------------------- Content data ---------------------- */
+
+const trustStats = [
+  { val: '25', em: '+', lbl: 'Years in Toronto' },
+  { val: '5,200+', em: '', lbl: 'Homes Transformed' },
+  { val: '4.9', em: '★', lbl: '348 Verified Reviews' },
+  { val: 'Lifetime', em: '.', lbl: 'Workmanship Warranty' },
+];
+
+const certifications = [
+  'NWFA Certified Installer',
+  'FSC Certified Materials',
+  'GreenGuard Gold Finishes',
+  'BBB A+ Accredited',
+  'WSIB Compliant',
+  'Bona Certified Craftsman',
+  'Loba 2K Specialist',
+  'HomeStars Best of Award · 8 Years',
+  'Houzz Best of Service',
+];
+
+const featuredReviews: Review[] = [
   {
-    id: 'installation',
-    title: 'Hardwood Installation',
-    short:
-      'Solid and engineered hardwood installed by master tradespeople. Pre-finished or site-finished, plank, herringbone, or chevron — built to last generations.',
-    icon: Icon.plank,
-    bullets: [
-      'Solid · engineered · wide-plank',
-      'Herringbone · chevron · custom borders',
-      'Subfloor leveling & moisture testing',
-      'Acclimation in your home, every job',
-    ],
+    initials: 'SM',
+    name: 'Sarah M.',
+    place: 'Rosedale · Full Refinish',
+    quote:
+      "Ecowoods refinished our 100-year-old red oak floors and they look better than I imagined possible. The dust control was unreal — we never had to leave the house.",
+    stars: 5,
   },
   {
-    id: 'refinishing',
-    title: 'Refinishing & Restoration',
-    short:
-      'Bring tired floors back to life. Strip, sand, stain, and seal with eco-friendly finishes. Most homes are walk-on ready the same day.',
-    icon: Icon.brush,
-    bullets: [
-      'Full sand-and-refinish',
-      'Custom stain matching · 40+ tones',
-      'Water-based & low-VOC sealers',
-      'Same-day walk-on with Bona Traffic',
-    ],
+    initials: 'AB',
+    name: 'Andrew B.',
+    place: 'Scarborough · Main Floor + Stairs',
+    quote:
+      'They moved our furniture, protected the kitchen, finished a day early, and the bill matched the estimate to the penny. Will hire again for the basement.',
+    stars: 5,
   },
   {
-    id: 'sanding',
-    title: 'Dust-Free Sanding',
-    short:
-      'Industry-leading dust containment. 99.7% of dust captured at the source — safe for kids, pets, and families with allergies.',
-    icon: Icon.sander,
-    bullets: [
-      'Festool · Bona Atomic dust systems',
-      'HEPA filtration · sealed extraction',
-      'No tarping the entire house',
-      'Live-in renovations welcome',
-    ],
-  },
-  {
-    id: 'stairs',
-    title: 'Stair Refinishing',
-    short:
-      'Treads, risers, nosings, handrails, and balustrades — refinished or fully rebuilt to match your floors and the architecture of your home.',
-    icon: Icon.stairs,
-    bullets: [
-      'Tread replacement & re-capping',
-      'Custom nosings & returns',
-      'Spindle & handrail refinishing',
-      'Open-side staircases & winders',
-    ],
-  },
-  {
-    id: 'inlays',
-    title: 'Custom Inlays & Borders',
-    short:
-      'Heritage detailing for heritage homes. Decorative medallions, mixed-species borders, and grain-matched parquet work — handcrafted in our Toronto shop.',
-    icon: Icon.diamond,
-    bullets: [
-      'Hand-cut inlays & medallions',
-      'Mixed-species feature borders',
-      'Period-accurate parquet repair',
-      'Architect & designer collaboration',
-    ],
-  },
-  {
-    id: 'commercial',
-    title: 'Commercial Hardwood',
-    short:
-      'Restaurants, retail, lofts, and offices. Commercial-grade species, finishes engineered for high traffic, and night-and-weekend installations.',
-    icon: Icon.building,
-    bullets: [
-      'After-hours & overnight install',
-      'Bona Traffic HD · commercial sealers',
-      'Acoustic underlayments',
-      'Property management contracts',
-    ],
+    initials: 'JL',
+    name: 'Jennifer L.',
+    place: 'Forest Hill · Custom Inlay',
+    quote:
+      "Custom inlay around our fireplace, walnut on oak. Came out exactly right the first install. Master craftsmen, no other word for it.",
+    stars: 5,
   },
 ];
 
-const pillars: Pillar[] = [
+const standardPillars: Pillar[] = [
+  {
+    icon: 'shield',
+    title: 'Lifetime Warranty',
+    proof: 'Every job, every home — we stand behind our work for as long as you own it.',
+  },
+  {
+    icon: 'diamond',
+    title: 'Master Craftsmen — Never Subcontractors',
+    proof: 'Salaried Ecowoods employees only, many with us 10+ years. No revolving crews.',
+  },
+  {
+    icon: 'leaf',
+    title: 'FSC-Certified Eco Materials + GreenGuard Gold',
+    proof: 'Sustainable species, water-based ≤50 g/L VOC finishes, zero-formaldehyde adhesives.',
+  },
+  {
+    icon: 'check',
+    title: 'Fixed Pricing in Writing + Zero Dust',
+    proof: 'Your written estimate is the price you pay. HEPA containment captures 99.7% of dust.',
+  },
+];
+
+const serviceChips = [
+  'Hardwood Installation',
+  'Refinishing & Restoration',
+  'Dust-Free Sanding',
+  'Stairs & Railings',
+  'Custom Inlays & Borders',
+  'Commercial Projects',
+];
+
+const funnelSteps: FunnelStep[] = [
   {
     num: '01',
-    title: 'Master Craftsmen, Not Subcontractors',
-    body: 'Every installer is a salaried Ecowoods employee — many with us 10+ years. No revolving day-labour crews, no language gaps, no surprises.',
-  },
-  {
-    num: '02',
-    title: 'Lifetime Workmanship Warranty',
-    body: 'We stand behind our work for as long as you own the home. If we did the floor, we own the floor. Period.',
-  },
-  {
-    num: '03',
-    title: 'Eco-Friendly From the Sawmill Up',
-    body: 'FSC-certified species, water-based finishes (≤50 g/L VOC), zero-formaldehyde adhesives, and HEPA dust extraction on every job.',
-  },
-  {
-    num: '04',
-    title: 'Fixed Pricing, In Writing',
-    body: 'Your in-home estimate is the price you pay. No mid-job surprises, no hidden charges for "unforeseen conditions" — we already saw them.',
-  },
-];
-
-const speciesList: Species[] = [
-  {
-    id: 'white-oak',
-    name: 'White Oak',
-    hardness: 'Janka 1360',
-    origin: 'Ontario & Quebec',
-    vibe: 'Calm, modern, infinitely stainable',
-    image:
-      'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=800&q=70',
-  },
-  {
-    id: 'red-oak',
-    name: 'Red Oak',
-    hardness: 'Janka 1290',
-    origin: 'Northern Ontario',
-    vibe: 'Warm, classic, the Canadian heritage choice',
-    image:
-      'https://images.unsplash.com/photo-1503594384566-461fe158e797?auto=format&fit=crop&w=800&q=70',
-  },
-  {
-    id: 'walnut',
-    name: 'Black Walnut',
-    hardness: 'Janka 1010',
-    origin: 'Eastern North America',
-    vibe: 'Dramatic, chocolate-rich, mid-century anchor',
-    image:
-      'https://images.unsplash.com/photo-1567016432779-094069958ea5?auto=format&fit=crop&w=800&q=70',
-  },
-  {
-    id: 'maple',
-    name: 'Hard Maple',
-    hardness: 'Janka 1450',
-    origin: 'Quebec sugar bush',
-    vibe: 'Bright, durable, the gym-floor classic',
-    image:
-      'https://images.unsplash.com/photo-1597055181449-b67771ab361b?auto=format&fit=crop&w=800&q=70',
-  },
-  {
-    id: 'hickory',
-    name: 'Hickory',
-    hardness: 'Janka 1820',
-    origin: 'Appalachian range',
-    vibe: 'Bold grain, hardest of the hardwoods',
-    image:
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=70',
-  },
-  {
-    id: 'cherry',
-    name: 'American Cherry',
-    hardness: 'Janka 950',
-    origin: 'Pennsylvania & Ohio',
-    vibe: 'Develops a deep amber patina over years',
-    image:
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&q=70',
-  },
-];
-
-const processSteps: ProcessStep[] = [
-  {
-    num: '01',
+    icon: 'pin',
     title: 'Free In-Home Consultation',
-    body: 'A senior estimator walks the space, takes measurements, listens to how you live, and brings species and finish samples to your kitchen table.',
-    duration: '45–60 min',
+    line: 'A senior estimator measures, moisture-tests, and brings species and finish samples to your door.',
   },
   {
     num: '02',
-    title: 'Fixed-Price Written Estimate',
-    body: 'Within 24 hours you receive a line-itemed PDF estimate. No square-foot ranges, no "approximate" pricing — one final number, in writing.',
-    duration: 'Within 24h',
+    icon: 'check',
+    title: 'Written Estimate — Fixed Price',
+    line: 'The number on paper is the number on your invoice. Fixed price guarantee at every stage.',
   },
   {
     num: '03',
-    title: 'Sample Approval & Scheduling',
-    body: 'Stain samples brushed on your actual subfloor. Once you approve, we lock the date and order materials. Most jobs start within 2–3 weeks.',
-    duration: '2–3 weeks',
+    icon: 'sander',
+    title: 'Flawless Execution — Dust-Free',
+    line: 'Salaried master craftsmen. No subcontractors — ever. 99.7% dust capture at the source.',
   },
   {
     num: '04',
-    title: 'Installation & Finishing',
-    body: 'Acclimation, install, sanding, staining, sealing — all by the same crew, all done in sequence. Typical 1,200 sq ft job: 5 to 7 working days.',
-    duration: '5–7 days',
-  },
-  {
-    num: '05',
-    title: 'Walkthrough & Warranty',
-    body: 'We walk every square foot with you. Anything not perfect is fixed before we leave. You sign off. Lifetime workmanship warranty activates.',
-    duration: 'Lifetime',
+    icon: 'shield',
+    title: 'Lifetime Protection',
+    line: 'A lifetime workmanship warranty, in writing, for as long as you own the home.',
   },
 ];
 
@@ -388,7 +281,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'rosedale',
     title: 'Rosedale Victorian Restoration',
-    sub: '1,800 sq ft · Red Oak · Period-accurate refinish',
+    sub: '1,800 sq ft Red Oak — Lifetime Warranty Delivered',
     image:
       'https://images.unsplash.com/photo-1560449752-3fd4bdbe7df0?auto=format&fit=crop&w=1400&q=80',
     span: 'span-8',
@@ -396,7 +289,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'leslieville',
     title: 'Leslieville Loft',
-    sub: '900 sq ft · White Oak · Wide plank',
+    sub: '900 sq ft Wide-Plank White Oak',
     image:
       'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80',
     span: 'span-4',
@@ -404,7 +297,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'forest-hill',
     title: 'Forest Hill Estate',
-    sub: 'Herringbone · Walnut · Custom border',
+    sub: 'Walnut Herringbone with Custom Border',
     image:
       'https://images.unsplash.com/photo-1580398814575-816cf5faebad?auto=format&fit=crop&w=900&q=80',
     span: 'span-4',
@@ -412,7 +305,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'distillery',
     title: 'Distillery District Penthouse',
-    sub: 'Chevron · Smoked Oak · 2,400 sq ft',
+    sub: '2,400 sq ft Smoked Oak Chevron',
     image:
       'https://images.unsplash.com/photo-1723897917319-3958c7b4aaa1?auto=format&fit=crop&w=1400&q=80',
     span: 'span-8',
@@ -420,7 +313,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'cabbagetown',
     title: 'Cabbagetown Townhouse',
-    sub: 'Refinish · Stair re-capping',
+    sub: 'Heritage Refinish with Stair Re-Capping',
     image:
       'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
     span: 'span-6',
@@ -428,158 +321,48 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'yorkville',
     title: 'Yorkville Condo Conversion',
-    sub: 'Engineered wide plank · Quiet underlayment',
+    sub: 'Engineered Wide Plank over Quiet Underlayment',
     image:
       'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&w=900&q=80',
     span: 'span-6',
   },
 ];
 
-const reviews: Review[] = [
-  {
-    initials: 'SM',
-    name: 'Sarah M.',
-    place: 'Rosedale, Toronto',
-    quote:
-      "Ecowoods refinished our 100-year-old red oak floors and they look better than I imagined possible. The dust control was unreal — we never had to leave the house.",
-    stars: 5,
-  },
-  {
-    initials: 'DK',
-    name: 'David K.',
-    place: 'Leslieville, Toronto',
-    quote:
-      "Got three quotes. Ecowoods wasn't the cheapest but they were the only ones who actually measured the moisture in our subfloor before quoting. That detail told me everything.",
-    stars: 5,
-  },
-  {
-    initials: 'PT',
-    name: 'Priya T.',
-    place: 'North York',
-    quote:
-      'Installed wide plank white oak in 1,400 sq ft. The herringbone in the foyer is a piece of art. Crew was on time every single day for two weeks. Spotless cleanup.',
-    stars: 5,
-  },
-  {
-    initials: 'MR',
-    name: 'Marco R.',
-    place: 'Etobicoke',
-    quote:
-      "We had a dog scratch problem after another contractor's job. Ecowoods came in, refinished with Bona Traffic, and we have not seen a single new scratch in 18 months. Worth every dollar.",
-    stars: 5,
-  },
-  {
-    initials: 'JL',
-    name: 'Jennifer L.',
-    place: 'Forest Hill',
-    quote:
-      "Custom inlay around our fireplace, walnut on oak. Ecowoods worked with our designer for six weeks of mockups. Came out exactly right the first install. Master craftsmen, no other word for it.",
-    stars: 5,
-  },
-  {
-    initials: 'AB',
-    name: 'Andrew B.',
-    place: 'Scarborough',
-    quote:
-      'Whole main floor and stairs. They moved our furniture, protected the kitchen, finished a day early, and the bill matched the estimate to the penny. Will hire again for the basement.',
-    stars: 5,
-  },
+const speciesList: Species[] = [
+  { id: 'white-oak', name: 'White Oak', hardness: 'Janka 1360', origin: 'Ontario & Quebec', vibe: 'Calm, modern, infinitely stainable' },
+  { id: 'red-oak', name: 'Red Oak', hardness: 'Janka 1290', origin: 'Northern Ontario', vibe: 'Warm, classic, the Canadian heritage choice' },
+  { id: 'walnut', name: 'Black Walnut', hardness: 'Janka 1010', origin: 'Eastern North America', vibe: 'Deep, luxurious, statement-making' },
+  { id: 'maple', name: 'Hard Maple', hardness: 'Janka 1450', origin: 'Ontario & Quebec', vibe: 'Bright, uniform, contemporary' },
+  { id: 'hickory', name: 'Hickory', hardness: 'Janka 1820', origin: 'Eastern North America', vibe: 'Rugged, characterful, family-proof' },
+  { id: 'ash', name: 'White Ash', hardness: 'Janka 1320', origin: 'Ontario', vibe: 'Light, Scandinavian, resilient' },
 ];
 
-const serviceAreas: Area[] = [
-  { name: 'Downtown Toronto' },
-  { name: 'North York' },
-  { name: 'Etobicoke' },
-  { name: 'Scarborough' },
-  { name: 'East York' },
-  { name: 'York' },
-  { name: 'Vaughan' },
-  { name: 'Markham' },
-  { name: 'Richmond Hill' },
-  { name: 'Mississauga' },
-  { name: 'Oakville' },
-  { name: 'Brampton' },
-  { name: 'Aurora' },
-  { name: 'Newmarket' },
-  { name: 'Pickering' },
-  { name: 'Ajax' },
+const serviceAreas = [
+  'Downtown Toronto', 'North York', 'Etobicoke', 'Scarborough', 'East York', 'York',
+  'Vaughan', 'Markham', 'Richmond Hill', 'Mississauga', 'Oakville', 'Brampton',
+  'Aurora', 'Newmarket', 'Pickering', 'Ajax',
 ];
 
 const faqItems: FaqItem[] = [
   {
-    q: 'How long does a typical hardwood floor installation take?',
-    a: 'For a standard 1,000–1,500 sq ft single-floor installation, plan on 5 to 7 working days from the day we arrive: one day for moisture testing and acclimation, two to three days for installation, and two to three days for sanding, staining, and finishing. Site-finished floors need an extra day for final coat curing.',
+    q: 'Is the estimate really fixed? What about "unforeseen conditions"?',
+    a: 'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.',
   },
   {
-    q: 'Can we stay in the house during refinishing?',
-    a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most of our refinishing clients sleep in their homes every night of the job. Water-based finishes have low odour and are walk-on ready in 2–4 hours.',
+    q: 'Can we stay in the house during the work?',
+    a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
   },
   {
-    q: 'What is the difference between solid and engineered hardwood?',
-    a: 'Solid is one piece of wood, typically 3/4 inch thick, sandable five or six times over its lifetime. Engineered is a real-wood top layer (2–6 mm) bonded to a multi-ply core, which makes it more stable across humidity swings — important in Toronto basements, condos, and over radiant heat. Both are real hardwood; the right answer depends on your subfloor and humidity environment.',
+    q: 'What exactly does the lifetime warranty cover?',
+    a: 'Every Ecowoods installation and refinish carries a lifetime workmanship warranty for as long as you own the home — transferable once at sale. Manufacturer material warranties (typically 25–35 years on finish, 50 years structural) pass through on top. Everything is in writing in your contract.',
   },
   {
-    q: 'How much does hardwood flooring cost in Toronto?',
-    a: 'Materials run from roughly $4/sq ft (entry-level red oak) to $20+/sq ft (wide-plank European white oak or specialty species). Installation in the GTA typically adds $3–$6/sq ft for solid and $4–$8/sq ft for engineered, including subfloor prep. Refinishing existing floors generally runs $3.50–$5.50/sq ft. Every Ecowoods quote is fixed — no per-foot ranges in your contract.',
-  },
-  {
-    q: 'Do you offer eco-friendly and low-VOC finishes?',
-    a: 'Every finish we apply is water-based, low-VOC (≤50 g/L), and GreenGuard Gold certified — Bona Traffic HD, Loba 2K Supra, and Pallmann Magic Oil. We also stock FSC-certified species and use zero-formaldehyde adhesives. If anyone in your household has chemical sensitivities, tell us at the consultation; we will spec the entire stack accordingly.',
-  },
-  {
-    q: 'Will refinishing damage my baseboards or trim?',
-    a: 'No. We tape and protect every baseboard with reusable rubber edge guards before sanding. Our edgers are 4-inch random-orbit machines that finish flush to the baseboard without contact. After 25 years of refinishing in Toronto heritage homes, we have not damaged a baseboard yet.',
-  },
-  {
-    q: 'How do I maintain my new hardwood floors?',
-    a: 'Dust mop daily, damp mop weekly with a Bona-recommended cleaner (never water, never vinegar, never Murphy Oil Soap). Add felt pads under furniture, trim pet nails, and keep indoor humidity between 35% and 55% year-round — a whole-home humidifier in winter is the single best investment for Toronto wood floors.',
-  },
-  {
-    q: 'Do you offer a written warranty?',
-    a: 'Yes. Every Ecowoods installation comes with a lifetime workmanship warranty for as long as you own the home — transferable once at sale. Material warranties from the manufacturer (typically 25–35 years on finish, 50 years on structural) pass through to you on top. Everything is in writing in your contract.',
+    q: 'How long will my project take?',
+    a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining, and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
   },
 ];
 
-const tips: Tip[] = [
-  {
-    tag: 'Wood Care · 6 min read',
-    title: 'Toronto Humidity & Hardwood: The Winter Survival Guide',
-    body: 'Why every Toronto homeowner needs a humidifier, what 35% humidity actually means at the floorboard level, and the cracks you should ignore.',
-    meta: 'Updated January 2026',
-    image:
-      'https://images.unsplash.com/32/Mc8kW4x9Q3aRR3RkP5Im_IMG_4417.jpg?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    tag: 'Buying Guide · 9 min read',
-    title: 'Solid vs Engineered Hardwood: Honest Truth from a Toronto Installer',
-    body: 'The condo loophole nobody mentions, where engineered actually wins, and the two situations where solid is still the only right answer.',
-    meta: 'Updated December 2025',
-    image:
-      'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    tag: 'Design · 4 min read',
-    title: 'Why Wide Plank Is Worth the Premium (and When It Isn\'t)',
-    body: 'Eight-inch planks photograph beautifully on Instagram but they fail spectacularly in some Toronto homes. Here is the moisture math that decides.',
-    meta: 'Updated November 2025',
-    image:
-      'https://images.unsplash.com/photo-1721838449374-722202a68197?auto=format&fit=crop&w=900&q=80',
-  },
-];
-
-const comparisonRows = [
-  { feature: 'In-home consultation by senior estimator', us: true, them: false },
-  { feature: 'Fixed-price written estimate (no ranges)', us: true, them: false },
-  { feature: 'Dust-free HEPA sanding included', us: true, them: 'add-on' },
-  { feature: 'Water-based, low-VOC finishes standard', us: true, them: 'add-on' },
-  { feature: 'Lifetime workmanship warranty', us: true, them: false },
-  { feature: 'Salaried in-house installers', us: true, them: false },
-  { feature: 'Subfloor moisture testing every job', us: true, them: false },
-  { feature: 'WSIB & liability insurance verified', us: true, them: 'sometimes' },
-  { feature: 'Live-in renovation friendly', us: true, them: false },
-];
-
-/* ---------------------- Reveal-on-scroll hook ---------------------- */
+/* ---------------------- Hooks ---------------------- */
 function useReveal() {
   const ref = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -603,48 +386,12 @@ function useReveal() {
   return ref;
 }
 
-/* ---------------------- Helpers ---------------------- */
-function formatCurrencyCAD(n: number): string {
-  return new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
-/* ============================================================
-   PAGE COMPONENT — FULL ORIGINAL + PERFECT UI/UX INTEGRATION
-   ============================================================ */
+/* ---------------------- Page ---------------------- */
 export default function HomePage() {
   const root = useReveal();
 
-  /* ---------- Estimator state ---------- */
-  const [sqft, setSqft] = useState<number>(800);
-  const [serviceType, setServiceType] = useState<'install' | 'refinish' | 'engineered' | 'wideplank'>(
-    'install'
-  );
-  const [tier, setTier] = useState<'standard' | 'premium' | 'bespoke'>('premium');
-
-  const pricingMatrix = useMemo(() => {
-    return {
-      install: { standard: 9.5, premium: 13.5, bespoke: 19.0 },
-      refinish: { standard: 3.8, premium: 4.8, bespoke: 6.5 },
-      engineered: { standard: 11.0, premium: 15.0, bespoke: 22.0 },
-      wideplank: { standard: 16.5, premium: 22.0, bespoke: 32.0 },
-    } as const;
-  }, []);
-
-  const estimateLow = useMemo(() => {
-    const rate = pricingMatrix[serviceType][tier];
-    return Math.round(sqft * rate * 0.92);
-  }, [sqft, serviceType, tier, pricingMatrix]);
-
-  const estimateHigh = useMemo(() => {
-    const rate = pricingMatrix[serviceType][tier];
-    return Math.round(sqft * rate * 1.08);
-  }, [sqft, serviceType, tier, pricingMatrix]);
-
-  /* ---------- FAQ state ---------- */
+  /* ---------- FAQ + modal state ---------- */
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [estimateModalOpen, setEstimateModalOpen] = useState(false);
 
@@ -692,62 +439,38 @@ const onSubmit = (data: LeadFormData) => {
 
   return (
     <div ref={root as React.MutableRefObject<HTMLDivElement>}>
-      {/* HERO */}
+      {/* 1 · HERO — minimalist authority */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />
-          <RotatingBackground />
+        <RotatingBackground />
         <div className="shell hero-content">
-          <div className="reveal" style={{ marginBottom: '2rem' }}>
-            <span className="availability-pill dark">
-              <span className="availability-dot" />
-              Now booking · Spring 2026 projects
-            </span>
-          </div>
-
           <h1 className="reveal" data-delay="1">
-            Toronto&rsquo;s master hardwood<br />
-            flooring <em>artisans</em>.
+            Mastercrafted Hardwood Flooring.<br />
+            <em>Guaranteed for Life.</em>
           </h1>
 
           <p className="hero-lede reveal" data-delay="2">
-            Installation, refinishing, and restoration of solid &amp; engineered hardwood. Eco-friendly
-            finishes, dust-free sanding, and a lifetime workmanship warranty — built by salaried
-            craftsmen who have been with us for decades.
+            Fixed price in writing. Zero dust. Salaried master artisans using FSC-certified
+            sustainable materials. Toronto homes transformed with certainty — not hope.
           </p>
 
           <div className="hero-actions reveal" data-delay="3">
             <a className="btn btn-copper btn-lg" href="#quote">
-              Get a Free Estimate
+              Get Your Free Written Estimate
               <span className="btn-arrow">{Icon.arrow}</span>
-            </a>
-            <a className="btn btn-ghost-light btn-lg" href="#gallery">
-              View Our Work
             </a>
           </div>
 
           <div className="hero-stats reveal" data-delay="4">
-            <div className="hero-stat">
-              <div className="val">
-                25<em>+</em>
+            {trustStats.map((s) => (
+              <div className="hero-stat" key={s.lbl}>
+                <div className="val">
+                  {s.val}
+                  {s.em && <em>{s.em}</em>}
+                </div>
+                <div className="lbl">{s.lbl}</div>
               </div>
-              <div className="lbl">Years in Toronto</div>
-            </div>
-            <div className="hero-stat">
-              <div className="val">5,200+</div>
-              <div className="lbl">Homes Refinished</div>
-            </div>
-            <div className="hero-stat">
-              <div className="val">
-                4.9<em>★</em>
-              </div>
-              <div className="lbl">Avg. Customer Rating</div>
-            </div>
-            <div className="hero-stat">
-              <div className="val">
-                Lifetime<em>.</em>
-              </div>
-              <div className="lbl">Workmanship Warranty</div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -757,20 +480,10 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* MARQUEE / TRUST */}
+      {/* Certification trust bar */}
       <section className="marquee" aria-label="Certifications and partners">
         <div className="marquee-track">
-          {[
-            'NWFA Certified Installer',
-            'BBB A+ Accredited',
-            'WSIB Compliant',
-            'Bona Certified Craftsman',
-            'Loba 2K Specialist',
-            'FSC Certified Materials',
-            'GreenGuard Gold Finishes',
-            'HomeStars Best of Award · 8 Years',
-            'Houzz Best of Service',
-          ].map((label, i) => (
+          {certifications.map((label, i) => (
             <span key={i} className="marquee-item">
               {Icon.award}
               {label}
@@ -779,227 +492,7 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* SERVICES — Now perfectly styled */}
-      <section className="section paper-texture" id="services">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">Our Craft</span>
-            <h2>
-              Six services. <span className="serif-italic">One standard.</span>
-            </h2>
-            <p>
-              We do hardwood. Only hardwood. Twenty-five years of focus on a single material means
-              we know every species, every adhesive, every finish, and every Toronto subfloor
-              condition you will ever encounter.
-            </p>
-          </div>
-
-          <div className="service-grid">
-            {services.map((s, i) => (
-              <article
-                key={s.id}
-                className="service-card reveal"
-                data-delay={(i % 3) + 1}
-                aria-labelledby={`svc-${s.id}-title`}
-              >
-                <div className="service-icon" aria-hidden="true">
-                  {s.icon}
-                </div>
-                <h3 id={`svc-${s.id}-title`}>{s.title}</h3>
-                <p>{s.short}</p>
-                <a className="service-link" href="#quote">
-                  Discuss your project {Icon.arrow}
-                </a>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PILLARS */}
-      <section className="section photo-bg-section" style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}>
-        <RotatingBackground theme="craft" interval={9000} />
-        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
-              Why Ecowoods
-            </span>
-            <h2 style={{ color: 'var(--cream-50)' }}>
-              Built to last <span className="serif-italic">three generations.</span>
-            </h2>
-            <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
-              The Toronto flooring market is crowded with subcontractors, brokers, and one-truck
-              operations. We are none of those. Ecowoods is a single shop, owned and operated by
-              the same family since 1998.
-            </p>
-          </div>
-
-          <div className="pillar-grid">
-            {pillars.map((p, i) => (
-              <div
-                key={p.num}
-                className="pillar reveal"
-                data-delay={i + 1}
-                style={{
-                  background: 'rgba(245, 239, 230, 0.04)',
-                  borderColor: 'rgba(245, 239, 230, 0.1)',
-                  color: 'var(--cream-50)',
-                }}
-              >
-                <div className="pillar-num">{p.num}</div>
-                <h4 style={{ color: 'var(--cream-50)' }}>{p.title}</h4>
-                <p style={{ color: 'rgba(245, 239, 230, 0.72)' }}>{p.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SPECIES SELECTOR — Premium Clean List (Perfect Screenshot Match + Elevated UX) */}
-      <section className="section" id="species">
-        <div className="shell">
-          <div className="section-head centered reveal">
-            <span className="eyebrow">Species &amp; Stains</span>
-            <h2>
-              Choose your <span className="serif-italic">grain.</span>
-            </h2>
-            <p>
-              From northern Ontario red oak to FSC-certified European white oak, we stock and source
-              over 40 species. Samples brushed on your subfloor before a single plank is committed.
-            </p>
-          </div>
-
-          <div className="species-list reveal" aria-label="Available hardwood species">
-            {speciesList.map((sp, i) => (
-              <a
-                key={sp.id}
-                href="#quote"
-                className="species-item"
-                style={{ animationDelay: `${(i % 6) * 65}ms` }}
-                aria-label={`Request a quote or custom sample for ${sp.name}`}
-              >
-                <div className="species-name">{sp.name}</div>
-                <div className="species-meta">
-                  {sp.hardness} · {sp.origin}
-                </div>
-                <div className="species-cta-hint">
-                  Discuss this species <span className="arrow">→</span>
-                </div>
-              </a>
-            ))}
-          </div>
-
-          <div className="custom-sample-box reveal">
-            <div style={{ maxWidth: '520px' }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Don&apos;t see your species?</h4>
-              <p style={{ color: 'var(--muted)' }}>
-                Reclaimed barn board, exotic species, hand-scraped finishes, smoked or fumed oak —
-                if it exists, we can source it.
-              </p>
-            </div>
-            <a 
-              className="btn btn-primary btn-lg" 
-              href="#quote"
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Request a Custom Sample
-              <span className="btn-arrow">{Icon.arrow}</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* PROCESS */}
-      <section className="section photo-bg-section" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }} id="process">
-        <RotatingBackground theme="finish" interval={10000} scrim="linear-gradient(115deg, rgba(20,13,9,0.8), rgba(20,13,9,0.7))" />
-        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="section-head reveal">
-            <span className="eyebrow">Our Process</span>
-            <h2>
-              From sample to <span className="serif-italic">signed-off.</span>
-            </h2>
-            <p>
-              Five steps. One project manager from start to finish. No salespeople, no handoffs,
-              no surprises.
-            </p>
-          </div>
-
-          <div
-            className="process-grid reveal"
-            style={{
-              background: 'var(--surface)',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--line)',
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            {processSteps.map((step, i) => (
-              <div key={step.num} className="process-step reveal" data-delay={i + 1}>
-                <div className="step-num">{step.num}</div>
-                <h4>{step.title}</h4>
-                <p style={{ marginBottom: '1rem' }}>{step.body}</p>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    color: 'var(--copper-deep)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  {Icon.clock}
-                  {step.duration}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* GALLERY */}
-      <section className="section" id="gallery">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">Recent Work</span>
-            <h2>
-              Toronto&rsquo;s living rooms, <span className="serif-italic">our daily portfolio.</span>
-            </h2>
-            <p>
-              A small sample of projects completed in the last twelve months across the GTA.
-            </p>
-          </div>
-
-          <div className="gallery-grid">
-            {galleryItems.map((g, i) => (
-              <a
-                key={g.id}
-                href="#quote"
-                className={`gallery-tile ${g.span} reveal`}
-                data-delay={(i % 4) + 1}
-              >
-                <img src={g.image} alt={g.title} loading="lazy" />
-                <div className="gallery-caption">
-                  <div className="title">{g.title}</div>
-                  <div className="sub">{g.sub}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-
-          <div className="reveal" style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <a className="btn btn-ghost btn-lg" href="#quote">
-              See the full project archive
-              <span className="btn-arrow">{Icon.arrow}</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* REVIEWS */}
+      {/* 2 · PROOF & AUTHORITY */}
       <section className="section paper-texture" id="reviews">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '780px' }}>
@@ -1015,18 +508,18 @@ const onSubmit = (data: LeadFormData) => {
                 4.9 <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· 348 verified reviews</span>
               </span>
             </div>
-            <span className="eyebrow">Reviews</span>
+            <span className="eyebrow">Proof</span>
             <h2>
               What clients say <span className="serif-italic">after move-in day.</span>
             </h2>
             <p>
-              Reviews aggregated across Google, HomeStars, Houzz, and BBB. We do not curate. Every
-              review for the last decade is publicly visible on those platforms.
+              Reviews aggregated across Google, HomeStars, Houzz, and BBB. We do not curate — every
+              review from the last decade is publicly visible on those platforms.
             </p>
           </div>
 
           <div className="testimonial-grid">
-            {reviews.map((r, i) => (
+            {featuredReviews.map((r, i) => (
               <article key={i} className="testimonial reveal" data-delay={(i % 3) + 1}>
                 <div className="testimonial-stars" aria-label={`${r.stars} out of 5 stars`}>
                   {Array.from({ length: r.stars }).map((_, j) => (
@@ -1046,351 +539,168 @@ const onSubmit = (data: LeadFormData) => {
               </article>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* GET THE MOBILE APP */}
-      <section className="section" style={{ background: 'var(--cream-50)' }}>
-        <div className="shell">
-          <div className="section-head centered reveal">
-            <span className="eyebrow">EcoWoods Pro App</span>
-            <h2>
-              Manage jobs on the go. <span className="serif-italic">Same system.</span>
-            </h2>
-            <p>
-              The same platform our installers and project managers use — now in your pocket.
-              Track bids, view schedules, upload photos, and get real-time updates.
-            </p>
-          </div>
-
-          <div className="app-promo reveal" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
-            gap: '3rem',
-            alignItems: 'center',
-            maxWidth: '1100px',
-            margin: '0 auto',
-          }}>
-            <div>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-                <div style={{
-                  background: 'var(--copper)',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px'
-                }}>
-                  iOS & Android
-                </div>
-                <div style={{
-                  background: '#111',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700
-                }}>
-                  Expo + React Native
-                </div>
-              </div>
-
-              <h3 style={{ fontSize: '2rem', lineHeight: 1.1, marginBottom: '1rem' }}>
-                One app.<br />One source of truth.
-              </h3>
-
-              <ul style={{ marginBottom: '2rem', lineHeight: 1.8 }}>
-                <li>✓ Submit job requests in under 60 seconds</li>
-                <li>✓ Real-time bidding from our team</li>
-                <li>✓ Live project timeline & photo updates</li>
-                <li>✓ Instant access to your warranty documents</li>
-                <li>✓ Same data as the website — zero duplication</li>
-              </ul>
-
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <a href="#" className="btn btn-copper btn-lg">
-                  Download on App Store
-                </a>
-                <a href="#" className="btn btn-ghost btn-lg">
-                  Get it on Google Play
-                </a>
-              </div>
+          <div className="warranty-callout reveal">
+            <div className="warranty-callout-icon" aria-hidden="true">
+              {Icon.shield}
             </div>
-
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: '220px',
-                height: '220px',
-                background: '#111',
-                margin: '0 auto',
-                borderRadius: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.4)',
-                position: 'relative'
-              }}>
-                <div style={{ textAlign: 'center', color: 'white' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📱</div>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>Scan to download</div>
-                </div>
-              </div>
-              <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--muted)' }}>
-                Or visit <strong>app.ecowoods.ca</strong> on your phone
+            <div>
+              <h3>Lifetime Workmanship Warranty</h3>
+              <p>
+                Every installation and refinish is covered for as long as you own the home —
+                transferable once at sale, with manufacturer material warranties passed through on
+                top. If we did the floor, we own the floor. In writing.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ESTIMATOR */}
-      <section className="section" id="estimator">
-        <div className="shell">
-          <div className="section-head centered reveal">
-            <span className="eyebrow">Instant Ballpark</span>
-            <h2>
-              Project estimator. <span className="serif-italic">Toronto pricing, today.</span>
+      {/* 3 · THE ECOWOODS STANDARD */}
+      <section
+        className="section photo-bg-section"
+        id="services"
+        style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
+      >
+        <RotatingBackground theme="craft" interval={9000} />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
+          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+            <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
+              The Ecowoods Standard
+            </span>
+            <h2 style={{ color: 'var(--cream-50)' }}>
+              One shop. One material. <span className="serif-italic">One standard.</span>
             </h2>
-            <p>
-              A ballpark range based on 25 years of GTA pricing data. Final estimates always
-              follow a free in-home consultation.
+            <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
+              Installation, refinishing, sanding, stairs, inlays, and commercial — every service
+              delivered by the same family-owned shop since 1998.
             </p>
           </div>
 
-          <div className="estimator reveal">
-            <div className="estimator-grid">
-              <div className="estimator-controls">
-                <div className="estimator-field">
-                  <label htmlFor="svc">Service</label>
-                  <div className="estimator-options" id="svc">
-                    {[
-                      { id: 'install', label: 'New Install' },
-                      { id: 'refinish', label: 'Refinishing' },
-                      { id: 'engineered', label: 'Engineered' },
-                      { id: 'wideplank', label: 'Wide Plank' },
-                    ].map((o) => (
-                      <button
-                        key={o.id}
-                        className={`estimator-option ${serviceType === o.id ? 'active' : ''}`}
-                        onClick={() => setServiceType(o.id as typeof serviceType)}
-                        type="button"
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
+          <div className="standard-grid">
+            {standardPillars.map((p, i) => (
+              <div key={p.title} className="standard-pillar reveal" data-delay={i + 1}>
+                <div className="standard-pillar-icon" aria-hidden="true">
+                  {Icon[p.icon]}
                 </div>
+                <h4>{p.title}</h4>
+                <p>{p.proof}</p>
+              </div>
+            ))}
+          </div>
 
-                <div className="estimator-field">
-                  <label htmlFor="tier">Material Tier</label>
-                  <div className="estimator-options" id="tier">
-                    {[
-                      { id: 'standard', label: 'Standard' },
-                      { id: 'premium', label: 'Premium' },
-                      { id: 'bespoke', label: 'Bespoke' },
-                    ].map((o) => (
-                      <button
-                        key={o.id}
-                        className={`estimator-option ${tier === o.id ? 'active' : ''}`}
-                        onClick={() => setTier(o.id as typeof tier)}
-                        type="button"
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
+          <div className="service-chip-row reveal" aria-label="Services">
+            {serviceChips.map((s) => (
+              <span key={s} className="service-chip">
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4 · HOW IT WORKS — 4-step funnel */}
+      <section className="section" id="process">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">How It Works</span>
+            <h2>
+              Four steps to <span className="serif-italic">certainty.</span>
+            </h2>
+            <p>
+              Fixed price guarantee at every stage. No subcontractors — ever.
+            </p>
+          </div>
+
+          <div className="funnel-grid reveal">
+            {funnelSteps.map((step, i) => (
+              <div key={step.num} className="funnel-step reveal" data-delay={i + 1}>
+                <div className="funnel-step-top">
+                  <span className="funnel-step-icon" aria-hidden="true">{Icon[step.icon]}</span>
+                  <span className="funnel-step-num">{step.num}</span>
                 </div>
+                <h4>{step.title}</h4>
+                <p>{step.line}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                <div className="estimator-field">
-                  <label htmlFor="sqft-range">Square Footage</label>
-                  <input
-                    id="sqft-range"
-                    type="range"
-                    min={200}
-                    max={4000}
-                    step={50}
-                    value={sqft}
-                    onChange={(e) => setSqft(Number(e.target.value))}
-                    style={{
-                      background: `linear-gradient(to right, var(--copper) 0%, var(--copper) ${
-                        ((sqft - 200) / (4000 - 200)) * 100
-                      }%, var(--line-strong) ${((sqft - 200) / (4000 - 200)) * 100}%, var(--line-strong) 100%)`,
-                    }}
-                  />
-                  <div className="range-readout">
-                    <span>200 sq ft</span>
-                    <strong>{sqft.toLocaleString()} sq ft</strong>
-                    <span>4,000 sq ft</span>
-                  </div>
+      {/* 5 · RESULTS — curated proof */}
+      <section className="section paper-texture" id="gallery">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">Results</span>
+            <h2>
+              Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
+            </h2>
+            <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
+          </div>
+
+          <div className="gallery-grid">
+            {galleryItems.map((g, i) => (
+              <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
+                <img src={g.image} alt={g.title} loading="lazy" />
+                <div className="gallery-caption">
+                  <div className="title">{g.title}</div>
+                  <div className="sub">{g.sub}</div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <div className="estimator-result">
-                <div className="est-label">Estimated Range</div>
-                <div className="est-value">
-                  {formatCurrencyCAD(estimateLow)} – {formatCurrencyCAD(estimateHigh)}
+      {/* Species — collapsed technical reference (kept for nav anchor, out of main flow) */}
+      <section className="section-tight" id="species">
+        <div className="shell">
+          <details className="species-accordion reveal">
+            <summary>
+              <span className="eyebrow" style={{ marginBottom: 0 }}>Species &amp; Technical Specs</span>
+              <span className="species-accordion-hint">
+                Over 40 species stocked and sourced — expand for details {Icon.plus}
+              </span>
+            </summary>
+            <div className="species-accordion-body">
+              {speciesList.map((sp) => (
+                <div key={sp.id} className="species-row">
+                  <strong>{sp.name}</strong>
+                  <span>{sp.hardness} · {sp.origin}</span>
+                  <em>{sp.vibe}</em>
                 </div>
-                <p className="est-detail">
-                  All-in for {sqft.toLocaleString()} sq ft of{' '}
-                  {serviceType === 'install'
-                    ? 'solid hardwood installation'
-                    : serviceType === 'refinish'
-                    ? 'refinishing & finishing'
-                    : serviceType === 'engineered'
-                    ? 'engineered hardwood installation'
-                    : 'wide plank installation'}{' '}
-                  at the <strong>{tier}</strong> tier. Includes labour, materials, dust-free
-                  sanding, and finishing. HST extra.
-                </p>
-                <a className="btn btn-copper" href="#quote">
-                  Lock in a written estimate
-                  <span className="btn-arrow">{Icon.arrow}</span>
-                </a>
-              </div>
+              ))}
+              <p className="species-accordion-note">
+                Reclaimed barn board, exotic species, smoked or fumed oak — if it exists, we can
+                source it. Samples are brushed on your subfloor at the free consultation.
+              </p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      {/* Coverage — slim (kept for footer anchor) */}
+      <section className="section-tight" id="areas">
+        <div className="shell">
+          <div className="areas-slim reveal">
+            <span className="areas-slim-label">Serving the entire GTA — same crew, same fixed pricing:</span>
+            <div className="areas-slim-chips">
+              {serviceAreas.map((a) => (
+                <span key={a} className="area-chip-slim">{a}</span>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* COMPARISON TABLE */}
-      <section className="section" style={{ background: 'var(--cream-50)' }}>
-        <div className="shell">
-          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow">Apples to Apples</span>
-            <h2>
-              Ecowoods vs. <span className="serif-italic">a typical Toronto installer.</span>
-            </h2>
-            <p>
-              Twenty-five years in this market gives us a clear-eyed view of what other quotes
-              actually contain — and what they leave out.
-            </p>
-          </div>
-
-          <div className="compare-wrapper reveal">
-            <table className="compare-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '50%' }}>Service Detail</th>
-                  <th className="ecowoods-col">Ecowoods</th>
-                  <th>Typical Quote</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row, i) => (
-                  <tr key={i}>
-                    <td className="feature">{row.feature}</td>
-                    <td className="ecowoods-col">
-                      <span className="check">{Icon.check}</span>
-                    </td>
-                    <td>
-                      {row.them === true ? (
-                        <span className="check">{Icon.check}</span>
-                      ) : row.them === 'add-on' ? (
-                        <span style={{ color: 'var(--warning)', fontSize: '0.85rem', fontWeight: 600 }}>
-                          Add-on charge
-                        </span>
-                      ) : row.them === 'sometimes' ? (
-                        <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Sometimes</span>
-                      ) : (
-                        <span style={{ color: 'var(--muted-soft)', fontSize: '1.2rem' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* SERVICE AREAS */}
-      <section className="section photo-bg-section" id="areas" style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)', color: 'var(--cream-50)' }}>
-        <RotatingBackground theme="homes" interval={11000} scrim="linear-gradient(115deg, rgba(20,13,9,0.8), rgba(20,13,9,0.7))" />
-        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow">Coverage</span>
-            <h2>
-              Toronto and the <span className="serif-italic">entire GTA.</span>
-            </h2>
-            <p>
-              Same crew. Same standards. Same fixed pricing regardless of postal code.
-              If your home is between Hamilton and Oshawa, we can be there next week.
-            </p>
-          </div>
-
-          <div className="areas-grid reveal">
-            {serviceAreas.map((a) => (
-              <a key={a.name} href="#quote" className="area-chip">
-                {Icon.pin}
-                {a.name}
-              </a>
-            ))}
-          </div>
-
-          <p
-            className="reveal"
-            style={{
-              marginTop: '2rem',
-              fontSize: '0.92rem',
-              color: 'var(--muted)',
-              textAlign: 'center',
-            }}
-          >
-            Outside the GTA? We have completed projects in Niagara, Muskoka, and Prince Edward
-            County —{' '}
-            <a href="#quote" style={{ color: 'var(--copper-deep)', fontWeight: 600 }}>
-              ask about travel terms
-            </a>
-            .
-          </p>
-        </div>
-      </section>
-
-      {/* TIPS / EDITORIAL */}
-      <section className="section paper-texture">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">Field Notes</span>
-            <h2>
-              From the shop floor. <span className="serif-italic">Practical guides.</span>
-            </h2>
-            <p>
-              No SEO fluff. Just the field knowledge our installers wish every Toronto homeowner
-              had before signing a contract.
-            </p>
-          </div>
-
-          <div className="tips-grid">
-            {tips.map((t, i) => (
-              <article key={i} className="tip-card reveal" data-delay={i + 1}>
-                <div className="tip-card-image">
-                  <img src={t.image} alt={t.title} loading="lazy" />
-                </div>
-                <div className="tip-card-body">
-                  <div className="tip-card-tag">{t.tag}</div>
-                  <h4>{t.title}</h4>
-                  <p>{t.body}</p>
-                  <div className="tip-card-meta">{t.meta}</div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
+      {/* Objection-handling FAQ — directly above the conversion moment */}
       <section className="section" id="faq">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow">Questions</span>
+            <span className="eyebrow">Before You Book</span>
             <h2>
-              Things <span className="serif-italic">we hear at the kitchen table.</span>
+              The four questions <span className="serif-italic">everyone asks.</span>
             </h2>
-            <p>
-              The questions every Toronto homeowner asks us during the in-home consultation —
-              answered honestly here, before you call.
-            </p>
           </div>
 
           <div className="faq-list reveal">
@@ -1419,7 +729,7 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* QUOTE / CONTACT */}
+      {/* 6 · CONVERSION — preserved Free In-Home Estimate section (untouched) */}
       <section className="section wood-grain-dark noise-overlay" id="quote">
         <div className="shell">
           <div className="contact-grid">
@@ -1678,64 +988,6 @@ const onSubmit = (data: LeadFormData) => {
           </div>
         </div>
       )}
-
-      {/* FINAL BAND / CLOSING */}
-      <section
-        className="section-tight"
-        style={{ position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg, var(--copper-deep), var(--copper))',
-          color: 'var(--cream-50)',
-          textAlign: 'center',
-        }}
-      >
-        <RotatingBackground theme="finish" interval={8000} scrim="linear-gradient(135deg, rgba(138,72,42,0.82), rgba(176,109,58,0.7))" />
-        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="reveal" style={{ maxWidth: '760px', margin: '0 auto' }}>
-            <h2
-              style={{
-                color: 'var(--cream-50)',
-                fontWeight: 300,
-                marginBottom: '1.25rem',
-              }}
-            >
-              Your floors should outlive <span className="serif-italic">your mortgage.</span>
-            </h2>
-            <p
-              style={{
-                color: 'rgba(253, 251, 246, 0.85)',
-                fontSize: '1.1rem',
-                marginBottom: '2rem',
-                lineHeight: 1.6,
-              }}
-            >
-              Twenty-five years of Toronto homeowners agree. Let&apos;s talk about yours.
-            </p>
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <a
-                className="btn btn-lg"
-                href="#quote"
-                style={{
-                  background: 'var(--walnut-950)',
-                  color: 'var(--cream-50)',
-                }}
-              >
-                Get a Free Estimate
-                <span className="btn-arrow">{Icon.arrow}</span>
-              </a>
-              <a className="btn btn-ghost-light btn-lg" href="tel:+14162491276">
-                Or call (416) 249-1276
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
