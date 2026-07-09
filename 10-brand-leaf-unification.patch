@@ -1,0 +1,290 @@
+diff --git a/apps/web/app/(auth)/login/LoginForm.tsx b/apps/web/app/(auth)/login/LoginForm.tsx
+index 44ddb5b..133d03e 100644
+--- a/apps/web/app/(auth)/login/LoginForm.tsx
++++ b/apps/web/app/(auth)/login/LoginForm.tsx
+@@ -6,6 +6,7 @@ import Link from 'next/link';
+ import { signIn, getSession } from 'next-auth/react';
+ import { useForm } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
++import { EcowoodsLeaf } from '@/app/components/EcowoodsLeaf';
+ import { z } from 'zod';
+ import { toast } from 'sonner';
+ import SocialLoginButtons from '@/app/components/SocialLoginButtons';
+@@ -85,10 +86,7 @@ export default function LoginForm({ enabledProviders }: { enabledProviders: OAut
+         {/* Brand */}
+         <div className="auth-brand">
+           <span className="brand-mark" style={{ width: 44, height: 44 }}>
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+-              <path d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z" fill="currentColor" fillOpacity="0.18" />
+-              <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
+-            </svg>
++            <EcowoodsLeaf size={24} />
+           </span>
+           <div>
+             <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>Ecowoods</div>
+diff --git a/apps/web/app/(auth)/register/RegisterForm.tsx b/apps/web/app/(auth)/register/RegisterForm.tsx
+index 68480fa..e636c98 100644
+--- a/apps/web/app/(auth)/register/RegisterForm.tsx
++++ b/apps/web/app/(auth)/register/RegisterForm.tsx
+@@ -4,6 +4,7 @@ import { useState } from 'react';
+ import Link from 'next/link';
+ import { useForm } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
++import { EcowoodsLeaf } from '@/app/components/EcowoodsLeaf';
+ import { z } from 'zod';
+ import { toast } from 'sonner';
+ import SocialLoginButtons from '@/app/components/SocialLoginButtons';
+@@ -121,10 +122,7 @@ export default function RegisterForm({ enabledProviders }: { enabledProviders: O
+         {/* Brand */}
+         <div className="auth-brand">
+           <span className="brand-mark" style={{ width: 44, height: 44 }}>
+-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+-              <path d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z" fill="currentColor" fillOpacity="0.18" />
+-              <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
+-            </svg>
++            <EcowoodsLeaf size={24} />
+           </span>
+           <div>
+             <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>Ecowoods</div>
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index f773e34..fd683d6 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { useState, useEffect, useRef, useCallback } from 'react';
+ import { onRenoGuideOpen } from '@/lib/renoguide';
++import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ // Theme-aware by construction: these are CSS custom properties, resolved by
+ // the browser on every paint. Flipping data-theme on <html> restyles the whole
+@@ -120,11 +121,8 @@ export default function ChatWidget() {
+           </div>
+         )}
+         {!open && (
+-          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
+-            <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+-              <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.96" />
+-              <path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke="#f6ecdd" strokeWidth="1.5" strokeLinecap="round" />
+-            </svg>
++          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
++            <EcowoodsLeaf size={26} strokeWidth={1.5} fillOpacity={0.22} />
+           </button>
+         )}
+       </div>
+@@ -133,7 +131,7 @@ export default function ChatWidget() {
+         <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
+             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
+-              <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true"><path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.95" /><path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke={C.bronze} strokeWidth="1.4" strokeLinecap="round" /></svg>
++              <EcowoodsLeaf size={18} strokeWidth={1.4} fillOpacity={0.22} />
+             </span>
+             <div style={{ flex: 1, minWidth: 0 }}>
+               <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
+diff --git a/apps/web/app/components/CommandPalette.tsx b/apps/web/app/components/CommandPalette.tsx
+index e54338e..d8e1322 100644
+--- a/apps/web/app/components/CommandPalette.tsx
++++ b/apps/web/app/components/CommandPalette.tsx
+@@ -3,6 +3,7 @@
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import { openRenoGuide } from '@/lib/renoguide';
+ import { useTheme } from './useTheme';
++import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+    ⌘K — for the 4% of visitors who type instead of scroll.
+@@ -26,11 +27,7 @@ type Action = {
+ type Group = { label: string; actions: Action[] };
+ 
+ const I = {
+-  chat: (
+-    <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+-      <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" />
+-    </svg>
+-  ),
++  chat: <EcowoodsLeaf size={20} strokeWidth={1.7} fillOpacity={0.22} />,
+   arrow: (
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+       <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+diff --git a/apps/web/app/components/EcowoodsLeaf.tsx b/apps/web/app/components/EcowoodsLeaf.tsx
+new file mode 100644
+index 0000000..b57aaea
+--- /dev/null
++++ b/apps/web/app/components/EcowoodsLeaf.tsx
+@@ -0,0 +1,68 @@
++import type { SVGProps } from 'react';
++
++/* ────────────────────────────────────────────────────────────────────────────
++   THE ECOWOODS LEAF — one drawing, one file.
++
++   Before this, the mark existed as three different shapes:
++
++     A. 24×24, filled body + inner stem      Header, SiteFooter, LoginForm,
++        (Header alone also drew an           RegisterForm
++         external stem, `M12 18v3`)
++     B. 32×32, a different silhouette        ChatWidget, CommandPalette,
++        with a thinner inner curve           FloorConfigurator
++
++   A homeowner who opens RenoGuide saw a logo that did not match the one in the
++   header — on a site whose entire argument is "we are the same shop that has
++   been doing this since 1998." Consistency of the mark is not decoration; it
++   is the visual half of that claim.
++
++   This is drawing A, without the external stem, matching the brand asset.
++   It inherits `currentColor`, so it works on copper, on cream, on espresso,
++   and in both themes without a single hardcoded value.
++
++   NOTE: this is the *brand mark*. It is deliberately not used for the
++   "FSC-Certified Eco Materials" pillar in page.tsx — that glyph means
++   sustainability, not Ecowoods. A logo where a content icon belongs reads as
++   a mistake.
++   ──────────────────────────────────────────────────────────────────────────── */
++
++export interface EcowoodsLeafProps extends Omit<SVGProps<SVGSVGElement>, 'viewBox'> {
++  /** Rendered edge length in px. Defaults to 24. */
++  size?: number | string;
++  /** The short stalk below the leaf. Off by default — the brand asset has none. */
++  withStem?: boolean;
++  /** Opacity of the filled body. 0 gives a pure outline. */
++  fillOpacity?: number;
++}
++
++export function EcowoodsLeaf({
++  size = 24,
++  withStem = false,
++  fillOpacity = 0.18,
++  strokeWidth = 1.6,
++  ...rest
++}: EcowoodsLeafProps) {
++  return (
++    <svg
++      viewBox="0 0 24 24"
++      width={size}
++      height={size}
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={strokeWidth}
++      aria-hidden="true"
++      focusable="false"
++      {...rest}
++    >
++      <path
++        d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z"
++        fill="currentColor"
++        fillOpacity={fillOpacity}
++      />
++      <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
++      {withStem && <path d="M12 18v3" strokeLinecap="round" />}
++    </svg>
++  );
++}
++
++export default EcowoodsLeaf;
+diff --git a/apps/web/app/components/FloorConfigurator.tsx b/apps/web/app/components/FloorConfigurator.tsx
+index 51cc853..386fc14 100644
+--- a/apps/web/app/components/FloorConfigurator.tsx
++++ b/apps/web/app/components/FloorConfigurator.tsx
+@@ -11,6 +11,7 @@ import {
+   bookMeasureIntent,
+ } from '@ecowoods/shared/ai';
+ import { openRenoGuide } from '@/lib/renoguide';
++import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+    DESIGN YOUR FLOOR
+@@ -272,9 +273,7 @@ export default function FloorConfigurator() {
+                 <span className="btn-arrow" aria-hidden="true">→</span>
+               </button>
+               <button type="button" className="fc-secondary" onClick={askRenoGuide}>
+-                <svg viewBox="0 0 32 32" width="17" height="17" aria-hidden="true">
+-                  <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="currentColor" fillOpacity="0.9" />
+-                </svg>
++<EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
+                 Ask RenoGuide about this floor
+               </button>
+              </div>
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 288d062..383f41f 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
+ import { useSession, signOut } from 'next-auth/react';
+ import ThemeToggle from './ThemeToggle';
+ import CommandPalette from './CommandPalette';
++import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ /* ---------------------- Hooks ---------------------- */
+ function useScrollState() {
+@@ -160,15 +161,7 @@ export default function Header() {
+           {/* Brand Lockup */}
+           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
+             <span className="brand-mark" aria-hidden="true">
+-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+-                <path
+-                  d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z"
+-                  fill="currentColor"
+-                  fillOpacity="0.18"
+-                />
+-                <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
+-                <path d="M12 18v3" strokeLinecap="round" />
+-              </svg>
++              <EcowoodsLeaf size={24} />
+             </span>
+             <span className="brand-copy">
+               <strong>Ecowoods</strong>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 067fab4..3f97024 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -1,4 +1,5 @@
+ import CookiePreferencesButton from './CookiePreferencesButton';
++import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ export default function SiteFooter() {
+   return (
+@@ -9,14 +10,7 @@ export default function SiteFooter() {
+           <div>
+             <div className="brand-lockup" style={{ marginBottom: '1.25rem' }}>
+               <span className="brand-mark" style={{ width: '42px', height: '42px' }}>
+-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+-                  <path
+-                    d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z"
+-                    fill="currentColor"
+-                    fillOpacity="0.18"
+-                  />
+-                  <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
+-                </svg>
++                <EcowoodsLeaf size={24} />
+               </span>
+               <span className="brand-copy">
+                 <strong style={{ color: 'var(--cream-50)' }}>Ecowoods</strong>
+diff --git a/apps/web/app/icon.svg b/apps/web/app/icon.svg
+new file mode 100644
+index 0000000..7724bed
+--- /dev/null
++++ b/apps/web/app/icon.svg
+@@ -0,0 +1,24 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
++  <!--
++    Ecowoods favicon. Next's App Router serves any app/icon.svg automatically
++    as <link rel="icon">, so the tab carries the same mark as the header.
++
++    Static hex is correct here: a favicon is rasterised by the browser chrome,
++    outside the page, where CSS custom properties do not exist. These are the
++    literal values of the walnut-800 to oak-500 tile gradient, and cream-50.
++    (An XML comment may not contain a double hyphen, so no var() names here.)
++  -->
++  <defs>
++    <linearGradient id="ew-tile" x1="0" y1="0" x2="1" y2="1">
++      <stop offset="0%" stop-color="#3a2418" />
++      <stop offset="100%" stop-color="#8b5e3c" />
++    </linearGradient>
++  </defs>
++
++  <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#ew-tile)" />
++
++  <g transform="translate(14.67 14.67) scale(1.444)" fill="none" stroke="#faf6ef" stroke-width="1.6">
++    <path d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z" fill="#faf6ef" fill-opacity="0.18" />
++    <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" stroke-linecap="round" />
++  </g>
++</svg>
