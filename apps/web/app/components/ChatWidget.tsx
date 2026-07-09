@@ -107,7 +107,9 @@ export default function ChatWidget() {
         .rg-launch:hover { transform: scale(1.05); }
       `}</style>
 
-      <div style={{ position: 'fixed', bottom: 22, right: 22, zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+      {/* --fab-inset lifts this above .sticky-cta-mobile on phones, where the
+          launcher used to sit squarely on top of the "Get Free Quote" button. */}
+      <div style={{ position: 'fixed', bottom: 'var(--fab-inset)', right: 'var(--fab-inset-x)', zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
         {!open && showNudge && (
           <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px var(--rg-shadow)', position: 'relative' }}>
             Planning a hardwood project? Get a ballpark in about a minute.
@@ -125,7 +127,7 @@ export default function ChatWidget() {
       </div>
 
       {open && (
-        <div role="dialog" aria-label="RenoGuide chat" style={{ position: 'fixed', zIndex: 130, bottom: 'max(22px, env(safe-area-inset-bottom))', right: 22, width: 'min(94vw, 392px)', height: 'min(78vh, 600px)', display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+        <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, color: '#fff' }}>
             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
               <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true"><path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.95" /><path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke={C.bronze} strokeWidth="1.4" strokeLinecap="round" /></svg>

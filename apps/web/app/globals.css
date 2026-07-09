@@ -81,6 +81,12 @@
   --section-y: clamp(4rem, 9vw, 7rem);
   --header-h: 80px;
 
+  /* Bottom-right/left floating UI. On phones a fixed CTA bar owns the last
+     72px of the viewport, so every FAB has to start above it. One token,
+     consumed by .wa-fab AND by ChatWidget's inline styles. */
+  --fab-inset: 22px;
+  --fab-inset-x: 22px;
+
   /* Motion */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
@@ -490,7 +496,7 @@ p {
   margin: 0 auto;
   /* The gap itself scales. At 1024px a fixed 1.25rem × 3 was 60px of pure
      overflow. */
-  gap: clamp(0.4rem, 1.3vw, 1.5rem);
+  gap: clamp(0.4rem, 1.3vw, 0.75rem);
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -564,8 +570,8 @@ p {
 
 .topbar-nav a {
   /* Padding and type scale with the viewport instead of forcing an overflow. */
-  padding: 0.5rem clamp(0.3rem, 0.8vw, 0.75rem);
-  font-size: clamp(0.78rem, 0.45vw + 0.55rem, 0.9rem);
+  padding: 0.5rem clamp(0.3rem, 0.8vw, 0.625rem);
+  font-size: clamp(0.78rem, 0.45vw + 0.55rem, 0.875rem);
   font-weight: 500;
   color: var(--ink-soft);
   border-radius: var(--radius-full);
@@ -4094,8 +4100,8 @@ html[data-theme='dark'] .paper-texture {
    ============================================================ */
 .wa-fab {
   position: fixed;
-  left: 22px;
-  bottom: max(22px, env(safe-area-inset-bottom));
+  left: var(--fab-inset-x);
+  bottom: var(--fab-inset);
   z-index: 120;
   height: 54px; width: 54px;
   display: grid; place-items: center;
@@ -4172,18 +4178,18 @@ html[data-theme='dark'] .paper-texture {
    ============================================================ */
 
 /* 1. The ⌘K hint is decoration long before the button is. */
-@media (max-width: 1400px) {
+@media (max-width: 1460px) {
   .cmdk-trigger kbd { display: none; }
 }
 
 /* 2. Search collapses to its icon. */
-@media (max-width: 1300px) {
+@media (max-width: 1380px) {
   .cmdk-trigger-label { display: none; }
   .cmdk-trigger { width: 38px; padding: 0; justify-content: center; }
 }
 
 /* 3. The phone becomes an icon — still a one-tap tel: link. */
-@media (max-width: 1180px) {
+@media (max-width: 1300px) {
   .phone-pill-label { display: none; }
   .phone-pill {
     width: 38px; padding: 0; justify-content: center;
@@ -4192,25 +4198,35 @@ html[data-theme='dark'] .paper-texture {
 }
 
 /* 4. Login moves into the sheet. */
-@media (max-width: 1060px) {
+@media (max-width: 1140px) {
   .login-btn { display: none; }
 }
 
 /* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
-@media (max-width: 1000px) {
+@media (max-width: 1020px) {
   .topbar-nav { display: none; }
   .hamburger { display: inline-flex; }
   .cmdk-trigger-label { display: inline; }
   .cmdk-trigger { width: auto; padding: 0 0.7rem 0 0.75rem; }
 }
 
-/* 6. Phone-as-icon is enough on a phone; the sheet has the rest. */
+/* 6. The header CTA is a duplicate of .sticky-cta-mobile's "Get Free Quote".
+      Dropping it frees ~140px — enough to keep ⌘K reachable on a phone, which
+      is the only entry point to RenoGuide's booking flow from the top of the
+      page. */
 @media (max-width: 768px) {
-  .cmdk-trigger { display: none; }
+  .topbar-quote { display: none; }
+  .cmdk-trigger-label { display: none; }
+  .cmdk-trigger { width: 38px; padding: 0; justify-content: center; }
 }
 
 @media (max-width: 400px) {
   .brand-copy small { display: none; }
+}
+
+/* Below ~380px even the icon has to go. Brand + theme + hamburger only. */
+@media (max-width: 379px) {
+  .cmdk-trigger { display: none; }
 }
 
 /* ============================================================
@@ -4314,4 +4330,131 @@ html[data-theme='dark'] .paper-texture {
 
 @media print {
   .progress-rail { display: none; }
+}
+
+/* ============================================================
+   MOBILE / TOUCH / SMALL-VIEWPORT INTEGRATION
+   ------------------------------------------------------------
+   Everything below exists because a desktop browser will happily
+   render a layout that is unusable in the hand.
+   ============================================================ */
+
+/* ---- 1. The bottom collision zone -------------------------
+   .sticky-cta-mobile is fixed, 72px tall, z-60, and holds the two
+   most valuable buttons on a phone: Call, and Get Free Quote.
+   The RenoGuide launcher (z-130) and the WhatsApp FAB (z-120) were
+   sitting directly on top of them. Lift both above the bar. */
+@media (max-width: 768px) {
+  :root {
+    --fab-inset: 88px; /* 72px bar + 16px breathing room */
+    --fab-inset-x: 16px;
+    --header-h: 68px;  /* header padding shrinks via clamp; keep anchors honest */
+  }
+}
+
+/* Anchor scrolling used a hardcoded 92px regardless of header height. */
+html { scroll-padding-top: calc(var(--header-h) + 12px); }
+
+/* The bar itself must clear the home indicator when a future
+   viewport-fit=cover lands. env() resolves to 0 today, so max() is a no-op. */
+.sticky-cta-mobile { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+
+/* ---- 2. RenoGuide chat, positioned from tokens ------------
+   Its launcher and panel are inline-styled by ChatWidget.tsx, which now
+   reads --fab-inset. These rules cover what inline styles can't express. */
+/* Geometry lives here, NOT in ChatWidget's style prop — an inline style beats
+   every rule below it, so a media query on an inline-positioned panel is dead
+   code. The component now only inlines colour and motion. */
+.rg-panel {
+  position: fixed;
+  z-index: 130;
+  bottom: var(--fab-inset);
+  right: var(--fab-inset-x);
+  width: min(94vw, 392px);
+  height: min(78vh, 600px);
+}
+
+@supports (height: 100dvh) {
+  /* iOS Safari's `vh` is the LARGE viewport: the panel ran under the URL bar.
+     dvh tracks the visible box, including when the keyboard opens. */
+  .rg-panel { height: min(78dvh, 600px); }
+}
+
+@media (max-width: 480px) {
+  .rg-panel {
+    width: calc(100vw - 24px);
+    right: 12px;
+  }
+}
+
+/* Landscape phone: 78dvh of a 380px-tall viewport is a letterbox. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .rg-panel { height: calc(100dvh - 24px); bottom: 12px; }
+  .wa-fab { display: none; }
+}
+
+/* ---- 3. Touch targets -------------------------------------
+   38px controls are fine for a cursor and cramped for a thumb.
+   WCAG 2.5.8 wants 24px minimum; Apple and Google both say 44px.
+   Only grow them where there is no cursor — the desktop header
+   stays tight. */
+@media (pointer: coarse) {
+  .theme-toggle,
+  .cmdk-trigger,
+  .phone-pill { min-height: 44px; min-width: 44px; }
+
+  .fc-pill { padding-block: 0.72rem; }
+  .fc-swatch { padding: 0.6rem; }
+  .fc-secondary { padding-block: 0.95rem; }
+
+  .fc-range { height: 6px; }
+  .fc-range::-webkit-slider-thumb { height: 28px; width: 28px; }
+  .fc-range::-moz-range-thumb { height: 28px; width: 28px; }
+
+  /* Hover-reveal is a lie on touch. */
+  .progress-tick-label { display: none; }
+}
+
+/* ---- 4. Dynamic viewport units ----------------------------
+   100vh on iOS is the tallest the viewport ever gets, so a "full height"
+   hero is always ~90px taller than the screen and the CTA sits below the
+   fold. svh is the smallest — the height with browser chrome showing. */
+@supports (height: 100svh) {
+  .hero { min-height: 100svh; }
+  .cmdk-overlay { padding-top: clamp(1rem, 10svh, 9rem); }
+  .cmdk-panel { max-height: min(70dvh, 560px); }
+}
+
+@media (max-width: 480px) {
+  @supports (height: 100svh) {
+    .hero { min-height: 88svh; }
+  }
+}
+
+/* ---- 5. Configurator on a phone ---------------------------- */
+@media (max-width: 560px) {
+  /* Two columns of spec at 320px gives 130px per value — "Hand-Scraped"
+     wraps mid-word. */
+  .fc-spec { grid-template-columns: 1fr; gap: 0.7rem; }
+  .fc-postal { max-width: 100%; }
+  .fc-range-ends { font-size: 0.68rem; }
+  .fc-result-figure { font-size: clamp(1.35rem, 6.4vw, 1.9rem); }
+}
+
+/* A tick label rendered off the left/right edge of the rail is worse
+   than no label; the rail is desktop-only anyway (hidden <900px). */
+
+/* ---- 6. Tablet: the awkward middle ------------------------- */
+@media (min-width: 769px) and (max-width: 1020px) {
+  /* Nav is a hamburger here, so the header has room — but the sticky
+     mobile CTA bar is gone (it stops at 768px). Put the FABs back down. */
+  :root { --fab-inset: 22px; --fab-inset-x: 22px; }
+}
+
+/* ---- 7. Wide desktop ---------------------------------------
+   --shell-max is 1280px. On a 2560px monitor the configurator's three
+   columns were fine but the gallery's 12-col grid stretched its rows to
+   400px while the tiles stayed 16:10-ish. Cap the row growth. */
+@media (min-width: 1600px) {
+  .gallery-grid { grid-auto-rows: clamp(280px, 20vw, 380px); }
 }

@@ -288,7 +288,8 @@ export default function Header() {
               </svg>
               <span className="phone-pill-label">{PHONE_DISPLAY}</span>
             </a>
-            <a className="btn btn-copper btn-sm" href={`${baseUrl}#quote`}>
+            {/* topbar-quote: hidden <=768px — .sticky-cta-mobile already carries it. */}
+            <a className="btn btn-copper btn-sm topbar-quote" href={`${baseUrl}#quote`}>
               Free Quote
               <svg
                 className="btn-arrow"
