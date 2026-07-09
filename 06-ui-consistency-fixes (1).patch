@@ -1,0 +1,254 @@
+diff --git a/apps/web/app/components/FloorConfigurator.tsx b/apps/web/app/components/FloorConfigurator.tsx
+index 675f57e..51cc853 100644
+--- a/apps/web/app/components/FloorConfigurator.tsx
++++ b/apps/web/app/components/FloorConfigurator.tsx
+@@ -87,8 +87,12 @@ export default function FloorConfigurator() {
+   const [postal, setPostal] = useState<string>('');
+   const [animate, setAnimate] = useState(false);
+ 
+-  // Don't count up on first paint — only on interaction.
+-  useEffect(() => { setAnimate(true); }, []);
++  // Read prefers-reduced-motion in an effect, never during render — reading it
++  // during render makes the server and the client disagree on first paint.
++  useEffect(() => {
++    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
++    if (!reduced) setAnimate(true);
++  }, []);
+ 
+   const species = SPECIES.find((s) => s.id === speciesId) ?? SPECIES[0];
+   const finish = FINISH_OPTIONS.find((f) => f.id === finishId) ?? FINISH_OPTIONS[1];
+@@ -99,11 +103,8 @@ export default function FloorConfigurator() {
+     [speciesId, sqft, finishId, patternId],
+   );
+ 
+-  const reduced =
+-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+-
+-  const low = useCountUp(estimate.estimatedLowCad, animate && !reduced);
+-  const high = useCountUp(estimate.estimatedHighCad, animate && !reduced);
++  const low = useCountUp(estimate.estimatedLowCad, animate);
++  const high = useCountUp(estimate.estimatedHighCad, animate);
+ 
+   const payload = { species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId, postal: postal.trim() || undefined };
+ 
+@@ -150,7 +151,8 @@ export default function FloorConfigurator() {
+               <div><dt>Finish</dt><dd>{finish.label}</dd></div>
+               <div><dt>Pattern</dt><dd>{estimate.pattern === patternId ? pattern.label : 'n/a for refinishing'}</dd></div>
+             </dl>
+-            <p className="fc-note">{finish.blurb} {pattern.blurb}</p>
++            <p className="fc-note">{finish.blurb}</p>
++            <p className="fc-note">{pattern.blurb}</p>
+           </div>
+ 
+           {/* ── Controls ────────────────────────────────────────── */}
+@@ -235,12 +237,23 @@ export default function FloorConfigurator() {
+ 
+           {/* ── Result ──────────────────────────────────────────── */}
+           <div className="fc-result">
++           <div className="fc-result-inner">
++            <div>
+             <div className="fc-result-label">Estimated installed range</div>
+-            <div className="fc-result-figure" aria-live="polite" aria-atomic="true">
++            {/*
++              aria-hidden: this figure re-renders ~25×/second while the count-up
++              runs. With aria-live on it, a screen reader narrated every frame.
++              The settled value is announced once, below, instead.
++            */}
++            <div className="fc-result-figure" aria-hidden="true">
+               <span>{cad(low)}</span>
+               <em>–</em>
+               <span>{cad(high)}</span>
+             </div>
++            <p className="fc-sr-only" role="status" aria-live="polite" aria-atomic="true">
++              Estimated installed range: {cad(estimate.estimatedLowCad)} to {cad(estimate.estimatedHighCad)} Canadian
++              for {sqft.toLocaleString('en-CA')} square feet of {species.name}.
++            </p>
+             <div className="fc-result-sub">
+               {estimate.perSqftCad} · {sqft.toLocaleString('en-CA')} sq ft · materials, labour, finish
+             </div>
+@@ -250,8 +263,10 @@ export default function FloorConfigurator() {
+               and moisture readings move it. Your fixed price is written down after the free in-home
+               measure — and then it does not change.
+             </p>
++            </div>
+ 
+-            <div className="fc-actions">
++            <div>
++             <div className="fc-actions">
+               <button type="button" className="btn btn-copper btn-lg fc-cta" onClick={bookMeasure}>
+                 Book my free measure
+                 <span className="btn-arrow" aria-hidden="true">→</span>
+@@ -262,11 +277,13 @@ export default function FloorConfigurator() {
+                 </svg>
+                 Ask RenoGuide about this floor
+               </button>
+-            </div>
++             </div>
+ 
+             <p className="fc-handoff">
+               Either button carries your exact configuration into the chat. No retyping.
+             </p>
++            </div>
++           </div>
+           </div>
+         </div>
+       </div>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index ce1edda..5f4599d 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -1935,6 +1935,12 @@ p {
+   display: grid;
+   grid-template-columns: repeat(12, 1fr);
+   gap: 1rem;
++  /* Row height is declared here, not derived from each tile's width.
++     Previously .gallery-tile carried aspect-ratio:16/10, so a span-8 tile was
++     twice as wide and therefore twice as tall as the span-4 beside it — the
++     short one pinned to the top of the row with dead space beneath. Fixing the
++     row means every tile in it is the same height, whatever its span. */
++  grid-auto-rows: clamp(230px, 24vw, 400px);
+ }
+ 
+ .gallery-tile {
+@@ -1944,7 +1950,9 @@ p {
+   box-shadow: var(--shadow-md);
+   transition: all 400ms var(--ease-out-quart);
+   display: block;
+-  aspect-ratio: 16 / 10;
++  /* was: aspect-ratio: 16 / 10 — see .gallery-grid */
++  height: 100%;
++  min-height: 0;
+   grid-column: span 12;
+ }
+ 
+@@ -3841,13 +3849,16 @@ html[data-theme='dark'] .paper-texture {
+ 
+ @media (min-width: 900px) {
+   .fc-grid { grid-template-columns: 1.05fr 1fr; grid-template-areas: 'preview controls' 'result result'; }
+-  .fc-preview { grid-area: preview; position: sticky; top: calc(var(--header-h) + 1.25rem); }
++  /* NO position:sticky here. A sticky grid item's containing block is the grid
++     CONTAINER, not its column — so on scroll the preview card detached and slid
++     down over the full-width result row below it. */
++  .fc-preview { grid-area: preview; }
+   .fc-controls { grid-area: controls; }
+   .fc-result { grid-area: result; }
+ }
+ 
+ @media (min-width: 1180px) {
+-  .fc-grid { grid-template-columns: 1fr 1fr 0.85fr; grid-template-areas: 'preview controls result'; }
++  .fc-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(320px, 0.92fr); grid-template-areas: 'preview controls result'; }
+ }
+ 
+ /* ---- Preview ---- */
+@@ -3870,14 +3881,20 @@ html[data-theme='dark'] .paper-texture {
+ }
+ 
+ .fc-plank::before {
+-  /* grain */
++  /* Boards run horizontally, so grain lines run horizontally too. The old rule
++     put fine 3px stripes on the 90deg axis — across the boards — which read as
++     a barcode rather than as wood.
++       layer 1: fine grain, along the board
++       layer 2: board-to-board seams
++       layer 3: staggered end joints  */
+   content: '';
+   position: absolute;
+   inset: -20%;
+   background-image:
+-    repeating-linear-gradient(90deg, transparent 0 3px, color-mix(in srgb, var(--fc-grain) 45%, transparent) 3px 4px, transparent 4px 11px),
+-    repeating-linear-gradient(90deg, transparent 0 17px, color-mix(in srgb, var(--fc-grain) 22%, transparent) 17px 18px, transparent 18px 41px),
+-    repeating-linear-gradient(180deg, color-mix(in srgb, var(--fc-grain) 60%, transparent) 0 2px, transparent 2px 92px);
++    repeating-linear-gradient(0deg, transparent 0 5px, color-mix(in srgb, var(--fc-grain) 20%, transparent) 5px 6px, transparent 6px 13px),
++    repeating-linear-gradient(0deg, color-mix(in srgb, var(--fc-grain) 55%, transparent) 0 2px, transparent 2px 54px),
++    repeating-linear-gradient(90deg, transparent 0 168px, color-mix(in srgb, var(--fc-grain) 38%, transparent) 168px 170px, transparent 170px 336px);
++  background-position: 0 0, 0 0, 0 0;
+   transition: background-image 420ms var(--ease-out-quart);
+ }
+ 
+@@ -3937,7 +3954,10 @@ html[data-theme='dark'] .paper-texture {
+ .fc-step { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper); }
+ .fc-sqft { margin-left: auto; font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+ 
+-.fc-swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 0.6rem; }
++/* flex, not grid: a 5-item auto-fit grid leaves a dead cell on the last row.
++   flex:1 makes the final row's items stretch to fill it. */
++.fc-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
++.fc-swatch { flex: 1 1 96px; min-width: 0; }
+ .fc-swatch {
+   display: flex;
+   flex-direction: column;
+@@ -3954,6 +3974,7 @@ html[data-theme='dark'] .paper-texture {
+ .fc-swatch-name { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
+ 
+ .fc-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
++.fc-pill { flex: 1 1 auto; }
+ .fc-pill {
+   padding: 0.55rem 0.95rem;
+   border-radius: var(--radius-full);
+@@ -3998,16 +4019,34 @@ html[data-theme='dark'] .paper-texture {
+   background: var(--surface);
+   padding: clamp(1.25rem, 2.4vw, 1.85rem);
+   box-shadow: var(--shadow-lg);
++  /* The card is narrow in the 3-col layout and full-bleed in the 2-col one.
++     Drive the internal layout off the CARD's own width, not the viewport, so
++     the two can never desync — no 1400px-wide CTA button. */
++  container-type: inline-size;
++}
++
++.fc-result-inner { display: grid; gap: 1.15rem; }
++
++@container (min-width: 620px) {
++  .fc-result-inner {
++    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
++    column-gap: clamp(2rem, 4cqi, 3.5rem);
++    align-items: center;
++  }
+ }
+ .fc-result-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-soft); }
+ .fc-result-figure {
+-  display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;
++  /* nowrap: the range must never break after the en-dash, which orphaned
++     "$12,870 –" on its own line in the narrow 3-col column. */
++  display: flex; align-items: baseline; gap: 0.45rem;
++  flex-wrap: nowrap; white-space: nowrap;
+   font-family: var(--font-display);
+-  font-size: clamp(1.85rem, 3.6vw, 2.5rem);
++  font-size: clamp(1.3rem, 1.9vw, 2.2rem);
+   font-weight: 500;
+   color: var(--ink);
+   margin: 0.55rem 0 0.35rem;
+   font-variant-numeric: tabular-nums;
++  letter-spacing: -0.01em;
+ }
+ .fc-result-figure em { color: var(--copper); font-style: normal; }
+ .fc-result-sub { font-size: 0.83rem; color: var(--muted); font-family: var(--font-mono); }
+@@ -4087,3 +4126,16 @@ html[data-theme='dark'] .paper-texture {
+ @media (prefers-reduced-motion: reduce) {
+   .exit-overlay, .exit-card, .fc-plank, .fc-plank::before, .fc-plank::after, .fc-plank-sheen { animation: none; transition: none; }
+ }
++
++
++/* Announce the settled estimate once, not on every animation frame. */
++.fc-sr-only {
++  position: absolute;
++  width: 1px; height: 1px;
++  padding: 0; margin: -1px;
++  overflow: hidden;
++  clip: rect(0 0 0 0);
++  clip-path: inset(50%);
++  white-space: nowrap;
++  border: 0;
++}
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index c046d9b..6b1922c 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -645,8 +645,6 @@ const onSubmit = (data: LeadFormData) => {
+                 <img
+                   src={g.image}
+                   alt={g.title}
+-                  width={1400}
+-                  height={933}
+                   loading={i === 0 ? 'eager' : 'lazy'}
+                   fetchPriority={i === 0 ? 'high' : 'auto'}
+                   decoding="async"
