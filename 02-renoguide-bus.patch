@@ -1,0 +1,162 @@
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index 1e7b73d..79c8193 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -1,8 +1,20 @@
+ 'use client';
+ 
+-import { useState, useEffect, useRef } from 'react';
++import { useState, useEffect, useRef, useCallback } from 'react';
++import { onRenoGuideOpen } from '@/lib/renoguide';
+ 
+-const C = { cream: '#faf6f0', paper: '#fffdfa', bronze: '#c07a44', bronzeDark: '#a85f2e', brown: '#43301f', border: '#ece2d4', muted: '#8c7b69' };
++// Theme-aware by construction: these are CSS custom properties, resolved by
++// the browser on every paint. Flipping data-theme on <html> restyles the whole
++// widget with zero React work and zero flash. (Defined in globals.css.)
++const C = {
++  cream: 'var(--rg-cream)',
++  paper: 'var(--rg-paper)',
++  bronze: 'var(--copper)',
++  bronzeDark: 'var(--copper-deep)',
++  brown: 'var(--rg-ink)',
++  border: 'var(--rg-border)',
++  muted: 'var(--rg-muted)',
++};
+ type Msg = { id: string; role: 'user' | 'assistant'; content: string };
+ const QUICK = ['Get a ballpark estimate', 'Which species suits pets & kids?', 'Book a free in-home measure'];
+ const uid = () => Math.random().toString(36).slice(2);
+@@ -22,7 +34,7 @@ export default function ChatWidget() {
+   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 250); }, [open]);
+   useEffect(() => { const k = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false); window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, []);
+ 
+-  const send = async (text: string) => {
++  const send = useCallback(async (text: string) => {
+     const t = text.trim();
+     if (!t || busy) return;
+     setErrored(false);
+@@ -54,7 +66,33 @@ export default function ChatWidget() {
+     } finally {
+       setBusy(false);
+     }
+-  };
++  }, [messages, busy]);
++
++  // Keep a live ref so the bus listener never fires a stale closure.
++  const sendRef = useRef(send);
++  useEffect(() => { sendRef.current = send; }, [send]);
++
++  /* ────────────────────────────────────────────────────────────────
++     THE SEAM. The floor configurator, the ⌘K palette, exit intent and
++     the WhatsApp rail all reach the agent through here — they never
++     reimplement pricing or booking, they just hand RenoGuide a sentence
++     and let estimate_project / get_availability / book_measure run.
++     ──────────────────────────────────────────────────────────────── */
++  useEffect(() => onRenoGuideOpen(({ prefill, autoSend = true, source }) => {
++    setOpen(true);
++    setShowNudge(false);
++    if (!prefill) return;
++    if (autoSend) {
++      // Let the panel paint before we start streaming into it.
++      setTimeout(() => sendRef.current(prefill), 120);
++    } else {
++      setInput(prefill);
++      setTimeout(() => inputRef.current?.focus(), 250);
++    }
++    if (source && typeof window !== 'undefined') {
++      console.log(JSON.stringify({ event: 'renoguide.opened', source }));
++    }
++  }), []);
+ 
+   const waiting = busy && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content;
+ 
+@@ -71,7 +109,7 @@ export default function ChatWidget() {
+ 
+       <div style={{ position: 'fixed', bottom: 22, right: 22, zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+         {!open && showNudge && (
+-          <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px rgba(67,48,31,.14)', position: 'relative' }}>
++          <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px var(--rg-shadow)', position: 'relative' }}>
+             Planning a hardwood project? Get a ballpark in about a minute.
+             <button onClick={() => setShowNudge(false)} aria-label="Dismiss" style={{ position: 'absolute', top: 4, right: 6, border: 'none', background: 'none', color: C.muted, cursor: 'pointer', fontSize: 14 }}>×</button>
+           </div>
+@@ -87,7 +125,7 @@ export default function ChatWidget() {
+       </div>
+ 
+       {open && (
+-        <div role="dialog" aria-label="RenoGuide chat" style={{ position: 'fixed', zIndex: 130, bottom: 'max(22px, env(safe-area-inset-bottom))', right: 22, width: 'min(94vw, 392px)', height: 'min(78vh, 600px)', display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px rgba(67,48,31,.28)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
++        <div role="dialog" aria-label="RenoGuide chat" style={{ position: 'fixed', zIndex: 130, bottom: 'max(22px, env(safe-area-inset-bottom))', right: 22, width: 'min(94vw, 392px)', height: 'min(78vh, 600px)', display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, color: '#fff' }}>
+             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
+               <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true"><path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.95" /><path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke={C.bronze} strokeWidth="1.4" strokeLinecap="round" /></svg>
+@@ -105,7 +143,7 @@ export default function ChatWidget() {
+           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', background: C.cream }}>
+             {messages.length === 0 && (
+               <div style={{ animation: 'rg-pop .3s ease' }}>
+-                <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px rgba(67,48,31,.05)' }}>
++                <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px var(--rg-bubble-shadow)' }}>
+                   Hi — I’m <strong>RenoGuide</strong>. Tell me the wood species, rough square footage and your area, and I’ll give you a transparent ballpark and line up a specialist. What are you thinking?
+                 </div>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+@@ -119,7 +157,7 @@ export default function ChatWidget() {
+               const isUser = m.role === 'user';
+               return (
+                 <div key={m.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', margin: '10px 0' }}>
+-                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})` : C.paper, color: isUser ? '#fff' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px rgba(67,48,31,.05)' }}>{m.content}</div>
++                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})` : C.paper, color: isUser ? '#fff' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px var(--rg-bubble-shadow)' }}>{m.content}</div>
+                 </div>
+               );
+             })}
+diff --git a/apps/web/lib/renoguide.ts b/apps/web/lib/renoguide.ts
+new file mode 100644
+index 0000000..541da8a
+--- /dev/null
++++ b/apps/web/lib/renoguide.ts
+@@ -0,0 +1,49 @@
++/**
++ * RenoGuide bus.
++ *
++ * WHY THIS EXISTS
++ * ---------------
++ * ChatWidget already owns a working agent loop: it streams /api/chat, which
++ * has real tools (estimate_project, get_availability, book_measure,
++ * create_quote_request) that write to Prisma and send email.
++ *
++ * Every new surface we add — the configurator, ⌘K, exit intent, WhatsApp —
++ * is worthless if it dead-ends in its own little UI. So none of them get
++ * their own state. They all do exactly one thing: hand RenoGuide a sentence
++ * and let the existing tools do the work.
++ *
++ * That means:
++ *   configurator "Ask RenoGuide" → openRenoGuide({ prefill: '...' })
++ *     → ChatWidget opens, sends it, model calls estimate_project
++ *   configurator "Book my measure" → openRenoGuide({ prefill: '...' })
++ *     → model calls get_availability then book_measure → real Appointment row
++ *
++ * One seam. No duplicated pricing UI, no second booking flow, no drift.
++ */
++
++export const RENOGUIDE_OPEN_EVENT = 'renoguide:open';
++
++export interface RenoGuideOpenDetail {
++  /** Text dropped into the composer. */
++  prefill?: string;
++  /** Send it immediately instead of letting the user edit first. Default true. */
++  autoSend?: boolean;
++  /** Attribution for analytics — 'configurator' | 'command-palette' | 'exit-intent' | ... */
++  source?: string;
++}
++
++/** Fire-and-forget. Safe to call during SSR (no-ops) and before ChatWidget mounts. */
++export function openRenoGuide(detail: RenoGuideOpenDetail = {}): void {
++  if (typeof window === 'undefined') return;
++  window.dispatchEvent(
++    new CustomEvent<RenoGuideOpenDetail>(RENOGUIDE_OPEN_EVENT, {
++      detail: { autoSend: true, ...detail },
++    }),
++  );
++}
++
++export function onRenoGuideOpen(handler: (detail: RenoGuideOpenDetail) => void): () => void {
++  const listener = (e: Event) => handler((e as CustomEvent<RenoGuideOpenDetail>).detail ?? {});
++  window.addEventListener(RENOGUIDE_OPEN_EVENT, listener);
++  return () => window.removeEventListener(RENOGUIDE_OPEN_EVENT, listener);
++}
