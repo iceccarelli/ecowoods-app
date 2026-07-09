@@ -11,6 +11,7 @@ import {
   bookMeasureIntent,
 } from '@ecowoods/shared/ai';
 import { openRenoGuide } from '@/lib/renoguide';
+import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 /* ────────────────────────────────────────────────────────────────────────────
    DESIGN YOUR FLOOR
@@ -272,9 +273,7 @@ export default function FloorConfigurator() {
                 <span className="btn-arrow" aria-hidden="true">→</span>
               </button>
               <button type="button" className="fc-secondary" onClick={askRenoGuide}>
-                <svg viewBox="0 0 32 32" width="17" height="17" aria-hidden="true">
-                  <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="currentColor" fillOpacity="0.9" />
-                </svg>
+<EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
                 Ask RenoGuide about this floor
               </button>
              </div>

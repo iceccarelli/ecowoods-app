@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { onRenoGuideOpen } from '@/lib/renoguide';
+import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 // Theme-aware by construction: these are CSS custom properties, resolved by
 // the browser on every paint. Flipping data-theme on <html> restyles the whole
@@ -11,6 +12,9 @@ const C = {
   paper: 'var(--rg-paper)',
   bronze: 'var(--copper)',
   bronzeDark: 'var(--copper-deep)',
+  // Filled surfaces that carry text need the accessible pair, not the brand pair.
+  ctaFrom: 'var(--cta-from)',
+  ctaTo: 'var(--cta-to)',
   brown: 'var(--rg-ink)',
   border: 'var(--rg-border)',
   muted: 'var(--rg-muted)',
@@ -117,20 +121,17 @@ export default function ChatWidget() {
           </div>
         )}
         {!open && (
-          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
-            <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-              <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.96" />
-              <path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke="#f6ecdd" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
+            <EcowoodsLeaf size={26} strokeWidth={1.5} fillOpacity={0.22} />
           </button>
         )}
       </div>
 
       {open && (
         <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
-              <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true"><path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" fill="#f6ecdd" fillOpacity="0.95" /><path d="M16 12.6c-1.7 2.3-2.5 3.5-2.5 5.3 0 1.8 1.1 3 2.5 3" fill="none" stroke={C.bronze} strokeWidth="1.4" strokeLinecap="round" /></svg>
+              <EcowoodsLeaf size={18} strokeWidth={1.4} fillOpacity={0.22} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
@@ -159,7 +160,7 @@ export default function ChatWidget() {
               const isUser = m.role === 'user';
               return (
                 <div key={m.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', margin: '10px 0' }}>
-                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})` : C.paper, color: isUser ? '#fff' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px var(--rg-bubble-shadow)' }}>{m.content}</div>
+                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` : C.paper, color: isUser ? 'var(--cta-fg)' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px var(--rg-bubble-shadow)' }}>{m.content}</div>
                 </div>
               );
             })}
@@ -172,8 +173,10 @@ export default function ChatWidget() {
               </div>
             )}
 
+            {/* Error card was #a23a2a on #fbeeea — a pale pink surface that stayed
+                pale in dark mode. Tokenised so the error state flips with the theme. */}
             {errored && (
-              <div style={{ margin: '10px 0', fontSize: 13, color: '#a23a2a', background: '#fbeeea', border: '1px solid #f0d3cc', borderRadius: 12, padding: '10px 12px' }}>
+              <div style={{ margin: '10px 0', fontSize: 13, color: 'var(--danger-fg)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: 12, padding: '10px 12px' }}>
                 Something hiccuped on my end. Try again, or call <strong>(416)&nbsp;249-1276</strong>.
               </div>
             )}

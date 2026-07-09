@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { EcowoodsLeaf } from '@/app/components/EcowoodsLeaf';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import SocialLoginButtons from '@/app/components/SocialLoginButtons';
@@ -121,10 +122,7 @@ export default function RegisterForm({ enabledProviders }: { enabledProviders: O
         {/* Brand */}
         <div className="auth-brand">
           <span className="brand-mark" style={{ width: 44, height: 44 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z" fill="currentColor" fillOpacity="0.18" />
-              <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
-            </svg>
+            <EcowoodsLeaf size={24} />
           </span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>Ecowoods</div>

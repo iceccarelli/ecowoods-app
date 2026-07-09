@@ -178,19 +178,19 @@ export default function CookieConsentBanner() {
           aria-live="polite"
           className="fixed inset-x-0 bottom-0 z-[100] px-5 py-5 sm:px-8"
           style={{
-            backgroundColor: '#2a1810',
-            borderTop: '1px solid #4d3322',
+            backgroundColor: 'var(--walnut-900)',
+            borderTop: '1px solid var(--on-dark-line)',
             boxShadow: '0 12px 32px rgba(26, 15, 8, 0.35)',
           }}
         >
           <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-relaxed" style={{ color: '#ffffff' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--on-dark)' }}>
               We use cookies to run this site and, only with your permission, to understand
               traffic and measure marketing performance. Essential cookies are always on.{' '}
               <a
                 href="/privacy"
                 className="underline underline-offset-2"
-                style={{ color: '#e09464' }}
+                style={{ color: 'var(--copper-bright)' }}
               >
                 Privacy Policy
               </a>
@@ -221,11 +221,11 @@ export default function CookieConsentBanner() {
         >
           <div
             className="relative w-full max-w-lg rounded-2xl p-6 sm:p-8"
-            style={{ backgroundColor: '#2a1810', border: '1px solid #4d3322' }}
+            style={{ backgroundColor: 'var(--walnut-900)', border: '1px solid var(--on-dark-line)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold" style={{ color: '#ffffff' }}>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--on-dark)' }}>
                 Cookie Preferences
               </h2>
               <button
@@ -233,13 +233,13 @@ export default function CookieConsentBanner() {
                 onClick={() => setModalOpen(false)}
                 aria-label="Close"
                 className="text-xl leading-none"
-                style={{ color: '#cbb8a8' }}
+                style={{ color: 'var(--on-dark-muted)' }}
               >
                 &times;
               </button>
             </div>
 
-            <p className="mb-6 text-sm" style={{ color: '#cbb8a8' }}>
+            <p className="mb-6 text-sm" style={{ color: 'var(--on-dark-muted)' }}>
               Choose which optional cookies we can use. Essential cookies can&apos;t be turned
               off.
             </p>
@@ -300,13 +300,13 @@ function ConsentRow({
   return (
     <div
       className="flex items-start justify-between gap-4 rounded-xl p-4"
-      style={{ border: '1px solid #4d3322' }}
+      style={{ border: '1px solid var(--on-dark-line)' }}
     >
       <div>
-        <div className="text-sm font-semibold" style={{ color: '#ffffff' }}>
+        <div className="text-sm font-semibold" style={{ color: 'var(--on-dark)' }}>
           {label}
         </div>
-        <p className="mt-1 text-xs" style={{ color: '#cbb8a8' }}>
+        <p className="mt-1 text-xs" style={{ color: 'var(--on-dark-muted)' }}>
           {description}
         </p>
       </div>
@@ -334,7 +334,7 @@ function ConsentToggle({
       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
       }`}
-      style={{ backgroundColor: checked ? '#c87e4f' : '#4d3322' }}
+      style={{ backgroundColor: checked ? 'var(--copper)' : 'var(--on-dark-line)' }}
     >
       <span
         className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform"

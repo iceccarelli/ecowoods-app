@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { openRenoGuide } from '@/lib/renoguide';
 import { useTheme } from './useTheme';
+import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 /* ────────────────────────────────────────────────────────────────────────────
    ⌘K — for the 4% of visitors who type instead of scroll.
@@ -26,11 +27,7 @@ type Action = {
 type Group = { label: string; actions: Action[] };
 
 const I = {
-  chat: (
-    <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M16 5c-3.4 4.2-5.6 6.5-5.6 10.1 0 3.3 2.5 5.7 5.6 5.7s5.6-2.4 5.6-5.7C21.6 11.5 19.4 9.2 16 5Z" />
-    </svg>
-  ),
+  chat: <EcowoodsLeaf size={20} strokeWidth={1.7} fillOpacity={0.22} />,
   arrow: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />

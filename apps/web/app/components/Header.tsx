@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
+import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -160,15 +161,7 @@ export default function Header() {
           {/* Brand Lockup */}
           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
             <span className="brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                <path
-                  d="M12 2C9 6 6 8 6 12c0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-3-6-6-10Z"
-                  fill="currentColor"
-                  fillOpacity="0.18"
-                />
-                <path d="M12 4.5c-2 3-4 4.5-4 7.5 0 2.5 1.8 4.5 4 4.5" strokeLinecap="round" />
-                <path d="M12 18v3" strokeLinecap="round" />
-              </svg>
+              <EcowoodsLeaf size={24} />
             </span>
             <span className="brand-copy">
               <strong>Ecowoods</strong>

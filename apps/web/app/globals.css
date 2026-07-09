@@ -50,6 +50,38 @@
   --copper-bright: #e09464;
   --copper-deep: #a0623a;
   --copper-glow: oklch(68% 0.18 45);
+
+  /* Copper is a good SURFACE and a bad GLYPH. #c87e4f reads 3.10:1 on cream.
+     Anything that is text or an icon uses --copper-text instead; anything that
+     is a filled shape keeps --copper. */
+  --copper-text: #9f5c32;                /* 4.53:1 on the darkest light surface */
+
+  /* Primary CTA. Cream on --copper was 2.97:1 — the single worst contrast on
+     the site, on the single most important control. */
+  --cta-from: #a56034;                   /* cream text 4.51:1 */
+  --cta-to: #925a35;                     /* cream text 5.22:1 */
+  --cta-fg: #faf6ef;
+
+  /* CHROME — the header, the hamburger, form scrims. These were hardcoded
+     rgba(253,251,246,…): a cream sheet that stayed cream in dark mode while
+     --ink flipped to near-white. Cream text on cream. */
+  --chrome: rgba(253, 251, 246, 0.85);
+  --chrome-scrolled: rgba(253, 251, 246, 0.98);
+  --chrome-btn: rgba(253, 251, 246, 0.6);
+  --scrim: rgba(253, 251, 246, 0.88);
+  --hover-tint: rgba(139, 94, 60, 0.08);
+
+  /* Surfaces that are dark in BOTH themes — hero, footer, wood-grain sections,
+     cookie banner. Their foreground is a constant, not a flip. */
+  --on-dark: #f5efe6;
+  --on-dark-muted: rgba(245, 239, 230, 0.72);
+  --on-dark-faint: rgba(245, 239, 230, 0.55);
+  --on-dark-line: rgba(245, 239, 230, 0.14);
+
+  /* Inline error state (RenoGuide chat) */
+  --danger-fg: #a23a2a;
+  --danger-bg: #fbeeea;
+  --danger-border: #f0d3cc;
   --forest: #4a5d3c;
   --forest-deep: #2f3d27;
   --moss: #6b7d52;
@@ -58,7 +90,9 @@
   --ink: #1a1410;
   --ink-soft: #2d231c;
   --muted: #6b5d52;
-  --muted-soft: #9a8a7a;
+  /* was #9a8a7a — 3.23:1 on --bg. Below WCAG AA (4.5:1) for body text,
+     and this token labels every "SPECIES / HARDNESS / FINISH" caption. */
+  --muted-soft: #796b5c;
   --line: rgba(58, 36, 24, 0.12);
   --line-strong: rgba(58, 36, 24, 0.22);
   --surface: #ffffff;
@@ -161,8 +195,8 @@ a {
 }
 
 ::selection {
-  background: var(--copper);
-  color: var(--cream-50);
+  background: var(--cta-from);
+  color: var(--cta-fg);
 }
 
 /* Focus visible — premium accessibility */
@@ -268,7 +302,7 @@ p {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  color: var(--copper);
+  color: var(--copper-text);
   opacity: 0.5;
   margin: 0 auto;
 }
@@ -399,13 +433,14 @@ p {
 }
 
 .btn-copper {
-  background: linear-gradient(135deg, var(--copper) 0%, var(--copper-deep) 100%);
-  color: var(--cream-50);
+  background: linear-gradient(135deg, var(--cta-from) 0%, var(--cta-to) 100%);
+  color: var(--cta-fg);
   box-shadow: var(--shadow-warm), 0 0 0 1px rgba(200, 126, 79, 0.3);
 }
 
 .btn-copper:hover {
-  background: linear-gradient(135deg, var(--copper-bright) 0%, var(--copper) 100%);
+  /* hover must not get LIGHTER — cream on --copper-bright is 2.30:1. */
+  background: linear-gradient(135deg, var(--copper) 0%, var(--cta-from) 100%);
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 20px 40px -12px rgba(200, 126, 79, 0.4), var(--shadow-glow);
 }
@@ -471,14 +506,14 @@ p {
   transition: transform 350ms var(--ease-out-quart),
               background-color 250ms ease,
               box-shadow 250ms ease;
-  background: rgba(253, 251, 246, 0.78);
+  background: var(--chrome);
   backdrop-filter: saturate(200%) blur(20px);
   -webkit-backdrop-filter: saturate(200%) blur(20px);
   border-bottom: 1px solid transparent;
 }
 
 .topbar.scrolled {
-  background: rgba(253, 251, 246, 0.96);
+  background: var(--chrome-scrolled);
   border-bottom-color: var(--line);
   box-shadow: 0 4px 20px rgba(26, 15, 8, 0.08);
 }
@@ -581,8 +616,8 @@ p {
 }
 
 .topbar-nav a:hover {
-  color: var(--walnut-900);
-  background: rgba(139, 94, 60, 0.08);
+  color: var(--ink);
+  background: var(--hover-tint);
 }
 
 .topbar-nav a.active {
@@ -604,7 +639,7 @@ p {
   padding: 0.55rem 0.95rem;
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--walnut-900);
+  color: var(--ink);
   border-radius: var(--radius-full);
   transition: all 200ms var(--ease-out-quart);
   border: 1px solid transparent;
@@ -619,7 +654,7 @@ p {
 .phone-pill svg {
   width: 16px;
   height: 16px;
-  color: var(--copper);
+  color: var(--copper-text);
 }
 
 .login-btn {
@@ -629,7 +664,7 @@ p {
   padding: 0.5rem 0.9rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--walnut-800);
+  color: var(--ink-soft);
   border-radius: var(--radius-full);
   border: 1px solid var(--line);
   background: transparent;
@@ -641,8 +676,8 @@ p {
 
 .login-btn:hover {
   background: var(--surface-2);
-  border-color: var(--walnut-600);
-  color: var(--walnut-900);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .login-btn-chevron {
@@ -700,20 +735,20 @@ p {
   border-radius: var(--radius-md);
   font-size: 0.88rem;
   font-weight: 500;
-  color: var(--walnut-800);
+  color: var(--ink-soft);
   text-decoration: none;
   text-align: left;
   transition: background 150ms ease;
 }
 
 .portal-menu-item svg {
-  color: var(--copper);
+  color: var(--copper-text);
   flex-shrink: 0;
 }
 
 .portal-menu-item:hover {
   background: var(--surface-2);
-  color: var(--walnut-900);
+  color: var(--ink);
 }
 
 .hamburger {
@@ -725,7 +760,7 @@ p {
   justify-content: center;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: rgba(253, 251, 246, 0.6);
+  background: var(--chrome-btn);
   cursor: pointer;
   transition: background 200ms ease, border-color 200ms ease;
 }
@@ -992,7 +1027,7 @@ p {
 
 .estimator-option:hover {
   border-color: var(--copper);
-  color: var(--walnut-900);
+  color: var(--ink);
   background: var(--surface-1);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -1161,7 +1196,7 @@ p {
 .faq-icon svg {
   width: 14px;
   height: 14px;
-  color: var(--walnut-800);
+  color: var(--ink-soft);
   transition: transform 300ms var(--ease-out-quart);
 }
 
@@ -1371,7 +1406,7 @@ p {
 .field-radio.checked {
   background: var(--walnut-900);
   color: var(--cream-50);
-  border-color: var(--walnut-900);
+  border-color: var(--copper);
   box-shadow: var(--shadow-warm);
 }
 
@@ -1607,7 +1642,7 @@ p {
 .area-chip svg {
   width: 14px;
   height: 14px;
-  color: var(--copper);
+  color: var(--copper-text);
 }
 
 /* --------------------- Comparison Table --------------------- */
@@ -1661,7 +1696,7 @@ p {
 
 .compare-table .ecowoods-col {
   background: rgba(200, 126, 79, 0.04);
-  color: var(--walnut-900);
+  color: var(--ink);
   font-weight: 500;
 }
 
@@ -1768,7 +1803,7 @@ p {
 .award svg {
   width: 30px;
   height: 30px;
-  color: var(--copper);
+  color: var(--copper-text);
 }
 
 /* --------------------- Marquee (Trust strip) - State-of-the-art smooth scroll --------------------- */
@@ -1807,7 +1842,7 @@ p {
 .marquee-item svg {
   width: 20px;
   height: 20px;
-  color: var(--copper);
+  color: var(--copper-text);
   flex-shrink: 0;
 }
 
@@ -1933,7 +1968,7 @@ p {
 }
 
 .service-link:hover {
-  color: var(--copper);
+  color: var(--copper-text);
   gap: 0.7rem;
 }
 
@@ -2132,7 +2167,7 @@ p {
 .testimonial-stars {
   display: flex;
   gap: 4px;
-  color: var(--copper);
+  color: var(--copper-text);
   margin-bottom: 1.25rem;
 }
 
@@ -2271,7 +2306,7 @@ p {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(253, 251, 246, 0.88);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3555,12 +3590,12 @@ p {
 :root { --header-h: 72px; }
 
 .topbar {
-  background: rgba(253, 251, 246, 0.85);
+  background: var(--chrome);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
 .topbar.scrolled {
-  background: rgba(253, 251, 246, 0.98);
+  background: var(--chrome-scrolled);
   box-shadow: 0 1px 0 var(--line), 0 8px 24px rgba(26, 15, 8, 0.06);
 }
 .topbar-inner {
@@ -3606,7 +3641,7 @@ html[data-theme='dark'] {
   --ink: #f2e9dc;
   --ink-soft: #dcd0be;
   --muted: #a2917f;
-  --muted-soft: #7d6e5f;
+  --muted-soft: #948372;   /* was #7d6e5f — 3.62:1 on --surface-2 */
 
   /* Hairlines read as light-on-dark now */
   --line: rgba(242, 233, 220, 0.12);
@@ -3617,6 +3652,27 @@ html[data-theme='dark'] {
   --copper-bright: #eda877;
   --copper-deep: #b46e40;
   --copper-glow: oklch(74% 0.15 48);
+
+  /* On espresso the bright copper already clears AA as a glyph (7.27:1). */
+  --copper-text: var(--copper-bright);
+
+  /* Same CTA in both themes: a mid-tone copper reads as a lit surface on
+     espresso and still carries cream text at 4.5:1. */
+  --cta-from: #a56034;
+  --cta-to: #925a35;
+  --cta-fg: #faf6ef;
+
+  --chrome: rgba(20, 17, 14, 0.86);
+  --chrome-scrolled: rgba(16, 14, 11, 0.97);
+  --chrome-btn: rgba(36, 30, 23, 0.7);
+  --scrim: rgba(18, 16, 13, 0.9);
+  --hover-tint: rgba(217, 143, 92, 0.14);
+
+  /* --on-dark-* deliberately NOT overridden: those surfaces never flip. */
+
+  --danger-fg: #ff9d8c;
+  --danger-bg: rgba(162, 58, 42, 0.16);
+  --danger-border: rgba(255, 157, 140, 0.28);
 
   /* Wood palette compresses so light-on-walnut sections stay legible */
   --walnut-950: #0b0906;
@@ -3683,7 +3739,7 @@ html[data-theme='dark'] .paper-texture {
 }
 
 .theme-toggle:hover {
-  color: var(--copper);
+  color: var(--copper-text);
   border-color: var(--copper);
   transform: translateY(-1px);
 }
@@ -3792,7 +3848,7 @@ html[data-theme='dark'] .paper-texture {
 }
 
 .cmdk-item[data-active='true'] { background: var(--surface-2); color: var(--ink); }
-.cmdk-item[data-active='true'] .cmdk-item-icon { color: var(--copper); }
+.cmdk-item[data-active='true'] .cmdk-item-icon { color: var(--copper-text); }
 .cmdk-item-icon { display: grid; place-items: center; height: 20px; width: 20px; color: var(--muted); flex: none; }
 .cmdk-item-body { min-width: 0; }
 .cmdk-item-title { display: block; }
@@ -3803,7 +3859,7 @@ html[data-theme='dark'] .paper-texture {
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--copper);
+  color: var(--copper-text);
   border: 1px solid color-mix(in srgb, var(--copper) 35%, transparent);
   border-radius: var(--radius-full);
   padding: 0.2rem 0.5rem;
@@ -3846,8 +3902,8 @@ html[data-theme='dark'] .paper-texture {
   left: 1rem;
   top: -100px;
   z-index: 300;
-  background: var(--copper);
-  color: var(--cream-50);
+  background: var(--cta-from);
+  color: var(--cta-fg);
   padding: 0.7rem 1.1rem;
   border-radius: var(--radius-md);
   font-weight: 600;
@@ -3972,7 +4028,7 @@ html[data-theme='dark'] .paper-texture {
   font-weight: 600;
   color: var(--ink);
 }
-.fc-step { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper); }
+.fc-step { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper-text); }
 .fc-sqft { margin-left: auto; font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
 
 /* flex, not grid: a 5-item auto-fit grid leaves a dead cell on the last row.
@@ -4006,7 +4062,7 @@ html[data-theme='dark'] .paper-texture {
   transition: all 180ms var(--ease-out-quart);
 }
 .fc-pill:hover { color: var(--ink); border-color: var(--line-strong); }
-.fc-pill[aria-pressed='true'] { background: var(--copper); border-color: var(--copper); color: var(--cream-50); }
+.fc-pill[aria-pressed='true'] { background: var(--cta-from); border-color: var(--cta-from); color: var(--cta-fg); }
 
 .fc-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 999px; background: var(--surface-2); outline-offset: 6px; }
 .fc-range::-webkit-slider-thumb {
@@ -4069,7 +4125,7 @@ html[data-theme='dark'] .paper-texture {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
-.fc-result-figure em { color: var(--copper); font-style: normal; }
+.fc-result-figure em { color: var(--copper-text); font-style: normal; }
 .fc-result-sub { font-size: 0.83rem; color: var(--muted); font-family: var(--font-mono); }
 .fc-disclaimer {
   margin: 1.15rem 0;
@@ -4092,7 +4148,7 @@ html[data-theme='dark'] .paper-texture {
   background: transparent; color: var(--ink-soft); font-size: 0.9rem; font-weight: 500;
   transition: all 180ms var(--ease-out-quart);
 }
-.fc-secondary:hover { border-color: var(--copper); color: var(--copper); }
+.fc-secondary:hover { border-color: var(--copper); color: var(--copper-text); }
 .fc-handoff { margin: 0.9rem 0 0; text-align: center; font-size: 0.75rem; color: var(--muted-soft); }
 
 /* ============================================================
@@ -4106,9 +4162,11 @@ html[data-theme='dark'] .paper-texture {
   height: 54px; width: 54px;
   display: grid; place-items: center;
   border-radius: var(--radius-full);
-  background: #25d366;
+  /* white on #25d366 is 1.98:1 — below the 3:1 a non-text UI icon needs.
+     #128c7e is WhatsApp's own darker brand green. */
+  background: #128c7e;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+  box-shadow: 0 8px 24px rgba(18, 140, 126, 0.38);
   transition: transform 180ms var(--ease-out-quart);
 }
 .wa-fab:hover { transform: scale(1.06); }
@@ -4142,7 +4200,7 @@ html[data-theme='dark'] .paper-texture {
 }
 .exit-close:hover { background: var(--surface-2); color: var(--ink); }
 .exit-foot { margin: 1.35rem 0 0; text-align: center; font-size: 0.8rem; color: var(--muted-soft); }
-.exit-foot a { color: var(--copper); font-weight: 600; }
+.exit-foot a { color: var(--copper-text); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
   .exit-overlay, .exit-card, .fc-plank, .fc-plank::before, .fc-plank::after, .fc-plank-sheen { animation: none; transition: none; }
