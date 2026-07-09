@@ -30,6 +30,21 @@
   --cream-50: #faf6ef;
   --paper: #fdfbf6;
 
+  /* Semantic surfaces — the only tokens dark mode needs to flip.
+     Light values are byte-identical to the originals, so nothing shifts. */
+  --bg: #fdfbf6;
+  --surface-1: #faf6ef;
+  --surface-2: #f5efe6;
+
+  /* RenoGuide chat surface (consumed by ChatWidget inline styles) */
+  --rg-cream: #faf6f0;
+  --rg-paper: #fffdfa;
+  --rg-ink: #43301f;
+  --rg-border: #ece2d4;
+  --rg-muted: #8c7b69;
+  --rg-shadow: rgba(67, 48, 31, 0.28);
+  --rg-bubble-shadow: rgba(67, 48, 31, 0.05);
+
   /* Accents — premium copper with glow */
   --copper: #c87e4f;
   --copper-bright: #e09464;
@@ -96,14 +111,19 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 92px;
   -webkit-text-size-adjust: 100%;
-  scrollbar-color: var(--copper) var(--cream-100);
+  scrollbar-color: var(--copper) var(--surface-2);
   scrollbar-width: thin;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: var(--font-body);
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
   line-height: 1.6;
   font-weight: 400;
@@ -300,7 +320,7 @@ p {
 }
 
 .paper-texture {
-  background-color: var(--cream-50);
+  background-color: var(--surface-1);
   background-image:
     radial-gradient(circle at 20% 10%, rgba(200, 126, 79, 0.06) 0%, transparent 35%),
     radial-gradient(circle at 80% 60%, rgba(74, 93, 60, 0.05) 0%, transparent 40%);
@@ -395,7 +415,7 @@ p {
 }
 
 .btn-ghost:hover {
-  background: var(--cream-100);
+  background: var(--surface-2);
   border-color: var(--walnut-700);
   transform: translateY(-1px);
 }
@@ -465,11 +485,19 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem clamp(1rem, 2.5vw, 2rem);
+  padding: clamp(0.7rem, 1.1vw, 1rem) clamp(1rem, 2.5vw, 2rem);
   max-width: var(--shell-max);
   margin: 0 auto;
-  gap: 1.25rem;
+  /* The gap itself scales. At 1024px a fixed 1.25rem × 3 was 60px of pure
+     overflow. */
+  gap: clamp(0.4rem, 1.3vw, 1.5rem);
+  flex-wrap: nowrap;
+  min-width: 0;
 }
+
+/* Brand and CTA cluster hold their size; the nav absorbs the slack. */
+.brand-lockup { flex: 0 0 auto; }
+.topbar-cta { flex: 0 0 auto; }
 
 .brand-lockup {
   display: inline-flex;
@@ -528,16 +556,21 @@ p {
 .topbar-nav {
   display: flex;
   align-items: center;
-  gap: 0.1rem;
+  justify-content: center;
+  gap: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .topbar-nav a {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
+  /* Padding and type scale with the viewport instead of forcing an overflow. */
+  padding: 0.5rem clamp(0.3rem, 0.8vw, 0.75rem);
+  font-size: clamp(0.78rem, 0.45vw + 0.55rem, 0.9rem);
   font-weight: 500;
   color: var(--ink-soft);
   border-radius: var(--radius-full);
   position: relative;
+  white-space: nowrap;
   transition: all 200ms var(--ease-out-quart);
 }
 
@@ -553,8 +586,10 @@ p {
 .topbar-cta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: clamp(0.35rem, 0.75vw, 0.75rem);
 }
+
+.topbar-cta > * { flex: none; white-space: nowrap; }
 
 .phone-pill {
   display: inline-flex;
@@ -571,7 +606,7 @@ p {
 }
 
 .phone-pill:hover {
-  background: var(--cream-100);
+  background: var(--surface-2);
   border-color: var(--line);
 }
 
@@ -599,7 +634,7 @@ p {
 }
 
 .login-btn:hover {
-  background: var(--cream-100);
+  background: var(--surface-2);
   border-color: var(--walnut-600);
   color: var(--walnut-900);
 }
@@ -671,7 +706,7 @@ p {
 }
 
 .portal-menu-item:hover {
-  background: var(--cream-100);
+  background: var(--surface-2);
   color: var(--walnut-900);
 }
 
@@ -689,7 +724,7 @@ p {
   transition: background 200ms ease, border-color 200ms ease;
 }
 .hamburger:hover {
-  background: var(--cream-100);
+  background: var(--surface-2);
   border-color: var(--line-strong);
 }
 .hamburger .bar {
@@ -714,7 +749,7 @@ p {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: var(--paper);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   padding: 6rem var(--shell-pad) 2.5rem;
@@ -952,7 +987,7 @@ p {
 .estimator-option:hover {
   border-color: var(--copper);
   color: var(--walnut-900);
-  background: var(--cream-50);
+  background: var(--surface-1);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -1064,7 +1099,7 @@ p {
   margin-top: 3rem;
   padding: 2rem 2.25rem;
   border-radius: var(--radius-lg);
-  background: var(--cream-50);
+  background: var(--surface-1);
   border: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -1110,7 +1145,7 @@ p {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--cream-100);
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1197,7 +1232,7 @@ p {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--cream-100);
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1278,7 +1313,7 @@ p {
   padding: 0.85rem 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--cream-50);
+  background: var(--surface-1);
   font-family: inherit;
   font-size: 0.98rem;
   color: var(--ink);
@@ -1314,7 +1349,7 @@ p {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   cursor: pointer;
-  background: var(--cream-50);
+  background: var(--surface-1);
   font-size: 0.88rem;
   font-weight: 500;
   transition: all 200ms ease;
@@ -1453,7 +1488,7 @@ p {
   right: 0;
   z-index: 60;
   padding: 0.75rem var(--shell-pad);
-  background: var(--paper);
+  background: var(--bg);
   border-top: 1px solid var(--line);
   box-shadow: 0 -4px 16px rgba(26, 15, 8, 0.06);
   gap: 0.5rem;
@@ -1544,7 +1579,7 @@ p {
 
 .area-chip {
   padding: 0.85rem 1rem;
-  background: var(--cream-50);
+  background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   font-size: 0.92rem;
@@ -1598,7 +1633,7 @@ p {
   font-weight: 500;
   font-size: 1.05rem;
   color: var(--ink);
-  background: var(--cream-50);
+  background: var(--surface-1);
   border-bottom: 1px solid var(--line-strong);
 }
 
@@ -1651,7 +1686,7 @@ p {
 .tip-card-image {
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--cream-100);
+  background: var(--surface-2);
   position: relative;
 }
 
@@ -1734,7 +1769,7 @@ p {
 .marquee {
   overflow: hidden;
   white-space: nowrap;
-  background: var(--cream-50);
+  background: var(--surface-1);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   padding: 1rem 0;
@@ -1915,6 +1950,12 @@ p {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 1rem;
+  /* Row height is declared here, not derived from each tile's width.
+     Previously .gallery-tile carried aspect-ratio:16/10, so a span-8 tile was
+     twice as wide and therefore twice as tall as the span-4 beside it — the
+     short one pinned to the top of the row with dead space beneath. Fixing the
+     row means every tile in it is the same height, whatever its span. */
+  grid-auto-rows: clamp(230px, 24vw, 400px);
 }
 
 .gallery-tile {
@@ -1924,7 +1965,9 @@ p {
   box-shadow: var(--shadow-md);
   transition: all 400ms var(--ease-out-quart);
   display: block;
-  aspect-ratio: 16 / 10;
+  /* was: aspect-ratio: 16 / 10 — see .gallery-grid */
+  height: 100%;
+  min-height: 0;
   grid-column: span 12;
 }
 
@@ -2046,7 +2089,7 @@ p {
 }
 
 .process-step:hover {
-  background: var(--cream-50);
+  background: var(--surface-1);
 }
 
 .process-step .step-num {
@@ -2289,7 +2332,7 @@ p {
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.75rem;
-  background: var(--cream-100);
+  background: var(--surface-2);
   border-radius: var(--radius-full);
   font-size: 0.8rem;
   font-weight: 500;
@@ -2328,7 +2371,7 @@ p {
 }
 
 .data-table th {
-  background: var(--cream-50);
+  background: var(--surface-1);
   font-weight: 600;
   text-align: left;
   padding: 0.85rem 1rem;
@@ -2570,7 +2613,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cream-50);
+  background: var(--surface-1);
   padding: 2rem var(--shell-pad);
 }
 .auth-card {
@@ -2643,7 +2686,7 @@ p {
 .portal-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--cream-50);
+  background: var(--surface-1);
 }
 
 .portal-sidebar {
@@ -2819,7 +2862,7 @@ p {
   padding: 0.875rem 0.5rem;
   transition: background 0.15s;
 }
-.portal-list-item-link:hover { background: var(--cream-50); }
+.portal-list-item-link:hover { background: var(--surface-1); }
 
 .portal-empty {
   color: var(--muted);
@@ -2880,7 +2923,7 @@ p {
   vertical-align: middle;
 }
 .portal-table tbody tr:last-child td { border-bottom: none; }
-.portal-table tbody tr:hover { background: var(--cream-50); }
+.portal-table tbody tr:hover { background: var(--surface-1); }
 
 /* Invoice cards */
 .portal-invoice-grid {
@@ -2973,7 +3016,7 @@ p {
   line-height: 1.6;
 }
 .inquiry-message.customer {
-  background: var(--cream-100);
+  background: var(--surface-2);
   border: 1px solid var(--line);
   margin-right: 2rem;
 }
@@ -3090,7 +3133,7 @@ p {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--cream-100);
+  background: var(--surface-2);
   border: 2px solid var(--line);
   display: flex;
   align-items: center;
@@ -3249,7 +3292,7 @@ p {
 .estimate-modal-close {
   position: absolute; top: 1rem; right: 1rem;
   width: 2rem; height: 2rem; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--cream-50);
+  border: 1px solid var(--line); background: var(--surface-1);
   color: var(--ink); font-size: 1.2rem; line-height: 1; cursor: pointer;
   display: grid; place-items: center; z-index: 1;
 }
@@ -3532,3 +3575,743 @@ p {
   border-radius: 10px;
 }
 .brand-copy strong { font-size: 1.12rem; }
+
+
+/* ============================================================
+   NIGHT SHOWROOM — dark theme
+   ------------------------------------------------------------
+   Same copper. Same warmth. Lights down.
+   We flip semantic tokens only; every component in this file
+   already consumes them, so no component rules change.
+   Applied via html[data-theme='dark'], set before paint by the
+   no-flash script in app/layout.tsx.
+   ============================================================ */
+html[data-theme='dark'] {
+  /* Surfaces — warm espresso, never neutral grey, never green */
+  --bg: #12100d;
+  --surface: #1b1712;
+  --surface-1: #1b1712;
+  --surface-2: #241e17;
+  --surface-warm: #1b1712;
+  --surface-deep: #0b0906;
+  --paper: #12100d;
+
+  /* Ink inverts */
+  --ink: #f2e9dc;
+  --ink-soft: #dcd0be;
+  --muted: #a2917f;
+  --muted-soft: #7d6e5f;
+
+  /* Hairlines read as light-on-dark now */
+  --line: rgba(242, 233, 220, 0.12);
+  --line-strong: rgba(242, 233, 220, 0.22);
+
+  /* Copper lifts ~1 step so it keeps 4.5:1 on espresso */
+  --copper: #d98f5c;
+  --copper-bright: #eda877;
+  --copper-deep: #b46e40;
+  --copper-glow: oklch(74% 0.15 48);
+
+  /* Wood palette compresses so light-on-walnut sections stay legible */
+  --walnut-950: #0b0906;
+  --walnut-900: #17120d;
+  --walnut-800: #241c14;
+  --maple-200: #6a5844;
+
+  --forest: #6c8358;
+  --moss: #869a6c;
+
+  /* Shadows go deeper + a copper rim replaces the missing ambient light */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.68), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-warm: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(217, 143, 92, 0.18);
+
+  /* RenoGuide chat */
+  --rg-cream: #1b1712;
+  --rg-paper: #241e17;
+  --rg-ink: #f2e9dc;
+  --rg-border: rgba(242, 233, 220, 0.14);
+  --rg-muted: #a2917f;
+  --rg-shadow: rgba(0, 0, 0, 0.65);
+  --rg-bubble-shadow: rgba(0, 0, 0, 0.35);
+}
+
+/* Photography carries most of the page's light. At night we pull it back
+   so the copper CTAs are the brightest thing on screen. */
+html[data-theme='dark'] .hero-bg,
+html[data-theme='dark'] .photo-bg-section img,
+html[data-theme='dark'] .gallery-tile img {
+  filter: brightness(0.72) saturate(0.94);
+}
+
+html[data-theme='dark'] .gallery-tile:hover img,
+html[data-theme='dark'] .gallery-tile:focus-within img {
+  filter: brightness(0.92) saturate(1);
+}
+
+html[data-theme='dark'] .paper-texture {
+  background-color: var(--bg);
+}
+
+/* Theme is a preference, not an animation. Never fight reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ------------------------------------------------------------
+   Theme toggle (header)
+   ------------------------------------------------------------ */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  height: 38px;
+  width: 38px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  transition: background 180ms var(--ease-out-quart), color 180ms var(--ease-out-quart),
+    border-color 180ms var(--ease-out-quart), transform 180ms var(--ease-out-quart);
+}
+
+.theme-toggle:hover {
+  color: var(--copper);
+  border-color: var(--copper);
+  transform: translateY(-1px);
+}
+
+.theme-toggle svg { height: 17px; width: 17px; }
+
+/* ------------------------------------------------------------
+   Command palette (⌘K)
+   ------------------------------------------------------------ */
+.cmdk-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding: 0 0.7rem 0 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  color: var(--muted);
+  font-size: 0.82rem;
+  transition: color 180ms var(--ease-out-quart), border-color 180ms var(--ease-out-quart);
+}
+
+.cmdk-trigger:hover { color: var(--ink); border-color: var(--line-strong); }
+.cmdk-trigger kbd {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0.28rem 0.36rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted-soft);
+}
+
+/* Collapse behaviour lives in the header ladder near the bottom of this file. */
+
+.cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(1rem, 12vh, 9rem) 1rem 1rem;
+  background: color-mix(in srgb, var(--walnut-950) 62%, transparent);
+  backdrop-filter: blur(6px) saturate(1.1);
+  animation: cmdk-fade 140ms var(--ease-out-quart);
+}
+
+.cmdk-panel {
+  width: min(100%, 620px);
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-xl);
+  animation: cmdk-rise 180ms var(--ease-out-expo);
+}
+
+.cmdk-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.cmdk-search input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 1.05rem 0;
+}
+
+.cmdk-search input::placeholder { color: var(--muted-soft); }
+
+.cmdk-list { overflow-y: auto; padding: 0.5rem; overscroll-behavior: contain; }
+.cmdk-group-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  padding: 0.75rem 0.75rem 0.4rem;
+}
+
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
+  color: var(--ink-soft);
+  font-size: 0.94rem;
+  scroll-margin: 0.5rem;
+}
+
+.cmdk-item[data-active='true'] { background: var(--surface-2); color: var(--ink); }
+.cmdk-item[data-active='true'] .cmdk-item-icon { color: var(--copper); }
+.cmdk-item-icon { display: grid; place-items: center; height: 20px; width: 20px; color: var(--muted); flex: none; }
+.cmdk-item-body { min-width: 0; }
+.cmdk-item-title { display: block; }
+.cmdk-item-hint { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+.cmdk-item-tag {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--copper);
+  border: 1px solid color-mix(in srgb, var(--copper) 35%, transparent);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.5rem;
+}
+
+.cmdk-empty { padding: 2.25rem 1rem; text-align: center; color: var(--muted); font-size: 0.92rem; }
+
+.cmdk-footer {
+  display: flex;
+  gap: 1.1rem;
+  padding: 0.7rem 1.1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.cmdk-footer kbd {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.14rem 0.32rem;
+  margin-right: 0.32rem;
+}
+
+@keyframes cmdk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cmdk-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cmdk-overlay, .cmdk-panel { animation: none; }
+}
+
+/* ------------------------------------------------------------
+   Skip link — first tab stop on the page
+   ------------------------------------------------------------ */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 300;
+  background: var(--copper);
+  color: var(--cream-50);
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: top 180ms var(--ease-out-quart);
+}
+
+.skip-link:focus-visible { top: 1rem; }
+
+/* ============================================================
+   FLOOR CONFIGURATOR
+   ============================================================ */
+.fc { background: var(--surface-1); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+.fc-grid {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .fc-grid { grid-template-columns: 1.05fr 1fr; grid-template-areas: 'preview controls' 'result result'; }
+  /* NO position:sticky here. A sticky grid item's containing block is the grid
+     CONTAINER, not its column — so on scroll the preview card detached and slid
+     down over the full-width result row below it. */
+  .fc-preview { grid-area: preview; }
+  .fc-controls { grid-area: controls; }
+  .fc-result { grid-area: result; }
+}
+
+@media (min-width: 1180px) {
+  .fc-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(320px, 0.92fr); grid-template-areas: 'preview controls result'; }
+}
+
+/* ---- Preview ---- */
+.fc-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.fc-plank {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--fc-base);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: background-color 420ms var(--ease-out-quart);
+}
+
+.fc-plank::before {
+  /* Boards run horizontally, so grain lines run horizontally too. The old rule
+     put fine 3px stripes on the 90deg axis — across the boards — which read as
+     a barcode rather than as wood.
+       layer 1: fine grain, along the board
+       layer 2: board-to-board seams
+       layer 3: staggered end joints  */
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 5px, color-mix(in srgb, var(--fc-grain) 20%, transparent) 5px 6px, transparent 6px 13px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--fc-grain) 55%, transparent) 0 2px, transparent 2px 54px),
+    repeating-linear-gradient(90deg, transparent 0 168px, color-mix(in srgb, var(--fc-grain) 38%, transparent) 168px 170px, transparent 170px 336px);
+  background-position: 0 0, 0 0, 0 0;
+  transition: background-image 420ms var(--ease-out-quart);
+}
+
+.fc-plank::after {
+  /* finish tint */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fc-tint);
+  transition: background 420ms var(--ease-out-quart);
+}
+
+.fc-plank-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(115deg, rgba(255, 255, 255, calc(var(--fc-sheen) * 2.4)) 0%, transparent 42%, transparent 70%, rgba(255, 255, 255, var(--fc-sheen)) 100%);
+  transition: background 420ms var(--ease-out-quart);
+}
+
+.fc-plank--diagonal::before { transform: rotate(45deg) scale(1.5); }
+.fc-plank--herringbone::before {
+  background-image:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--fc-grain) 70%, transparent) 0 1.5px, transparent 1.5px 34px),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--fc-grain) 70%, transparent) 0 1.5px, transparent 1.5px 34px),
+    repeating-linear-gradient(45deg, transparent 0 4px, color-mix(in srgb, var(--fc-grain) 20%, transparent) 4px 5px, transparent 5px 13px);
+}
+.fc-plank--chevron::before {
+  background-image:
+    repeating-linear-gradient(60deg, color-mix(in srgb, var(--fc-grain) 70%, transparent) 0 1.5px, transparent 1.5px 30px),
+    repeating-linear-gradient(-60deg, color-mix(in srgb, var(--fc-grain) 70%, transparent) 0 1.5px, transparent 1.5px 30px);
+}
+
+.fc-spec {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  margin: 1.15rem 0 0;
+}
+.fc-spec div { min-width: 0; }
+.fc-spec dt { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-soft); }
+.fc-spec dd { margin: 0.18rem 0 0; font-weight: 600; color: var(--ink); }
+.fc-note { margin: 1rem 0 0; font-size: 0.86rem; color: var(--muted); line-height: 1.55; }
+
+/* ---- Controls ---- */
+.fc-field { border: 0; margin: 0 0 1.6rem; padding: 0; }
+.fc-field legend {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.7rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fc-step { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper); }
+.fc-sqft { margin-left: auto; font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+
+/* flex, not grid: a 5-item auto-fit grid leaves a dead cell on the last row.
+   flex:1 makes the final row's items stretch to fill it. */
+.fc-swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.fc-swatch { flex: 1 1 96px; min-width: 0; }
+.fc-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: border-color 180ms var(--ease-out-quart), transform 180ms var(--ease-out-quart), box-shadow 180ms var(--ease-out-quart);
+}
+.fc-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.fc-swatch[aria-pressed='true'] { border-color: var(--copper); box-shadow: 0 0 0 1px var(--copper), var(--shadow-warm); }
+.fc-swatch-chip { display: block; height: 42px; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.fc-swatch-name { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
+
+.fc-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.fc-pill { flex: 1 1 auto; }
+.fc-pill {
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: all 180ms var(--ease-out-quart);
+}
+.fc-pill:hover { color: var(--ink); border-color: var(--line-strong); }
+.fc-pill[aria-pressed='true'] { background: var(--copper); border-color: var(--copper); color: var(--cream-50); }
+
+.fc-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 999px; background: var(--surface-2); outline-offset: 6px; }
+.fc-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  height: 22px; width: 22px; border-radius: 50%;
+  background: var(--copper); border: 3px solid var(--surface);
+  box-shadow: var(--shadow-md); cursor: grab;
+}
+.fc-range::-moz-range-thumb {
+  height: 22px; width: 22px; border-radius: 50%;
+  background: var(--copper); border: 3px solid var(--surface);
+  box-shadow: var(--shadow-md); cursor: grab;
+}
+.fc-range-ends { display: flex; justify-content: space-between; margin-top: 0.55rem; font-size: 0.72rem; color: var(--muted-soft); }
+
+.fc-postal-label { display: block; font-weight: 600; color: var(--ink); margin-bottom: 0.5rem; }
+.fc-postal-label span { display: block; font-weight: 400; font-size: 0.78rem; color: var(--muted-soft); }
+.fc-postal {
+  width: 100%; max-width: 220px;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface); color: var(--ink);
+  padding: 0.7rem 0.85rem; font-family: var(--font-mono); font-size: 0.9rem;
+  text-transform: uppercase;
+}
+.fc-postal:focus-visible { border-color: var(--copper); }
+
+/* ---- Result ---- */
+.fc-result {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: clamp(1.25rem, 2.4vw, 1.85rem);
+  box-shadow: var(--shadow-lg);
+  /* The card is narrow in the 3-col layout and full-bleed in the 2-col one.
+     Drive the internal layout off the CARD's own width, not the viewport, so
+     the two can never desync — no 1400px-wide CTA button. */
+  container-type: inline-size;
+}
+
+.fc-result-inner { display: grid; gap: 1.15rem; }
+
+@container (min-width: 620px) {
+  .fc-result-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    column-gap: clamp(2rem, 4cqi, 3.5rem);
+    align-items: center;
+  }
+}
+.fc-result-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-soft); }
+.fc-result-figure {
+  /* nowrap: the range must never break after the en-dash, which orphaned
+     "$12,870 –" on its own line in the narrow 3-col column. */
+  display: flex; align-items: baseline; gap: 0.45rem;
+  flex-wrap: nowrap; white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 1.9vw, 2.2rem);
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0.55rem 0 0.35rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.fc-result-figure em { color: var(--copper); font-style: normal; }
+.fc-result-sub { font-size: 0.83rem; color: var(--muted); font-family: var(--font-mono); }
+.fc-disclaimer {
+  margin: 1.15rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 2px solid var(--copper);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.fc-disclaimer strong { color: var(--ink-soft); }
+
+.fc-actions { display: grid; gap: 0.7rem; }
+.fc-cta { width: 100%; justify-content: center; }
+.fc-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  width: 100%; padding: 0.8rem 1rem;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-full);
+  background: transparent; color: var(--ink-soft); font-size: 0.9rem; font-weight: 500;
+  transition: all 180ms var(--ease-out-quart);
+}
+.fc-secondary:hover { border-color: var(--copper); color: var(--copper); }
+.fc-handoff { margin: 0.9rem 0 0; text-align: center; font-size: 0.75rem; color: var(--muted-soft); }
+
+/* ============================================================
+   CONVERSION RAIL — WhatsApp + exit intent
+   ============================================================ */
+.wa-fab {
+  position: fixed;
+  left: 22px;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 120;
+  height: 54px; width: 54px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-full);
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+  transition: transform 180ms var(--ease-out-quart);
+}
+.wa-fab:hover { transform: scale(1.06); }
+
+.exit-overlay {
+  position: fixed; inset: 0; z-index: 210;
+  display: grid; place-items: center;
+  padding: 1.25rem;
+  background: color-mix(in srgb, var(--walnut-950) 68%, transparent);
+  backdrop-filter: blur(5px);
+  animation: cmdk-fade 160ms var(--ease-out-quart);
+}
+.exit-card {
+  position: relative;
+  width: min(100%, 520px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  padding: clamp(1.6rem, 4vw, 2.4rem);
+  box-shadow: var(--shadow-xl);
+  animation: cmdk-rise 220ms var(--ease-out-expo);
+}
+.exit-card h3 { margin: 0.7rem 0 0.6rem; font-size: clamp(1.35rem, 2.6vw, 1.7rem); line-height: 1.25; }
+.exit-card > p { color: var(--muted); font-size: 0.95rem; line-height: 1.65; margin: 0 0 1.5rem; }
+.exit-actions { display: grid; gap: 0.7rem; }
+.exit-close {
+  position: absolute; top: 0.85rem; right: 0.95rem;
+  height: 32px; width: 32px; border-radius: var(--radius-full);
+  color: var(--muted); font-size: 1.25rem; line-height: 1;
+  transition: background 160ms var(--ease-out-quart);
+}
+.exit-close:hover { background: var(--surface-2); color: var(--ink); }
+.exit-foot { margin: 1.35rem 0 0; text-align: center; font-size: 0.8rem; color: var(--muted-soft); }
+.exit-foot a { color: var(--copper); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .exit-overlay, .exit-card, .fc-plank, .fc-plank::before, .fc-plank::after, .fc-plank-sheen { animation: none; transition: none; }
+}
+
+
+/* Announce the settled estimate once, not on every animation frame. */
+.fc-sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ============================================================
+   HEADER — progressive disclosure ladder
+   ------------------------------------------------------------
+   The bar carries brand + 6 nav links + search + theme + login +
+   phone + CTA. That needs ~1340px. It only collapsed at 768px, so
+   everything between 769px and ~1340px overflowed off the right edge
+   (the "Free Quote" button was the casualty). Adding the theme toggle
+   and the ⌘K trigger cost another ~150px and made it obvious.
+
+   Each step below sheds the least valuable pixels first, in order:
+     kbd hint → search label → phone number → login → nav
+   The phone number and login never actually disappear: both stay in
+   the mobile sheet, and ⌘K still has "Call (416) 249-1276".
+   ============================================================ */
+
+/* 1. The ⌘K hint is decoration long before the button is. */
+@media (max-width: 1400px) {
+  .cmdk-trigger kbd { display: none; }
+}
+
+/* 2. Search collapses to its icon. */
+@media (max-width: 1300px) {
+  .cmdk-trigger-label { display: none; }
+  .cmdk-trigger { width: 38px; padding: 0; justify-content: center; }
+}
+
+/* 3. The phone becomes an icon — still a one-tap tel: link. */
+@media (max-width: 1180px) {
+  .phone-pill-label { display: none; }
+  .phone-pill {
+    width: 38px; padding: 0; justify-content: center;
+    border-color: var(--line);
+  }
+}
+
+/* 4. Login moves into the sheet. */
+@media (max-width: 1060px) {
+  .login-btn { display: none; }
+}
+
+/* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
+@media (max-width: 1000px) {
+  .topbar-nav { display: none; }
+  .hamburger { display: inline-flex; }
+  .cmdk-trigger-label { display: inline; }
+  .cmdk-trigger { width: auto; padding: 0 0.7rem 0 0.75rem; }
+}
+
+/* 6. Phone-as-icon is enough on a phone; the sheet has the rest. */
+@media (max-width: 768px) {
+  .cmdk-trigger { display: none; }
+}
+
+@media (max-width: 400px) {
+  .brand-copy small { display: none; }
+}
+
+/* ============================================================
+   READING PROGRESS — scroll position + section rail
+   ============================================================ */
+.progress-rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 90; /* above .topbar (80) so it survives the hide-on-scroll header */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out-quart);
+}
+
+.progress-rail[data-visible='true'] { opacity: 1; }
+
+.progress-rail-track {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.progress-rail-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--copper-deep), var(--copper), var(--copper-bright));
+  will-change: transform;
+}
+
+/* Ticks sit ON the rail. Copper once passed, hairline before. */
+.progress-rail-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.progress-tick {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  pointer-events: auto;
+  transition: background 200ms var(--ease-out-quart), transform 200ms var(--ease-out-quart),
+    border-color 200ms var(--ease-out-quart);
+}
+
+.progress-tick[data-passed='true'] {
+  background: var(--copper);
+  border-color: var(--copper-deep);
+}
+
+.progress-tick:hover,
+.progress-tick:focus-visible {
+  transform: translateY(-50%) scale(1.55);
+}
+
+.progress-tick-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 0.32rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease-out-quart), transform 160ms var(--ease-out-quart);
+}
+
+.progress-tick:hover .progress-tick-label,
+.progress-tick:focus-visible .progress-tick-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Ticks need room to breathe and a hover surface. Bar only on small screens. */
+@media (max-width: 900px) {
+  .progress-rail-ticks { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-rail, .progress-rail-fill, .progress-tick, .progress-tick-label { transition: none; }
+}
+
+@media print {
+  .progress-rail { display: none; }
+}

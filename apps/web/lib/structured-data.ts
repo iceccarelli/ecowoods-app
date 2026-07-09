@@ -9,7 +9,11 @@ export const localBusinessSchema = {
       url: 'https://ecowoods.ca',
       image: 'https://ecowoods.ca/og-image.jpg',
       logo: 'https://ecowoods.ca/logo.png',
-      telephone: '+1-416-555-9663',
+      // Was +1-416-555-9663 — a placeholder that contradicted the (416) 249-1276
+      // shown in Header, ChatWidget, the contact block and the AI's
+      // get_company_context tool. A phone mismatch inside LocalBusiness markup is
+      // exactly the kind of NAP inconsistency that suppresses local pack ranking.
+      telephone: '+1-416-249-1276',
       email: 'services@ecowoods.ca',
       priceRange: '$$',
       foundingDate: '1998',
@@ -54,13 +58,17 @@ export const localBusinessSchema = {
           closes: '16:00',
         },
       ],
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.9',
-        reviewCount: '348',
-        bestRating: '5',
-        worstRating: '1',
-      },
+      // ⚠️  aggregateRating REMOVED ON PURPOSE — do not re-add.
+      //
+      // Google's structured-data policy forbids self-serving review markup: a
+      // LocalBusiness may not mark up ratings about *itself* that it collected
+      // itself. Shipping it is a documented cause of manual "Spammy structured
+      // markup" actions, which cost the rich result AND the local pack.
+      //
+      // The 4.9 / 348 figure is legitimate on-page copy. It is not legitimate
+      // JSON-LD. If EcoWoods wants stars in the SERP, the supported route is
+      // third-party aggregators (Google Business Profile, HomeStars, Houzz)
+      // emitting it about EcoWoods — which they already do.
       sameAs: [
         'https://www.instagram.com/ecowoods.ca',
         'https://www.facebook.com/ecowoodshardwood',
