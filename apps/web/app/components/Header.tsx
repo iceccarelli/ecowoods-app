@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import ThemeToggle from './ThemeToggle';
+import CommandPalette from './CommandPalette';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -194,6 +196,8 @@ export default function Header() {
 
           {/* Right CTA cluster */}
           <div className="topbar-cta">
+            <CommandPalette />
+            <ThemeToggle />
             {isLoggedIn ? (
               <div className="portal-menu" ref={portalMenuRef}>
                 <button
@@ -282,7 +286,7 @@ export default function Header() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {PHONE_DISPLAY}
+              <span className="phone-pill-label">{PHONE_DISPLAY}</span>
             </a>
             <a className="btn btn-copper btn-sm" href={`${baseUrl}#quote`}>
               Free Quote

@@ -7,14 +7,29 @@ import {
   computeAvailability, isBookableSlot, localDateKey,
   SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
-import { RENOGUIDE_SYSTEM_PROMPT, FLOORING_RATES_CAD_PER_SQFT } from '@ecowoods/shared/ai';
+import {
+  RENOGUIDE_SYSTEM_PROMPT,
+  estimateInstalledRangeCad,
+  FINISH_OPTIONS,
+  PATTERN_OPTIONS,
+} from '@ecowoods/shared/ai';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+// zod enums need a non-empty tuple; derive them from the shared catalogue so
+// adding a finish in one place makes it instantly callable by the agent.
+const FINISH_IDS = FINISH_OPTIONS.map((f) => f.id) as [string, ...string[]];
+const PATTERN_IDS = PATTERN_OPTIONS.map((p) => p.id) as [string, ...string[]];
+
 const HITS = new Map<string, { n: number; t: number }>();
 function limited(ip: string) {
   const now = Date.now(), w = 60_000, max = 20;
+  // HITS previously grew without bound on a warm lambda — one entry per IP, forever.
+  // Sweep expired buckets whenever the map gets large enough to be worth it.
+  if (HITS.size > 5_000) {
+    for (const [k, v] of HITS) if (now - v.t > w) HITS.delete(k);
+  }
   const e = HITS.get(ip);
   if (!e || now - e.t > w) { HITS.set(ip, { n: 1, t: now }); return false; }
   e.n += 1; return e.n > max;
@@ -67,12 +82,32 @@ export async function POST(req: Request) {
       }),
 
       estimate_project: tool({
-        description: 'Rough installed cost RANGE in CAD. An estimate that needs an in-home measure to finalize.',
-        inputSchema: z.object({ species: z.string(), squareFeet: z.number().positive() }),
-        execute: async ({ species, squareFeet }) => {
-          const key = species.toLowerCase().trim();
-          const rate = FLOORING_RATES_CAD_PER_SQFT[key] ?? FLOORING_RATES_CAD_PER_SQFT['red oak'];
-          return { species: key, squareFeet, estimatedLowCad: Math.round(rate.low * squareFeet), estimatedHighCad: Math.round(rate.high * squareFeet), perSqftCad: `$${rate.low}-$${rate.high}/sqft`, disclaimer: 'Rough range only. Final price needs a free in-home measure.' };
+        description:
+          'Rough installed cost RANGE in CAD. An estimate that needs an in-home measure to finalize. ' +
+          'Accepts the optional finish and pattern the homeowner picked in the on-site floor configurator — ' +
+          'pass them through verbatim so the number you quote matches the number they just saw on screen.',
+        inputSchema: z.object({
+          species: z.string(),
+          squareFeet: z.number().positive(),
+          finish: z.enum(FINISH_IDS).optional(),
+          pattern: z.enum(PATTERN_IDS).optional(),
+        }),
+        execute: async ({ species, squareFeet, finish, pattern }) => {
+          // Same function the configurator calls in the browser. Single source of truth.
+          const r = estimateInstalledRangeCad({ species, squareFeet, finish, pattern });
+          return {
+            species: r.species,
+            squareFeet: r.squareFeet,
+            finish: r.finish,
+            pattern: r.pattern,
+            estimatedLowCad: r.estimatedLowCad,
+            estimatedHighCad: r.estimatedHighCad,
+            perSqftCad: r.perSqftCad,
+            ...(r.speciesFallback
+              ? { note: `We do not have a rate on file for "${species}". This range is for red oak — say so plainly and offer to have a specialist price the species they asked about.` }
+              : {}),
+            disclaimer: r.disclaimer,
+          };
         },
       }),
 

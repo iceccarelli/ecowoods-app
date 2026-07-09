@@ -9,6 +9,7 @@ import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import { BookingScheduler } from './components/BookingScheduler';
+import FloorConfigurator from './components/FloorConfigurator';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel
@@ -641,7 +642,13 @@ const onSubmit = (data: LeadFormData) => {
           <div className="gallery-grid">
             {galleryItems.map((g, i) => (
               <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
-                <img src={g.image} alt={g.title} loading="lazy" />
+                <img
+                  src={g.image}
+                  alt={g.title}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={i === 0 ? 'high' : 'auto'}
+                  decoding="async"
+                />
                 <div className="gallery-caption">
                   <div className="title">{g.title}</div>
                   <div className="sub">{g.sub}</div>
@@ -651,6 +658,11 @@ const onSubmit = (data: LeadFormData) => {
           </div>
         </div>
       </section>
+
+      {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
+             specs". The gallery creates the want; the configurator lets them act on
+             it while it is still warm, and hands the whole configuration to RenoGuide. */}
+      <FloorConfigurator />
 
       {/* Species — collapsed technical reference (kept for nav anchor, out of main flow) */}
       <section className="section-tight" id="species">
