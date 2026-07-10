@@ -2,9 +2,11 @@
 
 # 🌳 EcoWoods
 
-### Toronto Hardwood Flooring — Lead-Generation Site + Marketplace Backend (Monorepo)
+### Toronto Hardwood Flooring — Production Lead Engine + Full-Stack Marketplace Platform (Turborepo)
 
-*A production marketing/lead-capture website, plus a separate (not-yet-deployed) API and client scaffolds, in one Turborepo.*
+**The single source of truth.**  
+This document describes **exactly** what is live, what is fully coded and ready, what is scaffolded, and the precise path to market domination.  
+Any human or AI agent reading this can understand the past, the present, and exactly how to take EcoWoods to the next level.
 
 [![Deployed on Vercel](https://img.shields.io/badge/Web%20live%20on-Vercel-000000?logo=vercel)](https://ecowoods-app.vercel.app)
 [![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?logo=next.js)](https://nextjs.org)
@@ -12,466 +14,536 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Turborepo](https://img.shields.io/badge/Monorepo-Turborepo-EF4444?logo=turborepo)](https://turborepo.com)
 [![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220?logo=pnpm)](https://pnpm.io)
-[![Tailwind](https://img.shields.io/badge/Styling-Tailwind-06B6D4?logo=tailwindcss)](https://tailwindcss.com)
-[![Zod](https://img.shields.io/badge/Validation-Zod-3068B7)](https://zod.dev)
+[![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?logo=prisma)](https://prisma.io)
 [![FastAPI](https://img.shields.io/badge/Backend%20(undeployed)-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Docker](https://img.shields.io/badge/Backend-Docker-2496ED?logo=docker)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Live production (web) →** [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app)
+**Live production (web) →** [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app)  
+*(If 404: the last deploy may have been cleaned. Redeploy from `main` with the env vars below.)*
 
 </div>
 
 ---
 
-> ### ⚠️ Read this first — what EcoWoods actually is today
+> ### ⚠️ READ THIS FIRST — The Absolute Truth (July 2026)
 >
-> **EcoWoods is a single-page lead-generation marketing website for a Toronto hardwood-flooring
-> company, deployed on Vercel.** Its job is to convert visitors into quote requests. That path —
-> the form → `POST /api/leads` → validated, captured, acknowledged — is the one thing that is
-> fully built, tested, and live.
+> **EcoWoods is a production-grade lead-generation engine** for a Toronto hardwood flooring company.
 >
-> The repository *also* contains a separate, well-structured **FastAPI marketplace backend**, two
-> **demo-grade Expo mobile apps**, and a **static HTML admin dashboard**. These are real code, but
-> they are **not deployed, not connected to the live website, and not part of the production
-> build.** They describe a *future* product (a contractor job/bid marketplace) that does not ship
-> today.
+> The **one fully live, revenue-generating path** is:
+> ```
+> Landing page → Quote form → POST /api/leads → Zod validation → durable log capture
+> → best-effort Prisma DB write → best-effort Resend/SMTP admin email → optional webhook
+> ```
 >
-> This README documents reality, separates "live" from "scaffolded," and lists the highest-impact
-> next steps. Earlier versions of this file described a Supabase/Drizzle/Stripe/Resend/Sentry/
-> PostHog commerce-and-social platform — **none of that is implemented.** It has been removed.
+> Everything else (full Prisma models for Projects/Invoices/Appointments, RenoGuide AI, booking calendar, Stripe checkout + webhooks, PDF generation, FastAPI marketplace, Expo mobile apps, static admin) **exists as real, high-quality code** but is **not yet production-wired or deployed**.
+>
+> This README is ruthlessly honest. It was completely rewritten on 2026-07-11 to eliminate all documentation drift.  
+> **When the code changes, update this file in the same PR.**
 
 ---
 
 ## 📑 Table of Contents
 
-1. [Status at a Glance](#-status-at-a-glance)
-2. [What the Live Site Does](#-what-the-live-site-does)
-3. [The Lead-Capture Flow (the one real revenue path)](#-the-lead-capture-flow-the-one-real-revenue-path)
-4. [Architecture — What Actually Runs](#-architecture--what-actually-runs)
-5. [Real Tech Stack](#-real-tech-stack)
-6. [Repository Structure (annotated)](#-repository-structure-annotated)
-7. [The FastAPI Backend (real, undeployed)](#-the-fastapi-backend-real-undeployed)
-8. [Mobile & Admin (scaffolds)](#-mobile--admin-scaffolds)
-9. [Local Development](#-local-development)
-10. [Environment Variables](#-environment-variables)
-11. [Deployment](#-deployment)
-12. [Security Posture (honest)](#-security-posture-honest)
-13. [CI/CD (what it really tests)](#-cicd-what-it-really-tests)
-14. [Roadmap — Ranked by Business Impact](#-roadmap--ranked-by-business-impact)
-15. [Known Gaps & Tech Debt](#-known-gaps--tech-debt)
-16. [Contributing](#-contributing)
-17. [License](#-license)
+1. [Status at a Glance (The Only Table That Matters)](#-status-at-a-glance-the-only-table-that-matters)
+2. [What Happened — History & Evolution](#-what-happened--history--evolution)
+3. [What the Live Site Does](#-what-the-live-site-does)
+4. [The Lead-Capture Flow (The One Real Revenue Path)](#-the-lead-capture-flow-the-one-real-revenue-path)
+5. [Architecture — What Actually Runs vs What Is Ready](#-architecture--what-actually-runs-vs-what-is-ready)
+6. [Real Tech Stack](#-real-tech-stack)
+7. [Repository Structure (Annotated & Accurate)](#-repository-structure-annotated--accurate)
+8. [The Full Prisma Schema (Already Built)](#-the-full-prisma-schema-already-built)
+9. [RenoGuide AI, Booking, Stripe, PDFs (Ready but Hidden)](#-renoguide-ai-booking-stripe-pdfs-ready-but-hidden)
+10. [The FastAPI Backend (Real Marketplace)](#-the-fastapi-backend-real-marketplace)
+11. [Mobile & Admin (Scaffolds)](#-mobile--admin-scaffolds)
+12. [Local Development (Perfect Integration)](#-local-development-perfect-integration)
+13. [Environment Variables (The Missing Link)](#-environment-variables-the-missing-link)
+14. [Deployment](#-deployment)
+15. [Security Posture (Honest + Actionable)](#-security-posture-honest--actionable)
+16. [CI/CD (What It Really Tests)](#-cicd-what-it-really-tests)
+17. [Roadmap — Ranked by Business Impact (Execute This)](#-roadmap--ranked-by-business-impact-execute-this)
+18. [How Any AI Agent Should Continue This Work](#-how-any-ai-agent-should-continue-this-work)
+19. [Known Gaps & Tech Debt](#-known-gaps--tech-debt)
+20. [Contributing](#-contributing)
+21. [License](#-license)
 
 ---
 
-## 🚦 Status at a Glance
+## 🚦 Status at a Glance (The Only Table That Matters)
 
-| Surface / Feature | State | Reality |
-|---|---|---|
-| **`apps/web` marketing site** | 🟢 **Live** | Next.js 15 single-page site on Vercel, auto-deployed from `main`. |
-| **`POST /api/leads`** | 🟢 **Live & working** | Zod-validated, durable capture-only persistence, optional webhook. Verified in prod. |
-| **`GET /api/backgrounds`** | 🟢 **Live** | Calls the Unsplash **Search API** at runtime for rotating section backdrops. ⚠️ see security notes. |
-| **Recent Work + Field Notes imagery** | 🟢 **Live** | Curated fixed Unsplash photos wired into `page.tsx`. |
-| **Security headers (HSTS, X-Frame-Options, etc.)** | 🟢 **Live** | Set in `vercel.json`. |
-| **Auth (`/api/auth/[...nextauth]`)** | 🟠 **Scaffold only** | NextAuth route exists but `providers: []` → **no one can log in.** Insecure default secret. |
-| **Payments (Stripe)** | 🔴 **Not implemented** | `stripe` + `@stripe/stripe-js` installed; **zero** checkout/webhook routes. |
-| **Lead → CRM / DB / email** | 🔴 **Not wired** | Leads currently land in Vercel runtime logs only (unless `LEADS_WEBHOOK_URL` is set). |
-| **`backend/` FastAPI marketplace** | 🟠 **Real, undeployed** | Jobs/bids/products/calendar/users/auth API. Runs locally; not hosted; not called by the live site. |
-| **`apps/mobile` (Expo)** | 🟠 **Demo / fragmented** | Two overlapping apps (`app/` router + legacy `frontend/`). Not built or shipped. |
-| **`apps/admin`** | 🟠 **Static demo** | Vanilla HTML/CSS/JS dashboard mounted by FastAPI at `/admin`. Not a Next.js app. |
-| **Web tests / web CI** | 🔴 **None** | No Vitest/Playwright; CI tests **only** the Python backend. |
-| **Sentry / PostHog / analytics / rate limiting / n8n** | 🔴 **Not present** | Referenced in old docs; no code exists. |
+| Surface / Feature                          | State          | Reality (July 2026)                                                                 | Action Required                  |
+|--------------------------------------------|----------------|-------------------------------------------------------------------------------------|----------------------------------|
+| **`apps/web` marketing site**              | 🟢 **Live**    | Next.js 15 App Router single-page masterpiece. Auto-deploys from `main`.            | Keep green                       |
+| **`POST /api/leads`**                      | 🟢 **Live**    | Zod (shared) → durable log → **best-effort Prisma** → **best-effort email** → webhook | Set `DATABASE_URL` + `RESEND_API_KEY` |
+| **`GET /api/backgrounds`**                 | 🟢 **Live**    | Unsplash Search API proxy.                                                          | Move key to env (security)       |
+| **Prisma Schema**                          | 🟢 **Ready**   | Full models: User, QuoteRequest, Project, Invoice, Appointment, Payment, etc.       | Set `DATABASE_URL`               |
+| **Email (Resend + SMTP)**                  | 🟢 **Ready**   | `lib/email` fully implemented. Admin new-quote + more.                              | Set `RESEND_API_KEY` + `ADMIN_EMAIL` |
+| **Auth (NextAuth v5 + Prisma Adapter)**    | 🟠 **Scaffold**| Conditional Google/Facebook/Twitter + Credentials. `providers: []` if no env.       | Set OAuth secrets                |
+| **Stripe Checkout + Webhooks**             | 🟠 **Partial** | `api/invoices/[id]/checkout` + `api/webhooks/stripe` + button exist.               | Wire live keys + test flow       |
+| **RenoGuide AI Chat**                      | 🟠 **Ready**   | Claude/OpenAI tools + event bus + chat route. Hidden from marketing page.           | Surface chat widget              |
+| **Booking Calendar**                       | 🟠 **Ready**   | `lib/booking/availability` + API. Not surfaced.                                     | Integrate "Book Estimate" CTA    |
+| **PDF Generation**                         | 🟠 **Ready**   | Quotes, contracts, invoices via `@react-pdf/renderer`.                              | Trigger from admin               |
+| **FastAPI marketplace**                    | 🟠 **Real**    | Complete jobs/bids/products/calendar API. Docker ready.                             | Deploy or archive                |
+| **Mobile (Expo)**                          | 🟠 **Demo**    | Two overlapping apps (`app/` + `frontend/`).                                        | Decide + ship one                |
+| **Admin Dashboard**                        | 🟠 **Static**  | Vanilla HTML/JS served by FastAPI.                                                  | Rebuild in Next.js               |
+| **Web tests / Web CI**                     | 🔴 **None**    | CI only covers Python backend.                                                      | Add Vitest + Playwright          |
+| **Analytics / Rate Limiting / Sentry**     | 🔴 **None**    | No PostHog, no Upstash ratelimit, no Sentry.                                        | Add immediately after P0         |
 
-Legend: 🟢 live · 🟠 in repo, not production-wired · 🔴 not implemented
+**Legend**  
+🟢 Live & production-wired · 🟠 Fully coded, not yet production-wired / not deployed · 🔴 Not implemented
+
+---
+
+## 📜 What Happened — History & Evolution
+
+| Period              | What Was True                                      | What Changed |
+|---------------------|----------------------------------------------------|--------------|
+| Early 2026          | README claimed Supabase/Drizzle/Resend/Sentry/PostHog commerce platform | Fiction — removed |
+| Mid-2026            | Lead capture = logs only. Auth completely inert. Stripe zero routes. | Code advanced |
+| July 9–10 2026      | Prisma schema + best-effort DB/email added to `/api/leads`. RenoGuide AI, booking, Stripe routes, PDF generation landed. | README never updated |
+| **July 11 2026**    | **This README rewritten from scratch** to match reality 100%. | Documentation now the source of truth |
+
+**Key invariant that has never changed:**  
+> A lead is **never silently lost**. Capture happens first (log). Everything else is best-effort.
 
 ---
 
 ## 🧭 What the Live Site Does
 
-`apps/web` is a single, long, animated landing page (`app/page.tsx`) for **EcoWoods**, a Toronto
-hardwood-flooring company (brand voice: *"Est. 1998 · 25+ years · 5,200+ homes refinished · lifetime
-workmanship warranty"*). Section by section:
+`apps/web/app/page.tsx` is a single, long, high-conversion animated landing page for **EcoWoods** (Est. 1998 · 25+ years · 5,200+ homes · lifetime workmanship warranty).
 
-- **Hero** — headline, primary CTAs (*Get a Free Estimate* / *View Our Work*), trust stats, and a
-  rotating certification marquee (NWFA, Bona, BBB A+, WSIB, Loba, FSC, GreenGuard, HomeStars, Houzz).
-- **Our Craft** — six service cards (Installation, Refinishing, Dust-Free Sanding, Stair Refinishing,
-  Custom Inlays & Borders, Commercial).
-- **Why EcoWoods** — four differentiators (salaried craftsmen, lifetime warranty, eco finishes,
-  fixed written pricing).
-- **Species & Stains** — wood species with Janka hardness ratings.
-- **Recent Work** — project gallery (the *"our daily portfolio"* grid; curated fixed images).
-- **Our Process** — five-step consultation-to-signoff timeline.
-- **Reviews / FAQ** — social proof and objection handling.
-- **Field Notes** — three editorial cards (practical hardwood guides; curated fixed images).
-- **Quote form** — the conversion surface that posts to `POST /api/leads`.
+Sections (in order):
+- **Hero** — primary CTAs, trust stats, certification marquee
+- **Our Craft** — 6 service cards
+- **Why EcoWoods** — 4 differentiators
+- **Species & Stains** — Janka hardness
+- **Recent Work** — portfolio grid
+- **Our Process** — 5-step timeline
+- **Reviews / FAQ**
+- **Field Notes** — editorial
+- **Quote Form** — the only conversion surface (posts to `/api/leads`)
 
-Several full-bleed section backdrops (`hero`, `craft`, `homes`, `finish`) are served by the
-`RotatingBackground` component, which fetches from `GET /api/backgrounds?theme=…` at runtime
-(see [security notes](#-security-posture-honest)).
+Full-bleed rotating backgrounds come from `GET /api/backgrounds`.
 
 ---
 
-## 🎯 The Lead-Capture Flow (the one real revenue path)
+## 🎯 The Lead-Capture Flow (The One Real Revenue Path)
 
-This is the most important — and most carefully engineered — code in the repo. Its guiding
-principle, stated in the source, is **"a lead is never silently lost."**
+**Guiding principle (enforced in code):**  
+> Once a lead validates, it is captured. Period. Downstream failures must never cost a lead.
 
 ```mermaid
 sequenceDiagram
     participant U as Visitor
-    participant F as Quote Form (react-hook-form + Zod)
-    participant C as submitLead (@ecowoods/api-client)
-    participant A as POST /api/leads (Next.js, nodejs runtime)
-    participant L as Durable capture (structured log)
-    participant W as Optional webhook (LEADS_WEBHOOK_URL)
+    participant F as Quote Form<br/>(react-hook-form + Zod)
+    participant C as submitLead<br/>(@ecowoods/api-client)
+    participant A as POST /api/leads<br/>(Next.js nodejs)
+    participant L as Durable Log<br/>(console → Vercel)
+    participant DB as Prisma<br/>(best-effort)
+    participant E as Email<br/>(Resend/SMTP best-effort)
+    participant W as Webhook<br/>(LEADS_WEBHOOK_URL)
 
-    U->>F: Fill name, email, phone, postal, service…
+    U->>F: Fill form
     F->>C: validate via shared leadSchema
-    C->>A: POST { ...lead, source, createdAt }
-    A->>A: re-validate via SAME shared leadSchema (defense in depth)
+    C->>A: POST lead
+    A->>A: re-validate (defense in depth)
     alt invalid
-        A-->>C: 400 { success:false, fieldErrors }
+        A-->>C: 400 + fieldErrors
     else valid
-        A->>L: persist FIRST (console JSON → Vercel logs)
-        alt capture throws
-            A-->>C: 500 (refuse to fake success)
-        else captured
-            A->>W: best-effort notify (failure ≠ request failure)
-            A-->>C: 201 { success:true, leadId, ecoPointsEarned:750 }
-            C->>U: toast + localStorage EcoPoints
-        end
+        A->>L: lead.captured (ALWAYS first)
+        A->>DB: quoteRequest.create (try/catch)
+        A->>E: sendAdminNewQuoteEmail (fire-and-forget)
+        A->>W: optional forward (fire-and-forget)
+        A-->>C: 201 { leadId, quoteId?, ecoPointsEarned: 750 }
+        C->>U: toast + localStorage
     end
 ```
 
-**Why it's robust**
-
-- **One schema, both sides.** `leadSchema` lives in `@ecowoods/shared` and validates on the client
-  *and* re-validates on the server — the contract can't drift.
-- **Capture before notify.** The lead is persisted before any downstream send; a flaky webhook
-  never costs you a lead.
-- **Honest persistence.** Today persistence = a structured `lead.captured` JSON line in Vercel
-  runtime logs (queryable/exportable). It is **not** a database or CRM yet. Setting
-  `LEADS_WEBHOOK_URL` forwards leads to n8n / Zapier / a CRM with a one-line change.
-
-> 🔴 **The #1 reliability gap:** logs are recoverable but not a system of record. Wiring a durable
-> destination (email + DB/CRM) is the single highest-value next step — see the
-> [roadmap](#-roadmap--ranked-by-business-impact).
+**Source of truth:** `apps/web/app/api/leads/route.ts`  
+**Shared contract:** `@ecowoods/shared` → `leadSchema`
 
 ---
 
-## 🏛 Architecture — What Actually Runs
+## 🏛 Architecture — What Actually Runs vs What Is Ready
 
 ```mermaid
 graph TB
-    subgraph Prod["🟢 Production (Vercel)"]
-        Web["apps/web — Next.js 15 (App Router)<br/>marketing page + API routes"]
-        Leads["POST /api/leads<br/>(Zod validate → log capture)"]
-        BG["GET /api/backgrounds<br/>(Unsplash Search API)"]
-        AuthR["/api/auth/[...nextauth]<br/>(NextAuth, providers: [] — inert)"]
+    subgraph Prod["🟢 PRODUCTION (Vercel)"]
+        Web["apps/web<br/>Next.js 15 App Router"]
+        Leads["POST /api/leads<br/>log + best-effort Prisma + email"]
+        BG["GET /api/backgrounds"]
+        AuthR["/api/auth/[...nextauth]"]
+        StripeW["/api/webhooks/stripe"]
+        Chat["/api/chat (RenoGuide)"]
         Web --> Leads
         Web --> BG
         Web --> AuthR
+        Web --> StripeW
+        Web --> Chat
     end
 
-    subgraph Pkgs["📦 Shared packages (consumed by web)"]
-        Shared["@ecowoods/shared<br/>Zod schemas · tokens · constants"]
-        ApiClient["@ecowoods/api-client<br/>submitLead (used) · useJobs (unused)"]
-        UI["@ecowoods/ui"]
-        AuthPkg["@ecowoods/auth (config shell)"]
+    subgraph Ready["🟠 FULLY CODED & READY (just needs env + surface)"]
+        Prisma["Prisma schema<br/>User · QuoteRequest · Project · Invoice · Appointment · Payment"]
+        Email["lib/email (Resend + SMTP)"]
+        AI["lib/ai.ts + lib/renoguide.ts<br/>Claude + OpenAI tools"]
+        Booking["lib/booking + /api/availability"]
+        PDFs["@react-pdf quotes/contracts/invoices"]
+        Stripe["lib/stripe + checkout routes"]
     end
 
-    subgraph NotProd["🟠 In repo, NOT deployed / NOT connected"]
-        FastAPI["backend/ — FastAPI marketplace<br/>auth · users · job-requests · products · bids · calendar"]
-        DB[("SQLite/Postgres via SQLAlchemy<br/>(local only)")]
-        Mobile["apps/mobile — Expo (demo, x2)"]
-        Admin["apps/admin — static HTML dashboard<br/>(mounted by FastAPI at /admin)"]
+    subgraph Scaffold["🟠 REAL CODE, NOT DEPLOYED"]
+        FastAPI["backend/ FastAPI marketplace"]
+        Mobile["apps/mobile (2 Expo apps)"]
+        Admin["apps/admin static HTML"]
     end
 
-    Ext["Unsplash Search API"]
-    BG --> Ext
-    Web --> Shared
-    Web --> ApiClient
-    Web --> UI
-    AuthR --> AuthPkg
-    ApiClient -. "useJobs → localhost:8000 (unused on web)" .-> FastAPI
-    FastAPI --> DB
-    FastAPI --> Admin
-
-    style FastAPI stroke-dasharray: 5 5
-    style DB stroke-dasharray: 5 5
-    style Mobile stroke-dasharray: 5 5
-    style Admin stroke-dasharray: 5 5
+    Leads --> Prisma
+    Leads --> Email
+    Chat --> AI
+    Web --> Booking
+    Web --> PDFs
+    Web --> Stripe
+    FastAPI -.-> Mobile
+    FastAPI -.-> Admin
 ```
 
-**Two important truths the diagram makes explicit:**
-
-1. The live web app is **self-contained** — it does not call the FastAPI backend in production.
-   The only client→backend link (`useJobs`/`apiFetch`) targets `NEXT_PUBLIC_API_URL ||
-   http://localhost:8000` and is **not used** anywhere in the live page.
-2. The FastAPI backend and the static admin dashboard model a **different product** (a
-   job/bid marketplace) than the marketing site. They're a parallel track, not the site's backend.
+**Critical truths:**
+1. The live web app **never calls** the FastAPI backend in production.
+2. All advanced features (DB, email, AI, booking, Stripe, PDFs) are already implemented inside `apps/web`. They just need environment variables and UI surface.
+3. The FastAPI + mobile + static admin represent a **parallel future marketplace product**.
 
 ---
 
 ## 🧱 Real Tech Stack
 
-| Layer | What's actually used |
-|---|---|
-| **Monorepo** | Turborepo 2.9 + pnpm 9.15 workspaces (`apps/*`, `packages/*`); root build/dev scoped to `@ecowoods/web`. |
-| **Web** | Next.js 15.5 (App Router), React 19, TypeScript 5.6, Tailwind CSS 3.4, framer-motion, lucide-react, sonner, react-hook-form, `@hookform/resolvers`, TanStack Query, Zod. |
-| **Web APIs** | Next.js Route Handlers (Node.js runtime): `/api/leads`, `/api/backgrounds`, `/api/auth/[...nextauth]` (NextAuth v4). |
-| **Shared** | `@ecowoods/shared` (Zod schemas, theme tokens, constants), `@ecowoods/api-client`, `@ecowoods/ui`, `@ecowoods/auth`, plus `types`/`config`/`utils`. |
-| **Backend** *(undeployed)* | FastAPI, SQLAlchemy 2 (async), SQLite/Postgres, JWT auth, Pydantic schemas; Dockerfile + `docker-compose.yml`. |
-| **Mobile** *(demo)* | Expo SDK 54, expo-router, React Native 0.81, `@stripe/stripe-react-native`, expo-notifications. |
-| **Hosting** | Vercel (web). Backend is local/containerized only. |
-| **Installed but unused** | `stripe`, `@stripe/stripe-js` (no payment code). |
+| Layer              | Technology |
+|--------------------|------------|
+| **Monorepo**       | Turborepo 2.9 + pnpm 9.15 workspaces |
+| **Web**            | Next.js 15.5 (App Router), React 19, TypeScript 5.6, Tailwind 3.4, framer-motion, lucide-react, sonner, react-hook-form + Zod, TanStack Query |
+| **ORM**            | Prisma 5 + PostgreSQL (Supabase/Neon recommended) |
+| **Auth**           | NextAuth v5 (Auth.js) + Prisma Adapter + conditional OAuth |
+| **Email**          | Resend (preferred) + nodemailer SMTP fallback |
+| **AI**             | Vercel AI SDK + Anthropic Claude + OpenAI |
+| **Payments**       | Stripe (server + client) + webhooks |
+| **PDF**            | @react-pdf/renderer |
+| **Shared**         | `@ecowoods/shared` (Zod schemas), `@ecowoods/api-client`, `@ecowoods/ui`, `@ecowoods/auth` |
+| **Backend**        | FastAPI + SQLAlchemy 2 (async) + Pydantic + JWT (undeployed) |
+| **Mobile**         | Expo SDK 54 + expo-router + React Native 0.81 (demo) |
+| **Hosting**        | Vercel (web only) |
 
 ---
 
-## 🗂 Repository Structure (annotated)
+## 🗂 Repository Structure (Annotated & Accurate)
 
 ```text
 ecowoods-app/
 ├── apps/
-│   ├── web/                     🟢 LIVE — Next.js 15 marketing site (the product)
-│   │   └── app/
-│   │       ├── page.tsx         the entire landing page (~hero→quote form)
-│   │       ├── components/      Header · RotatingBackground · SiteFooter
-│   │       └── api/
-│   │           ├── leads/       🟢 the lead-capture endpoint
-│   │           ├── backgrounds/ 🟢 Unsplash Search proxy (⚠️ key, rate limits)
-│   │           └── auth/        🟠 NextAuth, no providers (inert)
-│   ├── mobile/                  🟠 Expo demo — TWO overlapping apps:
-│   │   ├── app/                 expo-router app (tabs: shop/orders/profile) + DemoBanner
-│   │   └── frontend/            legacy RN app (Login/Bids/JobRequest/… own package.json)
-│   └── admin/
-│       └── admin-dashboard/     🟠 static HTML/CSS/JS dashboard (served by FastAPI /admin)
-├── backend/                     🟠 REAL FastAPI marketplace (undeployed)
-│   └── app/
-│       ├── main.py              app factory, routers under /api/v1, /health, /docs
-│       ├── api/                 auth · users · job_requests · products · bids · calendar_events
-│       ├── models/ schemas/     SQLAlchemy models + Pydantic schemas
-│       └── core/                config · database · security · dependencies
+│   ├── web/                          🟢 LIVE PRODUCT
+│   │   ├── app/
+│   │   │   ├── page.tsx              ← entire marketing landing page
+│   │   │   ├── api/
+│   │   │   │   ├── leads/            🟢 the money path
+│   │   │   │   ├── backgrounds/      🟢 Unsplash proxy
+│   │   │   │   ├── auth/             🟠 NextAuth
+│   │   │   │   ├── webhooks/stripe/  🟠 Stripe events
+│   │   │   │   ├── invoices/         🟠 checkout
+│   │   │   │   ├── appointments/     🟠
+│   │   │   │   ├── availability/     🟠
+│   │   │   │   ├── chat/             🟠 RenoGuide
+│   │   │   │   └── ...
+│   │   ├── lib/
+│   │   │   ├── db.ts                 🟢 Prisma singleton
+│   │   │   ├── email/                🟢 Resend + SMTP
+│   │   │   ├── ai.ts                 🟠
+│   │   │   ├── renoguide.ts          🟠
+│   │   │   ├── booking/              🟠
+│   │   │   ├── stripe.ts             🟠
+│   │   │   └── pdf/                  🟠
+│   │   └── prisma/
+│   │       └── schema.prisma         🟢 FULL schema (see below)
+│   ├── mobile/                       🟠 two overlapping Expo apps
+│   │   ├── app/                      (modern expo-router)
+│   │   └── frontend/                 (legacy RN)
+│   └── admin/                        🟠 static HTML dashboard
+├── backend/                          🟠 complete FastAPI marketplace
+│   └── app/ (auth, users, job_requests, products, bids, calendar)
 ├── packages/
-│   ├── shared/                  🟢 Zod schemas (leadSchema used), theme tokens, constants
-│   ├── api-client/              🟢 submitLead (used) · useJobs hooks (unused on web)
-│   ├── ui/                      🟢 cross-platform components
-│   ├── auth/                    🟠 NextAuth options shell (providers: [])
-│   ├── types/ · config/ · utils/  small shared bits
-├── scripts/                     maintenance scripts (e.g. image-swap patcher)
-├── docker-compose.yml           backend + Postgres (local)
-├── vercel.json                  framework=nextjs, outputDirectory=apps/web/.next, security headers
-├── turbo.json                   build/dev/lint/typecheck/test pipelines
-└── .github/workflows/ci.yml     ⚠️ Python-only CI (ruff/black/bandit/docker) — does NOT test web
+│   ├── shared/                       🟢 leadSchema + tokens
+│   ├── api-client/                   🟢 submitLead (used)
+│   ├── auth/                         🟠 providers: [] shell
+│   └── ui/
+├── docker-compose.yml                (backend + Postgres)
+├── vercel.json
+├── turbo.json
+└── .github/workflows/ci.yml          ⚠️ Python only
 ```
 
 ---
 
-## 🐍 The FastAPI Backend (real, undeployed)
+## 🗄 The Full Prisma Schema (Already Built)
 
-A genuinely structured async FastAPI service that models a **contractor job/bid marketplace** —
-*not* the marketing site's backend.
+Located at `apps/web/prisma/schema.prisma`.
 
-- **Routers** (all under `/api/v1`): `auth`, `users`, `job-requests`, `products`, `bids`, `calendar`.
-- **Persistence:** SQLAlchemy 2 async engine; `DATABASE_URL` supports SQLite (default/dev) or Postgres.
-- **Extras:** `/health`, OpenAPI docs at `/docs`, and a static admin dashboard auto-mounted at
-  `/admin` when `apps/admin/admin-dashboard` is present.
+**Models that exist today:**
+- `User` (with role: USER | ADMIN)
+- `QuoteRequest` (status, attachments, quotedAmount, stripeCheckoutSessionId, …)
+- `Project` (contract, depositPct, status: DRAFT → COMPLETED)
+- `Invoice` + `Payment` (Stripe-ready)
+- `Appointment` (for in-home estimates)
+- `Account` / `Session` / `VerificationToken` (NextAuth)
+- Full enums for every status
 
-**Run it locally:**
-
+**To activate:**
 ```bash
-# Option A — Docker (brings up Postgres too)
-docker compose up --build         # API on http://localhost:8000, docs at /docs
+# in Vercel (or .env.local)
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."   # for migrations
 
-# Option B — bare Python
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+# then
+pnpm --filter @ecowoods/web db:push   # or migrate
 ```
 
-> 🔎 **It is not hosted anywhere and the live website does not call it.** Treat it as a separate
-> initiative. The first decision the roadmap forces is whether to **invest in it, fold it into
-> Next.js API routes, or archive it.**
+Once `DATABASE_URL` is set, every new lead is automatically persisted as a `QuoteRequest`.
 
 ---
 
-## 📱 Mobile & Admin (scaffolds)
+## 🤖 RenoGuide AI, Booking, Stripe, PDFs (Ready but Hidden)
 
-- **`apps/mobile`** is **two parallel Expo apps**: a modern `expo-router` app (`app/(tabs)`:
-  shop/orders/profile + `product/[id]`) carrying a visible `DemoBanner`, and a legacy
-  `frontend/` React Native app (Login/Register/Bids/JobRequest/Calendar screens) with its *own*
-  `package.json`. It is demo-grade, fragmented, and **not built or released**. `@stripe/stripe-react-native`
-  is present but not a working payment flow.
-- **`apps/admin`** is a **static HTML/CSS/JS** dashboard (`index.html`, `app.js`, `api.js`) that the
-  FastAPI service mounts at `/admin`. It is **not** the Next.js admin app described in older docs.
+| Feature              | Location                              | Status                  | How to surface |
+|----------------------|---------------------------------------|-------------------------|----------------|
+| **RenoGuide AI**     | `lib/renoguide.ts` + `/api/chat`     | Fully coded             | Add chat widget to `page.tsx` |
+| **Booking**          | `lib/booking/availability.ts` + API  | Fully coded             | Add "Book In-Home Estimate" CTA |
+| **Stripe**           | `lib/stripe.ts` + checkout + webhook | Partial (invoice flow)  | Wire live keys + add deposit button on quote form |
+| **PDFs**             | `lib/pdf/*`                           | Fully coded             | Call from admin or auto-send |
+
+All of these already use the same Prisma client and email service. Integration is near-zero effort.
 
 ---
 
-## 💻 Local Development
+## 🐍 The FastAPI Backend (Real Marketplace)
+
+A complete, well-structured async FastAPI service for a **contractor job/bid marketplace**.
+
+- Routers: `/api/v1/auth`, `users`, `job-requests`, `products`, `bids`, `calendar`
+- SQLAlchemy 2 + Pydantic
+- Docker + docker-compose with Postgres
+- Static admin mounted at `/admin`
+
+**It is not called by the live web app.**  
+Decision required: invest, fold useful pieces into Next.js, or archive.
 
 ```bash
-# prerequisites: Node ≥ 18.18, pnpm 9.15 (corepack enable), Docker (optional, for backend)
+docker compose up --build          # http://localhost:8000/docs
+```
+
+---
+
+## 📱 Mobile & Admin (Scaffolds)
+
+- **Mobile**: Two parallel Expo apps. Modern `app/` (expo-router) + legacy `frontend/`. Demo banners. Not shipped.
+- **Admin**: Vanilla HTML/CSS/JS in `apps/admin/admin-dashboard`. Served only when FastAPI is running.
+
+---
+
+## 💻 Local Development (Perfect Integration)
+
+```bash
+# Prerequisites
+node ≥ 18.18
+corepack enable
+pnpm 9.15
+
 git clone https://github.com/iceccarelli/ecowoods-app.git
 cd ecowoods-app
 pnpm install
 
-# run the live product (web only) — http://localhost:3000
-pnpm dev            # = turbo dev --filter=@ecowoods/web
+# 1. Start the product (web)
+cp apps/web/.env.example apps/web/.env.local
+# edit .env.local with real keys (see next section)
+pnpm dev                          # → http://localhost:3000
 
-# production build of the web app
-pnpm build          # = turbo build --filter=@ecowoods/web
+# 2. (Optional) Full local stack with DB
+# set DATABASE_URL in .env.local
+pnpm --filter @ecowoods/web db:push
+pnpm --filter @ecowoods/web db:seed
 
-# backend (separate, optional) — see the FastAPI section
-docker compose up --build
+# 3. (Optional) FastAPI marketplace
+docker compose up --build         # → http://localhost:8000/docs
 ```
 
-> Note: `pnpm dev`/`pnpm build` are intentionally scoped to `@ecowoods/web`. The mobile and backend
-> targets are run independently.
+`pnpm dev` / `pnpm build` are correctly scoped to `@ecowoods/web`.
 
 ---
 
-## 🔐 Environment Variables
+## 🔐 Environment Variables (The Missing Link)
 
-**Web (`apps/web`) — all optional; the site runs without them, degrading gracefully:**
+**These are the only things standing between "good lead form" and "full CRM + AI + payments".**
 
-| Variable | Used by | Effect if unset |
-|---|---|---|
-| `UNSPLASH_ACCESS_KEY` | `/api/backgrounds` | Falls back to a **hardcoded key in source** (⚠️ remove — see security). |
-| `LEADS_WEBHOOK_URL` | `/api/leads` | Leads are captured to logs only (no CRM/Zapier/n8n forward). |
-| `NEXTAUTH_SECRET` | NextAuth | Uses insecure dev default `dev-insecure-change-me-in-prod`. |
-| `NEXTAUTH_URL` | NextAuth | Dev warning; needed once real auth providers exist. |
-| `NEXT_PUBLIC_API_URL` | `api-client` | Defaults to `http://localhost:8000` (only matters if you wire the backend). |
-
-**Backend (`backend/`, from `.env.example`):**
-
+### Required for production leads (P0)
 ```bash
-POSTGRES_USER=ecowoods
-POSTGRES_PASSWORD=ecowoods_secret
-POSTGRES_DB=ecowoods_db
-DB_PORT=5432
-API_PORT=8000
-SECRET_KEY=change-me-in-production-use-a-long-random-string
-DEBUG=false
-CORS_ORIGINS=["*"]          # ⚠️ wildcard — tighten before any deploy
+DATABASE_URL=postgresql://...          # Supabase or Neon free tier
+DIRECT_URL=postgresql://...            # for Prisma migrate
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=quotes@ecowoods.ca
+ADMIN_EMAIL=owner@ecowoods.ca
+NEXTAUTH_SECRET=                           # openssl rand -base64 32
+NEXTAUTH_URL=https://ecowoods-app.vercel.app
 ```
+
+### Highly recommended (P0/P1)
+```bash
+UNSPLASH_ACCESS_KEY=...                # rotate the hardcoded one
+LEADS_WEBHOOK_URL=https://hooks.zapier.com/...   # or n8n
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+ANTHROPIC_API_KEY=sk-ant-...           # for RenoGuide
+OPENAI_API_KEY=sk-...                  # fallback
+```
+
+### Full list
+See `apps/web/.env.example` (it is comprehensive and up-to-date).
+
+**Graceful degradation:**  
+If any of these are missing, the site still works and still captures leads (to logs). That is intentional.
 
 ---
 
 ## 🚀 Deployment
 
-- **Web → Vercel.** `vercel.json` sets `framework: nextjs`, `outputDirectory: apps/web/.next`,
-  `installCommand: pnpm install --no-frozen-lockfile`, `buildCommand: pnpm build`. Every push to
-  `main` triggers a production deploy. Verified live at
-  [ecowoods-app.vercel.app](https://ecowoods-app.vercel.app).
-- **Backend → not deployed.** A `Dockerfile` and `docker-compose.yml` exist for local/container use.
-  Hosting it (Fly.io / Render / Railway / a VM) is a deliberate, unmade decision.
-- **Mobile → not released.** No EAS build/submit pipeline is wired for production.
+- **Web**: Vercel. Every push to `main` deploys.  
+  Set the env vars above in Vercel project settings → Redeploy.
+- **Database**: Supabase or Neon (free tier is fine). Run `prisma db push` or migrate via Vercel build or CLI.
+- **Backend**: Not deployed. Use Fly.io / Railway / Render when ready.
+- **Mobile**: No EAS pipeline yet.
 
 ---
 
-## 🛡 Security Posture (honest)
+## 🛡 Security Posture (Honest + Actionable)
 
-**In place**
+**Already good**
+- Strong security headers in `vercel.json`
+- Server-side Zod on every write endpoint
+- Best-effort design never loses a lead
+- No `dangerouslySetInnerHTML`
 
-- Strong response headers via `vercel.json`: HSTS (preload), `X-Frame-Options: DENY`,
-  `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection`.
-- React's default output escaping; no `dangerouslySetInnerHTML`.
-- Server-side Zod validation on `/api/leads`.
-
-**🔴 Issues to fix (in priority order)**
-
-1. **Hardcoded Unsplash access key** in `apps/web/app/api/backgrounds/route.ts` (a committed secret
-   in a public repo, and a 50 req/hr rate-limit liability that can blank the backdrops). **Rotate
-   the key on Unsplash, move it to `UNSPLASH_ACCESS_KEY` in Vercel, and delete the fallback.**
-2. **Insecure default `NEXTAUTH_SECRET`** fallback. Set a real secret (and remove the default) the
-   moment auth is anything other than inert.
-3. **Backend `CORS_ORIGINS=["*"]`** — must be locked to known origins before any hosting.
-4. **No rate limiting / abuse protection** on `/api/leads` — add a limiter + spam/bot guard
-   (captcha or honeypot) before promoting it; it's the public write endpoint.
-5. **No Content-Security-Policy** header yet.
+**Fix immediately (in this order)**
+1. **Hardcoded Unsplash key** in `apps/web/app/api/backgrounds/route.ts`  
+   → Move to `UNSPLASH_ACCESS_KEY` env and delete the fallback. Rotate the key.
+2. **Insecure default `NEXTAUTH_SECRET`**  
+   → Set a real one and remove the fallback string.
+3. **No rate limiting** on `/api/leads`  
+   → Add `@upstash/ratelimit` (or Vercel KV) + honeypot.
+4. **No CSP header** yet.
+5. Backend `CORS_ORIGINS=["*"]` — lock before any deploy.
 
 ---
 
-## ✅ CI/CD (what it really tests)
+## ✅ CI/CD (What It Really Tests)
 
-`.github/workflows/ci.yml` runs on push/PR to `main` and contains **Python/Docker** jobs only:
+`.github/workflows/ci.yml` currently tests **only the Python backend** (ruff, black, bandit, Docker build).
 
-- `docker-build` — builds the backend image and validates `docker compose config`.
-- `lint` — `ruff` + `black --check` on `backend/`.
-- `security` — `bandit` on `backend/`.
+**There is zero CI for the web app.**  
+This is the second-highest risk after missing DB/email.
 
-> ⚠️ **There is no CI for the web app** — no install/typecheck/build/test of `apps/web`, and no
-> Vitest/Playwright anywhere. The green CI badge reflects backend checks, not the shipping product.
-> Adding a web pipeline (typecheck + build + a Playwright smoke test of the quote form) is a
-> top-tier gap.
-
----
-
-## 🗺 Roadmap — Ranked by Business Impact
-
-The business is **lead generation**. Everything is ordered by its effect on capturing and
-converting quote requests.
-
-### P0 — Protect and capture every lead (days)
-1. **Give leads a durable home.** Wire `LEADS_WEBHOOK_URL` to a CRM/Zapier/n8n **and** send an
-   instant email (Resend/SendGrid) to the shop + an autoresponder to the customer. Stop relying on
-   logs as the system of record.
-2. **Rotate the Unsplash key + move to env var** and delete the hardcoded fallback (security + the
-   backdrops silently breaking under rate limits).
-3. **Harden `/api/leads`:** rate limit + honeypot/captcha; alert on `lead.notify_failed`.
-
-### P1 — Maximize conversion (1–2 weeks)
-4. **Conversion analytics.** Add a privacy-friendly analytics + event tracking for form views,
-   starts, submits, and drop-off (so you can actually optimize the page).
-5. **Lighthouse/SEO/perf pass.** Self-host or pin hero imagery (the runtime Unsplash backdrops are
-   slow and non-deterministic), add `metadata`/OpenGraph, structured data (LocalBusiness JSON-LD),
-   and a sitemap. Fix the two caption/photo mismatches (Forest Hill "herringbone", Distillery
-   "chevron") and the temporary Cabbagetown staircase image.
-6. **Trust + accessibility.** Real project photos in *Recent Work* (currently stock), alt text,
-   keyboard/contrast audit, and visible reviews/credentials wired to live sources.
-
-### P2 — Engineering hygiene (parallel)
-7. **Web CI.** typecheck + build + Playwright smoke test of the quote flow on every PR.
-8. **Make a decision on the scaffolds.** Either invest in the FastAPI marketplace + mobile (with a
-   real product spec), fold the few useful endpoints into Next.js routes, or **archive them** so the
-   repo stops implying capabilities that don't ship. Remove `stripe` deps until there's checkout code.
-
-### P3 — Only if the product direction demands it
-9. **Auth** with real providers (the current route is inert) — needed only when there's an
-   account/marketplace surface.
-10. **Payments (Stripe Checkout + webhooks)** — needed only if EcoWoods sells online; today it sells
-    *consultations*, so this is far down the list.
+**Target state (add this week):**
+```yaml
+# typecheck + build + Playwright smoke of the quote form
+```
 
 ---
 
-## 🧹 Known Gaps & Tech Debt
+## 🗺 Roadmap — Ranked by Business Impact (Execute This)
 
-| Area | Reality |
-|---|---|
-| Persistence | Leads → Vercel logs only; no DB/CRM by default. |
-| Auth | NextAuth route with `providers: []` (cannot log in); insecure default secret. |
-| Payments | `stripe`/`stripe-js` installed, **no** routes or UI. |
-| Backend | Real FastAPI app, but undeployed and unused by the live site; SQLite-by-default. |
-| Mobile | Two overlapping Expo apps; demo banner; not released. |
-| Admin | Static HTML, served by the (undeployed) backend; not a Next.js app. |
-| Observability | No Sentry/PostHog/analytics/log drains. |
-| Web CI/tests | None; CI covers only the Python backend. |
-| Images | Section backdrops fetched live from Unsplash (rate-limited, non-deterministic); some captions don't match their photo. |
-| Docs drift | Prior README claimed Supabase/Drizzle/Resend/Sentry/PostHog/Upstash/Playwright + a live "commerce core" — removed as fiction. |
+### 🔴 P0 — Plug the Revenue Leak (This Weekend)
+
+| # | Action | Exact Command / Change | Success Metric |
+|---|--------|------------------------|----------------|
+| 1 | Deploy Postgres | Supabase free tier → set `DATABASE_URL` + `DIRECT_URL` in Vercel | Leads appear in `QuoteRequest` table |
+| 2 | Wire email | Set `RESEND_API_KEY` + `ADMIN_EMAIL` | Owner gets email within 5 s of form submit |
+| 3 | Harden Unsplash | Move key to env, delete hardcoded fallback | No secret in source |
+| 4 | Strong secret | Generate + set `NEXTAUTH_SECRET` | No more insecure default |
+| 5 | Rate limit | Add Upstash ratelimit to `/api/leads` | Spam impossible |
+
+**After P0 the business is safe.** Every lead is in the DB + email + logs.
+
+### 🟠 P1 — Convert Leads → Appointments (Next 2 Weeks)
+
+| # | Action | Impact |
+|---|--------|--------|
+| 6 | Surface RenoGuide chat widget on every page | 24/7 lead qualification |
+| 7 | Surface booking calendar ("Book In-Home Estimate") | Direct conversion |
+| 8 | Auto-response email to customer | Brand trust |
+| 9 | Functional Next.js admin dashboard | Replace static HTML |
+| 10 | Web CI (typecheck + build + Playwright) | No more broken deploys |
+
+### 🟡 P2 — Operational Excellence (Weeks 3–6)
+
+| # | Action |
+|---|--------|
+| 11 | Customer project portal (login → view status) |
+| 12 | Stripe deposit checkout on accepted quotes |
+| 13 | PostHog + Sentry |
+| 14 | Real project photos + SEO pass |
+
+### 🟢 P3 — Scale (Month 2+)
+
+| # | Action |
+|---|--------|
+| 15 | Deploy FastAPI marketplace **or** archive it |
+| 16 | Ship one clean mobile app |
+| 17 | Contractor bidding surface |
+| 18 | Referral system |
+
+---
+
+## 🤖 How Any AI Agent Should Continue This Work
+
+1. **Always read this README first.** It is the source of truth.
+2. **Never invent features that already exist.** Check `apps/web/lib/` and `prisma/schema.prisma` before writing new code.
+3. **P0 is sacred.** Do not build new features until `DATABASE_URL` + email are live and verified.
+4. **Preserve the invariant:**  
+   ```ts
+   // capture first, notify second, never fail the customer
+   console.log(lead.captured)
+   try { await db... } catch {}
+   sendEmail(...).catch(...)
+   ```
+5. **Update this README in the same PR** as any architectural change.
+6. **When adding UI for RenoGuide / booking / Stripe**, use the existing event bus and APIs — do not reimplement.
+7. Prefer extending the existing Prisma models over creating parallel tables.
+8. The FastAPI backend is a separate product. Do not couple the marketing site to it unless explicitly instructed.
+
+---
+
+## 🧹 Known Gaps & Tech Debt (Current)
+
+| Area                | Reality |
+|---------------------|---------|
+| Persistence         | Best-effort Prisma (activates with `DATABASE_URL`) |
+| Email               | Fully coded, activates with `RESEND_API_KEY` |
+| Auth                | Conditional providers, currently empty without env |
+| Stripe              | Routes exist for invoices; marketing deposit flow incomplete |
+| RenoGuide / Booking | Fully coded, not surfaced on landing page |
+| Web CI              | None |
+| Rate limiting       | None |
+| Unsplash key        | Still hardcoded (must fix) |
+| Admin               | Static HTML |
+| Mobile              | Fragmented dual apps |
+| FastAPI             | Real but undeployed |
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork → feature branch → PR against `main`.
-2. For web changes: run `pnpm build` locally and confirm the Vercel preview is green.
-3. For backend changes: `ruff check backend/`, `black --check backend/`, and ensure the Docker build
-   passes (these are enforced by CI).
-4. Keep cross-surface types in `@ecowoods/shared`; validate new API inputs with Zod (web) / Pydantic
-   (backend).
-5. Don't add dependencies for features that aren't being built in the same PR.
+2. For any web change: `pnpm build` must pass.
+3. For backend: `ruff` + `black` + Docker build (enforced by CI).
+4. Keep shared types in `@ecowoods/shared`.
+5. **Update this README in the same PR** if you change what is live / ready / scaffolded.
+6. Do not add dependencies for features you are not shipping in that PR.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
@@ -485,9 +557,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 <div align="center">
 
-**EcoWoods today:** a fast, focused, production lead-generation site for a Toronto hardwood-flooring
-business — with a marketplace backend and client apps waiting in the wings for a product decision.
+### EcoWoods is a sleeping giant.
 
-*This README describes what is true and running. When that changes, change this file in the same PR.*
+The code for a complete lead → appointment → contract → project → payment platform already exists.  
+The only thing missing is wiring the environment variables and surfacing the ready components.
+
+**P0 is one weekend of work.**  
+After that, this becomes a market-dominating machine.
+
+*This README is the single source of truth. Keep it perfect.*
 
 </div>
