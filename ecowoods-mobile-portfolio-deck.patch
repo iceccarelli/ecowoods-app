@@ -1,0 +1,589 @@
+diff --git a/apps/web/app/components/PortfolioGallery.tsx b/apps/web/app/components/PortfolioGallery.tsx
+new file mode 100644
+index 0000000..e31d85b
+--- /dev/null
++++ b/apps/web/app/components/PortfolioGallery.tsx
+@@ -0,0 +1,297 @@
++'use client';
++
++/**
++ * PortfolioGallery
++ * ----------------
++ * Desktop / SSR / no-JS: renders the ORIGINAL masonry grid, byte-for-byte, so
++ * search engines and non-touch users see exactly what they saw before.
++ *
++ * Mobile (<=767px, after hydration): swaps the grid for a reversible looping
++ * card deck — a physical, draggable stack you browse both directions. Nothing
++ * is ever discarded (this is a portfolio, not a dating app): the front card
++ * rotates to the back and loops. The front card's project feeds the estimate
++ * CTA beneath the deck, so browsing has a conversion path.
++ *
++ * No external gesture library: pointer events + CSS transforms only. The card
++ * uses `touch-action: pan-y`, so vertical page scrolling stays owned by the
++ * browser and only horizontal drags are treated as swipes — this is what keeps
++ * the deck from hijacking the scroll of the page around it.
++ */
++
++import {
++  CSSProperties,
++  PointerEvent as ReactPointerEvent,
++  useCallback,
++  useEffect,
++  useRef,
++  useState,
++} from 'react';
++
++export type PortfolioItem = {
++  id: string;
++  title: string;
++  sub: string;
++  image: string;
++  span: string;
++};
++
++const SWIPE_THRESHOLD = 84; // px of horizontal travel needed to commit
++const MAX_VISIBLE = 3; // cards drawn in the stack (front + 2 peeking)
++
++export default function PortfolioGallery({ items }: { items: PortfolioItem[] }) {
++  const [mounted, setMounted] = useState(false);
++  const [isMobile, setIsMobile] = useState(false);
++
++  useEffect(() => {
++    setMounted(true);
++    const mq = window.matchMedia('(max-width: 767px)');
++    const update = () => setIsMobile(mq.matches);
++    update();
++    mq.addEventListener('change', update);
++    return () => mq.removeEventListener('change', update);
++  }, []);
++
++  // Original masonry — the SSR output and the desktop experience, untouched.
++  const grid = (
++    <div className="gallery-grid">
++      {items.map((g, i) => (
++        <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
++          <img
++            src={g.image}
++            alt={g.title}
++            loading={i === 0 ? 'eager' : 'lazy'}
++            fetchPriority={i === 0 ? 'high' : 'auto'}
++            decoding="async"
++          />
++          <div className="gallery-caption">
++            <div className="title">{g.title}</div>
++            <div className="sub">{g.sub}</div>
++          </div>
++        </div>
++      ))}
++    </div>
++  );
++
++  // Before hydration and on desktop we return the grid, which matches the
++  // server render exactly (no hydration mismatch). Mobile swaps after mount.
++  if (!mounted || !isMobile || items.length === 0) return grid;
++  return <PortfolioDeck items={items} />;
++}
++
++function PortfolioDeck({ items }: { items: PortfolioItem[] }) {
++  const n = items.length;
++  const [deck, setDeck] = useState<PortfolioItem[]>(items);
++  const [dx, setDx] = useState(0);
++  const [dragging, setDragging] = useState(false);
++  const [anim, setAnim] = useState<null | 'next' | 'prev'>(null);
++
++  const gesture = useRef<{ x: number; y: number; axis: null | 'x' | 'y'; id: number } | null>(null);
++  const reduce = useRef(false);
++
++  useEffect(() => {
++    reduce.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
++  }, []);
++
++  const front = deck[0];
++  const busy = anim !== null;
++  const currentIndex = items.findIndex((it) => it.id === front.id);
++
++  const haptic = () => {
++    try {
++      navigator.vibrate?.(8);
++    } catch {
++      /* not supported — silent */
++    }
++  };
++
++  // Both directions resolve to the same fly-out: the front card leaves and the
++  // card behind it becomes the new front. For "prev" we first slot the target
++  // (the last card) directly behind the front, so the revealed card is the one
++  // we want — no flicker — and the commit is identical to "next".
++  const commit = useCallback((dir: 'next' | 'prev') => {
++    setDeck((d) => [...d.slice(1), d[0]]);
++    setAnim(null);
++    setDx(0);
++    setDragging(false);
++    void dir;
++  }, []);
++
++  const go = useCallback(
++    (dir: 'next' | 'prev') => {
++      if (busy || n < 2) return;
++      haptic();
++      if (dir === 'prev') {
++        // Move the last card to just behind the front before it flies away.
++        setDeck((d) => [d[0], d[d.length - 1], ...d.slice(1, d.length - 1)]);
++      }
++      if (reduce.current) {
++        commit(dir);
++        return;
++      }
++      setAnim(dir);
++    },
++    [busy, n, commit],
++  );
++
++  // ---- pointer drag on the front card -----------------------------------
++  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
++    if (busy || n < 2) return;
++    gesture.current = { x: e.clientX, y: e.clientY, axis: null, id: e.pointerId };
++    setDragging(true);
++    try {
++      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
++    } catch {
++      /* ignore */
++    }
++  };
++
++  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
++    const g = gesture.current;
++    if (!g || g.id !== e.pointerId) return;
++    const mx = e.clientX - g.x;
++    const my = e.clientY - g.y;
++    if (g.axis === null) {
++      if (Math.abs(mx) > 8 || Math.abs(my) > 8) {
++        g.axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
++      }
++    }
++    if (g.axis === 'y') return; // vertical → let the page scroll (touch-action: pan-y)
++    if (g.axis === 'x') setDx(mx);
++  };
++
++  const endGesture = (e: ReactPointerEvent<HTMLDivElement>) => {
++    const g = gesture.current;
++    if (!g || g.id !== e.pointerId) return;
++    gesture.current = null;
++    if (g.axis === 'x' && dx <= -SWIPE_THRESHOLD) {
++      go('next');
++    } else if (g.axis === 'x' && dx >= SWIPE_THRESHOLD) {
++      go('prev');
++    } else {
++      setDx(0);
++      setDragging(false);
++    }
++  };
++
++  // ---- per-card transform ------------------------------------------------
++  const cardStyle = (pos: number): CSSProperties => {
++    if (pos === 0) {
++      let transform = 'translate3d(0,0,0) rotate(0deg)';
++      let transition = dragging ? 'none' : 'transform .34s cubic-bezier(.22,.61,.36,1)';
++      let opacity = 1;
++      if (anim === 'next') {
++        transform = 'translate3d(-135%,0,0) rotate(-16deg)';
++        transition = 'transform .34s cubic-bezier(.4,0,.6,1), opacity .34s';
++        opacity = 0;
++      } else if (anim === 'prev') {
++        transform = 'translate3d(135%,0,0) rotate(16deg)';
++        transition = 'transform .34s cubic-bezier(.4,0,.6,1), opacity .34s';
++        opacity = 0;
++      } else if (dragging) {
++        transform = `translate3d(${dx}px,0,0) rotate(${dx * 0.04}deg)`;
++      }
++      return { transform, transition, opacity, zIndex: 40, touchAction: 'pan-y' };
++    }
++    // Cards behind: stepped down and scaled to read as a real stack + peek.
++    const y = pos * 15;
++    const scale = 1 - pos * 0.05;
++    return {
++      transform: `translate3d(0,${y}px,0) scale(${scale})`,
++      transition: 'transform .34s cubic-bezier(.22,.61,.36,1)',
++      opacity: pos >= MAX_VISIBLE ? 0 : 1,
++      zIndex: 40 - pos,
++      touchAction: 'pan-y',
++    };
++  };
++
++  const dragHint =
++    dragging && dx <= -24 ? 'next' : dragging && dx >= 24 ? 'prev' : null;
++
++  return (
++    <div className="pfd" aria-roledescription="carousel" aria-label="Project portfolio">
++      <div className="pfd-stack">
++        {deck.slice(0, MAX_VISIBLE).map((item, pos) => (
++          <div
++            key={item.id}
++            className="pfd-card"
++            style={cardStyle(pos)}
++            onPointerDown={pos === 0 ? onPointerDown : undefined}
++            onPointerMove={pos === 0 ? onPointerMove : undefined}
++            onPointerUp={pos === 0 ? endGesture : undefined}
++            onPointerCancel={pos === 0 ? endGesture : undefined}
++            onTransitionEnd={
++              pos === 0
++                ? (e) => {
++                    if (e.propertyName === 'transform' && anim) commit(anim);
++                  }
++                : undefined
++            }
++            aria-hidden={pos !== 0}
++          >
++            <img className="pfd-img" src={item.image} alt={item.title} draggable={false} decoding="async" />
++            <div className="pfd-scrim" />
++            {pos === 0 && dragHint && (
++              <span className={`pfd-flag pfd-flag--${dragHint}`}>
++                {dragHint === 'prev' ? '‹ Previous' : 'Next ›'}
++              </span>
++            )}
++            <div className="pfd-caption">
++              <div className="pfd-title">{item.title}</div>
++              <div className="pfd-sub">{item.sub}</div>
++            </div>
++          </div>
++        ))}
++      </div>
++
++      {/* Controls: prev / counter+dots / next */}
++      <div className="pfd-controls">
++        <button type="button" className="pfd-nav" onClick={() => go('prev')} disabled={busy} aria-label="Previous project">
++          ‹
++        </button>
++        <div className="pfd-progress" aria-hidden="true">
++          <span className="pfd-count">
++            {currentIndex + 1} / {n}
++          </span>
++          <span className="pfd-dots">
++            {items.map((it, i) => (
++              <span key={it.id} className={`pfd-dot ${i === currentIndex ? 'is-active' : ''}`} />
++            ))}
++          </span>
++        </div>
++        <button type="button" className="pfd-nav" onClick={() => go('next')} disabled={busy} aria-label="Next project">
++          ›
++        </button>
++      </div>
++
++      <a className="pfd-cta" href="#quote">
++        <span>Get an estimate for a floor like this</span>
++        <span className="pfd-cta-arrow" aria-hidden="true">→</span>
++      </a>
++
++      <p className="pfd-hint" aria-hidden="true">
++        Swipe to browse · {n} recent Toronto projects
++      </p>
++
++      {/* Screen-reader announcement + keyboard control */}
++      <div
++        className="pfd-sr"
++        tabIndex={0}
++        role="group"
++        aria-label={`Project ${currentIndex + 1} of ${n}: ${front.title}. Use left and right arrow keys to browse.`}
++        onKeyDown={(e) => {
++          if (e.key === 'ArrowRight') {
++            e.preventDefault();
++            go('next');
++          } else if (e.key === 'ArrowLeft') {
++            e.preventDefault();
++            go('prev');
++          }
++        }}
++      >
++        <span aria-live="polite">
++          {front.title} — {front.sub}
++        </span>
++      </div>
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 465bcf2..2df30b9 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -4544,3 +4544,244 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ @media (min-width: 1600px) {
+   .gallery-grid { grid-auto-rows: clamp(280px, 20vw, 380px); }
+ }
++
++/* ============================================================
++   MOBILE PORTFOLIO DECK (.pfd)
++   Rendered only on <=767px by PortfolioGallery.tsx; desktop keeps the
++   masonry grid. A reversible, non-destructive card stack: browse both
++   directions, front card loops to the back. Tokens are the site's own
++   (--copper, --cream-50, --walnut-*, --paper, --line) so it reads native.
++   ============================================================ */
++.pfd {
++  --pfd-radius: 22px;
++  width: 100%;
++  max-width: 460px;
++  margin: 0 auto;
++  user-select: none;
++  -webkit-user-select: none;
++}
++
++.pfd-stack {
++  position: relative;
++  width: 100%;
++  aspect-ratio: 3 / 4;
++  /* room for the two peeking cards below the front one */
++  margin-bottom: 1.5rem;
++}
++
++.pfd-card {
++  position: absolute;
++  inset: 0;
++  border-radius: var(--pfd-radius);
++  overflow: hidden;
++  background: var(--walnut-900);
++  box-shadow:
++    0 1px 2px rgba(26, 15, 8, 0.28),
++    0 18px 40px -12px rgba(26, 15, 8, 0.5);
++  will-change: transform, opacity;
++  transform-origin: center bottom;
++  cursor: grab;
++  border: 1px solid rgba(245, 239, 230, 0.06);
++}
++.pfd-card:active {
++  cursor: grabbing;
++}
++
++.pfd-img {
++  position: absolute;
++  inset: 0;
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  pointer-events: none;
++  -webkit-user-drag: none;
++}
++
++.pfd-scrim {
++  position: absolute;
++  inset: 0;
++  background: linear-gradient(
++    to top,
++    rgba(26, 15, 8, 0.86) 0%,
++    rgba(26, 15, 8, 0.45) 34%,
++    rgba(26, 15, 8, 0) 62%
++  );
++  pointer-events: none;
++}
++
++.pfd-caption {
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  padding: 1.5rem 1.4rem 1.6rem;
++  pointer-events: none;
++}
++.pfd-title {
++  font-family: var(--font-display);
++  color: var(--cream-50);
++  font-size: 1.4rem;
++  line-height: 1.15;
++  letter-spacing: -0.01em;
++  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
++}
++.pfd-sub {
++  margin-top: 0.4rem;
++  color: rgba(245, 239, 230, 0.82);
++  font-size: 0.88rem;
++  font-weight: 500;
++}
++
++/* directional drag flag */
++.pfd-flag {
++  position: absolute;
++  top: 1.15rem;
++  padding: 0.35rem 0.8rem;
++  border-radius: 999px;
++  font-size: 0.72rem;
++  font-weight: 700;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--cream-50);
++  background: rgba(200, 126, 79, 0.92);
++  box-shadow: 0 4px 14px rgba(26, 15, 8, 0.35);
++  pointer-events: none;
++  backdrop-filter: blur(4px);
++}
++.pfd-flag--next {
++  right: 1.15rem;
++}
++.pfd-flag--prev {
++  left: 1.15rem;
++}
++
++/* controls row */
++.pfd-controls {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++  margin-bottom: 1.1rem;
++}
++.pfd-nav {
++  flex: 0 0 auto;
++  width: 46px;
++  height: 46px;
++  border-radius: 999px;
++  border: 1px solid var(--line-strong);
++  background: var(--paper);
++  color: var(--walnut-800);
++  font-size: 1.5rem;
++  line-height: 1;
++  display: grid;
++  place-items: center;
++  cursor: pointer;
++  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
++}
++.pfd-nav:hover {
++  background: var(--surface-2);
++  border-color: var(--copper-text);
++}
++.pfd-nav:active {
++  transform: scale(0.92);
++}
++.pfd-nav:disabled {
++  opacity: 0.45;
++  cursor: default;
++}
++
++.pfd-progress {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 0.5rem;
++}
++.pfd-count {
++  font-family: var(--font-mono);
++  font-size: 0.78rem;
++  letter-spacing: 0.06em;
++  color: var(--muted-soft);
++}
++.pfd-dots {
++  display: flex;
++  gap: 0.4rem;
++}
++.pfd-dot {
++  width: 6px;
++  height: 6px;
++  border-radius: 999px;
++  background: var(--line-strong);
++  transition: background 0.2s ease, transform 0.2s ease;
++}
++.pfd-dot.is-active {
++  background: var(--copper);
++  transform: scale(1.3);
++}
++
++/* conversion CTA — reflects the front card */
++.pfd-cta {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.6rem;
++  width: 100%;
++  padding: 0.95rem 1.25rem;
++  border-radius: 14px;
++  background: linear-gradient(135deg, var(--cta-from), var(--cta-to));
++  color: var(--cta-fg);
++  font-weight: 600;
++  font-size: 0.95rem;
++  text-decoration: none;
++  box-shadow: 0 8px 22px -8px rgba(160, 96, 52, 0.6);
++  transition: transform 0.15s ease, box-shadow 0.15s ease;
++}
++.pfd-cta:active {
++  transform: translateY(1px);
++  box-shadow: 0 4px 14px -8px rgba(160, 96, 52, 0.6);
++}
++.pfd-cta-arrow {
++  transition: transform 0.2s ease;
++}
++.pfd-cta:hover .pfd-cta-arrow {
++  transform: translateX(3px);
++}
++
++.pfd-hint {
++  margin: 0.9rem 0 0;
++  text-align: center;
++  font-size: 0.8rem;
++  color: var(--muted-soft);
++}
++
++/* keyboard/screen-reader control — visible focus ring, otherwise unobtrusive */
++.pfd-sr {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++.pfd-sr:focus {
++  position: static;
++  width: auto;
++  height: auto;
++  clip: auto;
++  margin: 0.75rem 0 0;
++  padding: 0.5rem 0.75rem;
++  white-space: normal;
++  text-align: center;
++  font-size: 0.8rem;
++  color: var(--muted-soft);
++  outline: 2px solid var(--copper-text);
++  border-radius: 8px;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .pfd-card {
++    transition: none !important;
++  }
++}
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index 6b1922c..0b3dfce 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -10,6 +10,7 @@ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
+ import { RotatingBackground } from './components/RotatingBackground';
+ import { BookingScheduler } from './components/BookingScheduler';
+ import FloorConfigurator from './components/FloorConfigurator';
++import PortfolioGallery from './components/PortfolioGallery';
+ /* ============================================================
+    ECOWOODS — Toronto Hardwood Flooring
+    Marketing landing page · single conversion funnel
+@@ -639,23 +640,7 @@ const onSubmit = (data: LeadFormData) => {
+             <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
+           </div>
+ 
+-          <div className="gallery-grid">
+-            {galleryItems.map((g, i) => (
+-              <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
+-                <img
+-                  src={g.image}
+-                  alt={g.title}
+-                  loading={i === 0 ? 'eager' : 'lazy'}
+-                  fetchPriority={i === 0 ? 'high' : 'auto'}
+-                  decoding="async"
+-                />
+-                <div className="gallery-caption">
+-                  <div className="title">{g.title}</div>
+-                  <div className="sub">{g.sub}</div>
+-                </div>
+-              </div>
+-            ))}
+-          </div>
++          <PortfolioGallery items={galleryItems} />
+         </div>
+       </section>
+ 
