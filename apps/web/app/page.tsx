@@ -10,6 +10,7 @@ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import { BookingScheduler } from './components/BookingScheduler';
 import FloorConfigurator from './components/FloorConfigurator';
+import PortfolioGallery from './components/PortfolioGallery';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel
@@ -639,23 +640,7 @@ const onSubmit = (data: LeadFormData) => {
             <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
           </div>
 
-          <div className="gallery-grid">
-            {galleryItems.map((g, i) => (
-              <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
-                <img
-                  src={g.image}
-                  alt={g.title}
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                  fetchPriority={i === 0 ? 'high' : 'auto'}
-                  decoding="async"
-                />
-                <div className="gallery-caption">
-                  <div className="title">{g.title}</div>
-                  <div className="sub">{g.sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PortfolioGallery items={galleryItems} />
         </div>
       </section>
 
