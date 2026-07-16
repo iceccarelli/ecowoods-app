@@ -21,12 +21,12 @@ import { useEffect, useState } from 'react';
 
 export type TickerItem = {
   label: string;
-  /** share of recent project mix, in percent */
-  share: number;
-  trend: 'up' | 'down' | 'flat';
+  /** share of recent project mix, in percent. Omit for a plain label marquee. */
+  share?: number;
+  trend?: 'up' | 'down' | 'flat';
 };
 
-const TREND_GLYPH: Record<TickerItem['trend'], string> = {
+const TREND_GLYPH: Record<'up' | 'down' | 'flat', string> = {
   up: '▲',
   down: '▼',
   flat: '·',
@@ -35,9 +35,16 @@ const TREND_GLYPH: Record<TickerItem['trend'], string> = {
 export default function ServiceTicker({
   items,
   label = 'Services',
+  tone = 'auto',
 }: {
   items: TickerItem[];
   label?: string;
+  /**
+   * 'auto' follows the site theme (correct on light/paper sections).
+   * 'dark' pins light-on-dark chips for the photo-backed #services section,
+   * where themed chips would be invisible.
+   */
+  tone?: 'auto' | 'dark';
 }) {
   const [reduced, setReduced] = useState(false);
 
@@ -52,10 +59,13 @@ export default function ServiceTicker({
   // Static fallback — also the pre-hydration / reduced-motion render.
   if (reduced) {
     return (
-      <div className="service-chip-row reveal" aria-label={label}>
+      <div className={`svt svt--static ${tone === 'dark' ? 'svt--dark' : ''}`} aria-label={label}>
         {items.map((s) => (
-          <span key={s.label} className="service-chip">
-            {s.label} · {s.share}%
+          <span key={s.label} className="svt-item">
+            <span className="svt-label">{s.label}</span>
+            {s.share !== undefined && (
+              <span className={`svt-value svt-value--${s.trend ?? 'flat'}`}>{s.share}%</span>
+            )}
           </span>
         ))}
       </div>
@@ -69,17 +79,19 @@ export default function ServiceTicker({
   const row = items.map((s) => (
     <span className="svt-item" key={s.label}>
       <span className="svt-label">{s.label}</span>
-      <span className={`svt-value svt-value--${s.trend}`}>
-        <span className="svt-trend" aria-hidden="true">
-          {TREND_GLYPH[s.trend]}
+      {s.share !== undefined && (
+        <span className={`svt-value svt-value--${s.trend ?? 'flat'}`}>
+          <span className="svt-trend" aria-hidden="true">
+            {TREND_GLYPH[s.trend ?? 'flat']}
+          </span>
+          {s.share}%
         </span>
-        {s.share}%
-      </span>
+      )}
     </span>
   ));
 
   return (
-    <div className="svt reveal" aria-label={label}>
+    <div className={`svt reveal ${tone === 'dark' ? 'svt--dark' : ''}`} aria-label={label}>
       <div className="svt-viewport">
         <div
           className="svt-track"
@@ -96,7 +108,7 @@ export default function ServiceTicker({
       <ul className="svt-sr">
         {items.map((s) => (
           <li key={s.label}>
-            {s.label}: {s.share}% of recent projects
+            {s.share !== undefined ? `${s.label}: ${s.share}% of recent projects` : s.label}
           </li>
         ))}
       </ul>

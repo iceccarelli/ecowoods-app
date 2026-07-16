@@ -48,6 +48,7 @@ export default function PortfolioGallery({ items }: { items: PortfolioItem[] }) 
       ariaLabel="Project portfolio"
       srLabel={(g) => `${g.title} — ${g.sub}`}
       cardClassName="pfd-card--image"
+      aspectRatio="3 / 4"
       cta={{ href: '#quote', label: 'Get an estimate for a floor like this' }}
       hint={`Swipe to browse · ${items.length} recent Toronto projects`}
       renderCard={(g) => (

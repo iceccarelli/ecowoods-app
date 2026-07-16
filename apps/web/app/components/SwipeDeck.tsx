@@ -52,8 +52,20 @@ export type SwipeDeckProps<T> = {
   ariaLabel: string;
   /** extra class on each card, e.g. 'pfd-card--panel' */
   cardClassName?: string;
-  /** stack height as a CSS aspect-ratio string, default '3 / 4' */
+  /**
+   * Fixed frame for image decks, e.g. '3 / 4'. OMIT for content decks: the
+   * stack then sizes itself to its TALLEST card (see the sizer layer below),
+   * which is what kills the dead space a hard aspect-ratio forces onto short
+   * cards.
+   */
   aspectRatio?: string;
+  /**
+   * Chrome colour. 'auto' follows the site theme via semantic tokens (correct
+   * for sections that flip with light/dark mode). 'dark' pins it for sections
+   * that are always dark regardless of theme — e.g. the photo-backed
+   * #services section, where light chrome would clash.
+   */
+  tone?: 'auto' | 'dark';
   /** optional conversion CTA beneath the deck */
   cta?: { href: string; label: string } | null;
   hint?: string;
@@ -66,7 +78,8 @@ export default function SwipeDeck<T>({
   srLabel,
   ariaLabel,
   cardClassName = '',
-  aspectRatio = '3 / 4',
+  aspectRatio,
+  tone = 'auto',
   cta = null,
   hint,
 }: SwipeDeckProps<T>) {
@@ -184,10 +197,32 @@ export default function SwipeDeck<T>({
   };
 
   const dragHint = dragging && dx <= -24 ? 'next' : dragging && dx >= 24 ? 'prev' : null;
+  const contentSized = !aspectRatio;
 
   return (
-    <div className="pfd" aria-roledescription="carousel" aria-label={ariaLabel}>
-      <div className="pfd-stack" style={{ aspectRatio }}>
+    <div
+      className={`pfd ${tone === 'dark' ? 'pfd--dark' : ''}`}
+      aria-roledescription="carousel"
+      aria-label={ariaLabel}
+    >
+      <div
+        className={`pfd-stack ${contentSized ? 'pfd-stack--content' : ''}`}
+        style={aspectRatio ? { aspectRatio } : undefined}
+      >
+        {/*
+          Sizer layer (content decks only). Every card is rendered invisibly in
+          the same grid cell as the live stack, so the cell — and therefore the
+          deck — is exactly as tall as the tallest card's real content, and
+          stays that height while you swipe. Without this the stack would
+          resize on every swipe (jank), and with a fixed aspect-ratio short
+          cards would strand a screenful of empty space.
+        */}
+        {contentSized &&
+          items.map((item) => (
+            <div className={`pfd-card pfd-card--sizer ${cardClassName}`} key={`sz-${getKey(item)}`} aria-hidden="true">
+              {renderCard(item)}
+            </div>
+          ))}
         {deck.slice(0, MAX_VISIBLE).map((item, pos) => (
           <div
             key={getKey(item)}

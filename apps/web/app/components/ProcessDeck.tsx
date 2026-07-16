@@ -56,8 +56,7 @@ export default function ProcessDeck({
       getKey={(s) => s.num}
       ariaLabel="How it works"
       srLabel={(s) => `Step ${s.num}. ${s.title}. ${s.line}`}
-      cardClassName="pfd-card--panel pfd-card--light pfd-card--step"
-      aspectRatio="4 / 5"
+      cardClassName="pfd-card--themed pfd-card--step"
       cta={{ href: '#quote', label: 'Start with step one — book your estimate' }}
       renderCard={(s) => (
         <>
