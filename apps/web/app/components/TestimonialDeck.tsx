@@ -67,7 +67,7 @@ export default function TestimonialDeck({
       getKey={(r) => r.initials + r.name}
       ariaLabel="Client reviews"
       srLabel={(r) => `${r.stars} star review from ${r.name}, ${r.place}: ${r.quote}`}
-      cardClassName="pfd-card--panel pfd-card--review"
+      cardClassName="pfd-card--themed pfd-card--review"
       cta={{ href: '#quote', label: 'Start your own project' }}
       renderCard={(r) => (
         <>

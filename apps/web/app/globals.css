@@ -4564,14 +4564,25 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .pfd-stack {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
-  /* room for the two peeking cards below the front one */
+  /* Every card occupies the SAME grid cell, so the cell resolves to the
+     tallest card and the deck is exactly as tall as its content needs. Image
+     decks still pass an explicit aspect-ratio inline. */
+  display: grid;
   margin-bottom: 1.5rem;
+}
+/* content decks: no forced frame, just a floor so a short set still reads as a card */
+.pfd-stack--content {
+  min-height: 17rem;
+}
+/* invisible height reference — occupies the cell, paints nothing */
+.pfd-card--sizer {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .pfd-card {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: 1 / 1;
   border-radius: var(--pfd-radius);
   overflow: hidden;
   background: var(--walnut-900);
@@ -5070,4 +5081,97 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 /* light cards need a dark-on-light drag flag */
 .pfd-card--light .pfd-flag {
   background: var(--copper-deep);
+}
+
+/* ============================================================
+   DECK SIZING + TONE CORRECTIONS
+   Three fixes:
+   1. THEMED CARD — #reviews and #process follow the site theme (paper-texture
+      / plain sections flip under html[data-theme='dark']). Their cards were
+      hard-coded dark, which punched a dark hole into a light page. These use
+      the same semantic tokens the original .testimonial card used, so they are
+      light on light and dark on dark, automatically.
+   2. TONE — #services is photo-backed and dark in BOTH themes, so its deck
+      chrome is pinned dark rather than following the theme. Light nav buttons
+      and a --muted-soft counter were invisible/clashing on it.
+   3. DEAD SPACE — cards no longer stretch content to fill a forced frame.
+   ============================================================ */
+
+/* ---- 1. themed card (reviews + process) ---- */
+.pfd-card--themed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.9rem 1.7rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow:
+    0 1px 2px rgba(26, 15, 8, 0.05),
+    0 16px 36px -16px rgba(26, 15, 8, 0.2);
+}
+.pfd-card--themed .pfd-quote,
+.pfd-card--themed .pfd-author-name,
+.pfd-card--themed .pfd-step-title,
+.pfd-card--themed .pfd-panel-title {
+  color: var(--ink);
+}
+.pfd-card--themed .pfd-step-body,
+.pfd-card--themed .pfd-panel-body {
+  color: var(--muted);
+}
+.pfd-card--themed .pfd-author-place {
+  color: var(--muted);
+  opacity: 0.85;
+}
+/* dark-on-light drag flag for themed + light cards */
+.pfd-card--themed .pfd-flag {
+  background: var(--copper-deep);
+}
+
+/* ---- 2. dark chrome (photo-backed #services) ---- */
+.pfd--dark .pfd-nav {
+  background: rgba(26, 15, 8, 0.5);
+  border-color: rgba(245, 239, 230, 0.28);
+  color: var(--cream-50);
+  backdrop-filter: blur(8px);
+}
+.pfd--dark .pfd-nav:hover {
+  background: rgba(26, 15, 8, 0.7);
+  border-color: var(--copper-bright);
+}
+.pfd--dark .pfd-count {
+  color: rgba(245, 239, 230, 0.75);
+}
+.pfd--dark .pfd-dot {
+  background: rgba(245, 239, 230, 0.28);
+}
+.pfd--dark .pfd-dot.is-active {
+  background: var(--copper-bright);
+}
+.pfd--dark .pfd-hint {
+  color: rgba(245, 239, 230, 0.6);
+}
+
+/* ---- 3. remove the stretch that manufactured dead space ---- */
+/* The quote used flex:1 to fill a forced frame; now the card is content-sized
+   so it simply sits at its natural height. */
+.pfd-quote {
+  flex: 0 1 auto;
+  display: block;
+}
+.pfd-card--review {
+  justify-content: flex-start;
+}
+.pfd-card--panel,
+.pfd-card--themed {
+  justify-content: flex-start;
+}
+.pfd-card--review .pfd-author {
+  margin-top: 0.35rem;
+}
+/* step cards: number + icon row, then text — no filler */
+.pfd-card--step {
+  gap: 0.85rem;
+  padding: 1.9rem 1.7rem;
 }
