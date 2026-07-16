@@ -13,6 +13,8 @@ import FloorConfigurator from './components/FloorConfigurator';
 import PortfolioGallery from './components/PortfolioGallery';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
+import ProcessDeck from './components/ProcessDeck';
+import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel
@@ -245,13 +247,21 @@ const standardPillars: Pillar[] = [
   },
 ];
 
-const serviceChips = [
-  'Hardwood Installation',
-  'Refinishing & Restoration',
-  'Dust-Free Sanding',
-  'Stairs & Railings',
-  'Custom Inlays & Borders',
-  'Commercial Projects',
+/**
+ * Service ticker — share of recent project mix, shown exchange-style.
+ *
+ * ⚠️ PLACEHOLDER FIGURES. `share` and `trend` below are invented stand-ins so
+ * the component renders. They are published to homeowners as facts about
+ * Ecowoods, so REPLACE THEM WITH REAL NUMBERS from the job book before this
+ * ships. Shares are shown as a share of project mix and should total ~100.
+ */
+const serviceTicker: TickerItem[] = [
+  { label: 'Hardwood Installation', share: 34, trend: 'up' },
+  { label: 'Refinishing & Restoration', share: 28, trend: 'up' },
+  { label: 'Dust-Free Sanding', share: 14, trend: 'flat' },
+  { label: 'Stairs & Railings', share: 10, trend: 'up' },
+  { label: 'Custom Inlays & Borders', share: 8, trend: 'flat' },
+  { label: 'Commercial Projects', share: 6, trend: 'up' },
 ];
 
 const funnelSteps: FunnelStep[] = [
@@ -524,19 +534,6 @@ const onSubmit = (data: LeadFormData) => {
 
           <TestimonialDeck items={featuredReviews} star={Icon.star} />
 
-          <div className="warranty-callout reveal">
-            <div className="warranty-callout-icon" aria-hidden="true">
-              {Icon.shield}
-            </div>
-            <div>
-              <h3>Lifetime Workmanship Warranty</h3>
-              <p>
-                Every installation and refinish is covered for as long as you own the home —
-                transferable once at sale, with manufacturer material warranties passed through on
-                top. If we did the floor, we own the floor. In writing.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -563,13 +560,7 @@ const onSubmit = (data: LeadFormData) => {
 
           <StandardDeck items={standardPillars} icon={Icon} />
 
-          <div className="service-chip-row reveal" aria-label="Services">
-            {serviceChips.map((s) => (
-              <span key={s} className="service-chip">
-                {s}
-              </span>
-            ))}
-          </div>
+          <ServiceTicker items={serviceTicker} />
         </div>
       </section>
 
@@ -586,18 +577,7 @@ const onSubmit = (data: LeadFormData) => {
             </p>
           </div>
 
-          <div className="funnel-grid reveal">
-            {funnelSteps.map((step, i) => (
-              <div key={step.num} className="funnel-step reveal" data-delay={i + 1}>
-                <div className="funnel-step-top">
-                  <span className="funnel-step-icon" aria-hidden="true">{Icon[step.icon]}</span>
-                  <span className="funnel-step-num">{step.num}</span>
-                </div>
-                <h4>{step.title}</h4>
-                <p>{step.line}</p>
-              </div>
-            ))}
-          </div>
+          <ProcessDeck items={funnelSteps} icon={Icon} />
         </div>
       </section>
 

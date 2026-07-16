@@ -69,7 +69,6 @@ export default function TestimonialDeck({
       srLabel={(r) => `${r.stars} star review from ${r.name}, ${r.place}: ${r.quote}`}
       cardClassName="pfd-card--panel pfd-card--review"
       cta={{ href: '#quote', label: 'Start your own project' }}
-      hint={`Swipe through client reviews · ${items.length} of many`}
       renderCard={(r) => (
         <>
           <div className="pfd-review-stars" aria-label={`${r.stars} out of 5 stars`}>
