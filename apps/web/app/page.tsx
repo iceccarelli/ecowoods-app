@@ -9,7 +9,7 @@ import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import { BookingScheduler } from './components/BookingScheduler';
-import FloorConfigurator from './components/FloorConfigurator';
+import ConfiguratorSection from './components/ConfiguratorSection';
 import PortfolioGallery from './components/PortfolioGallery';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
@@ -406,7 +406,7 @@ export default function HomePage() {
   const root = useReveal();
 
   /* ---------- FAQ + modal state ---------- */
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [estimateModalOpen, setEstimateModalOpen] = useState(false);
 
 /* ---------- Contact Form - PERFECT INTEGRATION ---------- */
@@ -560,7 +560,7 @@ const onSubmit = (data: LeadFormData) => {
 
           <StandardDeck items={standardPillars} icon={Icon} />
 
-          <ServiceTicker items={serviceTicker} />
+          <ServiceTicker items={serviceTicker} tone="dark" />
         </div>
       </section>
 
@@ -599,7 +599,7 @@ const onSubmit = (data: LeadFormData) => {
       {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
              specs". The gallery creates the want; the configurator lets them act on
              it while it is still warm, and hands the whole configuration to RenoGuide. */}
-      <FloorConfigurator />
+      <ConfiguratorSection />
 
       {/* Species — collapsed technical reference (kept for nav anchor, out of main flow) */}
       <section className="section-tight" id="species">
@@ -633,11 +633,10 @@ const onSubmit = (data: LeadFormData) => {
         <div className="shell">
           <div className="areas-slim reveal">
             <span className="areas-slim-label">Serving the entire GTA — same crew, same fixed pricing:</span>
-            <div className="areas-slim-chips">
-              {serviceAreas.map((a) => (
-                <span key={a} className="area-chip-slim">{a}</span>
-              ))}
-            </div>
+            <ServiceTicker
+              items={serviceAreas.map((a) => ({ label: a }))}
+              label="Service areas across the GTA"
+            />
           </div>
         </div>
       </section>
