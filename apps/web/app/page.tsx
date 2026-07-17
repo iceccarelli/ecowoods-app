@@ -11,6 +11,7 @@ import { RotatingBackground } from './components/RotatingBackground';
 import BookingPanel from './components/BookingPanel';
 import ConfiguratorSection from './components/ConfiguratorSection';
 import CountUp from './components/CountUp';
+import SpecsCoverage from './components/SpecsCoverage';
 import PortfolioGallery from './components/PortfolioGallery';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
@@ -622,46 +623,7 @@ const onSubmit = (data: LeadFormData) => {
              specs". The gallery creates the want; the configurator lets them act on
              it while it is still warm, and hands the whole configuration to RenoGuide. */}
       <ConfiguratorSection />
-
-      {/* Species — collapsed technical reference (kept for nav anchor, out of main flow) */}
-      <section className="section-tight" id="species">
-        <div className="shell">
-          <details className="species-accordion reveal">
-            <summary>
-              <span className="eyebrow" style={{ marginBottom: 0 }}>Species &amp; Technical Specs</span>
-              <span className="species-accordion-hint">
-                Over 40 species stocked and sourced — expand for details {Icon.plus}
-              </span>
-            </summary>
-            <div className="species-accordion-body">
-              {speciesList.map((sp) => (
-                <div key={sp.id} className="species-row">
-                  <strong>{sp.name}</strong>
-                  <span>{sp.hardness} · {sp.origin}</span>
-                  <em>{sp.vibe}</em>
-                </div>
-              ))}
-              <p className="species-accordion-note">
-                Reclaimed barn board, exotic species, smoked or fumed oak — if it exists, we can
-                source it. Samples are brushed on your subfloor at the free consultation.
-              </p>
-            </div>
-          </details>
-        </div>
-      </section>
-
-      {/* Coverage — slim (kept for footer anchor) */}
-      <section className="section-tight" id="areas">
-        <div className="shell">
-          <div className="areas-slim reveal">
-            <span className="areas-slim-label">Serving the entire GTA — same crew, same fixed pricing:</span>
-            <ServiceTicker
-              items={serviceAreas.map((a) => ({ label: a }))}
-              label="Service areas across the GTA"
-            />
-          </div>
-        </div>
-      </section>
+      <SpecsCoverage species={speciesList} areas={serviceAreas} />
 
       {/* Objection-handling FAQ — directly above the conversion moment */}
       <section className="section" id="faq">
