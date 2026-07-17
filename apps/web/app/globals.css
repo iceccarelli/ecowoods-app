@@ -5410,3 +5410,221 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .sheet-pad {
   padding: 1.1rem 1rem 2rem;
 }
+
+/* ============================================================
+   MOBILE FOOTER — accordion columns
+   The footer grid collapses to 1fr at <=767px, which stacked ~14 screens of
+   links between the last section and the legal row. Each column becomes a
+   native <details> disclosure instead: a short menu you open, not a list you
+   scroll. Desktop is untouched — this block only styles markup the mobile
+   branch renders.
+   ============================================================ */
+.footer-grid--stacked {
+  gap: 0;
+  margin-bottom: 2.5rem;
+}
+
+.footer-col {
+  border-top: 1px solid rgba(245, 239, 230, 0.1);
+}
+.footer-col:last-of-type {
+  border-bottom: 1px solid rgba(245, 239, 230, 0.1);
+}
+
+.footer-col-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  cursor: pointer;
+  list-style: none;
+  /* comfortable thumb target across the full row */
+  -webkit-tap-highlight-color: transparent;
+}
+.footer-col-summary::-webkit-details-marker {
+  display: none;
+}
+.footer-col-summary h5 {
+  margin: 0;
+}
+.footer-col-summary:focus-visible {
+  outline: 2px solid var(--copper-bright);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* plus -> minus, drawn in CSS so there is no icon dependency */
+.footer-col-chevron {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+.footer-col-chevron::before,
+.footer-col-chevron::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--copper-bright);
+  transform: translate(-50%, -50%);
+  transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.24s;
+}
+.footer-col-chevron::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.footer-col[open] .footer-col-chevron::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+  opacity: 0;
+}
+
+.footer-col-body {
+  padding: 0 0 1.35rem;
+  animation: footer-col-in 0.24s ease-out;
+}
+@keyframes footer-col-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.footer-col-body .footer-links {
+  gap: 0.85rem;
+}
+
+/* phone stays out of the accordions — tap-to-call is a conversion path */
+.footer-call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid rgba(200, 126, 79, 0.35);
+  border-radius: 14px;
+  background: rgba(200, 126, 79, 0.1);
+  text-decoration: none;
+}
+.footer-call-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 230, 0.55);
+}
+.footer-call-num {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--copper-bright);
+}
+
+/* ---- AWS-pattern footer bottom (mobile) ----
+   AWS orders it: social -> back to top -> legal links -> copyright, with the
+   social row as BARE GLYPHS rather than chips. The chips read as buttons and
+   compete with the real CTA; flat marks sit quietly where they belong. */
+@media (max-width: 767px) {
+  .footer-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.6rem;
+    text-align: left;
+  }
+  .footer-social {
+    order: 1;
+    gap: 1.4rem;
+    padding: 0.25rem 0;
+  }
+  /* strip the chip: AWS uses plain marks, and a 44px hit area is kept via
+     padding rather than a visible box */
+  .footer-social a {
+    width: auto;
+    height: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: rgba(245, 239, 230, 0.75);
+  }
+  .footer-social a:hover,
+  .footer-social a:focus-visible {
+    background: none;
+    color: var(--copper-bright);
+    transform: none;
+  }
+  .footer-social svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .footer-top-btn {
+    order: 2;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.1rem;
+    border: 0;
+    background: none;
+    color: var(--cream-50);
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .footer-top-btn:active {
+    opacity: 0.7;
+  }
+
+  .footer-legal {
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+  .footer-legal a {
+    margin-right: 0 !important;
+  }
+  .footer-copy {
+    order: 4;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+}
+
+/* ---- primary CTA at the top of the footer (AWS: "Create an AWS account") ----
+   The estimate is the one action this footer exists to drive, so it sits above
+   the collapsed menu rather than under it. */
+.footer-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 2.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-full);
+  background: var(--cream-50);
+  color: var(--walnut-950);
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.footer-cta:active {
+  transform: translateY(1px);
+}
+.footer-cta:hover {
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-col-body {
+    animation: none;
+  }
+  .footer-col-chevron::before,
+  .footer-col-chevron::after {
+    transition: none;
+  }
+}
