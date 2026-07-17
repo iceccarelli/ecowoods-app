@@ -24,6 +24,7 @@
 
 import { useId, useState } from 'react';
 import CoverageMap from './CoverageMap';
+import SpeciesSwatch from './SpeciesSwatch';
 
 export type Species = {
   id: string;
@@ -31,6 +32,10 @@ export type Species = {
   hardness: string;
   origin: string;
   vibe: string;
+  /** Optional: a photo of YOUR OWN install of this species. Overrides the
+   *  drawn swatch. This is the right end state — a real Toronto floor beats
+   *  any stock photo, and you have thousands of them. */
+  photo?: string;
 };
 
 type Pane = 'species' | 'coverage';
@@ -89,11 +94,14 @@ export default function SpecsCoverage({
               <div className="species-table">
                 {species.map((sp) => (
                   <div className="species-row" key={sp.id}>
-                    <div className="species-name">{sp.name}</div>
-                    <div className="species-spec">
-                      {sp.hardness} · {sp.origin}
+                    <SpeciesSwatch id={sp.id} name={sp.name} photo={sp.photo} />
+                    <div className="species-body">
+                      <div className="species-name">{sp.name}</div>
+                      <div className="species-spec">
+                        {sp.hardness} · {sp.origin}
+                      </div>
+                      <div className="species-vibe">{sp.vibe}</div>
                     </div>
-                    <div className="species-vibe">{sp.vibe}</div>
                   </div>
                 ))}
               </div>
