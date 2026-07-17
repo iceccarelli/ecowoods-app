@@ -716,96 +716,21 @@ const onSubmit = (data: LeadFormData) => {
                 no-obligation in-home consultation. We bring species samples, finish samples, and a
                 portfolio of completed Toronto projects.
               </p>
-
-              <div className="contact-points">
-                <div className="contact-point">
-                  <div
-                    className="contact-point-icon"
-                    style={{
-                      background: 'rgba(245, 239, 230, 0.08)',
-                      border: '1px solid rgba(245, 239, 230, 0.16)',
-                    }}
-                  >
-                    <span style={{ color: 'var(--copper-bright)' }}>{Icon.phone}</span>
-                  </div>
-                  <div className="contact-point-text">
-                    <div className="label" style={{ color: 'rgba(245, 239, 230, 0.55)' }}>
-                      Call us
-                    </div>
-                    <a
-                      href="tel:+14162491276"
-                      className="value"
-                      style={{ color: 'var(--cream-50)' }}
-                    >
-                      (416) 249-1276
-                    </a>
-                  </div>
-                </div>
-
-                <div className="contact-point">
-                  <div
-                    className="contact-point-icon"
-                    style={{
-                      background: 'rgba(245, 239, 230, 0.08)',
-                      border: '1px solid rgba(245, 239, 230, 0.16)',
-                    }}
-                  >
-                    <span style={{ color: 'var(--copper-bright)' }}>{Icon.mail}</span>
-                  </div>
-                  <div className="contact-point-text">
-                    <div className="label" style={{ color: 'rgba(245, 239, 230, 0.55)' }}>
-                      Email
-                    </div>
-                    <a
-                      href="mailto:services@ecowoods.ca"
-                      className="value"
-                      style={{ color: 'var(--cream-50)' }}
-                    >
-                      services@ecowoods.ca
-                    </a>
-                  </div>
-                </div>
-
-                <div className="contact-point">
-                  <div
-                    className="contact-point-icon"
-                    style={{
-                      background: 'rgba(245, 239, 230, 0.08)',
-                      border: '1px solid rgba(245, 239, 230, 0.16)',
-                    }}
-                  >
-                    <span style={{ color: 'var(--copper-bright)' }}>{Icon.pin}</span>
-                  </div>
-                  <div className="contact-point-text">
-                    <div className="label" style={{ color: 'rgba(245, 239, 230, 0.55)' }}>
-                      Showroom
-                    </div>
-                    <div className="value" style={{ color: 'var(--cream-50)' }}>
-                      32 Norfield Crescent, Toronto, Ontario
-                    </div>
-                  </div>
-                </div>
-
-                <div className="contact-point">
-                  <div
-                    className="contact-point-icon"
-                    style={{
-                      background: 'rgba(245, 239, 230, 0.08)',
-                      border: '1px solid rgba(245, 239, 230, 0.16)',
-                    }}
-                  >
-                    <span style={{ color: 'var(--copper-bright)' }}>{Icon.clock}</span>
-                  </div>
-                  <div className="contact-point-text">
-                    <div className="label" style={{ color: 'rgba(245, 239, 230, 0.55)' }}>
-                      Hours
-                    </div>
-                    <div className="value" style={{ color: 'var(--cream-50)' }}>
-                      Mon–Sat · 8 AM – 7 PM
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/*
+                The footer already publishes email, showroom address and full
+                hours ~300px below this. Repeating them here made the reader
+                process the same four facts twice and buried the actual action.
+                This section keeps ONE fast path — phone, plus when to use it —
+                and lets the footer own the reference block.
+              */}
+              <a href="tel:+14162491276" className="quote-contact">
+                <span className="quote-contact-icon">{Icon.phone}</span>
+                <span className="quote-contact-text">
+                  <span className="quote-contact-label">Prefer to talk?</span>
+                  <span className="quote-contact-num">(416) 249-1276</span>
+                  <span className="quote-contact-when">Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM</span>
+                </span>
+              </a>
 
               <button type="button" className="estimate-cta-card" onClick={() => setEstimateModalOpen(true)}>
                 <span className="estimate-cta-icon">{Icon.mail}</span>
