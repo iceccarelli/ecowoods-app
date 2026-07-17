@@ -25,6 +25,21 @@ const uid = () => Math.random().toString(36).slice(2);
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+
+  /* The launcher is position:fixed, so it parked on top of the hero trust
+     stats — the first thing anyone reads. Hide it until the hero is behind
+     them. IntersectionObserver, not a scroll handler: no main-thread work. */
+  const [overHero, setOverHero] = useState(true);
+  useEffect(() => {
+    const hero = document.getElementById('hero');
+    if (!hero) { setOverHero(false); return; }
+    const io = new IntersectionObserver(
+      ([e]) => setOverHero(e.isIntersecting && e.intersectionRatio > 0.25),
+      { threshold: [0, 0.25, 0.5] },
+    );
+    io.observe(hero);
+    return () => io.disconnect();
+  }, []);
   const [input, setInput] = useState('');
   const [showNudge, setShowNudge] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -113,7 +128,7 @@ export default function ChatWidget() {
 
       {/* --fab-inset lifts this above .sticky-cta-mobile on phones, where the
           launcher used to sit squarely on top of the "Get Free Quote" button. */}
-      <div style={{ position: 'fixed', bottom: 'var(--fab-inset)', right: 'var(--fab-inset-x)', zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+      <div className="rg-dock" data-hero={overHero} style={{ position: 'fixed', bottom: 'var(--fab-inset)', right: 'var(--fab-inset-x)', zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
         {!open && showNudge && (
           <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px var(--rg-shadow)', position: 'relative' }}>
             Planning a hardwood project? Get a ballpark in about a minute.
