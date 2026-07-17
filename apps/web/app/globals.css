@@ -934,39 +934,69 @@ p {
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Two shared rows: every value sits on ONE baseline and every label on
+     another, so a label that wraps can no longer drag its column out of line
+     with the rest. Without subgrid support this degrades to the old behaviour
+     rather than breaking. */
+  grid-template-rows: auto auto;
+  align-items: start;
   gap: 0;
   border-top: 1px solid rgba(245, 239, 230, 0.18);
   padding-top: 2rem;
 }
 
 .hero-stat {
-  padding: 0 1.5rem 0 0;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 0.5rem;
+  /* was right-padding only, which pushed content against the left edge while
+     the divider sat 1.5rem away — optically lopsided in every cell */
+  padding: 0 1.25rem;
   border-right: 1px solid rgba(245, 239, 230, 0.12);
+}
+.hero-stat:first-child {
+  padding-left: 0;
 }
 
 .hero-stat:last-child { border-right: none; }
 
 .hero-stat .val {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1em;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-size: clamp(1.9rem, 3.2vw, 2.75rem);
   font-weight: 300;
   color: var(--cream-50);
   line-height: 1;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
   letter-spacing: -0.02em;
+  /* the bar sits on a photo; without this the cream goes muddy over light wood */
+  text-shadow: 0 1px 12px rgba(26, 15, 8, 0.55);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .hero-stat .val em {
   color: var(--copper-bright);
   font-style: normal;
+  /* was full size, so '+' and '★' read as part of the number instead of a
+     mark on it */
+  font-size: 0.62em;
+  line-height: 1;
 }
 
 .hero-stat .lbl {
-  font-size: 0.74rem;
+  /* `transform: scale(1.1)` used to do the sizing here. It scaled from each
+     label's own centre, so labels of different widths drifted by different
+     amounts, and non-integer scaling softened the text. Set the size directly. */
+  font-size: 0.8rem;
+  line-height: 1.35;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: rgba(245, 239, 230, 0.72);
-  transform: scale(1.1);
+  letter-spacing: 0.14em;
+  color: rgba(245, 239, 230, 0.85);
+  text-shadow: 0 1px 10px rgba(26, 15, 8, 0.6);
+  text-wrap: balance;
 }
 
 /* Estimator styles (enhanced) */
@@ -2260,9 +2290,21 @@ p {
   .phone-pill { display: none; }
   .login-btn { display: none; }
   .hamburger { display: inline-flex; }
-  .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 1.5rem 0; }
-  .hero-stat { border-right: none; padding-right: 0; }
-  .hero-stat:nth-child(1), .hero-stat:nth-child(2) { border-bottom: 1px solid rgba(245, 239, 230, 0.1); padding-bottom: 1.5rem; }
+  /* 2x2 on phones. The rows must be re-declared: the desktop rule sets two
+     shared rows for four columns, which is wrong once the bar wraps to two
+     rows of two — each pair needs its own value/label baseline. */
+  .hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto auto auto auto;
+    column-gap: 1.25rem;
+    row-gap: 1.5rem;
+  }
+  .hero-stat { border-right: none; padding: 0; }
+  .hero-stat:nth-child(1), .hero-stat:nth-child(2) {
+    border-bottom: 1px solid rgba(245, 239, 230, 0.1);
+    padding-bottom: 1.5rem;
+  }
+  .hero-stat .lbl { font-size: 0.72rem; letter-spacing: 0.12em; }
   .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
   .footer-bottom { flex-direction: column; align-items: flex-start; }
   .field-row { grid-template-columns: 1fr; }

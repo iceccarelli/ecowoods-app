@@ -178,11 +178,25 @@ const Icon = {
 
 /* ---------------------- Content data ---------------------- */
 
+/**
+ * Hero trust bar — the first thing a visitor reads.
+ *
+ * All four values are NUMERALS on purpose. The fourth used to be the word
+ * "Lifetime.", which broke the row two ways: a display-serif word is far wider
+ * than a numeral, and its two-word label wrapped while the others didn't, so
+ * the bar lost its rhythm exactly where the eye finishes.
+ *
+ * "0 · Subcontractors" restates the claim the rest of the site already makes
+ * ("Salaried master craftsmen. No subcontractors — ever.") — and a zero sitting
+ * among big numbers is the most arresting figure on the row. The lifetime
+ * warranty is not lost: it keeps its own pillar in #services, where there is
+ * room to state it precisely rather than compress it into one word over a photo.
+ */
 const trustStats = [
   { val: '25', em: '+', lbl: 'Years in Toronto' },
-  { val: '5,200+', em: '', lbl: 'Homes Transformed' },
+  { val: '5,200', em: '+', lbl: 'Homes Transformed' },
   { val: '4.9', em: '★', lbl: '348 Verified Reviews' },
-  { val: 'Lifetime', em: '.', lbl: 'Workmanship Warranty' },
+  { val: '0', em: '', lbl: 'Subcontractors' },
 ];
 
 const certifications = [
