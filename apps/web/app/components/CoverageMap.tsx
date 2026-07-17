@@ -31,26 +31,27 @@ type Place = { x: number; y: number; anchor?: 'start' | 'end' | 'middle'; dy?: n
 
 /** x: west -> east, y: north -> south, in the 100 x 74 viewBox */
 const PLACES: Record<string, Place> = {
-  Newmarket: { x: 47, y: 6, anchor: 'start', dy: -2.4 },
-  Aurora: { x: 48, y: 12, anchor: 'start', dy: -2.4 },
-  'Richmond Hill': { x: 50, y: 20, anchor: 'start', dy: -2.4 },
-  Markham: { x: 64, y: 24, anchor: 'start', dy: -2.4 },
-  Vaughan: { x: 38, y: 26, anchor: 'end', dy: -2.4 },
-  Brampton: { x: 21, y: 31, anchor: 'end', dy: -2.4 },
-  'North York': { x: 49, y: 36, anchor: 'start', dy: 3.6 },
-  Scarborough: { x: 69, y: 41, anchor: 'start', dy: -2.4 },
-  Pickering: { x: 80, y: 44, anchor: 'start', dy: 3.4 },
-  Ajax: { x: 87, y: 47, anchor: 'start', dy: 3.4 },
-  York: { x: 41, y: 45, anchor: 'end', dy: 0.8 },
-  'East York': { x: 56, y: 44, anchor: 'start', dy: -2.4 },
-  Etobicoke: { x: 30, y: 48, anchor: 'end', dy: 0.8 },
-  Mississauga: { x: 21, y: 53, anchor: 'end', dy: 0.8 },
-  'Downtown Toronto': { x: 49, y: 55, anchor: 'middle', dy: 4 },
-  Oakville: { x: 11, y: 61, anchor: 'start', dy: 3.4 },
+  Newmarket: { x: 47, y: 6, anchor: 'middle', dy: -2.6 },
+  Aurora: { x: 48, y: 12, anchor: 'start', dy: 1 },
+  'Richmond Hill': { x: 50, y: 19, anchor: 'start', dy: 1 },
+  Markham: { x: 64, y: 23, anchor: 'start', dy: 1 },
+  Vaughan: { x: 37, y: 25, anchor: 'end', dy: 1 },
+  Brampton: { x: 19, y: 31, anchor: 'end', dy: 1 },
+  'North York': { x: 51, y: 38, anchor: 'start', dy: 1 },
+  Scarborough: { x: 68, y: 45, anchor: 'start', dy: 1 },
+  /* Pickering above-right, Ajax below-right: they sat on top of each other */
+  Pickering: { x: 79, y: 41, anchor: 'start', dy: -1.6 },
+  Ajax: { x: 87, y: 44, anchor: 'start', dy: 1.8 },
+  York: { x: 40, y: 45, anchor: 'end', dy: 1 },
+  'East York': { x: 56, y: 46, anchor: 'start', dy: 1 },
+  Etobicoke: { x: 30, y: 48, anchor: 'end', dy: 1 },
+  Mississauga: { x: 21, y: 54, anchor: 'end', dy: 1 },
+  'Downtown Toronto': { x: 48, y: 57, anchor: 'middle', dy: 3.6 },
+  Oakville: { x: 11, y: 61, anchor: 'middle', dy: 3 },
 };
 
 /** the shop — 32 Norfield Crescent, M3J: Downsview, North York */
-const SHOP = { x: 44, y: 33 };
+const SHOP = { x: 44, y: 37 };
 
 export default function CoverageMap({ areas }: { areas: string[] }) {
   const [active, setActive] = useState<string | null>(null);
@@ -71,22 +72,47 @@ export default function CoverageMap({ areas }: { areas: string[] }) {
           <text className="cov-lake-label" x="60" y="70">LAKE ONTARIO</text>
 
           {/* --- the 400-series: how anyone here actually navigates --- */}
+          {/* --- 400-series: the spines everyone navigates by --- */}
           <g className="cov-hwy">
-            <path d="M 8,42 Q 30,40.5 50,40 Q 70,39.5 96,38" />
-            <path d="M 36,0 Q 37,20 42,40" />
-            <path d="M 55,10 Q 55,26 54,40 Q 53,50 50,58" />
-            <path d="M 29,26 Q 30,36 31,50" />
+            <path d="M 4,42 Q 26,41 46,40 Q 66,39 84,37.5 L 100,36" />
+            <path d="M 8,32 Q 30,30 52,27.5 Q 74,25 96,23" />
+            <path d="M 36,3 Q 37,20 40,40.5" />
+            <path d="M 53,3 Q 53,16 53,30" />
+            <path d="M 53,30 Q 53,44 50,58" />
+            <path d="M 30,27 Q 30,38 31,50" />
+            <path d="M 20,24 Q 20,32 21,41" />
+            <path d="M 4,58 Q 12,50 18,44 Q 21,42 24,41" />
             <path d="M 31,50 Q 22,55 12,61 Q 6,63 2,65" />
+            <path d="M 36,58.6 Q 47,58.6 57,57.6" />
+          </g>
+          {/* --- arterials: not highways, so drawn lighter --- */}
+          <g className="cov-road">
+            <path d="M 47,5 L 47,20 Q 48,30 48,58" />
           </g>
           <g className="cov-hwy-badge">
-            <text x="51" y="38.2">401</text>
-            <text x="36.4" y="9">400</text>
-            <text x="56.2" y="16">404</text>
-            <text x="14" y="59.5">QEW</text>
+            <text x="94" y="34.6">401</text>
+            <text x="91" y="21.4">407</text>
+            <text x="34" y="8">400</text>
+            <text x="55.5" y="9">404</text>
+            <text x="55.5" y="52">DVP</text>
+            <text x="32.5" y="30">427</text>
+            <text x="17.5" y="26">410</text>
+            <text x="7" y="53">403</text>
+            <text x="14.5" y="59.5">QEW</text>
+            <text x="33" y="61">GARDINER</text>
+            <text x="46.5" y="50" textAnchor="end">YONGE ST</text>
           </g>
 
+          {/* City of Toronto — its northern edge IS Steeles, so the boundary
+              and the arterial are the same line. 416 vs 905, readable at a glance. */}
+          <path
+            className="cov-boundary"
+            d="M 29,51 L 29,33.5 L 71,32.5 L 72,48 Q 63,54 55,58.5 Q 47,59.5 39,58 Q 32,55 29,51 Z"
+          />
+          <text className="cov-boundary-label" x="30" y="31.6">STEELES AVE</text>
+          <text className="cov-city-label" x="31" y="53.5">CITY OF TORONTO</text>
+
           {/* --- one crew, one drive --- */}
-          <circle className="cov-ring" cx={SHOP.x} cy={SHOP.y} r="31" />
 
           {active && PLACES[active] && (
             <line className="cov-spoke" x1={SHOP.x} y1={SHOP.y} x2={PLACES[active].x} y2={PLACES[active].y} />
