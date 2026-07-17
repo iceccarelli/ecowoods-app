@@ -36,12 +36,14 @@ const PLACES: Record<string, Place> = {
   Vaughan: { x: 37, y: 25, anchor: 'end', dy: 1 },
   Brampton: { x: 19, y: 31, anchor: 'end', dy: 1 },
   'North York': { x: 51, y: 38, anchor: 'start', dy: 1 },
-  /* Scarborough above its dot, East York left of its own: they collided */
-  Scarborough: { x: 68, y: 44, anchor: 'start', dy: -1.7 },
+  /* Placement solved against labels, dots AND route badges — an earlier pass
+     only tested label-vs-label, which let Pickering's dot land inside the word
+     'Scarborough'. */
+  Scarborough: { x: 68, y: 44, anchor: 'start', dy: 1.6 },
   Pickering: { x: 79, y: 41, anchor: 'start', dy: -1.6 },
   Ajax: { x: 87, y: 44, anchor: 'start', dy: 1.8 },
   York: { x: 40, y: 45, anchor: 'end', dy: 1 },
-  'East York': { x: 56, y: 47, anchor: 'end', dy: 1.9 },
+  'East York': { x: 56, y: 47, anchor: 'start', dy: 1.6 },
   Etobicoke: { x: 30, y: 48, anchor: 'end', dy: 1 },
   Mississauga: { x: 21, y: 54, anchor: 'end', dy: 1 },
   /* above its dot — it was landing on the Gardiner badge */
