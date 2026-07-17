@@ -561,7 +561,7 @@ const onSubmit = (data: LeadFormData) => {
 
       {/* 3 · THE ECOWOODS STANDARD */}
       <section
-        className="section photo-bg-section"
+        className="section photo-bg-section section--card"
         id="services"
         style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
       >
@@ -700,7 +700,7 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* 6 · CONVERSION — preserved Free In-Home Estimate section (untouched) */}
-      <section className="section wood-grain-dark noise-overlay" id="quote">
+      <section className="section wood-grain-dark noise-overlay section--card" id="quote">
         <div className="shell">
           <div className="contact-grid">
             <div className="contact-info reveal" style={{ color: 'var(--cream-50)' }}>
