@@ -1,0 +1,205 @@
+diff --git a/apps/web/app/components/CountUp.tsx b/apps/web/app/components/CountUp.tsx
+new file mode 100644
+index 0000000..bfbf6c3
+--- /dev/null
++++ b/apps/web/app/components/CountUp.tsx
+@@ -0,0 +1,112 @@
++'use client';
++
++/**
++ * CountUp — a number that rolls from 0 to its target when it scrolls into view.
++ *
++ * Re-arms on exit, so it runs again every time the stat comes back into the
++ * viewport (and on every page load), rather than firing once and going inert.
++ *
++ * Details that matter:
++ *  - IntersectionObserver, not a scroll listener: no work on the main thread
++ *    while the bar is off-screen.
++ *  - requestAnimationFrame with an ease-out curve, so it decelerates into the
++ *    final value instead of stopping dead. Linear counters look mechanical.
++ *  - The element reserves its FINAL width up front (a hidden sizer holding the
++ *    finished string). Without it, "0" -> "5,200" widens mid-flight and shoves
++ *    the whole row around — the exact alignment problem the subgrid work fixed.
++ *  - prefers-reduced-motion: renders the final value immediately, no animation.
++ *    Numbers ticking in peripheral vision is a real vestibular trigger.
++ *  - The accessible value is the FINAL number, announced once. Screen readers
++ *    never hear the intermediate ticks.
++ */
++
++import { useEffect, useRef, useState } from 'react';
++
++const DURATION = 1600; // ms — long enough to read as deliberate, not a slot machine
++
++/** ease-out expo: fast start, soft landing */
++const ease = (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
++
++export default function CountUp({
++  to,
++  decimals = 0,
++  unit = '',
++}: {
++  /** the target number */
++  to: number;
++  /** fixed decimal places, e.g. 1 for 4.9 */
++  decimals?: number;
++  /** static text pinned after the number, e.g. 'M' for millions */
++  unit?: string;
++}) {
++  const ref = useRef<HTMLSpanElement | null>(null);
++  const raf = useRef<number | null>(null);
++  const [value, setValue] = useState(0);
++  const [reduced, setReduced] = useState(false);
++
++  const fmt = (n: number) =>
++    n.toLocaleString('en-CA', {
++      minimumFractionDigits: decimals,
++      maximumFractionDigits: decimals,
++    });
++
++  useEffect(() => {
++    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
++    if (mq.matches) {
++      setReduced(true);
++      setValue(to);
++      return;
++    }
++
++    const el = ref.current;
++    if (!el) return;
++
++    const run = () => {
++      const start = performance.now();
++      const step = (now: number) => {
++        const t = Math.min((now - start) / DURATION, 1);
++        setValue(to * ease(t));
++        if (t < 1) raf.current = requestAnimationFrame(step);
++      };
++      raf.current = requestAnimationFrame(step);
++    };
++
++    const io = new IntersectionObserver(
++      ([entry]) => {
++        if (entry.isIntersecting) {
++          run();
++        } else {
++          // re-arm: leaving the viewport resets it so the next scroll-in replays
++          if (raf.current) cancelAnimationFrame(raf.current);
++          setValue(0);
++        }
++      },
++      { threshold: 0.4 },
++    );
++
++    io.observe(el);
++    return () => {
++      io.disconnect();
++      if (raf.current) cancelAnimationFrame(raf.current);
++    };
++  }, [to]);
++
++  return (
++    <span ref={ref} className="countup">
++      {/* reserves the final width so the row cannot shift while counting */}
++      <span className="countup-sizer" aria-hidden="true">
++        {fmt(to)}
++        {unit}
++      </span>
++      <span className="countup-live" aria-hidden="true">
++        {fmt(reduced ? to : value)}
++        {unit}
++      </span>
++      {/* the only thing assistive tech reads: the finished number */}
++      <span className="sr-only">
++        {fmt(to)}
++        {unit}
++      </span>
++    </span>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 821627a..16ac14e 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -5452,3 +5452,39 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .sheet-pad {
+   padding: 1.1rem 1rem 2rem;
+ }
++
++/* ============================================================
++   COUNTUP — rolling hero numbers
++   The live number is absolutely positioned over a hidden sizer holding the
++   FINAL string, so the element is born at its finished width. Counting from
++   "0" to "5,200" would otherwise widen the cell mid-animation and shove the
++   whole trust bar around — undoing the subgrid alignment.
++   ============================================================ */
++.countup {
++  position: relative;
++  display: inline-grid;
++  font-variant-numeric: tabular-nums lining-nums;
++}
++.countup-sizer {
++  visibility: hidden;
++  grid-area: 1 / 1;
++}
++.countup-live {
++  grid-area: 1 / 1;
++  justify-self: start;
++  white-space: nowrap;
++}
++
++/* visually-hidden utility — this codebase had none; the decks each rolled
++   their own (.pfd-sr, .svt-sr). One definition, reusable. */
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index 3dbd3a2..d0a51bb 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -10,6 +10,7 @@ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
+ import { RotatingBackground } from './components/RotatingBackground';
+ import BookingPanel from './components/BookingPanel';
+ import ConfiguratorSection from './components/ConfiguratorSection';
++import CountUp from './components/CountUp';
+ import PortfolioGallery from './components/PortfolioGallery';
+ import StandardDeck from './components/StandardDeck';
+ import TestimonialDeck from './components/TestimonialDeck';
+@@ -193,10 +194,17 @@ const Icon = {
+  * room to state it precisely rather than compress it into one word over a photo.
+  */
+ const trustStats = [
+-  { val: '25', em: '+', lbl: 'Years in Toronto' },
+-  { val: '5,200', em: '+', lbl: 'Homes Transformed' },
+-  { val: '4.9', em: '★', lbl: '348 Verified Reviews' },
+-  { val: '0', em: '', lbl: 'Subcontractors' },
++  { to: 25, em: '+', lbl: 'Years in Toronto' },
++  { to: 5200, em: '+', lbl: 'Homes Transformed' },
++  { to: 4.9, decimals: 1, em: '★', lbl: '348 Verified Reviews' },
++  /**
++   * ⚠️ VERIFY BEFORE THIS STAYS UP. 2.5M is not measured — it is the lowest
++   * figure internally consistent with the site's own claims: 5,200 homes x
++   * ~500 sq ft/home = 2.6M sq ft, implying ~$4.81/sq ft against $500k/yr x
++   * 25 yrs. Rounded DOWN: under-claiming is safe, over-claiming is not.
++   * Replace with the real number from the job book.
++   */
++  { to: 2.5, decimals: 1, unit: 'M', em: '+', lbl: 'Sq Ft Sanded & Finished' },
+ ];
+ 
+ const certifications = [
+@@ -493,7 +501,7 @@ const onSubmit = (data: LeadFormData) => {
+             {trustStats.map((s) => (
+               <div className="hero-stat" key={s.lbl}>
+                 <div className="val">
+-                  {s.val}
++                  <CountUp to={s.to} decimals={s.decimals} unit={s.unit} />
+                   {s.em && <em>{s.em}</em>}
+                 </div>
+                 <div className="lbl">{s.lbl}</div>
