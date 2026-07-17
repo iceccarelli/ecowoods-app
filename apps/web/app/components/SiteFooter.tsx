@@ -1,11 +1,76 @@
+'use client';
+
+/**
+ * SiteFooter — four columns on desktop, accordion columns on mobile.
+ *
+ * At <=767px the grid collapsed to a single column, which turned the footer
+ * into ~14 screens of links every visitor had to thumb past to reach the legal
+ * row. AWS solves the same problem the same way: each column becomes a
+ * disclosure, so the footer is a short menu you open rather than a list you
+ * scroll.
+ *
+ * The mobile branch uses NATIVE <details>/<summary>: no useState, no JS toggle,
+ * keyboard + screen-reader behaviour for free, and the links stay in the DOM
+ * (collapsed, not removed) so nothing is lost for SEO. Desktop and SSR render
+ * the original markup untouched.
+ *
+ * Kept out of the accordions on purpose: the brand block, the phone number
+ * (tap-to-call is a live conversion path) and the social row — same rule as the
+ * quote section, never gate the conversion path behind a tap.
+ */
+
+import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
+import { useIsMobile } from './SwipeDeck';
+
+/** Desktop: a plain column. Mobile: a native disclosure. */
+function FooterCol({
+  title,
+  mobile,
+  children,
+}: {
+  title: string;
+  mobile: boolean;
+  children: ReactNode;
+}) {
+  if (!mobile) {
+    return (
+      <div>
+        <h5>{title}</h5>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <details className="footer-col">
+      <summary className="footer-col-summary">
+        <h5>{title}</h5>
+        <span className="footer-col-chevron" aria-hidden="true" />
+      </summary>
+      <div className="footer-col-body">{children}</div>
+    </details>
+  );
+}
 
 export default function SiteFooter() {
+  const { mounted, isMobile } = useIsMobile();
+  const m = mounted && isMobile;
+
+  const backToTop = () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  };
+
   return (
     <footer className="site-footer" role="contentinfo">
       <div className="shell">
-        <div className="footer-grid">
+        {m && (
+          <a href="#quote" className="footer-cta">
+            Get your free estimate
+          </a>
+        )}
+        <div className={`footer-grid ${m ? 'footer-grid--stacked' : ''}`}>
           {/* Brand */}
           <div>
             <div className="brand-lockup" style={{ marginBottom: '1.25rem' }}>
@@ -25,11 +90,16 @@ export default function SiteFooter() {
               <span className="availability-dot" />
               Now booking · Spring 2026
             </div>
+            {m && (
+              <a href="tel:+14162491276" className="footer-call">
+                <span className="footer-call-label">Call the shop</span>
+                <span className="footer-call-num">(416) 249-1276</span>
+              </a>
+            )}
           </div>
 
           {/* Services */}
-          <div>
-            <h5>Services</h5>
+          <FooterCol title="Services" mobile={m}>
             <div className="footer-links">
               <a href="#services">Hardwood Installation</a>
               <a href="#services">Refinishing & Restoration</a>
@@ -39,11 +109,10 @@ export default function SiteFooter() {
               <a href="#services">Custom Inlays & Borders</a>
               <a href="#services">Commercial Projects</a>
             </div>
-          </div>
+          </FooterCol>
 
           {/* Service Areas */}
-          <div>
-            <h5>Service Areas</h5>
+          <FooterCol title="Service Areas" mobile={m}>
             <div className="footer-links">
               <a href="#areas">Toronto · Downtown</a>
               <a href="#areas">North York</a>
@@ -53,11 +122,10 @@ export default function SiteFooter() {
               <a href="#areas">Richmond Hill</a>
               <a href="#areas">Mississauga · Oakville</a>
             </div>
-          </div>
+          </FooterCol>
 
           {/* Visit */}
-          <div>
-            <h5>Showroom & Office</h5>
+          <FooterCol title="Showroom & Office" mobile={m}>
             <p style={{ marginBottom: '1.25rem', lineHeight: 1.7 }}>
               32 Norfield Crescent, Toronto, Ontario<br />
               Toronto, ON M3J 3A1
@@ -74,11 +142,13 @@ export default function SiteFooter() {
               Mon–Sat · 8:00 AM – 7:00 PM<br />
               Sunday · 10:00 AM – 4:00 PM
             </p>
-          </div>
+          </FooterCol>
         </div>
 
         <div className="footer-bottom">
-          <div>© {new Date().getFullYear()} Ecowoods Hardwood Flooring Inc. — All rights reserved.</div>
+          <div className="footer-copy">
+            © {new Date().getFullYear()} Ecowoods Hardwood Flooring Inc. — All rights reserved.
+          </div>
 <div className="footer-social" aria-label="Social media">
             <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
@@ -110,7 +180,13 @@ export default function SiteFooter() {
           </div>
 
 
-          <div>
+          {m && (
+            <button type="button" className="footer-top-btn" onClick={backToTop}>
+              Back to top <span aria-hidden="true">↑</span>
+            </button>
+          )}
+
+          <div className="footer-legal">
             <CookiePreferencesButton />
             <a href="/privacy" style={{ marginRight: '1.5rem' }}>Privacy</a>
             <a href="/terms">Terms</a>
