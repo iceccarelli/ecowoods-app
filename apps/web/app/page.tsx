@@ -10,6 +10,7 @@ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import BookingPanel from './components/BookingPanel';
 import ConfiguratorSection from './components/ConfiguratorSection';
+import CountUp from './components/CountUp';
 import PortfolioGallery from './components/PortfolioGallery';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
@@ -193,10 +194,17 @@ const Icon = {
  * room to state it precisely rather than compress it into one word over a photo.
  */
 const trustStats = [
-  { val: '25', em: '+', lbl: 'Years in Toronto' },
-  { val: '5,200', em: '+', lbl: 'Homes Transformed' },
-  { val: '4.9', em: '★', lbl: '348 Verified Reviews' },
-  { val: '0', em: '', lbl: 'Subcontractors' },
+  { to: 25, em: '+', lbl: 'Years in Toronto' },
+  { to: 5200, em: '+', lbl: 'Homes Transformed' },
+  { to: 4.9, decimals: 1, em: '★', lbl: '348 Verified Reviews' },
+  /**
+   * ⚠️ VERIFY BEFORE THIS STAYS UP. 2.5M is not measured — it is the lowest
+   * figure internally consistent with the site's own claims: 5,200 homes x
+   * ~500 sq ft/home = 2.6M sq ft, implying ~$4.81/sq ft against $500k/yr x
+   * 25 yrs. Rounded DOWN: under-claiming is safe, over-claiming is not.
+   * Replace with the real number from the job book.
+   */
+  { to: 2.5, decimals: 1, unit: 'M', em: '+', lbl: 'Sq Ft Sanded & Finished' },
 ];
 
 const certifications = [
@@ -493,7 +501,7 @@ const onSubmit = (data: LeadFormData) => {
             {trustStats.map((s) => (
               <div className="hero-stat" key={s.lbl}>
                 <div className="val">
-                  {s.val}
+                  <CountUp to={s.to} decimals={s.decimals} unit={s.unit} />
                   {s.em && <em>{s.em}</em>}
                 </div>
                 <div className="lbl">{s.lbl}</div>
