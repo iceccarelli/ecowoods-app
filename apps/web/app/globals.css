@@ -5197,7 +5197,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 }
 
 /* ============================================================
-   MOBILE CONFIGURATOR — teaser + full-screen sheet
+   SHARED MOBILE CHROME — teaser card + full-screen sheet
    The configurator is a genuinely good tool that is genuinely wrong inline on
    a phone: five screens of swatches and sliders between the gallery and the
    FAQ, imposed on every visitor whether they want it or not. On mobile it
@@ -5206,7 +5206,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
    Desktop is untouched (this block is mobile-only by construction: the teaser
    markup only renders below 767px).
    ============================================================ */
-.fc-teaser {
+.teaser {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -5219,20 +5219,20 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
     var(--surface);
   box-shadow: var(--shadow-sm);
 }
-.fc-teaser-title {
+.teaser-title {
   margin: 0;
   font-size: clamp(1.6rem, 7vw, 2rem);
   line-height: 1.1;
   letter-spacing: -0.015em;
   color: var(--ink);
 }
-.fc-teaser-body {
+.teaser-body {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
   line-height: 1.55;
 }
-.fc-teaser-btn {
+.teaser-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5250,17 +5250,17 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   box-shadow: 0 8px 22px -8px rgba(160, 96, 52, 0.6);
   transition: transform 0.15s ease;
 }
-.fc-teaser-btn:active {
+.teaser-btn:active {
   transform: translateY(1px);
 }
-.fc-teaser-note {
+.teaser-note {
   align-self: center;
   font-size: 0.78rem;
   color: var(--muted-soft);
 }
 
 /* ---- the sheet ---- */
-.fc-sheet {
+.sheet {
   position: fixed;
   inset: 0;
   z-index: 1200;
@@ -5268,17 +5268,17 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   flex-direction: column;
   justify-content: flex-end;
 }
-.fc-sheet-scrim {
+.sheet-scrim {
   position: absolute;
   inset: 0;
   border: 0;
   padding: 0;
   background: rgba(26, 15, 8, 0.55);
   backdrop-filter: blur(3px);
-  animation: fc-fade 0.2s ease-out;
+  animation: sheet-fade 0.2s ease-out;
   cursor: pointer;
 }
-.fc-sheet-panel {
+.sheet-panel {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -5287,19 +5287,19 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   background: var(--bg, var(--surface));
   overflow: hidden;
   box-shadow: 0 -8px 40px rgba(26, 15, 8, 0.35);
-  animation: fc-rise 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: sheet-rise 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-@keyframes fc-fade {
+@keyframes sheet-fade {
   from {
     opacity: 0;
   }
 }
-@keyframes fc-rise {
+@keyframes sheet-rise {
   from {
     transform: translate3d(0, 100%, 0);
   }
 }
-.fc-sheet-bar {
+.sheet-bar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -5311,7 +5311,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   /* the grab-handle affordance */
   position: relative;
 }
-.fc-sheet-bar::before {
+.sheet-bar::before {
   content: '';
   position: absolute;
   top: 6px;
@@ -5322,13 +5322,13 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   border-radius: 999px;
   background: var(--line-strong);
 }
-.fc-sheet-title {
+.sheet-title {
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--ink);
   padding-top: 0.4rem;
 }
-.fc-sheet-close {
+.sheet-close {
   flex: 0 0 auto;
   width: 40px;
   height: 40px;
@@ -5341,10 +5341,10 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   font-size: 1rem;
   cursor: pointer;
 }
-.fc-sheet-close:active {
+.sheet-close:active {
   transform: scale(0.94);
 }
-.fc-sheet-body {
+.sheet-body {
   flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -5352,14 +5352,61 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 }
 /* the configurator ships its own section padding; inside the sheet it should
    sit flush and let the sheet own the chrome */
-.fc-sheet-body > section {
+.sheet-body > section {
   padding-top: 0.5rem;
   padding-bottom: 2rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fc-sheet-scrim,
-  .fc-sheet-panel {
+  .sheet-scrim,
+  .sheet-panel {
     animation: none;
   }
+}
+
+/* ============================================================
+   TEASER — DARK VARIANT + BOOKING PANEL
+   The configurator teaser sits on a light section; the booking teaser sits in
+   the wood-grain-dark #quote section, so it needs the inverse treatment. Same
+   component, same rhythm — only the surface flips. (Same reasoning as the deck
+   tone variants: pin the chrome to the SECTION, not the theme, because this
+   section is dark in both themes.)
+   ============================================================ */
+.teaser--onDark {
+  background:
+    radial-gradient(120% 100% at 100% 0%, rgba(200, 126, 79, 0.16), transparent 60%),
+    rgba(245, 239, 230, 0.04);
+  border-color: rgba(245, 239, 230, 0.14);
+  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.55);
+}
+.teaser--onDark .teaser-title {
+  color: var(--cream-50);
+}
+.teaser--onDark .teaser-body {
+  color: rgba(245, 239, 230, 0.72);
+}
+.teaser--onDark .teaser-note {
+  color: rgba(245, 239, 230, 0.5);
+}
+.teaser--onDark .eyebrow {
+  color: var(--copper-bright);
+}
+.teaser-title--sm {
+  font-size: clamp(1.45rem, 6vw, 1.8rem);
+}
+.teaser--onDark .booking-step-label {
+  margin-bottom: 0.25rem;
+}
+
+/* mobile booking column: the teaser owns the spacing, not the calendar shell */
+.booking-column--compact {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* the scheduler brings no page padding of its own inside the sheet */
+.sheet-pad {
+  padding: 1.1rem 1rem 2rem;
 }

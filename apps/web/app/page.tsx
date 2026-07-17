@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
-import { BookingScheduler } from './components/BookingScheduler';
+import BookingPanel from './components/BookingPanel';
 import ConfiguratorSection from './components/ConfiguratorSection';
 import PortfolioGallery from './components/PortfolioGallery';
 import StandardDeck from './components/StandardDeck';
@@ -795,11 +795,8 @@ const onSubmit = (data: LeadFormData) => {
               </button>
             </div>
 
-            {/* Right column: the booking calendar */}
-            <div className="booking-column reveal">
-              <div className="booking-step-label"><span>{Icon.clock}</span> Bookings</div>
-              <BookingScheduler />
-            </div>
+            {/* Right column: the booking calendar (inline on desktop, sheet on mobile) */}
+            <BookingPanel clockIcon={Icon.clock} />
           </div>
         </div>
       </section>
