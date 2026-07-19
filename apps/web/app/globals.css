@@ -884,7 +884,8 @@ p {
 /* --------------------- Hero --------------------- */
 .hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for browsers without svh */
+  min-height: 100svh; /* small viewport height: fills exactly, no address-bar overflow */
   display: flex;
   align-items: center;
   padding-top: 6rem;
