@@ -116,7 +116,7 @@ export default function InvoiceIssueForm({
   if (invoice.status === 'PAID' || invoice.status === 'VOID') {
     return (
       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-        <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>—</span>
+        <span style={{ color: 'var(--muted)', fontSize: 'var(--fs-xs)' }}>—</span>
         {invoice.pdfUrl && (
           <>
             <a href={`/docs/invoice/${invoice.id}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
@@ -225,7 +225,7 @@ export default function InvoiceIssueForm({
           </div>
 
           {/* Live total */}
-          <div style={{ padding: '0.5rem 0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', marginBottom: '0.75rem', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+          <div style={{ padding: '0.5rem 0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', marginBottom: '0.75rem', fontSize: 'var(--fs-sm)', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
             <span>New Total</span>
             <span>{formatCAD(previewTotal)}</span>
           </div>
@@ -240,7 +240,7 @@ export default function InvoiceIssueForm({
             <textarea rows={2} value={reissueForm.description} onChange={(e) => setField('description', e.target.value)} placeholder="Visible to customer…" style={{ resize: 'vertical' }} />
           </div>
 
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginBottom: '0.75rem' }}>
             PDF will be regenerated and a new email will be sent to the customer.
           </p>
 

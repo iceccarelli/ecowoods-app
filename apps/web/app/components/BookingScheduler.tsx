@@ -101,7 +101,7 @@ export function BookingScheduler() {
     height: '100%', minHeight: 44, borderRadius: 'var(--radius-md, 10px)', border: '1px solid var(--line)',
     background: open ? 'var(--paper, #fff)' : 'transparent',
     color: open ? 'var(--ink)' : 'var(--muted-soft, #bbb)',
-    cursor: open ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: '0.9rem',
+    cursor: open ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: 'var(--fs-sm)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
   });
 
@@ -131,7 +131,7 @@ export function BookingScheduler() {
       {step === 'date' && (
         <>
           <h3 style={{ marginBottom: '0.25rem' }}>Pick a day</h3>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+          <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.25rem' }}>
             Free in-home estimate · Mon–Sat 8–7, Sun 10–4
           </p>
           {isLoading && <p style={{ color: 'var(--muted)' }}>Loading available dates…</p>}
@@ -145,7 +145,7 @@ export function BookingScheduler() {
                 <button type="button" className="btn btn-ghost btn-sm"
                   onClick={() => { const m = viewMonth + 1; if (m > 11) { setViewMonth(0); setViewYear((y) => y + 1); } else setViewMonth(m); }}>→</button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, textAlign: 'center', fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, textAlign: 'center', fontSize: 'var(--fs-3xs)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                 {WEEKDAYS.map((w) => <div key={w}>{w}</div>)}
               </div>
               <div className="cal-day-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(6,1fr)', gap: 6, minHeight: 380, flex: 1 }}>
@@ -167,7 +167,7 @@ export function BookingScheduler() {
           <button type="button" className="btn btn-ghost btn-sm" style={{ marginBottom: '1rem' }}
             onClick={() => { setStep('date'); setSelectedSlot(null); }}>← Change date</button>
           <h3 style={{ marginBottom: '0.25rem' }}>{fmtDayLabel(selectedDate)}</h3>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>Choose a time</p>
+          <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.25rem' }}>Choose a time</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(90px,1fr))', gap: 8 }}>
             {selSlots.map((s) => (
               <button key={s.start} type="button" className="btn btn-ghost btn-sm"
@@ -183,7 +183,7 @@ export function BookingScheduler() {
           <button type="button" className="btn btn-ghost btn-sm" style={{ marginBottom: '1rem' }}
             onClick={() => setStep('time')}>← Change time</button>
           <h3 style={{ marginBottom: '0.25rem' }}>Your details</h3>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
+          <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.25rem' }}>
             {fmtDayLabel(selectedSlot.start.slice(0, 10))} · {fmtTime(selectedSlot.start)} · {selectedSlot.durationMinutes} min
           </p>
           <div className="field-row">
@@ -232,7 +232,7 @@ export function BookingScheduler() {
           <p style={{ color: 'var(--muted)' }}>
             {confirmed.whenLabel}. A senior estimator will confirm by email and arrive with species and finish samples.
           </p>
-          <p style={{ color: 'var(--muted-soft, #999)', fontSize: '0.85rem', marginTop: '1rem' }}>Need to change it? Call (416) 249-1276.</p>
+          <p style={{ color: 'var(--muted-soft, #999)', fontSize: 'var(--fs-sm)', marginTop: '1rem' }}>Need to change it? Call (416) 249-1276.</p>
         </div>
       )}
     </div>

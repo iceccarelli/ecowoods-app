@@ -50,7 +50,7 @@ export default async function MyQuotesPage() {
                       : 'Quote Request'}
                     {q.city ? ` — ${q.city}, ${q.province}` : ''}
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                     Submitted {format(q.createdAt, 'MMMM d, yyyy')}
                     {q.squareFeet ? ` · ${q.squareFeet.toLocaleString()} sq ft` : ''}
                     {Array.isArray(q.species) && (q.species as string[]).length > 0 ? ` · ${(q.species as string[]).join(', ')}` : ''}
@@ -72,7 +72,7 @@ export default async function MyQuotesPage() {
                !(q as { quotePdfUrl: string }).quotePdfUrl.startsWith('data:') && (
                 <div style={{ marginTop: '0.75rem', padding: '0.875rem 1rem', background: 'rgba(200,126,79,0.07)', border: '1px solid rgba(200,126,79,0.25)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>📋 Estimate Ready</div>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>📋 Estimate Ready</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
                       Your formal estimate (견적서) is available.
                       {q.quotedAmount && (

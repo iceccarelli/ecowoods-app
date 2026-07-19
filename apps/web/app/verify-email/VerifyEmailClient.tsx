@@ -56,7 +56,7 @@ export default function VerifyEmailClient({
             background: 'rgba(74,124,89,0.08)',
             border: '1px solid rgba(74,124,89,0.25)',
             borderRadius: 'var(--radius-lg)',
-            fontSize: '0.9rem',
+            fontSize: 'var(--fs-sm)',
             color: 'var(--ink)',
           }}>
             🌲 We found <strong>{linkedQuotesCount}</strong> previous quote request{linkedQuotesCount > 1 ? 's' : ''} and linked {linkedQuotesCount > 1 ? 'them' : 'it'} to your account.

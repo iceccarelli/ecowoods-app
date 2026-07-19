@@ -51,7 +51,7 @@ export default async function MyInquiriesPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{inq.subject}</div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                     Submitted {format(inq.createdAt, 'MMMM d, yyyy')}
                   </div>
                 </div>

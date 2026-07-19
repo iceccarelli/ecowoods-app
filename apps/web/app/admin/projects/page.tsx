@@ -100,7 +100,7 @@ export default async function AdminProjectsPage({
                       {proj.status.replace('_', ' ')}
                     </span>
                   </td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                  <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                     {proj.startDate ? format(proj.startDate, 'MMM d, yyyy') : '—'}
                   </td>
                   <td>

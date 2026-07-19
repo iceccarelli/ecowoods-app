@@ -62,13 +62,13 @@ export default async function AdminUsersPage() {
                       <a href={`mailto:${user.email}`}>{user.email}</a>
                     </div>
                   </td>
-                  <td style={{ fontSize: '0.85rem' }}>{user.phone ?? '—'}</td>
+                  <td style={{ fontSize: 'var(--fs-sm)' }}>{user.phone ?? '—'}</td>
                   <td>{user.quoteRequests.length}</td>
                   <td>{user.projects.length}</td>
                   <td style={{ fontWeight: 600, color: totalPaid > 0 ? 'var(--success)' : undefined }}>
                     {totalPaid > 0 ? formatCAD(totalPaid) : '—'}
                   </td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                  <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                     {format(user.createdAt, 'MMM d, yyyy')}
                   </td>
                   <td>

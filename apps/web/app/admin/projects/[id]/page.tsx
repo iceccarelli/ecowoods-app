@@ -103,7 +103,7 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
                   project.status === 'IN_PROGRESS' || project.status === 'COMPLETED' ? (
                     <GenerateInvoicesButton projectId={project.id} />
                   ) : (
-                    <span style={{ fontSize: '0.82rem', color: 'var(--muted)', padding: '0.4rem 0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', padding: '0.4rem 0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
                       🔒 Sign contract first to generate invoices
                     </span>
                   )
@@ -120,15 +120,15 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
             {/* Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
               <div style={{ textAlign: 'center', padding: '0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Total Contract</div>
+                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginBottom: '0.25rem' }}>Total Contract</div>
                 <div style={{ fontWeight: 700 }}>{formatCAD(project.contractValue)}</div>
               </div>
               <div style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(74,124,89,0.08)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Paid</div>
+                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginBottom: '0.25rem' }}>Paid</div>
                 <div style={{ fontWeight: 700, color: 'var(--success)' }}>{formatCAD(totalPaid)}</div>
               </div>
               <div style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(212,164,68,0.1)', borderRadius: 'var(--radius)' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '0.25rem' }}>Outstanding</div>
+                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginBottom: '0.25rem' }}>Outstanding</div>
                 <div style={{ fontWeight: 700, color: 'var(--warning)' }}>{formatCAD(totalOutstanding)}</div>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
                           </span>
                         )}
                       </td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                      <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                         {inv.dueDate ? format(inv.dueDate, 'MMM d') : '—'}
                       </td>
                       <td>
@@ -182,9 +182,9 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
               <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Internal Notes</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {project.notes.map((note) => (
-                  <div key={note.id} style={{ padding: '0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', fontSize: '0.9rem' }}>
+                  <div key={note.id} style={{ padding: '0.75rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', fontSize: 'var(--fs-sm)' }}>
                     <p style={{ margin: 0 }}>{note.content}</p>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginTop: '0.5rem' }}>
                       {format(note.createdAt, 'MMM d, yyyy h:mm a')}
                     </div>
                   </div>

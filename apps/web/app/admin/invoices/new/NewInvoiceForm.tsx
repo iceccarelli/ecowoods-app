@@ -114,7 +114,7 @@ export default function NewInvoiceForm() {
                 onChange={(e) => set('subtotal', e.target.value)}
               />
               {selectedProject?.contractValue && (
-                <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginTop: '0.25rem' }}>
                   Contract value: ${selectedProject.contractValue.toLocaleString()}
                 </p>
               )}
@@ -137,7 +137,7 @@ export default function NewInvoiceForm() {
           </div>
 
           {subtotal > 0 && (
-            <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+            <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-100)', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: 'var(--fs-sm)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
               </div>

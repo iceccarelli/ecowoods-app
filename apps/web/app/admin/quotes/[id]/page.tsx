@@ -108,12 +108,12 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
             <div className="portal-card">
               <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>Linked Customer</h2>
               <div style={{ fontWeight: 600 }}>{quote.user.name}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{quote.user.email}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{quote.user.email}</div>
             </div>
           ) : (
             <div className="portal-card" style={{ borderColor: 'var(--warning)', borderWidth: 1.5 }}>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem' }}>⚠ No Account Linked</h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                 Submitted without login. Account at <strong>{quote.email}</strong> will auto-link on registration.
                 You can still create a project by selecting an existing customer below.
               </p>

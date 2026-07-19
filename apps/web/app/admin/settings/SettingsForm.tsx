@@ -86,7 +86,7 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
             </div>
           ))}
           <div className="field" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '1px' }}>
-            <div style={{ padding: '0.6rem 1rem', background: Math.abs(pctSum - 100) < 0.01 ? 'rgba(74,124,89,0.1)' : 'rgba(176,72,72,0.1)', borderRadius: 'var(--radius)', fontWeight: 700, fontSize: '0.9rem', color: Math.abs(pctSum - 100) < 0.01 ? 'var(--success)' : 'var(--danger)' }}>
+            <div style={{ padding: '0.6rem 1rem', background: Math.abs(pctSum - 100) < 0.01 ? 'rgba(74,124,89,0.1)' : 'rgba(176,72,72,0.1)', borderRadius: 'var(--radius)', fontWeight: 700, fontSize: 'var(--fs-sm)', color: Math.abs(pctSum - 100) < 0.01 ? 'var(--success)' : 'var(--danger)' }}>
               Total: {pctSum}%
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
             min="0"
             max="20"
           />
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginTop: '0.25rem' }}>
             Ontario HST = 13% · Quebec GST/QST = 14.975%
           </p>
         </div>
@@ -176,10 +176,10 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
 
       {/* Plaid integration note */}
       <div className="portal-card" style={{ background: 'rgba(26,15,8,0.03)', border: '1px dashed var(--line-strong)' }}>
-        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+        <h3 style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, marginBottom: '0.5rem' }}>
           🏦 Future: Automatic Bank Deposit Detection (Plaid)
         </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', lineHeight: 1.6 }}>
           <strong>Proposal:</strong> Plaid&apos;s Transactions API (Canada: TD, RBC, BMO, Scotiabank, CIBC) can automatically detect incoming e-transfers and match them to invoices by reference number.
           <br /><br />
           <strong>Requirements:</strong> Plaid Business account ($99/mo+), Business bank account at a supported institution, Plaid sandbox testing, customer consent flow.

@@ -703,7 +703,7 @@ const onSubmit = (data: LeadFormData) => {
                 noValidate
               >
                 <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
-                <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1.75rem' }}>
+                <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.75rem' }}>
                   Takes 60 seconds. No pressure, no spam, no obligation.
                 </p>
 

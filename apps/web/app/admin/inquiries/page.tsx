@@ -49,7 +49,7 @@ export default async function AdminInquiriesPage({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '1rem' }}>{inq.subject}</div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                     {inq.name} · <a href={`mailto:${inq.email}`}>{inq.email}</a>
                     {inq.phone && ` · ${inq.phone}`}
                     {' · '}{format(inq.createdAt, 'MMM d, yyyy')}

@@ -88,7 +88,7 @@ export default async function InvoicePayPage({
 
         <StripeCheckoutButton invoiceId={invoice.id} amount={Number(invoice.total)} invoiceNumber={invoice.number ?? ''} />
 
-        <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '1rem', textAlign: 'center' }}>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '1rem', textAlign: 'center' }}>
           Secured by Stripe. Accepts Visa, Mastercard, Amex, Apple Pay, Google Pay.
           <br />
           HST #: {invoice.project.user.email}

@@ -77,7 +77,7 @@ export default async function MyProjectsPage() {
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.25rem' }}>
                       {proj.title}
                     </h2>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                       {[proj.city, proj.province].filter(Boolean).join(', ')}
                       {proj.squareFeet ? ` · ${proj.squareFeet.toLocaleString()} sq ft` : ''}
                       {proj.contractValue ? ` · Contract: ${formatCAD(proj.contractValue)}` : ''}
@@ -98,7 +98,7 @@ export default async function MyProjectsPage() {
                           style={{
                             flex: 1,
                             textAlign: 'center',
-                            fontSize: '0.7rem',
+                            fontSize: 'var(--fs-3xs)',
                             color: i <= currentStep ? 'var(--copper-deep)' : 'var(--muted-soft)',
                             fontWeight: i === currentStep ? 700 : 400,
                           }}
@@ -124,19 +124,19 @@ export default async function MyProjectsPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
                   {proj.startDate && (
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Start Date</div>
+                      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Start Date</div>
                       <div style={{ fontWeight: 600 }}>{format(proj.startDate, 'MMMM d, yyyy')}</div>
                     </div>
                   )}
                   {proj.endDate && (
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>End Date</div>
+                      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>End Date</div>
                       <div style={{ fontWeight: 600 }}>{format(proj.endDate, 'MMMM d, yyyy')}</div>
                     </div>
                   )}
                   {proj.contractValue && (
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Paid to Date</div>
+                      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Paid to Date</div>
                       <div style={{ fontWeight: 600, color: paidTotal > 0 ? 'var(--success)' : undefined }}>
                         {formatCAD(paidTotal)} / {formatCAD(proj.contractValue)}
                       </div>
@@ -169,13 +169,13 @@ export default async function MyProjectsPage() {
                 {/* Invoices */}
                 {proj.invoices.length > 0 && (
                   <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--line)', paddingTop: '1.25rem' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--muted)' }}>
                       INVOICES
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {proj.invoices.map((inv) => (
                         <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                          <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
                             #{inv.number} — {inv.stage}
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

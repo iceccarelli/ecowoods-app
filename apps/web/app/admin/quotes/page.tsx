@@ -109,7 +109,7 @@ export default async function AdminQuotesPage({
                     {q.status}
                   </span>
                 </td>
-                <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                   {format(q.createdAt, 'MMM d, yyyy')}
                 </td>
                 <td>
