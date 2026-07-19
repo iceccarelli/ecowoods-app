@@ -523,8 +523,8 @@ const onSubmit = (data: LeadFormData) => {
               One shop. One material. <span className="serif-italic">One standard.</span>
             </h2>
             <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
-              Installation, refinishing, sanding, stairs, inlays, and commercial — every service
-              delivered by the same family-owned shop since 1998.
+              Installation, refinishing, sanding, stairs, inlays, and commercial — every service,
+              one shop, one accountable name — since 1998.
             </p>
           </div>
 
@@ -538,7 +538,7 @@ const onSubmit = (data: LeadFormData) => {
       <section className="section paper-texture" id="gallery">
         <div className="shell">
           <div className="section-head reveal">
-            <span className="eyebrow">Results</span>
+            <span className="eyebrow">The Work</span>
             <h2>
               Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
             </h2>
@@ -553,7 +553,7 @@ const onSubmit = (data: LeadFormData) => {
       <section className="section" id="process">
         <div className="shell">
           <div className="section-head reveal">
-            <span className="eyebrow">How It Works</span>
+            <span className="eyebrow">The Process</span>
             <h2>
               Four steps to <span className="serif-italic">certainty.</span>
             </h2>
@@ -588,7 +588,7 @@ const onSubmit = (data: LeadFormData) => {
                 4.9 <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· 348 verified reviews</span>
               </span>
             </div>
-            <span className="eyebrow">Proof</span>
+            <span className="eyebrow">The Verdict</span>
             <h2>
               What clients say <span className="serif-italic">after move-in day.</span>
             </h2>
@@ -607,7 +607,7 @@ const onSubmit = (data: LeadFormData) => {
       <section className="section" id="faq">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow">Before You Book</span>
+            <span className="eyebrow">Straight Answers</span>
             <h2>
               The four questions <span className="serif-italic">everyone asks.</span>
             </h2>
