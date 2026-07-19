@@ -5868,10 +5868,16 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 }
 .sx-title {
   margin: 0;
-  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
-  line-height: 1.12;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   color: var(--ink);
+}
+.sx-title .serif-italic {
+  font-style: italic;
+  color: var(--copper-text);
 }
 
 /* ---- tabs ---- */
@@ -6168,4 +6174,12 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   .species-row { grid-template-columns: 54px 1fr; gap: 0.85rem; }
   .sp-swatch { width: 54px; height: 54px; }
   .species-body { grid-template-columns: 1fr; gap: 0.2rem; }
+}
+
+
+/* --- footer estimate CTA: desktop only ---
+   .sticky-cta-mobile already carries "Get Free Quote" on phones (pinned), so the
+   footer's full-width estimate button is a third copy of one action. Hide < 768px. */
+@media (max-width: 767px) {
+  .footer-cta { display: none; }
 }
