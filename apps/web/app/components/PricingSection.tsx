@@ -3,25 +3,37 @@
 /**
  * PricingSection — "How much does it cost?", answered honestly.
  *
- * The single highest-value thing the site was missing. Every GTA competitor
- * hides price behind "contact for a quote"; Ecowoods' whole promise is "fixed
- * price in writing" — so NOT showing a number was the site contradicting its own
- * headline. The research (2026): "offer and policy details visible before final
- * commitment."
+ * Desktop keeps the 3-up grid (glanceable, comparison at once). On mobile, where
+ * three tall cards become a marathon scroll, it switches to the shared SwipeDeck
+ * — the SAME engine Services/Reviews/Process/Gallery use, so pricing is one
+ * thumb-swipe, not a new interaction to learn. The deck opens on the featured
+ * tier so the first card a phone visitor sees is the one that converts.
  *
  * Why a TIERED RANGE, not one number: refinishing genuinely varies with
- * condition, stairs, species and finish, so a single "$X/sqft" would either
+ * condition, stairs, species and finish. A single "$X/sqft" would either
  * under-quote (awkward upsell that kills the "fixed price" trust) or over-quote
  * (scares good leads). A range is honest AND answers the question — and because
  * Ecowoods runs dustless + salaried masters, it sits in the upper band and can
  * say WHY. That is the AWS move: transparent about being premium, not cheapest.
  *
  * ⚠️ NUMBERS BELOW ARE PUBLISHED GTA MARKET RANGES (2026), NOT ECOWOODS' OWN
- *    RATES. Replace `pricePerSqFt` / `from` on each tier with your real pricing
- *    before this goes live, or the site states market data as if it were yours.
+ *    RATES. Replace `pricePerSqFt` on each tier with your real pricing before
+ *    this goes live, or the site states market data as if it were yours.
  */
 
-const TIERS = [
+import SwipeDeck, { useIsMobile } from './SwipeDeck';
+
+type Tier = {
+  id: string;
+  name: string;
+  tagline: string;
+  pricePerSqFt: string;
+  blurb: string;
+  best: string;
+  highlight: boolean;
+};
+
+const TIERS: Tier[] = [
   {
     id: 'recoat',
     name: 'Screen & Recoat',
@@ -54,7 +66,67 @@ const TIERS = [
   },
 ];
 
+/** the visual of a single tier — shared by the grid and the swipe deck */
+function TierCard({ t }: { t: Tier }) {
+  return (
+    <>
+      {t.highlight && <span className="price-flag">Most common</span>}
+      <div className="price-card-head">
+        <h3 className="price-name">{t.name}</h3>
+        <p className="price-tagline">{t.tagline}</p>
+      </div>
+      <div className="price-figure">
+        <span className="price-currency">$</span>
+        <span className="price-amount">{t.pricePerSqFt}</span>
+        <span className="price-unit">/ sq ft</span>
+      </div>
+      <p className="price-blurb">{t.blurb}</p>
+      <div className="price-best">
+        <span className="price-best-label">Best for</span>
+        {t.best}
+      </div>
+    </>
+  );
+}
+
 export default function PricingSection() {
+  const { mounted, isMobile } = useIsMobile();
+
+  const grid = (
+    <div className="pricing-grid reveal">
+      {TIERS.map((t) => (
+        <div key={t.id} className={`price-card ${t.highlight ? 'is-featured' : ''}`}>
+          <TierCard t={t} />
+        </div>
+      ))}
+    </div>
+  );
+
+  // open the deck on the featured tier — the first card a phone visitor sees
+  const featuredFirst = (() => {
+    const i = TIERS.findIndex((t) => t.highlight);
+    if (i <= 0) return TIERS;
+    return [...TIERS.slice(i), ...TIERS.slice(0, i)];
+  })();
+
+  const deck = (
+    <SwipeDeck
+      items={featuredFirst}
+      getKey={(t) => t.id}
+      ariaLabel="Pricing tiers"
+      srLabel={(t) => `${t.name}. ${t.pricePerSqFt} dollars per square foot. ${t.blurb}`}
+      cardClassName="pfd-card--panel pfd-card--price"
+      tone="dark"
+      cta={{ href: '#quote', label: 'Get your exact price in writing' }}
+      hint={`Swipe through pricing · ${TIERS.length} tiers`}
+      renderCard={(t) => (
+        <div className={`price-card price-card--deck ${t.highlight ? 'is-featured' : ''}`}>
+          <TierCard t={t} />
+        </div>
+      )}
+    />
+  );
+
   return (
     <section className="section section--card pricing" id="pricing">
       <div className="shell">
@@ -70,27 +142,8 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div className="pricing-grid reveal">
-          {TIERS.map((t) => (
-            <div key={t.id} className={`price-card ${t.highlight ? 'is-featured' : ''}`}>
-              {t.highlight && <span className="price-flag">Most common</span>}
-              <div className="price-card-head">
-                <h3 className="price-name">{t.name}</h3>
-                <p className="price-tagline">{t.tagline}</p>
-              </div>
-              <div className="price-figure">
-                <span className="price-currency">$</span>
-                <span className="price-amount">{t.pricePerSqFt}</span>
-                <span className="price-unit">/ sq ft</span>
-              </div>
-              <p className="price-blurb">{t.blurb}</p>
-              <div className="price-best">
-                <span className="price-best-label">Best for</span>
-                {t.best}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* desktop grid until mounted+mobile confirmed, to avoid a layout flash */}
+        {mounted && isMobile ? deck : grid}
 
         <div className="pricing-foot reveal">
           <div className="pricing-foot-fact">
@@ -102,9 +155,12 @@ export default function PricingSection() {
             change, and board repairs. We walk every one of these with you on-site — no surprises,
             no change orders. That’s what “fixed price in writing” means.
           </p>
-          <a href="#quote" className="pricing-cta">
-            Get your exact price in writing
-          </a>
+          {/* the deck carries its own CTA; the grid (desktop) needs this one */}
+          {!(mounted && isMobile) && (
+            <a href="#quote" className="pricing-cta">
+              Get your exact price in writing
+            </a>
+          )}
         </div>
       </div>
     </section>
