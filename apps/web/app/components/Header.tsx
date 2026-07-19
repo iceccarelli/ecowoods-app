@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
-import { EcowoodsLeaf } from './EcowoodsLeaf';
+import Image from 'next/image';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -161,7 +161,7 @@ export default function Header() {
           {/* Brand Lockup */}
           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
             <span className="brand-mark" aria-hidden="true">
-              <EcowoodsLeaf size={24} />
+              <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="44px" style={{ objectFit: 'cover' }} priority />
             </span>
             <span className="brand-copy">
               <strong>Ecowoods</strong>

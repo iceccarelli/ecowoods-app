@@ -595,7 +595,7 @@ p {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--walnut-800), var(--oak-500));
+  background: var(--cream-50);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -19,9 +19,9 @@
  * quote section, never gate the conversion path behind a tap.
  */
 
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
-import { EcowoodsLeaf } from './EcowoodsLeaf';
 import { useIsMobile } from './SwipeDeck';
 
 /**
@@ -95,7 +95,7 @@ export default function SiteFooter() {
           <div>
             <div className="brand-lockup" style={{ marginBottom: '1.25rem' }}>
               <span className="brand-mark" style={{ width: '42px', height: '42px' }}>
-                <EcowoodsLeaf size={24} />
+                <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="42px" style={{ objectFit: 'cover' }} />
               </span>
               <span className="brand-copy">
                 <strong style={{ color: 'var(--cream-50)' }}>Ecowoods</strong>
