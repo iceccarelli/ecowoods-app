@@ -1,0 +1,432 @@
+diff --git a/.eslintrc b/.eslintrc
+index 2bad790..25c5ab1 100644
+--- a/.eslintrc
++++ b/.eslintrc
+@@ -1,6 +1,8 @@
+ {
+   "extends": ["next/core-web-vitals"],
++  "plugins": ["@typescript-eslint"],
+   "rules": {
+-    "@next/next/no-img-element": "off"
++    "@typescript-eslint/no-explicit-any": "off",
++    "@typescript-eslint/no-var-requires": "off"
+   }
+ }
+diff --git a/apps/web/.env.example b/apps/web/.env.example
+index 2636abe..1272866 100644
+--- a/apps/web/.env.example
++++ b/apps/web/.env.example
+@@ -212,3 +212,16 @@ NEXT_PUBLIC_META_PIXEL_ID=""       # Meta (Facebook) Pixel ID
+ # Without this, /api/chat returns 503 "Chat is not configured".
+ # ──────────────────────────────────────────────────────────────
+ ANTHROPIC_API_KEY=""
++
++# --- Social profiles (footer) ---
++# The footer renders a social icon ONLY when its URL is set. Leave blank to hide.
++# Use the real Ecowoods profile URL, never the platform homepage.
++NEXT_PUBLIC_SOCIAL_INSTAGRAM=
++NEXT_PUBLIC_SOCIAL_FACEBOOK=
++NEXT_PUBLIC_SOCIAL_HOUZZ=
++NEXT_PUBLIC_SOCIAL_GOOGLE=
++NEXT_PUBLIC_SOCIAL_PINTEREST=
++NEXT_PUBLIC_SOCIAL_YOUTUBE=
++NEXT_PUBLIC_SOCIAL_LINKEDIN=
++NEXT_PUBLIC_SOCIAL_TIKTOK=
++NEXT_PUBLIC_SOCIAL_X=
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index 4288ed8..4176ed5 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -108,7 +108,8 @@ export default function ChatWidget() {
+       setInput(prefill);
+       setTimeout(() => inputRef.current?.focus(), 250);
+     }
+-    if (source && typeof window !== 'undefined') {
++    if (source && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
++      // Dev-only telemetry breadcrumb; wire to a real analytics sink for prod.
+       console.log(JSON.stringify({ event: 'renoguide.opened', source }));
+     }
+   }), []);
+diff --git a/apps/web/app/components/PortfolioGallery.tsx b/apps/web/app/components/PortfolioGallery.tsx
+index c07b653..7082be7 100644
+--- a/apps/web/app/components/PortfolioGallery.tsx
++++ b/apps/web/app/components/PortfolioGallery.tsx
+@@ -1,12 +1,8 @@
+ 'use client';
+ 
+-/**
+- * PortfolioGallery — masonry grid on desktop, SwipeDeck on mobile.
+- * The deck engine lives in SwipeDeck.tsx; this file only supplies the image
+- * card content and the desktop fallback grid (unchanged from the original).
+- */
+-
++import Image from 'next/image';
+ import SwipeDeck, { useIsMobile } from './SwipeDeck';
++import { BLUR_WARM, IMG_SIZES } from '@/lib/image';
+ 
+ export type PortfolioItem = {
+   id: string;
+@@ -23,12 +19,15 @@ export default function PortfolioGallery({ items }: { items: PortfolioItem[] })
+     <div className="gallery-grid">
+       {items.map((g, i) => (
+         <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
+-          <img
++          <Image
+             src={g.image}
+             alt={g.title}
+-            loading={i === 0 ? 'eager' : 'lazy'}
+-            fetchPriority={i === 0 ? 'high' : 'auto'}
+-            decoding="async"
++            fill
++            sizes={IMG_SIZES.galleryTile}
++            priority={i === 0}
++            placeholder="blur"
++            blurDataURL={BLUR_WARM}
++            style={{ objectFit: 'cover' }}
+           />
+           <div className="gallery-caption">
+             <div className="title">{g.title}</div>
+@@ -53,7 +52,17 @@ export default function PortfolioGallery({ items }: { items: PortfolioItem[] })
+       hint={`Swipe to browse · ${items.length} recent Toronto projects`}
+       renderCard={(g) => (
+         <>
+-          <img className="pfd-img" src={g.image} alt={g.title} draggable={false} decoding="async" />
++          <Image
++            className="pfd-img"
++            src={g.image}
++            alt={g.title}
++            fill
++            sizes={IMG_SIZES.deckCard}
++            placeholder="blur"
++            blurDataURL={BLUR_WARM}
++            draggable={false}
++            style={{ objectFit: 'cover' }}
++          />
+           <div className="pfd-scrim" />
+           <div className="pfd-caption">
+             <div className="pfd-title">{g.title}</div>
+diff --git a/apps/web/app/components/RotatingBackground.tsx b/apps/web/app/components/RotatingBackground.tsx
+index d75ca87..bb62719 100644
+--- a/apps/web/app/components/RotatingBackground.tsx
++++ b/apps/web/app/components/RotatingBackground.tsx
+@@ -54,7 +54,7 @@ export function RotatingBackground({
+       </div>
+       {current && (
+         <a href={`${current.creditUrl}?utm_source=ecowoods&utm_medium=referral`} target="_blank" rel="noopener noreferrer"
+-          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 11, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
++          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
+           Photo: {current.credit} / Unsplash
+         </a>
+       )}
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index da8272e..556b3d5 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -24,6 +24,26 @@ import CookiePreferencesButton from './CookiePreferencesButton';
+ import { EcowoodsLeaf } from './EcowoodsLeaf';
+ import { useIsMobile } from './SwipeDeck';
+ 
++/**
++ * Social links are config-driven and fail safe. Previously every icon linked to
++ * the bare platform homepage (instagram.com/, facebook.com/, x.com/ …), which is
++ * a dead link that hurts credibility and SEO. We never ship a homepage link and
++ * never invent a handle: an icon renders ONLY when a real profile URL is set via
++ * the matching NEXT_PUBLIC_SOCIAL_* env var. Unset → the icon is omitted.
++ * Fill these in .env once the real Ecowoods profiles are confirmed.
++ */
++const SOCIAL_LINKS: { label: string; href?: string; icon: ReactNode }[] = [
++  { label: 'Instagram', href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
++  { label: 'Facebook', href: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
++  { label: 'Houzz', href: process.env.NEXT_PUBLIC_SOCIAL_HOUZZ, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>) },
++  { label: 'Google Reviews', href: process.env.NEXT_PUBLIC_SOCIAL_GOOGLE, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>) },
++  { label: 'Pinterest', href: process.env.NEXT_PUBLIC_SOCIAL_PINTEREST, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>) },
++  { label: 'YouTube', href: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.3-.4-4.9c-.2-.9-.9-1.6-1.8-1.8C19.1 5 12 5 12 5s-7.1 0-8.8.3c-.9.2-1.6.9-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9c.2.9.9 1.6 1.8 1.8C4.9 19 12 19 12 19s7.1 0 8.8-.3c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.9.4-4.9zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>) },
++  { label: 'LinkedIn', href: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3v9zM6.5 8.25A1.75 1.75 0 118.3 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>) },
++  { label: 'TikTok', href: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64c.27 0 .52.04.77.13V9.4a6.84 6.84 0 00-.77-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.1z"/></svg>) },
++  { label: 'X', href: process.env.NEXT_PUBLIC_SOCIAL_X, icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.51l-7.67 8.77 9.02 11.93h-7.06l-5.53-7.23-6.33 7.23H.66l8.2-9.38L0 2.25h7.24l5 6.61 5.99-6.61zm-1.24 17.6h1.95L7.08 4.25H5l11.99 15.6z"/></svg>) },
++];
++
+ /** Desktop: a plain column. Mobile: a native disclosure. */
+ function FooterCol({
+   title,
+@@ -150,33 +170,11 @@ export default function SiteFooter() {
+             © {new Date().getFullYear()} Ecowoods Hardwood Flooring Inc. — All rights reserved.
+           </div>
+ <div className="footer-social" aria-label="Social media">
+-            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+-            </a>
+-            <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>
+-            </a>
+-            <a href="https://www.houzz.com/" target="_blank" rel="noopener noreferrer" aria-label="Houzz">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>
+-            </a>
+-            <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" aria-label="Google Reviews">
+-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+-            </a>
+-            <a href="https://www.pinterest.com/" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+-            </a>
+-            <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.3-.4-4.9c-.2-.9-.9-1.6-1.8-1.8C19.1 5 12 5 12 5s-7.1 0-8.8.3c-.9.2-1.6.9-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9c.2.9.9 1.6 1.8 1.8C4.9 19 12 19 12 19s7.1 0 8.8-.3c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.9.4-4.9zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>
+-            </a>
+-            <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3v9zM6.5 8.25A1.75 1.75 0 118.3 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+-            </a>
+-            <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64c.27 0 .52.04.77.13V9.4a6.84 6.84 0 00-.77-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.1z"/></svg>
+-            </a>
+-            <a href="https://x.com/" target="_blank" rel="noopener noreferrer" aria-label="X">
+-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.51l-7.67 8.77 9.02 11.93h-7.06l-5.53-7.23-6.33 7.23H.66l8.2-9.38L0 2.25h7.24l5 6.61 5.99-6.61zm-1.24 17.6h1.95L7.08 4.25H5l11.99 15.6z"/></svg>
+-            </a>
++            {SOCIAL_LINKS.filter((s) => s.href).map((s) => (
++              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer me" aria-label={s.label}>
++                {s.icon}
++              </a>
++            ))}
+           </div>
+ 
+ 
+diff --git a/apps/web/app/components/SpeciesSwatch.tsx b/apps/web/app/components/SpeciesSwatch.tsx
+index f00f57b..abddac6 100644
+--- a/apps/web/app/components/SpeciesSwatch.tsx
++++ b/apps/web/app/components/SpeciesSwatch.tsx
+@@ -1,5 +1,8 @@
+ 'use client';
+ 
++import Image from 'next/image';
++import { BLUR_WARM, IMG_SIZES } from '@/lib/image';
++
+ /**
+  * SpeciesSwatch — a rendered plank of a given species.
+  *
+@@ -49,7 +52,15 @@ export default function SpeciesSwatch({
+   if (photo) {
+     return (
+       <div className="sp-swatch">
+-        <img src={photo} alt={`${name} flooring installed by Ecowoods`} loading="lazy" decoding="async" />
++        <Image
++          src={photo}
++          alt={`${name} flooring installed by Ecowoods`}
++          fill
++          sizes={IMG_SIZES.swatch}
++          placeholder="blur"
++          blurDataURL={BLUR_WARM}
++          style={{ objectFit: 'cover' }}
++        />
+       </div>
+     );
+   }
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 5774519..25e0c1b 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -884,7 +884,8 @@ p {
+ /* --------------------- Hero --------------------- */
+ .hero {
+   position: relative;
+-  min-height: 100vh;
++  min-height: 100vh; /* fallback for browsers without svh */
++  min-height: 100svh; /* small viewport height: fills exactly, no address-bar overflow */
+   display: flex;
+   align-items: center;
+   padding-top: 6rem;
+@@ -2295,7 +2296,7 @@ p {
+ }
+ 
+ /* --------------------- Responsive (Enhanced) --------------------- */
+-@media (max-width: 1024px) {
++@media (max-width: 1023px) {
+   .contact-grid { grid-template-columns: 1fr; }
+   .contact-info { position: static; }
+   .footer-grid { grid-template-columns: 1fr 1fr; gap: 2.5rem; }
+@@ -2306,7 +2307,7 @@ p {
+   .service-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+ }
+ 
+-@media (max-width: 768px) {
++@media (max-width: 767px) {
+   .topbar-nav { display: none; }
+   .phone-pill { display: none; }
+   .login-btn { display: none; }
+@@ -2658,7 +2659,7 @@ p {
+   margin: 0 auto;
+ }
+ /* 769px 이상에서만 2열 */
+-@media (min-width: 769px) {
++@media (min-width: 768px) {
+   .app-promo {
+     grid-template-columns: 1fr 1fr;
+     gap: 3rem;
+@@ -3302,7 +3303,7 @@ p {
+   -webkit-touch-callout: none; /* stop iOS long-press Copy/Search menu on the big number */
+ }
+ 
+-@media (max-width: 768px) {
++@media (max-width: 767px) {
+   .compare-table th,
+   .compare-table td {
+     padding: 0.85rem 0.9rem;
+@@ -3364,7 +3365,7 @@ p {
+   font-weight: 600;
+   flex-shrink: 0;
+ }
+-@media (max-width: 1024px) {
++@media (max-width: 1023px) {
+   /* stack to one column on tablet/mobile; step labels keep the flow legible */
+   .booking-step-label { font-size: var(--fs-base); }
+ }
+@@ -3513,7 +3514,7 @@ p {
+   font-size: var(--fs-sm);
+   line-height: 1.55;
+ }
+-@media (max-width: 1024px) {
++@media (max-width: 1023px) {
+   .standard-grid { grid-template-columns: repeat(2, 1fr); }
+ }
+ @media (max-width: 560px) {
+@@ -3585,7 +3586,7 @@ p {
+   font-size: var(--fs-sm);
+   line-height: 1.55;
+ }
+-@media (max-width: 1024px) {
++@media (max-width: 1023px) {
+   .funnel-grid { grid-template-columns: repeat(2, 1fr); }
+   .funnel-step:nth-child(2) { border-right: none; }
+   .funnel-step:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+@@ -4352,7 +4353,7 @@ html[data-theme='dark'] .paper-texture {
+ }
+ 
+ /* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
+-@media (max-width: 1020px) {
++@media (max-width: 1023px) {
+   .topbar-nav { display: none; }
+   .hamburger { display: inline-flex; }
+   .cmdk-trigger-label { display: inline; }
+@@ -4363,7 +4364,7 @@ html[data-theme='dark'] .paper-texture {
+       Dropping it frees ~140px — enough to keep ⌘K reachable on a phone, which
+       is the only entry point to RenoGuide's booking flow from the top of the
+       page. */
+-@media (max-width: 768px) {
++@media (max-width: 767px) {
+   .topbar-quote { display: none; }
+   .cmdk-trigger-label { display: none; }
+   .cmdk-trigger { width: 38px; padding: 0; justify-content: center; }
+@@ -4493,7 +4494,7 @@ html[data-theme='dark'] .paper-texture {
+    most valuable buttons on a phone: Call, and Get Free Quote.
+    The RenoGuide launcher (z-130) and the WhatsApp FAB (z-120) were
+    sitting directly on top of them. Lift both above the bar. */
+-@media (max-width: 768px) {
++@media (max-width: 767px) {
+   :root {
+     --fab-inset: 88px; /* 72px bar + 16px breathing room */
+     --fab-inset-x: 16px;
+@@ -4594,7 +4595,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+    than no label; the rail is desktop-only anyway (hidden <900px). */
+ 
+ /* ---- 6. Tablet: the awkward middle ------------------------- */
+-@media (min-width: 769px) and (max-width: 1020px) {
++@media (min-width: 768px) and (max-width: 1023px) {
+   /* Nav is a hamburger here, so the header has room — but the sticky
+      mobile CTA bar is gone (it stops at 768px). Put the FABs back down. */
+   :root { --fab-inset: 22px; --fab-inset-x: 22px; }
+@@ -6155,6 +6156,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   align-items: baseline;
+ }
+ .sp-swatch {
++  position: relative;
+   width: 68px;
+   height: 68px;
+   border-radius: 12px;
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 968d3a0..54388f7 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -50,7 +50,7 @@ import ChatWidget from "./components/ChatWidget";
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ const DESCRIPTION =
+-  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.';
++  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
+ 
+ export const metadata: Metadata = {
+   // Was pinned to the vercel.app preview host, so every canonical, og:url and
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index bb21f6a..54c4ba5 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -714,19 +714,21 @@ const onSubmit = (data: LeadFormData) => {
+                       id="f-name"
+                       {...register('name')}
+                       placeholder="Jane Doe"
++                      aria-invalid={!!errors.name}
+                       className={errors.name ? 'field-error' : ''}
+                     />
+-                    {errors.name && <p className="error-message">{errors.name.message}</p>}
++                    {errors.name && <p className="error-message" role="alert">{errors.name.message}</p>}
+                   </div>
+                   <div className="field">
+                     <label htmlFor="f-phone">Phone *</label>
+                     <input
+                       id="f-phone"
+                       {...register('phone')}
++                      aria-invalid={!!errors.phone}
+                       placeholder="(416) 249-1276"
+                       className={errors.phone ? 'field-error' : ''}
+                     />
+-                    {errors.phone && <p className="error-message">{errors.phone.message}</p>}
++                    {errors.phone && <p className="error-message" role="alert">{errors.phone.message}</p>}
+                   </div>
+                 </div>
+ 
+@@ -737,21 +739,23 @@ const onSubmit = (data: LeadFormData) => {
+                       id="f-email"
+                       type="email"
+                       {...register('email')}
++                      aria-invalid={!!errors.email}
+                       placeholder="jane@example.com"
+                       className={errors.email ? 'field-error' : ''}
+                     />
+-                    {errors.email && <p className="error-message">{errors.email.message}</p>}
++                    {errors.email && <p className="error-message" role="alert">{errors.email.message}</p>}
+                   </div>
+                   <div className="field">
+                     <label htmlFor="f-postal">Postal Code *</label>
+                     <input
+                       id="f-postal"
+                       {...register('postal')}
++                      aria-invalid={!!errors.postal}
+                       placeholder="M5V 3A8"
+                       maxLength={7}
+                       className={errors.postal ? 'field-error' : ''}
+                     />
+-                    {errors.postal && <p className="error-message">{errors.postal.message}</p>}
++                    {errors.postal && <p className="error-message" role="alert">{errors.postal.message}</p>}
+                   </div>
+                 </div>
+ 
+diff --git a/apps/web/lib/image.ts b/apps/web/lib/image.ts
+new file mode 100644
+index 0000000..04f8a9e
+--- /dev/null
++++ b/apps/web/lib/image.ts
+@@ -0,0 +1,18 @@
++/**
++ * Shared image constants for next/image.
++ *
++ * BLUR_WARM is a tiny (8x8) warm cream→walnut gradient used as the
++ * `placeholder="blur"` for remote photos, so images fade in warm instead of
++ * popping in — the premium feel, and it also reserves paint so there is no
++ * layout shift. One constant, one source of truth, so every photo fades the
++ * same way (the "one hand built this" rule applied to loading state).
++ */
++export const BLUR_WARM =
++  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAPUlEQVR4nG3LsQ0AIAzEQJH9h2IMRmCEd76hQQJBGhcnuc3RUzJKTg1RakpRqlGUmlzHred4dB+/GkWphgW5G7qJffmxzgAAAABJRU5ErkJggg==';
++
++/** Responsive `sizes` presets so next/image requests only the pixels it paints. */
++export const IMG_SIZES = {
++  swatch: '68px',
++  galleryTile: '(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw',
++  deckCard: '(max-width: 767px) 90vw, 420px',
++} as const;
