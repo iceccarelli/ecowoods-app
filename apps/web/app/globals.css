@@ -6484,3 +6484,44 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .price-card--deck .price-card-head {
   margin-top: 0.4rem;
 }
+
+
+/* ============================================================
+   LANDING UNIFY — hero fills the screen; sections bleed full-width
+   Appended last so it wins over earlier hero/section rules by cascade order.
+   ============================================================ */
+
+/* A. HERO — fill the viewport on every device, content centered.
+   svh = the small viewport height (with mobile browser chrome showing), so it
+   never gets cut off by the address bar. Overrides the earlier auto/flex-end
+   rules that let content spill past the fold. */
+.hero {
+  min-height: 100svh;
+  justify-content: center !important;
+  padding-top: clamp(5rem, 12vh, 8rem) !important;
+  padding-bottom: clamp(2rem, 6vh, 4rem) !important;
+}
+@supports not (height: 100svh) {
+  .hero { min-height: 100vh; }
+}
+
+/* B. SECTIONS BLEED FULL-WIDTH. Neutralise the floating-card treatment so no
+   section is an inset rounded rectangle. Tone change alone separates sections —
+   the AWS pattern. Real components inside (booking card, price cards) keep
+   their own rounding. */
+.section--card {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
+}
+@media (max-width: 767px) {
+  .section--card {
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0;
+  }
+}
+/* the adjacent-card join rules are now moot (no rounding to join), but keep
+   them harmless */
+.section--card + .section--card { margin-top: 0; }
