@@ -529,6 +529,71 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
+      {/* 3 · THE ECOWOODS STANDARD */}
+      <section
+        className="section photo-bg-section section--card"
+        id="services"
+        style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
+      >
+        <RotatingBackground theme="craft" interval={9000} />
+        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
+          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+            <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
+              The Ecowoods Standard
+            </span>
+            <h2 style={{ color: 'var(--cream-50)' }}>
+              One shop. One material. <span className="serif-italic">One standard.</span>
+            </h2>
+            <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
+              Installation, refinishing, sanding, stairs, inlays, and commercial — every service
+              delivered by the same family-owned shop since 1998.
+            </p>
+          </div>
+
+          <StandardDeck items={standardPillars} icon={Icon} />
+
+          <ServiceTicker items={serviceTicker} tone="dark" />
+        </div>
+      </section>
+
+      {/* 5 · RESULTS — curated proof */}
+      <section className="section paper-texture" id="gallery">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">Results</span>
+            <h2>
+              Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
+            </h2>
+            <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
+          </div>
+
+          <PortfolioGallery items={galleryItems} />
+        </div>
+      </section>
+
+      {/* 4 · HOW IT WORKS — 4-step funnel */}
+      <section className="section" id="process">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">How It Works</span>
+            <h2>
+              Four steps to <span className="serif-italic">certainty.</span>
+            </h2>
+            <p>
+              Fixed price guarantee at every stage. No subcontractors — ever.
+            </p>
+          </div>
+
+          <ProcessDeck items={funnelSteps} icon={Icon} />
+        </div>
+      </section>
+
+      {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
+             specs". The gallery creates the want; the configurator lets them act on
+             it while it is still warm, and hands the whole configuration to RenoGuide. */}
+      <ConfiguratorSection />
+      <SpecsCoverage species={speciesList} areas={serviceAreas} />
+
       {/* 2 · PROOF & AUTHORITY */}
       <section className="section paper-texture" id="reviews">
         <div className="shell">
@@ -559,71 +624,6 @@ const onSubmit = (data: LeadFormData) => {
 
         </div>
       </section>
-
-      {/* 3 · THE ECOWOODS STANDARD */}
-      <section
-        className="section photo-bg-section section--card"
-        id="services"
-        style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
-      >
-        <RotatingBackground theme="craft" interval={9000} />
-        <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-            <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
-              The Ecowoods Standard
-            </span>
-            <h2 style={{ color: 'var(--cream-50)' }}>
-              One shop. One material. <span className="serif-italic">One standard.</span>
-            </h2>
-            <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
-              Installation, refinishing, sanding, stairs, inlays, and commercial — every service
-              delivered by the same family-owned shop since 1998.
-            </p>
-          </div>
-
-          <StandardDeck items={standardPillars} icon={Icon} />
-
-          <ServiceTicker items={serviceTicker} tone="dark" />
-        </div>
-      </section>
-
-      {/* 4 · HOW IT WORKS — 4-step funnel */}
-      <section className="section" id="process">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">How It Works</span>
-            <h2>
-              Four steps to <span className="serif-italic">certainty.</span>
-            </h2>
-            <p>
-              Fixed price guarantee at every stage. No subcontractors — ever.
-            </p>
-          </div>
-
-          <ProcessDeck items={funnelSteps} icon={Icon} />
-        </div>
-      </section>
-
-      {/* 5 · RESULTS — curated proof */}
-      <section className="section paper-texture" id="gallery">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">Results</span>
-            <h2>
-              Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
-            </h2>
-            <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
-          </div>
-
-          <PortfolioGallery items={galleryItems} />
-        </div>
-      </section>
-
-      {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
-             specs". The gallery creates the want; the configurator lets them act on
-             it while it is still warm, and hands the whole configuration to RenoGuide. */}
-      <ConfiguratorSection />
-      <SpecsCoverage species={speciesList} areas={serviceAreas} />
 
       {/* Objection-handling FAQ — directly above the conversion moment */}
       <section className="section" id="faq">
