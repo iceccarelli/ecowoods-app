@@ -5821,8 +5821,21 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   }
 }
 /* cards sit on the page background, so consecutive ones need air between them */
+/* ============================================================
+   SECTION TRANSITION POLISH
+   Adjacent cards were pushed apart (margin-top) and both kept full rounding,
+   so twin dark sections (quote -> footer) read as two cards with a seam. Join
+   them: no gap, and flatten the corners where they meet so the surface is
+   continuous. AWS/Tesla read as one flowing page, not stacked cards.
+   ============================================================ */
 .section--card + .section--card {
-  margin-top: 1.25rem;
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.section--card:has(+ .section--card) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* ============================================================
