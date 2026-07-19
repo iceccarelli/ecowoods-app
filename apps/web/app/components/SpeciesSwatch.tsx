@@ -1,5 +1,8 @@
 'use client';
 
+import Image from 'next/image';
+import { BLUR_WARM, IMG_SIZES } from '@/lib/image';
+
 /**
  * SpeciesSwatch — a rendered plank of a given species.
  *
@@ -49,7 +52,15 @@ export default function SpeciesSwatch({
   if (photo) {
     return (
       <div className="sp-swatch">
-        <img src={photo} alt={`${name} flooring installed by Ecowoods`} loading="lazy" decoding="async" />
+        <Image
+          src={photo}
+          alt={`${name} flooring installed by Ecowoods`}
+          fill
+          sizes={IMG_SIZES.swatch}
+          placeholder="blur"
+          blurDataURL={BLUR_WARM}
+          style={{ objectFit: 'cover' }}
+        />
       </div>
     );
   }

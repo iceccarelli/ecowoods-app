@@ -6155,6 +6155,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   align-items: baseline;
 }
 .sp-swatch {
+  position: relative;
   width: 68px;
   height: 68px;
   border-radius: 12px;
