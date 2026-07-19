@@ -240,8 +240,8 @@ const featuredReviews: Review[] = [
 const standardPillars: Pillar[] = [
   {
     icon: 'shield',
-    title: 'Lifetime Warranty',
-    proof: 'Every job, every home — we stand behind our work for as long as you own it.',
+    title: 'Manufacturer-Backed',
+    proof: 'Premium finishes carry 25–35 year manufacturer warranties, structural to 50 — passed straight through to you, in writing.',
   },
   {
     icon: 'diamond',
@@ -299,8 +299,8 @@ const funnelSteps: FunnelStep[] = [
   {
     num: '04',
     icon: 'shield',
-    title: 'Lifetime Protection',
-    line: 'A lifetime workmanship warranty, in writing, for as long as you own the home.',
+    title: 'Warranties in Writing',
+    line: 'Manufacturer finish and structural warranties — 25 to 50 years — documented in your contract, not just promised.',
   },
 ];
 
@@ -308,7 +308,7 @@ const galleryItems: GalleryItem[] = [
   {
     id: 'rosedale',
     title: 'Rosedale Victorian Restoration',
-    sub: '1,800 sq ft Red Oak — Lifetime Warranty Delivered',
+    sub: '1,800 sq ft Red Oak — Fixed Price, Zero Dust',
     image:
       'https://images.unsplash.com/photo-1560449752-3fd4bdbe7df0?auto=format&fit=crop&w=1400&q=80',
     span: 'span-8',
@@ -380,8 +380,8 @@ const faqItems: FaqItem[] = [
     a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
   },
   {
-    q: 'What exactly does the lifetime warranty cover?',
-    a: 'Every Ecowoods installation and refinish carries a lifetime workmanship warranty for as long as you own the home — transferable once at sale. Manufacturer material warranties (typically 25–35 years on finish, 50 years structural) pass through on top. Everything is in writing in your contract.',
+    q: 'What warranty comes with the work?',
+    a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — and we pass every one through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right. No runaround.',
   },
   {
     q: 'How long will my project take?',
@@ -472,8 +472,8 @@ const onSubmit = (data: LeadFormData) => {
         <RotatingBackground />
         <div className="shell hero-content">
           <h1 className="reveal" data-delay="1">
-            Mastercrafted Hardwood Flooring.<br />
-            <em>Guaranteed for Life.</em>
+            Hardwood, Done Once.<br />
+            <em>Done Right.</em>
           </h1>
 
           <p className="hero-lede reveal" data-delay="2">
