@@ -46,7 +46,7 @@ export const viewport: Viewport = {
   ],
 };
 
-import ChatWidget from "./components/ChatWidget";
+import ChatWidgetLoader from "./components/ChatWidgetLoader";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 const DESCRIPTION =
@@ -125,7 +125,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Header />
           <main role="main" id="main">{children}</main>
           <SiteFooter />
-          <ChatWidget />
+          <ChatWidgetLoader />
           <ConversionRail />
         </Providers>
       </body>
