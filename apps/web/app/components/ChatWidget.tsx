@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import { EW_MARK } from '@/lib/brand';
 import { onRenoGuideOpen } from '@/lib/renoguide';
 
 // Theme-aware by construction: these are CSS custom properties, resolved by
@@ -138,7 +138,8 @@ export default function ChatWidget() {
         )}
         {!open && (
           <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
-            <Image src="/brand/ew-mark-cream.png" alt="" width={34} height={34} style={{ borderRadius: 9, display: 'block' }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EW_MARK} alt="" width={34} height={34} style={{ borderRadius: 9, display: 'block' }} />
           </button>
         )}
       </div>
@@ -147,7 +148,8 @@ export default function ChatWidget() {
         <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
-              <Image src="/brand/ew-mark-cream.png" alt="" width={38} height={38} style={{ borderRadius: 11, display: 'block' }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EW_MARK} alt="" width={38} height={38} style={{ borderRadius: 11, display: 'block' }} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>

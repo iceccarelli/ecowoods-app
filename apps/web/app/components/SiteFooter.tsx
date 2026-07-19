@@ -19,7 +19,7 @@
  * quote section, never gate the conversion path behind a tap.
  */
 
-import Image from 'next/image';
+import { EW_MARK } from '@/lib/brand';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { useIsMobile } from './SwipeDeck';
@@ -95,7 +95,8 @@ export default function SiteFooter() {
           <div>
             <div className="brand-lockup" style={{ marginBottom: '1.25rem' }}>
               <span className="brand-mark" style={{ width: '42px', height: '42px' }}>
-                <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="42px" style={{ objectFit: 'cover' }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EW_MARK} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </span>
               <span className="brand-copy">
                 <strong style={{ color: 'var(--cream-50)' }}>Ecowoods</strong>

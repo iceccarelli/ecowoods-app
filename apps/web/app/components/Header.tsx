@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
-import Image from 'next/image';
+import { EW_MARK } from '@/lib/brand';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -161,7 +161,8 @@ export default function Header() {
           {/* Brand Lockup */}
           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
             <span className="brand-mark" aria-hidden="true">
-              <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="44px" style={{ objectFit: 'cover' }} priority />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EW_MARK} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             </span>
             <span className="brand-copy">
               <strong>Ecowoods</strong>
