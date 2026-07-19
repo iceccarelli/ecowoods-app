@@ -135,7 +135,7 @@ export default function EstimateBuilder({
 
       {/* If estimate was already sent */}
       {quoteIssuedAt && !isEditing && (
-        <div style={{ padding: '0.75rem 1rem', background: 'rgba(74,124,89,0.08)', border: '1px solid rgba(74,124,89,0.25)', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+        <div style={{ padding: '0.75rem 1rem', background: 'rgba(74,124,89,0.08)', border: '1px solid rgba(74,124,89,0.25)', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: 'var(--fs-sm)' }}>
           ✅ Estimate sent to customer on <strong>{format(quoteIssuedAt, 'MMMM d, yyyy')}</strong>
           {existingAmount && <> · Total: <strong>{cad(existingAmount * (1 + taxRate / 100))}</strong></>}
         </div>
@@ -162,7 +162,7 @@ export default function EstimateBuilder({
               ))}
             </tbody>
           </table>
-          <div style={{ textAlign: 'right', fontSize: '0.9rem', lineHeight: 1.8 }}>
+          <div style={{ textAlign: 'right', fontSize: 'var(--fs-sm)', lineHeight: 1.8 }}>
             <div>Subtotal: {cad(subtotal)}</div>
             <div>HST ({taxRate}%): {cad(taxAmt)}</div>
             <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--copper-deep)' }}>
@@ -185,18 +185,18 @@ export default function EstimateBuilder({
                     placeholder="e.g. Hardwood installation – white oak"
                     value={line.description}
                     onChange={e => updateLine(i, 'description', e.target.value)}
-                    style={{ fontSize: '0.85rem', minWidth: 0 }}
+                    style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }}
                   />
-                  <input type="number" value={line.qty} min={0} onChange={e => updateLine(i, 'qty', e.target.value)} style={{ fontSize: '0.85rem', minWidth: 0 }} />
-                  <select value={line.unit} onChange={e => updateLine(i, 'unit', e.target.value)} style={{ fontSize: '0.85rem', minWidth: 0 }}>
+                  <input type="number" value={line.qty} min={0} onChange={e => updateLine(i, 'qty', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
+                  <select value={line.unit} onChange={e => updateLine(i, 'unit', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }}>
                     {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
-                  <input type="number" value={line.unitPrice} min={0} step="0.01" onChange={e => updateLine(i, 'unitPrice', e.target.value)} style={{ fontSize: '0.85rem', minWidth: 0 }} />
-                  <input type="number" value={line.amount} min={0} step="0.01" onChange={e => updateLine(i, 'amount', e.target.value)} style={{ fontSize: '0.85rem', minWidth: 0, background: 'var(--cream-100)' }} readOnly />
+                  <input type="number" value={line.unitPrice} min={0} step="0.01" onChange={e => updateLine(i, 'unitPrice', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
+                  <input type="number" value={line.amount} min={0} step="0.01" onChange={e => updateLine(i, 'amount', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0, background: 'var(--cream-100)' }} readOnly />
                   <button onClick={() => removeLine(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '1.1rem', padding: 0, lineHeight: 1, alignSelf: 'center' }}>×</button>
                 </div>
               ))}
-              <button onClick={addLine} className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem', fontSize: '0.82rem' }}>
+              <button onClick={addLine} className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem', fontSize: 'var(--fs-xs)' }}>
                 + Add line item
               </button>
             </div>
@@ -238,7 +238,7 @@ export default function EstimateBuilder({
         <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--line)' }}>
           {/* Warn if old data-URL PDF exists — needs regeneration */}
           {quotePdfUrl?.startsWith('data:') && (
-            <div style={{ fontSize: '0.82rem', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 'var(--radius)', padding: '0.5rem 0.75rem', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: 'var(--fs-xs)', color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 'var(--radius)', padding: '0.5rem 0.75rem', marginBottom: '0.75rem' }}>
               ⚠️ Old PDF stored as data URL — please click <strong>Generate PDF</strong> to create a shareable link.
             </div>
           )}

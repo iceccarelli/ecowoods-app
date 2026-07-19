@@ -90,7 +90,7 @@ export default function LoginForm({ enabledProviders }: { enabledProviders: OAut
           </span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>Ecowoods</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Customer Portal</div>
+            <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)' }}>Customer Portal</div>
           </div>
         </div>
 

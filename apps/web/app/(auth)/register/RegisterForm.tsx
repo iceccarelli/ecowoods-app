@@ -76,7 +76,7 @@ export default function RegisterForm({ enabledProviders }: { enabledProviders: O
             We sent a verification link to <strong>{submittedEmail}</strong>.
             Click the link in the email to activate your account.
           </p>
-          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '0.75rem' }}>
+          <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: '0.75rem' }}>
             The link expires in 30 minutes. Check your spam folder if you don&apos;t see it.
           </p>
 
@@ -88,7 +88,7 @@ export default function RegisterForm({ enabledProviders }: { enabledProviders: O
               background: '#fef9c3',
               border: '1px solid #fbbf24',
               borderRadius: 'var(--radius-lg)',
-              fontSize: '0.85rem',
+              fontSize: 'var(--fs-sm)',
               textAlign: 'left',
             }}>
               <p style={{ fontWeight: 700, marginBottom: '0.5rem' }}>
@@ -126,7 +126,7 @@ export default function RegisterForm({ enabledProviders }: { enabledProviders: O
           </span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>Ecowoods</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Create your account</div>
+            <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)' }}>Create your account</div>
           </div>
         </div>
 

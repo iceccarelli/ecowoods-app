@@ -80,7 +80,7 @@ export default async function MyInvoicesPage() {
                 )}
 
                 {inv.dueDate && (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginBottom: '1rem' }}>
                     Due: <strong>{format(inv.dueDate, 'MMMM d, yyyy')}</strong>
                   </div>
                 )}
@@ -159,21 +159,21 @@ export default async function MyInvoicesPage() {
                     <td><strong>#{inv.number}</strong></td>
                     <td style={{ fontSize: '0.88rem' }}>{inv.project.title}</td>
                     <td style={{ fontWeight: 700 }}>{formatCAD(inv.total)}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                    <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                       {inv.paidAt ? format(inv.paidAt, 'MMM d, yyyy') : '—'}
                     </td>
                     <td>
                       {inv.pdfUrl && !inv.pdfUrl.startsWith('data:') ? (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <Link href={`/docs/invoice/${inv.id}`} style={{ color: 'var(--copper-deep)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <Link href={`/docs/invoice/${inv.id}`} style={{ color: 'var(--copper-deep)', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
                             View
                           </Link>
-                          <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
                             PDF
                           </a>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--muted-soft)', fontSize: '0.85rem' }}>—</span>
+                        <span style={{ color: 'var(--muted-soft)', fontSize: 'var(--fs-sm)' }}>—</span>
                       )}
                     </td>
                   </tr>

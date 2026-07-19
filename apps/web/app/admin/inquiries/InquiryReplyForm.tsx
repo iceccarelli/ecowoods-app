@@ -68,8 +68,8 @@ export default function InquiryReplyForm({
   return (
     <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Your Reply</label>
-        <button onClick={handleAiDraft} disabled={aiLoading} className="btn btn-ghost btn-sm" style={{ fontSize: '0.78rem' }}>
+        <label style={{ fontWeight: 600, fontSize: 'var(--fs-sm)' }}>Your Reply</label>
+        <button onClick={handleAiDraft} disabled={aiLoading} className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--fs-2xs)' }}>
           {aiLoading ? '✨ Drafting…' : '✨ AI Draft'}
         </button>
       </div>

@@ -392,7 +392,7 @@ export default function Header() {
           <a className="btn btn-ghost btn-lg" href={`${baseUrl}#quote`} onClick={() => setMobileOpen(false)}>
             Request a free in-home estimate
           </a>
-          <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
             Mon–Sat · 8:00 AM – 7:00 PM<br />
             Showroom: 32 Norfield Crescent, Toronto, Ontario
           </p>

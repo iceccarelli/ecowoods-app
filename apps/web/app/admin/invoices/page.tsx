@@ -78,7 +78,7 @@ export default async function AdminInvoicesPage({
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '0.75rem' }}>
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '0.75rem' }}>
             Open each invoice to mark as paid once you verify receipt in your banking app.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default async function AdminInvoicesPage({
               <tr key={inv.id}>
                 <td style={{ fontWeight: 700 }}>#{inv.number}</td>
                 <td>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{inv.project.title.slice(0, 50)}</div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)' }}>{inv.project.title.slice(0, 50)}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{inv.project.user.name}</div>
                 </td>
                 <td style={{ fontSize: '0.88rem' }}>{inv.stage}</td>
@@ -124,7 +124,7 @@ export default async function AdminInvoicesPage({
                 <td>
                   <span className={`portal-badge portal-badge-${statusColor[inv.status]}`}>{inv.status}</span>
                 </td>
-                <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                <td style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
                   {inv.dueDate ? format(inv.dueDate, 'MMM d') : '—'}
                 </td>
                 <td>

@@ -77,7 +77,7 @@ export default function ConvertToProjectForm({
       <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--copper-deep)' }}>
         ✅ Convert to Project
       </h2>
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1.25rem' }}>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginBottom: '1.25rem' }}>
         Customer approved the estimate. Fill in project details to create the contract.
       </p>
 
@@ -117,7 +117,7 @@ export default function ConvertToProjectForm({
         </div>
       </div>
 
-      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '0.5rem' }}>
+      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--muted)', marginBottom: '0.5rem' }}>
         Invoice Staging (must sum to 100%)
       </div>
       <div className="field-row">

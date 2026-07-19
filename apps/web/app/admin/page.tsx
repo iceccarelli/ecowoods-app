@@ -110,7 +110,7 @@ export default async function AdminDashboard() {
                 <Link key={q.id} href={`/admin/quotes/${q.id}`} className="portal-list-item portal-list-item-link">
                   <div>
                     <div style={{ fontWeight: 600 }}>{q.name}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                       {q.city}, {q.province} · {q.service ?? 'General'}
                       {q.squareFeet ? ` · ${q.squareFeet.toLocaleString()} sq ft` : ''}
                     </div>
@@ -119,7 +119,7 @@ export default async function AdminDashboard() {
                     <span className={`portal-badge portal-badge-${q.status === 'PENDING' ? 'info' : 'warning'}`}>
                       {q.status}
                     </span>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginTop: '0.25rem' }}>
                       {format(q.createdAt, 'MMM d')}
                     </div>
                   </div>
@@ -143,13 +143,13 @@ export default async function AdminDashboard() {
                 <div key={pay.id} className="portal-list-item">
                   <div>
                     <div style={{ fontWeight: 600 }}>#{pay.invoice.number}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                       {pay.invoice.project.title.slice(0, 50)}{pay.invoice.project.title.length > 50 ? '…' : ''}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, color: 'var(--success)' }}>{formatCAD(pay.amount)}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)' }}>
                       {pay.method?.replace('_', ' ') ?? ''}
                     </div>
                   </div>

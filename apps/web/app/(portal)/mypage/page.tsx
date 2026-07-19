@@ -102,7 +102,7 @@ export default async function MyPageDashboard() {
                 <div key={inv.id} className="portal-list-item">
                   <div>
                     <div style={{ fontWeight: 600 }}>#{inv.number}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{inv.project.title}</div>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>{inv.project.title}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700 }}>{formatCAD(inv.total)}</div>
@@ -130,7 +130,7 @@ export default async function MyPageDashboard() {
                 <div key={proj.id} className="portal-list-item">
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{proj.title}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                       {proj.city}{proj.province ? `, ${proj.province}` : ''}
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default async function MyPageDashboard() {
                     {q.service ? q.service.charAt(0).toUpperCase() + q.service.slice(1) : 'Quote Request'}
                     {q.city ? ` — ${q.city}` : ''}
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                     Submitted {formatDistanceToNow(q.createdAt, { addSuffix: true })}
                   </div>
                 </div>
