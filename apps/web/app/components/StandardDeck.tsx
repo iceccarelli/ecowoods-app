@@ -49,7 +49,7 @@ export default function StandardDeck({
       srLabel={(p) => `${p.title}. ${p.proof}`}
       cardClassName="pfd-card--panel pfd-card--standard"
       tone="dark"
-      cta={{ href: '#quote', label: 'Get this standard in your home' }}
+      cta={{ href: '#quote', label: 'Put this crew in your home' }}
       hint={`Swipe through what makes Ecowoods different · ${items.length} standards`}
       renderCard={(p) => (
         <>
