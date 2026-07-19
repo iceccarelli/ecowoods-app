@@ -1,0 +1,124 @@
+From 3a85f283a7520d09c9962fcdce78770955179d94 Mon Sep 17 00:00:00 2001
+From: Vincenzo Grimaldi <vince.ceccarelli@gmail.com>
+Date: Sun, 19 Jul 2026 13:33:33 +0000
+Subject: [PATCH] fix(brand): inline EW logo as data URI so it can never 404
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The logo 404'd in production even after unoptimized: serving it from
+/public/brand made it depend on the deploy serving that path (Vercel monorepo
+public-folder resolution + cache), which failed on the live site. Root fix:
+inline the mark as a ~2.2KB base64 data URI (lib/brand.ts) rendered with a
+plain <img> in the header, footer, and both chat spots. No network request, no
+optimizer, no sharp, no /public dependency — it renders the instant the
+component mounts, on every deploy. Cream-chip variant so it reads on any
+background.
+---
+ apps/web/app/components/ChatWidget.tsx |  8 +++++---
+ apps/web/app/components/Header.tsx     |  5 +++--
+ apps/web/app/components/SiteFooter.tsx |  5 +++--
+ apps/web/lib/brand.ts                  | 12 ++++++++++++
+ 4 files changed, 23 insertions(+), 7 deletions(-)
+ create mode 100644 apps/web/lib/brand.ts
+
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index 784be9c..9df2000 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ 
+ import { useState, useEffect, useRef, useCallback } from 'react';
+-import Image from 'next/image';
++import { EW_MARK } from '@/lib/brand';
+ import { onRenoGuideOpen } from '@/lib/renoguide';
+ 
+ // Theme-aware by construction: these are CSS custom properties, resolved by
+@@ -138,7 +138,8 @@ export default function ChatWidget() {
+         )}
+         {!open && (
+           <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
+-            <Image src="/brand/ew-mark-cream.png" alt="" width={34} height={34} unoptimized style={{ borderRadius: 9, display: 'block' }} />
++            {/* eslint-disable-next-line @next/next/no-img-element */}
++            <img src={EW_MARK} alt="" width={34} height={34} style={{ borderRadius: 9, display: 'block' }} />
+           </button>
+         )}
+       </div>
+@@ -147,7 +148,8 @@ export default function ChatWidget() {
+         <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
+             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
+-              <Image src="/brand/ew-mark-cream.png" alt="" width={38} height={38} unoptimized style={{ borderRadius: 11, display: 'block' }} />
++              {/* eslint-disable-next-line @next/next/no-img-element */}
++              <img src={EW_MARK} alt="" width={38} height={38} style={{ borderRadius: 11, display: 'block' }} />
+             </span>
+             <div style={{ flex: 1, minWidth: 0 }}>
+               <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index d504fab..ab995b2 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
+ import { useSession, signOut } from 'next-auth/react';
+ import ThemeToggle from './ThemeToggle';
+ import CommandPalette from './CommandPalette';
+-import Image from 'next/image';
++import { EW_MARK } from '@/lib/brand';
+ 
+ /* ---------------------- Hooks ---------------------- */
+ function useScrollState() {
+@@ -161,7 +161,8 @@ export default function Header() {
+           {/* Brand Lockup */}
+           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
+             <span className="brand-mark" aria-hidden="true">
+-              <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="44px" style={{ objectFit: 'cover' }} priority unoptimized />
++              {/* eslint-disable-next-line @next/next/no-img-element */}
++              <img src={EW_MARK} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+             </span>
+             <span className="brand-copy">
+               <strong>Ecowoods</strong>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index ae79558..f2fb357 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -19,7 +19,7 @@
+  * quote section, never gate the conversion path behind a tap.
+  */
+ 
+-import Image from 'next/image';
++import { EW_MARK } from '@/lib/brand';
+ import type { ReactNode } from 'react';
+ import CookiePreferencesButton from './CookiePreferencesButton';
+ import { useIsMobile } from './SwipeDeck';
+@@ -95,7 +95,8 @@ export default function SiteFooter() {
+           <div>
+             <div className="brand-lockup" style={{ marginBottom: '1.25rem' }}>
+               <span className="brand-mark" style={{ width: '42px', height: '42px' }}>
+-                <Image src="/brand/ew-mark-cream.png" alt="" fill sizes="42px" style={{ objectFit: 'cover' }} unoptimized />
++                {/* eslint-disable-next-line @next/next/no-img-element */}
++                <img src={EW_MARK} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+               </span>
+               <span className="brand-copy">
+                 <strong style={{ color: 'var(--cream-50)' }}>Ecowoods</strong>
+diff --git a/apps/web/lib/brand.ts b/apps/web/lib/brand.ts
+new file mode 100644
+index 0000000..24e6cb0
+--- /dev/null
++++ b/apps/web/lib/brand.ts
+@@ -0,0 +1,12 @@
++/**
++ * EW_MARK — the Ecowoods monogram inlined as a base64 data URI.
++ *
++ * Why inline and not a file in /public: a logo must never 404. Serving it as a
++ * static asset made it depend on the deploy serving /brand/ correctly and on the
++ * next/image optimizer (sharp) — both of which broke it in production. As a data
++ * URI it ships inside the bundle: no network request, no optimizer, no
++ * deploy-config dependency. It renders the instant the component mounts, every
++ * time. It is the cream-chip version (self-contained cream background) so it
++ * reads on any header/footer/chat colour. ~2.2KB, quantized.
++ */
++export const EW_MARK = 'data:image/png;base64,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';
+-- 
+2.43.0
+
