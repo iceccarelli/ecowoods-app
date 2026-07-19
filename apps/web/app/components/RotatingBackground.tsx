@@ -54,7 +54,7 @@ export function RotatingBackground({
       </div>
       {current && (
         <a href={`${current.creditUrl}?utm_source=ecowoods&utm_medium=referral`} target="_blank" rel="noopener noreferrer"
-          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 11, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
+          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
           Photo: {current.credit} / Unsplash
         </a>
       )}
