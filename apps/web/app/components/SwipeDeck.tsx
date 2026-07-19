@@ -29,7 +29,7 @@ const MAX_VISIBLE = 3;
 
 /** SSR-safe mobile check. `mounted` guards against hydration mismatch: render
  *  the server/desktop markup until we know we're on a touch-width viewport. */
-export function useIsMobile(query = '(max-width: 767px)') {
+export function useIsMobile(query = '(max-width: 1023px)') {
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
