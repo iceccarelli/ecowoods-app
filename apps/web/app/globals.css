@@ -6453,3 +6453,34 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
     padding-bottom: clamp(2rem, 5vh, 3rem);
   }
 }
+
+
+/* ============================================================
+   PRICING on mobile — the shared SwipeDeck carries the tiers.
+   The card visual is the same .price-card; these rules adapt it to the deck's
+   full-bleed dark card so it reads like the other swipe decks.
+   ============================================================ */
+.pfd-card--price {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.price-card--deck {
+  height: 100%;
+  padding: 1.9rem 1.6rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.price-card--deck.is-featured {
+  border-color: var(--copper);
+  box-shadow: 0 0 0 1px var(--copper), var(--shadow-md);
+}
+/* the "Most common" flag needs room inside the deck card */
+.price-card--deck .price-flag {
+  top: 1rem;
+  left: 1.6rem;
+}
+.price-card--deck .price-card-head {
+  margin-top: 0.4rem;
+}
