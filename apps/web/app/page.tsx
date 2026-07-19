@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
+import PricingSection from './components/PricingSection';
 import BookingPanel from './components/BookingPanel';
 import ConfiguratorSection from './components/ConfiguratorSection';
 import CountUp from './components/CountUp';
@@ -208,17 +209,6 @@ const trustStats = [
   { to: 2.5, decimals: 1, unit: 'M', em: '+', lbl: 'Sq Ft Sanded & Finished' },
 ];
 
-const certifications = [
-  'NWFA Certified Installer',
-  'FSC Certified Materials',
-  'GreenGuard Gold Finishes',
-  'BBB A+ Accredited',
-  'WSIB Compliant',
-  'Bona Certified Craftsman',
-  'Loba 2K Specialist',
-  'HomeStars Best of Award · 8 Years',
-  'Houzz Best of Service',
-];
 
 const featuredReviews: Review[] = [
   {
@@ -517,18 +507,6 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* Certification trust bar */}
-      <section className="marquee" aria-label="Certifications and partners">
-        <div className="marquee-track">
-          {certifications.map((label, i) => (
-            <span key={i} className="marquee-item">
-              {Icon.award}
-              {label}
-            </span>
-          ))}
-        </div>
-      </section>
-
       {/* 3 · THE ECOWOODS STANDARD */}
       <section
         className="section photo-bg-section section--card"
@@ -660,6 +638,11 @@ const onSubmit = (data: LeadFormData) => {
           </div>
         </div>
       </section>
+
+      {/* 5c · PRICING — transparent range before the ask */}
+
+      <PricingSection />
+
 
       {/* 6 · CONVERSION — preserved Free In-Home Estimate section (untouched) */}
       <section className="section wood-grain-dark noise-overlay section--card" id="quote">
