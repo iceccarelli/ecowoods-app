@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,8 +10,6 @@ import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
-import BookingPanel from './components/BookingPanel';
-import ConfiguratorSection from './components/ConfiguratorSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
 import PortfolioGallery from './components/PortfolioGallery';
@@ -18,6 +17,18 @@ import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
+
+// Heavy, below-the-fold, interactive tools with no indexable text: load them in
+// their own client chunks (ssr:false) so they never block first paint. The
+// fallbacks reserve height so nothing shifts when they hydrate in (CLS = 0).
+const ConfiguratorSection = dynamic(() => import('./components/ConfiguratorSection'), {
+  ssr: false,
+  loading: () => <div aria-hidden="true" style={{ minHeight: 560 }} />,
+});
+const BookingPanel = dynamic(() => import('./components/BookingPanel'), {
+  ssr: false,
+  loading: () => <div aria-hidden="true" style={{ minHeight: 420 }} />,
+});
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel
@@ -466,6 +477,22 @@ const onSubmit = (data: LeadFormData) => {
 
   return (
     <div ref={root as React.MutableRefObject<HTMLDivElement>}>
+      {/* FAQPage structured data — built from faqItems (one source of truth) so
+          Google shows FAQ rich results and AI agents can quote the answers. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
       {/* 1 · HERO — minimalist authority */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />

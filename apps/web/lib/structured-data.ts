@@ -8,7 +8,7 @@ export const localBusinessSchema = {
       legalName: 'Ecowoods Hardwood Flooring Inc.',
       url: 'https://ecowoods.ca',
       image: 'https://ecowoods.ca/og-image.jpg',
-      logo: 'https://ecowoods.ca/logo.png',
+      logo: 'https://ecowoods.ca/icon-512.png',
       // Was +1-416-555-9663 — a placeholder that contradicted the (416) 249-1276
       // shown in Header, ChatWidget, the contact block and the AI's
       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
@@ -18,7 +18,7 @@ export const localBusinessSchema = {
       priceRange: '$$',
       foundingDate: '1998',
       slogan: "Toronto's master hardwood flooring artisans",
-      description: 'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by a lifetime workmanship warranty.',
+      description: 'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
       address: {
         '@type': 'PostalAddress',
         streetAddress: '32 Norfield Crescent, Toronto, ON',
@@ -69,6 +69,21 @@ export const localBusinessSchema = {
       // JSON-LD. If EcoWoods wants stars in the SERP, the supported route is
       // third-party aggregators (Google Business Profile, HomeStars, Houzz)
       // emitting it about EcoWoods — which they already do.
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Hardwood Flooring Services',
+        itemListElement: [
+          'Hardwood Flooring Installation',
+          'Hardwood Floor Refinishing',
+          'Dust-Free Floor Sanding',
+          'Hardwood Floor Restoration',
+          'Custom Inlays & Borders',
+          'Stair Refinishing',
+        ].map((name) => ({
+          '@type': 'Offer',
+          itemOffered: { '@type': 'Service', name, areaServed: 'Toronto & GTA' },
+        })),
+      },
       sameAs: [
         'https://www.instagram.com/ecowoods.ca',
         'https://www.facebook.com/ecowoodshardwood',
