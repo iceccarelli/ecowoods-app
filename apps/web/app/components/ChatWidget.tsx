@@ -108,7 +108,8 @@ export default function ChatWidget() {
       setInput(prefill);
       setTimeout(() => inputRef.current?.focus(), 250);
     }
-    if (source && typeof window !== 'undefined') {
+    if (source && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      // Dev-only telemetry breadcrumb; wire to a real analytics sink for prod.
       console.log(JSON.stringify({ event: 'renoguide.opened', source }));
     }
   }), []);

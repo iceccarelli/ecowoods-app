@@ -714,19 +714,21 @@ const onSubmit = (data: LeadFormData) => {
                       id="f-name"
                       {...register('name')}
                       placeholder="Jane Doe"
+                      aria-invalid={!!errors.name}
                       className={errors.name ? 'field-error' : ''}
                     />
-                    {errors.name && <p className="error-message">{errors.name.message}</p>}
+                    {errors.name && <p className="error-message" role="alert">{errors.name.message}</p>}
                   </div>
                   <div className="field">
                     <label htmlFor="f-phone">Phone *</label>
                     <input
                       id="f-phone"
                       {...register('phone')}
+                      aria-invalid={!!errors.phone}
                       placeholder="(416) 249-1276"
                       className={errors.phone ? 'field-error' : ''}
                     />
-                    {errors.phone && <p className="error-message">{errors.phone.message}</p>}
+                    {errors.phone && <p className="error-message" role="alert">{errors.phone.message}</p>}
                   </div>
                 </div>
 
@@ -737,21 +739,23 @@ const onSubmit = (data: LeadFormData) => {
                       id="f-email"
                       type="email"
                       {...register('email')}
+                      aria-invalid={!!errors.email}
                       placeholder="jane@example.com"
                       className={errors.email ? 'field-error' : ''}
                     />
-                    {errors.email && <p className="error-message">{errors.email.message}</p>}
+                    {errors.email && <p className="error-message" role="alert">{errors.email.message}</p>}
                   </div>
                   <div className="field">
                     <label htmlFor="f-postal">Postal Code *</label>
                     <input
                       id="f-postal"
                       {...register('postal')}
+                      aria-invalid={!!errors.postal}
                       placeholder="M5V 3A8"
                       maxLength={7}
                       className={errors.postal ? 'field-error' : ''}
                     />
-                    {errors.postal && <p className="error-message">{errors.postal.message}</p>}
+                    {errors.postal && <p className="error-message" role="alert">{errors.postal.message}</p>}
                   </div>
                 </div>
 

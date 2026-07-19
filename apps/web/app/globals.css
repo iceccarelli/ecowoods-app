@@ -884,7 +884,8 @@ p {
 /* --------------------- Hero --------------------- */
 .hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for browsers without svh */
+  min-height: 100svh; /* small viewport height: fills exactly, no address-bar overflow */
   display: flex;
   align-items: center;
   padding-top: 6rem;
@@ -2295,7 +2296,7 @@ p {
 }
 
 /* --------------------- Responsive (Enhanced) --------------------- */
-@media (max-width: 1024px) {
+@media (max-width: 1023px) {
   .contact-grid { grid-template-columns: 1fr; }
   .contact-info { position: static; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 2.5rem; }
@@ -2306,7 +2307,7 @@ p {
   .service-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .topbar-nav { display: none; }
   .phone-pill { display: none; }
   .login-btn { display: none; }
@@ -2658,7 +2659,7 @@ p {
   margin: 0 auto;
 }
 /* 769px 이상에서만 2열 */
-@media (min-width: 769px) {
+@media (min-width: 768px) {
   .app-promo {
     grid-template-columns: 1fr 1fr;
     gap: 3rem;
@@ -3302,7 +3303,7 @@ p {
   -webkit-touch-callout: none; /* stop iOS long-press Copy/Search menu on the big number */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .compare-table th,
   .compare-table td {
     padding: 0.85rem 0.9rem;
@@ -3364,7 +3365,7 @@ p {
   font-weight: 600;
   flex-shrink: 0;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1023px) {
   /* stack to one column on tablet/mobile; step labels keep the flow legible */
   .booking-step-label { font-size: var(--fs-base); }
 }
@@ -3513,7 +3514,7 @@ p {
   font-size: var(--fs-sm);
   line-height: 1.55;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1023px) {
   .standard-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
@@ -3585,7 +3586,7 @@ p {
   font-size: var(--fs-sm);
   line-height: 1.55;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1023px) {
   .funnel-grid { grid-template-columns: repeat(2, 1fr); }
   .funnel-step:nth-child(2) { border-right: none; }
   .funnel-step:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
@@ -4352,7 +4353,7 @@ html[data-theme='dark'] .paper-texture {
 }
 
 /* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
-@media (max-width: 1020px) {
+@media (max-width: 1023px) {
   .topbar-nav { display: none; }
   .hamburger { display: inline-flex; }
   .cmdk-trigger-label { display: inline; }
@@ -4363,7 +4364,7 @@ html[data-theme='dark'] .paper-texture {
       Dropping it frees ~140px — enough to keep ⌘K reachable on a phone, which
       is the only entry point to RenoGuide's booking flow from the top of the
       page. */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .topbar-quote { display: none; }
   .cmdk-trigger-label { display: none; }
   .cmdk-trigger { width: 38px; padding: 0; justify-content: center; }
@@ -4493,7 +4494,7 @@ html[data-theme='dark'] .paper-texture {
    most valuable buttons on a phone: Call, and Get Free Quote.
    The RenoGuide launcher (z-130) and the WhatsApp FAB (z-120) were
    sitting directly on top of them. Lift both above the bar. */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   :root {
     --fab-inset: 88px; /* 72px bar + 16px breathing room */
     --fab-inset-x: 16px;
@@ -4594,7 +4595,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
    than no label; the rail is desktop-only anyway (hidden <900px). */
 
 /* ---- 6. Tablet: the awkward middle ------------------------- */
-@media (min-width: 769px) and (max-width: 1020px) {
+@media (min-width: 768px) and (max-width: 1023px) {
   /* Nav is a hamburger here, so the header has room — but the sticky
      mobile CTA bar is gone (it stops at 768px). Put the FABs back down. */
   :root { --fab-inset: 22px; --fab-inset-x: 22px; }
@@ -6155,6 +6156,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   align-items: baseline;
 }
 .sp-swatch {
+  position: relative;
   width: 68px;
   height: 68px;
   border-radius: 12px;

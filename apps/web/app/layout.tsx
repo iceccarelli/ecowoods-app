@@ -50,7 +50,7 @@ import ChatWidget from "./components/ChatWidget";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 const DESCRIPTION =
-  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, lifetime workmanship warranty. Free in-home estimates.';
+  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
 
 export const metadata: Metadata = {
   // Was pinned to the vercel.app preview host, so every canonical, og:url and

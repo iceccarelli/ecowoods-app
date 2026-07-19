@@ -1,12 +1,8 @@
 'use client';
 
-/**
- * PortfolioGallery — masonry grid on desktop, SwipeDeck on mobile.
- * The deck engine lives in SwipeDeck.tsx; this file only supplies the image
- * card content and the desktop fallback grid (unchanged from the original).
- */
-
+import Image from 'next/image';
 import SwipeDeck, { useIsMobile } from './SwipeDeck';
+import { BLUR_WARM, IMG_SIZES } from '@/lib/image';
 
 export type PortfolioItem = {
   id: string;
@@ -23,12 +19,15 @@ export default function PortfolioGallery({ items }: { items: PortfolioItem[] }) 
     <div className="gallery-grid">
       {items.map((g, i) => (
         <div key={g.id} className={`gallery-tile ${g.span} reveal`} data-delay={(i % 4) + 1}>
-          <img
+          <Image
             src={g.image}
             alt={g.title}
-            loading={i === 0 ? 'eager' : 'lazy'}
-            fetchPriority={i === 0 ? 'high' : 'auto'}
-            decoding="async"
+            fill
+            sizes={IMG_SIZES.galleryTile}
+            priority={i === 0}
+            placeholder="blur"
+            blurDataURL={BLUR_WARM}
+            style={{ objectFit: 'cover' }}
           />
           <div className="gallery-caption">
             <div className="title">{g.title}</div>
@@ -53,7 +52,17 @@ export default function PortfolioGallery({ items }: { items: PortfolioItem[] }) 
       hint={`Swipe to browse · ${items.length} recent Toronto projects`}
       renderCard={(g) => (
         <>
-          <img className="pfd-img" src={g.image} alt={g.title} draggable={false} decoding="async" />
+          <Image
+            className="pfd-img"
+            src={g.image}
+            alt={g.title}
+            fill
+            sizes={IMG_SIZES.deckCard}
+            placeholder="blur"
+            blurDataURL={BLUR_WARM}
+            draggable={false}
+            style={{ objectFit: 'cover' }}
+          />
           <div className="pfd-scrim" />
           <div className="pfd-caption">
             <div className="pfd-title">{g.title}</div>
