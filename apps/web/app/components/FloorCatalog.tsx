@@ -46,37 +46,37 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
   }, [onClose, onNav]);
 
   return createPortal(
-    <div className="fc-scrim" role="dialog" aria-modal="true" aria-label={`${floor.name} — details`} onClick={onClose}>
-      <div className="fc-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
-        <div className="fc-modal-media">
-          <div className="fc-modal-stage">
-            <div className="fc-kb" key={shot}>
+    <div className="gc-scrim" role="dialog" aria-modal="true" aria-label={`${floor.name} — details`} onClick={onClose}>
+      <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="gc-modal-media">
+          <div className="gc-modal-stage">
+            <div className="gc-kb" key={shot}>
               <Image src={imgs[shot]} alt={`${floor.name} — ${shot}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
             </div>
           </div>
-          <div className="fc-thumbs" role="tablist" aria-label="Views of this floor">
+          <div className="gc-thumbs" role="tablist" aria-label="Views of this floor">
             {SHOT_KEYS.map((k) => (
-              <button key={k} role="tab" aria-selected={shot === k} className={`fc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
+              <button key={k} role="tab" aria-selected={shot === k} className={`gc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
                 <Image src={imgs[k]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
-                <span className="fc-thumb-label">{SHOT_LABEL[k]}</span>
+                <span className="gc-thumb-label">{SHOT_LABEL[k]}</span>
               </button>
             ))}
           </div>
         </div>
-        <div className="fc-modal-body">
-          <span className="fc-eyebrow">{floor.species} · {floor.format}</span>
-          <h3 className="fc-modal-title">{floor.name}</h3>
-          <p className="fc-tagline">{floor.tagline}</p>
-          <p className="fc-desc">{floor.description}</p>
-          <dl className="fc-specs">
+        <div className="gc-modal-body">
+          <span className="gc-eyebrow">{floor.species} · {floor.format}</span>
+          <h3 className="gc-modal-title">{floor.name}</h3>
+          <p className="gc-tagline">{floor.tagline}</p>
+          <p className="gc-desc">{floor.description}</p>
+          <dl className="gc-specs">
             <div><dt>Hardness</dt><dd>Janka {floor.janka}</dd></div>
             <div><dt>Origin</dt><dd>{floor.origin}</dd></div>
             <div><dt>Finish</dt><dd>{floor.finish}</dd></div>
             <div><dt>Best for</dt><dd>{floor.bestFor}</dd></div>
           </dl>
-          <a href="#quote" className="fc-cta" onClick={onClose}>Get a fixed-price estimate for this floor</a>
-          <div className="fc-modal-nav">
+          <a href="#quote" className="gc-cta" onClick={onClose}>Get a fixed-price estimate for this floor</a>
+          <div className="gc-modal-nav">
             <button onClick={() => onNav(-1)} aria-label="Previous floor">‹ Prev</button>
             <span>{index + 1} / {N}</span>
             <button onClick={() => onNav(1)} aria-label="Next floor">Next ›</button>
@@ -97,26 +97,26 @@ function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
   const rot = dx * 0.04;
   return (
     <div
-      className="fc-stage"
+      className="gc-stage"
       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
       role="group" aria-label={`${floor.name}. Tap for photos and specs.`}
       onClick={onOpen} {...drag}
     >
       {/* ken-burns image, remounts (and restarts the pan/zoom) on every floor+shot change */}
-      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
+      <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
         <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
       </div>
-      <span className="fc-card-scrim" />
-      <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
-      <span className="fc-card-chip">Janka {floor.janka}</span>
-      <span className="fc-tap-hint">Tap for 3 photos + details</span>
-      <span className="fc-card-cap">
-        <span className="fc-card-eyebrow">{floor.species} · {floor.format}</span>
-        <span className="fc-card-title">{floor.name}</span>
-        <span className="fc-shot-cap" key={shot}>{shotCaption(floor, shot)}</span>
+      <span className="gc-card-scrim" />
+      <span className="gc-shot-badge">{SHOT_LABEL[shot]}</span>
+      <span className="gc-card-chip">Janka {floor.janka}</span>
+      <span className="gc-tap-hint">Tap for 3 photos + details</span>
+      <span className="gc-card-cap">
+        <span className="gc-card-eyebrow">{floor.species} · {floor.format}</span>
+        <span className="gc-card-title">{floor.name}</span>
+        <span className="gc-shot-cap" key={shot}>{shotCaption(floor, shot)}</span>
       </span>
-      <span className="fc-shot-dots">
-        {SHOT_KEYS.map((k) => <span key={k} className={`fc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
+      <span className="gc-shot-dots">
+        {SHOT_KEYS.map((k) => <span key={k} className={`gc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
       </span>
     </div>
   );
@@ -208,43 +208,43 @@ export default function FloorCatalog() {
 
   return (
     <>
-      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-        <div className="fc-viewport">
+      <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+        <div className="gc-viewport">
           {/* desktop peek — previous */}
-          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
-            <div className="fc-kb fc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
+            <div className="gc-kb gc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
 
           <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(floor)} drag={drag} />
 
           {/* desktop peek — next */}
-          <button className="fc-peek fc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
-            <div className="fc-kb fc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+          <button className="gc-peek gc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
+            <div className="gc-kb gc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
         </div>
 
         {/* AWS-style control pill */}
-        <div className="fc-controls">
-          <button className="fc-nav-btn" onClick={() => goFloor(-1)} aria-label="Previous floor">‹</button>
-          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
-            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
+        <div className="gc-controls">
+          <button className="gc-nav-btn" onClick={() => goFloor(-1)} aria-label="Previous floor">‹</button>
+          <button className="gc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? <span className="gc-ic-pause" /> : <span className="gc-ic-play" />}
           </button>
-          <span className="fc-counter">{floor + 1} / {N}</span>
-          <button className="fc-nav-btn" onClick={() => goFloor(1)} aria-label="Next floor">›</button>
+          <span className="gc-counter">{floor + 1} / {N}</span>
+          <button className="gc-nav-btn" onClick={() => goFloor(1)} aria-label="Next floor">›</button>
         </div>
 
-        <div className="fc-dots" role="tablist" aria-label="Floors">
+        <div className="gc-dots" role="tablist" aria-label="Floors">
           {floors.map((f, i) => (
             <button key={f.slug} role="tab" aria-selected={i === floor} aria-label={f.name}
-              className={`fc-dot ${i === floor ? 'is-active' : ''}`} onClick={() => jumpFloor(i)} />
+              className={`gc-dot ${i === floor ? 'is-active' : ''}`} onClick={() => jumpFloor(i)} />
           ))}
         </div>
 
-        <p className="fc-deck-hint">
-          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> swipe or use the arrows <span className="fc-hint-sep">·</span> tap for photos &amp; specs
+        <p className="gc-deck-hint">
+          {playing ? 'Auto-playing' : 'Paused'} <span className="gc-hint-sep">·</span> swipe or use the arrows <span className="gc-hint-sep">·</span> tap for photos &amp; specs
         </p>
 
-        <div className="fc-cta-row">
+        <div className="gc-cta-row">
           <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
         </div>
       </div>

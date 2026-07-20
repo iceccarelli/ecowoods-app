@@ -42,35 +42,35 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
   }, [onClose, onNav]);
 
   return createPortal(
-    <div className="fc-scrim" role="dialog" aria-modal="true" aria-label={`${m.name} — details`} onClick={onClose}>
-      <div className="fc-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
-        <div className="fc-modal-media">
-          <div className="fc-modal-stage">
-            <div className="fc-kb" key={shot}>
+    <div className="gc-scrim" role="dialog" aria-modal="true" aria-label={`${m.name} — details`} onClick={onClose}>
+      <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="gc-modal-media">
+          <div className="gc-modal-stage">
+            <div className="gc-kb" key={shot}>
               <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[SHOT_TYPE[shot]]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
             </div>
           </div>
-          <div className="fc-thumbs" role="tablist" aria-label="Photos of this tool">
+          <div className="gc-thumbs" role="tablist" aria-label="Photos of this tool">
             {imgs.map((im, i) => (
-              <button key={i} role="tab" aria-selected={shot === i} className={`fc-thumb ${shot === i ? 'is-active' : ''}`} onClick={() => setShot(i)}>
+              <button key={i} role="tab" aria-selected={shot === i} className={`gc-thumb ${shot === i ? 'is-active' : ''}`} onClick={() => setShot(i)}>
                 <Image src={im} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
-                <span className="fc-thumb-label">{SHOT_LABEL[SHOT_TYPE[i]]}</span>
+                <span className="gc-thumb-label">{SHOT_LABEL[SHOT_TYPE[i]]}</span>
               </button>
             ))}
           </div>
         </div>
-        <div className="fc-modal-body">
-          <span className="fc-eyebrow">{m.stage}</span>
-          <h3 className="fc-modal-title">{m.name}</h3>
-          <p className="fc-tagline">{m.tagline}</p>
-          <p className="fc-desc">{m.description}</p>
-          <dl className="fc-specs">
+        <div className="gc-modal-body">
+          <span className="gc-eyebrow">{m.stage}</span>
+          <h3 className="gc-modal-title">{m.name}</h3>
+          <p className="gc-tagline">{m.tagline}</p>
+          <p className="gc-desc">{m.description}</p>
+          <dl className="gc-specs">
             <div><dt>Stage</dt><dd>{m.stage}</dd></div>
             <div><dt>What it does</dt><dd>{m.does}</dd></div>
           </dl>
-          <a href="#quote" className="fc-cta" onClick={onClose}>Book your free in-home estimate</a>
-          <div className="fc-modal-nav">
+          <a href="#quote" className="gc-cta" onClick={onClose}>Book your free in-home estimate</a>
+          <div className="gc-modal-nav">
             <button onClick={() => onNav(-1)} aria-label="Previous tool">‹ Prev</button>
             <span>{index + 1} / {N}</span>
             <button onClick={() => onNav(1)} aria-label="Next tool">Next ›</button>
@@ -91,23 +91,23 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
   const type = SHOT_TYPE[shotIdx];
   const rot = dx * 0.04;
   return (
-    <div className="fc-stage"
+    <div className="gc-stage"
       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
-      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
+      <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
         <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
       </div>
-      <span className="fc-card-scrim" />
-      <span className="fc-shot-badge">{SHOT_LABEL[type]}</span>
-      <span className="fc-card-chip">{machine.stage}</span>
-      <span className="fc-tap-hint">Tap for 6 photos + what it does</span>
-      <span className="fc-card-cap">
-        <span className="fc-card-eyebrow">{machine.stage}</span>
-        <span className="fc-card-title">{machine.name}</span>
-        <span className="fc-shot-cap" key={shotIdx}>{shotCaption(machine, type)}</span>
+      <span className="gc-card-scrim" />
+      <span className="gc-shot-badge">{SHOT_LABEL[type]}</span>
+      <span className="gc-card-chip">{machine.stage}</span>
+      <span className="gc-tap-hint">Tap for 6 photos + what it does</span>
+      <span className="gc-card-cap">
+        <span className="gc-card-eyebrow">{machine.stage}</span>
+        <span className="gc-card-title">{machine.name}</span>
+        <span className="gc-shot-cap" key={shotIdx}>{shotCaption(machine, type)}</span>
       </span>
-      <span className="fc-shot-dots">
-        {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`fc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
+      <span className="gc-shot-dots">
+        {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`gc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
       </span>
     </div>
   );
@@ -167,38 +167,38 @@ export default function MachineCatalog() {
 
   return (
     <>
-      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-        <div className="fc-viewport">
-          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
-            <div className="fc-kb fc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+      <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+        <div className="gc-viewport">
+          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
+            <div className="gc-kb gc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
           <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
-          <button className="fc-peek fc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
-            <div className="fc-kb fc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+          <button className="gc-peek gc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
+            <div className="gc-kb gc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
         </div>
 
-        <div className="fc-controls">
-          <button className="fc-nav-btn" onClick={() => go(-1)} aria-label="Previous tool">‹</button>
-          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
-            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
+        <div className="gc-controls">
+          <button className="gc-nav-btn" onClick={() => go(-1)} aria-label="Previous tool">‹</button>
+          <button className="gc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? <span className="gc-ic-pause" /> : <span className="gc-ic-play" />}
           </button>
-          <span className="fc-counter">{idx + 1} / {N}</span>
-          <button className="fc-nav-btn" onClick={() => go(1)} aria-label="Next tool">›</button>
+          <span className="gc-counter">{idx + 1} / {N}</span>
+          <button className="gc-nav-btn" onClick={() => go(1)} aria-label="Next tool">›</button>
         </div>
 
-        <div className="fc-dots" role="tablist" aria-label="Tools">
+        <div className="gc-dots" role="tablist" aria-label="Tools">
           {machines.map((m, i) => (
             <button key={m.slug} role="tab" aria-selected={i === idx} aria-label={m.name}
-              className={`fc-dot ${i === idx ? 'is-active' : ''}`} onClick={() => jump(i)} />
+              className={`gc-dot ${i === idx ? 'is-active' : ''}`} onClick={() => jump(i)} />
           ))}
         </div>
 
-        <p className="fc-deck-hint">
-          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> 6 photos per tool <span className="fc-hint-sep">·</span> swipe, use arrows, or tap to explore
+        <p className="gc-deck-hint">
+          {playing ? 'Auto-playing' : 'Paused'} <span className="gc-hint-sep">·</span> 6 photos per tool <span className="gc-hint-sep">·</span> swipe, use arrows, or tap to explore
         </p>
 
-        <div className="fc-cta-row">
+        <div className="gc-cta-row">
           <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
         </div>
       </div>
