@@ -1,0 +1,506 @@
+diff --git a/apps/web/app/components/FloorCatalog.tsx b/apps/web/app/components/FloorCatalog.tsx
+index 78b5205..bd96b86 100644
+--- a/apps/web/app/components/FloorCatalog.tsx
++++ b/apps/web/app/components/FloorCatalog.tsx
+@@ -46,37 +46,37 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
+   }, [onClose, onNav]);
+ 
+   return createPortal(
+-    <div className="fc-scrim" role="dialog" aria-modal="true" aria-label={`${floor.name} — details`} onClick={onClose}>
+-      <div className="fc-modal" onClick={(e) => e.stopPropagation()}>
+-        <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
+-        <div className="fc-modal-media">
+-          <div className="fc-modal-stage">
+-            <div className="fc-kb" key={shot}>
++    <div className="gc-scrim" role="dialog" aria-modal="true" aria-label={`${floor.name} — details`} onClick={onClose}>
++      <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
++        <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
++        <div className="gc-modal-media">
++          <div className="gc-modal-stage">
++            <div className="gc-kb" key={shot}>
+               <Image src={imgs[shot]} alt={`${floor.name} — ${shot}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+             </div>
+           </div>
+-          <div className="fc-thumbs" role="tablist" aria-label="Views of this floor">
++          <div className="gc-thumbs" role="tablist" aria-label="Views of this floor">
+             {SHOT_KEYS.map((k) => (
+-              <button key={k} role="tab" aria-selected={shot === k} className={`fc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
++              <button key={k} role="tab" aria-selected={shot === k} className={`gc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
+                 <Image src={imgs[k]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+-                <span className="fc-thumb-label">{SHOT_LABEL[k]}</span>
++                <span className="gc-thumb-label">{SHOT_LABEL[k]}</span>
+               </button>
+             ))}
+           </div>
+         </div>
+-        <div className="fc-modal-body">
+-          <span className="fc-eyebrow">{floor.species} · {floor.format}</span>
+-          <h3 className="fc-modal-title">{floor.name}</h3>
+-          <p className="fc-tagline">{floor.tagline}</p>
+-          <p className="fc-desc">{floor.description}</p>
+-          <dl className="fc-specs">
++        <div className="gc-modal-body">
++          <span className="gc-eyebrow">{floor.species} · {floor.format}</span>
++          <h3 className="gc-modal-title">{floor.name}</h3>
++          <p className="gc-tagline">{floor.tagline}</p>
++          <p className="gc-desc">{floor.description}</p>
++          <dl className="gc-specs">
+             <div><dt>Hardness</dt><dd>Janka {floor.janka}</dd></div>
+             <div><dt>Origin</dt><dd>{floor.origin}</dd></div>
+             <div><dt>Finish</dt><dd>{floor.finish}</dd></div>
+             <div><dt>Best for</dt><dd>{floor.bestFor}</dd></div>
+           </dl>
+-          <a href="#quote" className="fc-cta" onClick={onClose}>Get a fixed-price estimate for this floor</a>
+-          <div className="fc-modal-nav">
++          <a href="#quote" className="gc-cta" onClick={onClose}>Get a fixed-price estimate for this floor</a>
++          <div className="gc-modal-nav">
+             <button onClick={() => onNav(-1)} aria-label="Previous floor">‹ Prev</button>
+             <span>{index + 1} / {N}</span>
+             <button onClick={() => onNav(1)} aria-label="Next floor">Next ›</button>
+@@ -97,26 +97,26 @@ function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
+   const rot = dx * 0.04;
+   return (
+     <div
+-      className="fc-stage"
++      className="gc-stage"
+       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+       role="group" aria-label={`${floor.name}. Tap for photos and specs.`}
+       onClick={onOpen} {...drag}
+     >
+       {/* ken-burns image, remounts (and restarts the pan/zoom) on every floor+shot change */}
+-      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
++      <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
+         <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+       </div>
+-      <span className="fc-card-scrim" />
+-      <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
+-      <span className="fc-card-chip">Janka {floor.janka}</span>
+-      <span className="fc-tap-hint">Tap for 3 photos + details</span>
+-      <span className="fc-card-cap">
+-        <span className="fc-card-eyebrow">{floor.species} · {floor.format}</span>
+-        <span className="fc-card-title">{floor.name}</span>
+-        <span className="fc-shot-cap" key={shot}>{shotCaption(floor, shot)}</span>
++      <span className="gc-card-scrim" />
++      <span className="gc-shot-badge">{SHOT_LABEL[shot]}</span>
++      <span className="gc-card-chip">Janka {floor.janka}</span>
++      <span className="gc-tap-hint">Tap for 3 photos + details</span>
++      <span className="gc-card-cap">
++        <span className="gc-card-eyebrow">{floor.species} · {floor.format}</span>
++        <span className="gc-card-title">{floor.name}</span>
++        <span className="gc-shot-cap" key={shot}>{shotCaption(floor, shot)}</span>
+       </span>
+-      <span className="fc-shot-dots">
+-        {SHOT_KEYS.map((k) => <span key={k} className={`fc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
++      <span className="gc-shot-dots">
++        {SHOT_KEYS.map((k) => <span key={k} className={`gc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
+       </span>
+     </div>
+   );
+@@ -208,43 +208,43 @@ export default function FloorCatalog() {
+ 
+   return (
+     <>
+-      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+-        <div className="fc-viewport">
++      <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
++        <div className="gc-viewport">
+           {/* desktop peek — previous */}
+-          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
+-            <div className="fc-kb fc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
++            <div className="gc-kb gc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+           </button>
+ 
+           <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(floor)} drag={drag} />
+ 
+           {/* desktop peek — next */}
+-          <button className="fc-peek fc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
+-            <div className="fc-kb fc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++          <button className="gc-peek gc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
++            <div className="gc-kb gc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+           </button>
+         </div>
+ 
+         {/* AWS-style control pill */}
+-        <div className="fc-controls">
+-          <button className="fc-nav-btn" onClick={() => goFloor(-1)} aria-label="Previous floor">‹</button>
+-          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+-            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
++        <div className="gc-controls">
++          <button className="gc-nav-btn" onClick={() => goFloor(-1)} aria-label="Previous floor">‹</button>
++          <button className="gc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
++            {playing ? <span className="gc-ic-pause" /> : <span className="gc-ic-play" />}
+           </button>
+-          <span className="fc-counter">{floor + 1} / {N}</span>
+-          <button className="fc-nav-btn" onClick={() => goFloor(1)} aria-label="Next floor">›</button>
++          <span className="gc-counter">{floor + 1} / {N}</span>
++          <button className="gc-nav-btn" onClick={() => goFloor(1)} aria-label="Next floor">›</button>
+         </div>
+ 
+-        <div className="fc-dots" role="tablist" aria-label="Floors">
++        <div className="gc-dots" role="tablist" aria-label="Floors">
+           {floors.map((f, i) => (
+             <button key={f.slug} role="tab" aria-selected={i === floor} aria-label={f.name}
+-              className={`fc-dot ${i === floor ? 'is-active' : ''}`} onClick={() => jumpFloor(i)} />
++              className={`gc-dot ${i === floor ? 'is-active' : ''}`} onClick={() => jumpFloor(i)} />
+           ))}
+         </div>
+ 
+-        <p className="fc-deck-hint">
+-          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> swipe or use the arrows <span className="fc-hint-sep">·</span> tap for photos &amp; specs
++        <p className="gc-deck-hint">
++          {playing ? 'Auto-playing' : 'Paused'} <span className="gc-hint-sep">·</span> swipe or use the arrows <span className="gc-hint-sep">·</span> tap for photos &amp; specs
+         </p>
+ 
+-        <div className="fc-cta-row">
++        <div className="gc-cta-row">
+           <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
+         </div>
+       </div>
+diff --git a/apps/web/app/components/MachineCatalog.tsx b/apps/web/app/components/MachineCatalog.tsx
+index b9f1a9b..9d10b70 100644
+--- a/apps/web/app/components/MachineCatalog.tsx
++++ b/apps/web/app/components/MachineCatalog.tsx
+@@ -42,35 +42,35 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
+   }, [onClose, onNav]);
+ 
+   return createPortal(
+-    <div className="fc-scrim" role="dialog" aria-modal="true" aria-label={`${m.name} — details`} onClick={onClose}>
+-      <div className="fc-modal" onClick={(e) => e.stopPropagation()}>
+-        <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
+-        <div className="fc-modal-media">
+-          <div className="fc-modal-stage">
+-            <div className="fc-kb" key={shot}>
++    <div className="gc-scrim" role="dialog" aria-modal="true" aria-label={`${m.name} — details`} onClick={onClose}>
++      <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
++        <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
++        <div className="gc-modal-media">
++          <div className="gc-modal-stage">
++            <div className="gc-kb" key={shot}>
+               <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[SHOT_TYPE[shot]]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+             </div>
+           </div>
+-          <div className="fc-thumbs" role="tablist" aria-label="Photos of this tool">
++          <div className="gc-thumbs" role="tablist" aria-label="Photos of this tool">
+             {imgs.map((im, i) => (
+-              <button key={i} role="tab" aria-selected={shot === i} className={`fc-thumb ${shot === i ? 'is-active' : ''}`} onClick={() => setShot(i)}>
++              <button key={i} role="tab" aria-selected={shot === i} className={`gc-thumb ${shot === i ? 'is-active' : ''}`} onClick={() => setShot(i)}>
+                 <Image src={im} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+-                <span className="fc-thumb-label">{SHOT_LABEL[SHOT_TYPE[i]]}</span>
++                <span className="gc-thumb-label">{SHOT_LABEL[SHOT_TYPE[i]]}</span>
+               </button>
+             ))}
+           </div>
+         </div>
+-        <div className="fc-modal-body">
+-          <span className="fc-eyebrow">{m.stage}</span>
+-          <h3 className="fc-modal-title">{m.name}</h3>
+-          <p className="fc-tagline">{m.tagline}</p>
+-          <p className="fc-desc">{m.description}</p>
+-          <dl className="fc-specs">
++        <div className="gc-modal-body">
++          <span className="gc-eyebrow">{m.stage}</span>
++          <h3 className="gc-modal-title">{m.name}</h3>
++          <p className="gc-tagline">{m.tagline}</p>
++          <p className="gc-desc">{m.description}</p>
++          <dl className="gc-specs">
+             <div><dt>Stage</dt><dd>{m.stage}</dd></div>
+             <div><dt>What it does</dt><dd>{m.does}</dd></div>
+           </dl>
+-          <a href="#quote" className="fc-cta" onClick={onClose}>Book your free in-home estimate</a>
+-          <div className="fc-modal-nav">
++          <a href="#quote" className="gc-cta" onClick={onClose}>Book your free in-home estimate</a>
++          <div className="gc-modal-nav">
+             <button onClick={() => onNav(-1)} aria-label="Previous tool">‹ Prev</button>
+             <span>{index + 1} / {N}</span>
+             <button onClick={() => onNav(1)} aria-label="Next tool">Next ›</button>
+@@ -91,23 +91,23 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
+   const type = SHOT_TYPE[shotIdx];
+   const rot = dx * 0.04;
+   return (
+-    <div className="fc-stage"
++    <div className="gc-stage"
+       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
+-      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
++      <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
+         <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+       </div>
+-      <span className="fc-card-scrim" />
+-      <span className="fc-shot-badge">{SHOT_LABEL[type]}</span>
+-      <span className="fc-card-chip">{machine.stage}</span>
+-      <span className="fc-tap-hint">Tap for 6 photos + what it does</span>
+-      <span className="fc-card-cap">
+-        <span className="fc-card-eyebrow">{machine.stage}</span>
+-        <span className="fc-card-title">{machine.name}</span>
+-        <span className="fc-shot-cap" key={shotIdx}>{shotCaption(machine, type)}</span>
++      <span className="gc-card-scrim" />
++      <span className="gc-shot-badge">{SHOT_LABEL[type]}</span>
++      <span className="gc-card-chip">{machine.stage}</span>
++      <span className="gc-tap-hint">Tap for 6 photos + what it does</span>
++      <span className="gc-card-cap">
++        <span className="gc-card-eyebrow">{machine.stage}</span>
++        <span className="gc-card-title">{machine.name}</span>
++        <span className="gc-shot-cap" key={shotIdx}>{shotCaption(machine, type)}</span>
+       </span>
+-      <span className="fc-shot-dots">
+-        {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`fc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
++      <span className="gc-shot-dots">
++        {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`gc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
+       </span>
+     </div>
+   );
+@@ -167,38 +167,38 @@ export default function MachineCatalog() {
+ 
+   return (
+     <>
+-      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+-        <div className="fc-viewport">
+-          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
+-            <div className="fc-kb fc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++      <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
++        <div className="gc-viewport">
++          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
++            <div className="gc-kb gc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+           </button>
+           <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
+-          <button className="fc-peek fc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
+-            <div className="fc-kb fc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++          <button className="gc-peek gc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
++            <div className="gc-kb gc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+           </button>
+         </div>
+ 
+-        <div className="fc-controls">
+-          <button className="fc-nav-btn" onClick={() => go(-1)} aria-label="Previous tool">‹</button>
+-          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+-            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
++        <div className="gc-controls">
++          <button className="gc-nav-btn" onClick={() => go(-1)} aria-label="Previous tool">‹</button>
++          <button className="gc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
++            {playing ? <span className="gc-ic-pause" /> : <span className="gc-ic-play" />}
+           </button>
+-          <span className="fc-counter">{idx + 1} / {N}</span>
+-          <button className="fc-nav-btn" onClick={() => go(1)} aria-label="Next tool">›</button>
++          <span className="gc-counter">{idx + 1} / {N}</span>
++          <button className="gc-nav-btn" onClick={() => go(1)} aria-label="Next tool">›</button>
+         </div>
+ 
+-        <div className="fc-dots" role="tablist" aria-label="Tools">
++        <div className="gc-dots" role="tablist" aria-label="Tools">
+           {machines.map((m, i) => (
+             <button key={m.slug} role="tab" aria-selected={i === idx} aria-label={m.name}
+-              className={`fc-dot ${i === idx ? 'is-active' : ''}`} onClick={() => jump(i)} />
++              className={`gc-dot ${i === idx ? 'is-active' : ''}`} onClick={() => jump(i)} />
+           ))}
+         </div>
+ 
+-        <p className="fc-deck-hint">
+-          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> 6 photos per tool <span className="fc-hint-sep">·</span> swipe, use arrows, or tap to explore
++        <p className="gc-deck-hint">
++          {playing ? 'Auto-playing' : 'Paused'} <span className="gc-hint-sep">·</span> 6 photos per tool <span className="gc-hint-sep">·</span> swipe, use arrows, or tap to explore
+         </p>
+ 
+-        <div className="fc-cta-row">
++        <div className="gc-cta-row">
+           <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
+         </div>
+       </div>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 6352f68..81184f0 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -6809,15 +6809,15 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ 
+ 
+ /* === EW:FLOOR-CATALOG START === */
+-.fc-show { display: flex; flex-direction: column; align-items: center; }
++.gc-show { display: flex; flex-direction: column; align-items: center; }
+ 
+ /* ---- Ken Burns (alive on every image) ---- */
+-.fc-kb { position: absolute; inset: 0; overflow: hidden; animation: fcFade 600ms ease; }
+-.fc-kb img { will-change: transform; animation: kbDefault 12s ease-out both; }
+-.fc-kb-0 img { animation: kb0 9s ease-out both; }
+-.fc-kb-1 img { animation: kb1 9s ease-out both; }
+-.fc-kb-2 img { animation: kb2 9s ease-out both; }
+-.fc-kb-3 img { animation: kb3 9s ease-out both; }
++.gc-kb { position: absolute; inset: 0; overflow: hidden; animation: fcFade 600ms ease; }
++.gc-kb img { will-change: transform; animation: kbDefault 12s ease-out both; }
++.gc-kb-0 img { animation: kb0 9s ease-out both; }
++.gc-kb-1 img { animation: kb1 9s ease-out both; }
++.gc-kb-2 img { animation: kb2 9s ease-out both; }
++.gc-kb-3 img { animation: kb3 9s ease-out both; }
+ @keyframes kbDefault { from { transform: scale(1.03); } to { transform: scale(1.11); } }
+ @keyframes kb0 { from { transform: scale(1.03) translate(0,0); } to { transform: scale(1.13) translate(-2%,-1.5%); } }
+ @keyframes kb1 { from { transform: scale(1.13) translate(1.5%,1%); } to { transform: scale(1.03) translate(0,0); } }
+@@ -6826,99 +6826,99 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ @keyframes fcFade { from { opacity: 0; } to { opacity: 1; } }
+ 
+ /* ---- AWS-style viewport: hero centered, neighbours peeking ---- */
+-.fc-viewport { position: relative; width: 100%; height: clamp(300px, 42vw, 440px); display: flex; align-items: center; justify-content: center; }
+-.fc-stage {
++.gc-viewport { position: relative; width: 100%; height: clamp(300px, 42vw, 440px); display: flex; align-items: center; justify-content: center; }
++.gc-stage {
+   position: relative; height: 100%; aspect-ratio: 16 / 10; flex: 0 0 auto; z-index: 2;
+   border-radius: var(--radius-xl); overflow: hidden; background: var(--cream-100);
+   box-shadow: var(--shadow-xl); cursor: pointer; will-change: transform; touch-action: pan-y;
+ }
+-.fc-stage:focus-visible { outline: 3px solid var(--copper-deep); outline-offset: 3px; }
+-.fc-peek {
++.gc-stage:focus-visible { outline: 3px solid var(--copper-deep); outline-offset: 3px; }
++.gc-peek {
+   position: relative; height: 82%; flex: 0 0 auto; width: clamp(64px, 13vw, 210px); z-index: 1;
+   border: 0; padding: 0; cursor: pointer; background: var(--cream-100);
+   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
+   opacity: 0.5; filter: brightness(0.8); transition: opacity 320ms var(--ease-out-quart), filter 320ms, transform 320ms;
+ }
+-.fc-peek-prev { margin-right: -34px; transform: perspective(1200px) rotateY(7deg) scale(0.96); }
+-.fc-peek-next { margin-left: -34px; transform: perspective(1200px) rotateY(-7deg) scale(0.96); }
+-.fc-peek:hover { opacity: 0.9; filter: brightness(0.96); }
+-.fc-peek-prev:hover { transform: perspective(1200px) rotateY(7deg) scale(0.99); }
+-.fc-peek-next:hover { transform: perspective(1200px) rotateY(-7deg) scale(0.99); }
++.gc-peek-prev { margin-right: -34px; transform: perspective(1200px) rotateY(7deg) scale(0.96); }
++.gc-peek-next { margin-left: -34px; transform: perspective(1200px) rotateY(-7deg) scale(0.96); }
++.gc-peek:hover { opacity: 0.9; filter: brightness(0.96); }
++.gc-peek-prev:hover { transform: perspective(1200px) rotateY(7deg) scale(0.99); }
++.gc-peek-next:hover { transform: perspective(1200px) rotateY(-7deg) scale(0.99); }
+ 
+ /* ---- card overlays ---- */
+-.fc-card-scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(26,15,8,0.82) 0%, rgba(26,15,8,0.15) 46%, rgba(26,15,8,0) 70%); }
+-.fc-card-cap { position: absolute; left: 1.5rem; right: 1.5rem; bottom: 1.4rem; color: #faf6ef; pointer-events: none; }
+-.fc-card-eyebrow { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #f0d9c4; margin-bottom: 0.3rem; }
+-.fc-card-title { display: block; font-weight: 600; font-size: 1.6rem; line-height: 1.08; letter-spacing: -0.02em; }
+-.fc-shot-cap { display: block; margin-top: 6px; font-size: 0.95rem; font-style: italic; opacity: 0.92; animation: fcFade 500ms ease; }
+-.fc-card-chip { position: absolute; top: 1rem; right: 1rem; pointer-events: none; padding: 5px 12px; font-size: 0.72rem; font-weight: 600; color: #faf6ef; background: rgba(26,15,8,0.42); border: 1px solid rgba(250,246,239,0.28); border-radius: var(--radius-full); backdrop-filter: blur(6px); }
+-.fc-shot-badge { position: absolute; top: 1rem; left: 1rem; pointer-events: none; padding: 4px 11px; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #faf6ef; background: rgba(160,98,58,0.75); border-radius: var(--radius-full); backdrop-filter: blur(6px); animation: fcFade 400ms ease; }
+-.fc-tap-hint { position: absolute; top: 3rem; left: 1rem; pointer-events: none; padding: 4px 10px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.03em; color: #faf6ef; background: rgba(26,15,8,0.4); border: 1px solid rgba(250,246,239,0.22); border-radius: var(--radius-full); backdrop-filter: blur(6px); opacity: 0.85; }
+-.fc-shot-dots { position: absolute; bottom: 1.4rem; right: 1.5rem; display: flex; gap: 6px; pointer-events: none; }
+-.fc-shot-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(250,246,239,0.4); transition: all 300ms var(--ease-out-quart); }
+-.fc-shot-dot.is-active { background: #faf6ef; width: 18px; border-radius: 3px; }
++.gc-card-scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(26,15,8,0.82) 0%, rgba(26,15,8,0.15) 46%, rgba(26,15,8,0) 70%); }
++.gc-card-cap { position: absolute; left: 1.5rem; right: 1.5rem; bottom: 1.4rem; color: #faf6ef; pointer-events: none; }
++.gc-card-eyebrow { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #f0d9c4; margin-bottom: 0.3rem; }
++.gc-card-title { display: block; font-weight: 600; font-size: 1.6rem; line-height: 1.08; letter-spacing: -0.02em; }
++.gc-shot-cap { display: block; margin-top: 6px; font-size: 0.95rem; font-style: italic; opacity: 0.92; animation: fcFade 500ms ease; }
++.gc-card-chip { position: absolute; top: 1rem; right: 1rem; pointer-events: none; padding: 5px 12px; font-size: 0.72rem; font-weight: 600; color: #faf6ef; background: rgba(26,15,8,0.42); border: 1px solid rgba(250,246,239,0.28); border-radius: var(--radius-full); backdrop-filter: blur(6px); }
++.gc-shot-badge { position: absolute; top: 1rem; left: 1rem; pointer-events: none; padding: 4px 11px; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #faf6ef; background: rgba(160,98,58,0.75); border-radius: var(--radius-full); backdrop-filter: blur(6px); animation: fcFade 400ms ease; }
++.gc-tap-hint { position: absolute; top: 3rem; left: 1rem; pointer-events: none; padding: 4px 10px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.03em; color: #faf6ef; background: rgba(26,15,8,0.4); border: 1px solid rgba(250,246,239,0.22); border-radius: var(--radius-full); backdrop-filter: blur(6px); opacity: 0.85; }
++.gc-shot-dots { position: absolute; bottom: 1.4rem; right: 1.5rem; display: flex; gap: 6px; pointer-events: none; }
++.gc-shot-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(250,246,239,0.4); transition: all 300ms var(--ease-out-quart); }
++.gc-shot-dot.is-active { background: #faf6ef; width: 18px; border-radius: 3px; }
+ 
+ /* ---- control pill (AWS-style) ---- */
+-.fc-controls { margin-top: 1.7rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 6px; border-radius: var(--radius-full); background: var(--walnut-900); box-shadow: var(--shadow-lg); }
+-.fc-nav-btn, .fc-play { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--cream-50); cursor: pointer; display: grid; place-items: center; font-size: 1.45rem; line-height: 1; transition: background 160ms; }
+-.fc-nav-btn:hover, .fc-play:hover { background: rgba(255,255,255,0.14); }
+-.fc-play { font-size: 1rem; }
+-.fc-ic-play { width: 0; height: 0; border-left: 12px solid var(--cream-50); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 2px; }
+-.fc-ic-pause { width: 12px; height: 13px; border-left: 3.5px solid var(--cream-50); border-right: 3.5px solid var(--cream-50); }
+-.fc-counter { color: var(--cream-50); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; padding: 0 0.5rem; min-width: 52px; text-align: center; }
+-
+-.fc-dots { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; justify-content: center; max-width: 360px; }
+-.fc-dot { width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: var(--line-strong); cursor: pointer; transition: transform 200ms var(--ease-out-quart), background 200ms; }
+-.fc-dot.is-active { background: var(--copper-deep); transform: scale(1.4); }
+-
+-.fc-deck-hint { margin-top: 0.9rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+-.fc-hint-sep { margin: 0 0.4rem; opacity: 0.5; }
+-.fc-cta-row { display: flex; justify-content: center; margin-top: 2rem; }
+-.fc-cta-row .btn { min-width: 300px; }
++.gc-controls { margin-top: 1.7rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 6px; border-radius: var(--radius-full); background: var(--walnut-900); box-shadow: var(--shadow-lg); }
++.gc-nav-btn, .gc-play { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--cream-50); cursor: pointer; display: grid; place-items: center; font-size: 1.45rem; line-height: 1; transition: background 160ms; }
++.gc-nav-btn:hover, .gc-play:hover { background: rgba(255,255,255,0.14); }
++.gc-play { font-size: 1rem; }
++.gc-ic-play { width: 0; height: 0; border-left: 12px solid var(--cream-50); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 2px; }
++.gc-ic-pause { width: 12px; height: 13px; border-left: 3.5px solid var(--cream-50); border-right: 3.5px solid var(--cream-50); }
++.gc-counter { color: var(--cream-50); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; padding: 0 0.5rem; min-width: 52px; text-align: center; }
++
++.gc-dots { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; justify-content: center; max-width: 360px; }
++.gc-dot { width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: var(--line-strong); cursor: pointer; transition: transform 200ms var(--ease-out-quart), background 200ms; }
++.gc-dot.is-active { background: var(--copper-deep); transform: scale(1.4); }
++
++.gc-deck-hint { margin-top: 0.9rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
++.gc-hint-sep { margin: 0 0.4rem; opacity: 0.5; }
++.gc-cta-row { display: flex; justify-content: center; margin-top: 2rem; }
++.gc-cta-row .btn { min-width: 300px; }
+ 
+ @media (max-width: 767px) {
+-  .fc-viewport { height: auto; }
+-  .fc-peek { display: none; }
+-  .fc-stage { width: 90vw; height: auto; aspect-ratio: 4 / 5; }
+-  .fc-card-title { font-size: 1.35rem; }
+-  .fc-dots { display: none; }
+-  .fc-cta-row .btn { width: 100%; min-width: 0; }
++  .gc-viewport { height: auto; }
++  .gc-peek { display: none; }
++  .gc-stage { width: 90vw; height: auto; aspect-ratio: 4 / 5; }
++  .gc-card-title { font-size: 1.35rem; }
++  .gc-dots { display: none; }
++  .gc-cta-row .btn { width: 100%; min-width: 0; }
+ }
+ @media (prefers-reduced-motion: reduce) {
+-  .fc-kb img { animation: none !important; transform: scale(1.05) !important; }
+-  .fc-stage, .fc-nav-btn, .fc-dot, .fc-peek { transition-duration: 1ms !important; }
++  .gc-kb img { animation: none !important; transform: scale(1.05) !important; }
++  .gc-stage, .gc-nav-btn, .gc-dot, .gc-peek { transition-duration: 1ms !important; }
+ }
+ 
+ /* ---- lightbox ---- */
+-.fc-scrim { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: rgba(18,16,13,0.62); backdrop-filter: blur(8px); animation: fcFade 200ms var(--ease-out-quart); }
+-.fc-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); width: min(980px, 100%); max-height: 90vh; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl); }
+-.fc-close { position: absolute; top: 0.6rem; right: 0.7rem; z-index: 3; width: 36px; height: 36px; display: grid; place-items: center; font-size: 1.5rem; line-height: 1; color: #faf6ef; background: rgba(26,15,8,0.5); border: 0; border-radius: var(--radius-full); cursor: pointer; backdrop-filter: blur(6px); }
+-.fc-close:hover { background: rgba(26,15,8,0.72); }
+-.fc-modal-media { padding: 1rem; display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+-.fc-modal-stage { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden; background: var(--cream-100); }
+-.fc-thumbs { display: flex; gap: 0.55rem; }
+-.fc-thumb { position: relative; flex: 1 1 0; aspect-ratio: 3 / 2; border-radius: var(--radius-md); overflow: hidden; border: 2px solid transparent; cursor: pointer; padding: 0; background: var(--cream-100); transition: border-color 200ms var(--ease-out-quart); }
+-.fc-thumb.is-active { border-color: var(--copper-deep); }
+-.fc-thumb-label { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 5px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; color: #faf6ef; background: linear-gradient(to top, rgba(26,15,8,0.75), rgba(26,15,8,0)); }
+-.fc-modal-body { padding: 1.6rem 1.6rem 1.4rem; overflow-y: auto; min-width: 0; }
+-.fc-eyebrow { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--copper-deep); }
+-.fc-modal-title { margin: 0.35rem 0 0.2rem; font-size: 1.6rem; letter-spacing: -0.02em; color: var(--ink); }
+-.fc-tagline { margin: 0 0 0.9rem; font-style: italic; color: var(--ink-soft); font-size: 1.02rem; }
+-.fc-desc { margin: 0 0 1.15rem; color: var(--muted); line-height: 1.6; font-size: 0.94rem; }
+-.fc-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 1.2rem; margin: 0 0 1.4rem; }
+-.fc-specs div { border-top: 1px solid var(--line); padding-top: 0.55rem; }
+-.fc-specs dt { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+-.fc-specs dd { margin: 2px 0 0; font-weight: 600; color: var(--ink); font-size: 0.9rem; }
+-.fc-cta { display: block; text-align: center; text-decoration: none; padding: 0.85rem 1.2rem; border-radius: var(--radius-full); font-weight: 600; font-size: 0.92rem; color: #faf6ef; background: linear-gradient(135deg, var(--cta-from), var(--copper-deep)); box-shadow: var(--shadow-md); transition: transform 200ms var(--ease-out-quart), box-shadow 200ms; }
+-.fc-cta:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+-.fc-modal-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 1.1rem; font-size: 0.82rem; color: var(--muted); }
+-.fc-modal-nav button { background: 0; border: 0; color: var(--ink-soft); font-weight: 600; cursor: pointer; padding: 4px 6px; }
+-.fc-modal-nav button:hover { color: var(--copper-deep); }
+-@media (max-width: 860px) { .fc-modal { grid-template-columns: 1fr; max-height: 92vh; overflow-y: auto; } .fc-modal-body { padding: 1.2rem 1.3rem 1.5rem; } .fc-modal-title { font-size: 1.35rem; } }
++.gc-scrim { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: rgba(18,16,13,0.62); backdrop-filter: blur(8px); animation: fcFade 200ms var(--ease-out-quart); }
++.gc-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); width: min(980px, 100%); max-height: 90vh; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-xl); }
++.gc-close { position: absolute; top: 0.6rem; right: 0.7rem; z-index: 3; width: 36px; height: 36px; display: grid; place-items: center; font-size: 1.5rem; line-height: 1; color: #faf6ef; background: rgba(26,15,8,0.5); border: 0; border-radius: var(--radius-full); cursor: pointer; backdrop-filter: blur(6px); }
++.gc-close:hover { background: rgba(26,15,8,0.72); }
++.gc-modal-media { padding: 1rem; display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
++.gc-modal-stage { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden; background: var(--cream-100); }
++.gc-thumbs { display: flex; gap: 0.55rem; }
++.gc-thumb { position: relative; flex: 1 1 0; aspect-ratio: 3 / 2; border-radius: var(--radius-md); overflow: hidden; border: 2px solid transparent; cursor: pointer; padding: 0; background: var(--cream-100); transition: border-color 200ms var(--ease-out-quart); }
++.gc-thumb.is-active { border-color: var(--copper-deep); }
++.gc-thumb-label { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 5px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; color: #faf6ef; background: linear-gradient(to top, rgba(26,15,8,0.75), rgba(26,15,8,0)); }
++.gc-modal-body { padding: 1.6rem 1.6rem 1.4rem; overflow-y: auto; min-width: 0; }
++.gc-eyebrow { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--copper-deep); }
++.gc-modal-title { margin: 0.35rem 0 0.2rem; font-size: 1.6rem; letter-spacing: -0.02em; color: var(--ink); }
++.gc-tagline { margin: 0 0 0.9rem; font-style: italic; color: var(--ink-soft); font-size: 1.02rem; }
++.gc-desc { margin: 0 0 1.15rem; color: var(--muted); line-height: 1.6; font-size: 0.94rem; }
++.gc-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 1.2rem; margin: 0 0 1.4rem; }
++.gc-specs div { border-top: 1px solid var(--line); padding-top: 0.55rem; }
++.gc-specs dt { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
++.gc-specs dd { margin: 2px 0 0; font-weight: 600; color: var(--ink); font-size: 0.9rem; }
++.gc-cta { display: block; text-align: center; text-decoration: none; padding: 0.85rem 1.2rem; border-radius: var(--radius-full); font-weight: 600; font-size: 0.92rem; color: #faf6ef; background: linear-gradient(135deg, var(--cta-from), var(--copper-deep)); box-shadow: var(--shadow-md); transition: transform 200ms var(--ease-out-quart), box-shadow 200ms; }
++.gc-cta:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
++.gc-modal-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 1.1rem; font-size: 0.82rem; color: var(--muted); }
++.gc-modal-nav button { background: 0; border: 0; color: var(--ink-soft); font-weight: 600; cursor: pointer; padding: 4px 6px; }
++.gc-modal-nav button:hover { color: var(--copper-deep); }
++@media (max-width: 860px) { .gc-modal { grid-template-columns: 1fr; max-height: 92vh; overflow-y: auto; } .gc-modal-body { padding: 1.2rem 1.3rem 1.5rem; } .gc-modal-title { font-size: 1.35rem; } }
+ /* === EW:FLOOR-CATALOG END === */
+ 
+ 
+ /* === EW:MACHINE-THUMBS START === */
+-.fc-thumbs { flex-wrap: wrap; }
+-.fc-thumb { flex: 0 0 calc(33.333% - 0.37rem); }
++.gc-thumbs { flex-wrap: wrap; }
++.gc-thumb { flex: 0 0 calc(33.333% - 0.37rem); }
+ /* === EW:MACHINE-THUMBS END === */
