@@ -95,7 +95,7 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
       <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
-        <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+        <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
       </div>
       <span className="fc-card-scrim" />
       <span className="fc-shot-badge">{SHOT_LABEL[type]}</span>

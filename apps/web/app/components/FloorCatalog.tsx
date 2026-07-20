@@ -104,7 +104,7 @@ function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
     >
       {/* ken-burns image, remounts (and restarts the pan/zoom) on every floor+shot change */}
       <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
-        <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+        <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
       </div>
       <span className="fc-card-scrim" />
       <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
