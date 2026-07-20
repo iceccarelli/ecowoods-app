@@ -20,6 +20,7 @@ export default async function AdminDashboard() {
     recentPayments,
     openInquiries,
     recentQuotes,
+    newOrders,
   ] = await Promise.all([
     db.quoteRequest.count(),
     db.quoteRequest.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
@@ -40,6 +41,9 @@ export default async function AdminDashboard() {
       where: { status: { in: ['PENDING'] } },
       orderBy: { createdAt: 'desc' },
       take: 6,
+    }),
+    db.order.count({
+      where: { status: { in: ['PENDING', 'PAID'] }, createdAt: { gte: thirtyDaysAgo } },
     }),
   ]);
 
@@ -84,6 +88,11 @@ export default async function AdminDashboard() {
             {openInquiries}
           </div>
           <Link href="/admin/inquiries" className="portal-stat-link">Reply →</Link>
+        </div>
+        <div className="portal-stat-card">
+          <div className="portal-stat-label">New Orders (30d)</div>
+          <div className="portal-stat-value">{newOrders}</div>
+          <Link href="/admin/orders" className="portal-stat-link">View orders →</Link>
         </div>
       </div>
 

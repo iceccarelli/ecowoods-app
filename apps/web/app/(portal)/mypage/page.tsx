@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatDistanceToNow } from 'date-fns';
+import ShopCheckout, { type ShopProduct } from './ShopCheckout';
+import { parseProductOptions } from '@/lib/shop';
+import { FLOOR_IMAGES } from '@/app/data/floor-images';
 
 function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
   if (amount == null) return '—';
@@ -18,7 +21,7 @@ export default async function MyPageDashboard() {
   const userId = session.user.id;
 
   // Fetch all summary data in parallel
-  const [quotes, projects, invoices, inquiries] = await Promise.all([
+  const [quotes, projects, invoices, inquiries, products, settings] = await Promise.all([
     db.quoteRequest.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -37,7 +40,38 @@ export default async function MyPageDashboard() {
       include: { project: { select: { title: true } } },
     }),
     db.inquiry.count({ where: { userId, status: { not: 'RESOLVED' } } }),
+    db.product.findMany({
+      where: { active: true },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    }),
+    db.settings.findFirst(),
   ]);
+
+  const shopProducts: ShopProduct[] = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    unit: p.unit,
+    basePrice: Number(p.basePrice),
+    minQuantity: Number(p.minQuantity),
+    species: p.species,
+    format: p.format,
+    janka: p.janka,
+    description: p.description,
+    // Materials reuse Ecowoods' own bundled gallery photography (matched by
+    // slug); accessories use the Unsplash photo resolved into imageUrl by
+    // prisma/seed-product-images.ts, with required attribution.
+    image:
+      p.category === 'MATERIAL'
+        ? FLOOR_IMAGES[p.slug]
+          ? { src: FLOOR_IMAGES[p.slug].room, credit: null, creditUrl: null }
+          : null
+        : p.imageUrl
+          ? { src: p.imageUrl, credit: p.imageCredit, creditUrl: p.imageCreditUrl }
+          : null,
+    options: parseProductOptions(p.options),
+  }));
+  const taxRatePercent = Number(settings?.defaultTaxRate ?? 13);
 
   const totalOwed = invoices
     .filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')
@@ -60,6 +94,8 @@ export default async function MyPageDashboard() {
           + New Quote Request
         </Link>
       </div>
+
+      <ShopCheckout products={shopProducts} taxRatePercent={taxRatePercent} />
 
       {/* Summary cards */}
       <div className="portal-stats">

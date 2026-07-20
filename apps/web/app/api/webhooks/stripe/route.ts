@@ -49,10 +49,39 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const invoiceId = session.metadata?.invoiceId;
+        const orderId = session.metadata?.orderId;
         const userId = session.metadata?.userId;
 
+        if (orderId) {
+          const order = await db.order.findUnique({ where: { id: orderId } });
+          if (!order) {
+            console.warn(`[stripe webhook] order ${orderId} not found`);
+            break;
+          }
+
+          if (order.status === 'PAID' || order.status === 'FULFILLED') {
+            console.log(`[stripe webhook] order ${orderId} already paid — skipping`);
+            break;
+          }
+
+          await db.order.update({
+            where: { id: orderId },
+            data: {
+              status: 'PAID',
+              paidAt: new Date(),
+              stripePaymentIntentId:
+                typeof session.payment_intent === 'string'
+                  ? session.payment_intent
+                  : (session.payment_intent?.id ?? null),
+            },
+          });
+
+          console.log(`[stripe webhook] order ${orderId} marked PAID`);
+          break;
+        }
+
         if (!invoiceId) {
-          console.warn('[stripe webhook] checkout.session.completed missing invoiceId');
+          console.warn('[stripe webhook] checkout.session.completed missing invoiceId/orderId');
           break;
         }
 

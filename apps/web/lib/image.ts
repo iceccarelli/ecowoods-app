@@ -15,4 +15,5 @@ export const IMG_SIZES = {
   swatch: '68px',
   galleryTile: '(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw',
   deckCard: '(max-width: 767px) 90vw, 420px',
+  shopCard: '(max-width: 640px) 45vw, 260px',
 } as const;

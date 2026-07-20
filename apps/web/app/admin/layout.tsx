@@ -9,12 +9,14 @@ import {
   CustomersIcon,
   InquiriesIcon,
   SettingsIcon,
+  ShopIcon,
 } from '@/app/components/PortalIcons';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: <DashboardIcon /> },
   { href: '/admin/quotes', label: 'Quotes & Leads', icon: <QuotesIcon /> },
   { href: '/admin/projects', label: 'Projects', icon: <ProjectsIcon /> },
+  { href: '/admin/orders', label: 'Orders', icon: <ShopIcon /> },
   { href: '/admin/invoices', label: 'Invoices', icon: <InvoicesIcon /> },
   { href: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
   { href: '/admin/inquiries', label: 'Inquiries', icon: <InquiriesIcon /> },
