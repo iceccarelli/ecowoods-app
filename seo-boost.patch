@@ -1,0 +1,452 @@
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 1e2e2bd..2a7a11a 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -5,7 +5,7 @@ import Header from './components/Header';
+ import './globals.css';
+ import Providers from './providers';
+ import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
+-import { localBusinessSchema } from '@/lib/structured-data';
++import { localBusinessSchema, websiteSchema, faqPageSchema } from '@/lib/structured-data';
+ import ConversionRail from './components/ConversionRail';
+ import ReadingProgress from './components/ReadingProgress';
+ 
+@@ -52,6 +52,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ const DESCRIPTION =
+   'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
+ 
++const VERIFICATION = {
++  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
++    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
++    : {}),
++  ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
++    ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
++    : {}),
++};
++
+ export const metadata: Metadata = {
+   // Was pinned to the vercel.app preview host, so every canonical, og:url and
+   // og:image resolved to a domain the business does not use.
+@@ -89,6 +98,7 @@ export const metadata: Metadata = {
+     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+   },
+   formatDetection: { telephone: true, address: true },
++  verification: VERIFICATION,
+ };
+ 
+ export default function RootLayout({ children }: { children: ReactNode }) {
+@@ -113,6 +123,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+           type="application/ld+json"
+           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+         />
++        <script
++          type="application/ld+json"
++          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
++        />
++        <script
++          type="application/ld+json"
++          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema()) }}
++        />
+ 
+         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
+         <link rel="preconnect" href="https://images.unsplash.com" />
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+new file mode 100644
+index 0000000..2356696
+--- /dev/null
++++ b/apps/web/app/llms.txt/route.ts
+@@ -0,0 +1,41 @@
++import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
++
++export const dynamic = 'force-static';
++
++/**
++ * /llms.txt — a concise, machine-readable brief for AI agents and answer
++ * engines (ChatGPT, Claude, Perplexity, Gemini). Emerging convention, like
++ * robots.txt but for LLMs. Served via a route handler because this monorepo
++ * does not serve /public in production.
++ */
++export function GET() {
++  const lines: string[] = [];
++  lines.push(`# ${BUSINESS.name}`);
++  lines.push('');
++  lines.push(`> Premium hardwood flooring in ${BUSINESS.region}. Installation, refinishing, dust-free sanding, restoration and custom inlays. Fixed written estimates, manufacturer warranties passed through in writing, free in-home consultations.`);
++  lines.push('');
++  lines.push(`- Website: ${SITE_URL}`);
++  lines.push(`- Phone: ${BUSINESS.phoneDisplay}`);
++  lines.push(`- Email: ${BUSINESS.email}`);
++  lines.push(`- Service area: ${BUSINESS.region}`);
++  lines.push('');
++  lines.push('## Services');
++  for (const s of SERVICES) lines.push(`- ${s.name}: ${s.blurb}`);
++  lines.push('');
++  lines.push('## Service areas');
++  lines.push(CITIES.map((c) => c.name).join(', ') + '.');
++  lines.push(CITIES.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`).join('\n'));
++  lines.push('');
++  lines.push('## Key pages');
++  lines.push(`- Home: ${SITE_URL}`);
++  lines.push(`- Service areas: ${SITE_URL}/service-areas`);
++  lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
++  lines.push(`- The craft (machines & process): ${SITE_URL}/#craft`);
++  lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
++  lines.push('');
++  lines.push('## FAQ');
++  for (const f of FAQ_ITEMS) { lines.push(`### ${f.q}`); lines.push(f.a); lines.push(''); }
++  return new Response(lines.join('\n'), {
++    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
++  });
++}
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+new file mode 100644
+index 0000000..9cf567b
+--- /dev/null
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -0,0 +1,132 @@
++import type { Metadata } from 'next';
++import { notFound } from 'next/navigation';
++import Link from 'next/link';
++import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug } from '@/lib/seo-data';
++import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
++
++export function generateStaticParams() {
++  return CITIES.map((c) => ({ city: c.slug }));
++}
++export const dynamicParams = false;
++
++export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
++  const { city: slug } = await params;
++  const city = cityBySlug(slug);
++  if (!city) return {};
++  const title = `Hardwood Flooring in ${city.name}`;
++  const description = `Hardwood floor installation, refinishing and dust-free sanding in ${city.name} & the GTA. Fixed written estimates, manufacturer warranties in writing, free in-home consultation. Call ${BUSINESS.phoneDisplay}.`;
++  return {
++    title,
++    description,
++    alternates: { canonical: `/service-areas/${city.slug}` },
++    openGraph: { title: `${title} · Ecowoods`, description, url: `${SITE_URL}/service-areas/${city.slug}`, type: 'website' },
++  };
++}
++
++export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {
++  const { city: slug } = await params;
++  const city = cityBySlug(slug);
++  if (!city) notFound();
++  const url = `${SITE_URL}/service-areas/${city.slug}`;
++  const jsonLd = [
++    serviceAreaBusinessSchema(city),
++    breadcrumbSchema([
++      { name: 'Home', url: SITE_URL },
++      { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
++      { name: city.name, url },
++    ]),
++    faqPageSchema(),
++  ];
++  const nearby = CITIES.filter((c) => c.slug !== city.slug).slice(0, 10);
++
++  return (
++    <main>
++      {jsonLd.map((o, i) => (
++        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(o) }} />
++      ))}
++
++      <section className="section">
++        <div className="shell">
++          <nav aria-label="Breadcrumb" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1rem' }}>
++            <Link href="/">Home</Link> › <Link href="/service-areas">Service Areas</Link> › <span>{city.name}</span>
++          </nav>
++          <span className="eyebrow">Hardwood Flooring · {city.name}</span>
++          <h1 style={{ marginTop: '0.5rem' }}>
++            Hardwood flooring in <span className="serif-italic">{city.name}.</span>
++          </h1>
++          <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
++            Ecowoods installs, sands and refinishes solid and engineered hardwood across {city.name} and the
++            wider GTA. Dust-free sanding that keeps you living at home, fixed written estimates with no
++            &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
++          </p>
++          <p style={{ marginTop: '1.5rem' }}>
++            <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
++          </p>
++        </div>
++      </section>
++
++      <section className="section">
++        <div className="shell">
++          <span className="eyebrow">What we do in {city.name}</span>
++          <h2>Every service, one crew.</h2>
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
++            {SERVICES.map((s) => (
++              <div key={s.slug} style={{ padding: '1.25rem', border: '1px solid rgba(128,128,128,0.18)', borderRadius: '14px' }}>
++                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{s.name}</h3>
++                <p style={{ fontSize: '0.92rem', opacity: 0.82, marginTop: '0.5rem' }}>{s.blurb}</p>
++              </div>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="section">
++        <div className="shell">
++          <span className="eyebrow">Why {city.name} homeowners choose Ecowoods</span>
++          <h2>Fixed price. Dust-free. In writing.</h2>
++          <ul style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
++            <li><strong>Fixed written estimates.</strong> Moisture-tested and inspected up front — the number on paper is the number on your invoice.</li>
++            <li><strong>Dust-free sanding.</strong> HEPA-sealed containment captures ~99.7% of airborne dust, so most clients stay home during the work.</li>
++            <li><strong>Warranties in writing.</strong> Manufacturer finish and material warranties passed through, itemized in your contract.</li>
++            <li><strong>Salaried craftsmen.</strong> No day-labour subcontractors — the same crew from first board to final coat.</li>
++          </ul>
++          <p style={{ marginTop: '1.25rem' }}>
++            See <Link href="/#gallery">the floors we install</Link> and <Link href="/#craft">the machines behind the finish</Link>.
++          </p>
++        </div>
++      </section>
++
++      <section className="section">
++        <div className="shell">
++          <span className="eyebrow">Common questions</span>
++          <h2>Straight answers.</h2>
++          <div style={{ maxWidth: '52rem', marginTop: '1rem' }}>
++            {FAQ_ITEMS.map((f) => (
++              <details key={f.q} style={{ padding: '1rem 0', borderBottom: '1px solid rgba(128,128,128,0.18)' }}>
++                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{f.q}</summary>
++                <p style={{ marginTop: '0.6rem', opacity: 0.85 }}>{f.a}</p>
++              </details>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="section">
++        <div className="shell">
++          <span className="eyebrow">Also serving</span>
++          <h2>Across the GTA.</h2>
++          <p style={{ marginTop: '1rem', lineHeight: 2 }}>
++            {nearby.map((c, i) => (
++              <span key={c.slug}>
++                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>{i < nearby.length - 1 ? ' · ' : ''}
++              </span>
++            ))}
++          </p>
++          <p style={{ marginTop: '1.5rem' }}>
++            <a href="/#quote" className="btn btn-copper btn-lg">Get your fixed-price estimate in {city.name}</a>
++          </p>
++        </div>
++      </section>
++    </main>
++  );
++}
+diff --git a/apps/web/app/service-areas/page.tsx b/apps/web/app/service-areas/page.tsx
+new file mode 100644
+index 0000000..c9aa3e1
+--- /dev/null
++++ b/apps/web/app/service-areas/page.tsx
+@@ -0,0 +1,44 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { CITIES, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
++import { breadcrumbSchema } from '@/lib/structured-data';
++
++export const metadata: Metadata = {
++  title: 'Service Areas — Hardwood Flooring Across the GTA',
++  description: `Ecowoods installs and refinishes hardwood floors across Toronto and the GTA — from Downtown to Vaughan, Mississauga, Markham and beyond. Find your city. Call ${BUSINESS.phoneDisplay}.`,
++  alternates: { canonical: '/service-areas' },
++};
++
++export default function ServiceAreasIndex() {
++  const ld = breadcrumbSchema([
++    { name: 'Home', url: SITE_URL },
++    { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
++  ]);
++  return (
++    <main>
++      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
++      <section className="section">
++        <div className="shell">
++          <span className="eyebrow">Service Areas</span>
++          <h1>Hardwood flooring <span className="serif-italic">across the GTA.</span></h1>
++          <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
++            Installation, refinishing and dust-free sanding — from Downtown Toronto to Vaughan, Mississauga,
++            Markham and beyond. Find your city for local details, or book a free in-home estimate anywhere in
++            the Greater Toronto Area.
++          </p>
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
++            {CITIES.map((c) => (
++              <Link key={c.slug} href={`/service-areas/${c.slug}`}
++                style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
++                Hardwood Flooring in {c.name} →
++              </Link>
++            ))}
++          </div>
++          <p style={{ marginTop: '2rem' }}>
++            <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
++          </p>
++        </div>
++      </section>
++    </main>
++  );
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index c0a492f..37cf673 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -1,19 +1,20 @@
+ import type { MetadataRoute } from 'next';
+-
+-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
++import { SITE_URL, CITIES } from '@/lib/seo-data';
+ 
+ /**
+- * sitemap.xml — generated by Next. The site is a single indexable landing page;
+- * listing it with a fresh lastModified and high priority tells crawlers what to
+- * fetch first. Add real sub-pages here as they ship.
++ * sitemap.xml — homepage + the /service-areas hub and every city landing page,
++ * so crawlers discover the full local footprint, not just the root.
+  */
+ export default function sitemap(): MetadataRoute.Sitemap {
++  const now = new Date();
+   return [
+-    {
+-      url: SITE_URL,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 1,
+-    },
++    { url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1 },
++    { url: `${SITE_URL}/service-areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
++    ...CITIES.map((c) => ({
++      url: `${SITE_URL}/service-areas/${c.slug}`,
++      lastModified: now,
++      changeFrequency: 'monthly' as const,
++      priority: 0.7,
++    })),
+   ];
+ }
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+new file mode 100644
+index 0000000..f444482
+--- /dev/null
++++ b/apps/web/lib/seo-data.ts
+@@ -0,0 +1,52 @@
++/**
++ * seo-data.ts — single source of truth for programmatic SEO.
++ * Cities, services and FAQs used by the sitemap, the /service-areas pages,
++ * the JSON-LD builders and llms.txt. Keep business facts here in sync with
++ * lib/structured-data.ts (NAP) and the homepage FAQ.
++ */
++
++export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
++
++export const BUSINESS = {
++  name: 'Ecowoods Hardwood Flooring',
++  phone: '+1-416-249-1276',
++  phoneDisplay: '(416) 249-1276',
++  email: 'services@ecowoods.ca',
++  region: 'Toronto & the GTA',
++} as const;
++
++export type City = { slug: string; name: string };
++
++const AREAS = [
++  'Downtown Toronto', 'North York', 'Etobicoke', 'Scarborough', 'East York', 'York',
++  'Vaughan', 'Markham', 'Richmond Hill', 'Mississauga', 'Oakville', 'Brampton',
++  'Aurora', 'Newmarket', 'Pickering', 'Ajax',
++];
++
++const slugify = (s: string) =>
++  s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
++
++export const CITIES: City[] = AREAS.map((name) => ({ slug: slugify(name), name }));
++export const cityBySlug = (slug: string): City | undefined => CITIES.find((c) => c.slug === slug);
++
++export type Service = { slug: string; name: string; blurb: string };
++
++export const SERVICES: Service[] = [
++  { slug: 'hardwood-installation', name: 'Hardwood Flooring Installation', blurb: 'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.' },
++  { slug: 'floor-refinishing', name: 'Hardwood Floor Refinishing', blurb: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.' },
++  { slug: 'dust-free-sanding', name: 'Dust-Free Floor Sanding', blurb: 'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.' },
++  { slug: 'floor-restoration', name: 'Hardwood Floor Restoration', blurb: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.' },
++  { slug: 'custom-inlays', name: 'Custom Inlays & Borders', blurb: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.' },
++  { slug: 'stair-refinishing', name: 'Stair Refinishing', blurb: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.' },
++];
++
++export type FaqItem = { q: string; a: string };
++
++// Mirror of the homepage FAQ — kept here so it can be emitted as FAQPage JSON-LD
++// on every page. Keep in sync with app/page.tsx faqItems.
++export const FAQ_ITEMS: FaqItem[] = [
++  { q: 'Is the estimate really fixed? What about "unforeseen conditions"?', a: 'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.' },
++  { q: 'Can we stay in the house during the work?', a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
++  { q: 'What warranty comes with the work?', a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\u2019t right, we come back and make it right.' },
++  { q: 'How long will my project take?', a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.' },
++];
+diff --git a/apps/web/lib/structured-data.ts b/apps/web/lib/structured-data.ts
+index 05b295c..a65dc35 100644
+--- a/apps/web/lib/structured-data.ts
++++ b/apps/web/lib/structured-data.ts
+@@ -92,3 +92,66 @@ export const localBusinessSchema = {
+     },
+   ],
+ };
++
++/* ─────────────────────────────────────────────────────────────────────────
++ * Additional JSON-LD builders (added for programmatic SEO).
++ * The localBusinessSchema above is unchanged.
++ * ──────────────────────────────────────────────────────────────────────── */
++import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
++
++/** WebSite entity — helps Google understand the site + name. */
++export const websiteSchema = {
++  '@context': 'https://schema.org',
++  '@type': 'WebSite',
++  '@id': `${SITE_URL}/#website`,
++  url: SITE_URL,
++  name: BUSINESS.name,
++  inLanguage: 'en-CA',
++  publisher: { '@id': `${SITE_URL}/#business` },
++};
++
++/** FAQPage — eligible for the FAQ rich result. Uses real on-page Q&A. */
++export function faqPageSchema(items: FaqItem[] = FAQ_ITEMS) {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'FAQPage',
++    mainEntity: items.map((f) => ({
++      '@type': 'Question',
++      name: f.q,
++      acceptedAnswer: { '@type': 'Answer', text: f.a },
++    })),
++  };
++}
++
++/** BreadcrumbList — sitelink breadcrumbs in the SERP. */
++export function breadcrumbSchema(trail: { name: string; url: string }[]) {
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'BreadcrumbList',
++    itemListElement: trail.map((t, i) => ({
++      '@type': 'ListItem',
++      position: i + 1,
++      name: t.name,
++      item: t.url,
++    })),
++  };
++}
++
++/** Per-city LocalBusiness — same NAP, areaServed narrowed to the one city. */
++export function serviceAreaBusinessSchema(city: City) {
++  return {
++    '@context': 'https://schema.org',
++    '@type': ['LocalBusiness', 'HomeAndConstructionBusiness'],
++    '@id': `${SITE_URL}/service-areas/${city.slug}#business`,
++    name: `${BUSINESS.name} — ${city.name}`,
++    url: `${SITE_URL}/service-areas/${city.slug}`,
++    telephone: BUSINESS.phone,
++    email: BUSINESS.email,
++    parentOrganization: { '@id': `${SITE_URL}/#business` },
++    areaServed: { '@type': 'City', name: city.name },
++    makesOffer: SERVICES.map((s) => ({
++      '@type': 'Offer',
++      itemOffered: { '@type': 'Service', name: s.name, areaServed: city.name },
++    })),
++  };
++}
