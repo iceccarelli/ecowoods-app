@@ -1,0 +1,462 @@
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index c818978..8ce6790 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -42,6 +42,7 @@ const navigation = [
+   // { label: 'Species', href: '#species' }, // hidden with The Detail section
+   { label: 'Gallery', href: '#gallery' },
+   { label: 'Process', href: '#process' },
++  { label: 'The Craft', href: '#craft' },
+   { label: 'Reviews', href: '#reviews' },
+   { label: 'FAQ', href: '#faq' },
+ ];
+diff --git a/apps/web/app/components/MachineCatalog.tsx b/apps/web/app/components/MachineCatalog.tsx
+new file mode 100644
+index 0000000..bc14fa0
+--- /dev/null
++++ b/apps/web/app/components/MachineCatalog.tsx
+@@ -0,0 +1,214 @@
++'use client';
++
++import React, { useCallback, useEffect, useRef, useState } from 'react';
++import { createPortal } from 'react-dom';
++import Image from 'next/image';
++import { BLUR_WARM } from '@/lib/image';
++import { machines, machineImages, type Machine } from '../data/machines';
++
++const N = machines.length;
++const SHOT_KEYS = ['inuse', 'detail', 'context'] as const;
++type ShotKey = (typeof SHOT_KEYS)[number];
++
++const IMAGE_MS = 4000;
++const FLOOR_MS = 6000;
++const THROW_MS = 340;
++const THRESHOLD = 90;
++const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
++const PEEK_SIZES = '260px';
++const LIGHTBOX_SIZES = '(max-width: 900px) 92vw, 640px';
++
++const SHOT_LABEL: Record<ShotKey, string> = { inuse: 'In use', detail: 'The detail', context: 'On the job' };
++function shotCaption(m: Machine, s: ShotKey): string {
++  if (s === 'inuse') return m.does;
++  if (s === 'detail') return 'The working detail, up close';
++  return m.stage;
++}
++
++/* ─────────────────────────── Lightbox ─────────────────────────── */
++function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: () => void; onNav: (d: 1 | -1) => void }) {
++  const m = machines[index];
++  const imgs = machineImages(m.slug);
++  const [shot, setShot] = useState<ShotKey>('inuse');
++  useEffect(() => setShot('inuse'), [index]);
++  useEffect(() => {
++    const onKey = (e: KeyboardEvent) => {
++      if (e.key === 'Escape') onClose();
++      else if (e.key === 'ArrowRight') onNav(1);
++      else if (e.key === 'ArrowLeft') onNav(-1);
++    };
++    document.addEventListener('keydown', onKey);
++    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
++    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
++  }, [onClose, onNav]);
++
++  return createPortal(
++    <div className="fc-scrim" role="dialog" aria-modal="true" aria-label={`${m.name} — details`} onClick={onClose}>
++      <div className="fc-modal" onClick={(e) => e.stopPropagation()}>
++        <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
++        <div className="fc-modal-media">
++          <div className="fc-modal-stage">
++            <div className="fc-kb" key={shot}>
++              <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[shot]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
++            </div>
++          </div>
++          <div className="fc-thumbs" role="tablist" aria-label="Views of this tool">
++            {SHOT_KEYS.map((k) => (
++              <button key={k} role="tab" aria-selected={shot === k} className={`fc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
++                <Image src={imgs[k]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
++                <span className="fc-thumb-label">{SHOT_LABEL[k]}</span>
++              </button>
++            ))}
++          </div>
++        </div>
++        <div className="fc-modal-body">
++          <span className="fc-eyebrow">{m.stage}</span>
++          <h3 className="fc-modal-title">{m.name}</h3>
++          <p className="fc-tagline">{m.tagline}</p>
++          <p className="fc-desc">{m.description}</p>
++          <dl className="fc-specs">
++            <div><dt>Stage</dt><dd>{m.stage}</dd></div>
++            <div><dt>What it does</dt><dd>{m.does}</dd></div>
++          </dl>
++          <a href="#quote" className="fc-cta" onClick={onClose}>Book your free in-home estimate</a>
++          <div className="fc-modal-nav">
++            <button onClick={() => onNav(-1)} aria-label="Previous tool">‹ Prev</button>
++            <span>{index + 1} / {N}</span>
++            <button onClick={() => onNav(1)} aria-label="Next tool">Next ›</button>
++          </div>
++        </div>
++      </div>
++    </div>,
++    document.body,
++  );
++}
++
++/* ─────────────────── Stage (shared desktop + mobile) ───────────── */
++function Stage({ machine, shot, kbIndex, dx, transition, onOpen, drag }: {
++  machine: Machine; shot: ShotKey; kbIndex: number; dx: number; transition: boolean;
++  onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
++}) {
++  const imgs = machineImages(machine.slug);
++  const rot = dx * 0.04;
++  return (
++    <div className="fc-stage"
++      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
++      role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
++      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shot}`}>
++        <Image src={imgs[shot]} alt={`${machine.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
++      </div>
++      <span className="fc-card-scrim" />
++      <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
++      <span className="fc-card-chip">{machine.stage}</span>
++      <span className="fc-tap-hint">Tap for 3 photos + what it does</span>
++      <span className="fc-card-cap">
++        <span className="fc-card-eyebrow">{machine.stage}</span>
++        <span className="fc-card-title">{machine.name}</span>
++        <span className="fc-shot-cap" key={shot}>{shotCaption(machine, shot)}</span>
++      </span>
++      <span className="fc-shot-dots">
++        {SHOT_KEYS.map((k) => <span key={k} className={`fc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
++      </span>
++    </div>
++  );
++}
++
++/* ───────────────────────────── Show ────────────────────────────── */
++export default function MachineCatalog() {
++  const [idx, setIdx] = useState(0);
++  const [shotIdx, setShotIdx] = useState(0);
++  const [playing, setPlaying] = useState(true);
++  const [hovering, setHovering] = useState(false);
++  const [lightbox, setLightbox] = useState<number | null>(null);
++  const [mounted, setMounted] = useState(false);
++  useEffect(() => setMounted(true), []);
++
++  const [dx, setDx] = useState(0);
++  const [throwing, setThrowing] = useState(false);
++  const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
++  const movedRef = useRef(false);
++  const [dragging, setDragging] = useState(false);
++
++  const shot = SHOT_KEYS[shotIdx];
++  const active = playing && !hovering && !dragging && lightbox === null && mounted;
++
++  const go = useCallback((step: 1 | -1) => { setIdx((i) => (i + step + N) % N); setShotIdx(0); }, []);
++  const jump = useCallback((i: number) => { setIdx(i); setShotIdx(0); }, []);
++
++  useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % 3), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
++  useEffect(() => { if (!active) return; const t = window.setInterval(() => { setIdx((i) => (i + 1) % N); setShotIdx(0); }, FLOOR_MS); return () => window.clearInterval(t); }, [active]);
++
++  useEffect(() => {
++    if (lightbox !== null) return;
++    const onKey = (e: KeyboardEvent) => {
++      if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
++      else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
++    };
++    window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
++  }, [lightbox, go]);
++
++  const fling = useCallback((step: 1 | -1) => {
++    if (throwing) return; setThrowing(true); setDx(step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
++    window.setTimeout(() => { go(step); setDx(0); setThrowing(false); }, THROW_MS);
++  }, [throwing, go]);
++
++  const onDown = (e: React.PointerEvent) => { if (throwing) return; startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }; movedRef.current = false; setDragging(true); (e.currentTarget as Element).setPointerCapture?.(e.pointerId); };
++  const onMove = (e: React.PointerEvent) => { const s = startRef.current; if (!s) return; const d = e.clientX - s.x; if (Math.abs(d) > 6) movedRef.current = true; setDx(d); };
++  const onUp = (e: React.PointerEvent) => {
++    const s = startRef.current; startRef.current = null; setDragging(false); if (!s) return;
++    const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
++    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setDx(0); setLightbox(idx); return; }
++    if (d <= -THRESHOLD) fling(1); else if (d >= THRESHOLD) fling(-1); else setDx(0);
++  };
++  const drag = { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: () => { startRef.current = null; setDragging(false); setDx(0); } };
++
++  const prev = machines[(idx - 1 + N) % N];
++  const next = machines[(idx + 1) % N];
++  const transition = throwing || (!dragging && dx === 0);
++
++  return (
++    <>
++      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
++        <div className="fc-viewport">
++          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
++            <div className="fc-kb fc-kb-1"><Image src={machineImages(prev.slug).inuse} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++          </button>
++          <Stage machine={machines[idx]} shot={shot} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
++          <button className="fc-peek fc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
++            <div className="fc-kb fc-kb-2"><Image src={machineImages(next.slug).inuse} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
++          </button>
++        </div>
++
++        <div className="fc-controls">
++          <button className="fc-nav-btn" onClick={() => go(-1)} aria-label="Previous tool">‹</button>
++          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
++            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
++          </button>
++          <span className="fc-counter">{idx + 1} / {N}</span>
++          <button className="fc-nav-btn" onClick={() => go(1)} aria-label="Next tool">›</button>
++        </div>
++
++        <div className="fc-dots" role="tablist" aria-label="Tools">
++          {machines.map((m, i) => (
++            <button key={m.slug} role="tab" aria-selected={i === idx} aria-label={m.name}
++              className={`fc-dot ${i === idx ? 'is-active' : ''}`} onClick={() => jump(i)} />
++          ))}
++        </div>
++
++        <p className="fc-deck-hint">
++          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> swipe or use the arrows <span className="fc-hint-sep">·</span> tap to see what each tool does
++        </p>
++
++        <div className="fc-cta-row">
++          <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
++        </div>
++      </div>
++
++      {mounted && lightbox !== null && (
++        <MachineLightbox index={lightbox} onClose={() => setLightbox(null)} onNav={(d) => setLightbox((i) => (i === null ? i : (i + d + N) % N))} />
++      )}
++    </>
++  );
++}
++
++function window_w(): number { if (typeof window === 'undefined') return 800; return window.innerWidth || 800; }
+diff --git a/apps/web/app/data/machine-images.ts b/apps/web/app/data/machine-images.ts
+new file mode 100644
+index 0000000..04ed77e
+--- /dev/null
++++ b/apps/web/app/data/machine-images.ts
+@@ -0,0 +1,56 @@
++// AUTO-GENERATED — static imports so the 36 machine photos bundle into _next/static.
++import type { StaticImageData } from 'next/image';
++
++import drum_sander_inuse from '../../public/gallery-machines/drum-sander-01-inuse.webp';
++import drum_sander_detail from '../../public/gallery-machines/drum-sander-02-detail.webp';
++import drum_sander_context from '../../public/gallery-machines/drum-sander-03-context.webp';
++import edger_inuse from '../../public/gallery-machines/edger-01-inuse.webp';
++import edger_detail from '../../public/gallery-machines/edger-02-detail.webp';
++import edger_context from '../../public/gallery-machines/edger-03-context.webp';
++import orbital_sander_inuse from '../../public/gallery-machines/orbital-sander-01-inuse.webp';
++import orbital_sander_detail from '../../public/gallery-machines/orbital-sander-02-detail.webp';
++import orbital_sander_context from '../../public/gallery-machines/orbital-sander-03-context.webp';
++import buffer_inuse from '../../public/gallery-machines/buffer-01-inuse.webp';
++import buffer_detail from '../../public/gallery-machines/buffer-02-detail.webp';
++import buffer_context from '../../public/gallery-machines/buffer-03-context.webp';
++import dust_containment_inuse from '../../public/gallery-machines/dust-containment-01-inuse.webp';
++import dust_containment_detail from '../../public/gallery-machines/dust-containment-02-detail.webp';
++import dust_containment_context from '../../public/gallery-machines/dust-containment-03-context.webp';
++import flooring_nailer_inuse from '../../public/gallery-machines/flooring-nailer-01-inuse.webp';
++import flooring_nailer_detail from '../../public/gallery-machines/flooring-nailer-02-detail.webp';
++import flooring_nailer_context from '../../public/gallery-machines/flooring-nailer-03-context.webp';
++import table_saw_inuse from '../../public/gallery-machines/table-saw-01-inuse.webp';
++import table_saw_detail from '../../public/gallery-machines/table-saw-02-detail.webp';
++import table_saw_context from '../../public/gallery-machines/table-saw-03-context.webp';
++import miter_saw_inuse from '../../public/gallery-machines/miter-saw-01-inuse.webp';
++import miter_saw_detail from '../../public/gallery-machines/miter-saw-02-detail.webp';
++import miter_saw_context from '../../public/gallery-machines/miter-saw-03-context.webp';
++import jamb_saw_inuse from '../../public/gallery-machines/jamb-saw-01-inuse.webp';
++import jamb_saw_detail from '../../public/gallery-machines/jamb-saw-02-detail.webp';
++import jamb_saw_context from '../../public/gallery-machines/jamb-saw-03-context.webp';
++import moisture_meter_inuse from '../../public/gallery-machines/moisture-meter-01-inuse.webp';
++import moisture_meter_detail from '../../public/gallery-machines/moisture-meter-02-detail.webp';
++import moisture_meter_context from '../../public/gallery-machines/moisture-meter-03-context.webp';
++import finish_applicators_inuse from '../../public/gallery-machines/finish-applicators-01-inuse.webp';
++import finish_applicators_detail from '../../public/gallery-machines/finish-applicators-02-detail.webp';
++import finish_applicators_context from '../../public/gallery-machines/finish-applicators-03-context.webp';
++import router_inuse from '../../public/gallery-machines/router-01-inuse.webp';
++import router_detail from '../../public/gallery-machines/router-02-detail.webp';
++import router_context from '../../public/gallery-machines/router-03-context.webp';
++
++export type MachineShots = { inuse: StaticImageData; detail: StaticImageData; context: StaticImageData };
++
++export const MACHINE_IMAGES: Record<string, MachineShots> = {
++  'drum-sander': { inuse: drum_sander_inuse, detail: drum_sander_detail, context: drum_sander_context },
++  'edger': { inuse: edger_inuse, detail: edger_detail, context: edger_context },
++  'orbital-sander': { inuse: orbital_sander_inuse, detail: orbital_sander_detail, context: orbital_sander_context },
++  'buffer': { inuse: buffer_inuse, detail: buffer_detail, context: buffer_context },
++  'dust-containment': { inuse: dust_containment_inuse, detail: dust_containment_detail, context: dust_containment_context },
++  'flooring-nailer': { inuse: flooring_nailer_inuse, detail: flooring_nailer_detail, context: flooring_nailer_context },
++  'table-saw': { inuse: table_saw_inuse, detail: table_saw_detail, context: table_saw_context },
++  'miter-saw': { inuse: miter_saw_inuse, detail: miter_saw_detail, context: miter_saw_context },
++  'jamb-saw': { inuse: jamb_saw_inuse, detail: jamb_saw_detail, context: jamb_saw_context },
++  'moisture-meter': { inuse: moisture_meter_inuse, detail: moisture_meter_detail, context: moisture_meter_context },
++  'finish-applicators': { inuse: finish_applicators_inuse, detail: finish_applicators_detail, context: finish_applicators_context },
++  'router': { inuse: router_inuse, detail: router_detail, context: router_context },
++};
+diff --git a/apps/web/app/data/machines.ts b/apps/web/app/data/machines.ts
+new file mode 100644
+index 0000000..6886637
+--- /dev/null
++++ b/apps/web/app/data/machines.ts
+@@ -0,0 +1,124 @@
++import { MACHINE_IMAGES } from './machine-images';
++
++export type Machine = {
++  slug: string;
++  name: string;
++  stage: string;
++  tagline: string;
++  does: string;
++  description: string;
++  alt: string;
++};
++
++export const machineImages = (slug: string) => MACHINE_IMAGES[slug];
++
++export const machines: Machine[] = [
++  {
++    slug: 'drum-sander',
++    name: 'Drum Floor Sander',
++    stage: 'Sanding & refinishing',
++    tagline: 'Sanded to bare wood — dead flat.',
++    does: 'Sands hardwood to bare wood',
++    description: 'The primary sander that takes a hardwood floor down to fresh bare wood so stain and finish sit perfectly. Run under full HEPA dust containment — the foundation of a dust-free refinish.',
++    alt: 'Craftsman operating a drum floor sander on a Toronto hardwood floor',
++  },
++  {
++    slug: 'edger',
++    name: 'Edger Sander',
++    stage: 'Sanding & refinishing',
++    tagline: 'Edges and corners the drum can\'t reach.',
++    does: 'Sands perimeters and corners',
++    description: 'A compact, powerful sander designed specifically for the perimeter of the room and tight spaces around doorways and cabinets. Ensures every inch of the floor receives the same professional preparation.',
++    alt: 'Craftsman using an edger sander along the baseboard of a hardwood floor',
++  },
++  {
++    slug: 'orbital-sander',
++    name: 'Random-Orbital Floor Sander',
++    stage: 'Sanding & refinishing',
++    tagline: 'Swirl-free fine finish sanding.',
++    does: 'Fine, swirl-free finish sanding',
++    description: 'The final sanding pass that removes any remaining marks and leaves the surface perfectly smooth and ready for stain. Essential for a high-end, glass-like finish that lasts.',
++    alt: 'Random-orbital floor sander in use on sanded hardwood',
++  },
++  {
++    slug: 'buffer',
++    name: 'Buffer / Rotary Floor Polisher',
++    stage: 'Sanding & refinishing',
++    tagline: 'Screens between coats for a flawless surface.',
++    does: 'Screens and polishes finish coats',
++    description: 'Used between finish coats to lightly abrade the surface so the next coat bonds perfectly. Also polishes the final coat to the desired sheen — the difference between a good floor and a great one.',
++    alt: 'Rotary buffer polishing a hardwood floor between finish coats',
++  },
++  {
++    slug: 'dust-containment',
++    name: 'HEPA Dust-Containment System',
++    stage: 'Sanding & refinishing',
++    tagline: 'The zero-dust promise, delivered.',
++    does: 'Captures dust at the source',
++    description: 'Industrial HEPA filtration connected directly to every sanding machine. Captures the vast majority of dust at the source so your home stays clean during and after the job — the hallmark of a professional EcoWoods refinish.',
++    alt: 'HEPA dust extractor connected to floor sanding equipment on a job site',
++  },
++  {
++    slug: 'flooring-nailer',
++    name: 'Pneumatic Flooring Nailer',
++    stage: 'Installation & prep',
++    tagline: 'Precision fastening, board after board.',
++    does: 'Fastens solid hardwood boards',
++    description: 'The industry-standard tool that drives nails or staples at the exact angle and depth required for solid hardwood. Combined with a mallet, it seats each board tightly for a floor that stays quiet and solid for decades.',
++    alt: 'Craftsman using a pneumatic flooring nailer and mallet on hardwood planks',
++  },
++  {
++    slug: 'table-saw',
++    name: 'Table Saw',
++    stage: 'Installation & prep',
++    tagline: 'Rips boards to the exact width needed.',
++    does: 'Rips boards to width',
++    description: 'Used on site to rip the final boards in each row to the precise width so the floor fits the room perfectly with no gaps or forced joints. A mark of careful, professional layout.',
++    alt: 'Table saw set up on a hardwood flooring job site for ripping boards',
++  },
++  {
++    slug: 'miter-saw',
++    name: 'Compound Miter Saw',
++    stage: 'Installation & prep',
++    tagline: 'Clean angles for borders and patterns.',
++    does: 'Cuts precise angles and patterns',
++    description: 'Delivers the precise angle cuts required for borders, transitions, herringbone, chevron, and custom layouts. Accuracy here is what separates a standard install from true craftsmanship.',
++    alt: 'Compound miter saw cutting hardwood for a border or pattern',
++  },
++  {
++    slug: 'jamb-saw',
++    name: 'Jamb / Undercut Saw',
++    stage: 'Installation & prep',
++    tagline: 'Boards slide cleanly under casings.',
++    does: 'Undercuts casings and jambs',
++    description: 'Undercuts door jambs, casings, and baseboards so the new hardwood can run underneath for a seamless, professional look with no awkward scribe cuts or gaps.',
++    alt: 'Jamb saw undercutting a door casing for hardwood flooring',
++  },
++  {
++    slug: 'moisture-meter',
++    name: 'Moisture Meter',
++    stage: 'Installation & prep',
++    tagline: 'No unforeseen conditions.',
++    does: 'Tests subfloor and wood moisture',
++    description: 'Every EcoWoods job begins with thorough moisture testing of both the subfloor and the new hardwood. This simple tool prevents the most common causes of future problems — cupping, crowning, and gaps.',
++    alt: 'Moisture meter reading on a plywood subfloor before hardwood installation',
++  },
++  {
++    slug: 'finish-applicators',
++    name: 'Finish Applicators',
++    stage: 'Finishing & detail',
++    tagline: 'Even coats, professional results.',
++    does: 'Applies adhesive and finish coats',
++    description: 'T-bar applicators, lambswool pads, and specialty trowels ensure adhesive for glue-down installations and finish coats are applied evenly and at the correct thickness. The difference is visible in the final clarity and durability of the floor.',
++    alt: 'T-bar applicator spreading finish on a newly sanded hardwood floor',
++  },
++  {
++    slug: 'router',
++    name: 'Router & Inlay Tools',
++    stage: 'Finishing & detail',
++    tagline: 'Custom borders and bespoke details.',
++    does: 'Creates custom inlays and borders',
++    description: 'When a client wants a custom border, feature strip, or inlay, these tools create the precise recesses and profiles. This is where a floor becomes truly one-of-a-kind.',
++    alt: 'Router being used to create a custom border or inlay in hardwood flooring',
++  },
++];
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index 20a9192..5567624 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -13,6 +13,7 @@ import PricingSection from './components/PricingSection';
+ import CountUp from './components/CountUp';
+ import SpecsCoverage from './components/SpecsCoverage';
+ import FloorCatalog from './components/FloorCatalog';
++import MachineCatalog from './components/MachineCatalog';
+ import StandardDeck from './components/StandardDeck';
+ import TestimonialDeck from './components/TestimonialDeck';
+ import ProcessDeck from './components/ProcessDeck';
+@@ -541,6 +542,25 @@ const onSubmit = (data: LeadFormData) => {
+         </div>
+       </section>
+ 
++      {/* THE CRAFT — educational machine & tool gallery */}
++      <section className="section" id="craft">
++        <div className="shell">
++          <div className="section-head reveal">
++            <span className="eyebrow">The Craft</span>
++            <h2>
++              The machines behind <span className="serif-italic">the finish.</span>
++            </h2>
++            <p>
++              Every EcoWoods floor is built with professional-grade equipment run by our own salaried
++              craftsmen. Here is the gear behind a dust-free, fixed-price floor — and exactly what each
++              one does. Tap any tool to see it in use.
++            </p>
++          </div>
++
++          <MachineCatalog />
++        </div>
++      </section>
++
+       {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
+              specs". The gallery creates the want; the configurator lets them act on
+              it while it is still warm, and hands the whole configuration to RenoGuide. */}
