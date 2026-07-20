@@ -3128,23 +3128,56 @@ p {
   color: #fff;
 }
 
-.shop-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.5rem;
-  align-items: start;
+/* Horizontal scroll carousel — shared by the product strip and the cart strip.
+   Item count per screen is pure CSS: each item has a fixed flex-basis, so
+   however many fit in the container width is what's visible — no JS
+   breakpoints needed for the "responsive item count" behaviour. */
+.shop-carousel {
+  position: relative;
 }
-@media (max-width: 900px) {
-  .shop-layout { grid-template-columns: 1fr; }
-}
-
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+.shop-carousel-track {
+  display: flex;
   gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 0.25rem;
+  padding: 0.25rem 0.25rem 0.75rem;
+  scrollbar-width: thin;
+}
+.shop-carousel-track::-webkit-scrollbar { height: 6px; }
+.shop-carousel-track::-webkit-scrollbar-thumb { background: var(--line); border-radius: var(--radius-full); }
+
+.shop-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.shop-carousel-arrow:hover { background: var(--copper); color: #fff; border-color: var(--copper); }
+.shop-carousel-arrow-prev { left: -0.75rem; }
+.shop-carousel-arrow-next { right: -0.75rem; }
+@media (max-width: 640px) {
+  /* touch swipe takes over on small screens; arrows would just overlap cards */
+  .shop-carousel-arrow { display: none; }
 }
 
 .shop-card {
+  flex: 0 0 200px;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
@@ -3259,25 +3292,41 @@ p {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 1.25rem;
-  position: sticky;
-  top: calc(var(--header-h) + 1rem);
+  margin-top: 1.5rem;
 }
 .shop-cart-title {
   font-size: var(--fs-base);
   font-weight: 700;
   margin: 0 0 0.75rem;
 }
+.shop-cart-carousel .shop-carousel-arrow-prev { left: -0.5rem; }
+.shop-cart-carousel .shop-carousel-arrow-next { right: -0.5rem; }
 .shop-cart-items {
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0.25rem 0.25rem 0.75rem;
+  scrollbar-width: thin;
 }
+.shop-cart-items::-webkit-scrollbar { height: 6px; }
+.shop-cart-items::-webkit-scrollbar-thumb { background: var(--line); border-radius: var(--radius-full); }
 .shop-cart-item {
+  flex: 0 0 230px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: var(--fs-xs);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+}
+.shop-cart-item-top {
   display: flex;
   gap: 0.6rem;
   align-items: flex-start;
-  font-size: var(--fs-xs);
 }
 .shop-cart-item-thumb {
   position: relative;
@@ -3295,6 +3344,7 @@ p {
 .shop-cart-item-right {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   font-weight: 700;
   white-space: nowrap;
@@ -3310,6 +3360,9 @@ p {
 }
 .shop-cart-remove:hover { color: var(--danger); }
 
+/* .shop-cart-footer: no styles of its own — the fixed-height horizontal cart
+   strip above it means this footer is never pushed down by cart growth, so
+   the total + checkout button stay put without needing sticky positioning. */
 .shop-cart-summary {
   border-top: 1px solid var(--line);
   padding-top: 0.75rem;

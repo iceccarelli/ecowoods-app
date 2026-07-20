@@ -7,7 +7,7 @@
  * display/estimation only.
  */
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image, { type StaticImageData } from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -77,6 +77,12 @@ function defaultSelection(product: ShopProduct): Selection {
   return { quantity: product.minQuantity, selectedOptions };
 }
 
+function scrollTrack(ref: React.RefObject<HTMLDivElement | null>, direction: 1 | -1) {
+  const el = ref.current;
+  if (!el) return;
+  el.scrollBy({ left: direction * el.clientWidth * 0.85, behavior: 'smooth' });
+}
+
 export default function ShopCheckout(props: { products: ShopProduct[]; taxRatePercent: number }) {
   return (
     <Suspense fallback={null}>
@@ -94,6 +100,8 @@ function ShopCheckoutInner({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const productTrackRef = useRef<HTMLDivElement>(null);
+  const cartTrackRef = useRef<HTMLDivElement>(null);
 
   const [category, setCategory] = useState<'MATERIAL' | 'ACCESSORY'>('MATERIAL');
   const [selections, setSelections] = useState<Record<string, Selection>>(() =>
@@ -244,8 +252,16 @@ function ShopCheckoutInner({
         </button>
       </div>
 
-      <div className="shop-layout">
-        <div className="shop-grid">
+      <div className="shop-carousel">
+        <button
+          type="button"
+          className="shop-carousel-arrow shop-carousel-arrow-prev"
+          onClick={() => scrollTrack(productTrackRef, -1)}
+          aria-label="Scroll left"
+        >
+          ‹
+        </button>
+        <div className="shop-carousel-track" ref={productTrackRef}>
           {visibleProducts.map((product) => {
             const selection = selections[product.id] ?? defaultSelection(product);
             const unitPrice = computeUnitPrice(product, selection.selectedOptions);
@@ -352,35 +368,55 @@ function ShopCheckoutInner({
             );
           })}
         </div>
+        <button
+          type="button"
+          className="shop-carousel-arrow shop-carousel-arrow-next"
+          onClick={() => scrollTrack(productTrackRef, 1)}
+          aria-label="Scroll right"
+        >
+          ›
+        </button>
+      </div>
 
-        <div className="shop-cart">
-          <h3 className="shop-cart-title">Your cart</h3>
-          {cart.length === 0 ? (
-            <p className="portal-empty">Nothing added yet — browse materials or accessories on the left.</p>
-          ) : (
-            <>
-              <div className="shop-cart-items">
+      <div className="shop-cart">
+        <h3 className="shop-cart-title">Your cart</h3>
+        {cart.length === 0 ? (
+          <p className="portal-empty">Nothing added yet — browse materials or accessories above.</p>
+        ) : (
+          <>
+            <div className="shop-carousel shop-cart-carousel">
+              <button
+                type="button"
+                className="shop-carousel-arrow shop-carousel-arrow-prev"
+                onClick={() => scrollTrack(cartTrackRef, -1)}
+                aria-label="Scroll left"
+              >
+                ‹
+              </button>
+              <div className="shop-cart-items" ref={cartTrackRef}>
                 {cart.map((item, i) => (
                   <div key={i} className="shop-cart-item">
-                    <div className="shop-cart-item-thumb">
-                      {SHOW_PRODUCT_IMAGES && item.image && (
-                        <Image
-                          src={item.image.src}
-                          alt={item.name}
-                          fill
-                          sizes="44px"
-                          placeholder="blur"
-                          blurDataURL={BLUR_WARM}
-                        />
-                      )}
-                    </div>
-                    <div className="shop-cart-item-info">
-                      <div className="shop-cart-item-name">{item.name}</div>
-                      <div className="shop-cart-item-meta">
-                        {item.quantity} {unitLabel(item.unit)} × {formatCAD(item.unitPrice)}
-                        {Object.values(item.selectedOptions).some(Boolean) && (
-                          <> · {Object.values(item.selectedOptions).join(', ')}</>
+                    <div className="shop-cart-item-top">
+                      <div className="shop-cart-item-thumb">
+                        {SHOW_PRODUCT_IMAGES && item.image && (
+                          <Image
+                            src={item.image.src}
+                            alt={item.name}
+                            fill
+                            sizes="44px"
+                            placeholder="blur"
+                            blurDataURL={BLUR_WARM}
+                          />
                         )}
+                      </div>
+                      <div className="shop-cart-item-info">
+                        <div className="shop-cart-item-name">{item.name}</div>
+                        <div className="shop-cart-item-meta">
+                          {item.quantity} {unitLabel(item.unit)} × {formatCAD(item.unitPrice)}
+                          {Object.values(item.selectedOptions).some(Boolean) && (
+                            <> · {Object.values(item.selectedOptions).join(', ')}</>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="shop-cart-item-right">
@@ -392,7 +428,17 @@ function ShopCheckoutInner({
                   </div>
                 ))}
               </div>
+              <button
+                type="button"
+                className="shop-carousel-arrow shop-carousel-arrow-next"
+                onClick={() => scrollTrack(cartTrackRef, 1)}
+                aria-label="Scroll right"
+              >
+                ›
+              </button>
+            </div>
 
+            <div className="shop-cart-footer">
               <div className="shop-cart-summary">
                 <div className="shop-cart-summary-row">
                   <span>Subtotal</span>
@@ -416,9 +462,9 @@ function ShopCheckoutInner({
               >
                 {checkingOut ? 'Redirecting to Stripe…' : `Checkout — ${formatCAD(total)}`}
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
