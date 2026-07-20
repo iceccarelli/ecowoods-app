@@ -6639,3 +6639,8 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 @media (max-width: 860px) { .fc-modal { grid-template-columns: 1fr; max-height: 92vh; overflow-y: auto; } .fc-modal-body { padding: 1.2rem 1.3rem 1.5rem; } .fc-modal-title { font-size: 1.35rem; } }
 /* === EW:FLOOR-CATALOG END === */
 
+
+/* === EW:MACHINE-THUMBS START === */
+.fc-thumbs { flex-wrap: wrap; }
+.fc-thumb { flex: 0 0 calc(33.333% - 0.37rem); }
+/* === EW:MACHINE-THUMBS END === */

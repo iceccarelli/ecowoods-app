@@ -5,12 +5,11 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
 import { machines, machineImages, type Machine } from '../data/machines';
+import { SHOT_TYPE, type ShotType } from '../data/machine-images';
 
 const N = machines.length;
-const SHOT_KEYS = ['inuse', 'detail', 'context'] as const;
-type ShotKey = (typeof SHOT_KEYS)[number];
-
-const IMAGE_MS = 4000;
+const SHOTS = 6; // 6 photos per machine (set 1 = 01-03, set 2 = 04-06)
+const IMAGE_MS = 3500;
 const FLOOR_MS = 6000;
 const THROW_MS = 340;
 const THRESHOLD = 90;
@@ -18,10 +17,10 @@ const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
 const PEEK_SIZES = '260px';
 const LIGHTBOX_SIZES = '(max-width: 900px) 92vw, 640px';
 
-const SHOT_LABEL: Record<ShotKey, string> = { inuse: 'In use', detail: 'The detail', context: 'On the job' };
-function shotCaption(m: Machine, s: ShotKey): string {
-  if (s === 'inuse') return m.does;
-  if (s === 'detail') return 'The working detail, up close';
+const SHOT_LABEL: Record<ShotType, string> = { inuse: 'In use', detail: 'The detail', context: 'On the job' };
+function shotCaption(m: Machine, t: ShotType): string {
+  if (t === 'inuse') return m.does;
+  if (t === 'detail') return 'The working detail, up close';
   return m.stage;
 }
 
@@ -29,8 +28,8 @@ function shotCaption(m: Machine, s: ShotKey): string {
 function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: () => void; onNav: (d: 1 | -1) => void }) {
   const m = machines[index];
   const imgs = machineImages(m.slug);
-  const [shot, setShot] = useState<ShotKey>('inuse');
-  useEffect(() => setShot('inuse'), [index]);
+  const [shot, setShot] = useState(0);
+  useEffect(() => setShot(0), [index]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -49,14 +48,14 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
         <div className="fc-modal-media">
           <div className="fc-modal-stage">
             <div className="fc-kb" key={shot}>
-              <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[shot]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+              <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[SHOT_TYPE[shot]]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
             </div>
           </div>
-          <div className="fc-thumbs" role="tablist" aria-label="Views of this tool">
-            {SHOT_KEYS.map((k) => (
-              <button key={k} role="tab" aria-selected={shot === k} className={`fc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
-                <Image src={imgs[k]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
-                <span className="fc-thumb-label">{SHOT_LABEL[k]}</span>
+          <div className="fc-thumbs" role="tablist" aria-label="Photos of this tool">
+            {imgs.map((im, i) => (
+              <button key={i} role="tab" aria-selected={shot === i} className={`fc-thumb ${shot === i ? 'is-active' : ''}`} onClick={() => setShot(i)}>
+                <Image src={im} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+                <span className="fc-thumb-label">{SHOT_LABEL[SHOT_TYPE[i]]}</span>
               </button>
             ))}
           </div>
@@ -84,30 +83,31 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
 }
 
 /* ─────────────────── Stage (shared desktop + mobile) ───────────── */
-function Stage({ machine, shot, kbIndex, dx, transition, onOpen, drag }: {
-  machine: Machine; shot: ShotKey; kbIndex: number; dx: number; transition: boolean;
+function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
+  machine: Machine; shotIdx: number; kbIndex: number; dx: number; transition: boolean;
   onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
 }) {
   const imgs = machineImages(machine.slug);
+  const type = SHOT_TYPE[shotIdx];
   const rot = dx * 0.04;
   return (
     <div className="fc-stage"
       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
-      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shot}`}>
-        <Image src={imgs[shot]} alt={`${machine.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
+        <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
       </div>
       <span className="fc-card-scrim" />
-      <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
+      <span className="fc-shot-badge">{SHOT_LABEL[type]}</span>
       <span className="fc-card-chip">{machine.stage}</span>
-      <span className="fc-tap-hint">Tap for 3 photos + what it does</span>
+      <span className="fc-tap-hint">Tap for 6 photos + what it does</span>
       <span className="fc-card-cap">
         <span className="fc-card-eyebrow">{machine.stage}</span>
         <span className="fc-card-title">{machine.name}</span>
-        <span className="fc-shot-cap" key={shot}>{shotCaption(machine, shot)}</span>
+        <span className="fc-shot-cap" key={shotIdx}>{shotCaption(machine, type)}</span>
       </span>
       <span className="fc-shot-dots">
-        {SHOT_KEYS.map((k) => <span key={k} className={`fc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
+        {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`fc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
       </span>
     </div>
   );
@@ -129,13 +129,12 @@ export default function MachineCatalog() {
   const movedRef = useRef(false);
   const [dragging, setDragging] = useState(false);
 
-  const shot = SHOT_KEYS[shotIdx];
   const active = playing && !hovering && !dragging && lightbox === null && mounted;
 
   const go = useCallback((step: 1 | -1) => { setIdx((i) => (i + step + N) % N); setShotIdx(0); }, []);
   const jump = useCallback((i: number) => { setIdx(i); setShotIdx(0); }, []);
 
-  useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % 3), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
+  useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % SHOTS), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
   useEffect(() => { if (!active) return; const t = window.setInterval(() => { setIdx((i) => (i + 1) % N); setShotIdx(0); }, FLOOR_MS); return () => window.clearInterval(t); }, [active]);
 
   useEffect(() => {
@@ -171,11 +170,11 @@ export default function MachineCatalog() {
       <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
         <div className="fc-viewport">
           <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
-            <div className="fc-kb fc-kb-1"><Image src={machineImages(prev.slug).inuse} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+            <div className="fc-kb fc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
-          <Stage machine={machines[idx]} shot={shot} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
+          <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
           <button className="fc-peek fc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
-            <div className="fc-kb fc-kb-2"><Image src={machineImages(next.slug).inuse} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+            <div className="fc-kb fc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
         </div>
 
@@ -196,7 +195,7 @@ export default function MachineCatalog() {
         </div>
 
         <p className="fc-deck-hint">
-          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> swipe or use the arrows <span className="fc-hint-sep">·</span> tap to see what each tool does
+          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> 6 photos per tool <span className="fc-hint-sep">·</span> swipe, use arrows, or tap to explore
         </p>
 
         <div className="fc-cta-row">
