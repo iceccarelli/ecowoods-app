@@ -42,6 +42,7 @@ const navigation = [
   // { label: 'Species', href: '#species' }, // hidden with The Detail section
   { label: 'Gallery', href: '#gallery' },
   { label: 'Process', href: '#process' },
+  { label: 'The Craft', href: '#craft' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'FAQ', href: '#faq' },
 ];
