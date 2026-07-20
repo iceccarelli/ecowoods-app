@@ -12,7 +12,11 @@ const nextConfig = {
   serverExternalPackages: ['@react-pdf/renderer'],
 
   images: {
-    formats: ['image/avif', 'image/webp'],
+    // AVIF is best for production but very CPU/RAM-heavy to encode. In a
+    // resource-limited dev container, encoding several 2000x2000 images at once
+    // makes the optimizer drop some ("received null"). Dev uses cheap WebP;
+    // production keeps AVIF for the smaller, higher-quality payload.
+    formats: process.env.NODE_ENV === 'development' ? ['image/webp'] : ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'plus.unsplash.com' },
