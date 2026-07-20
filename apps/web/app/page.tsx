@@ -12,7 +12,6 @@ import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
-import PortfolioGallery from './components/PortfolioGallery';
 import FloorCatalog from './components/FloorCatalog';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
@@ -50,13 +49,6 @@ type FunnelStep = {
   icon: keyof typeof Icon;
 };
 
-type GalleryItem = {
-  id: string;
-  title: string;
-  sub: string;
-  image: string;
-  span: 'span-4' | 'span-6' | 'span-8' | 'span-12';
-};
 
 type Review = {
   initials: string;
@@ -316,56 +308,6 @@ const funnelSteps: FunnelStep[] = [
   },
 ];
 
-const galleryItems: GalleryItem[] = [
-  {
-    id: 'rosedale',
-    title: 'Rosedale Victorian Restoration',
-    sub: '1,800 sq ft Red Oak — Fixed Price, Zero Dust',
-    image:
-      'https://images.unsplash.com/photo-1560449752-3fd4bdbe7df0?auto=format&fit=crop&w=1400&q=80',
-    span: 'span-8',
-  },
-  {
-    id: 'leslieville',
-    title: 'Leslieville Loft',
-    sub: '900 sq ft Wide-Plank White Oak',
-    image:
-      'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80',
-    span: 'span-4',
-  },
-  {
-    id: 'forest-hill',
-    title: 'Forest Hill Estate',
-    sub: 'Walnut Herringbone with Custom Border',
-    image:
-      'https://images.unsplash.com/photo-1580398814575-816cf5faebad?auto=format&fit=crop&w=900&q=80',
-    span: 'span-4',
-  },
-  {
-    id: 'distillery',
-    title: 'Distillery District Penthouse',
-    sub: '2,400 sq ft Smoked Oak Chevron',
-    image:
-      'https://images.unsplash.com/photo-1723897917319-3958c7b4aaa1?auto=format&fit=crop&w=1400&q=80',
-    span: 'span-8',
-  },
-  {
-    id: 'cabbagetown',
-    title: 'Cabbagetown Townhouse',
-    sub: 'Heritage Refinish with Stair Re-Capping',
-    image:
-      'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
-    span: 'span-6',
-  },
-  {
-    id: 'yorkville',
-    title: 'Yorkville Condo Conversion',
-    sub: 'Engineered Wide Plank over Quiet Underlayment',
-    image:
-      'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&w=900&q=80',
-    span: 'span-6',
-  },
-];
 
 const speciesList: Species[] = [
   { id: 'white-oak', name: 'White Oak', hardness: 'Janka 1360', origin: 'Ontario & Quebec', vibe: 'Calm, modern, infinitely stainable' },
