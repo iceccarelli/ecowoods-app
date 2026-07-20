@@ -92,3 +92,66 @@ export const localBusinessSchema = {
     },
   ],
 };
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Additional JSON-LD builders (added for programmatic SEO).
+ * The localBusinessSchema above is unchanged.
+ * ──────────────────────────────────────────────────────────────────────── */
+import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
+
+/** WebSite entity — helps Google understand the site + name. */
+export const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  url: SITE_URL,
+  name: BUSINESS.name,
+  inLanguage: 'en-CA',
+  publisher: { '@id': `${SITE_URL}/#business` },
+};
+
+/** FAQPage — eligible for the FAQ rich result. Uses real on-page Q&A. */
+export function faqPageSchema(items: FaqItem[] = FAQ_ITEMS) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+}
+
+/** BreadcrumbList — sitelink breadcrumbs in the SERP. */
+export function breadcrumbSchema(trail: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((t, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: t.name,
+      item: t.url,
+    })),
+  };
+}
+
+/** Per-city LocalBusiness — same NAP, areaServed narrowed to the one city. */
+export function serviceAreaBusinessSchema(city: City) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': ['LocalBusiness', 'HomeAndConstructionBusiness'],
+    '@id': `${SITE_URL}/service-areas/${city.slug}#business`,
+    name: `${BUSINESS.name} — ${city.name}`,
+    url: `${SITE_URL}/service-areas/${city.slug}`,
+    telephone: BUSINESS.phone,
+    email: BUSINESS.email,
+    parentOrganization: { '@id': `${SITE_URL}/#business` },
+    areaServed: { '@type': 'City', name: city.name },
+    makesOffer: SERVICES.map((s) => ({
+      '@type': 'Offer',
+      itemOffered: { '@type': 'Service', name: s.name, areaServed: city.name },
+    })),
+  };
+}

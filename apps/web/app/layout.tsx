@@ -5,7 +5,7 @@ import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
-import { localBusinessSchema } from '@/lib/structured-data';
+import { localBusinessSchema, websiteSchema, faqPageSchema } from '@/lib/structured-data';
 import ConversionRail from './components/ConversionRail';
 import ReadingProgress from './components/ReadingProgress';
 
@@ -52,6 +52,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 const DESCRIPTION =
   'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
 
+const VERIFICATION = {
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+    ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+    : {}),
+};
+
 export const metadata: Metadata = {
   // Was pinned to the vercel.app preview host, so every canonical, og:url and
   // og:image resolved to a domain the business does not use.
@@ -89,6 +98,7 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
   formatDetection: { telephone: true, address: true },
+  verification: VERIFICATION,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -112,6 +122,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema()) }}
         />
 
         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
