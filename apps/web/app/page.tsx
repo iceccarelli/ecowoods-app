@@ -505,7 +505,9 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* THE DETAIL — moved up so on-page order matches the nav (Species → Gallery). */}
-      <SpecsCoverage species={speciesList} areas={serviceAreas} />
+      {/* SpecsCoverage ("The Detail") intentionally hidden — kept for later.
+          Re-enable by uncommenting the next line. */}
+      {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
 
       {/* 5 · RESULTS — curated proof */}
       <section className="section paper-texture" id="gallery">
