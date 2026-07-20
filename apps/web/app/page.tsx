@@ -12,7 +12,7 @@ import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
-import PortfolioGallery from './components/PortfolioGallery';
+import FloorCatalog from './components/FloorCatalog';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
@@ -49,13 +49,6 @@ type FunnelStep = {
   icon: keyof typeof Icon;
 };
 
-type GalleryItem = {
-  id: string;
-  title: string;
-  sub: string;
-  image: string;
-  span: 'span-4' | 'span-6' | 'span-8' | 'span-12';
-};
 
 type Review = {
   initials: string;
@@ -315,56 +308,6 @@ const funnelSteps: FunnelStep[] = [
   },
 ];
 
-const galleryItems: GalleryItem[] = [
-  {
-    id: 'rosedale',
-    title: 'Rosedale Victorian Restoration',
-    sub: '1,800 sq ft Red Oak — Fixed Price, Zero Dust',
-    image:
-      'https://images.unsplash.com/photo-1560449752-3fd4bdbe7df0?auto=format&fit=crop&w=1400&q=80',
-    span: 'span-8',
-  },
-  {
-    id: 'leslieville',
-    title: 'Leslieville Loft',
-    sub: '900 sq ft Wide-Plank White Oak',
-    image:
-      'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80',
-    span: 'span-4',
-  },
-  {
-    id: 'forest-hill',
-    title: 'Forest Hill Estate',
-    sub: 'Walnut Herringbone with Custom Border',
-    image:
-      'https://images.unsplash.com/photo-1580398814575-816cf5faebad?auto=format&fit=crop&w=900&q=80',
-    span: 'span-4',
-  },
-  {
-    id: 'distillery',
-    title: 'Distillery District Penthouse',
-    sub: '2,400 sq ft Smoked Oak Chevron',
-    image:
-      'https://images.unsplash.com/photo-1723897917319-3958c7b4aaa1?auto=format&fit=crop&w=1400&q=80',
-    span: 'span-8',
-  },
-  {
-    id: 'cabbagetown',
-    title: 'Cabbagetown Townhouse',
-    sub: 'Heritage Refinish with Stair Re-Capping',
-    image:
-      'https://images.unsplash.com/photo-1721274501580-6366b96a6050?auto=format&fit=crop&w=900&q=80',
-    span: 'span-6',
-  },
-  {
-    id: 'yorkville',
-    title: 'Yorkville Condo Conversion',
-    sub: 'Engineered Wide Plank over Quiet Underlayment',
-    image:
-      'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&w=900&q=80',
-    span: 'span-6',
-  },
-];
 
 const speciesList: Species[] = [
   { id: 'white-oak', name: 'White Oak', hardness: 'Janka 1360', origin: 'Ontario & Quebec', vibe: 'Calm, modern, infinitely stainable' },
@@ -561,18 +504,21 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
+      {/* THE DETAIL — moved up so on-page order matches the nav (Species → Gallery). */}
+      <SpecsCoverage species={speciesList} areas={serviceAreas} />
+
       {/* 5 · RESULTS — curated proof */}
       <section className="section paper-texture" id="gallery">
         <div className="shell">
           <div className="section-head reveal">
-            <span className="eyebrow">The Work</span>
+            <span className="eyebrow">The Collection</span>
             <h2>
-              Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
+              Twelve floors, <span className="serif-italic">endless rooms.</span>
             </h2>
-            <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
+            <p>The species and finishes we install across the GTA — tap any floor to see the grain up close and the room it belongs in.</p>
           </div>
 
-          <PortfolioGallery items={galleryItems} />
+          <FloorCatalog />
         </div>
       </section>
 
@@ -597,7 +543,6 @@ const onSubmit = (data: LeadFormData) => {
              specs". The gallery creates the want; the configurator lets them act on
              it while it is still warm, and hands the whole configuration to RenoGuide. */}
       <ConfiguratorSection />
-      <SpecsCoverage species={speciesList} areas={serviceAreas} />
 
       {/* 2 · PROOF & AUTHORITY */}
       <section className="section paper-texture" id="reviews">

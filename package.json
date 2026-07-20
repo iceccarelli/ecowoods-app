@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.10",
     "@types/node": "20.16.10",
     "next": "^15.5.18",
     "prettier": "^3.3.2",
