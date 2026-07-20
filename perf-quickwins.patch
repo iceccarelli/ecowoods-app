@@ -1,0 +1,53 @@
+diff --git a/apps/web/app/components/FloorCatalog.tsx b/apps/web/app/components/FloorCatalog.tsx
+index 338219d..78b5205 100644
+--- a/apps/web/app/components/FloorCatalog.tsx
++++ b/apps/web/app/components/FloorCatalog.tsx
+@@ -104,7 +104,7 @@ function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
+     >
+       {/* ken-burns image, remounts (and restarts the pan/zoom) on every floor+shot change */}
+       <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
+-        <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
++        <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+       </div>
+       <span className="fc-card-scrim" />
+       <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
+diff --git a/apps/web/app/components/MachineCatalog.tsx b/apps/web/app/components/MachineCatalog.tsx
+index 6f33266..b9f1a9b 100644
+--- a/apps/web/app/components/MachineCatalog.tsx
++++ b/apps/web/app/components/MachineCatalog.tsx
+@@ -95,7 +95,7 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
+       style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
+       <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
+-        <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
++        <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+       </div>
+       <span className="fc-card-scrim" />
+       <span className="fc-shot-badge">{SHOT_LABEL[type]}</span>
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 2a7a11a..a69dbc2 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -14,7 +14,6 @@ const fraunces = Fraunces({
+   subsets: ['latin'],
+   variable: '--font-display',
+   display: 'swap',
+-  weight: ['300', '400', '500', '600'],
+   style: ['normal', 'italic'],
+ });
+ 
+@@ -22,14 +21,12 @@ const jakarta = Plus_Jakarta_Sans({
+   subsets: ['latin'],
+   variable: '--font-body',
+   display: 'swap',
+-  weight: ['400', '500', '600', '700'],
+ });
+ 
+ const mono = JetBrains_Mono({
+   subsets: ['latin'],
+   variable: '--font-mono',
+   display: 'swap',
+-  weight: ['400', '700'],
+ });
+ 
+ import SiteFooter from "./components/SiteFooter";
