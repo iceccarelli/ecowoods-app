@@ -1,3 +1,4 @@
+import { FLOOR_IMAGES } from './floor-images';
 /**
  * The EcoWoods floor collection — 12 products, each with a room / detail /
  * lifestyle image triptych. Species facts mirror `speciesList` in the pricing
@@ -27,14 +28,7 @@ export type Floor = {
   span: 'span-4' | 'span-6' | 'span-8';
 };
 
-const g = (slug: string, shot: 'room' | 'detail' | 'lifestyle') =>
-  `/gallery/${slug}-${shot === 'room' ? '01-room' : shot === 'detail' ? '02-detail' : '03-lifestyle'}.webp`;
-
-export const floorImages = (slug: string) => ({
-  room: g(slug, 'room'),
-  detail: g(slug, 'detail'),
-  lifestyle: g(slug, 'lifestyle'),
-});
+export const floorImages = (slug: string) => FLOOR_IMAGES[slug];
 
 export const floors: Floor[] = [
   {
