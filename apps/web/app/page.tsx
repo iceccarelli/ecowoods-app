@@ -13,6 +13,7 @@ import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
 import PortfolioGallery from './components/PortfolioGallery';
+import FloorCatalog from './components/FloorCatalog';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
@@ -561,18 +562,21 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
+      {/* THE DETAIL — moved up so on-page order matches the nav (Species → Gallery). */}
+      <SpecsCoverage species={speciesList} areas={serviceAreas} />
+
       {/* 5 · RESULTS — curated proof */}
       <section className="section paper-texture" id="gallery">
         <div className="shell">
           <div className="section-head reveal">
-            <span className="eyebrow">The Work</span>
+            <span className="eyebrow">The Collection</span>
             <h2>
-              Toronto&rsquo;s living rooms, <span className="serif-italic">our portfolio.</span>
+              Twelve floors, <span className="serif-italic">endless rooms.</span>
             </h2>
-            <p>A curated sample of projects completed across the GTA in the last twelve months.</p>
+            <p>The species and finishes we install across the GTA — tap any floor to see the grain up close and the room it belongs in.</p>
           </div>
 
-          <PortfolioGallery items={galleryItems} />
+          <FloorCatalog />
         </div>
       </section>
 
@@ -597,7 +601,6 @@ const onSubmit = (data: LeadFormData) => {
              specs". The gallery creates the want; the configurator lets them act on
              it while it is still warm, and hands the whole configuration to RenoGuide. */}
       <ConfiguratorSection />
-      <SpecsCoverage species={speciesList} areas={serviceAreas} />
 
       {/* 2 · PROOF & AUTHORITY */}
       <section className="section paper-texture" id="reviews">
