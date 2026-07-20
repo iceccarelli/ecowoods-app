@@ -68,6 +68,15 @@ export function InquiriesIcon() {
   );
 }
 
+export function ShopIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M6 8.5h12l-1 12H7Z" />
+      <path d="M9 8.5V6.5a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}
+
 export function SettingsIcon() {
   return (
     <svg {...iconProps}>

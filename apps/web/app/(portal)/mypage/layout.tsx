@@ -7,10 +7,12 @@ import {
   ProjectsIcon,
   InvoicesIcon,
   InquiriesIcon,
+  ShopIcon,
 } from '@/app/components/PortalIcons';
 
 const navItems = [
   { href: '/mypage', label: 'Dashboard', icon: <DashboardIcon /> },
+  { href: '/mypage/orders', label: 'My Orders', icon: <ShopIcon /> },
   { href: '/mypage/quotes', label: 'My Quotes', icon: <QuotesIcon /> },
   { href: '/mypage/projects', label: 'My Projects', icon: <ProjectsIcon /> },
   { href: '/mypage/invoices', label: 'Invoices & Payments', icon: <InvoicesIcon /> },
