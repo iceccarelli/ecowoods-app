@@ -7,31 +7,32 @@ import { BLUR_WARM } from '@/lib/image';
 import { floors, floorImages, type Floor } from '../data/floors';
 
 const N = floors.length;
-const SHOTS = [
-  { key: 'room' as const, label: 'In the room' },
-  { key: 'detail' as const, label: 'Grain detail' },
-  { key: 'lifestyle' as const, label: 'Lived-in' },
-];
-const CARD_SIZES = '(max-width: 767px) 90vw, 660px';
-const LIGHTBOX_SIZES = '(max-width: 900px) 92vw, 640px';
+const SHOT_KEYS = ['room', 'detail', 'lifestyle'] as const;
+type ShotKey = (typeof SHOT_KEYS)[number];
+
+const IMAGE_MS = 4000;   // rotate the 3 photos within a floor
+const FLOOR_MS = 6000;   // auto-advance to the next floor
 const THROW_MS = 340;
-const THRESHOLD = 96; // px of horizontal drag to commit a throw
+const THRESHOLD = 90;
+
+const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
+const PEEK_SIZES = '260px';
+const LIGHTBOX_SIZES = '(max-width: 900px) 92vw, 640px';
+
+// per-photo caption so each of the 3 images "speaks" as it rotates
+function shotCaption(f: Floor, s: ShotKey): string {
+  if (s === 'room') return 'Seen in the room';
+  if (s === 'detail') return `Grain & finish up close · ${f.finish}`;
+  return `Lived-in · ${f.bestFor}`;
+}
+const SHOT_LABEL: Record<ShotKey, string> = { room: 'In the room', detail: 'Grain detail', lifestyle: 'Lived-in' };
 
 /* ─────────────────────────── Lightbox ─────────────────────────── */
-function FloorLightbox({
-  index,
-  onClose,
-  onNav,
-}: {
-  index: number;
-  onClose: () => void;
-  onNav: (dir: 1 | -1) => void;
-}) {
-  const floor: Floor = floors[index];
+function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () => void; onNav: (d: 1 | -1) => void }) {
+  const floor = floors[index];
   const imgs = floorImages(floor.slug);
-  const [shot, setShot] = useState<'room' | 'detail' | 'lifestyle'>('room');
+  const [shot, setShot] = useState<ShotKey>('room');
   useEffect(() => setShot('room'), [index]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -41,10 +42,7 @@ function FloorLightbox({
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [onClose, onNav]);
 
   return createPortal(
@@ -53,15 +51,15 @@ function FloorLightbox({
         <button className="fc-close" onClick={onClose} aria-label="Close">×</button>
         <div className="fc-modal-media">
           <div className="fc-modal-stage">
-            <Image key={shot} src={imgs[shot]} alt={`${floor.name} — ${shot}`} fill sizes={LIGHTBOX_SIZES}
-              placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+            <div className="fc-kb" key={shot}>
+              <Image src={imgs[shot]} alt={`${floor.name} — ${shot}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+            </div>
           </div>
           <div className="fc-thumbs" role="tablist" aria-label="Views of this floor">
-            {SHOTS.map((s) => (
-              <button key={s.key} role="tab" aria-selected={shot === s.key}
-                className={`fc-thumb ${shot === s.key ? 'is-active' : ''}`} onClick={() => setShot(s.key)}>
-                <Image src={imgs[s.key]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
-                <span className="fc-thumb-label">{s.label}</span>
+            {SHOT_KEYS.map((k) => (
+              <button key={k} role="tab" aria-selected={shot === k} className={`fc-thumb ${shot === k ? 'is-active' : ''}`} onClick={() => setShot(k)}>
+                <Image src={imgs[k]} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+                <span className="fc-thumb-label">{SHOT_LABEL[k]}</span>
               </button>
             ))}
           </div>
@@ -90,150 +88,160 @@ function FloorLightbox({
   );
 }
 
-/* ─────────────────────── Single deck card face ─────────────────── */
-function CardFace({ floor, priority = false }: { floor: Floor; priority?: boolean }) {
+/* ─────────────────── Stage (shared desktop + mobile) ───────────── */
+function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
+  floor: Floor; shot: ShotKey; kbIndex: number; dx: number; transition: boolean;
+  onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
+}) {
+  const imgs = floorImages(floor.slug);
+  const rot = dx * 0.04;
   return (
-    <>
-      <Image src={floorImages(floor.slug).room} alt={floor.name} fill sizes={CARD_SIZES}
-        priority={priority} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+    <div
+      className="fc-stage"
+      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+      role="group" aria-label={`${floor.name}. Tap for photos and specs.`}
+      onClick={onOpen} {...drag}
+    >
+      {/* ken-burns image, remounts (and restarts the pan/zoom) on every floor+shot change */}
+      <div className={`fc-kb fc-kb-${kbIndex % 4}`} key={`${floor.slug}-${shot}`}>
+        <Image src={imgs[shot]} alt={`${floor.name} — ${SHOT_LABEL[shot]}`} fill sizes={CARD_SIZES} priority placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
+      </div>
       <span className="fc-card-scrim" />
+      <span className="fc-shot-badge">{SHOT_LABEL[shot]}</span>
+      <span className="fc-card-chip">Janka {floor.janka}</span>
+      <span className="fc-tap-hint">Tap for 3 photos + details</span>
       <span className="fc-card-cap">
         <span className="fc-card-eyebrow">{floor.species} · {floor.format}</span>
         <span className="fc-card-title">{floor.name}</span>
-        <span className="fc-card-sub">{floor.tagline}</span>
+        <span className="fc-shot-cap" key={shot}>{shotCaption(floor, shot)}</span>
       </span>
-      <span className="fc-card-chip">Janka {floor.janka}</span>
-    </>
+      <span className="fc-shot-dots">
+        {SHOT_KEYS.map((k) => <span key={k} className={`fc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
+      </span>
+    </div>
   );
 }
 
-/* ───────────────────────────── Deck ────────────────────────────── */
+/* ───────────────────────────── Show ────────────────────────────── */
 export default function FloorCatalog() {
-  const [current, setCurrent] = useState(0);
+  const [floor, setFloor] = useState(0);
+  const [shotIdx, setShotIdx] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [hovering, setHovering] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // drag / throw state for the top card
+  // drag / throw
   const [dx, setDx] = useState(0);
-  const [throwing, setThrowing] = useState<0 | 1 | -1>(0); // 0 idle · 1 exit-left(next) · -1 exit-right(prev)
+  const [throwing, setThrowing] = useState(false);
   const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const movedRef = useRef(false);
+  const [dragging, setDragging] = useState(false);
 
-  const advance = useCallback((step: 1 | -1) => setCurrent((i) => (i + step + N) % N), []);
+  const shot = SHOT_KEYS[shotIdx];
+  const active = playing && !hovering && !dragging && lightbox === null && mounted;
 
-  // step: +1 next / -1 prev.  Exit direction: next flies left, prev flies right.
-  const fling = useCallback((step: 1 | -1) => {
-    if (throwing) return;
-    setThrowing(step === 1 ? 1 : -1);
-    setDx(0);
-    window.setTimeout(() => {
-      advance(step);
-      setThrowing(0);
-    }, THROW_MS);
-  }, [throwing, advance]);
+  const goFloor = useCallback((step: 1 | -1) => { setFloor((f) => (f + step + N) % N); setShotIdx(0); }, []);
+  const jumpFloor = useCallback((i: number) => { setFloor(i); setShotIdx(0); }, []);
 
-  // keyboard nav (only when lightbox closed)
+  // autoplay — photos every 4s, floors every 6s (independent, both pausable)
+  useEffect(() => {
+    if (!active) return;
+    const img = window.setInterval(() => setShotIdx((s) => (s + 1) % 3), IMAGE_MS);
+    return () => window.clearInterval(img);
+  }, [active, floor]);
+  useEffect(() => {
+    if (!active) return;
+    const flr = window.setInterval(() => { setFloor((f) => (f + 1) % N); setShotIdx(0); }, FLOOR_MS);
+    return () => window.clearInterval(flr);
+  }, [active]);
+
+  // keyboard
   useEffect(() => {
     if (lightbox !== null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') fling(1);
-      else if (e.key === 'ArrowLeft') fling(-1);
+      if (e.key === 'ArrowRight') goFloor(1);
+      else if (e.key === 'ArrowLeft') goFloor(-1);
+      else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [lightbox, fling]);
+  }, [lightbox, goFloor]);
+
+  const fling = useCallback((step: 1 | -1) => {
+    if (throwing) return;
+    setThrowing(true);
+    setDx(step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
+    window.setTimeout(() => { goFloor(step); setDx(0); setThrowing(false); }, THROW_MS);
+  }, [throwing, goFloor]);
 
   const onDown = (e: React.PointerEvent) => {
     if (throwing) return;
     startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
-    movedRef.current = false;
+    movedRef.current = false; setDragging(true);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
-    const s = startRef.current;
-    if (!s) return;
+    const s = startRef.current; if (!s) return;
     const d = e.clientX - s.x;
     if (Math.abs(d) > 6) movedRef.current = true;
     setDx(d);
   };
   const onUp = (e: React.PointerEvent) => {
-    const s = startRef.current;
-    startRef.current = null;
+    const s = startRef.current; startRef.current = null; setDragging(false);
     if (!s) return;
-    const d = e.clientX - s.x;
-    const dy = e.clientY - s.y;
-    const dt = Date.now() - s.t;
-    // treat as a tap → open the lightbox
-    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) {
-      setDx(0);
-      setLightbox(current);
-      return;
-    }
+    const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
+    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setDx(0); setLightbox(floor); return; }
     if (d <= -THRESHOLD) fling(1);
     else if (d >= THRESHOLD) fling(-1);
-    else setDx(0); // snap back
+    else setDx(0);
+  };
+  const drag = {
+    onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp,
+    onPointerCancel: () => { startRef.current = null; setDragging(false); setDx(0); },
   };
 
-  // transform for the top (motion) card
-  const rot = throwing ? throwing * -14 : dx * 0.05;
-  const tx = throwing ? throwing * -window_w() * 1.25 : dx;
-  const motionStyle: React.CSSProperties = {
-    transform: `translateX(${tx}px) rotate(${rot}deg)`,
-    transition: throwing || startRef.current === null ? `transform ${throwing ? THROW_MS : 260}ms cubic-bezier(0.22,1,0.36,1)` : 'none',
-    opacity: throwing ? 0 : 1,
-  };
-  // while actively dragging we want no transition (follow finger)
-  if (movedRef.current && startRef.current) motionStyle.transition = 'none';
-
-  const peek1 = floors[(current + 1) % N];
-  const peek2 = floors[(current + 2) % N];
-  const top = floors[current];
-
-  const dragHint = dx <= -40 ? 'next' : dx >= 40 ? 'prev' : '';
+  const prevFloor = floors[(floor - 1 + N) % N];
+  const nextFloor = floors[(floor + 1) % N];
+  const transition = throwing || (!dragging && dx === 0);
 
   return (
     <>
-      <div className="fc-deck">
-        <div className="fc-stack" aria-roledescription="carousel">
-          {/* depth layers */}
-          <div className="fc-card fc-peek fc-peek-2" aria-hidden><CardFace floor={peek2} /></div>
-          <div className="fc-card fc-peek fc-peek-1" aria-hidden><CardFace floor={peek1} /></div>
-          {/* live, draggable top card */}
-          <div
-            key={current}
-            className={`fc-card fc-motion ${dragHint ? `hint-${dragHint}` : ''}`}
-            style={motionStyle}
-            role="group"
-            aria-label={`${top.name} — floor ${current + 1} of ${N}. Drag or use arrow keys to browse, tap to view photos.`}
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={() => { startRef.current = null; setDx(0); }}
-          >
-            <CardFace floor={top} priority />
-            <span className="fc-swipe-tag fc-tag-next">Next →</span>
-            <span className="fc-swipe-tag fc-tag-prev">← Back</span>
-            <span className="fc-tap-hint">Tap for 3 photos + details</span>
-          </div>
+      <div className="fc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+        <div className="fc-viewport">
+          {/* desktop peek — previous */}
+          <button className="fc-peek fc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
+            <div className="fc-kb fc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+          </button>
+
+          <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(floor)} drag={drag} />
+
+          {/* desktop peek — next */}
+          <button className="fc-peek fc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
+            <div className="fc-kb fc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
+          </button>
         </div>
 
+        {/* AWS-style control pill */}
         <div className="fc-controls">
-          <button className="fc-nav-btn" onClick={() => fling(-1)} aria-label="Previous floor">‹</button>
-          <div className="fc-dots" role="tablist" aria-label="Floors">
-            {floors.map((f, i) => (
-              <button key={f.slug} role="tab" aria-selected={i === current} aria-label={f.name}
-                className={`fc-dot ${i === current ? 'is-active' : ''}`}
-                onClick={() => { if (!throwing) setCurrent(i); }} />
-            ))}
-          </div>
-          <button className="fc-nav-btn" onClick={() => fling(1)} aria-label="Next floor">›</button>
+          <button className="fc-nav-btn" onClick={() => goFloor(-1)} aria-label="Previous floor">‹</button>
+          <button className="fc-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? <span className="fc-ic-pause" /> : <span className="fc-ic-play" />}
+          </button>
+          <span className="fc-counter">{floor + 1} / {N}</span>
+          <button className="fc-nav-btn" onClick={() => goFloor(1)} aria-label="Next floor">›</button>
+        </div>
+
+        <div className="fc-dots" role="tablist" aria-label="Floors">
+          {floors.map((f, i) => (
+            <button key={f.slug} role="tab" aria-selected={i === floor} aria-label={f.name}
+              className={`fc-dot ${i === floor ? 'is-active' : ''}`} onClick={() => jumpFloor(i)} />
+          ))}
         </div>
 
         <p className="fc-deck-hint">
-          <span className="fc-counter">{current + 1} / {N}</span>
-          <span className="fc-hint-sep">·</span>
-          Swipe the card, use the arrows, or tap for photos &amp; specs
+          {playing ? 'Auto-playing' : 'Paused'} <span className="fc-hint-sep">·</span> swipe or use the arrows <span className="fc-hint-sep">·</span> tap for photos &amp; specs
         </p>
 
         <div className="fc-cta-row">
@@ -242,17 +250,12 @@ export default function FloorCatalog() {
       </div>
 
       {mounted && lightbox !== null && (
-        <FloorLightbox
-          index={lightbox}
-          onClose={() => setLightbox(null)}
-          onNav={(dir) => setLightbox((i) => (i === null ? i : (i + dir + N) % N))}
-        />
+        <FloorLightbox index={lightbox} onClose={() => setLightbox(null)} onNav={(d) => setLightbox((i) => (i === null ? i : (i + d + N) % N))} />
       )}
     </>
   );
 }
 
-// SSR-safe viewport width for the throw distance
 function window_w(): number {
   if (typeof window === 'undefined') return 800;
   return window.innerWidth || 800;
