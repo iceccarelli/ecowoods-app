@@ -1,36 +1,20 @@
-name: IndexNow ping
+name: IndexNow (post-deploy)
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/app/**"
-      - "apps/web/lib/seo-data.ts"
-      - "apps/web/public/*.txt"
+  deployment_status:
 jobs:
   ping:
+    # Only run when a Production deployment succeeds
+    if: >
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment_status.environment == 'Production'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Submit sitemap URLs to IndexNow
         env:
-          SITE: https://ecowoods.ca
-        run: |
-          set -euo pipefail
-          # Key = the hex-named file in public/ — single source of truth, no secret to sync.
-          key=""
-          for f in apps/web/public/*.txt; do
-            [ -e "$f" ] || continue
-            b=$(basename "$f" .txt)
-            case "$b" in *[!0-9a-fA-F]*) continue;; esac
-            [ ${#b} -ge 8 ] && { key="$b"; break; }
-          done
-          if [ -z "$key" ]; then echo "No IndexNow key file; skipping."; exit 0; fi
-          host=$(printf '%s' "$SITE" | sed -E 's#https?://##')
-          # Pull canonical URLs straight from the deployed sitemap (single source of truth).
-          urls=$(curl -sS "$SITE/sitemap.xml" \
-            | grep -oE '<loc>[^<]+</loc>' | sed -E 's#</?loc>##g' \
-            | sed 's/.*/"&"/' | paste -sd, -)
-          if [ -z "$urls" ]; then echo "No URLs from sitemap; skipping."; exit 0; fi
-          body="{\"host\":\"$host\",\"key\":\"$key\",\"keyLocation\":\"$SITE/$key.txt\",\"urlList\":[$urls]}"
-          echo "Submitting $(printf '%s' "$urls" | tr ',' '\n' | wc -l) URLs"
-          curl -sS -X POST "https://api.indexnow.org/indexnow" -H "content-type: application/json" -d "$body"
+          SITE_URL: https://ecowoods.ca
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: node apps/web/scripts/notify-indexnow.mjs
