@@ -51,7 +51,7 @@ const PLACES: Record<string, Place> = {
   Oakville: { x: 11, y: 61, anchor: 'middle', dy: 3 },
 };
 
-/** 32 Norfield Crescent (M3J) — Downsview, North York */
+/** 32 Norfield Crescent, Etobicoke (M9W) */
 const SHOP = { x: 44, y: 37 };
 
 const HWY = 'rgba(140,110,85,0.42)';

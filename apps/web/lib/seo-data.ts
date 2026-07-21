@@ -13,6 +13,15 @@ export const BUSINESS = {
   phoneDisplay: '(416) 249-1276',
   email: 'services@ecowoods.ca',
   region: 'Toronto & the GTA',
+  address: {
+    streetAddress: '32 Norfield Crescent',
+    addressLocality: 'Toronto',
+    addressRegion: 'ON',
+    postalCode: 'M9W 1X6',
+    addressCountry: 'CA',
+    latitude: 43.72085,
+    longitude: -79.57542,
+  },
 } as const;
 
 export type City = { slug: string; name: string };

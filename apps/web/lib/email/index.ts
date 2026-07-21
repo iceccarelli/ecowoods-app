@@ -163,7 +163,7 @@ export async function sendWelcomeEmail({
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crsnt., Toronto, ON M3J 3A1
+          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
         </div>
       </div>
     `,
@@ -237,7 +237,7 @@ export async function sendInvoiceEmail({
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crsnt., Toronto, ON M3J 3A1
+          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
         </div>
       </div>
     `,
@@ -416,7 +416,7 @@ export async function sendContractEmail({
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crsnt., Toronto, ON M3J 3A1
+          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
         </div>
       </div>
     `,

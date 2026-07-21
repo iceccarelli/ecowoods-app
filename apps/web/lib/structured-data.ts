@@ -21,16 +21,16 @@ export const localBusinessSchema = {
       description: 'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
       address: {
         '@type': 'PostalAddress',
-        streetAddress: '32 Norfield Crescent, Toronto, ON',
+        streetAddress: '32 Norfield Crescent',
         addressLocality: 'Toronto',
         addressRegion: 'ON',
-        postalCode: 'M3J 3A1',
+        postalCode: 'M9W 1X6',
         addressCountry: 'CA',
       },
       geo: {
         '@type': 'GeoCoordinates',
-        latitude: 43.7796,
-        longitude: -79.5072,
+        latitude: 43.72085,
+        longitude: -79.57542,
       },
       areaServed: [
         { '@type': 'City', name: 'Toronto' },

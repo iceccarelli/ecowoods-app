@@ -149,7 +149,7 @@ export default function SiteFooter() {
           <FooterCol title="Showroom & Office" mobile={m}>
             <p style={{ marginBottom: '1.25rem', lineHeight: 1.7 }}>
               32 Norfield Crescent, Toronto, Ontario<br />
-              Toronto, ON M3J 3A1
+              Toronto, ON M9W 1X6
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>
               <a href="tel:+14162491276" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
