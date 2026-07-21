@@ -18,7 +18,10 @@ export default function robots(): MetadataRoute.Robots {
       // Named allow for AI crawlers — some ignore '*'; naming them removes doubt.
       { userAgent: ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-Web', 'anthropic-ai', 'PerplexityBot', 'Google-Extended', 'Applebot-Extended', 'CCBot'], allow: '/' },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [
+      `${SITE_URL}/sitemap/0.xml`,
+      `${SITE_URL}/sitemap/1.xml`,
+    ],
     host: SITE_URL,
   };
 }
