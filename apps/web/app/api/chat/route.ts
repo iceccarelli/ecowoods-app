@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'EcoWoods', phone: '(416) 249-1276', email: s?.companyEmail ?? 'hello@ecowoods.ca', note: 'Toronto / GTA hardwood flooring. Est. 1998. Lifetime workmanship warranty.' };
+          return { company: 'EcoWoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'hello@ecowoods.ca', note: 'Toronto / GTA hardwood flooring. Est. 1998. Lifetime workmanship warranty.' };
         },
       }),
 
@@ -137,9 +137,9 @@ export async function POST(req: Request) {
             }
             return slots.length
               ? { timezone: BUSINESS_TIMEZONE, slots, note: 'Offer 2-3 of these exact times. Pass the startsAt value verbatim to book_measure.' }
-              : { timezone: BUSINESS_TIMEZONE, slots: [], note: 'No openings in range — ask them to call (416) 249-1276 to book.' };
+              : { timezone: BUSINESS_TIMEZONE, slots: [], note: 'No openings in range — ask them to call (647) 244-5156 to book.' };
           } catch {
-            return { slots: [], note: 'Calendar unavailable — ask them to call (416) 249-1276 to book.' };
+            return { slots: [], note: 'Calendar unavailable — ask them to call (647) 244-5156 to book.' };
           }
         },
       }),
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
-            return { ok: false, message: 'Could not confirm that — ask them to call (416) 249-1276 and we will book it.' };
+            return { ok: false, message: 'Could not confirm that — ask them to call (647) 244-5156 and we will book it.' };
           }
         },
       }),
@@ -225,7 +225,7 @@ export async function POST(req: Request) {
       try {
         for await (const chunk of result.textStream) controller.enqueue(encoder.encode(chunk));
       } catch {
-        controller.enqueue(encoder.encode('\n\n(Sorry — something interrupted that. Please try again or call (416) 249-1276.)'));
+        controller.enqueue(encoder.encode('\n\n(Sorry — something interrupted that. Please try again or call (647) 244-5156.)'));
       }
       controller.close();
     },

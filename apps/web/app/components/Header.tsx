@@ -65,8 +65,8 @@ const ADMIN_NAV = [
   { href: '/admin/settings', label: 'Settings' },
 ];
 
-const PHONE_DISPLAY = '(416) 249-1276';
-const PHONE_HREF = 'tel:+14162491276';
+const PHONE_DISPLAY = '(647) 244-5156';
+const PHONE_HREF = 'tel:+16472445156';
 
 /* ---------------------- Component ---------------------- */
 export default function Header() {

@@ -132,7 +132,7 @@ export default function ConversionRail() {
             </div>
 
             <p className="exit-foot">
-              Or call <a href="tel:+14162491276">(416) 249-1276</a> · Mon–Sat, 8 AM – 7 PM
+              Or call <a href="tel:+16472445156">(647) 244-5156</a> · Mon–Sat, 8 AM – 7 PM
             </p>
           </div>
         </div>

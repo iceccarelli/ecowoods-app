@@ -8,9 +8,9 @@
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
 export const BUSINESS = {
-  name: 'Ecowoods Hardwood Flooring',
-  phone: '+1-416-249-1276',
-  phoneDisplay: '(416) 249-1276',
+  name: 'Ecowoods Inc.',
+  phone: '+1-647-244-5156',
+  phoneDisplay: '(647) 244-5156',
   email: 'services@ecowoods.ca',
   region: 'Toronto & the GTA',
   address: {

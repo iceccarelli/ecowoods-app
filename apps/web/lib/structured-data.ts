@@ -4,16 +4,16 @@ export const localBusinessSchema = {
     {
       '@type': ['LocalBusiness', 'HomeAndConstructionBusiness'],
       '@id': 'https://ecowoods.ca/#business',
-      name: 'Ecowoods Hardwood Flooring',
+      name: 'Ecowoods Inc.',
       legalName: 'Ecowoods Hardwood Flooring Inc.',
       url: 'https://ecowoods.ca',
       image: 'https://ecowoods.ca/og-image.jpg',
       logo: 'https://ecowoods.ca/icon-512.png',
-      // Was +1-416-555-9663 — a placeholder that contradicted the (416) 249-1276
+      // Was +1-416-555-9663 — a placeholder that contradicted the (647) 244-5156
       // shown in Header, ChatWidget, the contact block and the AI's
       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
       // exactly the kind of NAP inconsistency that suppresses local pack ranking.
-      telephone: '+1-416-249-1276',
+      telephone: '+1-647-244-5156',
       email: 'services@ecowoods.ca',
       priceRange: '$$',
       foundingDate: '1998',
