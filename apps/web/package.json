@@ -60,7 +60,7 @@
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^16.4.7",
     "eslint": "8.57.1",
     "eslint-config-next": "15.0.0",
     "prisma": "^5.22.0",

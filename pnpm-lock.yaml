@@ -267,8 +267,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.16)
       dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
+        specifier: ^16.4.7
+        version: 16.4.7
       eslint:
         specifier: 8.57.1
         version: 8.57.1
@@ -3736,10 +3736,6 @@ packages:
 
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
-    engines: {node: '>=12'}
-
-  dotenv@17.4.2:
-    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
@@ -10531,8 +10527,6 @@ snapshots:
 
   dotenv@16.4.7: {}
 
-  dotenv@17.4.2: {}
-
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -13106,7 +13100,7 @@ snapshots:
       convert-source-map: 2.0.0
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.1.0)
-      semver: 7.8.5
+      semver: 7.8.1
     transitivePeerDependencies:
       - supports-color
 
