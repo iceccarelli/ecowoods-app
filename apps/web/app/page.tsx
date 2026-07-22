@@ -410,7 +410,7 @@ const mutation = useMutation({
   },
   onError: (error: Error) => {
     toast.error("Something went wrong", {
-      description: error.message || "Please try again or call (416) 249-1276",
+      description: error.message || "Please try again or call (647) 244-5156",
     });
   },
 });
@@ -662,11 +662,11 @@ const onSubmit = (data: LeadFormData) => {
                 This section keeps ONE fast path — phone, plus when to use it —
                 and lets the footer own the reference block.
               */}
-              <a href="tel:+14162491276" className="quote-contact">
+              <a href="tel:+16472445156" className="quote-contact">
                 <span className="quote-contact-icon">{Icon.phone}</span>
                 <span className="quote-contact-text">
                   <span className="quote-contact-label">Prefer to talk?</span>
-                  <span className="quote-contact-num">(416) 249-1276</span>
+                  <span className="quote-contact-num">(647) 244-5156</span>
                   <span className="quote-contact-when">Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM</span>
                 </span>
               </a>
@@ -719,7 +719,7 @@ const onSubmit = (data: LeadFormData) => {
                       id="f-phone"
                       {...register('phone')}
                       aria-invalid={!!errors.phone}
-                      placeholder="(416) 249-1276"
+                      placeholder="(647) 244-5156"
                       className={errors.phone ? 'field-error' : ''}
                     />
                     {errors.phone && <p className="error-message" role="alert">{errors.phone.message}</p>}

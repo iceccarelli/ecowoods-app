@@ -112,9 +112,9 @@ export default function SiteFooter() {
               Now booking · Spring 2026
             </div>
             {m && (
-              <a href="tel:+14162491276" className="footer-call">
+              <a href="tel:+16472445156" className="footer-call">
                 <span className="footer-call-label">Call the shop</span>
-                <span className="footer-call-num">(416) 249-1276</span>
+                <span className="footer-call-num">(647) 244-5156</span>
               </a>
             )}
           </div>
@@ -149,11 +149,11 @@ export default function SiteFooter() {
           <FooterCol title="Showroom & Office" mobile={m}>
             <p style={{ marginBottom: '1.25rem', lineHeight: 1.7 }}>
               32 Norfield Crescent, Toronto, Ontario<br />
-              Toronto, ON M3J 3A1
+              Toronto, ON M9W 1X6
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>
-              <a href="tel:+14162491276" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
-                (416) 249-1276
+              <a href="tel:+16472445156" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
+                (647) 244-5156
               </a>
               <a href="mailto:services@ecowoods.ca">services@ecowoods.ca</a>
             </div>

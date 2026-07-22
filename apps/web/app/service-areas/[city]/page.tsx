@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug } from '@/lib/seo-data';
+import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
 import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 
 export function generateStaticParams() {
@@ -64,6 +64,32 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </p>
         </div>
       </section>
+
+      {(() => {
+        const cc = cityContent(city.slug);
+        if (!cc) return null;
+        return (
+          <section className="section">
+            <div className="shell">
+              <span className="eyebrow">Hardwood flooring in {city.name}</span>
+              <h2>What we see in {city.name} homes.</h2>
+              <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.intro}</p>
+              {cc.neighbourhoods.length > 0 && (
+                <p style={{ marginTop: '1rem' }}><strong>Areas we work:</strong> {cc.neighbourhoods.join(' · ')}</p>
+              )}
+              {cc.housingNote && (
+                <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.housingNote}</p>
+              )}
+              {cc.signatureProject && (
+                <blockquote style={{ margin: '1.5rem 0', padding: '1rem 1.25rem', borderLeft: '3px solid var(--copper-bright, #b87333)', opacity: 0.9 }}>{cc.signatureProject}</blockquote>
+              )}
+              {cc.localConsideration && (
+                <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.localConsideration}</p>
+              )}
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="section">
         <div className="shell">

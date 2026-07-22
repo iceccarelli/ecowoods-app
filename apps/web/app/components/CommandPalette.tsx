@@ -121,8 +121,8 @@ export default function CommandPalette() {
     {
       label: 'Contact & appearance',
       actions: [
-        { id: 'call', title: 'Call (416) 249-1276', hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
-          run: () => { close(); window.location.href = 'tel:+14162491276'; } },
+        { id: 'call', title: 'Call (647) 244-5156', hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
+          run: () => { close(); window.location.href = 'tel:+16472445156'; } },
         { id: 'theme', title: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', hint: 'Night showroom', keywords: 'theme dark light mode night appearance', icon: I.sun,
           run: () => { toggle(); close(); } },
       ],
