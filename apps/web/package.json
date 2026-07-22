@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "build:hm": "prisma generate && NODE_OPTIONS=--max-old-space-size=4096 next build --no-lint"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
