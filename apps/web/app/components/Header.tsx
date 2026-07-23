@@ -38,9 +38,9 @@ function useScrollState() {
 
 /* ---------------------- Navigation ---------------------- */
 const navigation = [
-  { label: 'Services', href: '#services' },
-  // { label: 'Species', href: '#species' }, // hidden with The Detail section
   { label: 'Gallery', href: '#gallery' },
+  // { label: 'Species', href: '#species' }, // hidden with The Detail section
+  { label: 'Services', href: '#services' },
   { label: 'Process', href: '#process' },
   { label: 'The Craft', href: '#craft' },
   { label: 'Reviews', href: '#reviews' },

@@ -478,6 +478,21 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
+      {/* 5 · RESULTS — curated proof */}
+      <section className="section paper-texture" id="gallery">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">The Collection</span>
+            <h2>
+              Twelve floors, <span className="serif-italic">endless rooms.</span>
+            </h2>
+            <p>The species and finishes we install across the GTA — tap any floor to see the grain up close and the room it belongs in.</p>
+          </div>
+
+          <FloorCatalog />
+        </div>
+      </section>
+
       {/* 3 · THE ECOWOODS STANDARD */}
       <section
         className="section photo-bg-section section--card"
@@ -509,21 +524,6 @@ const onSubmit = (data: LeadFormData) => {
       {/* SpecsCoverage ("The Detail") intentionally hidden — kept for later.
           Re-enable by uncommenting the next line. */}
       {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
-
-      {/* 5 · RESULTS — curated proof */}
-      <section className="section paper-texture" id="gallery">
-        <div className="shell">
-          <div className="section-head reveal">
-            <span className="eyebrow">The Collection</span>
-            <h2>
-              Twelve floors, <span className="serif-italic">endless rooms.</span>
-            </h2>
-            <p>The species and finishes we install across the GTA — tap any floor to see the grain up close and the room it belongs in.</p>
-          </div>
-
-          <FloorCatalog />
-        </div>
-      </section>
 
       {/* 4 · HOW IT WORKS — 4-step funnel */}
       <section className="section" id="process">
