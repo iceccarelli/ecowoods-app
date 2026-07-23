@@ -43,7 +43,7 @@ async function main() {
       companyName: 'Ecowoods Hardwood Flooring Inc.',
       companyAddress: '32 Norfield Crescent, Toronto, ON M9W 1X6',
       companyPhone: '(416) 249-1276',
-      companyEmail: 'hello@ecowoods.ca',
+      companyEmail: 'services@ecowoods.ca',
       companyNumberHst: 'RT 1234 5678',
       aiEnabled: false,
     },

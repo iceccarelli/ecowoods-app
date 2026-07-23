@@ -41,7 +41,7 @@ type SpeciesSwatch = {
 const SPECIES: readonly SpeciesSwatch[] = [
   { id: 'white oak', name: 'White Oak',  janka: 'Janka 1360', base: '#c9a882', grain: '#a8865e', note: 'Calm, modern, takes any stain' },
   { id: 'red oak',   name: 'Red Oak',    janka: 'Janka 1290', base: '#c69574', grain: '#a06f4d', note: 'The Canadian heritage floor' },
-  { id: 'walnut',    name: 'Walnut',     janka: 'Janka 1010', base: '#6b4b34', grain: '#4a3122', note: 'Deep, quiet, expensive-looking' },
+  { id: 'walnut',    name: 'Black Walnut',     janka: 'Janka 1010', base: '#6b4b34', grain: '#4a3122', note: 'Deep, quiet, expensive-looking' },
   { id: 'maple',     name: 'Hard Maple', janka: 'Janka 1450', base: '#e0c69f', grain: '#c4a87f', note: 'Bright, uniform, contemporary' },
   { id: 'hickory',   name: 'Hickory',    janka: 'Janka 1820', base: '#c08e5e', grain: '#8a5c33', note: 'Hardest we lay. Family-proof.' },
 ] as const;

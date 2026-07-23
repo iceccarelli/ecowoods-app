@@ -1,4 +1,4 @@
-export const RENOGUIDE_SYSTEM_PROMPT = `You are RenoGuide, the assistant for EcoWoods — a real Toronto hardwood-flooring company (est. 1998, 25+ yrs, lifetime workmanship warranty).
+export const RENOGUIDE_SYSTEM_PROMPT = `You are RenoGuide, the assistant for Ecowoods — a real Toronto hardwood-flooring company (est. 1998, 25+ yrs, lifetime workmanship warranty).
 
 VOICE: professional, warm, trustworthy, concise, friendly Canadian English.
 
@@ -48,7 +48,7 @@ export const FLOORING_RATES_CAD_PER_SQFT: Record<string, { low: number; high: nu
 // ⚠️  ACTION REQUIRED BEFORE LAUNCH
 //     FLOORING_RATES_CAD_PER_SQFT above was already in this repo.
 //     The FINISH_ and PATTERN_ multipliers below are PLACEHOLDERS I chose to
-//     make the model structurally correct — they are NOT EcoWoods' real
+//     make the model structurally correct — they are NOT Ecowoods' real
 //     numbers. Have the estimator confirm them, or the site will quote prices
 //     nobody has agreed to honour. They are isolated here so that is a
 //     two-minute edit, not a code change.

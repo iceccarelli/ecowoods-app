@@ -1,6 +1,6 @@
 import { FLOOR_IMAGES } from './floor-images';
 /**
- * The EcoWoods floor collection — 12 products, each with a room / detail /
+ * The Ecowoods floor collection — 12 products, each with a room / detail /
  * lifestyle image triptych. Species facts mirror `speciesList` in the pricing
  * section (single source of truth for Janka + origin). Images live in
  * /public/gallery and are referenced root-relative, so no next.config

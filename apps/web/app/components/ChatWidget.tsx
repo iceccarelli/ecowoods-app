@@ -155,7 +155,7 @@ export default function ChatWidget() {
               <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
               <div style={{ fontSize: 11.5, opacity: .92, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ height: 7, width: 7, borderRadius: 50, background: '#7ee0a0', boxShadow: '0 0 0 2px rgba(126,224,160,.3)' }} />
-                EcoWoods · Toronto &amp; GTA
+                Ecowoods · Toronto &amp; GTA
               </div>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat" style={{ border: 'none', background: 'rgba(255,255,255,.16)', color: '#fff', height: 30, width: 30, borderRadius: 8, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>

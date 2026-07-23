@@ -1,6 +1,6 @@
 /**
  * @ecowoods/api-client
- * Production-grade TanStack Query + REST client for EcoWoods
+ * Production-grade TanStack Query + REST client for Ecowoods
  * All functions are type-safe, retry-enabled, and integrate with shared schemas.
  * Wires directly to Next.js API routes, Supabase Edge Functions, or FastAPI backend.
  * This is THE money printer integration layer — every lead, job, and EcoPoint flows through here.

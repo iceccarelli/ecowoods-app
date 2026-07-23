@@ -66,9 +66,9 @@ export const localBusinessSchema = {
       // markup" actions, which cost the rich result AND the local pack.
       //
       // The 4.9 / 348 figure is legitimate on-page copy. It is not legitimate
-      // JSON-LD. If EcoWoods wants stars in the SERP, the supported route is
+      // JSON-LD. If Ecowoods wants stars in the SERP, the supported route is
       // third-party aggregators (Google Business Profile, HomeStars, Houzz)
-      // emitting it about EcoWoods — which they already do.
+      // emitting it about Ecowoods — which they already do.
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
         name: 'Hardwood Flooring Services',

@@ -38,7 +38,7 @@ const TIERS: Tier[] = [
     id: 'recoat',
     name: 'Screen & Recoat',
     tagline: 'Refresh a floor that’s still sound',
-    pricePerSqFt: '2–3', // ⚠️ market range — replace with Ecowoods rate
+    pricePerSqFt: '2.50–4.00',
     blurb:
       'A light abrasion and a fresh topcoat. No full sand — right when the finish is worn but the wood underneath is healthy. Extends the floor 3–5 years.',
     best: 'Floors under ~10 years with surface wear only',
@@ -48,7 +48,7 @@ const TIERS: Tier[] = [
     id: 'standard',
     name: 'Full Sand & Finish',
     tagline: 'The complete restoration',
-    pricePerSqFt: '4.50–7', // ⚠️ market range — replace with Ecowoods rate
+    pricePerSqFt: '4.75–7.50',
     blurb:
       'Sanded to bare wood, stained to your choice, three coats of premium finish — all dustless. This is what most Toronto main floors need every 7–10 years.',
     best: 'Most homes · scratches, greying, or a colour change',
@@ -58,7 +58,7 @@ const TIERS: Tier[] = [
     id: 'premium',
     name: 'Premium & Hardwood Install',
     tagline: 'New floors or specialty finishes',
-    pricePerSqFt: 'from 8', // ⚠️ market range — replace with Ecowoods rate
+    pricePerSqFt: '11.00–18.00',
     blurb:
       'New wide-plank hardwood, oil finishes like Rubio Monocoat, custom stain matching, stairs and repairs. Priced per project after we see the space.',
     best: 'New installs, oil finishes, stairs, board repair',

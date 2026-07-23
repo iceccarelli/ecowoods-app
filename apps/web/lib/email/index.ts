@@ -45,7 +45,7 @@ const resend = transport === 'resend'
 const FROM =
   process.env.RESEND_FROM_EMAIL ??
   process.env.SMTP_FROM ??
-  'hello@ecowoods.ca';
+  'services@ecowoods.ca';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ecowoods.ca';
 

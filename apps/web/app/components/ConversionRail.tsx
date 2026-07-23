@@ -9,7 +9,7 @@ import { openRenoGuide } from '@/lib/renoguide';
    Two rules, both learned the hard way:
 
    1. WhatsApp renders ONLY if NEXT_PUBLIC_WHATSAPP_NUMBER is set. I will not
-      hardcode a number EcoWoods may not monitor; a floating icon that opens a
+      hardcode a number Ecowoods may not monitor; a floating icon that opens a
       chat nobody reads is worse than no icon. Set the env var to turn it on.
 
    2. Exit intent fires at most once per session, desktop only, never within

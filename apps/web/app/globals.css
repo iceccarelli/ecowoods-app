@@ -2648,7 +2648,7 @@ p {
   animation: none !important;
 }
 
-/* ── 앱 프로모 그리드 (EcoWoods Pro App 섹션) ────────────────── */
+/* ── 앱 프로모 그리드 (Ecowoods Pro App 섹션) ────────────────── */
 /* 모바일 퍼스트: 기본은 1열 (QR 박스가 텍스트 아래로) */
 .app-promo {
   display: grid;

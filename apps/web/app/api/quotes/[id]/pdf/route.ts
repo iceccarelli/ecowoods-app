@@ -35,7 +35,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     companyName: 'Ecowoods Hardwood Flooring Inc.' as string | null,
     companyAddress: '32 Norfield Crescent, Toronto, ON M9W 1X6' as string | null,
     companyPhone: '(416) 249-1276' as string | null,
-    companyEmail: 'hello@ecowoods.ca' as string | null,
+    companyEmail: 'services@ecowoods.ca' as string | null,
     companyNumberHst: null as string | null,
     companyLogoUrl: null as string | null,
     defaultDepositPct: 30,

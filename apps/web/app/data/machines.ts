@@ -55,7 +55,7 @@ export const machines: Machine[] = [
     stage: 'Sanding & refinishing',
     tagline: 'The zero-dust promise, delivered.',
     does: 'Captures dust at the source',
-    description: 'Industrial HEPA filtration connected directly to every sanding machine. Captures the vast majority of dust at the source so your home stays clean during and after the job — the hallmark of a professional EcoWoods refinish.',
+    description: 'Industrial HEPA filtration connected directly to every sanding machine. Captures the vast majority of dust at the source so your home stays clean during and after the job — the hallmark of a professional Ecowoods refinish.',
     alt: 'HEPA dust extractor connected to floor sanding equipment on a job site',
   },
   {
@@ -100,7 +100,7 @@ export const machines: Machine[] = [
     stage: 'Installation & prep',
     tagline: 'No unforeseen conditions.',
     does: 'Tests subfloor and wood moisture',
-    description: 'Every EcoWoods job begins with thorough moisture testing of both the subfloor and the new hardwood. This simple tool prevents the most common causes of future problems — cupping, crowning, and gaps.',
+    description: 'Every Ecowoods job begins with thorough moisture testing of both the subfloor and the new hardwood. This simple tool prevents the most common causes of future problems — cupping, crowning, and gaps.',
     alt: 'Moisture meter reading on a plywood subfloor before hardwood installation',
   },
   {

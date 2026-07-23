@@ -73,11 +73,11 @@ export async function POST(req: Request) {
     stopWhen: stepCountIs(8),
     tools: {
       get_company_context: tool({
-        description: 'Get real EcoWoods contact facts (phone, email) before sharing them.',
+        description: 'Get real Ecowoods contact facts (phone, email) before sharing them.',
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'EcoWoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'hello@ecowoods.ca', note: 'Toronto / GTA hardwood flooring. Est. 1998. Lifetime workmanship warranty.' };
+          return { company: 'Ecowoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'services@ecowoods.ca', note: 'Toronto / GTA hardwood flooring. Est. 1998. Manufacturer finish and material warranties passed through in writing.' };
         },
       }),
 

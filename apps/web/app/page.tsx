@@ -551,7 +551,7 @@ const onSubmit = (data: LeadFormData) => {
               The machines behind <span className="serif-italic">the finish.</span>
             </h2>
             <p>
-              Every EcoWoods floor is built with professional-grade equipment run by our own salaried
+              Every Ecowoods floor is built with professional-grade equipment run by our own salaried
               craftsmen. Here is the gear behind a dust-free, fixed-price floor — and exactly what each
               one does. Tap any tool to see it in use.
             </p>
