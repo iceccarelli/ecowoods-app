@@ -12,8 +12,9 @@ export async function ContentLibraryPromo() {
   const articles = await getArticles();
   if (articles.length === 0) return null;
 
+  // Featured first, then newest — always fill to two cards.
   const featured = articles.filter((a) => a.featured);
-  const display = (featured.length > 0 ? featured : articles).slice(0, 2);
+  const display = [...featured, ...articles.filter((a) => !a.featured)].slice(0, 2);
 
   return (
     <section className="section-tight paper-texture">
