@@ -139,7 +139,7 @@ export function buildService(config: ServiceConfig2): Service {
     '@id': `${config.siteUrl}/services/${config.id}#service`,
     name: config.name,
     description: config.description,
-    areaServed: config.areaServed,
+    areaServed: config.areaServed.map((name) => ({ '@type': 'City' as const, name })),
     ...(config.priceRange && {
       offers: [
         {

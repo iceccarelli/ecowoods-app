@@ -8,7 +8,7 @@ import { join } from 'path';
 import grayMatter from 'gray-matter';
 import type { CaseStudyMetadata, CaseStudy, CaseStudyListItem, CaseStudyChallenge, CaseStudyResult } from './case-study-types';
 
-const CASE_STUDIES_DIR = join(process.cwd(), 'apps/web/content/case-studies');
+const CASE_STUDIES_DIR = join(process.cwd(), 'content/case-studies');
 
 /**
  * Parse YAML frontmatter + MDX content from a case study file.
@@ -20,7 +20,7 @@ function parseCaseStudyFile(
   const { data, content: body } = grayMatter(content);
 
   // Extract slug from filename (remove .mdx extension)
-  const slug = filename.replace(/\\.mdx$/, '');
+  const slug = filename.replace(/\.mdx$/, '');
 
   // Helper to get field (handles hyphenated and camelCase)
   const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
@@ -138,8 +138,10 @@ export async function getCaseStudies(options?: {
         projectDate: metadata.projectDate,
         squareFootage: metadata.squareFootage,
         woodSpecies: metadata.woodSpecies,
+        topics: metadata.topics ?? [],
         publishedAt: metadata.publishedAt,
-        featured: metadata.featured,
+        modifiedAt: metadata.modifiedAt,
+        featured: metadata.featured ?? false,
       });
     }
 
@@ -164,10 +166,9 @@ export async function getCaseStudies(options?: {
 export async function getAllCaseStudySlugs(): Promise<string[]> {
   try {
     const files = await fs.readdir(CASE_STUDIES_DIR);
-    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   } catch (error) {
     console.error('Failed to list case study slugs:', error);
     return [];
   }
 }
-"

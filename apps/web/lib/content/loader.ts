@@ -8,7 +8,7 @@ import { join } from 'path';
 import grayMatter from 'gray-matter';
 import type { ArticleMetadata, Article, ArticleListItem } from './types';
 
-const ARTICLES_DIR = join(process.cwd(), 'apps/web/content/articles');
+const ARTICLES_DIR = join(process.cwd(), 'content/articles');
 
 /**
  * Parse YAML frontmatter + MDX content from a file.
@@ -17,7 +17,7 @@ function parseArticleFile(filename: string, content: string): { metadata: Articl
   const { data, content: body } = grayMatter(content);
 
   // Extract slug from filename (remove .mdx extension)
-  const slug = filename.replace(/\\.mdx$/, '');
+  const slug = filename.replace(/\.mdx$/, '');
 
   // gray-matter parses hyphenated keys; handle both hyphenated and camelCase variants
   const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
@@ -99,6 +99,9 @@ export async function getArticles(options?: { category?: string; featured?: bool
         publishedAt: metadata.publishedAt,
         image: metadata.image,
         readingTimeMinutes: metadata.readingTimeMinutes,
+        wordCount: metadata.wordCount,
+        modifiedAt: metadata.modifiedAt,
+        topics: metadata.topics ?? [],
         featured: metadata.featured,
       });
     }
@@ -132,10 +135,9 @@ export async function getArticleForSEO(slug: string): Promise<ArticleMetadata | 
 export async function getAllArticleSlugs(): Promise<string[]> {
   try {
     const files = await fs.readdir(ARTICLES_DIR);
-    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   } catch (error) {
     console.error('Failed to list article slugs:', error);
     return [];
   }
 }
-"

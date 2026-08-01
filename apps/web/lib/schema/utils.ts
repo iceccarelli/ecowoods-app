@@ -7,7 +7,7 @@
  * Safe for use in dangerouslySetInnerHTML.
  *
  * @param schema Any schema object
- * @returns JSON string safe for <script type=\"application/ld+json\">
+ * @returns JSON string safe for <script type="application/ld+json">
  */
 export function serializeSchema(schema: unknown): string {
   try {

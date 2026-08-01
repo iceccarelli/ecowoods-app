@@ -18,11 +18,10 @@ export function ArticleContent({ content }: ArticleContentProps) {
   // Otherwise, render as HTML (from markdown/MDX parsing)
   return (
     <div
-      className=\"prose prose-stone dark:prose-invert max-w-none\"
+      className="prose prose-stone dark:prose-invert max-w-none"
       dangerouslySetInnerHTML={{
         __html: content,
       }}
     />
   );
 }
-"

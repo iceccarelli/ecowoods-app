@@ -3,7 +3,7 @@
  */
 
 /**
- * Format a date string to readable format (e.g., \"July 31, 2026\").
+ * Format a date string to readable format (e.g., "July 31, 2026").
  */
 export function formatDate(isoString: string): string {
   const date = new Date(isoString);
@@ -48,4 +48,3 @@ export function slugify(text: string): string {
 export function generateSEODescription(content: string, length: number = 160): string {
   return content.slice(0, length).trim() + (content.length > length ? '...' : '');
 }
-"

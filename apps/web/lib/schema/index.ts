@@ -89,4 +89,3 @@ export function faqPageSchema(items?: any) {
   const { HOMEPAGE_FAQ_SCHEMA } = require('./root-schema');
   return HOMEPAGE_FAQ_SCHEMA;
 }
-"

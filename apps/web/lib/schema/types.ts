@@ -176,16 +176,27 @@ export interface Person {
   url?: string;
 }
 
+/**
+ * Lightweight JSON-LD reference to an Organization defined elsewhere on the
+ * page (linked via @id). Standard practice to avoid duplicating the full node.
+ */
+export interface OrganizationRef {
+  '@type': 'Organization';
+  '@id': string;
+  name?: string;
+}
+
 export interface Article extends SchemaBase {
   '@type': 'Article' | 'TechArticle' | 'BlogPosting';
   '@id': string;
   headline: string;
+  url?: string;
   description: string;
   image?: string | string[];
   datePublished: string; // ISO 8601
   dateModified?: string; // ISO 8601
   author: Person | Organization;
-  publisher: Organization;
+  publisher: Organization | OrganizationRef;
   wordCount?: number;
   timeRequired?: string; // "PT15M"
   articleBody?: string;
@@ -214,10 +225,11 @@ export interface CaseStudy extends SchemaBase {
   '@type': 'CaseStudy';
   '@id': string;
   headline: string;
+  url?: string;
   description: string;
-  image?: string[];
+  image?: string | string[];
   datePublished: string; // ISO 8601
-  author: Organization;
+  author: Person | Organization;
   about: LocalBusinessEntity;
   result: Thing;
   mentions: Thing[];
@@ -288,7 +300,7 @@ export interface Product extends SchemaBase {
   description: string;
   image?: string | string[];
   brand?: string;
-  manufacturer?: Organization;
+  manufacturer?: Organization | OrganizationRef;
   offers?: Offer[];
   aggregateRating?: AggregateRating;
   url?: string;
