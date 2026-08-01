@@ -1,21 +1,11 @@
 /**
- * ContentLibraryPromo — compact homepage strip surfacing the technical
- * library, rendered BELOW pricing: it serves the researcher after the
- * price is on the table, never as a detour before the ask.
- * Server component; styled with site tokens (.tlx-card / .clp-more).
+ * ContentLibraryPromo — compact homepage teaser below Pricing.
+ * No cards: headline block + one button into the technical library,
+ * mirroring the "Design your floor" teaser above it.
  */
 import Link from 'next/link';
-import { getArticles } from '@/lib/content/loader';
-import { formatDate } from '@/lib/content/utils';
 
-export async function ContentLibraryPromo() {
-  const articles = await getArticles();
-  if (articles.length === 0) return null;
-
-  // Featured first, then newest — always fill to two cards.
-  const featured = articles.filter((a) => a.featured);
-  const display = [...featured, ...articles.filter((a) => !a.featured)].slice(0, 2);
-
+export function ContentLibraryPromo() {
   return (
     <section className="section-tight paper-texture">
       <div className="shell">
@@ -28,27 +18,10 @@ export async function ContentLibraryPromo() {
             Moisture testing, finish chemistry, dust-free methodology — the technical standards
             the estimate is built on, documented from the job site.
           </p>
+          <Link href="/technical-library" className="btn btn-copper">
+            Browse the technical library <span aria-hidden>→</span>
+          </Link>
         </div>
-
-        <div className="tlx-grid" style={{ marginTop: '2rem' }}>
-          {display.map((article) => (
-            <Link key={article.slug} href={`/blog/${article.slug}`} className="tlx-card">
-              <span className="tlx-card-tag">
-                {article.category ? article.category.replace(/-/g, ' ') : 'Article'}
-              </span>
-              <h3>{article.title}</h3>
-              <p>{article.description}</p>
-              <span className="tlx-card-data">
-                <span>{formatDate(article.publishedAt)}</span>
-                {article.readingTimeMinutes ? <span>{article.readingTimeMinutes} min read</span> : null}
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        <Link href="/technical-library" className="clp-more">
-          Browse the full technical library <span aria-hidden>→</span>
-        </Link>
       </div>
     </section>
   );
