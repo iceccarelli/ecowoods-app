@@ -8,7 +8,7 @@ import { join } from 'path';
 import grayMatter from 'gray-matter';
 import type { ArticleMetadata, Article, ArticleListItem } from './types';
 
-const ARTICLES_DIR = join(process.cwd(), 'apps/web/content/articles');
+const ARTICLES_DIR = join(process.cwd(), 'content/articles');
 
 /**
  * Parse YAML frontmatter + MDX content from a file.
@@ -99,6 +99,9 @@ export async function getArticles(options?: { category?: string; featured?: bool
         publishedAt: metadata.publishedAt,
         image: metadata.image,
         readingTimeMinutes: metadata.readingTimeMinutes,
+        wordCount: metadata.wordCount,
+        modifiedAt: metadata.modifiedAt,
+        topics: metadata.topics ?? [],
         featured: metadata.featured,
       });
     }
@@ -138,4 +141,3 @@ export async function getAllArticleSlugs(): Promise<string[]> {
     return [];
   }
 }
-"

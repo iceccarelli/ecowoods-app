@@ -68,8 +68,7 @@ const accessories: Array<{
 ];
 
 async function main() {
-  console.log('🌱 Seeding shop products (upsert by slug — non-destructive)...
-');
+  console.log('🌱 Seeding shop products (upsert by slug — non-destructive)...\n');
 
   for (const m of materials) {
     await db.product.upsert({
@@ -122,9 +121,7 @@ async function main() {
   }
   console.log(`  ✓ ${accessories.length} accessory products upserted`);
 
-  console.log('
-✅ Product seed complete!
-');
+  console.log('\n✅ Product seed complete!\n');
 }
 
 main()

@@ -72,8 +72,7 @@ async function sendVerificationEmail({
 }): Promise<boolean> {
   if (!process.env.RESEND_API_KEY) {
     // No email service → log to console (dev mode fallback)
-    console.log('
-[auth] EMAIL VERIFICATION (no RESEND configured)');
+    console.log('\n[auth] EMAIL VERIFICATION (no RESEND configured)');
     console.log(`  To:  ${to}`);
     console.log(`  URL: ${verifyUrl}
 `);

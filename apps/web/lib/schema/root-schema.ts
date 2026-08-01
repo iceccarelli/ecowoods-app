@@ -117,7 +117,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     },
   ],
   foundingYear: 1998,
-  slogan: \"Toronto's master hardwood flooring artisans\",
+  slogan: "Toronto's master hardwood flooring artisans",
   description:
     'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
   logoUrl: `${SITE_URL}/icon-512.png`,
@@ -142,9 +142,9 @@ export const ROOT_AGGREGATE_RATING: AggregateRating = buildAggregateRating(4.9, 
 
 export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = [
   {
-    question: 'Is the estimate really fixed? What about \"unforeseen conditions\"?',
+    question: 'Is the estimate really fixed? What about "unforeseen conditions"?',
     answer:
-      'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no \"unforeseen conditions\" to surprise you later. The number on paper is the number on your invoice.',
+      'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.',
   },
   {
     question: 'Can we stay in the house during the work?',
@@ -154,7 +154,7 @@ export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = [
   {
     question: 'What warranty comes with the work?',
     answer:
-      'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\\'t right, we come back and make it right.',
+      'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right.',
   },
   {
     question: 'How long will my project take?',
@@ -195,7 +195,7 @@ export const HOMEPAGE_FAQ_SCHEMA: FAQPage = buildFAQPage(HOMEPAGE_FAQ_ITEMS);
  * EXPORT ALL SCHEMAS AS ARRAY FOR LAYOUT INJECTION
  * ────────────────────────────────────────────────────────────────────────
  *
- * The layout.tsx renders each of these into <script type=\"application/ld+json\">
+ * The layout.tsx renders each of these into <script type="application/ld+json">
  * tags in <head>.
  */
 

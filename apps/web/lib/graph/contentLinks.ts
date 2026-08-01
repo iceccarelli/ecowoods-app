@@ -4,8 +4,6 @@
  * Used by detail pages to automatically show 2–4 related pieces.
  */
 
-import type { Article, ArticleListItem } from '@/lib/content/types';
-import type { CaseStudyListItem, CaseStudyMetadata } from '@/lib/content/case-study-types';
 
 export type ContentType = 'article' | 'case-study';
 
@@ -16,6 +14,17 @@ export interface ContentNode {
   topics: string[];
   description: string;
 }
+
+/**
+ * Minimal structural shape the node builders actually read — satisfied by
+ * Article, ArticleListItem, CaseStudy, and CaseStudyListItem alike.
+ */
+export type NodeSource = {
+  slug: string;
+  title: string;
+  description: string;
+  topics?: string[];
+};
 
 export interface RelatedContent {
   type: ContentType;
@@ -29,7 +38,7 @@ export interface RelatedContent {
 /**
  * Convert article to content node
  */
-export function articleToNode(article: ArticleListItem): ContentNode {
+export function articleToNode(article: NodeSource): ContentNode {
   return {
     type: 'article',
     slug: article.slug,
@@ -42,7 +51,7 @@ export function articleToNode(article: ArticleListItem): ContentNode {
 /**
  * Convert case study to content node
  */
-export function caseStudyToNode(caseStudy: CaseStudyListItem): ContentNode {
+export function caseStudyToNode(caseStudy: NodeSource): ContentNode {
   return {
     type: 'case-study',
     slug: caseStudy.slug,

@@ -330,22 +330,17 @@ export function ContractDocument({
           <View style={styles.signatureBlock}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>
-              Authorized by: {settings.companyName ?? ''}{'
-'}
-              Name: ____________________________{'
-'}
-              Title: ____________________________{'
-'}
+              Authorized by: {settings.companyName ?? ''}{'\n'}
+              Name: ____________________________{'\n'}
+              Title: ____________________________{'\n'}
               Date: ____________________________
             </Text>
           </View>
           <View style={styles.signatureBlock}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureLabel}>
-              Client Signature{'
-'}
-              Name: {customer.name ?? '____________________________'}{'
-'}
+              Client Signature{'\n'}
+              Name: {customer.name ?? '____________________________'}{'\n'}
               Date: ____________________________
             </Text>
           </View>

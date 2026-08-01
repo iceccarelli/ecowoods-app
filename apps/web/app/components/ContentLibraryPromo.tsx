@@ -69,11 +69,11 @@ export async function ContentLibraryPromo() {
                       <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-2">
                         {article.description}
                       </p>
-                      <div className="mt-3 flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400">
-                        <span>{article.wordCount} words</span>
-                        <span>·</span>
-                        <span>Density {article.semanticDensity || '8'}/10</span>
-                      </div>
+                      {article.wordCount ? (
+                        <div className="mt-3 flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400">
+                          <span>{article.wordCount.toLocaleString()} words</span>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform">
                       →

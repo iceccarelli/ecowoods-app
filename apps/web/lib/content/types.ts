@@ -72,6 +72,8 @@ export interface ArticleListItem {
   publishedAt: string;
   image?: string;
   readingTimeMinutes?: number;
+  wordCount?: number;
+  modifiedAt?: string;
+  topics?: string[];
   featured?: boolean;
 }
-"

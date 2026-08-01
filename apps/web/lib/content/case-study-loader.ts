@@ -8,7 +8,7 @@ import { join } from 'path';
 import grayMatter from 'gray-matter';
 import type { CaseStudyMetadata, CaseStudy, CaseStudyListItem, CaseStudyChallenge, CaseStudyResult } from './case-study-types';
 
-const CASE_STUDIES_DIR = join(process.cwd(), 'apps/web/content/case-studies');
+const CASE_STUDIES_DIR = join(process.cwd(), 'content/case-studies');
 
 /**
  * Parse YAML frontmatter + MDX content from a case study file.
@@ -138,8 +138,10 @@ export async function getCaseStudies(options?: {
         projectDate: metadata.projectDate,
         squareFootage: metadata.squareFootage,
         woodSpecies: metadata.woodSpecies,
+        topics: metadata.topics ?? [],
         publishedAt: metadata.publishedAt,
-        featured: metadata.featured,
+        modifiedAt: metadata.modifiedAt,
+        featured: metadata.featured ?? false,
       });
     }
 
@@ -170,4 +172,3 @@ export async function getAllCaseStudySlugs(): Promise<string[]> {
     return [];
   }
 }
-"

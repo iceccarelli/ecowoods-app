@@ -20,9 +20,9 @@ import type {
 export function SchemaScript({ schema }: { schema: unknown }): ReactNode {
   return (
     <script
-      type=\"application/ld+json\"
+      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}
-      key=\"schema\"
+      key="schema"
     />
   );
 }
@@ -36,7 +36,7 @@ export function SchemaScripts({ schemas }: { schemas: unknown[] }): ReactNode {
       {schemas.map((schema, index) => (
         <script
           key={`schema-${index}`}
-          type=\"application/ld+json\"
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}
         />
       ))}
@@ -49,7 +49,7 @@ export function SchemaScripts({ schemas }: { schemas: unknown[] }): ReactNode {
  * Use in route metadata (generateMetadata in Next.js 13+).
  *
  * Example:
- *   export const metadata = articleHead({ headline: \"...\", slug: \"...\" });
+ *   export const metadata = articleHead({ headline: "...", slug: "..." });
  */
 export function articleHead(config: {
   headline: string;
@@ -115,4 +115,3 @@ export function productHead(config: {
     }),
   };
 }
-"

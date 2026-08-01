@@ -5,13 +5,13 @@
 export interface CaseStudyChallenge {
   title: string;
   description: string;
-  impact: string; // e.g., \"Risk of cupping if not addressed\"
+  impact: string; // e.g., "Risk of cupping if not addressed"
 }
 
 export interface CaseStudyResult {
   metric: string;
   value: string | number;
-  unit?: string; // e.g., \"% MC\", \"ft²\", \"hours\"
+  unit?: string; // e.g., "% MC", "ft²", "hours"
   context?: string; // Additional explanation
 }
 
@@ -34,8 +34,8 @@ export interface CaseStudyMetadata {
   squareFootage: number;
   projectType: 'residential' | 'commercial' | 'renovation' | 'new-construction' | 'restoration';
   substrateType: 'concrete' | 'plywood' | 'hardwood-subfloor' | 'radiant-heat' | 'mixed';
-  woodSpecies: string | string[]; // e.g., \"White Oak\" or [\"Oak\", \"Maple\"]
-  finishType: string; // e.g., \"Acrylic Polyurethane, 3 coats\"
+  woodSpecies: string | string[]; // e.g., "White Oak" or ["Oak", "Maple"]
+  finishType: string; // e.g., "Acrylic Polyurethane, 3 coats"
   installationDays: number;
   cureDays: number;
   initialMoistureReading?: number; // % MC
@@ -50,7 +50,7 @@ export interface CaseStudyMetadata {
   results: CaseStudyResult[];
   testimonial?: {
     quote: string;
-    attribution: string; // \"John Smith, Homeowner\"
+    attribution: string; // "John Smith, Homeowner"
   };
   author: string;
   authorTitle?: string;
@@ -78,7 +78,8 @@ export interface CaseStudyListItem {
   projectDate: string;
   squareFootage: number;
   woodSpecies: string | string[];
+  topics?: string[];
   publishedAt: string;
+  modifiedAt?: string;
   featured: boolean;
 }
-"
