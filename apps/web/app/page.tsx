@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
+import { ContentLibraryPromo } from './components/ContentLibraryPromo';
 import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
@@ -632,6 +633,9 @@ const onSubmit = (data: LeadFormData) => {
           </div>
         </div>
       </section>
+
+      {/* 5b · CONTENT LIBRARY — technical authority and proof */}
+      <ContentLibraryPromo />
 
       {/* 5c · PRICING — transparent range before the ask */}
 

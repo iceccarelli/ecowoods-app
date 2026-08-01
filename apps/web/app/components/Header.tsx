@@ -43,6 +43,7 @@ const navigation = [
   { label: 'Services', href: '#services' },
   { label: 'Process', href: '#process' },
   { label: 'The Craft', href: '#craft' },
+  { label: 'Technical Library', href: '/technical-library' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'FAQ', href: '#faq' },
 ];
@@ -174,12 +175,15 @@ export default function Header() {
           {/* Primary Nav */}
           <nav className="topbar-nav" aria-label="Primary">
             {navigation.map((item) => {
-              const id = item.href.replace('#', '');
-              const isActive = activeSection === id;
+              // Check if this is an anchor link or a page link
+              const isAnchor = item.href.startsWith('#');
+              const id = isAnchor ? item.href.replace('#', '') : '';
+              const isActive = isAnchor && activeSection === id;
+              const href = isAnchor ? `${baseUrl}${item.href}` : item.href;
               return (
                 <a
                   key={item.href}
-                  href={`${baseUrl}${item.href}`}
+                  href={href}
                   className={isActive ? 'active' : ''}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -322,16 +326,19 @@ export default function Header() {
         aria-hidden={!mobileOpen}
       >
         <nav aria-label="Mobile navigation">
-          {navigation.map((item, idx) => (
-            <a
-              key={item.href}
-              href={`${baseUrl}${item.href}`}
-              onClick={() => setMobileOpen(false)}
-            >
-              {item.label}
-              <span className="num">0{idx + 1}</span>
-            </a>
-          ))}
+          {navigation.map((item, idx) => {
+            const href = item.href.startsWith('#') ? `${baseUrl}${item.href}` : item.href;
+            return (
+              <a
+                key={item.href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+                <span className="num">0{idx + 1}</span>
+              </a>
+            );
+          })}
           <a href={`${baseUrl}#quote`} onClick={() => setMobileOpen(false)}>
             Free Quote
             <span className="num">0{navigation.length + 1}</span>

@@ -5,7 +5,7 @@ import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
-import { localBusinessSchema, websiteSchema, faqPageSchema } from '@/lib/structured-data';
+import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA, ROOT_AGGREGATE_RATING } from '@/lib/schema';
 import ConversionRail from './components/ConversionRail';
 import ReadingProgress from './components/ReadingProgress';
 
@@ -112,21 +112,28 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_NO_FLASH_SCRIPT }} />
 
         {/*
-          localBusinessSchema has existed in lib/structured-data.ts since the
-          repo was written and was never imported by anything. All that SEO
-          work was shipping to nobody. It ships now.
+          Root entity graph: Organization → Services + Website + FAQ.
+          Injected on every page. Every article/case study/product references
+          these via @id pointers, creating a deeply nested, machine-readable
+          entity graph that AI agents can ingest and cite.
+
+          Schema coverage:
+          - LocalBusiness (+ 6 nested Services)
+          - WebSite
+          - FAQPage (homepage FAQ)
+          - Note: AggregateRating kept separate per schema.org compliance
         */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ROOT_ORGANIZATION_SCHEMA) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ROOT_WEBSITE_SCHEMA) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema()) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOMEPAGE_FAQ_SCHEMA) }}
         />
 
         {/* Unsplash serves the hero + gallery. Warm the connection early. */}

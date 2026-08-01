@@ -1,31 +1,62 @@
-import type { MetadataRoute } from 'next';
-import { SITE_URL, CITIES } from '@/lib/seo-data';
-
 /**
- * Split sitemap. Next emits a <sitemapindex> at /sitemap.xml referencing
- * /sitemap/0.xml (core pages) and /sitemap/1.xml (service-area cities).
- * Scales cleanly as the URL footprint grows; robots.ts still points at
- * /sitemap.xml (now the index), so no change needed there.
+ * Sitemap — dynamically generate sitemap.xml with all content pages.
+ * Ensures blog articles, case studies, and key pages are discoverable by crawlers.
  */
-export async function generateSitemaps() {
-  return [{ id: 0 }, { id: 1 }];
-}
 
-export default function sitemap({ id }: { id: number }): MetadataRoute.Sitemap {
-  const now = new Date();
+import type { MetadataRoute } from 'next';
+import { getArticles } from '@/lib/content/loader';
+import { getCaseStudies } from '@/lib/content/case-study-loader';
 
-  if (id === 0) {
-    return [
-      { url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1 },
-      { url: `${SITE_URL}/service-areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    ];
-  }
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
-  // id === 1 — locations
-  return CITIES.map((c) => ({
-    url: `${SITE_URL}/service-areas/${c.slug}`,
-    lastModified: now,
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Fetch all articles and case studies
+  const articles = await getArticles();
+  const caseStudies = await getCaseStudies();
+
+  // Base pages (always included)
+  const basePages: MetadataRoute.Sitemap = [
+    {
+      url: SITE_URL,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1.0,
+    },
+    {
+      url: `${SITE_URL}/technical-library`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${SITE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/case-studies`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+  ];
+
+  // Article pages
+  const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
+    url: `${SITE_URL}/blog/${article.slug}`,
+    lastModified: new Date(article.modifiedAt || article.publishedAt),
     changeFrequency: 'monthly' as const,
-    priority: 0.7,
+    priority: 0.8,
   }));
+
+  // Case study pages
+  const caseStudyPages: MetadataRoute.Sitemap = caseStudies.map((caseStudy) => ({
+    url: `${SITE_URL}/case-studies/${caseStudy.slug}`,
+    lastModified: new Date(caseStudy.modifiedAt || caseStudy.publishedAt),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  return [...basePages, ...articlePages, ...caseStudyPages];
 }
