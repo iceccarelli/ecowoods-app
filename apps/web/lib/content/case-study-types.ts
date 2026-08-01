@@ -65,7 +65,7 @@ export interface CaseStudyMetadata {
 }
 
 export interface CaseStudy extends CaseStudyMetadata {
-  content: string | React.ReactNode; // Rendered MDX content
+  content: string; // HTML rendered from the markdown body
   wordCount: number;
 }
 
