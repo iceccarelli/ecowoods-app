@@ -6922,3 +6922,153 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .gc-thumbs { flex-wrap: wrap; }
 .gc-thumb { flex: 0 0 calc(33.333% - 0.37rem); }
 /* === EW:MACHINE-THUMBS END === */
+
+/* ════════════════════════════════════════════════════════════════════════
+   TECHNICAL LIBRARY EXPERIENCE (.tlx-*)
+   Content layer for /technical-library, /blog, /case-studies.
+   Design language: the Ecowoods "job binder" — warm paper pages, Fraunces
+   headlines, and measurement data set in the mono face on cream reading
+   strips (the signature: this is a company that measures things).
+   All values derive from the token system at the top of this file.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.tlx-page { background: var(--paper); color: var(--walnut-950); min-height: 100vh; }
+
+/* ── Hero ── */
+.tlx-hero { border-bottom: 1px solid var(--cream-100); padding: 4.5rem 0 3rem; }
+.tlx-hero .shell { max-width: 860px; }
+.tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--oak-500); margin-bottom: 1.5rem; }
+.tlx-crumbs a { color: inherit; text-decoration: none; }
+.tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper); }
+.tlx-crumbs span[aria-hidden] { color: var(--maple-200); }
+.tlx-title { font-family: var(--font-display); font-weight: 600; line-height: 1.12;
+  font-size: clamp(1.9rem, 4.5vw, 3rem); letter-spacing: -0.01em; margin: 0 0 1rem; }
+.tlx-lede { font-size: 1.1rem; line-height: 1.65; color: var(--walnut-700);
+  max-width: 62ch; margin: 0 0 1.75rem; }
+
+/* ── Meta strip (the instrument label) ── */
+.tlx-meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--oak-500); }
+.tlx-meta strong { color: var(--walnut-900); font-weight: 600; }
+
+/* ── Section scaffolding ── */
+.tlx-section { padding: 3.25rem 0; }
+.tlx-section + .tlx-section { border-top: 1px solid var(--cream-100); }
+.tlx-section .shell { max-width: 1080px; }
+.tlx-kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--copper); margin: 0 0 0.6rem; }
+.tlx-h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem;
+  line-height: 1.2; margin: 0 0 0.75rem; }
+.tlx-note { color: var(--walnut-700); max-width: 60ch; margin: 0 0 2rem; line-height: 1.6; }
+
+/* ── Cards ── */
+.tlx-grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.tlx-card { display: flex; flex-direction: column; gap: 0.65rem; padding: 1.5rem;
+  background: var(--cream-50); border: 1px solid var(--cream-100); border-radius: 14px;
+  text-decoration: none; color: inherit;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+.tlx-card:hover, .tlx-card:focus-visible { border-color: var(--copper);
+  transform: translateY(-2px); box-shadow: 0 10px 28px rgba(67, 48, 31, 0.10); }
+.tlx-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.tlx-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.12rem;
+  line-height: 1.3; margin: 0; }
+.tlx-card p { color: var(--walnut-700); font-size: 0.92rem; line-height: 1.55; margin: 0; }
+.tlx-card-tag { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--copper); }
+.tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--maple-200);
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
+  color: var(--oak-500); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
+.tlx-card-cta { color: var(--copper); font-weight: 600; font-size: 0.9rem; }
+
+/* ── Pillars ── */
+.tlx-pillar { background: var(--cream-50); border: 1px solid var(--cream-100);
+  border-left: 3px solid var(--copper); border-radius: 12px; padding: 1.5rem; }
+.tlx-pillar h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 0.5rem; }
+.tlx-pillar p { color: var(--walnut-700); font-size: 0.92rem; line-height: 1.55; margin: 0 0 0.9rem; }
+.tlx-pillar ul { list-style: none; margin: 0; padding: 0;
+  font-family: var(--font-mono); font-size: 0.76rem; color: var(--oak-500); }
+.tlx-pillar li { padding: 0.22rem 0; }
+.tlx-pillar li::before { content: '✓ '; color: var(--copper); }
+
+/* ── Case-study spec strip (the job card) ── */
+.tlx-specs { display: grid; gap: 1px; background: var(--cream-100);
+  border: 1px solid var(--cream-100); border-radius: 12px; overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 1.75rem; }
+.tlx-spec { background: var(--cream-50); padding: 0.85rem 1rem; }
+.tlx-spec dt { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--oak-500); margin: 0 0 0.25rem; }
+.tlx-spec dd { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--walnut-900); }
+
+/* ── Article body ── */
+.tlx-body { max-width: 720px; margin: 0 auto; font-size: 1.02rem; line-height: 1.75;
+  color: var(--walnut-900); }
+.tlx-body > :first-child { margin-top: 0; }
+.tlx-body h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem;
+  line-height: 1.25; margin: 2.75rem 0 1rem; }
+.tlx-body h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;
+  margin: 2.1rem 0 0.75rem; }
+.tlx-body h4 { font-weight: 700; font-size: 1rem; margin: 1.75rem 0 0.5rem; }
+.tlx-body p { margin: 0 0 1.1rem; }
+.tlx-body a { color: var(--copper-deep); text-decoration: underline;
+  text-decoration-color: var(--copper); text-underline-offset: 3px; }
+.tlx-body a:hover { color: var(--copper); }
+.tlx-body ul, .tlx-body ol { margin: 0 0 1.2rem; padding-left: 1.4rem; }
+.tlx-body li { margin: 0.3rem 0; }
+.tlx-body li::marker { color: var(--copper); }
+.tlx-body li > input[type='checkbox'] { accent-color: var(--copper); margin-right: 0.5rem; }
+.tlx-body strong { color: var(--walnut-950); }
+.tlx-body blockquote { margin: 1.5rem 0; padding: 0.9rem 1.25rem;
+  border-left: 3px solid var(--copper); background: var(--cream-50);
+  border-radius: 0 10px 10px 0; color: var(--walnut-700); font-style: italic; }
+.tlx-body hr { border: 0; border-top: 1px solid var(--cream-100); margin: 2.5rem 0; }
+
+/* The signature: measurement data on cream reading strips */
+.tlx-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0;
+  font-size: 0.88rem; line-height: 1.45; }
+.tlx-body thead th { font-family: var(--font-mono); font-size: 0.7rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--oak-500);
+  text-align: left; padding: 0.55rem 0.8rem; border-bottom: 2px solid var(--copper); }
+.tlx-body tbody td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--cream-100);
+  font-variant-numeric: tabular-nums; vertical-align: top; }
+.tlx-body tbody tr:nth-child(odd) td { background: var(--cream-50); }
+.tlx-body td:first-child, .tlx-body th:first-child { padding-left: 1rem; }
+.tlx-body code { font-family: var(--font-mono); font-size: 0.86em;
+  background: var(--cream-100); border-radius: 5px; padding: 0.12em 0.4em; }
+.tlx-body pre { margin: 1.5rem 0; padding: 1.1rem 1.25rem; overflow-x: auto;
+  background: var(--cream-50); border: 1px solid var(--cream-100);
+  border-left: 3px solid var(--copper); border-radius: 0 10px 10px 0;
+  font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+  color: var(--walnut-900); }
+.tlx-body pre code { background: none; padding: 0; border-radius: 0; }
+
+@media (max-width: 640px) {
+  .tlx-body table { display: block; overflow-x: auto; }
+}
+
+/* ── About / tags footer ── */
+.tlx-about { max-width: 720px; margin: 3.5rem auto 0; padding: 1.4rem 1.5rem;
+  background: var(--cream-50); border: 1px solid var(--cream-100); border-radius: 12px; }
+.tlx-about h3 { font-family: var(--font-display); font-size: 1rem; margin: 0 0 0.4rem; }
+.tlx-about p { color: var(--walnut-700); font-size: 0.9rem; line-height: 1.6; margin: 0; }
+.tlx-tags { max-width: 720px; margin: 1.5rem auto 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tlx-tags span { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+  padding: 0.3rem 0.75rem; border: 1px solid var(--cream-100); border-radius: 999px;
+  background: var(--cream-50); color: var(--oak-500); }
+
+/* ── Related ── */
+.tlx-related { max-width: 860px; margin: 4rem auto 0; padding-top: 2.5rem;
+  border-top: 1px solid var(--cream-100); }
+.tlx-related .tlx-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+/* ── CTA band ── */
+.tlx-cta { background: var(--walnut-950); color: var(--cream-50); border-radius: 18px;
+  padding: 2.5rem 2rem; text-align: center; }
+.tlx-cta h2 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 0.6rem; }
+.tlx-cta p { color: var(--maple-200); margin: 0 0 1.5rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tlx-card, .tlx-card:hover { transition: none; transform: none; }
+}

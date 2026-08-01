@@ -6,6 +6,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import grayMatter from 'gray-matter';
+import { renderMarkdown, estimateReadingTime } from './markdown';
 import type { ArticleMetadata, Article, ArticleListItem } from './types';
 
 const ARTICLES_DIR = join(process.cwd(), 'content/articles');
@@ -30,7 +31,7 @@ function parseArticleFile(filename: string, content: string): { metadata: Articl
     slug,
     title: data.title || slug.replace(/-/g, ' '),
     description: data.description || '',
-    author: data.author || 'Mark Carelli',
+    author: data.author || 'The Ecowoods Team',
     authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
     publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),
     modifiedAt: getField('modified-at', 'modifiedAt'),
@@ -63,7 +64,8 @@ export async function getArticle(slug: string): Promise<Article | null> {
 
     return {
       ...metadata,
-      content: body,
+      readingTimeMinutes: metadata.readingTimeMinutes ?? estimateReadingTime(body),
+      content: renderMarkdown(body),
     };
   } catch (error) {
     console.error(`Failed to load article ${slug}:`, error);
@@ -84,7 +86,7 @@ export async function getArticles(options?: { category?: string; featured?: bool
     for (const filename of mdxFiles) {
       const filepath = join(ARTICLES_DIR, filename);
       const content = await fs.readFile(filepath, 'utf-8');
-      const { metadata } = parseArticleFile(filename, content);
+      const { metadata, body } = parseArticleFile(filename, content);
 
       if (!metadata.published) continue; // Skip unpublished
 
@@ -98,7 +100,7 @@ export async function getArticles(options?: { category?: string; featured?: bool
         category: metadata.category,
         publishedAt: metadata.publishedAt,
         image: metadata.image,
-        readingTimeMinutes: metadata.readingTimeMinutes,
+        readingTimeMinutes: metadata.readingTimeMinutes ?? estimateReadingTime(body),
         wordCount: metadata.wordCount,
         modifiedAt: metadata.modifiedAt,
         topics: metadata.topics ?? [],

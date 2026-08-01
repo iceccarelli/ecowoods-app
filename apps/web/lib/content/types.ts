@@ -13,7 +13,7 @@ export interface ArticleMetadata {
   /** Short description for previews and meta tags */
   description: string;
 
-  /** Author name (default: Mark Carelli) */
+  /** Author name (default: The Ecowoods Team) */
   author?: string;
 
   /** Author title/role (default: Lead Architect) */

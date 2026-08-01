@@ -91,7 +91,7 @@ export default async function CaseStudyPage({ params }: Props) {
     woodSpecies: caseStudy.woodSpecies,
     finishType: caseStudy.finishType,
     author: {
-      name: caseStudy.author || 'Mark Carelli',
+      name: caseStudy.author || 'Ecowoods',
       title: caseStudy.authorTitle || 'Lead Architect',
     },
     publishedAt: new Date(caseStudy.publishedAt),
@@ -130,7 +130,7 @@ export default async function CaseStudyPage({ params }: Props) {
 
       {/* Render case study with layout and related content */}
       <CaseStudyLayout metadata={caseStudy} relatedContent={relatedContent}>
-        {caseStudy.content}
+        <div className="tlx-body" dangerouslySetInnerHTML={{ __html: caseStudy.content }} />
       </CaseStudyLayout>
     </>
   );

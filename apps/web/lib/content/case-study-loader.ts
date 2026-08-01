@@ -7,6 +7,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import grayMatter from 'gray-matter';
 import type { CaseStudyMetadata, CaseStudy, CaseStudyListItem, CaseStudyChallenge, CaseStudyResult } from './case-study-types';
+import { renderMarkdown } from './markdown';
 
 const CASE_STUDIES_DIR = join(process.cwd(), 'content/case-studies');
 
@@ -68,7 +69,7 @@ function parseCaseStudyFile(
     solution: data.solution || '',
     results,
     testimonial: data.testimonial,
-    author: data.author || 'Mark Carelli',
+    author: data.author || 'The Ecowoods Team',
     authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
     images: (data.images as string[]) || [],
     keywords: data.keywords || '',
@@ -96,7 +97,7 @@ export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
 
     return {
       ...metadata,
-      content: body,
+      content: renderMarkdown(body),
       wordCount: (body.match(/\\b\\w+\\b/g) || []).length,
     };
   } catch (error) {

@@ -296,7 +296,7 @@ export function buildCaseStudy(config: CaseStudyConfig): CaseStudy {
     ...(config.modifiedAt && { dateModified: config.modifiedAt.toISOString() }),
     author: {
       '@type': 'Person',
-      name: config.author?.name || 'Mark Carelli',
+      name: config.author?.name || 'Ecowoods',
       ...(config.author?.title && { title: config.author.title }),
     } as Person,
     about: {
