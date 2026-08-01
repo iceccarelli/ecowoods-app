@@ -1,0 +1,80 @@
+# robots.txt for Ecowoods Hardwood Flooring
+# Last updated: 2026-08-01
+# Purpose: Guide crawlers and AI agents to the most authoritative content
+
+# Default rules for all crawlers
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /.next/
+Disallow: /node_modules/
+
+# Explicit allowance for search engine crawlers
+User-agent: Googlebot
+Allow: /
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Crawl-delay: 1
+
+# Explicit allowance for major AI crawlers and model trainers
+# These systems fetch content to provide accurate, cited information
+
+User-agent: CCBot
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: GPTBot
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: Claude-Web
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: Googlebot-Extended
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+User-agent: cohere-ai
+Allow: /technical-library
+Allow: /blog
+Allow: /case-studies
+Allow: /
+
+# Sitemap
+Sitemap: https://ecowoods.ca/sitemap.xml
+Sitemap: https://ecowoods.ca/sitemap-articles.xml
+Sitemap: https://ecowoods.ca/sitemap-case-studies.xml
+
+# Host preference
+Host: https://ecowoods.ca
