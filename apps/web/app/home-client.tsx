@@ -14,6 +14,7 @@ import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
 import FloorCatalog from './components/FloorCatalog';
+import MachineCatalog from './components/MachineCatalog';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
@@ -506,8 +507,7 @@ const onSubmit = (data: LeadFormData) => {
             </h2>
             <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
               Installation, refinishing, sanding, stairs, inlays, and commercial — every service,
-              one shop, one accountable name — since 1998. Our own salaried craftsmen on
-              professional-grade equipment, dust-free by default.
+              one shop, one accountable name — since 1998.
             </p>
           </div>
 
@@ -536,6 +536,25 @@ const onSubmit = (data: LeadFormData) => {
           </div>
 
           <ProcessDeck items={funnelSteps} icon={Icon} />
+        </div>
+      </section>
+
+      {/* THE CRAFT — educational machine & tool gallery */}
+      <section className="section" id="craft">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">The Craft</span>
+            <h2>
+              The machines behind <span className="serif-italic">the finish.</span>
+            </h2>
+            <p>
+              Every Ecowoods floor is built with professional-grade equipment run by our own salaried
+              craftsmen. Here is the gear behind a dust-free, fixed-price floor — and exactly what each
+              one does. Tap any tool to see it in use.
+            </p>
+          </div>
+
+          <MachineCatalog />
         </div>
       </section>
 

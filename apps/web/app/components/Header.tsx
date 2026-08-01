@@ -42,6 +42,7 @@ const navigation = [
   // { label: 'Species', href: '#species' }, // hidden with The Detail section
   { label: 'Services', href: '#services' },
   { label: 'Process', href: '#process' },
+  { label: 'The Craft', href: '#craft' },
   { label: 'Technical Library', href: '/technical-library' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'FAQ', href: '#faq' },

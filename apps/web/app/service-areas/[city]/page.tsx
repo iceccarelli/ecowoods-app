@@ -117,7 +117,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             <li><strong>Salaried craftsmen.</strong> No day-labour subcontractors — the same crew from first board to final coat.</li>
           </ul>
           <p style={{ marginTop: '1.25rem' }}>
-            See <Link href="/#gallery">the floors we install</Link> and <Link href="/technical-library">the standards behind the finish</Link>.
+            See <Link href="/#gallery">the floors we install</Link> and <Link href="/#craft">the machines behind the finish</Link>.
           </p>
         </div>
       </section>
