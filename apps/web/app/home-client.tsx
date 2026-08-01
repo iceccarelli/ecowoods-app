@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,10 +23,6 @@ import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
 // Heavy, below-the-fold, interactive tools with no indexable text: load them in
 // their own client chunks (ssr:false) so they never block first paint. The
 // fallbacks reserve height so nothing shifts when they hydrate in (CLS = 0).
-const ConfiguratorSection = dynamic(() => import('./components/ConfiguratorSection'), {
-  ssr: false,
-  loading: () => <div aria-hidden="true" style={{ minHeight: 560 }} />,
-});
 const BookingPanel = dynamic(() => import('./components/BookingPanel'), {
   ssr: false,
   loading: () => <div aria-hidden="true" style={{ minHeight: 420 }} />,
@@ -561,10 +558,26 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* 5b · DESIGN YOUR FLOOR — sits between "look what we did" and "here are the
-             specs". The gallery creates the want; the configurator lets them act on
-             it while it is still warm, and hands the whole configuration to RenoGuide. */}
-      <ConfiguratorSection />
+      {/* 5b · DESIGN YOUR FLOOR — teaser only. The full configurator lives at
+             /design so the landing page stays short; researchers click through,
+             buyers keep scrolling toward pricing and the estimate. */}
+      <section className="section-tight" id="design">
+        <div className="shell">
+          <div className="section-head reveal" style={{ maxWidth: '640px' }}>
+            <span className="eyebrow">Design your floor</span>
+            <h2>
+              See it before we <span className="serif-italic">build it.</span>
+            </h2>
+            <p>
+              Pick species, finish, and pattern — with a live installed-price range built from
+              the same numbers our estimator carries in the truck.
+            </p>
+            <Link href="/design" className="btn btn-copper">
+              Open the floor designer <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* 2 · PROOF & AUTHORITY */}
       <section className="section paper-texture" id="reviews">

@@ -104,7 +104,7 @@ export default function CommandPalette() {
     {
       label: 'Design',
       actions: [
-        { id: 'configurator', title: 'Design your floor', hint: 'Species, finish, pattern — live pricing', keywords: 'configurator design build customize herringbone chevron finish', icon: I.arrow, run: go('configurator') },
+        { id: 'configurator', title: 'Design your floor', hint: 'Species, finish, pattern — live pricing', keywords: 'configurator design build customize herringbone chevron finish', icon: I.arrow, run: () => { close(); window.location.assign('/design'); } },
         { id: 'gallery', title: 'See finished Toronto projects', keywords: 'gallery portfolio work photos results', icon: I.arrow, run: go('gallery') },
       ],
     },
