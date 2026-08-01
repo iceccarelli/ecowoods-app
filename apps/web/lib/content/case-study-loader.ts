@@ -20,7 +20,7 @@ function parseCaseStudyFile(
   const { data, content: body } = grayMatter(content);
 
   // Extract slug from filename (remove .mdx extension)
-  const slug = filename.replace(/\\.mdx$/, '');
+  const slug = filename.replace(/\.mdx$/, '');
 
   // Helper to get field (handles hyphenated and camelCase)
   const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
@@ -166,7 +166,7 @@ export async function getCaseStudies(options?: {
 export async function getAllCaseStudySlugs(): Promise<string[]> {
   try {
     const files = await fs.readdir(CASE_STUDIES_DIR);
-    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   } catch (error) {
     console.error('Failed to list case study slugs:', error);
     return [];

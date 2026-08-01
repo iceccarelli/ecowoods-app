@@ -17,7 +17,7 @@ function parseArticleFile(filename: string, content: string): { metadata: Articl
   const { data, content: body } = grayMatter(content);
 
   // Extract slug from filename (remove .mdx extension)
-  const slug = filename.replace(/\\.mdx$/, '');
+  const slug = filename.replace(/\.mdx$/, '');
 
   // gray-matter parses hyphenated keys; handle both hyphenated and camelCase variants
   const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
@@ -135,7 +135,7 @@ export async function getArticleForSEO(slug: string): Promise<ArticleMetadata | 
 export async function getAllArticleSlugs(): Promise<string[]> {
   try {
     const files = await fs.readdir(ARTICLES_DIR);
-    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   } catch (error) {
     console.error('Failed to list article slugs:', error);
     return [];
