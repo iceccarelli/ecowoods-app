@@ -1,1 +1,130 @@
-/**\n * Article detail page — renders single article with schema injection and related content.\n */\n\nimport type { Metadata } from 'next';\nimport { notFound } from 'next/navigation';\nimport { getArticle, getArticles } from '@/lib/content/loader';\nimport { getCaseStudies } from '@/lib/content/case-study-loader';\nimport { ArticleLayout } from '@/app/components/ArticleLayout';\nimport { buildArticle, SchemaScript } from '@/lib/schema';\nimport { ArticleContent } from './article-content';\nimport {\n  articleToNode,\n  caseStudyToNode,\n  findRelatedContent,\n  getFallbackRelated,\n} from '@/lib/graph/contentLinks';\n\nconst SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';\n\ninterface Props {\n  params: Promise<{ slug: string }>;\n}\n\n/**\n * Generate static params for all published articles at build time.\n */\nexport async function generateStaticParams() {\n  const articles = await getArticles();\n  return articles.map((article) => ({\n    slug: article.slug,\n  }));\n}\n\n/**\n * Generate metadata for SEO (title, description, og:image, etc.)\n */\nexport async function generateMetadata({ params }: Props): Promise<Metadata> {\n  const { slug } = await params;\n  const article = await getArticle(slug);\n\n  if (!article) {\n    return { title: 'Article Not Found' };\n  }\n\n  const url = `${SITE_URL}/blog/${slug}`;\n\n  return {\n    title: article.title,\n    description: article.description,\n    authors: article.author ? [{ name: article.author }] : undefined,\n    openGraph: {\n      title: article.title,\n      description: article.description,\n      url,\n      type: 'article',\n      authors: article.author ? [article.author] : undefined,\n      publishedTime: article.publishedAt,\n      modifiedTime: article.modifiedAt,\n      images: article.image ? [{ url: article.image }] : undefined,\n    },\n    twitter: {\n      card: 'summary_large_image',\n      title: article.title,\n      description: article.description,\n      images: article.image ? [article.image] : undefined,\n    },\n    alternates: {\n      canonical: url,\n    },\n  };\n}\n\nexport default async function ArticlePage({ params }: Props) {\n  const { slug } = await params;\n  const article = await getArticle(slug);\n\n  if (!article) {\n    notFound();\n  }\n\n  // Build JSON-LD schema for this article\n  const articleSchema = buildArticle({\n    id: slug,\n    headline: article.title,\n    description: article.description,\n    content: article.content,\n    author: {\n      name: article.author || 'Mark Carelli',\n      title: article.authorTitle || 'Lead Architect',\n    },\n    publishedAt: new Date(article.publishedAt),\n    modifiedAt: article.modifiedAt ? new Date(article.modifiedAt) : undefined,\n    wordCount: article.wordCount,\n    readingTimeMinutes: article.readingTimeMinutes,\n    imageUrl: article.image,\n    siteUrl: SITE_URL,\n    topics: article.topics,\n  });\n\n  // Load all content for related content calculation\n  const allArticles = await getArticles();\n  const allCaseStudies = await getCaseStudies();\n\n  // Build content graph\n  const articleNodes = allArticles.map(articleToNode);\n  const caseStudyNodes = allCaseStudies.map(caseStudyToNode);\n  const allContentNodes = [...articleNodes, ...caseStudyNodes];\n\n  // Find related content (2–4 items)\n  const sourceNode = articleToNode(article);\n  let relatedContent = findRelatedContent(sourceNode, allContentNodes, 4);\n\n  // Fallback to predefined relationships if topic matching returns < 2 results\n  if (relatedContent.length < 2) {\n    relatedContent = getFallbackRelated(slug, allContentNodes, 4);\n  }\n\n  return (\n    <>\n      {/* Inject Article JSON-LD schema */}\n      <SchemaScript schema={articleSchema} />\n\n      {/* Render article with layout and related content */}\n      <ArticleLayout metadata={article} relatedContent={relatedContent}>\n        <ArticleContent content={article.content} />\n      </ArticleLayout>\n    </>\n  );\n}\n
+/**
+ * Article detail page — renders single article with schema injection and related content.
+ */
+
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getArticle, getArticles } from '@/lib/content/loader';
+import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { ArticleLayout } from '@/app/components/ArticleLayout';
+import { buildArticle, SchemaScript } from '@/lib/schema';
+import { ArticleContent } from './article-content';
+import {
+  articleToNode,
+  caseStudyToNode,
+  findRelatedContent,
+  getFallbackRelated,
+} from '@/lib/graph/contentLinks';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+/**
+ * Generate static params for all published articles at build time.
+ */
+export async function generateStaticParams() {
+  const articles = await getArticles();
+  return articles.map((article) => ({
+    slug: article.slug,
+  }));
+}
+
+/**
+ * Generate metadata for SEO (title, description, og:image, etc.)
+ */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getArticle(slug);
+
+  if (!article) {
+    return { title: 'Article Not Found' };
+  }
+
+  const url = `${SITE_URL}/blog/${slug}`;
+
+  return {
+    title: article.title,
+    description: article.description,
+    authors: article.author ? [{ name: article.author }] : undefined,
+    openGraph: {
+      title: article.title,
+      description: article.description,
+      url,
+      type: 'article',
+      authors: article.author ? [article.author] : undefined,
+      publishedTime: article.publishedAt,
+      modifiedTime: article.modifiedAt,
+      images: article.image ? [{ url: article.image }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.description,
+      images: article.image ? [article.image] : undefined,
+    },
+    alternates: {
+      canonical: url,
+    },
+  };
+}
+
+export default async function ArticlePage({ params }: Props) {
+  const { slug } = await params;
+  const article = await getArticle(slug);
+
+  if (!article) {
+    notFound();
+  }
+
+  // Build JSON-LD schema for this article
+  const articleSchema = buildArticle({
+    id: slug,
+    headline: article.title,
+    description: article.description,
+    content: article.content,
+    author: {
+      name: article.author || 'Mark Carelli',
+      title: article.authorTitle || 'Lead Architect',
+    },
+    publishedAt: new Date(article.publishedAt),
+    modifiedAt: article.modifiedAt ? new Date(article.modifiedAt) : undefined,
+    wordCount: article.wordCount,
+    readingTimeMinutes: article.readingTimeMinutes,
+    imageUrl: article.image,
+    siteUrl: SITE_URL,
+    topics: article.topics,
+  });
+
+  // Load all content for related content calculation
+  const allArticles = await getArticles();
+  const allCaseStudies = await getCaseStudies();
+
+  // Build content graph
+  const articleNodes = allArticles.map(articleToNode);
+  const caseStudyNodes = allCaseStudies.map(caseStudyToNode);
+  const allContentNodes = [...articleNodes, ...caseStudyNodes];
+
+  // Find related content (2–4 items)
+  const sourceNode = articleToNode(article);
+  let relatedContent = findRelatedContent(sourceNode, allContentNodes, 4);
+
+  // Fallback to predefined relationships if topic matching returns < 2 results
+  if (relatedContent.length < 2) {
+    relatedContent = getFallbackRelated(slug, allContentNodes, 4);
+  }
+
+  return (
+    <>
+      {/* Inject Article JSON-LD schema */}
+      <SchemaScript schema={articleSchema} />
+
+      {/* Render article with layout and related content */}
+      <ArticleLayout metadata={article} relatedContent={relatedContent}>
+        <ArticleContent content={article.content} />
+      </ArticleLayout>
+    </>
+  );
+}

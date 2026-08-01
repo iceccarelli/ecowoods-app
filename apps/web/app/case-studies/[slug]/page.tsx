@@ -1,1 +1,137 @@
-/**\n * Case Study detail page — renders single case study with schema injection and related content.\n */\n\nimport type { Metadata } from 'next';\nimport { notFound } from 'next/navigation';\nimport { getCaseStudy, getAllCaseStudySlugs, getCaseStudies } from '@/lib/content/case-study-loader';\nimport { getArticles } from '@/lib/content/loader';\nimport { buildCaseStudy, SchemaScript } from '@/lib/schema';\nimport { CaseStudyLayout } from './case-study-layout';\nimport {\n  caseStudyToNode,\n  articleToNode,\n  findRelatedContent,\n  getFallbackRelated,\n} from '@/lib/graph/contentLinks';\n\nconst SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';\n\ninterface Props {\n  params: Promise<{ slug: string }>;\n}\n\n/**\n * Generate static params for all published case studies at build time.\n */\nexport async function generateStaticParams() {\n  const slugs = await getAllCaseStudySlugs();\n  return slugs.map((slug) => ({\n    slug,\n  }));\n}\n\n/**\n * Generate metadata for SEO (title, description, og:image, etc.)\n */\nexport async function generateMetadata({ params }: Props): Promise<Metadata> {\n  const { slug } = await params;\n  const caseStudy = await getCaseStudy(slug);\n\n  if (!caseStudy) {\n    return { title: 'Case Study Not Found' };\n  }\n\n  const url = `${SITE_URL}/case-studies/${slug}`;\n\n  return {\n    title: caseStudy.title,\n    description: caseStudy.description,\n    authors: caseStudy.author ? [{ name: caseStudy.author }] : undefined,\n    openGraph: {\n      title: caseStudy.title,\n      description: caseStudy.description,\n      url,\n      type: 'article',\n      authors: caseStudy.author ? [caseStudy.author] : undefined,\n      publishedTime: caseStudy.publishedAt,\n      modifiedTime: caseStudy.modifiedAt,\n      images: caseStudy.images && caseStudy.images.length > 0 ? [{ url: caseStudy.images[0] }] : undefined,\n    },\n    twitter: {\n      card: 'summary_large_image',\n      title: caseStudy.title,\n      description: caseStudy.description,\n      images: caseStudy.images && caseStudy.images.length > 0 ? [caseStudy.images[0]] : undefined,\n    },\n    alternates: {\n      canonical: url,\n    },\n  };\n}\n\nexport default async function CaseStudyPage({ params }: Props) {\n  const { slug } = await params;\n  const caseStudy = await getCaseStudy(slug);\n\n  if (!caseStudy) {\n    notFound();\n  }\n\n  // Build JSON-LD schema for this case study\n  const caseStudySchema = buildCaseStudy({\n    id: slug,\n    headline: caseStudy.title,\n    description: caseStudy.description,\n    content: caseStudy.content,\n    location: caseStudy.location,\n    projectType: caseStudy.projectType,\n    projectDate: new Date(caseStudy.projectDate),\n    squareFootage: caseStudy.squareFootage,\n    woodSpecies: caseStudy.woodSpecies,\n    finishType: caseStudy.finishType,\n    author: {\n      name: caseStudy.author || 'Mark Carelli',\n      title: caseStudy.authorTitle || 'Lead Architect',\n    },\n    publishedAt: new Date(caseStudy.publishedAt),\n    modifiedAt: caseStudy.modifiedAt ? new Date(caseStudy.modifiedAt) : undefined,\n    wordCount: caseStudy.wordCount,\n    challenges: caseStudy.challenges,\n    results: caseStudy.results,\n    testimonial: caseStudy.testimonial,\n    imageUrl: caseStudy.images?.[0],\n    siteUrl: SITE_URL,\n    topics: caseStudy.topics,\n  });\n\n  // Load all content for related content calculation\n  const allArticles = await getArticles();\n  const allCaseStudies = await getCaseStudies();\n\n  // Build content graph\n  const articleNodes = allArticles.map(articleToNode);\n  const caseStudyNodes = allCaseStudies.map(caseStudyToNode);\n  const allContentNodes = [...articleNodes, ...caseStudyNodes];\n\n  // Find related content (2–4 items)\n  const sourceNode = caseStudyToNode(caseStudy);\n  let relatedContent = findRelatedContent(sourceNode, allContentNodes, 4);\n\n  // Fallback to predefined relationships if topic matching returns < 2 results\n  if (relatedContent.length < 2) {\n    relatedContent = getFallbackRelated(slug, allContentNodes, 4);\n  }\n\n  return (\n    <>\n      {/* Inject CaseStudy JSON-LD schema */}\n      <SchemaScript schema={caseStudySchema} />\n\n      {/* Render case study with layout and related content */}\n      <CaseStudyLayout metadata={caseStudy} relatedContent={relatedContent}>\n        {caseStudy.content}\n      </CaseStudyLayout>\n    </>\n  );\n}\n
+/**
+ * Case Study detail page — renders single case study with schema injection and related content.
+ */
+
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getCaseStudy, getAllCaseStudySlugs, getCaseStudies } from '@/lib/content/case-study-loader';
+import { getArticles } from '@/lib/content/loader';
+import { buildCaseStudy, SchemaScript } from '@/lib/schema';
+import { CaseStudyLayout } from './case-study-layout';
+import {
+  caseStudyToNode,
+  articleToNode,
+  findRelatedContent,
+  getFallbackRelated,
+} from '@/lib/graph/contentLinks';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+/**
+ * Generate static params for all published case studies at build time.
+ */
+export async function generateStaticParams() {
+  const slugs = await getAllCaseStudySlugs();
+  return slugs.map((slug) => ({
+    slug,
+  }));
+}
+
+/**
+ * Generate metadata for SEO (title, description, og:image, etc.)
+ */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const caseStudy = await getCaseStudy(slug);
+
+  if (!caseStudy) {
+    return { title: 'Case Study Not Found' };
+  }
+
+  const url = `${SITE_URL}/case-studies/${slug}`;
+
+  return {
+    title: caseStudy.title,
+    description: caseStudy.description,
+    authors: caseStudy.author ? [{ name: caseStudy.author }] : undefined,
+    openGraph: {
+      title: caseStudy.title,
+      description: caseStudy.description,
+      url,
+      type: 'article',
+      authors: caseStudy.author ? [caseStudy.author] : undefined,
+      publishedTime: caseStudy.publishedAt,
+      modifiedTime: caseStudy.modifiedAt,
+      images: caseStudy.images && caseStudy.images.length > 0 ? [{ url: caseStudy.images[0] }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: caseStudy.title,
+      description: caseStudy.description,
+      images: caseStudy.images && caseStudy.images.length > 0 ? [caseStudy.images[0]] : undefined,
+    },
+    alternates: {
+      canonical: url,
+    },
+  };
+}
+
+export default async function CaseStudyPage({ params }: Props) {
+  const { slug } = await params;
+  const caseStudy = await getCaseStudy(slug);
+
+  if (!caseStudy) {
+    notFound();
+  }
+
+  // Build JSON-LD schema for this case study
+  const caseStudySchema = buildCaseStudy({
+    id: slug,
+    headline: caseStudy.title,
+    description: caseStudy.description,
+    content: caseStudy.content,
+    location: caseStudy.location,
+    projectType: caseStudy.projectType,
+    projectDate: new Date(caseStudy.projectDate),
+    squareFootage: caseStudy.squareFootage,
+    woodSpecies: caseStudy.woodSpecies,
+    finishType: caseStudy.finishType,
+    author: {
+      name: caseStudy.author || 'Mark Carelli',
+      title: caseStudy.authorTitle || 'Lead Architect',
+    },
+    publishedAt: new Date(caseStudy.publishedAt),
+    modifiedAt: caseStudy.modifiedAt ? new Date(caseStudy.modifiedAt) : undefined,
+    wordCount: caseStudy.wordCount,
+    challenges: caseStudy.challenges,
+    results: caseStudy.results,
+    testimonial: caseStudy.testimonial,
+    imageUrl: caseStudy.images?.[0],
+    siteUrl: SITE_URL,
+    topics: caseStudy.topics,
+  });
+
+  // Load all content for related content calculation
+  const allArticles = await getArticles();
+  const allCaseStudies = await getCaseStudies();
+
+  // Build content graph
+  const articleNodes = allArticles.map(articleToNode);
+  const caseStudyNodes = allCaseStudies.map(caseStudyToNode);
+  const allContentNodes = [...articleNodes, ...caseStudyNodes];
+
+  // Find related content (2–4 items)
+  const sourceNode = caseStudyToNode(caseStudy);
+  let relatedContent = findRelatedContent(sourceNode, allContentNodes, 4);
+
+  // Fallback to predefined relationships if topic matching returns < 2 results
+  if (relatedContent.length < 2) {
+    relatedContent = getFallbackRelated(slug, allContentNodes, 4);
+  }
+
+  return (
+    <>
+      {/* Inject CaseStudy JSON-LD schema */}
+      <SchemaScript schema={caseStudySchema} />
+
+      {/* Render case study with layout and related content */}
+      <CaseStudyLayout metadata={caseStudy} relatedContent={relatedContent}>
+        {caseStudy.content}
+      </CaseStudyLayout>
+    </>
+  );
+}
