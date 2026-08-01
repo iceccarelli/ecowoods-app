@@ -1,1 +1,86 @@
-/**\n * Schema utilities — safe serialization and injection helpers.\n */\n\n/**\n * Serialize a single schema object to JSON-LD string.\n * Safe for use in dangerouslySetInnerHTML.\n *\n * @param schema Any schema object\n * @returns JSON string safe for <script type=\"application/ld+json\">\n */\nexport function serializeSchema(schema: unknown): string {\n  try {\n    return JSON.stringify(schema);\n  } catch (error) {\n    console.error('Failed to serialize schema:', error, schema);\n    return '{}';\n  }\n}\n\n/**\n * Serialize multiple schemas into a single JSON-LD array.\n * When multiple schemas need to be in one <script> tag.\n *\n * @param schemas Array of schema objects\n * @returns JSON string with @graph array\n */\nexport function serializeSchemas(schemas: unknown[]): string {\n  try {\n    if (schemas.length === 0) return '{}';\n    if (schemas.length === 1) return JSON.stringify(schemas[0]);\n    // Multiple schemas: wrap in @graph\n    return JSON.stringify({\n      '@context': 'https://schema.org',\n      '@graph': schemas,\n    });\n  } catch (error) {\n    console.error('Failed to serialize schemas:', error);\n    return '{}';\n  }\n}\n\n/**\n * Validate schema has required fields.\n * Useful for development/testing.\n *\n * @param schema Schema to validate\n * @param requiredFields Fields that must exist\n * @returns true if valid\n */\nexport function validateSchema(\n  schema: Record<string, unknown>,\n  requiredFields: string[] = ['@context', '@type']\n): boolean {\n  return requiredFields.every((field) => field in schema && schema[field] !== undefined);\n}\n\n/**\n * Remove null/undefined values from schema for cleaner JSON output.\n * Recursively cleans nested objects.\n *\n * @param obj Object to clean\n * @returns Cleaned object\n */\nexport function cleanSchema(obj: unknown): unknown {\n  if (obj === null || obj === undefined) return undefined;\n\n  if (Array.isArray(obj)) {\n    return obj\n      .map((item) => cleanSchema(item))\n      .filter((item) => item !== undefined && item !== null);\n  }\n\n  if (typeof obj === 'object' && obj !== null) {\n    const cleaned: Record<string, unknown> = {};\n    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {\n      const cleanedValue = cleanSchema(value);\n      if (cleanedValue !== undefined && cleanedValue !== null) {\n        cleaned[key] = cleanedValue;\n      }\n    }\n    return Object.keys(cleaned).length > 0 ? cleaned : undefined;\n  }\n\n  return obj;\n}\n
+/**
+ * Schema utilities — safe serialization and injection helpers.
+ */
+
+/**
+ * Serialize a single schema object to JSON-LD string.
+ * Safe for use in dangerouslySetInnerHTML.
+ *
+ * @param schema Any schema object
+ * @returns JSON string safe for <script type=\"application/ld+json\">
+ */
+export function serializeSchema(schema: unknown): string {
+  try {
+    return JSON.stringify(schema);
+  } catch (error) {
+    console.error('Failed to serialize schema:', error, schema);
+    return '{}';
+  }
+}
+
+/**
+ * Serialize multiple schemas into a single JSON-LD array.
+ * When multiple schemas need to be in one <script> tag.
+ *
+ * @param schemas Array of schema objects
+ * @returns JSON string with @graph array
+ */
+export function serializeSchemas(schemas: unknown[]): string {
+  try {
+    if (schemas.length === 0) return '{}';
+    if (schemas.length === 1) return JSON.stringify(schemas[0]);
+    // Multiple schemas: wrap in @graph
+    return JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': schemas,
+    });
+  } catch (error) {
+    console.error('Failed to serialize schemas:', error);
+    return '{}';
+  }
+}
+
+/**
+ * Validate schema has required fields.
+ * Useful for development/testing.
+ *
+ * @param schema Schema to validate
+ * @param requiredFields Fields that must exist
+ * @returns true if valid
+ */
+export function validateSchema(
+  schema: Record<string, unknown>,
+  requiredFields: string[] = ['@context', '@type']
+): boolean {
+  return requiredFields.every((field) => field in schema && schema[field] !== undefined);
+}
+
+/**
+ * Remove null/undefined values from schema for cleaner JSON output.
+ * Recursively cleans nested objects.
+ *
+ * @param obj Object to clean
+ * @returns Cleaned object
+ */
+export function cleanSchema(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return undefined;
+
+  if (Array.isArray(obj)) {
+    return obj
+      .map((item) => cleanSchema(item))
+      .filter((item) => item !== undefined && item !== null);
+  }
+
+  if (typeof obj === 'object' && obj !== null) {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const cleanedValue = cleanSchema(value);
+      if (cleanedValue !== undefined && cleanedValue !== null) {
+        cleaned[key] = cleanedValue;
+      }
+    }
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  }
+
+  return obj;
+}

@@ -1,1 +1,118 @@
-/**\n * React components for injecting schemas into pages.\n * Use these in route components to add structured data for articles, case studies, etc.\n */\n\nimport { ReactNode } from 'react';\nimport { serializeSchema } from './utils';\nimport type {\n  Article,\n  CaseStudy,\n  Product,\n  BreadcrumbList,\n  FAQPage,\n} from './types';\n\n/**\n * SchemaScript — inject a single schema into <head>.\n * Use in route metadata or page component.\n */\nexport function SchemaScript({ schema }: { schema: unknown }): ReactNode {\n  return (\n    <script\n      type=\"application/ld+json\"\n      dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}\n      key=\"schema\"\n    />\n  );\n}\n\n/**\n * SchemaScripts — inject multiple schemas into <head>.\n */\nexport function SchemaScripts({ schemas }: { schemas: unknown[] }): ReactNode {\n  return (\n    <>\n      {schemas.map((schema, index) => (\n        <script\n          key={`schema-${index}`}\n          type=\"application/ld+json\"\n          dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}\n        />\n      ))}\n    </>\n  );\n}\n\n/**\n * ArticleHead — metadata + schema for blog articles.\n * Use in route metadata (generateMetadata in Next.js 13+).\n *\n * Example:\n *   export const metadata = articleHead({ headline: \"...\", slug: \"...\" });\n */\nexport function articleHead(config: {\n  headline: string;\n  slug: string;\n  description: string;\n  imageUrl?: string;\n  publishedAt: Date;\n}) {\n  return {\n    title: config.headline,\n    description: config.description,\n    ...(config.imageUrl && {\n      openGraph: {\n        title: config.headline,\n        description: config.description,\n        images: [{ url: config.imageUrl }],\n      },\n    }),\n  };\n}\n\n/**\n * CaseStudyHead — metadata + schema for case studies.\n */\nexport function caseStudyHead(config: {\n  headline: string;\n  slug: string;\n  description: string;\n  imageUrl?: string;\n  location: { city: string; province: string };\n}) {\n  return {\n    title: config.headline,\n    description: config.description,\n    ...(config.imageUrl && {\n      openGraph: {\n        title: config.headline,\n        description: config.description,\n        images: [{ url: config.imageUrl }],\n      },\n    }),\n  };\n}\n\n/**\n * ProductHead — metadata + schema for RaaS products.\n */\nexport function productHead(config: {\n  name: string;\n  slug: string;\n  description: string;\n  imageUrl?: string;\n}) {\n  return {\n    title: config.name,\n    description: config.description,\n    ...(config.imageUrl && {\n      openGraph: {\n        title: config.name,\n        description: config.description,\n        images: [{ url: config.imageUrl }],\n      },\n    }),\n  };\n}\n"
+/**
+ * React components for injecting schemas into pages.
+ * Use these in route components to add structured data for articles, case studies, etc.
+ */
+
+import { ReactNode } from 'react';
+import { serializeSchema } from './utils';
+import type {
+  Article,
+  CaseStudy,
+  Product,
+  BreadcrumbList,
+  FAQPage,
+} from './types';
+
+/**
+ * SchemaScript — inject a single schema into <head>.
+ * Use in route metadata or page component.
+ */
+export function SchemaScript({ schema }: { schema: unknown }): ReactNode {
+  return (
+    <script
+      type=\"application/ld+json\"
+      dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}
+      key=\"schema\"
+    />
+  );
+}
+
+/**
+ * SchemaScripts — inject multiple schemas into <head>.
+ */
+export function SchemaScripts({ schemas }: { schemas: unknown[] }): ReactNode {
+  return (
+    <>
+      {schemas.map((schema, index) => (
+        <script
+          key={`schema-${index}`}
+          type=\"application/ld+json\"
+          dangerouslySetInnerHTML={{ __html: serializeSchema(schema) }}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * ArticleHead — metadata + schema for blog articles.
+ * Use in route metadata (generateMetadata in Next.js 13+).
+ *
+ * Example:
+ *   export const metadata = articleHead({ headline: \"...\", slug: \"...\" });
+ */
+export function articleHead(config: {
+  headline: string;
+  slug: string;
+  description: string;
+  imageUrl?: string;
+  publishedAt: Date;
+}) {
+  return {
+    title: config.headline,
+    description: config.description,
+    ...(config.imageUrl && {
+      openGraph: {
+        title: config.headline,
+        description: config.description,
+        images: [{ url: config.imageUrl }],
+      },
+    }),
+  };
+}
+
+/**
+ * CaseStudyHead — metadata + schema for case studies.
+ */
+export function caseStudyHead(config: {
+  headline: string;
+  slug: string;
+  description: string;
+  imageUrl?: string;
+  location: { city: string; province: string };
+}) {
+  return {
+    title: config.headline,
+    description: config.description,
+    ...(config.imageUrl && {
+      openGraph: {
+        title: config.headline,
+        description: config.description,
+        images: [{ url: config.imageUrl }],
+      },
+    }),
+  };
+}
+
+/**
+ * ProductHead — metadata + schema for RaaS products.
+ */
+export function productHead(config: {
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl?: string;
+}) {
+  return {
+    title: config.name,
+    description: config.description,
+    ...(config.imageUrl && {
+      openGraph: {
+        title: config.name,
+        description: config.description,
+        images: [{ url: config.imageUrl }],
+      },
+    }),
+  };
+}
+"

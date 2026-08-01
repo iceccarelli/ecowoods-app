@@ -1,1 +1,84 @@
-/**\n * Case Study content types — proprietary engineering documentation for AI citation.\n */\n\nexport interface CaseStudyChallenge {\n  title: string;\n  description: string;\n  impact: string; // e.g., \"Risk of cupping if not addressed\"\n}\n\nexport interface CaseStudyResult {\n  metric: string;\n  value: string | number;\n  unit?: string; // e.g., \"% MC\", \"ft²\", \"hours\"\n  context?: string; // Additional explanation\n}\n\nexport interface CaseStudyMetadata {\n  slug: string;\n  title: string;\n  description: string; // Short summary (160 char max for SEO)\n  location: {\n    address: string;\n    city: string;\n    province: string;\n    coordinates?: {\n      latitude: number;\n      longitude: number;\n    };\n  };\n  projectDate: string; // ISO date string\n  publishedAt: string; // When case study was published\n  modifiedAt?: string;\n  squareFootage: number;\n  projectType: 'residential' | 'commercial' | 'renovation' | 'new-construction' | 'restoration';\n  substrateType: 'concrete' | 'plywood' | 'hardwood-subfloor' | 'radiant-heat' | 'mixed';\n  woodSpecies: string | string[]; // e.g., \"White Oak\" or [\"Oak\", \"Maple\"]\n  finishType: string; // e.g., \"Acrylic Polyurethane, 3 coats\"\n  installationDays: number;\n  cureDays: number;\n  initialMoistureReading?: number; // % MC\n  finalMoistureReading?: number; // % MC\n  subfloorMoistureReading?: number; // % MC (MVTR from calcium chloride test)\n  relativeHumidityRange?: {\n    min: number;\n    max: number;\n  };\n  challenges: CaseStudyChallenge[];\n  solution: string; // Detailed explanation of how problem was solved\n  results: CaseStudyResult[];\n  testimonial?: {\n    quote: string;\n    attribution: string; // \"John Smith, Homeowner\"\n  };\n  author: string;\n  authorTitle?: string;\n  images?: string[]; // Relative paths or URLs\n  keywords?: string;\n  semanticDensity?: number; // 1-10 self-assessment\n  topics?: string[];\n  relatedCaseStudies?: string[]; // Slugs\n  relatedArticles?: string[]; // Slugs to blog articles\n  published?: boolean; // default true\n  featured?: boolean;\n}\n\nexport interface CaseStudy extends CaseStudyMetadata {\n  content: string | React.ReactNode; // Rendered MDX content\n  wordCount: number;\n}\n\nexport interface CaseStudyListItem {\n  slug: string;\n  title: string;\n  description: string;\n  location: CaseStudyMetadata['location'];\n  projectType: string;\n  projectDate: string;\n  squareFootage: number;\n  woodSpecies: string | string[];\n  publishedAt: string;\n  featured: boolean;\n}\n"
+/**
+ * Case Study content types — proprietary engineering documentation for AI citation.
+ */
+
+export interface CaseStudyChallenge {
+  title: string;
+  description: string;
+  impact: string; // e.g., \"Risk of cupping if not addressed\"
+}
+
+export interface CaseStudyResult {
+  metric: string;
+  value: string | number;
+  unit?: string; // e.g., \"% MC\", \"ft²\", \"hours\"
+  context?: string; // Additional explanation
+}
+
+export interface CaseStudyMetadata {
+  slug: string;
+  title: string;
+  description: string; // Short summary (160 char max for SEO)
+  location: {
+    address: string;
+    city: string;
+    province: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  projectDate: string; // ISO date string
+  publishedAt: string; // When case study was published
+  modifiedAt?: string;
+  squareFootage: number;
+  projectType: 'residential' | 'commercial' | 'renovation' | 'new-construction' | 'restoration';
+  substrateType: 'concrete' | 'plywood' | 'hardwood-subfloor' | 'radiant-heat' | 'mixed';
+  woodSpecies: string | string[]; // e.g., \"White Oak\" or [\"Oak\", \"Maple\"]
+  finishType: string; // e.g., \"Acrylic Polyurethane, 3 coats\"
+  installationDays: number;
+  cureDays: number;
+  initialMoistureReading?: number; // % MC
+  finalMoistureReading?: number; // % MC
+  subfloorMoistureReading?: number; // % MC (MVTR from calcium chloride test)
+  relativeHumidityRange?: {
+    min: number;
+    max: number;
+  };
+  challenges: CaseStudyChallenge[];
+  solution: string; // Detailed explanation of how problem was solved
+  results: CaseStudyResult[];
+  testimonial?: {
+    quote: string;
+    attribution: string; // \"John Smith, Homeowner\"
+  };
+  author: string;
+  authorTitle?: string;
+  images?: string[]; // Relative paths or URLs
+  keywords?: string;
+  semanticDensity?: number; // 1-10 self-assessment
+  topics?: string[];
+  relatedCaseStudies?: string[]; // Slugs
+  relatedArticles?: string[]; // Slugs to blog articles
+  published?: boolean; // default true
+  featured?: boolean;
+}
+
+export interface CaseStudy extends CaseStudyMetadata {
+  content: string | React.ReactNode; // Rendered MDX content
+  wordCount: number;
+}
+
+export interface CaseStudyListItem {
+  slug: string;
+  title: string;
+  description: string;
+  location: CaseStudyMetadata['location'];
+  projectType: string;
+  projectDate: string;
+  squareFootage: number;
+  woodSpecies: string | string[];
+  publishedAt: string;
+  featured: boolean;
+}
+"

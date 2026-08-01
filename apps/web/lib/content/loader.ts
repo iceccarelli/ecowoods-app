@@ -1,1 +1,141 @@
-/**\n * Article loader — read frontmatter + content from .mdx files.\n * Uses gray-matter for YAML parsing.\n */\n\nimport { promises as fs } from 'fs';\nimport { join } from 'path';\nimport grayMatter from 'gray-matter';\nimport type { ArticleMetadata, Article, ArticleListItem } from './types';\n\nconst ARTICLES_DIR = join(process.cwd(), 'apps/web/content/articles');\n\n/**\n * Parse YAML frontmatter + MDX content from a file.\n */\nfunction parseArticleFile(filename: string, content: string): { metadata: ArticleMetadata; body: string } {\n  const { data, content: body } = grayMatter(content);\n\n  // Extract slug from filename (remove .mdx extension)\n  const slug = filename.replace(/\\.mdx$/, '');\n\n  // gray-matter parses hyphenated keys; handle both hyphenated and camelCase variants\n  const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];\n\n  // Count words for reading time calculation\n  const wordCount = getField('word-count', 'wordCount') ?? (body.match(/\\b\\w+\\b/g) || []).length;\n\n  // Merge parsed frontmatter with required fields\n  const metadata: ArticleMetadata = {\n    slug,\n    title: data.title || slug.replace(/-/g, ' '),\n    description: data.description || '',\n    author: data.author || 'Mark Carelli',\n    authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',\n    publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),\n    modifiedAt: getField('modified-at', 'modifiedAt'),\n    category: data.category,\n    tags: (data.tags as string[]) || [],\n    keywords: data.keywords || '',\n    image: data.image,\n    wordCount: wordCount as number,\n    readingTimeMinutes: getField('reading-time-minutes', 'readingTimeMinutes') ?? Math.ceil((wordCount as number) / 200),\n    semanticDensity: getField('semantic-density', 'semanticDensity'),\n    topics: (data.topics as string[]) || [],\n    relatedArticles: getField('related-articles', 'relatedArticles') || [],\n    published: data.published !== false, // default true\n    featured: data.featured || false,\n  };\n\n  return { metadata, body };\n}\n\n/**\n * Read a single article by slug.\n */\nexport async function getArticle(slug: string): Promise<Article | null> {\n  try {\n    const filepath = join(ARTICLES_DIR, `${slug}.mdx`);\n    const content = await fs.readFile(filepath, 'utf-8');\n    const { metadata, body } = parseArticleFile(`${slug}.mdx`, content);\n\n    if (!metadata.published) return null; // Hide unpublished articles\n\n    return {\n      ...metadata,\n      content: body,\n    };\n  } catch (error) {\n    console.error(`Failed to load article ${slug}:`, error);\n    return null;\n  }\n}\n\n/**\n * List all published articles, sorted by date (newest first).\n */\nexport async function getArticles(options?: { category?: string; featured?: boolean }): Promise<ArticleListItem[]> {\n  try {\n    const files = await fs.readdir(ARTICLES_DIR);\n    const mdxFiles = files.filter((f) => f.endsWith('.mdx'));\n\n    const articles: ArticleListItem[] = [];\n\n    for (const filename of mdxFiles) {\n      const filepath = join(ARTICLES_DIR, filename);\n      const content = await fs.readFile(filepath, 'utf-8');\n      const { metadata } = parseArticleFile(filename, content);\n\n      if (!metadata.published) continue; // Skip unpublished\n\n      if (options?.category && metadata.category !== options.category) continue;\n      if (options?.featured !== undefined && metadata.featured !== options.featured) continue;\n\n      articles.push({\n        slug: metadata.slug,\n        title: metadata.title,\n        description: metadata.description,\n        category: metadata.category,\n        publishedAt: metadata.publishedAt,\n        image: metadata.image,\n        readingTimeMinutes: metadata.readingTimeMinutes,\n        featured: metadata.featured,\n      });\n    }\n\n    // Sort: featured first (by date desc), then all by date desc\n    articles.sort((a, b) => {\n      if (a.featured !== b.featured) {\n        return a.featured ? -1 : 1;\n      }\n      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();\n    });\n\n    return articles;\n  } catch (error) {\n    console.error('Failed to list articles:', error);\n    return [];\n  }\n}\n\n/**\n * Get article metadata for a slug, or null if not found/not published.\n */\nexport async function getArticleForSEO(slug: string): Promise<ArticleMetadata | null> {\n  const article = await getArticle(slug);\n  return article || null;\n}\n\n/**\n * Get all article slugs (for sitemap generation, etc.)\n */\nexport async function getAllArticleSlugs(): Promise<string[]> {\n  try {\n    const files = await fs.readdir(ARTICLES_DIR);\n    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));\n  } catch (error) {\n    console.error('Failed to list article slugs:', error);\n    return [];\n  }\n}\n"
+/**
+ * Article loader — read frontmatter + content from .mdx files.
+ * Uses gray-matter for YAML parsing.
+ */
+
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import grayMatter from 'gray-matter';
+import type { ArticleMetadata, Article, ArticleListItem } from './types';
+
+const ARTICLES_DIR = join(process.cwd(), 'apps/web/content/articles');
+
+/**
+ * Parse YAML frontmatter + MDX content from a file.
+ */
+function parseArticleFile(filename: string, content: string): { metadata: ArticleMetadata; body: string } {
+  const { data, content: body } = grayMatter(content);
+
+  // Extract slug from filename (remove .mdx extension)
+  const slug = filename.replace(/\\.mdx$/, '');
+
+  // gray-matter parses hyphenated keys; handle both hyphenated and camelCase variants
+  const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
+
+  // Count words for reading time calculation
+  const wordCount = getField('word-count', 'wordCount') ?? (body.match(/\\b\\w+\\b/g) || []).length;
+
+  // Merge parsed frontmatter with required fields
+  const metadata: ArticleMetadata = {
+    slug,
+    title: data.title || slug.replace(/-/g, ' '),
+    description: data.description || '',
+    author: data.author || 'Mark Carelli',
+    authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
+    publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),
+    modifiedAt: getField('modified-at', 'modifiedAt'),
+    category: data.category,
+    tags: (data.tags as string[]) || [],
+    keywords: data.keywords || '',
+    image: data.image,
+    wordCount: wordCount as number,
+    readingTimeMinutes: getField('reading-time-minutes', 'readingTimeMinutes') ?? Math.ceil((wordCount as number) / 200),
+    semanticDensity: getField('semantic-density', 'semanticDensity'),
+    topics: (data.topics as string[]) || [],
+    relatedArticles: getField('related-articles', 'relatedArticles') || [],
+    published: data.published !== false, // default true
+    featured: data.featured || false,
+  };
+
+  return { metadata, body };
+}
+
+/**
+ * Read a single article by slug.
+ */
+export async function getArticle(slug: string): Promise<Article | null> {
+  try {
+    const filepath = join(ARTICLES_DIR, `${slug}.mdx`);
+    const content = await fs.readFile(filepath, 'utf-8');
+    const { metadata, body } = parseArticleFile(`${slug}.mdx`, content);
+
+    if (!metadata.published) return null; // Hide unpublished articles
+
+    return {
+      ...metadata,
+      content: body,
+    };
+  } catch (error) {
+    console.error(`Failed to load article ${slug}:`, error);
+    return null;
+  }
+}
+
+/**
+ * List all published articles, sorted by date (newest first).
+ */
+export async function getArticles(options?: { category?: string; featured?: boolean }): Promise<ArticleListItem[]> {
+  try {
+    const files = await fs.readdir(ARTICLES_DIR);
+    const mdxFiles = files.filter((f) => f.endsWith('.mdx'));
+
+    const articles: ArticleListItem[] = [];
+
+    for (const filename of mdxFiles) {
+      const filepath = join(ARTICLES_DIR, filename);
+      const content = await fs.readFile(filepath, 'utf-8');
+      const { metadata } = parseArticleFile(filename, content);
+
+      if (!metadata.published) continue; // Skip unpublished
+
+      if (options?.category && metadata.category !== options.category) continue;
+      if (options?.featured !== undefined && metadata.featured !== options.featured) continue;
+
+      articles.push({
+        slug: metadata.slug,
+        title: metadata.title,
+        description: metadata.description,
+        category: metadata.category,
+        publishedAt: metadata.publishedAt,
+        image: metadata.image,
+        readingTimeMinutes: metadata.readingTimeMinutes,
+        featured: metadata.featured,
+      });
+    }
+
+    // Sort: featured first (by date desc), then all by date desc
+    articles.sort((a, b) => {
+      if (a.featured !== b.featured) {
+        return a.featured ? -1 : 1;
+      }
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
+
+    return articles;
+  } catch (error) {
+    console.error('Failed to list articles:', error);
+    return [];
+  }
+}
+
+/**
+ * Get article metadata for a slug, or null if not found/not published.
+ */
+export async function getArticleForSEO(slug: string): Promise<ArticleMetadata | null> {
+  const article = await getArticle(slug);
+  return article || null;
+}
+
+/**
+ * Get all article slugs (for sitemap generation, etc.)
+ */
+export async function getAllArticleSlugs(): Promise<string[]> {
+  try {
+    const files = await fs.readdir(ARTICLES_DIR);
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+  } catch (error) {
+    console.error('Failed to list article slugs:', error);
+    return [];
+  }
+}
+"

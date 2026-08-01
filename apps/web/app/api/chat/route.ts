@@ -225,7 +225,9 @@ export async function POST(req: Request) {
       try {
         for await (const chunk of result.textStream) controller.enqueue(encoder.encode(chunk));
       } catch {
-        controller.enqueue(encoder.encode('\n\n(Sorry — something interrupted that. Please try again or call (647) 244-5156.)'));
+        controller.enqueue(encoder.encode('
+
+(Sorry — something interrupted that. Please try again or call (647) 244-5156.)'));
       }
       controller.close();
     },

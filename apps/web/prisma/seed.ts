@@ -17,7 +17,8 @@ import bcrypt from 'bcryptjs';
 const db = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Ecowoods database...\n');
+  console.log('🌱 Seeding Ecowoods database...
+');
 
   // ── Wipe in dependency order ─────────────────────────────────────────
   await db.payment.deleteMany();
@@ -494,7 +495,9 @@ Mike @ Ecowoods`,
   console.log('  ✓ Inquiries created (2)');
 
   // ── Summary ───────────────────────────────────────────────────────────
-  console.log('\n✅ Seed complete!\n');
+  console.log('
+✅ Seed complete!
+');
   console.log('─────────────────────────────────────────');
   console.log('  Admin login:');
   console.log('    Email: admin@ecowoods.ca');
@@ -504,7 +507,8 @@ Mike @ Ecowoods`,
   console.log('    Email: sarah.miller@gmail.com / Customer2026!');
   console.log('    Email: david.kim@outlook.com  / Customer2026!');
   console.log('    Email: priya.tomas@gmail.com  / Customer2026!');
-  console.log('─────────────────────────────────────────\n');
+  console.log('─────────────────────────────────────────
+');
 }
 
 main()

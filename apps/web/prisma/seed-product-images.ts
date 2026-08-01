@@ -58,7 +58,8 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('🖼️  Enriching accessory products with Unsplash photos...\n');
+  console.log('🖼️  Enriching accessory products with Unsplash photos...
+');
 
   const accessories = await db.product.findMany({
     where: { category: 'ACCESSORY', ...(force ? {} : { imageUrl: null }) },
@@ -87,7 +88,9 @@ async function main() {
     }
   }
 
-  console.log('\n✅ Accessory image enrichment complete!\n');
+  console.log('
+✅ Accessory image enrichment complete!
+');
 }
 
 main()

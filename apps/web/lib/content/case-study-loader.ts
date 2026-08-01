@@ -1,1 +1,173 @@
-/**\n * Case Study loader — read frontmatter + content from .mdx files.\n * Similar to article loader, but for engineering case studies.\n */\n\nimport { promises as fs } from 'fs';\nimport { join } from 'path';\nimport grayMatter from 'gray-matter';\nimport type { CaseStudyMetadata, CaseStudy, CaseStudyListItem, CaseStudyChallenge, CaseStudyResult } from './case-study-types';\n\nconst CASE_STUDIES_DIR = join(process.cwd(), 'apps/web/content/case-studies');\n\n/**\n * Parse YAML frontmatter + MDX content from a case study file.\n */\nfunction parseCaseStudyFile(\n  filename: string,\n  content: string,\n): { metadata: CaseStudyMetadata; body: string } {\n  const { data, content: body } = grayMatter(content);\n\n  // Extract slug from filename (remove .mdx extension)\n  const slug = filename.replace(/\\.mdx$/, '');\n\n  // Helper to get field (handles hyphenated and camelCase)\n  const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];\n\n  // Count words for reading time\n  const wordCount = getField('word-count', 'wordCount') ?? (body.match(/\\b\\w+\\b/g) || []).length;\n\n  // Parse challenges array\n  const challenges = (data.challenges as CaseStudyChallenge[]) || [];\n\n  // Parse results array\n  const results = (data.results as CaseStudyResult[]) || [];\n\n  // Parse location object\n  const location = data.location || {\n    address: '',\n    city: 'Toronto',\n    province: 'ON',\n  };\n\n  // Parse relative humidity range\n  const relativeHumidityRange = data['relative-humidity-range'] || getField('relative-humidity-range', 'relativeHumidityRange');\n\n  // Merge parsed frontmatter with required fields\n  const metadata: CaseStudyMetadata = {\n    slug,\n    title: data.title || slug.replace(/-/g, ' '),\n    description: data.description || '',\n    location: typeof location === 'object' ? location : { address: '', city: 'Toronto', province: 'ON' },\n    projectDate: getField('project-date', 'projectDate') || new Date().toISOString(),\n    publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),\n    modifiedAt: getField('modified-at', 'modifiedAt'),\n    squareFootage: data['square-footage'] ?? data.squareFootage ?? 0,\n    projectType: data['project-type'] ?? data.projectType ?? 'residential',\n    substrateType: data['substrate-type'] ?? data.substrateType ?? 'concrete',\n    woodSpecies: data['wood-species'] ?? data.woodSpecies ?? '',\n    finishType: data['finish-type'] ?? data.finishType ?? '',\n    installationDays: data['installation-days'] ?? data.installationDays ?? 0,\n    cureDays: data['cure-days'] ?? data.cureDays ?? 0,\n    initialMoistureReading: data['initial-moisture-reading'] ?? data.initialMoistureReading,\n    finalMoistureReading: data['final-moisture-reading'] ?? data.finalMoistureReading,\n    subfloorMoistureReading: data['subfloor-moisture-reading'] ?? data.subfloorMoistureReading,\n    relativeHumidityRange,\n    challenges,\n    solution: data.solution || '',\n    results,\n    testimonial: data.testimonial,\n    author: data.author || 'Mark Carelli',\n    authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',\n    images: (data.images as string[]) || [],\n    keywords: data.keywords || '',\n    semanticDensity: getField('semantic-density', 'semanticDensity'),\n    topics: (data.topics as string[]) || [],\n    relatedCaseStudies: getField('related-case-studies', 'relatedCaseStudies') || [],\n    relatedArticles: getField('related-articles', 'relatedArticles') || [],\n    published: data.published !== false, // default true\n    featured: data.featured || false,\n  };\n\n  return { metadata, body };\n}\n\n/**\n * Read a single case study by slug.\n */\nexport async function getCaseStudy(slug: string): Promise<CaseStudy | null> {\n  try {\n    const filepath = join(CASE_STUDIES_DIR, `${slug}.mdx`);\n    const content = await fs.readFile(filepath, 'utf-8');\n    const { metadata, body } = parseCaseStudyFile(`${slug}.mdx`, content);\n\n    if (!metadata.published) return null; // Hide unpublished\n\n    return {\n      ...metadata,\n      content: body,\n      wordCount: (body.match(/\\b\\w+\\b/g) || []).length,\n    };\n  } catch (error) {\n    console.error(`Failed to load case study ${slug}:`, error);\n    return null;\n  }\n}\n\n/**\n * List all published case studies, sorted by date (newest first).\n * Optional filtering by project type.\n */\nexport async function getCaseStudies(options?: {\n  projectType?: string;\n  featured?: boolean;\n}): Promise<CaseStudyListItem[]> {\n  try {\n    const files = await fs.readdir(CASE_STUDIES_DIR);\n    const mdxFiles = files.filter((f) => f.endsWith('.mdx'));\n\n    const caseStudies: CaseStudyListItem[] = [];\n\n    for (const filename of mdxFiles) {\n      const filepath = join(CASE_STUDIES_DIR, filename);\n      const content = await fs.readFile(filepath, 'utf-8');\n      const { metadata } = parseCaseStudyFile(filename, content);\n\n      if (!metadata.published) continue; // Skip unpublished\n\n      if (options?.projectType && metadata.projectType !== options.projectType) continue;\n      if (options?.featured !== undefined && metadata.featured !== options.featured) continue;\n\n      caseStudies.push({\n        slug: metadata.slug,\n        title: metadata.title,\n        description: metadata.description,\n        location: metadata.location,\n        projectType: metadata.projectType,\n        projectDate: metadata.projectDate,\n        squareFootage: metadata.squareFootage,\n        woodSpecies: metadata.woodSpecies,\n        publishedAt: metadata.publishedAt,\n        featured: metadata.featured,\n      });\n    }\n\n    // Sort: featured first (by date desc), then all by date desc\n    caseStudies.sort((a, b) => {\n      if (a.featured !== b.featured) {\n        return a.featured ? -1 : 1;\n      }\n      return new Date(b.projectDate).getTime() - new Date(a.projectDate).getTime();\n    });\n\n    return caseStudies;\n  } catch (error) {\n    console.error('Failed to list case studies:', error);\n    return [];\n  }\n}\n\n/**\n * Get all case study slugs (for sitemap generation, static params, etc.)\n */\nexport async function getAllCaseStudySlugs(): Promise<string[]> {\n  try {\n    const files = await fs.readdir(CASE_STUDIES_DIR);\n    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));\n  } catch (error) {\n    console.error('Failed to list case study slugs:', error);\n    return [];\n  }\n}\n"
+/**
+ * Case Study loader — read frontmatter + content from .mdx files.
+ * Similar to article loader, but for engineering case studies.
+ */
+
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import grayMatter from 'gray-matter';
+import type { CaseStudyMetadata, CaseStudy, CaseStudyListItem, CaseStudyChallenge, CaseStudyResult } from './case-study-types';
+
+const CASE_STUDIES_DIR = join(process.cwd(), 'apps/web/content/case-studies');
+
+/**
+ * Parse YAML frontmatter + MDX content from a case study file.
+ */
+function parseCaseStudyFile(
+  filename: string,
+  content: string,
+): { metadata: CaseStudyMetadata; body: string } {
+  const { data, content: body } = grayMatter(content);
+
+  // Extract slug from filename (remove .mdx extension)
+  const slug = filename.replace(/\\.mdx$/, '');
+
+  // Helper to get field (handles hyphenated and camelCase)
+  const getField = (hyphenated: string, camelCase: string) => data[hyphenated] ?? data[camelCase];
+
+  // Count words for reading time
+  const wordCount = getField('word-count', 'wordCount') ?? (body.match(/\\b\\w+\\b/g) || []).length;
+
+  // Parse challenges array
+  const challenges = (data.challenges as CaseStudyChallenge[]) || [];
+
+  // Parse results array
+  const results = (data.results as CaseStudyResult[]) || [];
+
+  // Parse location object
+  const location = data.location || {
+    address: '',
+    city: 'Toronto',
+    province: 'ON',
+  };
+
+  // Parse relative humidity range
+  const relativeHumidityRange = data['relative-humidity-range'] || getField('relative-humidity-range', 'relativeHumidityRange');
+
+  // Merge parsed frontmatter with required fields
+  const metadata: CaseStudyMetadata = {
+    slug,
+    title: data.title || slug.replace(/-/g, ' '),
+    description: data.description || '',
+    location: typeof location === 'object' ? location : { address: '', city: 'Toronto', province: 'ON' },
+    projectDate: getField('project-date', 'projectDate') || new Date().toISOString(),
+    publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),
+    modifiedAt: getField('modified-at', 'modifiedAt'),
+    squareFootage: data['square-footage'] ?? data.squareFootage ?? 0,
+    projectType: data['project-type'] ?? data.projectType ?? 'residential',
+    substrateType: data['substrate-type'] ?? data.substrateType ?? 'concrete',
+    woodSpecies: data['wood-species'] ?? data.woodSpecies ?? '',
+    finishType: data['finish-type'] ?? data.finishType ?? '',
+    installationDays: data['installation-days'] ?? data.installationDays ?? 0,
+    cureDays: data['cure-days'] ?? data.cureDays ?? 0,
+    initialMoistureReading: data['initial-moisture-reading'] ?? data.initialMoistureReading,
+    finalMoistureReading: data['final-moisture-reading'] ?? data.finalMoistureReading,
+    subfloorMoistureReading: data['subfloor-moisture-reading'] ?? data.subfloorMoistureReading,
+    relativeHumidityRange,
+    challenges,
+    solution: data.solution || '',
+    results,
+    testimonial: data.testimonial,
+    author: data.author || 'Mark Carelli',
+    authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
+    images: (data.images as string[]) || [],
+    keywords: data.keywords || '',
+    semanticDensity: getField('semantic-density', 'semanticDensity'),
+    topics: (data.topics as string[]) || [],
+    relatedCaseStudies: getField('related-case-studies', 'relatedCaseStudies') || [],
+    relatedArticles: getField('related-articles', 'relatedArticles') || [],
+    published: data.published !== false, // default true
+    featured: data.featured || false,
+  };
+
+  return { metadata, body };
+}
+
+/**
+ * Read a single case study by slug.
+ */
+export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
+  try {
+    const filepath = join(CASE_STUDIES_DIR, `${slug}.mdx`);
+    const content = await fs.readFile(filepath, 'utf-8');
+    const { metadata, body } = parseCaseStudyFile(`${slug}.mdx`, content);
+
+    if (!metadata.published) return null; // Hide unpublished
+
+    return {
+      ...metadata,
+      content: body,
+      wordCount: (body.match(/\\b\\w+\\b/g) || []).length,
+    };
+  } catch (error) {
+    console.error(`Failed to load case study ${slug}:`, error);
+    return null;
+  }
+}
+
+/**
+ * List all published case studies, sorted by date (newest first).
+ * Optional filtering by project type.
+ */
+export async function getCaseStudies(options?: {
+  projectType?: string;
+  featured?: boolean;
+}): Promise<CaseStudyListItem[]> {
+  try {
+    const files = await fs.readdir(CASE_STUDIES_DIR);
+    const mdxFiles = files.filter((f) => f.endsWith('.mdx'));
+
+    const caseStudies: CaseStudyListItem[] = [];
+
+    for (const filename of mdxFiles) {
+      const filepath = join(CASE_STUDIES_DIR, filename);
+      const content = await fs.readFile(filepath, 'utf-8');
+      const { metadata } = parseCaseStudyFile(filename, content);
+
+      if (!metadata.published) continue; // Skip unpublished
+
+      if (options?.projectType && metadata.projectType !== options.projectType) continue;
+      if (options?.featured !== undefined && metadata.featured !== options.featured) continue;
+
+      caseStudies.push({
+        slug: metadata.slug,
+        title: metadata.title,
+        description: metadata.description,
+        location: metadata.location,
+        projectType: metadata.projectType,
+        projectDate: metadata.projectDate,
+        squareFootage: metadata.squareFootage,
+        woodSpecies: metadata.woodSpecies,
+        publishedAt: metadata.publishedAt,
+        featured: metadata.featured,
+      });
+    }
+
+    // Sort: featured first (by date desc), then all by date desc
+    caseStudies.sort((a, b) => {
+      if (a.featured !== b.featured) {
+        return a.featured ? -1 : 1;
+      }
+      return new Date(b.projectDate).getTime() - new Date(a.projectDate).getTime();
+    });
+
+    return caseStudies;
+  } catch (error) {
+    console.error('Failed to list case studies:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all case study slugs (for sitemap generation, static params, etc.)
+ */
+export async function getAllCaseStudySlugs(): Promise<string[]> {
+  try {
+    const files = await fs.readdir(CASE_STUDIES_DIR);
+    return files.filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\\.mdx$/, ''));
+  } catch (error) {
+    console.error('Failed to list case study slugs:', error);
+    return [];
+  }
+}
+"

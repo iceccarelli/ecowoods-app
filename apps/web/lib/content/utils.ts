@@ -1,1 +1,51 @@
-/**\n * Article utilities — formatting, date handling, etc.\n */\n\n/**\n * Format a date string to readable format (e.g., \"July 31, 2026\").\n */\nexport function formatDate(isoString: string): string {\n  const date = new Date(isoString);\n  return new Intl.DateTimeFormat('en-CA', {\n    year: 'numeric',\n    month: 'long',\n    day: 'numeric',\n  }).format(date);\n}\n\n/**\n * Calculate reading time in minutes based on word count.\n * Average reader: ~200 words per minute.\n */\nexport function calculateReadingTime(wordCount: number): number {\n  return Math.ceil(wordCount / 200);\n}\n\n/**\n * Count words in text content.\n */\nexport function countWords(text: string): number {\n  return (text.match(/\\b\\w+\\b/g) || []).length;\n}\n\n/**\n * Generate a URL-safe slug from a string.\n */\nexport function slugify(text: string): string {\n  return text\n    .toLowerCase()\n    .trim()\n    .replace(/[^\\w\\s-]/g, '')\n    .replace(/\\s+/g, '-')\n    .replace(/-+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n\n/**\n * Generate SEO description (first 160 characters of content).\n */\nexport function generateSEODescription(content: string, length: number = 160): string {\n  return content.slice(0, length).trim() + (content.length > length ? '...' : '');\n}\n"
+/**
+ * Article utilities — formatting, date handling, etc.
+ */
+
+/**
+ * Format a date string to readable format (e.g., \"July 31, 2026\").
+ */
+export function formatDate(isoString: string): string {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}
+
+/**
+ * Calculate reading time in minutes based on word count.
+ * Average reader: ~200 words per minute.
+ */
+export function calculateReadingTime(wordCount: number): number {
+  return Math.ceil(wordCount / 200);
+}
+
+/**
+ * Count words in text content.
+ */
+export function countWords(text: string): number {
+  return (text.match(/\\b\\w+\\b/g) || []).length;
+}
+
+/**
+ * Generate a URL-safe slug from a string.
+ */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\\w\\s-]/g, '')
+    .replace(/\\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Generate SEO description (first 160 characters of content).
+ */
+export function generateSEODescription(content: string, length: number = 160): string {
+  return content.slice(0, length).trim() + (content.length > length ? '...' : '');
+}
+"

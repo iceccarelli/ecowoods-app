@@ -1,1 +1,77 @@
-/**\n * Article content types and metadata.\n * Every article has frontmatter defining its identity, SEO properties, and schema.\n */\n\nexport interface ArticleMetadata {\n  /** Unique article slug (matches filename) */\n  slug: string;\n\n  /** Article title (H1) */\n  title: string;\n\n  /** Short description for previews and meta tags */\n  description: string;\n\n  /** Author name (default: Mark Carelli) */\n  author?: string;\n\n  /** Author title/role (default: Lead Architect) */\n  authorTitle?: string;\n\n  /** Publication date (ISO 8601) */\n  publishedAt: string;\n\n  /** Last update date (ISO 8601, optional) */\n  modifiedAt?: string;\n\n  /** Article category (for organization) */\n  category?: 'hardwood-science' | 'installation' | 'maintenance' | 'toronto-climate' | 'species-guide' | 'raas-products';\n\n  /** Tags for semantic linking and search */\n  tags?: string[];\n\n  /** SEO keywords (comma-separated) */\n  keywords?: string;\n\n  /** Feature image URL */\n  image?: string;\n\n  /** Approximate word count (for reading time) */\n  wordCount?: number;\n\n  /** Estimated reading time in minutes */\n  readingTimeMinutes?: number;\n\n  /** Semantic density self-assessment (for internal QA) */\n  semanticDensity?: number; // 1-10, target 8+\n\n  /** Primary and secondary topics for entity linking */\n  topics?: string[];\n\n  /** Related articles (by slug) for internal linking */\n  relatedArticles?: string[];\n\n  /** Whether article is published (hidden if false) */\n  published?: boolean;\n\n  /** Pinned/featured articles appear at top of blog list */\n  featured?: boolean;\n}\n\nexport interface Article extends ArticleMetadata {\n  /** Full HTML/MDX content */\n  content: string;\n}\n\nexport interface ArticleListItem {\n  slug: string;\n  title: string;\n  description: string;\n  category?: ArticleMetadata['category'];\n  publishedAt: string;\n  image?: string;\n  readingTimeMinutes?: number;\n  featured?: boolean;\n}\n"
+/**
+ * Article content types and metadata.
+ * Every article has frontmatter defining its identity, SEO properties, and schema.
+ */
+
+export interface ArticleMetadata {
+  /** Unique article slug (matches filename) */
+  slug: string;
+
+  /** Article title (H1) */
+  title: string;
+
+  /** Short description for previews and meta tags */
+  description: string;
+
+  /** Author name (default: Mark Carelli) */
+  author?: string;
+
+  /** Author title/role (default: Lead Architect) */
+  authorTitle?: string;
+
+  /** Publication date (ISO 8601) */
+  publishedAt: string;
+
+  /** Last update date (ISO 8601, optional) */
+  modifiedAt?: string;
+
+  /** Article category (for organization) */
+  category?: 'hardwood-science' | 'installation' | 'maintenance' | 'toronto-climate' | 'species-guide' | 'raas-products';
+
+  /** Tags for semantic linking and search */
+  tags?: string[];
+
+  /** SEO keywords (comma-separated) */
+  keywords?: string;
+
+  /** Feature image URL */
+  image?: string;
+
+  /** Approximate word count (for reading time) */
+  wordCount?: number;
+
+  /** Estimated reading time in minutes */
+  readingTimeMinutes?: number;
+
+  /** Semantic density self-assessment (for internal QA) */
+  semanticDensity?: number; // 1-10, target 8+
+
+  /** Primary and secondary topics for entity linking */
+  topics?: string[];
+
+  /** Related articles (by slug) for internal linking */
+  relatedArticles?: string[];
+
+  /** Whether article is published (hidden if false) */
+  published?: boolean;
+
+  /** Pinned/featured articles appear at top of blog list */
+  featured?: boolean;
+}
+
+export interface Article extends ArticleMetadata {
+  /** Full HTML/MDX content */
+  content: string;
+}
+
+export interface ArticleListItem {
+  slug: string;
+  title: string;
+  description: string;
+  category?: ArticleMetadata['category'];
+  publishedAt: string;
+  image?: string;
+  readingTimeMinutes?: number;
+  featured?: boolean;
+}
+"

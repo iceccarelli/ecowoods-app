@@ -168,18 +168,42 @@ export const CONTENT_RELATIONSHIPS: Record<string, string[]> = {
     'wood-acclimation-timeline-toronto-gta',
   ],
 
-  // Case Studies
+  // Case Studies (Phase 1 & 3)
   'distillery-district-victorian-condo': [
     'subfloor-moisture-testing-protocol',
     'white-oak-vs-red-oak-tannin-behavior',
     'species-comparison-matrix-toronto-renovations',
     'dust-free-sanding-hepa-extraction-explained',
+    'yorkville-loft-basement-conversion-moisture-mitigation',
   ],
   'rosedale-estate-stairs-radiant-heat': [
     'subfloor-moisture-testing-protocol',
     'wood-acclimation-timeline-toronto-gta',
     'dust-free-sanding-hepa-extraction-explained',
     'water-based-vs-oil-based-polyurethane-chemistry',
+    'midtown-townhouse-three-level-transition',
+  ],
+
+  // Case Studies (Phase 3 Expansion)
+  'yorkville-loft-basement-conversion-moisture-mitigation': [
+    'subfloor-moisture-testing-protocol',
+    'wood-acclimation-timeline-toronto-gta',
+    'species-comparison-matrix-toronto-renovations',
+    'distillery-district-victorian-condo',
+  ],
+  'midtown-townhouse-three-level-transition': [
+    'subfloor-moisture-testing-protocol',
+    'wood-acclimation-timeline-toronto-gta',
+    'white-oak-vs-red-oak-tannin-behavior',
+    'species-comparison-matrix-toronto-renovations',
+    'water-based-vs-oil-based-polyurethane-chemistry',
+    'rosedale-estate-stairs-radiant-heat',
+  ],
+  'forest-hill-walnut-wide-plank-color-stability': [
+    'water-based-vs-oil-based-polyurethane-chemistry',
+    'species-comparison-matrix-toronto-renovations',
+    'dust-free-sanding-hepa-extraction-explained',
+    'distillery-district-victorian-condo',
   ],
 };
 

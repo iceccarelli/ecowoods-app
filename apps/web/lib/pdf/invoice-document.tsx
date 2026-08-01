@@ -373,8 +373,10 @@ export function InvoiceDocument({
           <View style={styles.paySection}>
             <Text style={styles.payLabel}>Payment Instructions</Text>
             <Text style={styles.payText}>
-              Pay online at: ecowoods.ca/mypage/invoices{'\n'}
-              Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number ?? ''}){'\n'}
+              Pay online at: ecowoods.ca/mypage/invoices{'
+'}
+              Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number ?? ''}){'
+'}
               Questions? Call (416) 249-1276 or email {settings.companyEmail ?? ''}
             </Text>
           </View>
@@ -384,10 +386,12 @@ export function InvoiceDocument({
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
             {settings.companyName ?? ''} · {settings.companyAddress ?? ''}
-            {settings.companyNumberHst ? `\nHST Registration #: ${settings.companyNumberHst}` : ''}
+            {settings.companyNumberHst ? `
+HST Registration #: ${settings.companyNumberHst}` : ''}
           </Text>
           <Text style={styles.footerText}>
-            Invoice #{invoice.number ?? ''} · Page 1{'\n'}
+            Invoice #{invoice.number ?? ''} · Page 1{'
+'}
             Generated {format(new Date(), 'MMMM d, yyyy')}
           </Text>
         </View>

@@ -179,7 +179,15 @@ export async function sendEstimateEmail(quoteId: string) {
         </div>
       </div>
     `,
-    text: `Hi ${quote.name},\n\nYour Ecowoods estimate is ready.\nTotal: ${totalFormatted} CAD\n\nView online: ${viewUrl}\nDownload PDF: ${pdfUrl}\n\nTo proceed, reply to this email or call ${settings?.companyPhone ?? '(416) 249-1276'}.`,
+    text: `Hi ${quote.name},
+
+Your Ecowoods estimate is ready.
+Total: ${totalFormatted} CAD
+
+View online: ${viewUrl}
+Download PDF: ${pdfUrl}
+
+To proceed, reply to this email or call ${settings?.companyPhone ?? '(416) 249-1276'}.`,
   });
 
   await db.quoteRequest.update({

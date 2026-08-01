@@ -24,7 +24,8 @@ export function GET() {
   lines.push('');
   lines.push('## Service areas');
   lines.push(CITIES.map((c) => c.name).join(', ') + '.');
-  lines.push(CITIES.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`).join('\n'));
+  lines.push(CITIES.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`).join('
+'));
   lines.push('');
   lines.push('## Key pages');
   lines.push(`- Home: ${SITE_URL}`);
@@ -35,7 +36,8 @@ export function GET() {
   lines.push('');
   lines.push('## FAQ');
   for (const f of FAQ_ITEMS) { lines.push(`### ${f.q}`); lines.push(f.a); lines.push(''); }
-  return new Response(lines.join('\n'), {
+  return new Response(lines.join('
+'), {
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
   });
 }

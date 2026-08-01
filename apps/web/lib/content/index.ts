@@ -1,1 +1,13 @@
-/**\n * Content module — articles, case studies, blog, publishing.\n * Clean public API for content management.\n */\n\n// Articles\nexport * from './types';\nexport * from './loader';\nexport * from './utils';\n\n// Case Studies\nexport * from './case-study-types';\nexport * from './case-study-loader';\n
+/**
+ * Content module — articles, case studies, blog, publishing.
+ * Clean public API for content management.
+ */
+
+// Articles
+export * from './types';
+export * from './loader';
+export * from './utils';
+
+// Case Studies
+export * from './case-study-types';
+export * from './case-study-loader';

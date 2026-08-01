@@ -132,7 +132,11 @@ Keep it under 200 words. Be specific and helpful.`,
     temperature: 0.65,
   });
 
-  return completion.choices[0]?.message?.content ?? `Hi ${customerName},\n\nThank you for your inquiry. We'll be in touch shortly.\n\nThe Ecowoods Team`;
+  return completion.choices[0]?.message?.content ?? `Hi ${customerName},
+
+Thank you for your inquiry. We'll be in touch shortly.
+
+The Ecowoods Team`;
 }
 
 // ─── Generate contract scope / description ───────────────────────────────────
