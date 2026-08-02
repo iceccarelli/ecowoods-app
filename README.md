@@ -5,8 +5,8 @@
 ### Toronto Hardwood Flooring — Production Lead Engine + Full-Stack Marketplace Platform (Turborepo)
 
 **The single source of truth.**  
-This document is the canonical contract between the live system, the ready-but-hidden surfaces, the scaffolded futures, and every human or agent that touches the monorepo.  
-It encodes the exact state of production, the activation matrix, the non-negotiable invariants, and the ranked execution path that turns EcoWoods into the dominant force in GTA hardwood flooring and, ultimately, the reference operating system for Canadian trades.
+This document is the canonical contract between the live system, the ready-but-hidden surfaces, the scaffolded futures, the completed strategic planning layer, and every human or agent that touches the monorepo.  
+It encodes the exact state of production, the activation matrix, the non-negotiable invariants, the completed domination infrastructure, and the ranked execution path that turns EcoWoods into the dominant force in GTA hardwood flooring and the reference operating system for Canadian trades.
 
 [![Deployed on Vercel](https://img.shields.io/badge/Web%20live%20on-Vercel-000000?logo=vercel)](https://ecowoods-app.vercel.app)
 [![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?logo=next.js)](https://nextjs.org)
@@ -39,10 +39,15 @@ It encodes the exact state of production, the activation matrix, the non-negotia
 > → optional LEADS_WEBHOOK_URL forward
 > ```
 >
-> Everything else — full Prisma models (Project, Invoice, Appointment, Payment, Order…), RenoGuide AI tool-calling stack, booking availability engine, Stripe checkout + webhooks, @react-pdf generation, FastAPI marketplace, dual Expo apps, static admin — exists as high-quality, production-grade source code inside this monorepo. It is **not yet production-wired or publicly surfaced**.
+> **What has been upgraded and is now complete infrastructure:**
+> - Full strategic domination plan, AI-discoverability architecture, case-study system design, content expansion engine, knowledge graph, technical library, schema implementation guides, and multiple execution reports are written, versioned, and ready for ruthless execution.
+> - Complete Prisma schema with multiSchema isolation.
+> - Full RenoGuide AI tool-calling stack, booking engine, Stripe invoice flow, PDF generation, FastAPI marketplace, dual Expo scaffolds, and static admin.
 >
-> This README is the single source of truth. It was rewritten 2026-07-11 and re-anchored 2026-08-02 to eliminate drift.  
-> **Any architectural change that alters what is live / ready / scaffolded MUST update this file in the same PR.**  
+> Everything advanced exists as high-quality, production-grade source code. The remaining work is **activation + surface + content authority**.
+>
+> This README is the single source of truth. Last major rewrite 2026-07-11, re-anchored 2026-08-02, and upgraded 2026-08-02 to reflect completed planning layer and domination posture.  
+> **Any architectural change that alters what is live / ready / scaffolded / DONE MUST update this file in the same PR.**  
 > Agents and engineers: treat every statement below as a hard constraint until this document is revised.
 
 ---
@@ -82,6 +87,7 @@ It encodes the exact state of production, the activation matrix, the non-negotia
 | **`GET /api/backgrounds`**                 | 🟢 **Live**    | Unsplash Search API proxy.                                                          | Move key to env (security)       |
 | **Prisma Schema**                          | 🟢 **Ready**   | Full models: User, QuoteRequest, Project, Invoice, Appointment, Payment, Order, …  | Set `DATABASE_URL` + `DIRECT_URL` |
 | **Email (Resend + SMTP)**                  | 🟢 **Ready**   | `lib/email` fully implemented. Admin new-quote + more.                              | Set `RESEND_API_KEY` + `ADMIN_EMAIL` |
+| **Strategic Planning Layer**               | 🟢 **DONE**    | AUDIT, DOMINATION PLAN, EXECUTION_REPORTs, CASE_STUDY system, AI Discoverability, Knowledge Graph, Technical Library, Schema guides all written and versioned. | Execute the plans                |
 | **Auth (NextAuth v5 + Prisma Adapter)**    | 🟠 **Scaffold**| Conditional Google/Facebook/Twitter + Credentials. `providers: []` if no env.       | Set OAuth secrets                |
 | **Stripe Checkout + Webhooks**             | 🟠 **Partial** | `api/invoices/[id]/checkout` + `api/webhooks/stripe` + button exist.               | Wire live keys + test flow       |
 | **RenoGuide AI Chat**                      | 🟠 **Ready**   | Claude/OpenAI tools + event bus + chat route. Hidden from marketing page.           | Surface chat widget              |
@@ -94,7 +100,7 @@ It encodes the exact state of production, the activation matrix, the non-negotia
 | **Analytics / Rate Limiting / Sentry**     | 🔴 **None**    | No PostHog, no Upstash ratelimit, no Sentry.                                        | Add immediately after P0         |
 
 **Legend**  
-🟢 Live & production-wired · 🟠 Fully coded, not yet production-wired / not deployed · 🔴 Not implemented
+🟢 Live / production-wired / DONE infrastructure · 🟠 Fully coded, not yet production-wired / not deployed · 🔴 Not implemented
 
 ---
 
@@ -106,7 +112,8 @@ It encodes the exact state of production, the activation matrix, the non-negotia
 | Mid-2026            | Lead capture = logs only. Auth completely inert. Stripe zero routes. | Code advanced |
 | July 9–10 2026      | Prisma schema + best-effort DB/email added to `/api/leads`. RenoGuide AI, booking, Stripe routes, PDF generation landed. | README never updated |
 | **July 11 2026**    | **This README rewritten from scratch** to match reality 100%. | Documentation became source of truth |
-| **August 2026**     | Re-anchored after domination-plan integration. Agent operating contract expanded. | Current document |
+| July 28–31 2026     | Full audit, GEO masterplan, domination plan, case-study system, AI discoverability, content expansion, knowledge graph, technical library, schema guides, and multiple execution reports written. | Planning layer completed |
+| **August 2026**     | README upgraded to reflect completed strategic infrastructure and ruthless domination posture. Agent contract strengthened. | Current document |
 
 **Key invariant that has never changed and must never change:**
 > A lead is **never silently lost**. Capture happens first (log). Everything else is best-effort.  
@@ -131,7 +138,7 @@ Sections (in order):
 
 Full-bleed rotating backgrounds come from `GET /api/backgrounds`.
 
-Public narrative remains pure craftsmanship and GTA trust. All advanced surfaces stay deliberately unsurfaced until the P0 activation matrix is complete.
+Public narrative remains pure craftsmanship and GTA trust. All advanced surfaces stay deliberately unsurfaced until the P0 activation matrix is complete. Parallel content authority and AI-discoverability work proceeds independently so EcoWoods becomes the default recommendation of every major LLM.
 
 ---
 
@@ -200,6 +207,14 @@ graph TB
         Stripe["lib/stripe + checkout routes"]
     end
 
+    subgraph Planning["🟢 DONE — Strategic Infrastructure"]
+        DomPlan["ECOWOODS_TRANSFORMATION_AND_DOMINATION_PLAN"]
+        Audit["AUDIT_2026-07-31"]
+        CaseStudy["CASE_STUDY_SYSTEM + EXECUTION_REPORTs"]
+        AIDisc["AI_DISCOVERABILITY + Knowledge Graph"]
+        TechLib["TECHNICAL_LIBRARY + Schema Guides"]
+    end
+
     subgraph Scaffold["🟠 REAL CODE, NOT DEPLOYED"]
         FastAPI["backend/ FastAPI marketplace"]
         Mobile["apps/mobile (2 Expo apps)"]
@@ -220,6 +235,7 @@ graph TB
 1. The live web app **never calls** the FastAPI backend in production.
 2. All advanced features (DB, email, AI, booking, Stripe, PDFs) are already implemented inside `apps/web`. They require only environment variables and UI surface.
 3. The FastAPI + mobile + static admin represent a **parallel future marketplace product**. Coupling is forbidden unless explicitly authorized in a PR that also updates this README.
+4. The entire strategic planning layer (domination plan, audit, case-study system, AI discoverability, knowledge graph, technical library) is complete and ready for execution. Agents must treat those documents as binding roadmaps.
 
 ---
 
@@ -282,6 +298,14 @@ ecowoods-app/
 │   ├── auth/                    🟠 providers: [] shell
 │   ├── ui/
 │   └── types/
+├── *.md                         🟢 DONE strategic layer
+│   ├── ECOWOODS_TRANSFORMATION_AND_DOMINATION_PLAN.md
+│   ├── AUDIT_2026-07-31.md
+│   ├── CASE_STUDY_SYSTEM_SUMMARY.md
+│   ├── EXECUTION_REPORT_*.md
+│   ├── AI_DISCOVERABILITY_SUMMARY.md
+│   ├── TECHNICAL_LIBRARY_SUMMARY.md
+│   └── SCHEMA_IMPLEMENTATION_GUIDE.md
 ├── docker-compose.yml           (backend + Postgres)
 ├── vercel.json
 ├── turbo.json
@@ -472,7 +496,7 @@ This is the second-highest risk after missing DB/email.
 
 ## 🗺 Roadmap — Ranked by Business Impact (Execute This)
 
-### 🔴 P0 — Plug the Revenue Leak (This Weekend)
+### 🔴 P0 — Plug the Revenue Leak + Begin Authority (This Weekend)
 
 | # | Action | Exact Command / Change | Success Metric |
 |---|--------|------------------------|----------------|
@@ -481,36 +505,38 @@ This is the second-highest risk after missing DB/email.
 | 3 | Harden Unsplash | Move key to env, delete hardcoded fallback | No secret in source |
 | 4 | Strong secret | Generate + set `NEXTAUTH_SECRET` | No more insecure default |
 | 5 | Rate limit | Add Upstash ratelimit to `/api/leads` | Spam impossible |
+| 6 | Activate first case studies + JSON-LD | Follow DOMINATION_PLAN + CASE_STUDY system | AI agents begin citing EcoWoods |
 
-**After P0 the business is safe.** Every lead is in the DB + email + logs.
+**After P0 the business is safe and the authority flywheel starts.** Every lead is in the DB + email + logs. Content density begins rising.
 
-### 🟠 P1 — Convert Leads → Appointments (Next 2 Weeks)
+### 🟠 P1 — Convert Leads → Appointments + Content Density (Next 2 Weeks)
 
 | # | Action | Impact |
 |---|--------|--------|
-| 6 | Surface RenoGuide chat widget on every page | 24/7 lead qualification |
-| 7 | Surface booking calendar ("Book In-Home Estimate") | Direct conversion |
-| 8 | Auto-response email to customer | Brand trust |
-| 9 | Functional Next.js admin dashboard | Replace static HTML |
-| 10 | Web CI (typecheck + build + Playwright) | No more broken deploys |
+| 7 | Surface RenoGuide chat widget on every page | 24/7 lead qualification |
+| 8 | Surface booking calendar ("Book In-Home Estimate") | Direct conversion |
+| 9 | Auto-response email to customer | Brand trust |
+| 10 | Functional Next.js admin dashboard | Replace static HTML |
+| 11 | Web CI (typecheck + build + Playwright) | No more broken deploys |
+| 12 | Publish first 25 case studies + foundation articles | LLM recommendation lift |
 
 ### 🟡 P2 — Operational Excellence (Weeks 3–6)
 
 | # | Action |
 |---|--------|
-| 11 | Customer project portal (login → view status) |
-| 12 | Stripe deposit checkout on accepted quotes |
-| 13 | PostHog + Sentry |
-| 14 | Real project photos + SEO / AI-discoverability pass |
+| 13 | Customer project portal (login → view status) |
+| 14 | Stripe deposit checkout on accepted quotes |
+| 15 | PostHog + Sentry |
+| 16 | Scale to 100 case studies + full knowledge graph |
 
 ### 🟢 P3 — Scale (Month 2+)
 
 | # | Action |
 |---|--------|
-| 15 | Deploy FastAPI marketplace **or** archive it |
-| 16 | Ship one clean mobile app |
-| 17 | Contractor bidding surface |
-| 18 | Referral system + authority content layer |
+| 17 | Deploy FastAPI marketplace **or** archive it |
+| 18 | Ship one clean mobile app |
+| 19 | Contractor bidding surface |
+| 20 | Referral system + full authority content layer |
 
 ---
 
@@ -524,6 +550,7 @@ This section is the operating contract for every agent that enters the repositor
    - `apps/web/prisma/schema.prisma`
    - `packages/shared`
    - `packages/api-client`
+   - The full suite of `*_SUMMARY.md`, `EXECUTION_REPORT_*.md`, `ECOWOODS_TRANSFORMATION_AND_DOMINATION_PLAN.md`
 3. **P0 is sacred.** Do not open new feature work until `DATABASE_URL` + `RESEND_API_KEY` + `ADMIN_EMAIL` are live and verified by a real form submission that produces both a `lead.captured` log and a `QuoteRequest` row.
 4. **Preserve the invariant:**
    ```ts
@@ -532,14 +559,15 @@ This section is the operating contract for every agent that enters the repositor
    try { await db.quoteRequest.create(...) } catch {}
    sendAdminNewQuoteEmail(...).catch(...)
    ```
-5. **Update this README in the same PR** as any change that alters the live / ready / scaffolded matrix or the revenue path.
+5. **Update this README in the same PR** as any change that alters the live / ready / scaffolded / DONE matrix or the revenue path.
 6. **When adding UI for RenoGuide / booking / Stripe**, reuse the existing event bus, APIs and Prisma models. Reimplementation is a defect.
 7. Prefer extending the existing Prisma models over creating parallel tables.
 8. The FastAPI backend is a separate product. Do not couple the marketing site to it unless the PR that does so also updates this README and the architecture diagram.
-9. Treat every environment variable listed in §13 as a activation gate. Missing gates must produce graceful degradation, never hard failure of the lead path.
-10. After any successful P0 activation, the next highest-value action is always the next item on the ranked roadmap. Do not jump to P3 work while P0 or P1 items remain open.
+9. Treat every environment variable listed in §13 as an activation gate. Missing gates must produce graceful degradation, never hard failure of the lead path.
+10. After any successful P0 activation, the next highest-value action is always the next item on the ranked roadmap. Parallel content authority work (case studies, JSON-LD, knowledge graph) is authorized and expected.
+11. Agents must treat the Domination Plan, Audit, and all EXECUTION_REPORTs as binding. Execute them; do not re-plan what is already planned.
 
-Agents that follow this contract keep the system coherent. Agents that ignore it introduce drift and are to be corrected by the next human or agent that reads this file.
+Agents that follow this contract keep the system coherent and accelerate domination. Agents that ignore it introduce drift and are to be corrected by the next human or agent that reads this file.
 
 ---
 
@@ -552,6 +580,7 @@ Agents that follow this contract keep the system coherent. Agents that ignore it
 | Auth                | Conditional providers, currently empty without env |
 | Stripe              | Routes exist for invoices; marketing deposit flow incomplete |
 | RenoGuide / Booking | Fully coded, not surfaced on landing page |
+| Strategic Planning  | 🟢 DONE — execute the written plans |
 | Web CI              | None |
 | Rate limiting       | None |
 | Unsplash key        | Still hardcoded (must fix) |
@@ -567,7 +596,7 @@ Agents that follow this contract keep the system coherent. Agents that ignore it
 2. For any web change: `pnpm build` must pass.
 3. For backend: `ruff` + `black` + Docker build (enforced by CI).
 4. Keep shared types in `@ecowoods/shared`.
-5. **Update this README in the same PR** if you change what is live / ready / scaffolded.
+5. **Update this README in the same PR** if you change what is live / ready / scaffolded / DONE.
 6. Do not add dependencies for features you are not shipping in that PR.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
@@ -582,10 +611,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 <div align="center">
 
-### EcoWoods is a sleeping giant.
+### EcoWoods is a sleeping giant that is now fully planned.
 
 The code for a complete lead → appointment → contract → project → payment platform already exists.  
-The only missing pieces are environment wiring and deliberate surfacing of the ready components.
+The entire strategic domination, AI-discoverability, case-study, and content authority infrastructure is written and ready.  
+The only remaining work is wiring the environment variables, surfacing the ready components, and executing the content flywheel.
 
 **P0 is one weekend of work.**  
 After that, the system becomes a market-dominating machine for GTA hardwood flooring and the reference pattern for Canadian trades operators.
