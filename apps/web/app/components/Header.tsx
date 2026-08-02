@@ -44,6 +44,7 @@ const navigation = [
   { label: 'Process', href: '#process' },
   { label: 'The Craft', href: '#craft' },
   { label: 'Technical Library', href: '/technical-library' },
+  { label: 'FloorForge', href: '/products/floorforge' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'FAQ', href: '#faq' },
 ];
