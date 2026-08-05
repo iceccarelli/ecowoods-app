@@ -34,7 +34,6 @@ It encodes the exact state of production, the activation matrix, the non-negotia
 > ```
 > Landing page → Quote form (react-hook-form + shared Zod) → POST /api/leads
 > → re-validation → durable log capture (ALWAYS FIRST)
-> → best-effort Prisma QuoteRequest write
 > → best-effort Resend/SMTP admin email
 > → optional LEADS_WEBHOOK_URL forward
 > ```
