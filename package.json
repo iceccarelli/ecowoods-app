@@ -9,7 +9,8 @@
     "build:web": "turbo build --filter=@ecowoods/web",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "verify:facts": "node scripts/verify-business-facts.mjs"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.10",

@@ -20,6 +20,7 @@
  */
 
 import { EW_MARK } from '@/lib/brand';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { useIsMobile } from './SwipeDeck';
@@ -100,11 +101,11 @@ export default function SiteFooter() {
               </span>
               <span className="brand-copy">
                 <strong style={{ color: 'var(--cream-50)' }}>Ecowoods</strong>
-                <small style={{ color: 'rgba(245, 239, 230, 0.55)' }}>Toronto · Est. 1998</small>
+                <small style={{ color: 'rgba(245, 239, 230, 0.55)' }}>Toronto · Est. {BUSINESS_NAP.foundedYear}</small>
               </span>
             </div>
             <p style={{ marginBottom: '1.5rem', maxWidth: '320px' }}>
-              Master hardwood flooring craftsmen serving Toronto and the GTA for over 25 years.
+              Master hardwood flooring craftsmen serving Toronto and the GTA since {BUSINESS_NAP.foundedYear}.
               Eco-friendly finishes, manufacturer-backed warranties, dust-free refinishing.
             </p>
             <div className="availability-pill dark">

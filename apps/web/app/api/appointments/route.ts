@@ -124,7 +124,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('[appointments] failed:', err);
     return NextResponse.json(
-      { error: "We couldn't confirm that. Please call (416) 249-1276 and we'll book it for you." },
+      { error: "We couldn't confirm that. Please call (647) 244-5156 and we'll book it for you." },
       { status: 500 },
     );
   }

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[availability] failed:', err);
     return NextResponse.json(
-      { error: 'Could not load availability. Please call (416) 249-1276.' },
+      { error: 'Could not load availability. Please call (647) 244-5156.' },
       { status: 500 },
     );
   }

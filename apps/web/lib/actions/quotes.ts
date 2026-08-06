@@ -170,7 +170,7 @@ export async function sendEstimateEmail(quoteId: string) {
           </div>
           <p style="color:#6b5d52;font-size:13px;">
             To accept this estimate and proceed, simply reply to this email or call us at
-            <strong>${settings?.companyPhone ?? '(416) 249-1276'}</strong>.
+            <strong>${settings?.companyPhone ?? '(647) 244-5156'}</strong>.
             We will then prepare a formal contract for your review.
           </p>
         </div>
@@ -187,7 +187,7 @@ Total: ${totalFormatted} CAD
 View online: ${viewUrl}
 Download PDF: ${pdfUrl}
 
-To proceed, reply to this email or call ${settings?.companyPhone ?? '(416) 249-1276'}.`,
+To proceed, reply to this email or call ${settings?.companyPhone ?? '(647) 244-5156'}.`,
   });
 
   await db.quoteRequest.update({

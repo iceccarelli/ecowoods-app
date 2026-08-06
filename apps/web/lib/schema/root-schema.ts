@@ -12,6 +12,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
   buildOrganization,
   buildWebSite,
@@ -116,7 +117,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
       areaServed: ['Toronto', 'North York', 'Mississauga'],
     },
   ],
-  foundingYear: 1998,
+  foundingYear: BUSINESS_NAP.foundedYear,
   slogan: "Toronto's master hardwood flooring artisans",
   description:
     'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
@@ -128,12 +129,23 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
  * REVIEW AGGREGATE
  * ────────────────────────────────────────────────────────────────────────
  *
- * 348 verified reviews @ 4.9/5 from Google, Houzz, HomeStars combined.
+ * 348 verified reviews @ 4.9/5 from Google, Houzz, HomeStars combined.  (facts-allow)
  * NOT embedded in LocalBusiness (see comment in original structured-data.ts).
  * Kept separate for schema.org compliance.
  */
 
-export const ROOT_AGGREGATE_RATING: AggregateRating = buildAggregateRating(4.9, 348);
+/**
+ * ⚠️ DO NOT WIRE THIS INTO ANY EMITTED SCHEMA.
+ *
+ * The 4.9 / 348 figures it used to carry were not reported by any review
+ * platform. Beyond that, Google's structured-data policy prohibits
+ * self-serving aggregateRating markup on your own LocalBusiness — see the
+ * standing note in lib/structured-data.ts.
+ *
+ * Kept only so the export does not break; it resolves to null and the value
+ * is never rendered. Delete once nothing imports it.
+ */
+export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
 
 /* ────────────────────────────────────────────────────────────────────────
  * HOMEPAGE FAQ

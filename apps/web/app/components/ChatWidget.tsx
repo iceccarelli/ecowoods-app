@@ -195,7 +195,7 @@ export default function ChatWidget() {
                 pale in dark mode. Tokenised so the error state flips with the theme. */}
             {errored && (
               <div style={{ margin: '10px 0', fontSize: 13, color: 'var(--danger-fg)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: 12, padding: '10px 12px' }}>
-                Something hiccuped on my end. Try again, or call <strong>(416)&nbsp;249-1276</strong>.
+                Something hiccuped on my end. Try again, or call <strong>(647)&nbsp;244-5156</strong>.
               </div>
             )}
           </div>

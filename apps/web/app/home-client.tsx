@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -197,47 +198,43 @@ const Icon = {
  * warranty is not lost: it keeps its own pillar in #services, where there is
  * room to state it precisely rather than compress it into one word over a photo.
  */
-const trustStats = [
-  { to: 25, em: '+', lbl: 'Years in Toronto' },
-  { to: 5200, em: '+', lbl: 'Homes Transformed' },
-  { to: 4.9, decimals: 1, em: '★', lbl: '348 Verified Reviews' },
-  /**
-   * ⚠️ VERIFY BEFORE THIS STAYS UP. 2.5M is not measured — it is the lowest
-   * figure internally consistent with the site's own claims: 5,200 homes x
-   * ~500 sq ft/home = 2.6M sq ft, implying ~$4.81/sq ft against $500k/yr x
-   * 25 yrs. Rounded DOWN: under-claiming is safe, over-claiming is not.
-   * Replace with the real number from the job book.
-   */
-  { to: 2.5, decimals: 1, unit: 'M', em: '+', lbl: 'Sq Ft Sanded & Finished' },
+/**
+ * Only figures we can stand behind in front of a customer.
+ *
+ * REMOVED (were fabricated, do not restore without a source):
+ *   - "5,200+ Homes Transformed"      — never measured  (facts-allow)
+ *   - "2.5M+ Sq Ft Sanded & Finished" — back-computed from the line above  (facts-allow)
+ *   - "4.9★ / 348 Verified Reviews"   — no platform reports these numbers  (facts-allow)
+ *
+ * To add a stat back: put the real number here AND record where it came from
+ * (job book export, platform screenshot) in the comment. `pnpm verify:facts`
+ * blocks the retired figures from reappearing.
+ */
+type TrustStat = { to: number; lbl: string; em?: string; decimals?: number; unit?: string };
+
+const trustStats: TrustStat[] = [
+  { to: yearsInBusiness(), em: '+', lbl: 'Years in Toronto' },
 ];
 
 
-const featuredReviews: Review[] = [
-  {
-    initials: 'SM',
-    name: 'Sarah M.',
-    place: 'Rosedale · Full Refinish',
-    quote:
-      "Ecowoods refinished our 100-year-old red oak floors and they look better than I imagined possible. The dust control was unreal — we never had to leave the house.",
-    stars: 5,
-  },
-  {
-    initials: 'AB',
-    name: 'Andrew B.',
-    place: 'Scarborough · Main Floor + Stairs',
-    quote:
-      'They moved our furniture, protected the kitchen, finished a day early, and the bill matched the estimate to the penny. Will hire again for the basement.',
-    stars: 5,
-  },
-  {
-    initials: 'JL',
-    name: 'Jennifer L.',
-    place: 'Forest Hill · Custom Inlay',
-    quote:
-      "Custom inlay around our fireplace, walnut on oak. Came out exactly right the first install. Master craftsmen, no other word for it.",
-    stars: 5,
-  },
-];
+/**
+ * EMPTY ON PURPOSE — do not repopulate with written-for-the-site copy.
+ *
+ * This array previously held three testimonials attributed to named customers
+ * ("Sarah M. · Rosedale", "Andrew B. · Scarborough", "Jennifer L. · Forest
+ * Hill") in specific Toronto neighbourhoods. None of them came from a real
+ * customer. Publishing invented reviews attributed to real-sounding people is
+ * a Competition Act problem in Canada, not merely a tone problem.
+ *
+ * TO RESTORE — each entry needs, on file:
+ *   1. the review text as the customer actually wrote it;
+ *   2. the platform + permalink it was published on (Google / HomeStars / Houzz);
+ *   3. the customer's consent to reproduce it on ecowoods.ca.
+ *
+ * The #reviews section below renders the deck when this array has entries, and
+ * an honest references-on-request block when it is empty. Nothing else to change.
+ */
+const featuredReviews: Review[] = [];
 
 const standardPillars: Pillar[] = [
   {
@@ -270,13 +267,22 @@ const standardPillars: Pillar[] = [
  * Ecowoods, so REPLACE THEM WITH REAL NUMBERS from the job book before this
  * ships. Shares are shown as a share of project mix and should total ~100.
  */
+/**
+ * Labels only. The previous 34/28/14/10/8/6 "share of project mix" figures were
+ * invented and were published live — a prospect could reasonably read them as
+ * audited business data. `share` is optional on TickerItem, so omitting it
+ * renders the plain label marquee (identical to the GTA service-areas ticker).
+ *
+ * To restore percentages: supply real shares from the job book and add the
+ * source in this comment. Do not estimate them.
+ */
 const serviceTicker: TickerItem[] = [
-  { label: 'Hardwood Installation', share: 34, trend: 'up' },
-  { label: 'Refinishing & Restoration', share: 28, trend: 'up' },
-  { label: 'Dust-Free Sanding', share: 14, trend: 'flat' },
-  { label: 'Stairs & Railings', share: 10, trend: 'up' },
-  { label: 'Custom Inlays & Borders', share: 8, trend: 'flat' },
-  { label: 'Commercial Projects', share: 6, trend: 'up' },
+  { label: 'Hardwood Installation' },
+  { label: 'Refinishing & Restoration' },
+  { label: 'Dust-Free Sanding' },
+  { label: 'Stairs & Railings' },
+  { label: 'Custom Inlays & Borders' },
+  { label: 'Commercial Projects' },
 ];
 
 const funnelSteps: FunnelStep[] = [
@@ -507,7 +513,7 @@ const onSubmit = (data: LeadFormData) => {
             </h2>
             <p style={{ color: 'rgba(245, 239, 230, 0.78)' }}>
               Installation, refinishing, sanding, stairs, inlays, and commercial — every service,
-              one shop, one accountable name — since 1998.
+              one shop, one accountable name — since {BUSINESS_NAP.foundedYear}.
             </p>
           </div>
 
@@ -583,29 +589,32 @@ const onSubmit = (data: LeadFormData) => {
       <section className="section paper-texture" id="reviews">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '780px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', gap: '2px', color: 'var(--copper)' }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} style={{ width: '20px', height: '20px', fill: 'currentColor' }}>
-                    {Icon.star}
-                  </span>
-                ))}
-              </div>
-              <span style={{ fontWeight: 600 }}>
-                4.9 <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· 348 verified reviews</span>
-              </span>
-            </div>
             <span className="eyebrow">The Verdict</span>
             <h2>
               What clients say <span className="serif-italic">after move-in day.</span>
             </h2>
             <p>
-              Reviews aggregated across Google, HomeStars, Houzz, and BBB. We do not curate — every
-              review from the last decade is publicly visible on those platforms.
+              Our reviews live on Google, HomeStars and Houzz, where we cannot edit them. We would
+              rather point you there than reprint the flattering ones here.
             </p>
           </div>
 
-          <TestimonialDeck items={featuredReviews} star={Icon.star} />
+          {featuredReviews.length > 0 ? (
+            <TestimonialDeck items={featuredReviews} star={Icon.star} />
+          ) : (
+            /* Shown while featuredReviews is empty — see the note on that array.
+               References from real jobs beat a curated quote wall anyway. */
+            <div className="reveal" style={{ maxWidth: '620px' }}>
+              <p style={{ marginBottom: '1.5rem' }}>
+                Ask on your estimate visit and we will put you in touch with recent clients on your
+                street or in your neighbourhood — people who have lived on the floor for a season,
+                not just admired it on install day.
+              </p>
+              <a href={BUSINESS_NAP.phoneHref} className="btn btn-copper">
+                Call {BUSINESS_NAP.phoneDisplay} <span aria-hidden>→</span>
+              </a>
+            </div>
+          )}
 
         </div>
       </section>

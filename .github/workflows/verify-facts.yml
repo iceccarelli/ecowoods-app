@@ -1,0 +1,29 @@
+name: Verify Business Facts
+
+# Blocks retired phone numbers, invented volume/reputation figures and
+# hardcoded founding-year claims from reaching main.
+#
+# No dependency install: the guard is dependency-free by design so it runs in
+# seconds and cannot itself break the pipeline.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-facts:
+    name: Business facts
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check for retired claims
+        run: node scripts/verify-business-facts.mjs

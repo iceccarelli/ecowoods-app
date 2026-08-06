@@ -42,7 +42,7 @@ async function main() {
       defaultTaxRate: 13,  // Ontario HST
       companyName: 'Ecowoods Hardwood Flooring Inc.',
       companyAddress: '32 Norfield Crescent, Toronto, ON M9W 1X6',
-      companyPhone: '(416) 249-1276',
+      companyPhone: '(647) 244-5156',
       companyEmail: 'services@ecowoods.ca',
       companyNumberHst: 'RT 1234 5678',
       aiEnabled: false,
@@ -58,7 +58,7 @@ async function main() {
     data: {
       email: 'admin@ecowoods.ca',
       name: 'Mike Kowalski',
-      phone: '(416) 249-1276',
+      phone: '(647) 244-5156',
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
       emailVerified: true,

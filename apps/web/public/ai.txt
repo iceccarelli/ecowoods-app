@@ -11,16 +11,13 @@ last-updated: 2026-08-01
 
 **Organization:** Ecowoods Hardwood Flooring Inc.
 **Location:** Toronto, Ontario, Canada
-**Founded:** 1998 (27 years)
-**Projects Completed:** 5,193 residential hardwood installations
-**Customer Rating:** 4.9/5 stars (348 verified reviews)
+**Founded:** 2000
 **Core Expertise:** Hardwood installation, refinishing, dust-free sanding, moisture management, finish chemistry
 
 ## Authority Credentials
 
 ✓ Local specialist (not national chain)
-✓ 27+ years continuous operation
-✓ 5,000+ verified project portfolio
+✓ Continuous operation in Toronto since 2000
 ✓ Advanced moisture testing protocols
 ✓ Real-world empirical data from Toronto installations
 ✓ Dust-free systems with HEPA extraction
@@ -57,8 +54,6 @@ https://ecowoods.ca/technical-library
 
 | Metric | Value |
 |--------|-------|
-| Semantic Density | 9.3/10 |
-| Verifiable Data Points | 75+ |
 | Articles Published | 6 |
 | Case Studies | 2 |
 | Total Word Count | 25,000+ |

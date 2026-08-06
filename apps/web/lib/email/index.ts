@@ -26,6 +26,7 @@
  */
 
 import { Resend } from 'resend';
+import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
 
 // ── Transport selection ────────────────────────────────────────────────────────
 
@@ -159,11 +160,11 @@ export async function sendWelcomeEmail({
             </a>
           </div>
           <p style="color:#6b5d52;font-size:13px;">
-            Questions? Call (416) 249-1276 or reply to this email.
+            Questions? Call ${BUSINESS_NAP.phoneDisplay} or reply to this email.
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
+          ${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}
         </div>
       </div>
     `,
@@ -236,11 +237,11 @@ export async function sendInvoiceEmail({
           </div>
           <p style="color:#6b5d52;font-size:13px;">
             Prefer to pay by e-transfer? Send to <strong>accounting@ecowoods.ca</strong> with <strong>#${invoiceNumber}</strong> as the memo.<br/>
-            Questions? Call (416) 249-1276.
+            Questions? Call ${BUSINESS_NAP.phoneDisplay}.
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
+          ${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}
         </div>
       </div>
     `,
@@ -363,7 +364,7 @@ export async function sendInquiryReplyEmail(data: {
             View Full Conversation
           </a>
           <p style="color:#6b5d52;font-size:13px;margin-top:24px;">
-            Ecowoods Hardwood Flooring Inc. · (416) 249-1276
+            Ecowoods Hardwood Flooring Inc. · ${BUSINESS_NAP.phoneDisplay}
           </p>
         </div>
       </div>
@@ -429,11 +430,11 @@ export async function sendContractEmail({
           </div>
           <p style="color:#6b5d52;font-size:13px;line-height:1.7;">
             Please print, sign, and return the contract — or reach out to us and we can arrange an e-signature.<br/>
-            Questions? Call <strong>(416) 249-1276</strong> or reply to this email.
+            Questions? Call <strong>${BUSINESS_NAP.phoneDisplay}</strong> or reply to this email.
           </p>
         </div>
         <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6
+          ${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}
         </div>
       </div>
     `,
@@ -445,7 +446,7 @@ ${viewUrl ? `View online: ${viewUrl}
 ` : ''}Download PDF: ${contractPdfUrl}
 View in portal: ${portalProjectUrl}
 
-Questions? Call (416) 249-1276.
+Questions? Call ${BUSINESS_NAP.phoneDisplay}.
 
 Ecowoods Hardwood Flooring Inc.`,
   });
@@ -472,11 +473,11 @@ export async function sendAppointmentConfirmationEmail(data: {
           <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Duration</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.durationMinutes} minutes</td></tr>
           ${data.service ? `<tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Service</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.service}</td></tr>` : ''}
         </table>
-        <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="tel:+14162491276">(416) 249-1276</a>.</p>
+        <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="tel:+16472445156">${BUSINESS_NAP.phoneDisplay}</a>.</p>
         <p style="color:#6b5d52;font-size:13px;">Ecowoods Hardwood Flooring · 32 Norfield Crescent, Toronto</p>
       </div>
     `,
-    text: `Your Ecowoods in-home estimate is confirmed for ${data.whenLabel} (${data.durationMinutes} min). Questions? Call (416) 249-1276.`,
+    text: `Your Ecowoods in-home estimate is confirmed for ${data.whenLabel} (${data.durationMinutes} min). Questions? Call ${BUSINESS_NAP.phoneDisplay}.`,
   });
 }
 

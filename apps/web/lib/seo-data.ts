@@ -5,23 +5,22 @@
  * lib/structured-data.ts (NAP) and the homepage FAQ.
  */
 
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
+/**
+ * Derived from BUSINESS_NAP so there is exactly one place to change a business
+ * fact. Shape preserved for existing call sites.
+ */
 export const BUSINESS = {
-  name: 'Ecowoods Inc.',
-  phone: '+1-647-244-5156',
-  phoneDisplay: '(647) 244-5156',
-  email: 'services@ecowoods.ca',
-  region: 'Toronto & the GTA',
-  address: {
-    streetAddress: '32 Norfield Crescent',
-    addressLocality: 'Toronto',
-    addressRegion: 'ON',
-    postalCode: 'M9W 1X6',
-    addressCountry: 'CA',
-    latitude: 43.72085,
-    longitude: -79.57542,
-  },
+  name: BUSINESS_NAP.name,
+  phone: BUSINESS_NAP.phoneSchema,
+  phoneDisplay: BUSINESS_NAP.phoneDisplay,
+  email: BUSINESS_NAP.email,
+  region: BUSINESS_NAP.region,
+  address: BUSINESS_NAP.address,
+  foundedYear: BUSINESS_NAP.foundedYear,
 } as const;
 
 export type City = { slug: string; name: string };

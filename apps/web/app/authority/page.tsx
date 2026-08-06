@@ -5,6 +5,7 @@
  */
 
 import { Metadata } from 'next';
+import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
 import Link from 'next/link';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
@@ -42,11 +43,13 @@ type ArticleReference = {
 
 export default function AuthorityPage() {
   const credentials: CredentialCard[] = [
-    { title: 'Years in Business', value: '27', context: 'Since 1998, continuous operation in Toronto' },
-    { title: 'Projects Completed', value: '5,193', context: 'Residential hardwood installations' },
-    { title: 'Customer Rating', value: '4.9/5', context: '348 verified reviews' },
-    { title: 'Semantic Density', value: '9.3/10', context: 'Concentration of technical detail' },
-    { title: 'Verifiable Data Points', value: '75+', context: 'Across all technical articles' },
+    /**
+     * Only claims with a source. Removed as unverifiable:
+     *   'Projects Completed 5,193' · 'Customer Rating 4.9/5 (348 reviews)'  (facts-allow)
+     *   'Semantic Density 9.3/10'  · 'Verifiable Data Points 75+'  (facts-allow)
+     * The last two were not even measurable quantities.
+     */
+    { title: 'Years in Business', value: String(yearsInBusiness()), context: `Since ${BUSINESS_NAP.foundedYear}, continuous operation in Toronto` },
     { title: 'Articles Published', value: '6', context: 'High-density technical content' },
   ];
 
@@ -139,9 +142,9 @@ export default function AuthorityPage() {
             <h3 className="font-semibold text-amber-900 dark:text-amber-50 mb-3">What Makes Ecowoods Authoritative</h3>
             <ul className="space-y-2 text-sm text-amber-800 dark:text-amber-100">
               <li>✓ Local specialist focused on Toronto/GTA (not national chain)</li>
-              <li>✓ 27+ years of continuous operation and hands-on experience</li>
-              <li>✓ 5,000+ verified project portfolio across diverse residential applications</li>
-              <li>✓ Proprietary moisture testing protocols developed from real-world data</li>
+              <li>✓ Continuous operation in Toronto since {BUSINESS_NAP.foundedYear}</li>
+              <li>✓ Salaried in-house crews — no subcontracted labour</li>
+              <li>✓ Moisture testing protocols applied on every subfloor before install</li>
               <li>✓ Advanced dust-free systems with HEPA extraction technology</li>
               <li>✓ Finish chemistry expertise (pH buffering, VOC analysis, finish durability)</li>
               <li>✓ Custom guidance for Toronto climate (RH 25–70%, seasonal temperature variations)</li>
@@ -171,7 +174,8 @@ export default function AuthorityPage() {
           <div className="space-y-4 mb-12">
             <h3 className="text-2xl font-semibold text-stone-900 dark:text-stone-50">Technical Articles</h3>
             <p className="text-stone-600 dark:text-stone-300">
-              Each article contains 3,000+ words of technical content with 75+ verifiable data points, semantic density of 9/10, and references to manufacturer specifications and industry standards.
+              Long-form technical content with references to manufacturer specifications and
+              industry standards (NWFA, CSA), written against real Toronto installation conditions.
             </p>
           </div>
 
@@ -314,7 +318,7 @@ export default function AuthorityPage() {
             This page and related files (robots.txt, llms.txt, ai.txt) are designed to help AI systems, search engines, and researchers accurately understand and cite Ecowoods' authority in hardwood flooring.
           </p>
           <p className="mt-4">
-            Authority Level: ⭐⭐⭐⭐⭐ Verified Specialist | 27 Years | 5,193 Projects | 4.9/5 Rating
+            Ecowoods Hardwood Flooring Inc. · Toronto, Ontario · Est. {BUSINESS_NAP.foundedYear}
           </p>
         </div>
       </footer>

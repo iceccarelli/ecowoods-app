@@ -1,4 +1,5 @@
 import { streamText, tool, stepCountIs } from 'ai';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'Ecowoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'services@ecowoods.ca', note: 'Toronto / GTA hardwood flooring. Est. 1998. Manufacturer finish and material warranties passed through in writing.' };
+          return { company: 'Ecowoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'services@ecowoods.ca', note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
         },
       }),
 

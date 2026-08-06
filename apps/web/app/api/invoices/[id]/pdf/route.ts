@@ -39,7 +39,7 @@ export async function POST(
     id: '00000000-0000-0000-0000-000000000001',
     companyName: 'Ecowoods Hardwood Flooring Inc.' as string | null,
     companyAddress: '32 Norfield Crescent, Toronto, ON M9W 1X6' as string | null,
-    companyPhone: '(416) 249-1276' as string | null,
+    companyPhone: '(647) 244-5156' as string | null,
     companyEmail: 'services@ecowoods.ca' as string | null,
     companyNumberHst: null as string | null,
     companyLogoUrl: null as string | null,

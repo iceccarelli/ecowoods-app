@@ -375,7 +375,7 @@ export function InvoiceDocument({
             <Text style={styles.payText}>
               Pay online at: ecowoods.ca/mypage/invoices{'\n'}
               Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number ?? ''}){'\n'}
-              Questions? Call (416) 249-1276 or email {settings.companyEmail ?? ''}
+              Questions? Call (647) 244-5156 or email {settings.companyEmail ?? ''}
             </Text>
           </View>
         )}

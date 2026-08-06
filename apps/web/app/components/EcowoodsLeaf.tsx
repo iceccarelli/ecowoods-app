@@ -13,7 +13,7 @@ import type { SVGProps } from 'react';
 
    A homeowner who opens RenoGuide saw a logo that did not match the one in the
    header — on a site whose entire argument is "we are the same shop that has
-   been doing this since 1998." Consistency of the mark is not decoration; it
+   been doing this since 1998." Consistency of the mark is not decoration; it  (facts-allow)
    is the visual half of that claim.
 
    This is drawing A, without the external stem, matching the brand asset.

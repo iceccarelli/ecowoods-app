@@ -5,7 +5,7 @@ import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
-import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA, ROOT_AGGREGATE_RATING } from '@/lib/schema';
+import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA } from '@/lib/schema';
 import ConversionRail from './components/ConversionRail';
 import ReadingProgress from './components/ReadingProgress';
 

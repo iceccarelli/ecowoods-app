@@ -148,7 +148,7 @@ export default async function PublicInvoicePage({
         </div>
 
         <div style={{ textAlign: 'center', padding: '24px', fontSize: '12px', color: '#6b5d52' }}>
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6 · (416) 249-1276
+          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6 · (647) 244-5156
         </div>
       </div>
     </div>

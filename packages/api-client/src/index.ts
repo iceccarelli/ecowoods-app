@@ -7,6 +7,7 @@
  */
 
 import { LeadFormData, leadSchema } from '@ecowoods/shared';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 // Re-export shared types for monorepo contract (critical for build)
 export type { LeadFormData } from '@ecowoods/shared';
@@ -42,7 +43,10 @@ export async function submitLead(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || 'Failed to submit quote request. Please try again or call (503) 555-0192.');
+    const error = new Error(
+      errorData.message ||
+        `Failed to submit quote request. Please try again or call ${BUSINESS_NAP.phoneDisplay}.`
+    );
     (error as any).status = response.status;
     throw error;
   }
@@ -112,7 +116,7 @@ export async function fetchAvailability(q: AvailabilityQuery = {}): Promise<Avai
   const res = await fetch(`/api/availability${qs ? '?' + qs : ''}`, { cache: 'no-store' });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
-    throw new Error(e.error || 'Could not load availability. Please call (416) 249-1276.');
+    throw new Error(e.error || 'Could not load availability. Please call (647) 244-5156.');
   }
   return res.json();
 }
@@ -130,7 +134,7 @@ export async function submitAppointment(
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
     const err = new Error(
-      e.error || 'Could not confirm that time. Please try another or call (416) 249-1276.',
+      e.error || 'Could not confirm that time. Please try another or call (647) 244-5156.',
     );
     (err as any).status = res.status;
     throw err;

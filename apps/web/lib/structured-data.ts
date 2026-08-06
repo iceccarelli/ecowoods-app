@@ -9,14 +9,14 @@ export const localBusinessSchema = {
       url: 'https://ecowoods.ca',
       image: 'https://ecowoods.ca/og-image.jpg',
       logo: 'https://ecowoods.ca/icon-512.png',
-      // Was +1-416-555-9663 — a placeholder that contradicted the (647) 244-5156
+      // Was +1-416-555-9663 — a placeholder that contradicted the (647) 244-5156  (facts-allow)
       // shown in Header, ChatWidget, the contact block and the AI's
       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
       // exactly the kind of NAP inconsistency that suppresses local pack ranking.
       telephone: '+1-647-244-5156',
       email: 'services@ecowoods.ca',
       priceRange: '$$',
-      foundingDate: '1998',
+      foundingDate: String(BUSINESS_NAP.foundedYear),
       slogan: "Toronto's master hardwood flooring artisans",
       description: 'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
       address: {
@@ -98,6 +98,7 @@ export const localBusinessSchema = {
  * The localBusinessSchema above is unchanged.
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 /** WebSite entity — helps Google understand the site + name. */
 export const websiteSchema = {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
@@ -67,8 +68,8 @@ const ADMIN_NAV = [
   { href: '/admin/settings', label: 'Settings' },
 ];
 
-const PHONE_DISPLAY = '(647) 244-5156';
-const PHONE_HREF = 'tel:+16472445156';
+const PHONE_DISPLAY = BUSINESS_NAP.phoneDisplay;
+const PHONE_HREF = BUSINESS_NAP.phoneHref;
 
 /* ---------------------- Component ---------------------- */
 export default function Header() {
@@ -169,7 +170,7 @@ export default function Header() {
             </span>
             <span className="brand-copy">
               <strong>Ecowoods</strong>
-              <small>Toronto · Est. 1998</small>
+              <small>Toronto · Est. {BUSINESS_NAP.foundedYear}</small>
             </span>
           </a>
 
