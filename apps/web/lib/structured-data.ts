@@ -84,11 +84,8 @@ export const localBusinessSchema = {
           itemOffered: { '@type': 'Service', name, areaServed: 'Toronto & GTA' },
         })),
       },
-      sameAs: [
-        'https://www.instagram.com/ecowoods.ca',
-        'https://www.facebook.com/ecowoodshardwood',
-        'https://www.houzz.com/pro/ecowoods',
-      ],
+      // Derived from PROFILE_LINKS — see the note in lib/schema/builders.ts.
+      sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
     },
   ],
 };
@@ -98,7 +95,7 @@ export const localBusinessSchema = {
  * The localBusinessSchema above is unchanged.
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PROFILE_LINKS } from '@ecowoods/shared/constants';
 
 /** WebSite entity — helps Google understand the site + name. */
 export const websiteSchema = {

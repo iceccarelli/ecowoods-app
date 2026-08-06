@@ -3,6 +3,7 @@
  * These functions are the source of truth for what EcoWoods emits to search engines and AI agents.
  */
 
+import { PROFILE_LINKS } from '@ecowoods/shared/constants';
 import type {
   Organization,
   Service,
@@ -110,12 +111,20 @@ export function buildOrganization(config: OrganizationConfig): Organization {
       })
     ),
 
-    // Social profiles
-    sameAs: [
-      'https://www.instagram.com/ecowoods.ca',
-      'https://www.facebook.com/ecowoodshardwood',
-      'https://www.houzz.com/pro/ecowoods',
-    ],
+    /**
+     * sameAs tells Google which external profiles are THIS entity. A wrong URL
+     * here is worse than an omission — it asks Google to resolve your business
+     * to a page that is not yours, which undercuts the local-SEO work.
+     *
+     * Previously hardcoded, and wrong: 'instagram.com/ecowoods.ca' is not the
+     * handle in use (the real one is @ecowoodshardwood, matching the
+     * ecowoodshardwood.com domain), and the Houzz /pro/ URL was never verified.
+     *
+     * Now derived from PROFILE_LINKS, so an entry appears here only once its
+     * URL has been opened and confirmed. Adding the verified HomeStars profile
+     * also links the entity to real reviews.
+     */
+    sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
   };
 }
 
