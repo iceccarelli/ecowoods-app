@@ -12,7 +12,9 @@
     "format": "prettier --write .",
     "verify:facts": "node scripts/verify-business-facts.mjs",
     "verify:migrations": "node scripts/verify-migrations.mjs",
-    "verify": "pnpm verify:facts && pnpm verify:migrations"
+    "verify": "pnpm verify:facts && pnpm verify:migrations",
+    "hooks:install": "git config core.hooksPath scripts/hooks",
+    "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm --filter @ecowoods/web build"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.10",

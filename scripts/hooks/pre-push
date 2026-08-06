@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Pre-push guards — the same checks CI runs, ~5 seconds, on your machine.
+#
+# Installed by: pnpm hooks:install
+# Bypass once with: git push --no-verify
+#
+# The point: on 2026-08-06 GitHub Actions had a major outage and every check sat
+# queued for an hour. Nothing was wrong with the code — but there was also no
+# way to know that without a runner. These guards are dependency-free and
+# connectionless precisely so they can run here instead. CI becomes a second
+# opinion rather than the only opinion.
+#
+# Deliberately fast: only the two guards. Typecheck and build stay in CI, where
+# a two-minute wait is free. If you want them locally before a risky push:
+#   pnpm --filter @ecowoods/web exec prisma generate \
+#     && pnpm --filter @ecowoods/web exec tsc --noEmit
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "▸ pre-push guards"
+
+FAILED=0
+node scripts/verify-business-facts.mjs || FAILED=1
+node scripts/verify-migrations.mjs    || FAILED=1
+
+if [ "$FAILED" -ne 0 ]; then
+  echo ""
+  echo "✗ push blocked — fix the above, or bypass with: git push --no-verify"
+  exit 1
+fi
+
+echo "✓ guards passed — pushing"

@@ -1,0 +1,96 @@
+name: Web
+
+# The checks that gate what customers actually see.
+#
+# Why this workflow exists: before it, CI ran nine checks and NONE of them
+# built apps/web. Six were Python jobs for backend/, which Vercel does not
+# deploy. That is how a client-component/metadata error reached production and
+# sat there for four days while three Python versions were tested on every push.
+#
+# Order is deliberate — cheapest and most specific failure first:
+#   guards (~5s) -> typecheck (~40s) -> build (~2min)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.github/workflows/web.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.github/workflows/web.yml'
+
+# A newer push makes an in-flight run irrelevant. Without this, queues pile up
+# during a GitHub Actions incident and every stale run competes for a runner.
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: Guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Dependency-free and connectionless — runs in seconds, never flakes,
+      # and fails before anyone waits on an install.
+      - name: Business facts
+        run: node scripts/verify-business-facts.mjs
+      - name: Schema / migration drift
+        run: node scripts/verify-migrations.mjs
+
+  build:
+    name: Typecheck & Build
+    needs: guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Placeholder values only. next build must not depend on real secrets — if a
+    # value here has to become real for the build to pass, that is a bug worth
+    # fixing rather than a secret worth adding.
+    env:
+      DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=ecowoods
+      DIRECT_URL: postgresql://user:pass@localhost:5432/db?schema=ecowoods
+      NEXTAUTH_SECRET: ci-placeholder-not-a-real-secret
+      NEXTAUTH_URL: https://ecowoods.ca
+      NEXT_PUBLIC_SITE_URL: https://ecowoods.ca
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Must precede tsc: the client is generated from schema.prisma, and
+      # without it every model added since the last generate is a type error.
+      - name: Generate Prisma client
+        run: pnpm --filter @ecowoods/web exec prisma generate
+      - name: Typecheck
+        run: pnpm --filter @ecowoods/web exec tsc --noEmit
+      - name: Production build
+        run: pnpm --filter @ecowoods/web build
