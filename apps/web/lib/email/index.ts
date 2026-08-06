@@ -64,8 +64,7 @@ export async function sendEmail({
 }) {
   // ── Dev mode — log to console, no real email ────────────────────────────
   if (transport === 'dev') {
-    console.log('
-[email] DEV MODE — would send:');
+    console.log('\n[email] DEV MODE — would send:');
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
     if (text) console.log(`  Body:    ${text.slice(0, 200)}`);
@@ -321,8 +320,7 @@ export async function sendAdminNewInquiryEmail(data: {
         <p><strong>Email:</strong> ${data.email}</p>
         <p><strong>Subject:</strong> ${data.subject}</p>
         <blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;">
-          ${data.message.replace(/
-/g, '<br>')}
+          ${data.message.replace(/\n/g, '<br>')}
         </blockquote>
         <a href="${adminUrl}" style="display:inline-block;margin-top:16px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">
           Reply in Admin Portal →
@@ -359,8 +357,7 @@ export async function sendInquiryReplyEmail(data: {
           <p>Hi ${data.name},</p>
           <p>Our team has replied to your inquiry: <strong>${data.subject}</strong></p>
           <div style="background:#f5efe6;padding:16px;border-left:3px solid #c87e4f;margin:20px 0;border-radius:4px;white-space:pre-wrap;line-height:1.7;">
-            ${data.replyContent.replace(/
-/g, '<br>')}
+            ${data.replyContent.replace(/\n/g, '<br>')}
           </div>
           <a href="${portalUrl}" style="display:inline-block;background:#c87e4f;color:#fdfbf6;padding:12px 24px;text-decoration:none;border-radius:6px;">
             View Full Conversation
@@ -526,8 +523,7 @@ export async function sendAdminNewPilotLeadEmail(data: {
             </tr>
           `).join('')}
         </table>
-        ${data.message ? `<p><strong>About their work:</strong></p><blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;margin:16px 0;">${data.message.replace(/
-/g, '<br>')}</blockquote>` : ''}
+        ${data.message ? `<p><strong>About their work:</strong></p><blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;margin:16px 0;">${data.message.replace(/\n/g, '<br>')}</blockquote>` : ''}
         <a href="${adminUrl}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
           Review in Admin Portal →
         </a>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { Metadata } from 'next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -771,16 +770,3 @@ export default function FloorForgePage() {
     </>
   );
 }
-
-/* ──────────────────── METADATA ──────────────────── */
-export const metadata: Metadata = {
-  title: 'FloorForge — Autonomous Floor Refinishing Pilot',
-  description:
-    'FloorForge is an early-access autonomous floor refinishing robot in the software + hardware alignment stage. Open to contractor pilots in 2026. Join the interest list.',
-  openGraph: {
-    title: 'FloorForge — Autonomous Floor Refinishing Pilot',
-    description:
-      'Autonomous floor sanding and finishing. Early-access pilot for contractors. In active development.',
-    type: 'website',
-  },
-};
