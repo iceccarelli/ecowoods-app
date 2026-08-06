@@ -10,7 +10,9 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
-    "verify:facts": "node scripts/verify-business-facts.mjs"
+    "verify:facts": "node scripts/verify-business-facts.mjs",
+    "verify:migrations": "node scripts/verify-migrations.mjs",
+    "verify": "pnpm verify:facts && pnpm verify:migrations"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.10",
