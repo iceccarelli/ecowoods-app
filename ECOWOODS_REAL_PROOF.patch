@@ -1,0 +1,181 @@
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index a920a96..b01e475 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -20,7 +20,7 @@
+  */
+ 
+ import { EW_MARK } from '@/lib/brand';
+-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, REVIEW_PROFILES } from '@ecowoods/shared/constants';
+ import type { ReactNode } from 'react';
+ import CookiePreferencesButton from './CookiePreferencesButton';
+ import { useIsMobile } from './SwipeDeck';
+@@ -33,16 +33,25 @@ import { useIsMobile } from './SwipeDeck';
+  * the matching NEXT_PUBLIC_SOCIAL_* env var. Unset → the icon is omitted.
+  * Fill these in .env once the real Ecowoods profiles are confirmed.
+  */
++/** Verified HomeStars profile — see PROFILE_LINKS in @ecowoods/shared/constants. */
++const HOMESTARS_URL = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
++
++/**
++ * An entry without an href is not rendered (see the .filter below). Seven
++ * icons lost their href here because they pointed at platform home pages, not
++ * at Ecowoods. Restore one by pasting the real profile URL — after opening it.
++ */
+ const SOCIAL_LINKS: { label: string; href?: string; icon: ReactNode }[] = [
+   { label: 'Instagram', href: "https://www.instagram.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
++  { label: 'HomeStars', href: HOMESTARS_URL, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" strokeLinejoin="round"/><path d="m12 10 1.2 2.5 2.8.4-2 2 .5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-2 2.8-.4Z" fill="currentColor" stroke="none"/></svg>) },
+   { label: 'Facebook', href: "https://www.facebook.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
+-  { label: 'Houzz', href: "https://www.houzz.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>) },
+-  { label: 'Google Reviews', href: "https://www.google.com/maps", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>) },
+-  { label: 'Pinterest', href: "https://www.pinterest.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>) },
+-  { label: 'YouTube', href: "https://www.youtube.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.3-.4-4.9c-.2-.9-.9-1.6-1.8-1.8C19.1 5 12 5 12 5s-7.1 0-8.8.3c-.9.2-1.6.9-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9c.2.9.9 1.6 1.8 1.8C4.9 19 12 19 12 19s7.1 0 8.8-.3c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.9.4-4.9zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>) },
+-  { label: 'LinkedIn', href: "https://www.linkedin.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3v9zM6.5 8.25A1.75 1.75 0 118.3 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>) },
+-  { label: 'TikTok', href: "https://www.tiktok.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64c.27 0 .52.04.77.13V9.4a6.84 6.84 0 00-.77-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.1z"/></svg>) },
+-  { label: 'X', href: "https://x.com/", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.51l-7.67 8.77 9.02 11.93h-7.06l-5.53-7.23-6.33 7.23H.66l8.2-9.38L0 2.25h7.24l5 6.61 5.99-6.61zm-1.24 17.6h1.95L7.08 4.25H5l11.99 15.6z"/></svg>) },
++  { label: 'Houzz', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>) },
++  { label: 'Google Reviews', icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>) },
++  { label: 'Pinterest', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>) },
++  { label: 'YouTube', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.3-.4-4.9c-.2-.9-.9-1.6-1.8-1.8C19.1 5 12 5 12 5s-7.1 0-8.8.3c-.9.2-1.6.9-1.8 1.8C1 8.7 1 12 1 12s0 3.3.4 4.9c.2.9.9 1.6 1.8 1.8C4.9 19 12 19 12 19s7.1 0 8.8-.3c.9-.2 1.6-.9 1.8-1.8.4-1.6.4-4.9.4-4.9zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>) },
++  { label: 'LinkedIn', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3v9zM6.5 8.25A1.75 1.75 0 118.3 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>) },
++  { label: 'TikTok', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64c.27 0 .52.04.77.13V9.4a6.84 6.84 0 00-.77-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.1z"/></svg>) },
++  { label: 'X', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.51l-7.67 8.77 9.02 11.93h-7.06l-5.53-7.23-6.33 7.23H.66l8.2-9.38L0 2.25h7.24l5 6.61 5.99-6.61zm-1.24 17.6h1.95L7.08 4.25H5l11.99 15.6z"/></svg>) },
+ ];
+ 
+ /** Desktop: a plain column. Mobile: a native disclosure. */
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 4f0c3ff..842a7d5 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ 
+ import { useEffect, useRef, useState, type ReactNode } from 'react';
+-import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES } from '@ecowoods/shared/constants';
+ import dynamic from 'next/dynamic';
+ import Link from 'next/link';
+ import { useForm } from 'react-hook-form';
+@@ -236,6 +236,9 @@ const trustStats: TrustStat[] = [
+  */
+ const featuredReviews: Review[] = [];
+ 
++/** Only set once a real profile URL is confirmed — see PROFILE_LINKS. */
++const homestarsUrl = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
++
+ const standardPillars: Pillar[] = [
+   {
+     icon: 'shield',
+@@ -594,8 +597,8 @@ const onSubmit = (data: LeadFormData) => {
+               What clients say <span className="serif-italic">after move-in day.</span>
+             </h2>
+             <p>
+-              Our reviews live on Google, HomeStars and Houzz, where we cannot edit them. We would
+-              rather point you there than reprint the flattering ones here.
++              Our reviews live on HomeStars, where we cannot edit them. We would rather send you
++              there than reprint the flattering ones here.
+             </p>
+           </div>
+ 
+@@ -610,9 +613,21 @@ const onSubmit = (data: LeadFormData) => {
+                 street or in your neighbourhood — people who have lived on the floor for a season,
+                 not just admired it on install day.
+               </p>
+-              <a href={BUSINESS_NAP.phoneHref} className="btn btn-copper">
+-                Call {BUSINESS_NAP.phoneDisplay} <span aria-hidden>→</span>
+-              </a>
++              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
++                {homestarsUrl && (
++                  <a
++                    href={homestarsUrl}
++                    target="_blank"
++                    rel="noopener noreferrer"
++                    className="btn btn-copper"
++                  >
++                    Read our HomeStars reviews <span aria-hidden>→</span>
++                  </a>
++                )}
++                <a href={BUSINESS_NAP.phoneHref} className="btn btn-ghost">
++                  Call {BUSINESS_NAP.phoneDisplay}
++                </a>
++              </div>
+             </div>
+           )}
+ 
+diff --git a/packages/shared/constants/index.ts b/packages/shared/constants/index.ts
+index a2a07c1..eaee8d3 100644
+--- a/packages/shared/constants/index.ts
++++ b/packages/shared/constants/index.ts
+@@ -73,21 +73,54 @@ export const ROUTES = {
+   JOB_DETAIL: (id: string) => `/jobs/${id}`,
+ } as const;
+  
+-/* ---------------------- Social & Review Links (Business Critical - Lead Gen & Social Proof) ---------------------- */
+-export const SOCIAL_LINKS = [
+-  { platform: 'Instagram', href: 'https://www.instagram.com/ecowoods.ca', label: 'Instagram' },
+-  { platform: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood', label: 'Facebook' },
+-  { platform: 'Houzz', href: 'https://www.houzz.com/pro/ecowoods', label: 'Houzz' },
+-  { platform: 'Google', href: 'https://www.google.com/maps?cid=ecowoods', label: 'Google Reviews' },
+-  { platform: 'LinkedIn', href: 'https://www.linkedin.com/company/ecowoods-hardwood-flooring', label: 'LinkedIn' },
+-  { platform: 'YouTube', href: 'https://www.youtube.com/@ecowoods', label: 'YouTube' },
+-  { platform: 'TikTok', href: 'https://www.tiktok.com/@ecowoods.hardwood', label: 'TikTok' },
+-  { platform: 'Pinterest', href: 'https://www.pinterest.com/ecowoods', label: 'Pinterest' },
+-  { platform: 'X', href: 'https://x.com/ecowoods', label: 'X' },
+-  { platform: 'WhatsApp', href: 'https://wa.me/16472445156?text=Hi%20Ecowoods%2C%20I%27d%20like%20a%20free%20estimate%20for%20hardwood%20flooring', label: 'WhatsApp' },
+-  { platform: 'Website', href: 'https://ecowoods.ca', label: 'Official Website' },
+-  { platform: 'Telegram', href: 'https://t.me/ecowoods', label: 'Telegram' },
+-] as const;
+- 
+-export type SocialLink = (typeof SOCIAL_LINKS)[number];
++/* ---------------------- Review & Social Profiles ----------------------
++ *
++ * SINGLE SOURCE OF TRUTH. An entry appears on the site only if `href` is set.
++ * No href, no link — that is the whole mechanism.
++ *
++ * This replaces an exported SOCIAL_LINKS array that nothing imported and that
++ * contained constructed handles (@ecowoods.ca, /pro/ecowoods, and a
++ * "google.com/maps?cid=ecowoods" that is not a valid CID format at all).
++ * Meanwhile the footer rendered its own separate list in which six of nine
++ * icons pointed at platform HOME PAGES — clicking "Google Reviews" in the
++ * footer landed you on Google Maps' front door. On a site whose reviews
++ * section tells visitors to go read the reviews elsewhere, that is a dead end
++ * at the exact moment a prospect is looking for proof.
++ *
++ * Rule going forward: paste a URL here only after opening it and seeing an
++ * Ecowoods page. Leave href out until then.
++ */
++export type ProfileLink = {
++  label: string;
++  /** Omit until the URL has been opened and confirmed to show Ecowoods. */
++  href?: string;
++  /** true = a review platform, eligible to be surfaced as proof on the site. */
++  review?: boolean;
++};
++
++export const PROFILE_LINKS: ProfileLink[] = [
++  // ── Verified ──────────────────────────────────────────────────────────
++  {
++    label: 'HomeStars',
++    href: 'https://www.homestars.com/profile/2776939-ecowoods',
++    review: true,
++  },
++
++  // ── Company-operated, handle matches the ecowoodshardwood.com domain ──
++  { label: 'Instagram', href: 'https://www.instagram.com/ecowoodshardwood' },
++  { label: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood' },
++
++  // ── NOT LINKED until someone opens the real profile and pastes the URL ─
++  // Every one of these previously pointed at a platform home page.
++  { label: 'Google Reviews', review: true },  // needs the Business Profile / Maps place URL
++  { label: 'Houzz', review: true },           // needs the real /pro/ URL
++  { label: 'YouTube' },
++  { label: 'LinkedIn' },
++  { label: 'Pinterest' },
++  { label: 'TikTok' },
++  { label: 'X' },
++];
++
++/** Review platforms with a confirmed URL — safe to cite as proof on the site. */
++export const REVIEW_PROFILES = PROFILE_LINKS.filter((p) => p.review && p.href);
+  
