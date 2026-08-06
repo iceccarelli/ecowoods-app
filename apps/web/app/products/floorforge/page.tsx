@@ -95,16 +95,30 @@ export default function FloorForgePage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: FloorforgeInterestData) =>
-      submitLead({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        postal: '00000', // Placeholder for required field
-        service: `floorforge-pilot-${data.role}`,
-        source: 'floorforge-waitlist',
-        message: `Company: ${data.companyName}\nRole: ${data.role}\nAnnual Flooring Sq Ft: ${data.flooringSqFt || 'Not specified'}\n\n${data.message || ''}`,
-      }),
+    mutationFn: async (data: FloorforgeInterestData) => {
+      const res = await fetch('/api/pilot-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          companyName: data.companyName,
+          role: data.role,
+          flooringSqFt: data.flooringSqFt,
+          message: data.message,
+          source: 'floorforge-waitlist',
+          program: 'floorforge-waitlist',
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to submit interest');
+      }
+
+      return res.json();
+    },
     onSuccess: () => {
       toast.success('Thank you for your interest!', {
         description:

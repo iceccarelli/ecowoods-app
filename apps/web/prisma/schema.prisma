@@ -214,6 +214,36 @@ model VerificationToken {
 }
 
 // ─────────────────────────────────────────────
+// PILOT LEAD — FloorForge & other pilot programs
+// ─────────────────────────────────────────────
+
+model PilotLead {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  role      String   // contractor, flooring-specialist, general-builder, property-manager, other
+  program   String   // floorforge-waitlist, etc.
+  squareFeet Int?
+  message   String?  @db.Text
+  source    String?  // floorforge-waitlist, web_modal, etc.
+
+  status    String   @default("new")    // new, contacted, qualified, enrolled
+  adminNotes String? @db.Text
+  contactedAt DateTime? @db.Timestamptz
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([email])
+  @@index([program])
+  @@index([status])
+  @@index([createdAt])
+  @@schema("ecowoods")
+}
+
+// ─────────────────────────────────────────────
 // QUOTE REQUEST
 // ─────────────────────────────────────────────
 

@@ -479,3 +479,56 @@ export async function sendAppointmentConfirmationEmail(data: {
     text: `Your Ecowoods in-home estimate is confirmed for ${data.whenLabel} (${data.durationMinutes} min). Questions? Call (416) 249-1276.`,
   });
 }
+
+// ─── Admin: new pilot lead notification ────────────────────────────────────
+export async function sendAdminNewPilotLeadEmail(data: {
+  pilotLeadId: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  role: string;
+  flooringSqFt?: number;
+  message?: string;
+  program: string;
+}) {
+  const adminUrl = `${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/admin/pilot-leads/${data.pilotLeadId}`;
+  const roleLabel: Record<string, string> = {
+    'contractor': 'Contractor',
+    'flooring-specialist': 'Flooring Specialist',
+    'general-builder': 'General Builder',
+    'property-manager': 'Property Manager',
+    'other': 'Other',
+  };
+
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `🚀 New Pilot Lead — ${data.name} (${data.role})`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
+        <h2>New ${data.program} Pilot Submission</h2>
+        <table style="width:100%;border-collapse:collapse;">
+          ${[
+            ['Name', data.name],
+            ['Email', data.email],
+            ['Phone', data.phone],
+            ['Company', data.company],
+            ['Role', roleLabel[data.role] || data.role],
+            ['Annual Flooring Sq Ft', data.flooringSqFt ? `${data.flooringSqFt.toLocaleString()} sq ft` : '—'],
+            ['Program', data.program],
+          ].map(([label, value]) => `
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${label}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${value}</td>
+            </tr>
+          `).join('')}
+        </table>
+        ${data.message ? `<p><strong>About their work:</strong></p><blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;margin:16px 0;">${data.message.replace(/\n/g, '<br>')}</blockquote>` : ''}
+        <a href="${adminUrl}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
+          Review in Admin Portal →
+        </a>
+      </div>
+    `,
+    text: `New pilot lead from ${data.name} (${data.role}) — ${adminUrl}`,
+  });
+}

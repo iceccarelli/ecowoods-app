@@ -91,3 +91,29 @@ export const availabilityQuerySchema = z.object({
 export type AppointmentService = (typeof APPOINTMENT_SERVICES)[number];
 export type AppointmentFormData = z.infer<typeof appointmentSchema>;
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
+
+// ─────────────────────────────────────────────────────────────────
+// PILOT LEAD — FloorForge & other pilot programs
+// ─────────────────────────────────────────────────────────────────
+
+export const pilotLeadSchema = z
+  .object({
+    name: z.string().min(2, 'Please enter your full name'),
+    email: z.string().email('Please enter a valid email'),
+    phone: z.string().min(7, 'Please enter a valid phone number'),
+    companyName: z.string().min(2, 'Please enter your company or workshop name'),
+    role: z.enum(
+      ['contractor', 'flooring-specialist', 'general-builder', 'property-manager', 'other'],
+      { errorMap: () => ({ message: 'Please select your role' }) }
+    ),
+    flooringSqFt: z.preprocess(
+      (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : v),
+      z.number().positive('Please enter a valid square footage').optional()
+    ),
+    message: z.string().max(2000, 'Message is too long').optional(),
+    source: z.string().optional(),
+    program: z.string().min(1, 'Program is required'),
+  })
+  .passthrough();
+
+export type PilotLeadFormData = z.infer<typeof pilotLeadSchema>;
