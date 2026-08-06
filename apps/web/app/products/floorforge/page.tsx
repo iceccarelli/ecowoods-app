@@ -153,7 +153,7 @@ export default function FloorForgePage() {
       a: 'Hardwood floor sanding and finishing is labor-intensive, creates significant dust and odor, and requires highly skilled workers. FloorForge is designed to handle the repetitive machine work — sanding passes, dust capture, finish application — freeing contractors to focus on high-value tasks like species selection, custom inlays, and quality inspection.',
     },
     {
-      q: 'Is this replacing Ecowoods' own services?',
+      q: "Is this replacing Ecowoods' own services?",
       a: 'No. Ecowoods will continue to offer full-service hardwood flooring, sanding, and finishing to homeowners in the GTA. FloorForge is designed as a tool for the broader flooring industry — contractors, property managers, and flooring specialists who want to improve consistency and reduce labor strain.',
     },
     {
