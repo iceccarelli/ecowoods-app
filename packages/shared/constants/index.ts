@@ -73,21 +73,54 @@ export const ROUTES = {
   JOB_DETAIL: (id: string) => `/jobs/${id}`,
 } as const;
  
-/* ---------------------- Social & Review Links (Business Critical - Lead Gen & Social Proof) ---------------------- */
-export const SOCIAL_LINKS = [
-  { platform: 'Instagram', href: 'https://www.instagram.com/ecowoods.ca', label: 'Instagram' },
-  { platform: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood', label: 'Facebook' },
-  { platform: 'Houzz', href: 'https://www.houzz.com/pro/ecowoods', label: 'Houzz' },
-  { platform: 'Google', href: 'https://www.google.com/maps?cid=ecowoods', label: 'Google Reviews' },
-  { platform: 'LinkedIn', href: 'https://www.linkedin.com/company/ecowoods-hardwood-flooring', label: 'LinkedIn' },
-  { platform: 'YouTube', href: 'https://www.youtube.com/@ecowoods', label: 'YouTube' },
-  { platform: 'TikTok', href: 'https://www.tiktok.com/@ecowoods.hardwood', label: 'TikTok' },
-  { platform: 'Pinterest', href: 'https://www.pinterest.com/ecowoods', label: 'Pinterest' },
-  { platform: 'X', href: 'https://x.com/ecowoods', label: 'X' },
-  { platform: 'WhatsApp', href: 'https://wa.me/16472445156?text=Hi%20Ecowoods%2C%20I%27d%20like%20a%20free%20estimate%20for%20hardwood%20flooring', label: 'WhatsApp' },
-  { platform: 'Website', href: 'https://ecowoods.ca', label: 'Official Website' },
-  { platform: 'Telegram', href: 'https://t.me/ecowoods', label: 'Telegram' },
-] as const;
- 
-export type SocialLink = (typeof SOCIAL_LINKS)[number];
+/* ---------------------- Review & Social Profiles ----------------------
+ *
+ * SINGLE SOURCE OF TRUTH. An entry appears on the site only if `href` is set.
+ * No href, no link — that is the whole mechanism.
+ *
+ * This replaces an exported SOCIAL_LINKS array that nothing imported and that
+ * contained constructed handles (@ecowoods.ca, /pro/ecowoods, and a
+ * "google.com/maps?cid=ecowoods" that is not a valid CID format at all).
+ * Meanwhile the footer rendered its own separate list in which six of nine
+ * icons pointed at platform HOME PAGES — clicking "Google Reviews" in the
+ * footer landed you on Google Maps' front door. On a site whose reviews
+ * section tells visitors to go read the reviews elsewhere, that is a dead end
+ * at the exact moment a prospect is looking for proof.
+ *
+ * Rule going forward: paste a URL here only after opening it and seeing an
+ * Ecowoods page. Leave href out until then.
+ */
+export type ProfileLink = {
+  label: string;
+  /** Omit until the URL has been opened and confirmed to show Ecowoods. */
+  href?: string;
+  /** true = a review platform, eligible to be surfaced as proof on the site. */
+  review?: boolean;
+};
+
+export const PROFILE_LINKS: ProfileLink[] = [
+  // ── Verified ──────────────────────────────────────────────────────────
+  {
+    label: 'HomeStars',
+    href: 'https://www.homestars.com/profile/2776939-ecowoods',
+    review: true,
+  },
+
+  // ── Company-operated, handle matches the ecowoodshardwood.com domain ──
+  { label: 'Instagram', href: 'https://www.instagram.com/ecowoodshardwood' },
+  { label: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood' },
+
+  // ── NOT LINKED until someone opens the real profile and pastes the URL ─
+  // Every one of these previously pointed at a platform home page.
+  { label: 'Google Reviews', review: true },  // needs the Business Profile / Maps place URL
+  { label: 'Houzz', review: true },           // needs the real /pro/ URL
+  { label: 'YouTube' },
+  { label: 'LinkedIn' },
+  { label: 'Pinterest' },
+  { label: 'TikTok' },
+  { label: 'X' },
+];
+
+/** Review platforms with a confirmed URL — safe to cite as proof on the site. */
+export const REVIEW_PROFILES = PROFILE_LINKS.filter((p) => p.review && p.href);
  

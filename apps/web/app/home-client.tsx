@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES } from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -235,6 +235,9 @@ const trustStats: TrustStat[] = [
  * an honest references-on-request block when it is empty. Nothing else to change.
  */
 const featuredReviews: Review[] = [];
+
+/** Only set once a real profile URL is confirmed — see PROFILE_LINKS. */
+const homestarsUrl = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
 
 const standardPillars: Pillar[] = [
   {
@@ -594,8 +597,8 @@ const onSubmit = (data: LeadFormData) => {
               What clients say <span className="serif-italic">after move-in day.</span>
             </h2>
             <p>
-              Our reviews live on Google, HomeStars and Houzz, where we cannot edit them. We would
-              rather point you there than reprint the flattering ones here.
+              Our reviews live on HomeStars, where we cannot edit them. We would rather send you
+              there than reprint the flattering ones here.
             </p>
           </div>
 
@@ -610,9 +613,21 @@ const onSubmit = (data: LeadFormData) => {
                 street or in your neighbourhood — people who have lived on the floor for a season,
                 not just admired it on install day.
               </p>
-              <a href={BUSINESS_NAP.phoneHref} className="btn btn-copper">
-                Call {BUSINESS_NAP.phoneDisplay} <span aria-hidden>→</span>
-              </a>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {homestarsUrl && (
+                  <a
+                    href={homestarsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-copper"
+                  >
+                    Read our HomeStars reviews <span aria-hidden>→</span>
+                  </a>
+                )}
+                <a href={BUSINESS_NAP.phoneHref} className="btn btn-ghost">
+                  Call {BUSINESS_NAP.phoneDisplay}
+                </a>
+              </div>
             </div>
           )}
 
