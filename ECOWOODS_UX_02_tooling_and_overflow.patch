@@ -1,0 +1,881 @@
+diff --git a/ECOWOODS_UX_08B_structured_data.patch b/ECOWOODS_UX_08B_structured_data.patch
+deleted file mode 100644
+index e3aa1f3..0000000
+--- a/ECOWOODS_UX_08B_structured_data.patch
++++ /dev/null
+@@ -1,226 +0,0 @@
+-diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+-index 30ec2ae..9f8637e 100644
+---- a/apps/web/app/layout.tsx
+-+++ b/apps/web/app/layout.tsx
+-@@ -5,7 +5,7 @@ import Header from './components/Header';
+- import './globals.css';
+- import Providers from './providers';
+- import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
+--import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA } from '@/lib/schema';
+-+import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA } from '@/lib/schema';
+- import ConversionRail from './components/ConversionRail';
+- import ReadingProgress from './components/ReadingProgress';
+- 
+-@@ -117,11 +117,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+-           these via @id pointers, creating a deeply nested, machine-readable
+-           entity graph that AI agents can ingest and cite.
+- 
+--          Schema coverage:
+-+          Schema coverage on EVERY route:
+-           - LocalBusiness (+ 6 nested Services)
+-           - WebSite
+--          - FAQPage (homepage FAQ)
+-           - Note: AggregateRating kept separate per schema.org compliance
+-+
+-+          FAQPage is deliberately NOT here. It used to be, which declared all 67
+-+          routes — /admin, /mypage/invoices, /blog/*, /docs/quote/[id] — as FAQ
+-+          pages, and gave the homepage a SECOND FAQPage on top of the one
+-+          home-client.tsx already renders. Google's FAQPage guidance requires the
+-+          FAQ to be the page's main content. The homepage and the 16
+-+          service-area pages emit their own, next to the visible questions.
+-+          See audit/FINDINGS.md F-27.
+-         */}
+-         <script
+-           type="application/ld+json"
+-@@ -131,10 +138,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+-           type="application/ld+json"
+-           dangerouslySetInnerHTML={{ __html: JSON.stringify(ROOT_WEBSITE_SCHEMA) }}
+-         />
+--        <script
+--          type="application/ld+json"
+--          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOMEPAGE_FAQ_SCHEMA) }}
+--        />
+- 
+-         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
+-         <link rel="preconnect" href="https://images.unsplash.com" />
+-diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+-index 5737518..8dc74d3 100644
+---- a/apps/web/lib/schema/root-schema.ts
+-+++ b/apps/web/lib/schema/root-schema.ts
+-@@ -12,6 +12,7 @@
+-  * Keep in sync with seo-data.ts (NAP).
+-  */
+- 
+-+import { FAQ_ITEMS } from '@/lib/seo-data';
+- import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+- import {
+-   buildOrganization,
+-@@ -152,28 +153,20 @@ export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
+-  * ────────────────────────────────────────────────────────────────────────
+-  */
+- 
+--export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = [
+--  {
+--    question: 'Is the estimate really fixed? What about "unforeseen conditions"?',
+--    answer:
+--      'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.',
+--  },
+--  {
+--    question: 'Can we stay in the house during the work?',
+--    answer:
+--      'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+--  },
+--  {
+--    question: 'What warranty comes with the work?',
+--    answer:
+--      'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right.',
+--  },
+--  {
+--    question: 'How long will my project take?',
+--    answer:
+--      'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
+--  },
+--];
+-+/**
+-+ * Homepage FAQ, derived from the single source in lib/seo-data.ts.
+-+ *
+-+ * This was a verbatim second copy of FAQ_ITEMS — byte-identical, verified by
+-+ * comparison before it was removed, so this is a de-duplication and not a
+-+ * content change. A third copy still lives in app/home-client.tsx as the
+-+ * VISIBLE text, and its wording has already drifted from this one; reconciling
+-+ * the two is a content decision and is recorded in audit/DEFERRED.md Q5.
+-+ * See audit/FINDINGS.md F-28.
+-+ */
+-+export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = FAQ_ITEMS.map((f) => ({
+-+  question: f.q,
+-+  answer: f.a,
+-+}));
+- 
+- /* ────────────────────────────────────────────────────────────────────────
+-  * BUILT SCHEMAS (exported for injection into layout)
+-diff --git a/audit/DEFERRED.md b/audit/DEFERRED.md
+-index 462c454..8b5b77b 100644
+---- a/audit/DEFERRED.md
+-+++ b/audit/DEFERRED.md
+-@@ -49,6 +49,35 @@ is churn with a visual blast radius and no customer benefit. The brief's Phase
+- 1.4 asks for "a deliberate ratio," which could be read either way. **Confirm
+- before Phase 1 touches type.**
+- 
+-+### Q5 — Which FAQ wording is canonical? (blocks closing F-28)
+-+
+-+Three of four homepage FAQ answers differ between the visible page and the
+-+machine-readable copies. Two directions, both content decisions:
+-+
+-+**(a) The visible page wins.** `FAQ_ITEMS` in `lib/seo-data.ts` adopts the
+-+home-client wording. Consequence: "HEPA-sealed **Festool and Bona Atomic**
+-+systems" and "**No runaround.**" then appear on all 16 service-area pages and in
+-+`/llms.txt`. Naming two supplier brands sitewide is a positioning choice.
+-+
+-+**(b) The machine copy wins.** `home-client.tsx` imports `FAQ_ITEMS` instead of
+-+declaring its own. Consequence: the brand names and "No runaround." come off the
+-+homepage.
+-+
+-+Either way the result is one source and markup that matches visible content.
+-+I am not choosing which sentence Ecowoods publishes.
+-+
+-+### Q6 — Is the 99.7% dust-capture figure verifiable?
+-+
+-+It appears in 10 places, is now inside the JSON-LD an answer engine will quote,
+-+and is derived in `dust-free-sanding-hepa-extraction-explained.mdx` from a CFM
+-+calculation rather than from a measurement of an Ecowoods job. Same category as
+-+the `<2.5µm` claim removed in F-23.
+-+
+-+If Francisco can point to the equipment spec or test it is drawn from, it stays
+-+and should be attributed. If not, it should be softened to describe the method
+-+rather than assert a number. `pnpm verify:facts` will not catch it either way —
+-+it is not on the retired list.
+-+
+- ### Q4 — What replaces the Unsplash hero photo?
+- 
+- F-06 establishes that `globals.css:910` loads a 2400px third-party stock photo as
+-diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+-index 9321072..4e70f4a 100644
+---- a/audit/FINDINGS.md
+-+++ b/audit/FINDINGS.md
+-@@ -809,3 +809,81 @@ headers in a `<thead>` row; all now `<th scope="col">`.
+-   publication date. Phase 8's `<article>` / `<time datetime>` requirement was
+-   **already met**; no change needed.
+- - Every breadcrumb `<nav>` already has `aria-label="Breadcrumb"`.
+-+
+-+---
+-+
+-+## 10. Structured-data findings (Phase 8b)
+-+
+-+### F-27 · `FAQPage` was declared on all 67 routes, and twice on the homepage · **P1**
+-+
+-+`app/layout.tsx` injected `HOMEPAGE_FAQ_SCHEMA` into the `<head>` of **every**
+-+route. That told every parser that `/admin`, `/mypage/invoices`,
+-+`/blog/subfloor-moisture-testing-protocol`, `/docs/quote/[id]` and 60 others are
+-+FAQ pages. Google's FAQPage guidance is explicit that the markup belongs on a
+-+page whose main content is the FAQ.
+-+
+-+On `/` it was worse: `app/home-client.tsx:433` already renders its own
+-+`FAQPage` from `faqItems`, so the homepage shipped **two** `FAQPage` blocks.
+-+
+-+Removed from the site-wide graph. The homepage keeps the one that sits next to
+-+the visible questions; `/service-areas/[city]` keeps its own via
+-+`faqPageSchema()`, which is correct — those pages render `FAQ_ITEMS` visibly at
+-+`service-areas/[city]/page.tsx:130`.
+-+
+-+`ROOT_ORGANIZATION_SCHEMA` and `ROOT_WEBSITE_SCHEMA` stay site-wide, which is
+-+right: they describe the entity and the site, not the page.
+-+
+-+### F-28 · The FAQ existed in three copies, and the machine copy no longer matched the visible one · **P1**
+-+
+-+| Source | Consumed by |
+-+|---|---|
+-+| `lib/seo-data.ts` `FAQ_ITEMS` | `/llms.txt`, `/service-areas/[city]` (visible + JSON-LD) |
+-+| `lib/schema/root-schema.ts` `HOMEPAGE_FAQ_ITEMS` | the site-wide JSON-LD (F-27) |
+-+| `app/home-client.tsx` `faqItems` | the **visible** homepage FAQ + its JSON-LD |
+-+
+-+Compared programmatically. `root-schema` and `seo-data` are **byte-identical** —
+-+a pure duplicate, now derived rather than repeated.
+-+
+-+`home-client` has **drifted on three of four answers**:
+-+
+-+| | visible page says | machine copies say |
+-+|---|---|---|
+-+| Q2 | "HEPA-sealed **Festool and Bona Atomic** systems" | "HEPA-sealed systems" |
+-+| Q3 | "**and we pass every one through** to you in writing … make it right. **No runaround.**" | "passed through to you in writing … make it right." |
+-+| Q4 | "sanding, staining**,** and finishing" | "sanding, staining and finishing" |
+-+
+-+Q4 is a comma. Q2 and Q3 are not: the answer a human reads on ecowoods.ca names
+-+two equipment brands and adds a promise that the answer an AI agent reads does
+-+not contain. Google requires FAQ markup to match the visible content;
+-+a mismatch is a structured-data manual-action risk, and for an answer engine it
+-+means the quoted answer and the on-page answer differ.
+-+
+-+**Not fixed here, deliberately.** Reconciling them means choosing which wording
+-+is canonical, and either direction changes published copy — adding brand names
+-+to 16 city pages and `/llms.txt`, or removing them from the homepage. That is a
+-+content decision. `audit/DEFERRED.md` Q5.
+-+
+-+### Flagged, not touched — the 99.7% dust-capture claim
+-+
+-+`99.7%` appears in **10 places** including `home-client.tsx:261,308,341`,
+-+`service-areas/[city]/page.tsx:115`, `root-schema.ts:94,164`,
+-+`seo-data.ts:45,57`, `products/floorforge/page.tsx:364`, and the article
+-+`dust-free-sanding-hepa-extraction-explained.mdx`, where it is presented with a
+-+CFM derivation.
+-+
+-+It is the same class of claim as the `<2.5µm` figure removed from `llms.txt` in
+-+F-23: a specific measured performance number. `pnpm verify:facts` passes because
+-+it is not on the retired-literals list. Whether it is verifiable is Francisco's
+-+call, not mine — **but it is now also in the JSON-LD, which is the copy an
+-+answer engine will quote.** Recorded in `audit/DEFERRED.md` Q6.
+-+
+-+### Checked and correct — the entity graph
+-+
+-+Worth stating plainly, because it is the part that was done well:
+-+`buildOrganization` emits `@id: {baseUrl}/#organization`, `buildWebSite` emits
+-+`{baseUrl}/#website` with `publisher: { '@id': …/#organization }`, and articles,
+-+case studies, services and products all reference the organization by `@id`
+-+rather than repeating it. That is exactly what makes an entity resolvable to a
+-+crawler. `ROOT_AGGREGATE_RATING` is `null` with a comment explaining that
+-+self-serving review markup is not allowed — also correct, and it should stay
+-+null.
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index a6bc8f3..61f23e2 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7114,8 +7114,23 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   color: var(--ink); }
+ .tlx-body pre code { background: none; padding: 0; border-radius: 0; }
+ 
+-@media (max-width: 640px) {
+-  .tlx-body table { display: block; overflow-x: auto; }
++/* Scroll container emitted around every article/case-study table by
++   lib/content/markdown.ts. The table itself is left alone, so it still fills
++   and aligns normally; only the wrapper scrolls. Replaces a
++   `max-width: 640px` rule that made the guard conditional on the VIEWPORT when
++   the real constraint is the 720px reading measure — everything from 641px up
++   was unprotected. See audit/FINDINGS.md F-29. */
++.tlx-table-wrap {
++  max-width: 100%;
++  overflow-x: auto;
++  -webkit-overflow-scrolling: touch;
++}
++/* Keyboard users must be able to reach a scrollable region; the wrapper is
++   focusable (tabindex=0), so it needs a visible focus ring like anything else. */
++.tlx-table-wrap:focus-visible {
++  outline: 3px solid var(--copper-bright);
++  outline-offset: 3px;
++  border-radius: 4px;
+ }
+ 
+ /* ── About / tags footer ── */
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 30ec2ae..9f8637e 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -5,7 +5,7 @@ import Header from './components/Header';
+ import './globals.css';
+ import Providers from './providers';
+ import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
+-import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA } from '@/lib/schema';
++import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA } from '@/lib/schema';
+ import ConversionRail from './components/ConversionRail';
+ import ReadingProgress from './components/ReadingProgress';
+ 
+@@ -117,11 +117,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+           these via @id pointers, creating a deeply nested, machine-readable
+           entity graph that AI agents can ingest and cite.
+ 
+-          Schema coverage:
++          Schema coverage on EVERY route:
+           - LocalBusiness (+ 6 nested Services)
+           - WebSite
+-          - FAQPage (homepage FAQ)
+           - Note: AggregateRating kept separate per schema.org compliance
++
++          FAQPage is deliberately NOT here. It used to be, which declared all 67
++          routes — /admin, /mypage/invoices, /blog/*, /docs/quote/[id] — as FAQ
++          pages, and gave the homepage a SECOND FAQPage on top of the one
++          home-client.tsx already renders. Google's FAQPage guidance requires the
++          FAQ to be the page's main content. The homepage and the 16
++          service-area pages emit their own, next to the visible questions.
++          See audit/FINDINGS.md F-27.
+         */}
+         <script
+           type="application/ld+json"
+@@ -131,10 +138,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+           type="application/ld+json"
+           dangerouslySetInnerHTML={{ __html: JSON.stringify(ROOT_WEBSITE_SCHEMA) }}
+         />
+-        <script
+-          type="application/ld+json"
+-          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOMEPAGE_FAQ_SCHEMA) }}
+-        />
+ 
+         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
+         <link rel="preconnect" href="https://images.unsplash.com" />
+diff --git a/apps/web/lib/content/markdown.ts b/apps/web/lib/content/markdown.ts
+index 644dfaf..cd50a12 100644
+--- a/apps/web/lib/content/markdown.ts
++++ b/apps/web/lib/content/markdown.ts
+@@ -24,7 +24,32 @@ export function stripLeadingH1(markdown: string): string {
+   return markdown.replace(/^\s*#\s[^\n]+\n+/, '');
+ }
+ 
++/**
++ * Wrap every rendered <table> in a horizontally scrollable container.
++ *
++ * `.tlx-body` is capped at a 720px reading measure, so a wide spec table
++ * overflows its column long before it overflows the viewport — and since
++ * nothing between the table and <body> clips, the whole document gains a
++ * horizontal scrollbar. The stylesheet only handled this below a 640px
++ * viewport, which left the entire 641px-and-up range unprotected on the six
++ * articles that carry tables (species-comparison-matrix has 44 table rows,
++ * water-based-vs-oil-based has 67).
++ *
++ * Wrapping is the intrinsic fix rather than another breakpoint: the constraint
++ * is the measure, not the viewport, so the guard should not be conditional on
++ * viewport width at all. `display: block; overflow-x: auto` directly on the
++ * <table> would also work but changes table layout at every width; a wrapper
++ * leaves the table rendering untouched. See audit/FINDINGS.md F-29.
++ */
++function wrapTables(html: string): string {
++  return html.replace(
++    /<table(?=[\s>])/g,
++    '<div class="tlx-table-wrap" role="region" tabindex="0"><table',
++  ).replace(/<\/table>/g, '</table></div>');
++}
++
+ /** Convert a markdown body to HTML for dangerouslySetInnerHTML. */
+ export function renderMarkdown(markdown: string): string {
+-  return marked.parse(stripLeadingH1(markdown), { async: false, gfm: true }) as string;
++  const html = marked.parse(stripLeadingH1(markdown), { async: false, gfm: true }) as string;
++  return wrapTables(html);
+ }
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 5737518..8dc74d3 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -12,6 +12,7 @@
+  * Keep in sync with seo-data.ts (NAP).
+  */
+ 
++import { FAQ_ITEMS } from '@/lib/seo-data';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import {
+   buildOrganization,
+@@ -152,28 +153,20 @@ export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
+  * ────────────────────────────────────────────────────────────────────────
+  */
+ 
+-export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = [
+-  {
+-    question: 'Is the estimate really fixed? What about "unforeseen conditions"?',
+-    answer:
+-      'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.',
+-  },
+-  {
+-    question: 'Can we stay in the house during the work?',
+-    answer:
+-      'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+-  },
+-  {
+-    question: 'What warranty comes with the work?',
+-    answer:
+-      'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right.',
+-  },
+-  {
+-    question: 'How long will my project take?',
+-    answer:
+-      'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
+-  },
+-];
++/**
++ * Homepage FAQ, derived from the single source in lib/seo-data.ts.
++ *
++ * This was a verbatim second copy of FAQ_ITEMS — byte-identical, verified by
++ * comparison before it was removed, so this is a de-duplication and not a
++ * content change. A third copy still lives in app/home-client.tsx as the
++ * VISIBLE text, and its wording has already drifted from this one; reconciling
++ * the two is a content decision and is recorded in audit/DEFERRED.md Q5.
++ * See audit/FINDINGS.md F-28.
++ */
++export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = FAQ_ITEMS.map((f) => ({
++  question: f.q,
++  answer: f.a,
++}));
+ 
+ /* ────────────────────────────────────────────────────────────────────────
+  * BUILT SCHEMAS (exported for injection into layout)
+diff --git a/audit/DEFERRED.md b/audit/DEFERRED.md
+index 462c454..8b5b77b 100644
+--- a/audit/DEFERRED.md
++++ b/audit/DEFERRED.md
+@@ -49,6 +49,35 @@ is churn with a visual blast radius and no customer benefit. The brief's Phase
+ 1.4 asks for "a deliberate ratio," which could be read either way. **Confirm
+ before Phase 1 touches type.**
+ 
++### Q5 — Which FAQ wording is canonical? (blocks closing F-28)
++
++Three of four homepage FAQ answers differ between the visible page and the
++machine-readable copies. Two directions, both content decisions:
++
++**(a) The visible page wins.** `FAQ_ITEMS` in `lib/seo-data.ts` adopts the
++home-client wording. Consequence: "HEPA-sealed **Festool and Bona Atomic**
++systems" and "**No runaround.**" then appear on all 16 service-area pages and in
++`/llms.txt`. Naming two supplier brands sitewide is a positioning choice.
++
++**(b) The machine copy wins.** `home-client.tsx` imports `FAQ_ITEMS` instead of
++declaring its own. Consequence: the brand names and "No runaround." come off the
++homepage.
++
++Either way the result is one source and markup that matches visible content.
++I am not choosing which sentence Ecowoods publishes.
++
++### Q6 — Is the 99.7% dust-capture figure verifiable?
++
++It appears in 10 places, is now inside the JSON-LD an answer engine will quote,
++and is derived in `dust-free-sanding-hepa-extraction-explained.mdx` from a CFM
++calculation rather than from a measurement of an Ecowoods job. Same category as
++the `<2.5µm` claim removed in F-23.
++
++If Francisco can point to the equipment spec or test it is drawn from, it stays
++and should be attributed. If not, it should be softened to describe the method
++rather than assert a number. `pnpm verify:facts` will not catch it either way —
++it is not on the retired list.
++
+ ### Q4 — What replaces the Unsplash hero photo?
+ 
+ F-06 establishes that `globals.css:910` loads a 2400px third-party stock photo as
+diff --git a/audit/DESIGN_SYSTEM.md b/audit/DESIGN_SYSTEM.md
+index 14e527d..94eef2f 100644
+--- a/audit/DESIGN_SYSTEM.md
++++ b/audit/DESIGN_SYSTEM.md
+@@ -237,6 +237,22 @@ not a normalisation.
+ | `max-width: 1140/1300/1380/1460px` | 4 | `lg`/`xl` | **off-scale** |
+ | `min-width: 1600px` | 1 | `xl`+ | **off-scale** |
+ 
++**Two categories, and only one of them should be collapsed.**
++
++A *layout tier* answers "which device class is this". A *component threshold*
++answers "when does this particular element run out of room". They look identical
++in the stylesheet and are not the same thing.
++
++| Category | Examples here | What to do |
++|---|---|---|
++| Layout tier | 767 (x15), 1023 (x8), 768, 480 | already on the scale — keep |
++| Component threshold | 379 `.cmdk-trigger`, 400 `.brand-copy small`, 1140 `.login-btn`, 900/1180 `.fc-grid`, 860 `.pricing-grid`, 560 `.standard-grid` | do NOT snap to the scale; replace with intrinsic sizing (`minmax`, `flex-wrap`, `clamp`, container queries) once the breakage each was written for is observed |
++
++Snapping `.login-btn`'s 1140px down to 1024px leaves the header nav overflowing
++between 1024 and 1140. Snapping the configurator's 1180px down breaks a
++three-column grid whose result panel needs 320px. The magic number is a symptom;
++the container's real minimum is the cause, and finding it needs a rendered page.
++
+ **Phase 2 method, per off-scale query:** find the specific breakage that prompted
+ the magic number and solve it intrinsically — `min-width: 0` on a flex child,
+ `flex-wrap`, `grid-template-columns: repeat(auto-fit, minmax(min(100%, Npx), 1fr))`,
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 9321072..826f301 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -809,3 +809,165 @@ headers in a `<thead>` row; all now `<th scope="col">`.
+   publication date. Phase 8's `<article>` / `<time datetime>` requirement was
+   **already met**; no change needed.
+ - Every breadcrumb `<nav>` already has `aria-label="Breadcrumb"`.
++
++---
++
++## 10. Structured-data findings (Phase 8b)
++
++### F-27 · `FAQPage` was declared on all 67 routes, and twice on the homepage · **P1**
++
++`app/layout.tsx` injected `HOMEPAGE_FAQ_SCHEMA` into the `<head>` of **every**
++route. That told every parser that `/admin`, `/mypage/invoices`,
++`/blog/subfloor-moisture-testing-protocol`, `/docs/quote/[id]` and 60 others are
++FAQ pages. Google's FAQPage guidance is explicit that the markup belongs on a
++page whose main content is the FAQ.
++
++On `/` it was worse: `app/home-client.tsx:433` already renders its own
++`FAQPage` from `faqItems`, so the homepage shipped **two** `FAQPage` blocks.
++
++Removed from the site-wide graph. The homepage keeps the one that sits next to
++the visible questions; `/service-areas/[city]` keeps its own via
++`faqPageSchema()`, which is correct — those pages render `FAQ_ITEMS` visibly at
++`service-areas/[city]/page.tsx:130`.
++
++`ROOT_ORGANIZATION_SCHEMA` and `ROOT_WEBSITE_SCHEMA` stay site-wide, which is
++right: they describe the entity and the site, not the page.
++
++### F-28 · The FAQ existed in three copies, and the machine copy no longer matched the visible one · **P1**
++
++| Source | Consumed by |
++|---|---|
++| `lib/seo-data.ts` `FAQ_ITEMS` | `/llms.txt`, `/service-areas/[city]` (visible + JSON-LD) |
++| `lib/schema/root-schema.ts` `HOMEPAGE_FAQ_ITEMS` | the site-wide JSON-LD (F-27) |
++| `app/home-client.tsx` `faqItems` | the **visible** homepage FAQ + its JSON-LD |
++
++Compared programmatically. `root-schema` and `seo-data` are **byte-identical** —
++a pure duplicate, now derived rather than repeated.
++
++`home-client` has **drifted on three of four answers**:
++
++| | visible page says | machine copies say |
++|---|---|---|
++| Q2 | "HEPA-sealed **Festool and Bona Atomic** systems" | "HEPA-sealed systems" |
++| Q3 | "**and we pass every one through** to you in writing … make it right. **No runaround.**" | "passed through to you in writing … make it right." |
++| Q4 | "sanding, staining**,** and finishing" | "sanding, staining and finishing" |
++
++Q4 is a comma. Q2 and Q3 are not: the answer a human reads on ecowoods.ca names
++two equipment brands and adds a promise that the answer an AI agent reads does
++not contain. Google requires FAQ markup to match the visible content;
++a mismatch is a structured-data manual-action risk, and for an answer engine it
++means the quoted answer and the on-page answer differ.
++
++**Not fixed here, deliberately.** Reconciling them means choosing which wording
++is canonical, and either direction changes published copy — adding brand names
++to 16 city pages and `/llms.txt`, or removing them from the homepage. That is a
++content decision. `audit/DEFERRED.md` Q5.
++
++### Flagged, not touched — the 99.7% dust-capture claim
++
++`99.7%` appears in **10 places** including `home-client.tsx:261,308,341`,
++`service-areas/[city]/page.tsx:115`, `root-schema.ts:94,164`,
++`seo-data.ts:45,57`, `products/floorforge/page.tsx:364`, and the article
++`dust-free-sanding-hepa-extraction-explained.mdx`, where it is presented with a
++CFM derivation.
++
++It is the same class of claim as the `<2.5µm` figure removed from `llms.txt` in
++F-23: a specific measured performance number. `pnpm verify:facts` passes because
++it is not on the retired-literals list. Whether it is verifiable is Francisco's
++call, not mine — **but it is now also in the JSON-LD, which is the copy an
++answer engine will quote.** Recorded in `audit/DEFERRED.md` Q6.
++
++### Checked and correct — the entity graph
++
++Worth stating plainly, because it is the part that was done well:
++`buildOrganization` emits `@id: {baseUrl}/#organization`, `buildWebSite` emits
++`{baseUrl}/#website` with `publisher: { '@id': …/#organization }`, and articles,
++case studies, services and products all reference the organization by `@id`
++rather than repeating it. That is exactly what makes an entity resolvable to a
++crawler. `ROOT_AGGREGATE_RATING` is `null` with a comment explaining that
++self-serving review markup is not allowed — also correct, and it should stay
++null.
++
++---
++
++## 11. Article-table overflow (Phase 2 reconnaissance)
++
++### F-29 · Wide article tables overflowed the page at every width above 640px · **P0**
++
++`.tlx-body` is capped at a **720px** reading measure (`globals.css:7076`). The
++only guard on wide tables was:
++
++```css
++@media (max-width: 640px) { .tlx-body table { display: block; overflow-x: auto; } }
++```
++
++That makes the guard conditional on the **viewport**, when the constraint is the
++**measure**. A table wider than 720px overflows its column on a 1440px laptop
++exactly as it does on a phone — and nothing between the table and `<body>`
++clips, so the whole document gains a horizontal scrollbar.
++
++Every article carries tables:
++
++| Article | table rows |
++|---|---|
++| `water-based-vs-oil-based-polyurethane-chemistry` | 67 |
++| `species-comparison-matrix-toronto-renovations` | 44 |
++| `wood-acclimation-timeline-toronto-gta` | 26 |
++| `white-oak-vs-red-oak-tannin-behavior` | 25 |
++| `subfloor-moisture-testing-protocol` | 20 |
++| `dust-free-sanding-hepa-extraction-explained` | 12 |
++
++These are the pages a reader and a crawler spend the most time on, and the
++comparison matrices are the most quotable content on the site.
++
++**Fixed intrinsically rather than with another breakpoint.**
++`lib/content/markdown.ts` now wraps every rendered `<table>` in
++`<div class="tlx-table-wrap" role="region" tabindex="0">`, and the wrapper
++scrolls at all widths. The 640px media query is deleted.
++
++Why a wrapper and not `display: block` on the table itself: `display: block`
++also works, but it changes table layout at every width — the table stops
++filling its column. The wrapper leaves rendering untouched.
++
++`tabindex="0"` makes the scroll region keyboard-reachable, which a scrollable
++region must be; `.tlx-table-wrap:focus-visible` gives it the same focus ring as
++everything else.
++
++**Not yet measured.** This is a static fix for a statically-provable defect. The
++overflow sweep in the runtime pass is what confirms it — and confirms whether
++any *other* element overflows, which is the part I still cannot see.
++
++### Why the rest of Phase 2 is not in this patch
++
++The brief's premise is that 16 off-scale media-query widths are accretion to be
++collapsed onto a five-step scale. Reading all 72 queries, that is **half right**,
++and acting on the wrong half would break things:
++
++**Layout tiers — these belong on the scale.** `max-width: 767px` (15 uses),
++`max-width: 1023px` (8), `min-width: 768px` (3), `max-width: 480px` (4). Already
++on it.
++
++**Component thresholds — these are not viewport tiers and must not be moved
++blind.** Each is "when does *this component* run out of room":
++
++| Query | What it governs |
++|---|---|
++| `max-width: 379px` | hides `.cmdk-trigger` |
++| `max-width: 400px` | hides `.brand-copy small`; shrinks `.tlx-title` |
++| `max-width: 1140px` | hides `.login-btn` — the header nav's own limit |
++| `min-width: 900px` / `min-width: 1180px` | the `/design` configurator's 2-col then 3-col grid |
++| `max-width: 860px` | `.pricing-grid`, `.cov`, `.gc-modal` collapse |
++| `max-width: 560px` | `.standard-grid`, `.funnel-grid`, `.fc-spec` collapse |
++
++Snapping `.login-btn`'s 1140px to 1024px leaves the header overflowing between
++those widths. Snapping the configurator's 1180px to 1024px breaks a three-column
++grid that needs 320px for its result panel. **Each of these was put there
++because something broke at that width, and I cannot see what breaks if I move
++it.** The brief's own instruction is to find the specific breakage and solve it
++intrinsically — that requires the runtime pass.
++
++`max-width: 480px` / `min-width: 481px` is not an off-by-one defect: they are
++mutually exclusive and correct as written.
++
++`DESIGN_SYSTEM.md` §4.2 now carries this two-category classification. The
++collapse itself waits for `audit/runtime-report.json`.
+diff --git a/audit/scripts/run-runtime-audit.sh b/audit/scripts/run-runtime-audit.sh
+new file mode 100644
+index 0000000..61efe35
+--- /dev/null
++++ b/audit/scripts/run-runtime-audit.sh
+@@ -0,0 +1,112 @@
++#!/usr/bin/env bash
++#
++# audit/scripts/run-runtime-audit.sh
++#
++# One command for the whole runtime pass. This exists because the manual
++# version had three moving parts — install a browser, start a dev server in a
++# second terminal, remember the flags — and so it never got run, which left
++# patches 05, 06 and 09 blocked on data nobody could be bothered to produce.
++#
++#   bash audit/scripts/run-runtime-audit.sh
++#
++# It will:
++#   1. install the Playwright chromium build if it is missing
++#   2. build and start the app on a free port (production build — dev-mode
++#      timings are meaningless and dev-only overlays pollute the DOM)
++#   3. run audit/scripts/runtime-audit.mjs across every public route x
++#      10 viewports x both themes
++#   4. shut the server down again, whatever happened
++#   5. leave audit/runtime-report.json (and audit/shots/ with --shots)
++#
++# Options are passed straight through:
++#   bash audit/scripts/run-runtime-audit.sh --shots
++#   bash audit/scripts/run-runtime-audit.sh --skip-axe
++#   bash audit/scripts/run-runtime-audit.sh --routes=/,/design
++#
++# axe-core is optional. If @axe-core/playwright is not installed the accessibility
++# pass is skipped and everything else still runs — a partial report beats none.
++#
++set -uo pipefail
++
++cd "$(git rev-parse --show-toplevel)"
++PORT="${PORT:-3111}"
++SERVER_PID=""
++
++cleanup() {
++  if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
++    echo "▸ stopping server (pid $SERVER_PID)"
++    kill "$SERVER_PID" 2>/dev/null || true
++    wait "$SERVER_PID" 2>/dev/null || true
++  fi
++}
++trap cleanup EXIT INT TERM
++
++echo "▸ 1/4  browser"
++if ! node -e "require('playwright')" 2>/dev/null; then
++  echo "     playwright not resolvable — installing"
++  pnpm add -Dw playwright || { echo "     FAILED: install playwright manually"; exit 2; }
++fi
++pnpm exec playwright install chromium || {
++  echo "     FAILED: could not download chromium."
++  echo "     If this machine blocks the download host, run the audit somewhere that doesn't."
++  exit 2
++}
++
++if node -e "require('@axe-core/playwright')" 2>/dev/null; then
++  echo "     @axe-core/playwright present — accessibility pass enabled"
++else
++  echo "     @axe-core/playwright missing — accessibility pass will be skipped"
++  echo "     (install with: pnpm add -Dw @axe-core/playwright, then re-run)"
++fi
++
++echo "▸ 2/4  production build"
++pnpm --filter @ecowoods/web exec prisma generate >/dev/null || exit 2
++pnpm --filter @ecowoods/web build || { echo "     build failed — fix that first"; exit 2; }
++
++echo "▸ 3/4  starting server on :$PORT"
++(cd apps/web && PORT="$PORT" pnpm exec next start -p "$PORT" >/tmp/ecowoods-audit-server.log 2>&1) &
++SERVER_PID=$!
++
++for i in $(seq 1 60); do
++  if curl -sf -o /dev/null "http://localhost:$PORT/"; then
++    echo "     up after ${i}s"
++    break
++  fi
++  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
++    echo "     server died on startup — /tmp/ecowoods-audit-server.log:"
++    tail -20 /tmp/ecowoods-audit-server.log
++    exit 2
++  fi
++  sleep 1
++  [ "$i" = 60 ] && { echo "     server never became ready"; tail -20 /tmp/ecowoods-audit-server.log; exit 2; }
++done
++
++echo "▸ 4/4  running the audit"
++node audit/scripts/runtime-audit.mjs --base="http://localhost:$PORT" "$@"
++STATUS=$?
++
++echo
++if [ -f audit/runtime-report.json ]; then
++  node -e "
++    const r = require('./audit/runtime-report.json');
++    const cells = r.results.length;
++    const overflow = r.results.filter(x => x.top && x.top.overflow).length;
++    const zoom = r.results.filter(x => x.top && x.top.iosZoom.length).length;
++    const axe = r.results.filter(x => x.axe && x.axe.length).length;
++    const tap = r.results.filter(x => x.top && x.top.tapSmall.length).length;
++    const err = r.results.filter(x => x.error).length;
++    console.log('── summary ─────────────────────────────');
++    console.log('  cells (route x viewport x theme):', cells);
++    console.log('  with horizontal overflow        :', overflow);
++    console.log('  with a form control under 16px  :', zoom);
++    console.log('  with a tap target under 44px    :', tap);
++    console.log('  with axe violations             :', axe);
++    console.log('  errored                         :', err);
++  "
++  echo
++  echo "wrote audit/runtime-report.json — send this file back and patches 05, 06 and 09 become writable."
++else
++  echo "no report written — see the output above."
++fi
++
++exit $STATUS
+diff --git a/scripts/patch-apply.sh b/scripts/patch-apply.sh
+new file mode 100644
+index 0000000..3023fb0
+--- /dev/null
++++ b/scripts/patch-apply.sh
+@@ -0,0 +1,120 @@
++#!/usr/bin/env bash
++#
++# scripts/patch-apply.sh
++#
++# Applies a .patch file that arrived in this repository by GitHub web upload,
++# then untracks it.
++#
++# WHY THIS EXISTS
++#
++# Every patch in this series has been uploaded through the GitHub web UI, which
++# commits the file to main instead of applying it — and which ignores
++# .gitignore, so `*.patch` cannot prevent it. The instructions kept saying
++# "put it in /tmp and run git apply", that directory never existed, `git apply`
++# failed, and the rest of the sequence then ran against unchanged code and
++# reported a green build for work that had not been applied. That happened five
++# times. The upload path is the real delivery channel; this makes it a
++# supported one instead of a recurring failure.
++#
++# NOT named apply-*.sh on purpose: .gitignore carries an `apply-*.sh` rule from
++# the repo-hygiene cleanup, which would silently keep this file untracked.
++#
++# USAGE
++#
++#   bash scripts/patch-apply.sh                 # apply every uploaded patch, in name order
++#   bash scripts/patch-apply.sh ECOWOODS_UX_02_x.patch
++#   bash scripts/patch-apply.sh --check         # dry run, change nothing
++#
++# It is safe to re-run: an already-applied patch is detected and skipped rather
++# than reported as a failure. That distinction matters — an already-applied
++# patch fails `git apply` identically to a broken one.
++#
++set -uo pipefail
++
++cd "$(git rev-parse --show-toplevel)"
++
++CHECK_ONLY=0
++FILES=()
++for a in "$@"; do
++  case "$a" in
++    --check) CHECK_ONLY=1 ;;
++    -*) echo "unknown option: $a"; exit 2 ;;
++    *) FILES+=("$a") ;;
++  esac
++done
++
++if [ "${#FILES[@]}" -eq 0 ]; then
++  while IFS= read -r f; do FILES+=("$f"); done < <(git ls-files '*.patch' | sort)
++  while IFS= read -r f; do
++    case " ${FILES[*]-} " in *" $f "*) ;; *) FILES+=("$f") ;; esac
++  done < <(ls -1 ./*.patch 2>/dev/null | sed 's|^\./||' | sort)
++fi
++
++if [ "${#FILES[@]}" -eq 0 ]; then
++  echo "No .patch files found at the repo root. Nothing to do."
++  exit 0
++fi
++
++echo "▸ repo: $(pwd)"
++echo "▸ HEAD: $(git rev-parse HEAD)"
++echo "▸ patches: ${FILES[*]}"
++echo
++
++APPLIED=0
++SKIPPED=0
++FAILED=0
++
++for f in "${FILES[@]}"; do
++  echo "── $f"
++  if [ ! -f "$f" ]; then echo "     missing on disk — skipping"; continue; fi
++
++  if git apply --reverse --check "$f" >/dev/null 2>&1; then
++    echo "     ALREADY APPLIED (reverse-check passes) — untracking only"
++    SKIPPED=$((SKIPPED + 1))
++  elif git apply --check "$f" >/dev/null 2>&1; then
++    if [ "$CHECK_ONLY" = 1 ]; then
++      echo "     would apply cleanly"
++      continue
++    fi
++    git apply "$f" && echo "     applied" && APPLIED=$((APPLIED + 1))
++  else
++    echo "     ✗ DOES NOT APPLY. Most likely the base drifted."
++    echo "       Ask for a regenerated patch against $(git rev-parse --short HEAD)."
++    echo "       Diagnostics:"
++    git apply --check "$f" 2>&1 | sed 's/^/         /' | head -12
++    FAILED=$((FAILED + 1))
++    continue
++  fi
++
++  if [ "$CHECK_ONLY" = 0 ]; then
++    git rm -q --cached "$f" 2>/dev/null || true
++    rm -f "$f"
++    echo "     untracked and removed"
++  fi
++done
++
++echo
++echo "applied=$APPLIED  already-applied=$SKIPPED  failed=$FAILED"
++[ "$CHECK_ONLY" = 1 ] && exit 0
++
++if [ "$FAILED" -gt 0 ]; then
++  echo
++  echo "Stop here. Do not build or push while a patch failed to apply —"
++  echo "the build will be green for code that was never changed."
++  exit 1
++fi
++
++echo
++git status --short
++cat <<'NEXT'
++
++Verify before you commit. All five, in this order:
++
++  pnpm install
++  pnpm --filter @ecowoods/web exec prisma generate     # MUST precede tsc
++  pnpm --filter @ecowoods/web exec tsc --noEmit
++  pnpm verify
++  pnpm --filter @ecowoods/web build
++
++  node audit/scripts/parse-scan.mjs                    # expect zero diagnostics
++NEXT
