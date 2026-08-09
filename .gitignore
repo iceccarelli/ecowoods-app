@@ -54,5 +54,15 @@ __pycache__/
 .env*.local
 node_modules/
 
+# ── Build-process litter ─────────────────────────────────────────────────────
+# Every one of these has been committed to this repo at least once, usually by
+# uploading a file through the GitHub web UI — which does NOT honour .gitignore.
+# Keeping the rules anyway so local `git add -A` stays safe.
 *.patch
-*.patch
+*.diff
+apply-*.sh
+*.zip
+.backups/
+
+# The npm lockfile is not used here — pnpm-lock.yaml is authoritative.
+package-lock.json
