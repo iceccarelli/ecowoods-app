@@ -1,0 +1,584 @@
+diff --git a/apps/web/app/(portal)/mypage/invoices/page.tsx b/apps/web/app/(portal)/mypage/invoices/page.tsx
+index e69be32..ce7b5ef 100644
+--- a/apps/web/app/(portal)/mypage/invoices/page.tsx
++++ b/apps/web/app/(portal)/mypage/invoices/page.tsx
+@@ -146,11 +146,11 @@ export default async function MyInvoicesPage() {
+             <table className="portal-table">
+               <thead>
+                 <tr>
+-                  <th>Invoice</th>
+-                  <th>Project</th>
+-                  <th>Amount</th>
+-                  <th>Paid</th>
+-                  <th>PDF</th>
++                  <th scope="col">Invoice</th>
++                  <th scope="col">Project</th>
++                  <th scope="col">Amount</th>
++                  <th scope="col">Paid</th>
++                  <th scope="col">PDF</th>
+                 </tr>
+               </thead>
+               <tbody>
+diff --git a/apps/web/app/(portal)/mypage/layout.tsx b/apps/web/app/(portal)/mypage/layout.tsx
+index 26d78de..e7a43b2 100644
+--- a/apps/web/app/(portal)/mypage/layout.tsx
++++ b/apps/web/app/(portal)/mypage/layout.tsx
+@@ -31,7 +31,7 @@ export default async function MyPageLayout({
+     <div className="portal-layout">
+       {/* Sidebar */}
+       <aside className="portal-sidebar">
+-        <nav className="portal-nav">
++        <nav className="portal-nav" aria-label="Your account">
+           {navItems.map((item) => (
+             <Link key={item.href} href={item.href} className="portal-nav-item">
+               <span className="portal-nav-icon">{item.icon}</span>
+@@ -42,9 +42,9 @@ export default async function MyPageLayout({
+       </aside>
+ 
+       {/* Main content */}
+-      <main className="portal-main">
++      <div className="portal-main">
+         {children}
+-      </main>
++      </div>
+     </div>
+   );
+ }
+diff --git a/apps/web/app/admin/invoices/page.tsx b/apps/web/app/admin/invoices/page.tsx
+index fe57fa8..879aa49 100644
+--- a/apps/web/app/admin/invoices/page.tsx
++++ b/apps/web/app/admin/invoices/page.tsx
+@@ -98,14 +98,14 @@ export default async function AdminInvoicesPage({
+         <table className="portal-table">
+           <thead>
+             <tr>
+-              <th>Invoice #</th>
+-              <th>Project / Customer</th>
+-              <th>Stage</th>
+-              <th>Total</th>
+-              <th>Status</th>
+-              <th>Due</th>
+-              <th>Bank Pending</th>
+-              <th>Actions</th>
++              <th scope="col">Invoice #</th>
++              <th scope="col">Project / Customer</th>
++              <th scope="col">Stage</th>
++              <th scope="col">Total</th>
++              <th scope="col">Status</th>
++              <th scope="col">Due</th>
++              <th scope="col">Bank Pending</th>
++              <th scope="col">Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+diff --git a/apps/web/app/admin/layout.tsx b/apps/web/app/admin/layout.tsx
+index 6693e18..dad3fc8 100644
+--- a/apps/web/app/admin/layout.tsx
++++ b/apps/web/app/admin/layout.tsx
+@@ -37,7 +37,7 @@ export default async function AdminLayout({
+     <div className="portal-layout">
+       {/* Admin Sidebar */}
+       <aside className="portal-sidebar admin-sidebar">
+-        <nav className="portal-nav">
++        <nav className="portal-nav" aria-label="Admin">
+           {navItems.map((item) => (
+             <Link key={item.href} href={item.href} className="portal-nav-item">
+               <span className="portal-nav-icon">{item.icon}</span>
+@@ -48,9 +48,9 @@ export default async function AdminLayout({
+       </aside>
+ 
+       {/* Main content */}
+-      <main className="portal-main">
++      <div className="portal-main">
+         {children}
+-      </main>
++      </div>
+     </div>
+   );
+ }
+diff --git a/apps/web/app/admin/orders/page.tsx b/apps/web/app/admin/orders/page.tsx
+index 93517fd..aa11064 100644
+--- a/apps/web/app/admin/orders/page.tsx
++++ b/apps/web/app/admin/orders/page.tsx
+@@ -63,12 +63,12 @@ export default async function AdminOrdersPage({
+         <table className="portal-table">
+           <thead>
+             <tr>
+-              <th>Customer</th>
+-              <th>Items</th>
+-              <th>Total</th>
+-              <th>Status</th>
+-              <th>Placed</th>
+-              <th>Actions</th>
++              <th scope="col">Customer</th>
++              <th scope="col">Items</th>
++              <th scope="col">Total</th>
++              <th scope="col">Status</th>
++              <th scope="col">Placed</th>
++              <th scope="col">Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+diff --git a/apps/web/app/admin/projects/[id]/page.tsx b/apps/web/app/admin/projects/[id]/page.tsx
+index ccd6f46..e742a58 100644
+--- a/apps/web/app/admin/projects/[id]/page.tsx
++++ b/apps/web/app/admin/projects/[id]/page.tsx
+@@ -139,12 +139,12 @@ export default async function AdminProjectDetailPage({ params }: { params: Promi
+               <table className="portal-table">
+                 <thead>
+                   <tr>
+-                    <th>Invoice #</th>
+-                    <th>Stage</th>
+-                    <th>Total</th>
+-                    <th>Status</th>
+-                    <th>Due</th>
+-                    <th>Actions</th>
++                    <th scope="col">Invoice #</th>
++                    <th scope="col">Stage</th>
++                    <th scope="col">Total</th>
++                    <th scope="col">Status</th>
++                    <th scope="col">Due</th>
++                    <th scope="col">Actions</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+diff --git a/apps/web/app/admin/projects/page.tsx b/apps/web/app/admin/projects/page.tsx
+index 16eec54..eca8434 100644
+--- a/apps/web/app/admin/projects/page.tsx
++++ b/apps/web/app/admin/projects/page.tsx
+@@ -68,13 +68,13 @@ export default async function AdminProjectsPage({
+         <table className="portal-table">
+           <thead>
+             <tr>
+-              <th>Project</th>
+-              <th>Customer</th>
+-              <th>Contract Value</th>
+-              <th>Paid</th>
+-              <th>Status</th>
+-              <th>Start</th>
+-              <th>Actions</th>
++              <th scope="col">Project</th>
++              <th scope="col">Customer</th>
++              <th scope="col">Contract Value</th>
++              <th scope="col">Paid</th>
++              <th scope="col">Status</th>
++              <th scope="col">Start</th>
++              <th scope="col">Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+diff --git a/apps/web/app/admin/quotes/[id]/EstimateBuilder.tsx b/apps/web/app/admin/quotes/[id]/EstimateBuilder.tsx
+index baeb77c..afc84ab 100644
+--- a/apps/web/app/admin/quotes/[id]/EstimateBuilder.tsx
++++ b/apps/web/app/admin/quotes/[id]/EstimateBuilder.tsx
+@@ -147,7 +147,7 @@ export default function EstimateBuilder({
+           <table className="portal-table" style={{ marginBottom: '1rem' }}>
+             <thead>
+               <tr>
+-                <th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Amount</th>
++                <th scope="col">Description</th><th scope="col">Qty</th><th scope="col">Unit</th><th scope="col">Unit Price</th><th scope="col">Amount</th>
+               </tr>
+             </thead>
+             <tbody>
+diff --git a/apps/web/app/admin/quotes/page.tsx b/apps/web/app/admin/quotes/page.tsx
+index d92a7be..a5ae014 100644
+--- a/apps/web/app/admin/quotes/page.tsx
++++ b/apps/web/app/admin/quotes/page.tsx
+@@ -77,13 +77,13 @@ export default async function AdminQuotesPage({
+         <table className="portal-table">
+           <thead>
+             <tr>
+-              <th>Name / Contact</th>
+-              <th>Location</th>
+-              <th>Service</th>
+-              <th>Sq Ft</th>
+-              <th>Status</th>
+-              <th>Submitted</th>
+-              <th>Actions</th>
++              <th scope="col">Name / Contact</th>
++              <th scope="col">Location</th>
++              <th scope="col">Service</th>
++              <th scope="col">Sq Ft</th>
++              <th scope="col">Status</th>
++              <th scope="col">Submitted</th>
++              <th scope="col">Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+diff --git a/apps/web/app/admin/users/page.tsx b/apps/web/app/admin/users/page.tsx
+index eb8638f..43bde13 100644
+--- a/apps/web/app/admin/users/page.tsx
++++ b/apps/web/app/admin/users/page.tsx
+@@ -35,13 +35,13 @@ export default async function AdminUsersPage() {
+         <table className="portal-table">
+           <thead>
+             <tr>
+-              <th>Name / Email</th>
+-              <th>Phone</th>
+-              <th>Quotes</th>
+-              <th>Projects</th>
+-              <th>Revenue (Paid)</th>
+-              <th>Joined</th>
+-              <th>Actions</th>
++              <th scope="col">Name / Email</th>
++              <th scope="col">Phone</th>
++              <th scope="col">Quotes</th>
++              <th scope="col">Projects</th>
++              <th scope="col">Revenue (Paid)</th>
++              <th scope="col">Joined</th>
++              <th scope="col">Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+diff --git a/apps/web/app/authority/page.tsx b/apps/web/app/authority/page.tsx
+index 27d0be6..bea96fc 100644
+--- a/apps/web/app/authority/page.tsx
++++ b/apps/web/app/authority/page.tsx
+@@ -120,7 +120,7 @@ export default function AuthorityPage() {
+       </header>
+ 
+       {/* Main Content */}
+-      <main className="mx-auto max-w-4xl px-6 py-12">
++      <div className="mx-auto max-w-4xl px-6 py-12">
+         {/* Credentials Section */}
+         <section className="mb-16">
+           <h2 className="mb-8 text-3xl font-bold text-stone-900 dark:text-stone-50">Authority Credentials</h2>
+@@ -309,7 +309,7 @@ export default function AuthorityPage() {
+             <p><strong>Website:</strong> <a href="/" className="underline">ecowoods.ca</a></p>
+           </div>
+         </section>
+-      </main>
++      </div>
+ 
+       {/* Footer */}
+       <footer className="border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 mt-16">
+diff --git a/apps/web/app/blog/page.tsx b/apps/web/app/blog/page.tsx
+index 99c8dad..cfcb2ee 100644
+--- a/apps/web/app/blog/page.tsx
++++ b/apps/web/app/blog/page.tsx
+@@ -47,7 +47,7 @@ export default async function BlogPage() {
+         </div>
+       </header>
+ 
+-      <main className="tlx-section">
++      <div className="tlx-section">
+         <div className="shell">
+           {articles.length === 0 ? (
+             <p className="tlx-note">No articles published yet. Check back soon.</p>
+@@ -72,7 +72,7 @@ export default async function BlogPage() {
+             </>
+           )}
+         </div>
+-      </main>
++      </div>
+     </div>
+   );
+ }
+diff --git a/apps/web/app/case-studies/[slug]/case-study-layout.tsx b/apps/web/app/case-studies/[slug]/case-study-layout.tsx
+index 199af4d..54af7cb 100644
+--- a/apps/web/app/case-studies/[slug]/case-study-layout.tsx
++++ b/apps/web/app/case-studies/[slug]/case-study-layout.tsx
+@@ -78,7 +78,7 @@ export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStud
+         </div>
+       </header>
+ 
+-      <main className="tlx-section">
++      <div className="tlx-section">
+         <div className="shell">
+           {children}
+ 
+@@ -106,7 +106,7 @@ export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStud
+             </section>
+           )}
+         </div>
+-      </main>
++      </div>
+     </article>
+   );
+ }
+diff --git a/apps/web/app/case-studies/page.tsx b/apps/web/app/case-studies/page.tsx
+index a0f0785..7bca248 100644
+--- a/apps/web/app/case-studies/page.tsx
++++ b/apps/web/app/case-studies/page.tsx
+@@ -31,7 +31,7 @@ export default async function CaseStudiesPage() {
+         </div>
+       </header>
+ 
+-      <main className="tlx-section">
++      <div className="tlx-section">
+         <div className="shell">
+           {caseStudies.length === 0 ? (
+             <p className="tlx-note">No case studies published yet. Check back soon.</p>
+@@ -50,7 +50,7 @@ export default async function CaseStudiesPage() {
+                     <span className="tlx-card-tag">
+                       {caseStudy.projectType ? caseStudy.projectType.replace(/-/g, ' ') : 'Project'}
+                     </span>
+-                    <h3>{caseStudy.title}</h3>
++                    <h2>{caseStudy.title}</h2>
+                     <p>{caseStudy.description}</p>
+                     <span className="tlx-card-data">
+                       <span>
+@@ -66,7 +66,7 @@ export default async function CaseStudiesPage() {
+             </div>
+           )}
+         </div>
+-      </main>
++      </div>
+     </div>
+   );
+ }
+diff --git a/apps/web/app/components/ArticleLayout.tsx b/apps/web/app/components/ArticleLayout.tsx
+index e30b28f..b9461dd 100644
+--- a/apps/web/app/components/ArticleLayout.tsx
++++ b/apps/web/app/components/ArticleLayout.tsx
+@@ -50,7 +50,7 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
+         </div>
+       </header>
+ 
+-      <main className="tlx-section">
++      <div className="tlx-section">
+         <div className="shell">
+           {children}
+ 
+@@ -95,7 +95,7 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
+             </section>
+           )}
+         </div>
+-      </main>
++      </div>
+     </article>
+   );
+ }
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 8962e24..9590a52 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -159,7 +159,6 @@ export default function Header() {
+     <>
+       <header
+         className={`topbar ${isHidden ? 'hidden' : ''} ${scrolled ? 'scrolled' : ''}`}
+-        role="banner"
+       >
+         <div className="topbar-inner">
+           {/* Brand Lockup */}
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index b01e475..3cf034b 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -93,7 +93,7 @@ export default function SiteFooter() {
+   };
+ 
+   return (
+-    <footer className="site-footer" role="contentinfo">
++    <footer className="site-footer">
+       <div className="shell">
+         {m && (
+           <a href="#quote" className="footer-cta">
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 706e0a9..30ec2ae 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -145,7 +145,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+         <Providers>
+           <ReadingProgress />
+           <Header />
+-          <main role="main" id="main">{children}</main>
++          <main id="main">{children}</main>
+           <SiteFooter />
+           <ChatWidgetLoader />
+           <ConversionRail />
+diff --git a/apps/web/app/products/floorforge/page.tsx b/apps/web/app/products/floorforge/page.tsx
+index 2cc7cb5..dcbae8b 100644
+--- a/apps/web/app/products/floorforge/page.tsx
++++ b/apps/web/app/products/floorforge/page.tsx
+@@ -209,7 +209,7 @@ export default function FloorForgePage() {
+         }}
+       />
+ 
+-      <main>
++      <div>
+         {/* ─────────────────── HERO ─────────────────── */}
+         <section className="section" style={{ paddingTop: 'var(--space-xl)' }}>
+           <div className="shell">
+@@ -602,7 +602,7 @@ export default function FloorForgePage() {
+             </button>
+           </div>
+         </section>
+-      </main>
++      </div>
+ 
+       {/* ─────────────────── PILOT INTEREST MODAL ─────────────────── */}
+       {interestModalOpen && (
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index fc5b976..a051a90 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -40,7 +40,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+   const nearby = CITIES.filter((c) => c.slug !== city.slug).slice(0, 10);
+ 
+   return (
+-    <main>
++    <div>
+       {jsonLd.map((o, i) => (
+         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(o) }} />
+       ))}
+@@ -153,6 +153,6 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           </p>
+         </div>
+       </section>
+-    </main>
++    </div>
+   );
+ }
+diff --git a/apps/web/app/service-areas/page.tsx b/apps/web/app/service-areas/page.tsx
+index c9aa3e1..70c6167 100644
+--- a/apps/web/app/service-areas/page.tsx
++++ b/apps/web/app/service-areas/page.tsx
+@@ -15,7 +15,7 @@ export default function ServiceAreasIndex() {
+     { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
+   ]);
+   return (
+-    <main>
++    <div>
+       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+       <section className="section">
+         <div className="shell">
+@@ -39,6 +39,6 @@ export default function ServiceAreasIndex() {
+           </p>
+         </div>
+       </section>
+-    </main>
++    </div>
+   );
+ }
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 66734f3..9321072 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -337,13 +337,22 @@ See §5.
+ chosen for its font size rather than its position in the document outline is a
+ machine-readability bug as well as a screen-reader one (Phase 8).
+ 
+-### F-08 · Two `<h1>` elements in two files
++### F-08 · Two `<h1>` elements in two files — **WITHDRAWN**
+ 
+-`apps/web/app/verify-email/page.tsx` and
+-`apps/web/app/(portal)/mypage/invoices/[id]/pay/page.tsx` each declare two `<h1>`.
+-**Unverified** — both are likely in mutually-exclusive conditional branches
+-(success/failure states), in which case only one ever renders and this is a
+-non-finding. Needs a render check, not a static one.
++Phase 0 flagged `verify-email/page.tsx` and
++`(portal)/mypage/invoices/[id]/pay/page.tsx` as declaring two `<h1>` each, and
++said it needed a render check. Checked during Phase 7: both are **mutually
++exclusive early returns**.
++
++- `verify-email/page.tsx:16` `if (!token) return (…<h1>Invalid link</h1>…)`,
++  `:33` `if (!result.success) return (…<h1>Link expired or invalid</h1>…)`,
++  `:49` the success return.
++- `pay/page.tsx:36` `if (invoice.status === 'PAID') return (…<h1>Invoice Already
++  Paid</h1>…)`, `:53` the normal return.
++
++Exactly one `<h1>` renders in every case. **Not a defect.** The static heading
++audit cannot see control flow; this is a known limitation of
++`semantics-audit.mjs` and is now noted in its header.
+ 
+ ### F-09 · 592 static inline styles bypass the token system
+ 
+@@ -723,3 +732,80 @@ that list. The guard was working; the list was incomplete.
+ certification makes ecowoods.ca the cited source of a false claim about a real
+ business. The remediation of June removed invented testimonials from the pages a
+ human reads and left the file a machine reads untouched.
++
++---
++
++## 9. Document-outline findings (Phase 7 structural)
++
++### F-24 · Ten files emitted a `<main>` nested inside the root `<main>` · **P0**
++
++Phase 0 reported this as "~19 routes" from `admin/layout.tsx`,
++`(portal)/mypage/layout.tsx` and `authority/page.tsx`. The real count was higher:
++`app/layout.tsx:148` wraps every route in `<main id="main">`, and **ten** further
++files opened another one inside it.
++
++| File | line |
++|---|---|
++| `app/blog/page.tsx` | 50 |
++| `app/case-studies/page.tsx` | 34 |
++| `app/components/ArticleLayout.tsx` | 53 |
++| `app/case-studies/[slug]/case-study-layout.tsx` | 81 |
++| `app/service-areas/page.tsx` | 18 |
++| `app/service-areas/[city]/page.tsx` | 43 |
++| `app/products/floorforge/page.tsx` | 212 |
++| `app/admin/layout.tsx` | 51 |
++| `app/(portal)/mypage/layout.tsx` | 45 |
++| `app/authority/page.tsx` | 123 |
++
++That is effectively **every content route on the site** — the blog, all six
++articles, all five case studies, `/service-areas` and its 16 city pages,
++`/products/floorforge`, `/authority`, and all 18 portal and admin routes.
++
++Three consequences, all measurable:
++
++1. **Nested `<main>` is invalid HTML** and produces a duplicate `main` landmark.
++   axe: `landmark-no-duplicate-main`, `landmark-unique`.
++2. **An answer engine parsing the page cannot tell which region is the primary
++   content.** Two `main` landmarks is the structural equivalent of two `<h1>`.
++3. **The skip link lands in the wrong place.** `app/layout.tsx:144` targets
++   `#main`, which is the outer element. On `/mypage/invoices` a keyboard user
++   pressing it arrives above the sidebar navigation — the exact failure the skip
++   link exists to prevent.
++
++**Fixed by keeping the root `<main id="main">` as the sole landmark and turning
++all ten nested ones into `<div>`, classNames unchanged.** No CSS rule in
++`globals.css` selects `main`, `header`, `footer` or `article` by element, so the
++change is visually a no-op — verified by grep before editing.
++
++`app/authority/page.tsx` keeps its page-level `<header>` and `<footer>`: inside
++`<main>` neither maps to a `banner`/`contentinfo` landmark, so they are
++spec-legal and carry no duplicate.
++
++### F-25 · Two unlabelled `<nav>` landmarks · P1
++
++`app/admin/layout.tsx:40` and `app/(portal)/mypage/layout.tsx:34` rendered
++`<nav className="portal-nav">` with no accessible name, alongside the two in
++`Header.tsx` — axe `landmark-unique`. A screen-reader user listing landmarks got
++several unnamed "navigation" entries. Now `aria-label="Admin"` and
++`aria-label="Your account"`. Every breadcrumb `<nav>` already carried
++`aria-label="Breadcrumb"`.
++
++### F-26 · 51 table headers without `scope` · P1
++
++Eight files across `/admin/*` and `/mypage/invoices` render `<th>` with no
++`scope`. Without it a screen reader cannot reliably associate a cell with its
++column header, and a table parser has to guess the orientation. All 51 are column
++headers in a `<thead>` row; all now `<th scope="col">`.
++
++### F-15 · Redundant ARIA roles — fixed
++
++`Header.tsx` `role="banner"`, `SiteFooter.tsx` `role="contentinfo"`,
++`layout.tsx` `role="main"`. Each duplicates the element's implicit role. Removed.
++
++### Already correct — checked, not changed
++
++- `ArticleLayout.tsx:23` and `case-study-layout.tsx:26` already wrap their
++  content in `<article>` and already emit `<time dateTime={…}>` for the
++  publication date. Phase 8's `<article>` / `<time datetime>` requirement was
++  **already met**; no change needed.
++- Every breadcrumb `<nav>` already has `aria-label="Breadcrumb"`.
+diff --git a/audit/scripts/semantics-audit.mjs b/audit/scripts/semantics-audit.mjs
+index 531006d..361c05d 100644
+--- a/audit/scripts/semantics-audit.mjs
++++ b/audit/scripts/semantics-audit.mjs
+@@ -15,6 +15,12 @@
+  * landmark counts are reported per FILE and must be summed along the layout
+  * chain by hand. That limitation is stated rather than hidden.
+  *
++ * It also cannot see CONTROL FLOW. A file with two <h1> in two mutually
++ * exclusive early returns renders exactly one, and this script will still report
++ * "h1x2" — that is what happened with verify-email/page.tsx and
++ * mypage/invoices/[id]/pay/page.tsx (see audit/FINDINGS.md F-08, withdrawn).
++ * Always open the file before believing a heading-count finding.
++ *
+  * Usage: node audit/scripts/semantics-audit.mjs
+  */
+ import fs from 'node:fs';
