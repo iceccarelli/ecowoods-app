@@ -49,6 +49,35 @@ is churn with a visual blast radius and no customer benefit. The brief's Phase
 1.4 asks for "a deliberate ratio," which could be read either way. **Confirm
 before Phase 1 touches type.**
 
+### Q5 — Which FAQ wording is canonical? (blocks closing F-28)
+
+Three of four homepage FAQ answers differ between the visible page and the
+machine-readable copies. Two directions, both content decisions:
+
+**(a) The visible page wins.** `FAQ_ITEMS` in `lib/seo-data.ts` adopts the
+home-client wording. Consequence: "HEPA-sealed **Festool and Bona Atomic**
+systems" and "**No runaround.**" then appear on all 16 service-area pages and in
+`/llms.txt`. Naming two supplier brands sitewide is a positioning choice.
+
+**(b) The machine copy wins.** `home-client.tsx` imports `FAQ_ITEMS` instead of
+declaring its own. Consequence: the brand names and "No runaround." come off the
+homepage.
+
+Either way the result is one source and markup that matches visible content.
+I am not choosing which sentence Ecowoods publishes.
+
+### Q6 — Is the 99.7% dust-capture figure verifiable?
+
+It appears in 10 places, is now inside the JSON-LD an answer engine will quote,
+and is derived in `dust-free-sanding-hepa-extraction-explained.mdx` from a CFM
+calculation rather than from a measurement of an Ecowoods job. Same category as
+the `<2.5µm` claim removed in F-23.
+
+If Francisco can point to the equipment spec or test it is drawn from, it stays
+and should be attributed. If not, it should be softened to describe the method
+rather than assert a number. `pnpm verify:facts` will not catch it either way —
+it is not on the retired list.
+
 ### Q4 — What replaces the Unsplash hero photo?
 
 F-06 establishes that `globals.css:910` loads a 2400px third-party stock photo as

@@ -12,6 +12,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
+import { FAQ_ITEMS } from '@/lib/seo-data';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
   buildOrganization,
@@ -152,28 +153,20 @@ export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
  * ────────────────────────────────────────────────────────────────────────
  */
 
-export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = [
-  {
-    question: 'Is the estimate really fixed? What about "unforeseen conditions"?',
-    answer:
-      'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.',
-  },
-  {
-    question: 'Can we stay in the house during the work?',
-    answer:
-      'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
-  },
-  {
-    question: 'What warranty comes with the work?',
-    answer:
-      'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right.',
-  },
-  {
-    question: 'How long will my project take?',
-    answer:
-      'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
-  },
-];
+/**
+ * Homepage FAQ, derived from the single source in lib/seo-data.ts.
+ *
+ * This was a verbatim second copy of FAQ_ITEMS — byte-identical, verified by
+ * comparison before it was removed, so this is a de-duplication and not a
+ * content change. A third copy still lives in app/home-client.tsx as the
+ * VISIBLE text, and its wording has already drifted from this one; reconciling
+ * the two is a content decision and is recorded in audit/DEFERRED.md Q5.
+ * See audit/FINDINGS.md F-28.
+ */
+export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = FAQ_ITEMS.map((f) => ({
+  question: f.q,
+  answer: f.a,
+}));
 
 /* ────────────────────────────────────────────────────────────────────────
  * BUILT SCHEMAS (exported for injection into layout)

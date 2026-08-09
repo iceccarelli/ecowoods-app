@@ -809,3 +809,81 @@ headers in a `<thead>` row; all now `<th scope="col">`.
   publication date. Phase 8's `<article>` / `<time datetime>` requirement was
   **already met**; no change needed.
 - Every breadcrumb `<nav>` already has `aria-label="Breadcrumb"`.
+
+---
+
+## 10. Structured-data findings (Phase 8b)
+
+### F-27 · `FAQPage` was declared on all 67 routes, and twice on the homepage · **P1**
+
+`app/layout.tsx` injected `HOMEPAGE_FAQ_SCHEMA` into the `<head>` of **every**
+route. That told every parser that `/admin`, `/mypage/invoices`,
+`/blog/subfloor-moisture-testing-protocol`, `/docs/quote/[id]` and 60 others are
+FAQ pages. Google's FAQPage guidance is explicit that the markup belongs on a
+page whose main content is the FAQ.
+
+On `/` it was worse: `app/home-client.tsx:433` already renders its own
+`FAQPage` from `faqItems`, so the homepage shipped **two** `FAQPage` blocks.
+
+Removed from the site-wide graph. The homepage keeps the one that sits next to
+the visible questions; `/service-areas/[city]` keeps its own via
+`faqPageSchema()`, which is correct — those pages render `FAQ_ITEMS` visibly at
+`service-areas/[city]/page.tsx:130`.
+
+`ROOT_ORGANIZATION_SCHEMA` and `ROOT_WEBSITE_SCHEMA` stay site-wide, which is
+right: they describe the entity and the site, not the page.
+
+### F-28 · The FAQ existed in three copies, and the machine copy no longer matched the visible one · **P1**
+
+| Source | Consumed by |
+|---|---|
+| `lib/seo-data.ts` `FAQ_ITEMS` | `/llms.txt`, `/service-areas/[city]` (visible + JSON-LD) |
+| `lib/schema/root-schema.ts` `HOMEPAGE_FAQ_ITEMS` | the site-wide JSON-LD (F-27) |
+| `app/home-client.tsx` `faqItems` | the **visible** homepage FAQ + its JSON-LD |
+
+Compared programmatically. `root-schema` and `seo-data` are **byte-identical** —
+a pure duplicate, now derived rather than repeated.
+
+`home-client` has **drifted on three of four answers**:
+
+| | visible page says | machine copies say |
+|---|---|---|
+| Q2 | "HEPA-sealed **Festool and Bona Atomic** systems" | "HEPA-sealed systems" |
+| Q3 | "**and we pass every one through** to you in writing … make it right. **No runaround.**" | "passed through to you in writing … make it right." |
+| Q4 | "sanding, staining**,** and finishing" | "sanding, staining and finishing" |
+
+Q4 is a comma. Q2 and Q3 are not: the answer a human reads on ecowoods.ca names
+two equipment brands and adds a promise that the answer an AI agent reads does
+not contain. Google requires FAQ markup to match the visible content;
+a mismatch is a structured-data manual-action risk, and for an answer engine it
+means the quoted answer and the on-page answer differ.
+
+**Not fixed here, deliberately.** Reconciling them means choosing which wording
+is canonical, and either direction changes published copy — adding brand names
+to 16 city pages and `/llms.txt`, or removing them from the homepage. That is a
+content decision. `audit/DEFERRED.md` Q5.
+
+### Flagged, not touched — the 99.7% dust-capture claim
+
+`99.7%` appears in **10 places** including `home-client.tsx:261,308,341`,
+`service-areas/[city]/page.tsx:115`, `root-schema.ts:94,164`,
+`seo-data.ts:45,57`, `products/floorforge/page.tsx:364`, and the article
+`dust-free-sanding-hepa-extraction-explained.mdx`, where it is presented with a
+CFM derivation.
+
+It is the same class of claim as the `<2.5µm` figure removed from `llms.txt` in
+F-23: a specific measured performance number. `pnpm verify:facts` passes because
+it is not on the retired-literals list. Whether it is verifiable is Francisco's
+call, not mine — **but it is now also in the JSON-LD, which is the copy an
+answer engine will quote.** Recorded in `audit/DEFERRED.md` Q6.
+
+### Checked and correct — the entity graph
+
+Worth stating plainly, because it is the part that was done well:
+`buildOrganization` emits `@id: {baseUrl}/#organization`, `buildWebSite` emits
+`{baseUrl}/#website` with `publisher: { '@id': …/#organization }`, and articles,
+case studies, services and products all reference the organization by `@id`
+rather than repeating it. That is exactly what makes an entity resolvable to a
+crawler. `ROOT_AGGREGATE_RATING` is `null` with a comment explaining that
+self-serving review markup is not allowed — also correct, and it should stay
+null.

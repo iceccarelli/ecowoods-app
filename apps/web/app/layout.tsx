@@ -5,7 +5,7 @@ import Header from './components/Header';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
-import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA, HOMEPAGE_FAQ_SCHEMA } from '@/lib/schema';
+import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA } from '@/lib/schema';
 import ConversionRail from './components/ConversionRail';
 import ReadingProgress from './components/ReadingProgress';
 
@@ -117,11 +117,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           these via @id pointers, creating a deeply nested, machine-readable
           entity graph that AI agents can ingest and cite.
 
-          Schema coverage:
+          Schema coverage on EVERY route:
           - LocalBusiness (+ 6 nested Services)
           - WebSite
-          - FAQPage (homepage FAQ)
           - Note: AggregateRating kept separate per schema.org compliance
+
+          FAQPage is deliberately NOT here. It used to be, which declared all 67
+          routes — /admin, /mypage/invoices, /blog/*, /docs/quote/[id] — as FAQ
+          pages, and gave the homepage a SECOND FAQPage on top of the one
+          home-client.tsx already renders. Google's FAQPage guidance requires the
+          FAQ to be the page's main content. The homepage and the 16
+          service-area pages emit their own, next to the visible questions.
+          See audit/FINDINGS.md F-27.
         */}
         <script
           type="application/ld+json"
@@ -130,10 +137,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ROOT_WEBSITE_SCHEMA) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(HOMEPAGE_FAQ_SCHEMA) }}
         />
 
         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
