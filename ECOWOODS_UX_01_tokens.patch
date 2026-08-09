@@ -1,0 +1,567 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 3a0353a..a6bc8f3 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -62,6 +62,15 @@
+   --cta-to: #925a35;                     /* cream text 5.22:1 */
+   --cta-fg: #faf6ef;
+ 
++  /* The generalisation of the line above. The --cta-* pair fixed .btn-copper and
++     nothing else, so ten further components re-derived "cream on --copper" by
++     hand and every one of them landed on 2.97:1 (2.43:1 in dark). Any filled
++     copper shape carrying text or a glyph uses this pair — never raw --copper.
++     Deliberately identical in both themes: a mid copper reads as a lit surface
++     on espresso and still carries cream at 4.5:1. */
++  --copper-surface: #a56034;             /* = --cta-from */
++  --on-copper: #faf6ef;                  /* 4.51:1 on --copper-surface */
++
+   /* CHROME — the header, the hamburger, form scrims. These were hardcoded
+      rgba(253,251,246,…): a cream sheet that stayed cream in dark mode while
+      --ink flipped to near-white. Cream text on cream. */
+@@ -99,10 +108,17 @@
+   --surface-warm: #faf6ef;
+   --surface-deep: #1a0f08;
+ 
+-  /* Status */
+-  --success: #4a7c59;
+-  --warning: #d4a444;
+-  --danger: #b04848;
++  /* Status. These are used as TEXT in ~20 places (admin money figures, form
++     errors, the availability pill) as well as fills, so they carry the 4.5:1
++     bar, measured against the worst surface each actually lands on. */
++  --success: #42704f;   /* was #4a7c59 — 4.25:1 on --surface-2, 3.95:1 on the
++                           14%-green availability pill. Now 5.02 / 4.66. */
++  --warning: #8f6410;   /* was #d4a444 — 2.00:1 on --surface-2, the worst text
++                           contrast left on the site, on admin currency totals.
++                           Now 4.59 there, 5.25 on --surface. Reads as deep
++                           ochre, which sits inside the copper family rather
++                           than fighting it. */
++  --danger: #b04848;    /* 4.75:1 on --surface-2 — already AA, unchanged. */
+ 
+   /* Typography */
+   --font-display: 'Fraunces', 'Playfair Display', Georgia, serif;
+@@ -123,6 +139,15 @@
+   --fs-lg: 1.25rem;
+   --fs-xl: 1.5rem;
+ 
++  /* Display steps. The scale stopped at 24px, so every heading above that size
++     used a raw clamp() or rem inline — 41 distinct fixed sizes were counted
++     before tokens existed and the top of the scale is where they crept back.
++     Heading LEVEL is chosen by document structure; these choose its size.
++     See audit/DESIGN_SYSTEM.md §2.4 for the level->token mapping. */
++  --fs-2xl: clamp(1.75rem, 3vw, 2.25rem);      /* h2, section headings */
++  --fs-3xl: clamp(2.25rem, 4.5vw, 3rem);       /* h1 on interior pages */
++  --fs-display: clamp(2.75rem, 7vw, 4.5rem);   /* hero h1 only */
++
+   /* Spacing rhythm
+      The middle term drives the fluid scale. It was 9vw, which is *viewport*-
+      proportional: sections drifted apart on wide monitors regardless of
+@@ -130,6 +155,21 @@
+      and the cap drops 7rem -> 5.5rem so large screens stay connected. Mobile is
+      effectively unchanged (min term 3.5rem vs 4rem). One scale, used everywhere,
+      is what makes rhythm feel intentional rather than incidental. */
++  /* Component spacing scale. These were referenced 17 times by
++     app/products/floorforge/page.tsx and defined NOWHERE, so every section
++     padding and grid gap on the live pilot lead page resolved to an invalid
++     declaration and collapsed to 0. A var() with no fallback pointing at an
++     undefined property is invalid at computed-value time: nothing throws,
++     nothing logs, next build stays green. See audit/FINDINGS.md F-01.
++     4px base. Section-level rhythm is fluid and lives below, separately. */
++  --space-2xs: 0.25rem;   /*  4px — icon-to-label */
++  --space-xs: 0.5rem;     /*  8px — tight inline gaps, chip padding */
++  --space-sm: 0.75rem;    /* 12px — form field internal padding */
++  --space-md: 1rem;       /* 16px — default gap, compact card padding */
++  --space-lg: 1.5rem;     /* 24px — card padding, grid gap */
++  --space-xl: 2.5rem;     /* 40px — between blocks inside a section */
++  --space-2xl: 4rem;      /* 64px — between subsections */
++
+   --shell-max: 1280px;
+   --shell-pad: clamp(1.25rem, 4vw, 3rem);
+   --section-y: clamp(3.5rem, 5.5vw, 5.5rem);
+@@ -143,7 +183,15 @@
+   --fab-inset: 22px;
+   --fab-inset-x: 22px;
+ 
+-  /* Motion */
++  /* Motion. Easings were tokenised; durations were not, so 31 distinct values
++     are in play as literals. These are the four bands. Micro-interactions
++     120-200ms, entrances 250-400ms, nothing over 500ms except a deliberate
++     ambient loop (marquees). Introduced here; Phase 5 migrates the literals. */
++  --dur-fast: 150ms;    /* hover, active, focus, colour */
++  --dur-base: 200ms;    /* the default */
++  --dur-slow: 300ms;    /* larger state changes */
++  --dur-enter: 380ms;   /* entrances, sheets, modals */
++
+   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+   --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+@@ -156,12 +204,20 @@
+   --shadow-warm: 0 12px 32px rgba(200, 126, 79, 0.18), 0 0 0 1px rgba(200, 126, 79, 0.1);
+   --shadow-glow: 0 0 40px -8px var(--copper-glow);
+ 
+-  /* Radii */
++  /* Radii. Bare --radius was referenced 19 times (globals.css .portal-list-item-link,
++     17 TSX sites across /mypage/* and /admin/*, and tailwind's borderRadius.DEFAULT)
++     and defined nowhere, so every card and list row in the logged-in portal
++     rendered square. See audit/FINDINGS.md F-02. */
+   --radius-sm: 6px;
+   --radius-md: 10px;
+   --radius-lg: 18px;
+   --radius-xl: 28px;
+   --radius-full: 999px;
++  --radius: var(--radius-md);   /* the default, for code that asks for "a radius" */
++
++  /* Alias for the same reason: app/products/floorforge/page.tsx asks for
++     var(--border) twice; the hairline token has always been called --line. */
++  --border: var(--line);
+ }
+ 
+ /* --------------------- Resets & Base (State-of-the-art) --------------------- */
+@@ -462,7 +518,7 @@ p {
+ 
+ .btn-primary {
+   background: var(--walnut-900);
+-  color: var(--cream-50);
++  color: var(--on-dark);
+ }
+ 
+ .btn-primary:hover {
+@@ -891,7 +947,7 @@ p {
+   padding-top: 6rem;
+   overflow: hidden;
+   background: var(--walnut-950);
+-  color: var(--cream-50);
++  color: var(--on-dark);
+ }
+ 
+ .hero-bg {
+@@ -1115,9 +1171,9 @@ p {
+ }
+ 
+ .estimator-option.active {
+-  background: var(--copper);
+-  border-color: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  border-color: var(--copper-surface);
++  color: var(--on-copper);
+   font-weight: 700;
+   box-shadow: var(--shadow-warm);
+   transform: none;
+@@ -1486,7 +1542,7 @@ p {
+ 
+ .field-radio.checked {
+   background: var(--walnut-900);
+-  color: var(--cream-50);
++  color: var(--on-dark);
+   border-color: var(--copper);
+   box-shadow: var(--shadow-warm);
+ }
+@@ -1981,21 +2037,27 @@ p {
+   width: 64px;
+   height: 64px;
+   border-radius: 18px;
+-  background: linear-gradient(145deg, var(--cream-100), var(--surface-warm));
++  /* was --cream-100 -> --surface-warm. --cream-100 is a primitive and does not
++     flip, --surface-warm does, so in dark this tile ran cream -> espresso with
++     a --copper-deep glyph at 3.50:1. Both stops are semantic now, so the tile
++     is light in light and espresso in dark, and the glyph tracks it. */
++  background: linear-gradient(145deg, var(--surface-2), var(--surface-warm));
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   margin-bottom: 1.75rem;
+   flex-shrink: 0;
+-  color: var(--copper-deep);
++  color: var(--copper-text);
+   box-shadow: inset 0 2px 0 rgba(255,255,255,0.7), var(--shadow-md);
+   transition: all 300ms var(--ease-out-quart);
+   position: relative;
+ }
+ 
+ .service-card:hover .service-icon {
+-  background: linear-gradient(145deg, var(--copper), var(--copper-deep));
+-  color: var(--cream-50);
++  /* was --copper -> --copper-deep: the light end put cream at 2.97:1 (2.43:1
++     dark). --copper-surface is the lightest copper that carries --on-copper. */
++  background: linear-gradient(145deg, var(--copper-surface), var(--cta-to));
++  color: var(--on-copper);
+   transform: rotate(3deg) scale(1.08);
+   box-shadow: var(--shadow-glow);
+ }
+@@ -2275,8 +2337,8 @@ p {
+   width: 48px;
+   height: 48px;
+   border-radius: 9999px;
+-  background: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  color: var(--on-copper);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+@@ -2827,7 +2889,7 @@ p {
+   width: 260px;
+   min-height: 100vh;
+   background: var(--walnut-950);
+-  color: var(--cream-50);
++  color: var(--on-dark);
+   display: flex;
+   flex-direction: column;
+   position: sticky;
+@@ -3637,8 +3699,8 @@ p {
+   width: 1.75rem;
+   height: 1.75rem;
+   border-radius: 999px;
+-  background: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  color: var(--on-copper);
+   font-size: var(--fs-base);
+   font-weight: 600;
+   flex-shrink: 0;
+@@ -3672,8 +3734,8 @@ p {
+   display: grid; place-items: center;
+   width: 2.5rem; height: 2.5rem; flex-shrink: 0;
+   border-radius: 10px;
+-  background: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  color: var(--on-copper);
+ }
+ .estimate-cta-text { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+ .estimate-cta-title { font-family: var(--font-display); font-size: var(--fs-md); color: var(--cream-50); line-height: 1.2; }
+@@ -4044,6 +4106,13 @@ html[data-theme='dark'] {
+   --danger-bg: rgba(162, 58, 42, 0.16);
+   --danger-border: rgba(255, 157, 140, 0.28);
+ 
++  /* Status had no dark override at all, so the light values — chosen against
++     cream — were still in force on espresso. Measured against --surface-2
++     (#241e17), the worst dark surface any of them lands on. */
++  --success: #84b894;   /* 7.28:1 (light value #42704f was 1.62:1 here) */
++  --warning: #d4a444;   /* 7.22:1 — the amber the light theme cannot afford */
++  --danger: #e88b8b;    /* 6.67:1 (light value #b04848 was 3.04:1 here) */
++
+   /* Wood palette compresses so light-on-walnut sections stay legible */
+   --walnut-950: #0b0906;
+   --walnut-900: #17120d;
+@@ -5228,8 +5297,9 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   place-items: center;
+   font-weight: 700;
+   font-size: var(--fs-base);
+-  color: var(--cream-50);
+-  background: linear-gradient(135deg, var(--copper), var(--copper-bright));
++  color: var(--on-copper);
++  /* --copper-bright is the worst case here: cream on it is 2.30:1. */
++  background: linear-gradient(135deg, var(--cta-to), var(--copper-surface));
+ }
+ .pfd-author-meta {
+   display: flex;
+@@ -6585,8 +6655,8 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   left: 1.5rem;
+   padding: 0.25rem 0.7rem;
+   border-radius: var(--radius-full);
+-  background: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  color: var(--on-copper);
+   font-size: var(--fs-3xs);
+   font-weight: 700;
+   letter-spacing: 0.08em;
+@@ -6666,8 +6736,8 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   display: inline-block;
+   padding: 0.95rem 1.8rem;
+   border-radius: var(--radius-full);
+-  background: var(--copper);
+-  color: var(--cream-50);
++  background: var(--copper-surface);
++  color: var(--on-copper);
+   font-weight: 600;
+   text-decoration: none;
+   transition: transform 0.15s ease, background 0.15s ease;
+@@ -6935,7 +7005,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-page { background: var(--paper); color: var(--walnut-950); min-height: 100vh; }
+ 
+ /* ── Hero ── */
+-.tlx-hero { border-bottom: 1px solid var(--cream-100); padding: 4.5rem 0 3rem; }
++.tlx-hero { border-bottom: 1px solid var(--line); padding: 4.5rem 0 3rem; }
+ .tlx-hero .shell { max-width: 860px; }
+ .tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+@@ -7036,12 +7106,12 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-body tbody tr:nth-child(odd) td { background: var(--cream-50); }
+ .tlx-body td:first-child, .tlx-body th:first-child { padding-left: 1rem; }
+ .tlx-body code { font-family: var(--font-mono); font-size: 0.86em;
+-  background: var(--cream-100); border-radius: 5px; padding: 0.12em 0.4em; }
++  background: var(--surface-2); border-radius: 5px; padding: 0.12em 0.4em; }
+ .tlx-body pre { margin: 1.5rem 0; padding: 1.1rem 1.25rem; overflow-x: auto;
+-  background: var(--cream-50); border: 1px solid var(--cream-100);
++  background: var(--surface-1); border: 1px solid var(--line);
+   border-left: 3px solid var(--copper); border-radius: 0 10px 10px 0;
+   font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+-  color: var(--walnut-900); }
++  color: var(--ink); }
+ .tlx-body pre code { background: none; padding: 0; border-radius: 0; }
+ 
+ @media (max-width: 640px) {
+@@ -7050,24 +7120,29 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ 
+ /* ── About / tags footer ── */
+ .tlx-about { max-width: 720px; margin: 3.5rem auto 0; padding: 1.4rem 1.5rem;
+-  background: var(--cream-50); border: 1px solid var(--cream-100); border-radius: 12px; }
++  background: var(--surface-1); border: 1px solid var(--line); border-radius: 12px; }
+ .tlx-about h3 { font-family: var(--font-display); font-size: 1rem; margin: 0 0 0.4rem; }
+-.tlx-about p { color: var(--walnut-700); font-size: 0.9rem; line-height: 1.6; margin: 0; }
++.tlx-about p { color: var(--ink-soft); font-size: 0.9rem; line-height: 1.6; margin: 0; }
+ .tlx-tags { max-width: 720px; margin: 1.5rem auto 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+ .tlx-tags span { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em;
+-  padding: 0.3rem 0.75rem; border: 1px solid var(--cream-100); border-radius: 999px;
+-  background: var(--cream-50); color: var(--oak-500); }
++  padding: 0.3rem 0.75rem; border: 1px solid var(--line); border-radius: 999px;
++  background: var(--surface-2); color: var(--copper-text); }
+ 
+ /* ── Related ── */
+ .tlx-related { max-width: 860px; margin: 4rem auto 0; padding-top: 2.5rem;
+-  border-top: 1px solid var(--cream-100); }
++  border-top: 1px solid var(--line); }
+ .tlx-related .tlx-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+ 
+ /* ── CTA band ── */
+-.tlx-cta { background: var(--walnut-950); color: var(--cream-50); border-radius: 18px;
++/* Dark in BOTH themes, which is what the --on-dark-* family exists for.
++   --maple-200 is a primitive: it flips #e8d4b8 -> #6a5844 while --walnut-950
++   also darkens, so this paragraph read 13.03:1 in light and 2.93:1 in dark —
++   on the CTA band at the foot of every /technical-library, /blog and
++   /case-studies page. See audit/FINDINGS.md F-05. */
++.tlx-cta { background: var(--walnut-950); color: var(--on-dark); border-radius: 18px;
+   padding: 2.5rem 2rem; text-align: center; }
+ .tlx-cta h2 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 0.6rem; }
+-.tlx-cta p { color: var(--maple-200); margin: 0 0 1.5rem; }
++.tlx-cta p { color: var(--on-dark-muted); margin: 0 0 1.5rem; }
+ 
+ @media (prefers-reduced-motion: reduce) {
+   .tlx-card, .tlx-card:hover { transition: none; transform: none; }
+diff --git a/apps/web/tailwind.config.ts b/apps/web/tailwind.config.ts
+index 6d831e3..7d67570 100644
+--- a/apps/web/tailwind.config.ts
++++ b/apps/web/tailwind.config.ts
+@@ -6,7 +6,8 @@ import type { Config } from 'tailwindcss';
+  * The actual design tokens (wood palette, type scale, motion easings, shadows)
+  * live in globals.css as CSS variables. This config only:
+  *   1. Tells Tailwind where to look for class names.
+- *   2. Exposes a thin theme bridge so utilities like `text-walnut-900` work
++ *   2. Tells Tailwind what "dark" means on this site.
++ *   3. Exposes a thin theme bridge so utilities like `text-walnut-900` work
+  *      if you ever want them — but most styling is already done via the
+  *      component classes in globals.css, so this is intentionally minimal.
+  */
+@@ -15,16 +16,41 @@ const config: Config = {
+     './app/**/*.{ts,tsx}',
+     './components/**/*.{ts,tsx}',
+   ],
++
++  /**
++   * Without this key Tailwind defaults to `media`, i.e. the OS-level
++   * `prefers-color-scheme`. This site's dark mode is `html[data-theme='dark']`,
++   * written before paint by the no-flash script in app/layout.tsx and driven by
++   * the ThemeToggle and the `ecowoods:theme` localStorage key.
++   *
++   * Those two mechanisms were completely decoupled, so a visitor with the site
++   * toggled to dark and a light OS got a light /authority on a dark site — and
++   * the reverse. /authority is the only page using `dark:` variants (55 of
++   * them). See audit/FINDINGS.md F-03.
++   *
++   * This aligns the wiring. It does NOT resolve the palette drift on that page
++   * — /authority is still styled in stock `stone-*`/`amber-*` rather than brand
++   * tokens, which is open question Q1 in audit/DEFERRED.md.
++   */
++  darkMode: ['selector', "html[data-theme='dark']"],
++
+   theme: {
+     extend: {
+       colors: {
++        /**
++         * Only steps that actually exist in globals.css are listed. The removed
++         * entries (walnut 50-500, oak 600, cream 200) pointed at custom
++         * properties defined nowhere, so a utility like `bg-walnut-300` emitted
++         * a background-color referencing an undefined custom property — an
++         * invalid declaration that silently falls back to the inherited value.
++         * Nothing errored; the utility just did nothing. No usage was found, so
++         * this is a landmine removal rather than a fix. See audit/FINDINGS.md
++         * F-14.
++         *
++         * If a step is wanted back, define the token in globals.css first, in
++         * BOTH themes, then re-add it here — not the other way round.
++         */
+         walnut: {
+-          50: 'var(--walnut-50)',
+-          100: 'var(--walnut-100)',
+-          200: 'var(--walnut-200)',
+-          300: 'var(--walnut-300)',
+-          400: 'var(--walnut-400)',
+-          500: 'var(--walnut-500)',
+           600: 'var(--walnut-600)',
+           700: 'var(--walnut-700)',
+           800: 'var(--walnut-800)',
+@@ -32,17 +58,30 @@ const config: Config = {
+           950: 'var(--walnut-950)',
+         },
+         oak: {
++          300: 'var(--oak-300)',
+           400: 'var(--oak-400)',
+           500: 'var(--oak-500)',
+-          600: 'var(--oak-600)',
+         },
+         cream: {
+           50: 'var(--cream-50)',
+           100: 'var(--cream-100)',
+-          200: 'var(--cream-200)',
+         },
+-        copper: 'var(--copper)',
++        maple: {
++          200: 'var(--maple-200)',
++        },
++        copper: {
++          DEFAULT: 'var(--copper)',
++          bright: 'var(--copper-bright)',
++          deep: 'var(--copper-deep)',
++          /* the only copper safe behind cream text — see globals.css */
++          surface: 'var(--copper-surface)',
++        },
+         forest: 'var(--forest)',
++        /* semantic and theme-aware — prefer these over the primitives above */
++        ink: 'var(--ink)',
++        muted: 'var(--muted)',
++        surface: 'var(--surface)',
++        line: 'var(--line)',
+       },
+       fontFamily: {
+         serif: ['var(--font-display)', 'serif'],
+@@ -50,10 +89,26 @@ const config: Config = {
+         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
+       },
+       borderRadius: {
++        /* --radius is now defined; before this `rounded` was a no-op */
+         DEFAULT: 'var(--radius)',
+         lg: 'var(--radius-lg)',
+         xl: 'var(--radius-xl)',
+       },
++      spacing: {
++        '2xs': 'var(--space-2xs)',
++        xs: 'var(--space-xs)',
++        sm: 'var(--space-sm)',
++        md: 'var(--space-md)',
++        lg: 'var(--space-lg)',
++        xl: 'var(--space-xl)',
++        '2xl': 'var(--space-2xl)',
++      },
++      transitionDuration: {
++        fast: 'var(--dur-fast)',
++        DEFAULT: 'var(--dur-base)',
++        slow: 'var(--dur-slow)',
++        enter: 'var(--dur-enter)',
++      },
+     },
+   },
+   plugins: [],
+diff --git a/audit/DESIGN_SYSTEM.md b/audit/DESIGN_SYSTEM.md
+index 1e8cf7c..14e527d 100644
+--- a/audit/DESIGN_SYSTEM.md
++++ b/audit/DESIGN_SYSTEM.md
+@@ -65,7 +65,7 @@ Current state: 47 of 62 colour tokens have a dark override. The 15 without:
+ |---|---|
+ | `--on-dark`, `--on-dark-muted`, `--on-dark-faint`, `--on-dark-line` | **correct** — documented at `globals.css:4041`; these name a surface that never flips |
+ | `--cream-50`, `--cream-100`, `--oak-300/400/500`, `--walnut-600/700` | primitives — acceptable *provided* no component rule references them (§1.1) |
+-| `--forest-deep` | needs a dark value; used as a section background |
++| `--forest-deep` | **dead token — zero usages in the repo.** Earlier text here called it a section background; that was wrong. Leave it without a dark value. |
+ | `--success`, `--warning`, `--danger` | **need dark values.** `--warning` also fails contrast in light (2.00-2.28:1) |
+ 
+ ### 1.4 Contrast floor
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index f1bd74c..4649acf 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -460,14 +460,24 @@ needs a browser. Three further `<div onClick>` sites need inspection:
+ 15 of 62 colour tokens have no dark override. `--on-dark-*` is deliberate and
+ documented at `globals.css:4041`. The rest — `--cream-50`, `--cream-100`,
+ `--oak-300/400/500`, `--walnut-600/700`, `--forest-deep`, `--success`,
+-`--warning`, `--danger` — are not. Consequence visible at `globals.css:7059`:
++`--warning`, `--danger` — are not. (`--forest-deep` has **zero usages anywhere
++in the repo** and is a dead token; `DESIGN_SYSTEM.md` §1.3 called it a section
++background, which was wrong. Leave it dead; do not give it a dark value.) Consequence visible at `globals.css:7059`:
+ `.tlx-tags span { background: var(--cream-50); color: var(--oak-500) }` renders a
+ bright cream pill on an espresso page in dark mode. Contrast is fine (5.18:1);
+ it is a brightness island, P2.
+ 
+-`--warning` (#d4a444) measures **2.00-2.28:1** on every light surface. No
+-`color: var(--warning)` rule currently exists, so this is latent. P3, but fix the
+-token now rather than after someone uses it.
++**CORRECTION (found during Phase 1): `--warning` is not latent — it is live.**
++The Phase 0 pass grepped `globals.css` only and reported no `color: var(--warning)`
++rule. There are **five inline-style usages in TSX**, all in the admin, all as
++text: `admin/projects/[id]/page.tsx:132` and
++`admin/invoices/new/NewInvoiceForm.tsx:150` render currency totals in it, and
++`admin/page.tsx:80,87` render pending-invoice and open-inquiry counts. At
++**2.00:1 on `--surface-2`** that was the worst text contrast remaining on the
++site. Severity was **P3, corrected to P1**. Fixed in patch 01.
++
++Lesson for the remaining phases: a token census that only reads `globals.css`
++misses the 592 static inline styles. Grep both.
+ 
+ ### F-18 · Token duplicates
+ 
+@@ -549,6 +559,26 @@ the apply sequence checks it before touching anything.
+ 
+ ---
+ 
++## 5a. Status after `ECOWOODS_UX_01_tokens.patch`
++
++| ID | Was | Now |
++|---|---|---|
++| F-01 | 17 undefined `--space-*` / `--border` refs | **FIXED** — scale defined in `:root` |
++| F-02 | 19 undefined `--radius` refs | **FIXED** — `--radius: var(--radius-md)` |
++| F-03 | `/authority` on `prefers-color-scheme` | **PARTIAL** — theme wiring fixed via `darkMode`; palette drift is Q1 |
++| F-05 | 10 rules at 2.97:1 / 2.43:1 | **FIXED** — `--copper-surface` / `--on-copper`, 4.51:1 |
++| F-11 | 8 stock Tailwind hexes in `.portal-badge-*` | open — Phase 4 |
++| F-14 | 8 Tailwind colours → undefined tokens | **FIXED** — removed |
++| F-17 | status tokens fail AA, no dark override | **FIXED** — both themes, all surfaces ≥ 4.5:1 |
++
++`node audit/scripts/undefined-tokens-audit.mjs` went from **46 undefined
++references without a fallback to 0**. `theme-parity-audit.mjs` went from **16
++HIGH to 1**, and the survivor (`.footer-cta`, `globals.css:6012`) was measured
++and is safe: 17.47:1 light, 18.46:1 dark. It is left alone rather than given an
++invented token.
++
++---
++
+ ## 6. Severity index
+ 
+ | ID | Sev | Route(s) | Theme | Evidence |
+diff --git a/audit/scripts/theme-parity-audit.mjs b/audit/scripts/theme-parity-audit.mjs
+index b31c29f..29d7432 100644
+--- a/audit/scripts/theme-parity-audit.mjs
++++ b/audit/scripts/theme-parity-audit.mjs
+@@ -71,6 +71,13 @@ const all = [...rules, ...nested];
+ const findings = { HIGH: [], MED: [], LITERAL: [] };
+ const tokenOf = v => { const m = String(v).match(/var\(\s*(--[\w-]+)/); return m ? m[1] : null; };
+ 
++/* Tokens that are theme-fixed ON PURPOSE. --on-dark-* names a surface that is
++   dark in both themes (hero, footer, wood-grain sections); --on-copper and the
++   --cta-* pair name a filled copper control that keeps the same value at night
++   so cream stays at 4.5:1. Pairing one of these with a flipping background is
++   the intended pattern, not a split — flagging them buries the real ones. */
++const INTENTIONALLY_FIXED = /^--(on-dark|on-copper|cta-fg)/;
++
+ for (const r of all) {
+   if (/^html\[data-theme/.test(r.sel)) continue;          // explicit dark rules are fine
+   const decl = Object.create(null);
+@@ -81,7 +88,8 @@ for (const r of all) {
+   const bgTok = bgRaw ? tokenOf(bgRaw) : null;
+   const fgTok = fgRaw ? tokenOf(fgRaw) : null;
+ 
+-  if (bgTok && fgTok && flips(bgTok) !== flips(fgTok)) {
++  if (bgTok && fgTok && flips(bgTok) !== flips(fgTok)
++      && !INTENTIONALLY_FIXED.test(fgTok) && !INTENTIONALLY_FIXED.test(bgTok)) {
+     findings.HIGH.push({ ...r, fg: fgTok, bg: bgTok, why: `background ${flips(bgTok) ? 'flips' : 'is fixed'} but text ${flips(fgTok) ? 'flips' : 'is fixed'}` });
+   } else if (fgRaw && !fgTok && /#[0-9a-f]{3,8}|rgba?\(|\b(white|black)\b/i.test(fgRaw)) {
+     findings.LITERAL.push({ ...r, prop: 'color', value: fgRaw });
