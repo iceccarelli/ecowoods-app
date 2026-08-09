@@ -146,11 +146,11 @@ export default async function MyInvoicesPage() {
             <table className="portal-table">
               <thead>
                 <tr>
-                  <th>Invoice</th>
-                  <th>Project</th>
-                  <th>Amount</th>
-                  <th>Paid</th>
-                  <th>PDF</th>
+                  <th scope="col">Invoice</th>
+                  <th scope="col">Project</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Paid</th>
+                  <th scope="col">PDF</th>
                 </tr>
               </thead>
               <tbody>

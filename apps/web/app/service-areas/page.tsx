@@ -15,7 +15,7 @@ export default function ServiceAreasIndex() {
     { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
   ]);
   return (
-    <main>
+    <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <section className="section">
         <div className="shell">
@@ -39,6 +39,6 @@ export default function ServiceAreasIndex() {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

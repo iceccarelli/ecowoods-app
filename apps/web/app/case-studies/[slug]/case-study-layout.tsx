@@ -78,7 +78,7 @@ export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStud
         </div>
       </header>
 
-      <main className="tlx-section">
+      <div className="tlx-section">
         <div className="shell">
           {children}
 
@@ -106,7 +106,7 @@ export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStud
             </section>
           )}
         </div>
-      </main>
+      </div>
     </article>
   );
 }

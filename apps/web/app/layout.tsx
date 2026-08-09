@@ -145,7 +145,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <ReadingProgress />
           <Header />
-          <main role="main" id="main">{children}</main>
+          <main id="main">{children}</main>
           <SiteFooter />
           <ChatWidgetLoader />
           <ConversionRail />

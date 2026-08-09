@@ -31,7 +31,7 @@ export default async function MyPageLayout({
     <div className="portal-layout">
       {/* Sidebar */}
       <aside className="portal-sidebar">
-        <nav className="portal-nav">
+        <nav className="portal-nav" aria-label="Your account">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="portal-nav-item">
               <span className="portal-nav-icon">{item.icon}</span>
@@ -42,9 +42,9 @@ export default async function MyPageLayout({
       </aside>
 
       {/* Main content */}
-      <main className="portal-main">
+      <div className="portal-main">
         {children}
-      </main>
+      </div>
     </div>
   );
 }

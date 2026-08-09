@@ -40,7 +40,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const nearby = CITIES.filter((c) => c.slug !== city.slug).slice(0, 10);
 
   return (
-    <main>
+    <div>
       {jsonLd.map((o, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(o) }} />
       ))}
@@ -153,6 +153,6 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

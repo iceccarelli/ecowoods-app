@@ -35,13 +35,13 @@ export default async function AdminUsersPage() {
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Name / Email</th>
-              <th>Phone</th>
-              <th>Quotes</th>
-              <th>Projects</th>
-              <th>Revenue (Paid)</th>
-              <th>Joined</th>
-              <th>Actions</th>
+              <th scope="col">Name / Email</th>
+              <th scope="col">Phone</th>
+              <th scope="col">Quotes</th>
+              <th scope="col">Projects</th>
+              <th scope="col">Revenue (Paid)</th>
+              <th scope="col">Joined</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

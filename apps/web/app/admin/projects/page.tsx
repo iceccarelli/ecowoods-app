@@ -68,13 +68,13 @@ export default async function AdminProjectsPage({
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Project</th>
-              <th>Customer</th>
-              <th>Contract Value</th>
-              <th>Paid</th>
-              <th>Status</th>
-              <th>Start</th>
-              <th>Actions</th>
+              <th scope="col">Project</th>
+              <th scope="col">Customer</th>
+              <th scope="col">Contract Value</th>
+              <th scope="col">Paid</th>
+              <th scope="col">Status</th>
+              <th scope="col">Start</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

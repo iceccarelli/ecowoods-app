@@ -77,13 +77,13 @@ export default async function AdminQuotesPage({
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Name / Contact</th>
-              <th>Location</th>
-              <th>Service</th>
-              <th>Sq Ft</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Actions</th>
+              <th scope="col">Name / Contact</th>
+              <th scope="col">Location</th>
+              <th scope="col">Service</th>
+              <th scope="col">Sq Ft</th>
+              <th scope="col">Status</th>
+              <th scope="col">Submitted</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

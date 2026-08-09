@@ -98,14 +98,14 @@ export default async function AdminInvoicesPage({
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Invoice #</th>
-              <th>Project / Customer</th>
-              <th>Stage</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Due</th>
-              <th>Bank Pending</th>
-              <th>Actions</th>
+              <th scope="col">Invoice #</th>
+              <th scope="col">Project / Customer</th>
+              <th scope="col">Stage</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">Due</th>
+              <th scope="col">Bank Pending</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

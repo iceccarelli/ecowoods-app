@@ -93,7 +93,7 @@ export default function SiteFooter() {
   };
 
   return (
-    <footer className="site-footer" role="contentinfo">
+    <footer className="site-footer">
       <div className="shell">
         {m && (
           <a href="#quote" className="footer-cta">

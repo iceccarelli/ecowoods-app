@@ -337,13 +337,22 @@ See §5.
 chosen for its font size rather than its position in the document outline is a
 machine-readability bug as well as a screen-reader one (Phase 8).
 
-### F-08 · Two `<h1>` elements in two files
+### F-08 · Two `<h1>` elements in two files — **WITHDRAWN**
 
-`apps/web/app/verify-email/page.tsx` and
-`apps/web/app/(portal)/mypage/invoices/[id]/pay/page.tsx` each declare two `<h1>`.
-**Unverified** — both are likely in mutually-exclusive conditional branches
-(success/failure states), in which case only one ever renders and this is a
-non-finding. Needs a render check, not a static one.
+Phase 0 flagged `verify-email/page.tsx` and
+`(portal)/mypage/invoices/[id]/pay/page.tsx` as declaring two `<h1>` each, and
+said it needed a render check. Checked during Phase 7: both are **mutually
+exclusive early returns**.
+
+- `verify-email/page.tsx:16` `if (!token) return (…<h1>Invalid link</h1>…)`,
+  `:33` `if (!result.success) return (…<h1>Link expired or invalid</h1>…)`,
+  `:49` the success return.
+- `pay/page.tsx:36` `if (invoice.status === 'PAID') return (…<h1>Invoice Already
+  Paid</h1>…)`, `:53` the normal return.
+
+Exactly one `<h1>` renders in every case. **Not a defect.** The static heading
+audit cannot see control flow; this is a known limitation of
+`semantics-audit.mjs` and is now noted in its header.
 
 ### F-09 · 592 static inline styles bypass the token system
 
@@ -723,3 +732,80 @@ that list. The guard was working; the list was incomplete.
 certification makes ecowoods.ca the cited source of a false claim about a real
 business. The remediation of June removed invented testimonials from the pages a
 human reads and left the file a machine reads untouched.
+
+---
+
+## 9. Document-outline findings (Phase 7 structural)
+
+### F-24 · Ten files emitted a `<main>` nested inside the root `<main>` · **P0**
+
+Phase 0 reported this as "~19 routes" from `admin/layout.tsx`,
+`(portal)/mypage/layout.tsx` and `authority/page.tsx`. The real count was higher:
+`app/layout.tsx:148` wraps every route in `<main id="main">`, and **ten** further
+files opened another one inside it.
+
+| File | line |
+|---|---|
+| `app/blog/page.tsx` | 50 |
+| `app/case-studies/page.tsx` | 34 |
+| `app/components/ArticleLayout.tsx` | 53 |
+| `app/case-studies/[slug]/case-study-layout.tsx` | 81 |
+| `app/service-areas/page.tsx` | 18 |
+| `app/service-areas/[city]/page.tsx` | 43 |
+| `app/products/floorforge/page.tsx` | 212 |
+| `app/admin/layout.tsx` | 51 |
+| `app/(portal)/mypage/layout.tsx` | 45 |
+| `app/authority/page.tsx` | 123 |
+
+That is effectively **every content route on the site** — the blog, all six
+articles, all five case studies, `/service-areas` and its 16 city pages,
+`/products/floorforge`, `/authority`, and all 18 portal and admin routes.
+
+Three consequences, all measurable:
+
+1. **Nested `<main>` is invalid HTML** and produces a duplicate `main` landmark.
+   axe: `landmark-no-duplicate-main`, `landmark-unique`.
+2. **An answer engine parsing the page cannot tell which region is the primary
+   content.** Two `main` landmarks is the structural equivalent of two `<h1>`.
+3. **The skip link lands in the wrong place.** `app/layout.tsx:144` targets
+   `#main`, which is the outer element. On `/mypage/invoices` a keyboard user
+   pressing it arrives above the sidebar navigation — the exact failure the skip
+   link exists to prevent.
+
+**Fixed by keeping the root `<main id="main">` as the sole landmark and turning
+all ten nested ones into `<div>`, classNames unchanged.** No CSS rule in
+`globals.css` selects `main`, `header`, `footer` or `article` by element, so the
+change is visually a no-op — verified by grep before editing.
+
+`app/authority/page.tsx` keeps its page-level `<header>` and `<footer>`: inside
+`<main>` neither maps to a `banner`/`contentinfo` landmark, so they are
+spec-legal and carry no duplicate.
+
+### F-25 · Two unlabelled `<nav>` landmarks · P1
+
+`app/admin/layout.tsx:40` and `app/(portal)/mypage/layout.tsx:34` rendered
+`<nav className="portal-nav">` with no accessible name, alongside the two in
+`Header.tsx` — axe `landmark-unique`. A screen-reader user listing landmarks got
+several unnamed "navigation" entries. Now `aria-label="Admin"` and
+`aria-label="Your account"`. Every breadcrumb `<nav>` already carried
+`aria-label="Breadcrumb"`.
+
+### F-26 · 51 table headers without `scope` · P1
+
+Eight files across `/admin/*` and `/mypage/invoices` render `<th>` with no
+`scope`. Without it a screen reader cannot reliably associate a cell with its
+column header, and a table parser has to guess the orientation. All 51 are column
+headers in a `<thead>` row; all now `<th scope="col">`.
+
+### F-15 · Redundant ARIA roles — fixed
+
+`Header.tsx` `role="banner"`, `SiteFooter.tsx` `role="contentinfo"`,
+`layout.tsx` `role="main"`. Each duplicates the element's implicit role. Removed.
+
+### Already correct — checked, not changed
+
+- `ArticleLayout.tsx:23` and `case-study-layout.tsx:26` already wrap their
+  content in `<article>` and already emit `<time dateTime={…}>` for the
+  publication date. Phase 8's `<article>` / `<time datetime>` requirement was
+  **already met**; no change needed.
+- Every breadcrumb `<nav>` already has `aria-label="Breadcrumb"`.

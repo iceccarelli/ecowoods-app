@@ -147,7 +147,7 @@ export default function EstimateBuilder({
           <table className="portal-table" style={{ marginBottom: '1rem' }}>
             <thead>
               <tr>
-                <th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Amount</th>
+                <th scope="col">Description</th><th scope="col">Qty</th><th scope="col">Unit</th><th scope="col">Unit Price</th><th scope="col">Amount</th>
               </tr>
             </thead>
             <tbody>

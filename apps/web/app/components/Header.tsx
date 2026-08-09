@@ -159,7 +159,6 @@ export default function Header() {
     <>
       <header
         className={`topbar ${isHidden ? 'hidden' : ''} ${scrolled ? 'scrolled' : ''}`}
-        role="banner"
       >
         <div className="topbar-inner">
           {/* Brand Lockup */}

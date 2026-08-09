@@ -209,7 +209,7 @@ export default function FloorForgePage() {
         }}
       />
 
-      <main>
+      <div>
         {/* ─────────────────── HERO ─────────────────── */}
         <section className="section" style={{ paddingTop: 'var(--space-xl)' }}>
           <div className="shell">
@@ -602,7 +602,7 @@ export default function FloorForgePage() {
             </button>
           </div>
         </section>
-      </main>
+      </div>
 
       {/* ─────────────────── PILOT INTEREST MODAL ─────────────────── */}
       {interestModalOpen && (

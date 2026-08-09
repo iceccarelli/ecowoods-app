@@ -47,7 +47,7 @@ export default async function BlogPage() {
         </div>
       </header>
 
-      <main className="tlx-section">
+      <div className="tlx-section">
         <div className="shell">
           {articles.length === 0 ? (
             <p className="tlx-note">No articles published yet. Check back soon.</p>
@@ -72,7 +72,7 @@ export default async function BlogPage() {
             </>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

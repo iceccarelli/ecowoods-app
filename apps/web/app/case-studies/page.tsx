@@ -31,7 +31,7 @@ export default async function CaseStudiesPage() {
         </div>
       </header>
 
-      <main className="tlx-section">
+      <div className="tlx-section">
         <div className="shell">
           {caseStudies.length === 0 ? (
             <p className="tlx-note">No case studies published yet. Check back soon.</p>
@@ -50,7 +50,7 @@ export default async function CaseStudiesPage() {
                     <span className="tlx-card-tag">
                       {caseStudy.projectType ? caseStudy.projectType.replace(/-/g, ' ') : 'Project'}
                     </span>
-                    <h3>{caseStudy.title}</h3>
+                    <h2>{caseStudy.title}</h2>
                     <p>{caseStudy.description}</p>
                     <span className="tlx-card-data">
                       <span>
@@ -66,7 +66,7 @@ export default async function CaseStudiesPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

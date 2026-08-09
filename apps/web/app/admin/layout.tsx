@@ -37,7 +37,7 @@ export default async function AdminLayout({
     <div className="portal-layout">
       {/* Admin Sidebar */}
       <aside className="portal-sidebar admin-sidebar">
-        <nav className="portal-nav">
+        <nav className="portal-nav" aria-label="Admin">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="portal-nav-item">
               <span className="portal-nav-icon">{item.icon}</span>
@@ -48,9 +48,9 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <main className="portal-main">
+      <div className="portal-main">
         {children}
-      </main>
+      </div>
     </div>
   );
 }

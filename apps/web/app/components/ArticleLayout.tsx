@@ -50,7 +50,7 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
         </div>
       </header>
 
-      <main className="tlx-section">
+      <div className="tlx-section">
         <div className="shell">
           {children}
 
@@ -95,7 +95,7 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
             </section>
           )}
         </div>
-      </main>
+      </div>
     </article>
   );
 }

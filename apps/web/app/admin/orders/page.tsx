@@ -63,12 +63,12 @@ export default async function AdminOrdersPage({
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Customer</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Placed</th>
-              <th>Actions</th>
+              <th scope="col">Customer</th>
+              <th scope="col">Items</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">Placed</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>

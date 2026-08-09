@@ -15,6 +15,12 @@
  * landmark counts are reported per FILE and must be summed along the layout
  * chain by hand. That limitation is stated rather than hidden.
  *
+ * It also cannot see CONTROL FLOW. A file with two <h1> in two mutually
+ * exclusive early returns renders exactly one, and this script will still report
+ * "h1x2" — that is what happened with verify-email/page.tsx and
+ * mypage/invoices/[id]/pay/page.tsx (see audit/FINDINGS.md F-08, withdrawn).
+ * Always open the file before believing a heading-count finding.
+ *
  * Usage: node audit/scripts/semantics-audit.mjs
  */
 import fs from 'node:fs';

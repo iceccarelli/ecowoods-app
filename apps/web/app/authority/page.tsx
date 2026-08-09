@@ -120,7 +120,7 @@ export default function AuthorityPage() {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-4xl px-6 py-12">
         {/* Credentials Section */}
         <section className="mb-16">
           <h2 className="mb-8 text-3xl font-bold text-stone-900 dark:text-stone-50">Authority Credentials</h2>
@@ -309,7 +309,7 @@ export default function AuthorityPage() {
             <p><strong>Website:</strong> <a href="/" className="underline">ecowoods.ca</a></p>
           </div>
         </section>
-      </main>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 mt-16">
