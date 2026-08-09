@@ -71,6 +71,13 @@ const all = [...rules, ...nested];
 const findings = { HIGH: [], MED: [], LITERAL: [] };
 const tokenOf = v => { const m = String(v).match(/var\(\s*(--[\w-]+)/); return m ? m[1] : null; };
 
+/* Tokens that are theme-fixed ON PURPOSE. --on-dark-* names a surface that is
+   dark in both themes (hero, footer, wood-grain sections); --on-copper and the
+   --cta-* pair name a filled copper control that keeps the same value at night
+   so cream stays at 4.5:1. Pairing one of these with a flipping background is
+   the intended pattern, not a split — flagging them buries the real ones. */
+const INTENTIONALLY_FIXED = /^--(on-dark|on-copper|cta-fg)/;
+
 for (const r of all) {
   if (/^html\[data-theme/.test(r.sel)) continue;          // explicit dark rules are fine
   const decl = Object.create(null);
@@ -81,7 +88,8 @@ for (const r of all) {
   const bgTok = bgRaw ? tokenOf(bgRaw) : null;
   const fgTok = fgRaw ? tokenOf(fgRaw) : null;
 
-  if (bgTok && fgTok && flips(bgTok) !== flips(fgTok)) {
+  if (bgTok && fgTok && flips(bgTok) !== flips(fgTok)
+      && !INTENTIONALLY_FIXED.test(fgTok) && !INTENTIONALLY_FIXED.test(bgTok)) {
     findings.HIGH.push({ ...r, fg: fgTok, bg: bgTok, why: `background ${flips(bgTok) ? 'flips' : 'is fixed'} but text ${flips(fgTok) ? 'flips' : 'is fixed'}` });
   } else if (fgRaw && !fgTok && /#[0-9a-f]{3,8}|rgba?\(|\b(white|black)\b/i.test(fgRaw)) {
     findings.LITERAL.push({ ...r, prop: 'color', value: fgRaw });

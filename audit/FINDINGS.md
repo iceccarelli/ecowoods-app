@@ -460,14 +460,24 @@ needs a browser. Three further `<div onClick>` sites need inspection:
 15 of 62 colour tokens have no dark override. `--on-dark-*` is deliberate and
 documented at `globals.css:4041`. The rest — `--cream-50`, `--cream-100`,
 `--oak-300/400/500`, `--walnut-600/700`, `--forest-deep`, `--success`,
-`--warning`, `--danger` — are not. Consequence visible at `globals.css:7059`:
+`--warning`, `--danger` — are not. (`--forest-deep` has **zero usages anywhere
+in the repo** and is a dead token; `DESIGN_SYSTEM.md` §1.3 called it a section
+background, which was wrong. Leave it dead; do not give it a dark value.) Consequence visible at `globals.css:7059`:
 `.tlx-tags span { background: var(--cream-50); color: var(--oak-500) }` renders a
 bright cream pill on an espresso page in dark mode. Contrast is fine (5.18:1);
 it is a brightness island, P2.
 
-`--warning` (#d4a444) measures **2.00-2.28:1** on every light surface. No
-`color: var(--warning)` rule currently exists, so this is latent. P3, but fix the
-token now rather than after someone uses it.
+**CORRECTION (found during Phase 1): `--warning` is not latent — it is live.**
+The Phase 0 pass grepped `globals.css` only and reported no `color: var(--warning)`
+rule. There are **five inline-style usages in TSX**, all in the admin, all as
+text: `admin/projects/[id]/page.tsx:132` and
+`admin/invoices/new/NewInvoiceForm.tsx:150` render currency totals in it, and
+`admin/page.tsx:80,87` render pending-invoice and open-inquiry counts. At
+**2.00:1 on `--surface-2`** that was the worst text contrast remaining on the
+site. Severity was **P3, corrected to P1**. Fixed in patch 01.
+
+Lesson for the remaining phases: a token census that only reads `globals.css`
+misses the 592 static inline styles. Grep both.
 
 ### F-18 · Token duplicates
 
@@ -549,6 +559,26 @@ the apply sequence checks it before touching anything.
 
 ---
 
+## 5a. Status after `ECOWOODS_UX_01_tokens.patch`
+
+| ID | Was | Now |
+|---|---|---|
+| F-01 | 17 undefined `--space-*` / `--border` refs | **FIXED** — scale defined in `:root` |
+| F-02 | 19 undefined `--radius` refs | **FIXED** — `--radius: var(--radius-md)` |
+| F-03 | `/authority` on `prefers-color-scheme` | **PARTIAL** — theme wiring fixed via `darkMode`; palette drift is Q1 |
+| F-05 | 10 rules at 2.97:1 / 2.43:1 | **FIXED** — `--copper-surface` / `--on-copper`, 4.51:1 |
+| F-11 | 8 stock Tailwind hexes in `.portal-badge-*` | open — Phase 4 |
+| F-14 | 8 Tailwind colours → undefined tokens | **FIXED** — removed |
+| F-17 | status tokens fail AA, no dark override | **FIXED** — both themes, all surfaces ≥ 4.5:1 |
+
+`node audit/scripts/undefined-tokens-audit.mjs` went from **46 undefined
+references without a fallback to 0**. `theme-parity-audit.mjs` went from **16
+HIGH to 1**, and the survivor (`.footer-cta`, `globals.css:6012`) was measured
+and is safe: 17.47:1 light, 18.46:1 dark. It is left alone rather than given an
+invented token.
+
+---
+
 ## 6. Severity index
 
 | ID | Sev | Route(s) | Theme | Evidence |
@@ -610,3 +640,86 @@ applies to boundaries that convey information, not decorative hairlines. Whether
 any given `--line` border is the *sole* affordance defining a control needs
 per-rule inspection, not a blanket verdict. Deferred to Phase 7 with a
 rule-by-rule pass.
+
+---
+
+## 8. Machine-readability findings (Phase 8 reconnaissance)
+
+Found while preparing `ECOWOODS_UX_08_machine_readable.patch`. These were not in
+the Phase 0 pass because Phase 0 audited the rendered design surface and these
+live in `public/` and in Metadata routes.
+
+### F-21 · `public/robots.txt` shadowed `app/robots.ts`, and both pointed at dead sitemaps · **P0**
+
+Next serves static files from `public/` before the router reaches a Metadata
+route, so `app/robots.ts` — the maintained one — was never served. Every crawler
+read the static file, last touched 2026-08-01.
+
+What the served file declared:
+
+| | |
+|---|---|
+| `Sitemap: /sitemap.xml` | valid |
+| `Sitemap: /sitemap-articles.xml` | **404** — no such route exists |
+| `Sitemap: /sitemap-case-studies.xml` | **404** |
+| `Disallow:` list | `/admin/`, `/api/`, `/private/`, `/.next/`, `/node_modules/` |
+| Not disallowed | `/mypage/*`, `/login`, `/register`, `/verify-email`, **`/docs/{contract,invoice,quote}/[id]`** |
+| `User-agent: Googlebot-Extended` | **not a real token.** Google's is `Google-Extended`. Matched nothing. |
+| `Crawl-delay: 1` | ignored by Google, honoured by Bing — slows indexing for no gain |
+| `Host:` | deprecated, Yandex-only |
+
+`/docs/{contract,invoice,quote}/[id]` renders a specific customer's paperwork
+from a URL. It was crawlable.
+
+And the *shadowed* file was no better: `app/robots.ts` pointed at
+`/sitemap/0.xml` and `/sitemap/1.xml`, left over from a `generateSitemaps()`
+split that no longer exists in `app/sitemap.ts`. **Whichever file won, every
+sitemap URL a crawler was handed was either wrong or dead.**
+
+### F-22 · The sitemap declared 18 of 66 routes and omitted the entire local-search surface · **P0**
+
+`app/sitemap.ts` emits 6 base pages + 6 articles + 5 case studies. Missing:
+
+- `/service-areas` and **all 16 GTA city pages** — for a Toronto trade business
+  this is the highest-commercial-intent set of pages on the site
+- `/authority`
+
+The city pages are built (`generateStaticParams` over `CITIES`) and linked, so
+they are discoverable by crawl — but they were absent from the one file that
+tells a crawler what to prioritise and when it changed.
+
+### F-23 · `public/ai.txt` and `public/llms.txt` were the least trustworthy files on the site · **P0**
+
+Both were served (see F-21 — same shadowing applies; `app/llms.txt/route.ts`
+existed and was never reached). Both are aimed squarely at the systems most
+likely to repeat their contents verbatim.
+
+`public/ai.txt` shipped:
+
+| Claim | Problem |
+|---|---|
+| `Authority Level: ⭐⭐⭐⭐⭐ Verified Specialist` | a self-awarded rating, handed to AI systems |
+| `Total Word Count: 25,000+` | invented metric |
+| `Years of Data: 27` | invented, and inconsistent with `foundedYear: 2000` |
+| `Case Studies: 2` | **wrong** — the repo has 5 |
+| `Articles Published: 6` | correct today, guaranteed to drift |
+
+`public/llms.txt` shipped:
+
+| Claim | Problem |
+|---|---|
+| `Installer certification (NWFA, IHSCA, etc. where applicable)` | unverified credential claim |
+| `HEPA-extraction technology reducing airborne dust to <2.5µm` | unverified performance figure |
+| `25+ years of hands-on hardwood experience` | a third variant of the years claim |
+| `Manufacturer partnerships for warranty backing` | unverified |
+| `6 technical articles + 2 engineering case studies (8 authoritative pieces)` | wrong count |
+| `seasonal RH 25%–70% range` | unsourced data claim |
+
+`pnpm verify:facts` passed the whole time: the guard scans `apps/web/public` for
+**retired** literals (the old 4.9/348 review numbers), and none of these were on
+that list. The guard was working; the list was incomplete.
+
+**Why this outranks a contrast bug.** An AI agent that repeats a fabricated NWFA
+certification makes ecowoods.ca the cited source of a false claim about a real
+business. The remediation of June removed invented testimonials from the pages a
+human reads and left the file a machine reads untouched.

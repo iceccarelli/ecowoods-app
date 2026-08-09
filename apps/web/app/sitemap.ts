@@ -6,6 +6,7 @@
 import type { MetadataRoute } from 'next';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { CITIES } from '@/lib/seo-data';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -52,7 +53,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/authority`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/service-areas`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
   ];
+
+  /**
+   * The 16 GTA service-area pages. These were missing entirely: the build
+   * produces 66 routes and this sitemap declared 18 of them, omitting the whole
+   * local-search surface — which for a Toronto trade business is the single
+   * highest-intent set of pages on the site. Derived from CITIES so the sitemap
+   * cannot drift from the routes generateStaticParams actually builds.
+   * See audit/FINDINGS.md F-22.
+   */
+  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+    url: `${SITE_URL}/service-areas/${city.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
 
   // Article pages
   const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
@@ -70,5 +98,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...basePages, ...articlePages, ...caseStudyPages];
+  return [...basePages, ...cityPages, ...articlePages, ...caseStudyPages];
 }

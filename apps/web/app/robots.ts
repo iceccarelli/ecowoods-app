@@ -13,15 +13,38 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email'],
+        // /docs/{contract,invoice,quote}/[id] renders a specific customer's
+        // paperwork from a URL. It was never disallowed.
+        disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
-      // Named allow for AI crawlers — some ignore '*'; naming them removes doubt.
-      { userAgent: ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-Web', 'anthropic-ai', 'PerplexityBot', 'Google-Extended', 'Applebot-Extended', 'CCBot'], allow: '/' },
+      // Named allow for AI crawlers — some ignore '*', so naming them removes
+      // doubt. Tokens are the ones each operator actually documents:
+      //   OpenAI      GPTBot (training), OAI-SearchBot (search index),
+      //               ChatGPT-User (user-initiated fetch)
+      //   Anthropic   ClaudeBot (crawler), Claude-User, Claude-SearchBot
+      //   Google      Google-Extended (Gemini grounding; NOT "Googlebot-Extended",
+      //               which is not a real token and matches nothing)
+      //   Apple       Applebot-Extended
+      //   Perplexity  PerplexityBot
+      //   Common Crawl CCBot — the corpus most open models train on
+      {
+        userAgent: [
+          'GPTBot', 'OAI-SearchBot', 'ChatGPT-User',
+          'ClaudeBot', 'Claude-User', 'Claude-SearchBot', 'anthropic-ai', 'Claude-Web',
+          'Google-Extended', 'Applebot-Extended',
+          'PerplexityBot', 'Perplexity-User',
+          'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
+        ],
+        allow: '/',
+        disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
+      },
     ],
-    sitemap: [
-      `${SITE_URL}/sitemap/0.xml`,
-      `${SITE_URL}/sitemap/1.xml`,
-    ],
+    // app/sitemap.ts exports a single default sitemap, so Next serves exactly
+    // one file at /sitemap.xml. The two children below were left over from a
+    // generateSitemaps() split that no longer exists — both were 404s, which
+    // means every crawler that read this file was handed two dead sitemap URLs
+    // and zero live ones. See audit/FINDINGS.md F-21.
+    sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };
 }

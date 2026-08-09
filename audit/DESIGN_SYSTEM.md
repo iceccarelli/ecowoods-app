@@ -65,7 +65,7 @@ Current state: 47 of 62 colour tokens have a dark override. The 15 without:
 |---|---|
 | `--on-dark`, `--on-dark-muted`, `--on-dark-faint`, `--on-dark-line` | **correct** — documented at `globals.css:4041`; these name a surface that never flips |
 | `--cream-50`, `--cream-100`, `--oak-300/400/500`, `--walnut-600/700` | primitives — acceptable *provided* no component rule references them (§1.1) |
-| `--forest-deep` | needs a dark value; used as a section background |
+| `--forest-deep` | **dead token — zero usages in the repo.** Earlier text here called it a section background; that was wrong. Leave it without a dark value. |
 | `--success`, `--warning`, `--danger` | **need dark values.** `--warning` also fails contrast in light (2.00-2.28:1) |
 
 ### 1.4 Contrast floor
