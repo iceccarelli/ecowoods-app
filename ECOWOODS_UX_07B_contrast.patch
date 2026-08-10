@@ -1,0 +1,227 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 61f23e2..78cab74 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7002,27 +7002,40 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+    All values derive from the token system at the top of this file.
+    ════════════════════════════════════════════════════════════════════════ */
+ 
+-.tlx-page { background: var(--paper); color: var(--walnut-950); min-height: 100vh; }
++/* Every text colour on the technical-library / blog / case-study surface was a
++   PRIMITIVE that does not flip between themes, while the surface underneath it
++   does. Measured in dark mode against --bg #12100d:
++       --walnut-700  1.64:1     --maple-200  2.80:1
++       --walnut-900  ~1.3:1     --oak-500    3.40:1
++       --walnut-950  ~1.1:1
++   The lede, the notes, every card paragraph and every pull-quote on those pages
++   rendered as near-black text on a near-black background. That is the whole of
++   axe's color-contrast finding: 30 nodes on dark /technical-library, 16 on dark
++   /blog, 10 on dark /case-studies, 15 on light /technical-library.
++
++   Patch 01 converted the .tlx-* SURFACES off primitives and stopped there. This
++   completes it for the text. See audit/FINDINGS.md F-33. */
++.tlx-page { background: var(--paper); color: var(--ink); min-height: 100vh; }
+ 
+ /* ── Hero ── */
+ .tlx-hero { border-bottom: 1px solid var(--line); padding: 4.5rem 0 3rem; }
+ .tlx-hero .shell { max-width: 860px; }
+ .tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+-  text-transform: uppercase; color: var(--oak-500); margin-bottom: 1.5rem; }
++  text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+ .tlx-crumbs a { color: inherit; text-decoration: none; }
+ .tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper); }
+-.tlx-crumbs span[aria-hidden] { color: var(--maple-200); }
++.tlx-crumbs span[aria-hidden] { color: var(--muted-soft); }
+ .tlx-title { font-family: var(--font-display); font-weight: 600; line-height: 1.12;
+   font-size: clamp(1.9rem, 4.5vw, 3rem); letter-spacing: -0.01em; margin: 0 0 1rem; }
+-.tlx-lede { font-size: 1.1rem; line-height: 1.65; color: var(--walnut-700);
++.tlx-lede { font-size: 1.1rem; line-height: 1.65; color: var(--ink-soft);
+   max-width: 62ch; margin: 0 0 1.75rem; }
+ 
+ /* ── Meta strip (the instrument label) ── */
+ .tlx-meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+   font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em;
+-  text-transform: uppercase; color: var(--oak-500); }
+-.tlx-meta strong { color: var(--walnut-900); font-weight: 600; }
++  text-transform: uppercase; color: var(--muted); }
++.tlx-meta strong { color: var(--ink); font-weight: 600; }
+ 
+ /* ── Section scaffolding ── */
+ .tlx-section { padding: 3.25rem 0; }
+@@ -7032,7 +7045,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   text-transform: uppercase; color: var(--copper); margin: 0 0 0.6rem; }
+ .tlx-h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem;
+   line-height: 1.2; margin: 0 0 0.75rem; }
+-.tlx-note { color: var(--walnut-700); max-width: 60ch; margin: 0 0 2rem; line-height: 1.6; }
++.tlx-note { color: var(--ink-soft); max-width: 60ch; margin: 0 0 2rem; line-height: 1.6; }
+ 
+ /* ── Cards ── */
+ .tlx-grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+@@ -7045,21 +7058,21 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+ .tlx-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.12rem;
+   line-height: 1.3; margin: 0; }
+-.tlx-card p { color: var(--walnut-700); font-size: 0.92rem; line-height: 1.55; margin: 0; }
++.tlx-card p { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.55; margin: 0; }
+ .tlx-card-tag { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+   text-transform: uppercase; color: var(--copper); }
+ .tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--maple-200);
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
+-  color: var(--oak-500); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
++  color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
+ .tlx-card-cta { color: var(--copper); font-weight: 600; font-size: 0.9rem; }
+ 
+ /* ── Pillars ── */
+ .tlx-pillar { background: var(--cream-50); border: 1px solid var(--cream-100);
+   border-left: 3px solid var(--copper); border-radius: 12px; padding: 1.5rem; }
+ .tlx-pillar h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 0.5rem; }
+-.tlx-pillar p { color: var(--walnut-700); font-size: 0.92rem; line-height: 1.55; margin: 0 0 0.9rem; }
++.tlx-pillar p { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.55; margin: 0 0 0.9rem; }
+ .tlx-pillar ul { list-style: none; margin: 0; padding: 0;
+-  font-family: var(--font-mono); font-size: 0.76rem; color: var(--oak-500); }
++  font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
+ .tlx-pillar li { padding: 0.22rem 0; }
+ .tlx-pillar li::before { content: '✓ '; color: var(--copper); }
+ 
+@@ -7069,12 +7082,12 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 1.75rem; }
+ .tlx-spec { background: var(--cream-50); padding: 0.85rem 1rem; }
+ .tlx-spec dt { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.12em;
+-  text-transform: uppercase; color: var(--oak-500); margin: 0 0 0.25rem; }
+-.tlx-spec dd { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--walnut-900); }
++  text-transform: uppercase; color: var(--muted); margin: 0 0 0.25rem; }
++.tlx-spec dd { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--ink); }
+ 
+ /* ── Article body ── */
+ .tlx-body { max-width: 720px; margin: 0 auto; font-size: 1.02rem; line-height: 1.75;
+-  color: var(--walnut-900); }
++  color: var(--ink); }
+ .tlx-body > :first-child { margin-top: 0; }
+ .tlx-body h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem;
+   line-height: 1.25; margin: 2.75rem 0 1rem; }
+@@ -7089,17 +7102,17 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-body li { margin: 0.3rem 0; }
+ .tlx-body li::marker { color: var(--copper); }
+ .tlx-body li > input[type='checkbox'] { accent-color: var(--copper); margin-right: 0.5rem; }
+-.tlx-body strong { color: var(--walnut-950); }
++.tlx-body strong { color: var(--ink); }
+ .tlx-body blockquote { margin: 1.5rem 0; padding: 0.9rem 1.25rem;
+   border-left: 3px solid var(--copper); background: var(--cream-50);
+-  border-radius: 0 10px 10px 0; color: var(--walnut-700); font-style: italic; }
++  border-radius: 0 10px 10px 0; color: var(--ink-soft); font-style: italic; }
+ .tlx-body hr { border: 0; border-top: 1px solid var(--cream-100); margin: 2.5rem 0; }
+ 
+ /* The signature: measurement data on cream reading strips */
+ .tlx-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0;
+   font-size: 0.88rem; line-height: 1.45; }
+ .tlx-body thead th { font-family: var(--font-mono); font-size: 0.7rem;
+-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--oak-500);
++  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+   text-align: left; padding: 0.55rem 0.8rem; border-bottom: 2px solid var(--copper); }
+ .tlx-body tbody td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--cream-100);
+   font-variant-numeric: tabular-nums; vertical-align: top; }
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 826f301..0d98d42 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -971,3 +971,99 @@ mutually exclusive and correct as written.
+ 
+ `DESIGN_SYSTEM.md` §4.2 now carries this two-category classification. The
+ collapse itself waits for `audit/runtime-report.json`.
++
++---
++
++## 13. Contrast, measured (Phase 7b)
++
++### F-33 · The whole editorial surface was near-black text on a near-black background in dark mode · **P0**
++
++axe: `color-contrast`, **serious**, **130 of 220 cells**, concentrated exactly
++where the report says:
++
++| Route / theme | failing nodes |
++|---|---|
++| dark `/technical-library` | **30** |
++| dark `/blog` | 16 |
++| light `/technical-library` | 15 |
++| dark `/case-studies` | 10 |
++| light `/blog` | 8 |
++| light `/case-studies` | 5 |
++
++**Every text colour on the `.tlx-*` surface was a primitive that does not flip
++between themes, sitting on a surface that does.** Measured against `--paper` in
++dark (`#12100d`):
++
++| Token | Dark value | Contrast |
++|---|---|---|
++| `--walnut-950` | `#0b0906` | **~1.1:1** |
++| `--walnut-900` | `#17120d` | **~1.3:1** |
++| `--walnut-700` | `#4d3322` (never flips) | **1.64:1** |
++| `--maple-200` | `#6a5844` | **2.80:1** |
++| `--oak-500` | `#8b5e3c` (never flips) | **3.40:1** |
++
++`.tlx-page` itself set `color: var(--walnut-950)` on `background: var(--paper)`.
++The lede, every note, every card paragraph, every pull-quote, the breadcrumbs,
++the meta strip and the spec definitions were all in this family. In dark mode
++the technical library — the pages carrying the entire technical-authority
++argument, and the pages most likely to be cited — rendered as **near-black text
++on a near-black background**.
++
++Patch 01 converted the `.tlx-*` *surfaces* off primitives and stopped there.
++This completes it for the text: **17 declarations** across the namespace.
++
++| Was | Now | Dark | Light |
++|---|---|---|---|
++| `--walnut-950`, `--walnut-900` (×5) | `--ink` | **15.80** | **15.78** |
++| `--walnut-700` (×5) | `--ink-soft` | **12.49** | ≥ 10 |
++| `--maple-200` (×1) | `--muted-soft` | **5.20** | ≥ 4.5 |
++| `--oak-500` (×6) | `--muted` | **6.23** | **6.13** |
++
++**Lesson, and it is the same one twice:** a token census that fixes the
++backgrounds and not the foregrounds fixes half a bug. The rule from
++`DESIGN_SYSTEM.md` §1.1 — *no component rule may reference a primitive* — is
++the thing that would have caught both passes at once.
++
++### F-34 · `/register` renders without `<title>` and without `lang` · **P0, cause unconfirmed**
++
++axe: `document-title` and `html-has-lang`, both **serious**, both **19 of 20
++cells**, both on **`/register` only**. Every other route passes.
++
++`lang="en-CA"` is set at `app/layout.tsx:104`, so the root layout's `<html>` is
++not rendering for that route. There is **no `app/global-error.tsx`,
++`app/error.tsx` or `app/not-found.tsx`** in this repo, which means Next's
++built-in error boundary handles a thrown render — and that boundary emits its
++own bare `<html>` with no `lang` and no `<title>`. That fits the symptom
++exactly.
++
++What is *different* about `/register`: `app/(auth)/login/page.tsx` wraps its
++client form in `<Suspense>`; `app/(auth)/register/page.tsx` does not. Neither
++exports `metadata`. `RegisterForm` does not call `useSearchParams`, so the usual
++cause does not apply.
++
++**Not fixed here — the cause is a hypothesis, not a measurement.** A page with
++no `<title>` and no `lang` is close to unreadable for a crawler, and `/register`
++is an account-creation path, so this is the highest-priority item left. Confirm
++with:
++
++```bash
++curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3111/register
++curl -s http://localhost:3111/register | head -5
++```
++
++A 500, or an opening `<html>` with no `lang`, confirms it.
++
++### Overflow root cause — still unknown, and the collector is why
++
++`audit/scripts/runtime-audit.mjs` caps `offenders` at 25 **in DOM order**. The
++header chrome and the off-screen mobile sheet's ~20 links consume every slot, so
++the element actually setting the document width is never captured. The
++document measured 330 / 324 / 359 / **513** against a 320px viewport on `/`,
++`/products/floorforge`, `/service-areas` and
++`/service-areas/downtown-toronto` — and 513 held constant across every phone
++viewport, which still points at one fixed-width element.
++
++The collector needs to sort by `width` descending and exclude descendants of
++`#mobile-sheet` before the next run. Until then, **do not guess the cause** —
++every entry currently visible in the offender list is a `width: 100%` element
++stretched by an already-wide document, i.e. a consequence.
