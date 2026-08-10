@@ -885,6 +885,12 @@ p {
 .hamburger.open .bar:nth-child(3) { transform: translateY(0) rotate(-45deg); }
 
 /* --------------------- Mobile Menu --------------------- */
+/* The closed sheet is translated off-canvas but was otherwise fully present:
+   still painted, still hit-testable, still contributing its box. Pairing
+   `visibility: hidden` with the transform takes it out of hit-testing and the
+   a11y tree, and delaying the visibility change until the slide-out finishes
+   keeps the animation intact. The matching `inert` on the element itself is in
+   Header.tsx. See audit/FINDINGS.md F-30. */
 .mobile-sheet {
   position: fixed;
   inset: 0;
@@ -894,12 +900,16 @@ p {
   flex-direction: column;
   padding: 6rem var(--shell-pad) 2.5rem;
   transform: translateX(100%);
-  transition: transform 380ms var(--ease-out-expo);
+  visibility: hidden;
+  transition: transform 380ms var(--ease-out-expo), visibility 0s linear 380ms;
   overflow-y: auto;
 }
 
 .mobile-sheet.open {
   transform: translateX(0);
+  visibility: visible;
+  /* visible immediately on open, hidden only after the slide-out completes */
+  transition: transform 380ms var(--ease-out-expo), visibility 0s;
 }
 
 .mobile-sheet nav {
@@ -1603,14 +1613,42 @@ p {
   gap: 0.7rem;
 }
 
+/* Every footer link measured 236x22 — line-height with no padding — and the
+   footer appears on all 66 routes, which is why 201 of 220 measured cells
+   reported a sub-44px tap target. Giving the link a 44px min-height and
+   centring the text keeps the visual rhythm (the text baseline does not move)
+   while making the whole row tappable. See audit/FINDINGS.md F-31. */
 .footer-links a {
   color: rgba(245, 239, 230, 0.7);
   font-size: var(--fs-sm);
   transition: color 200ms ease;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .footer-links a:hover {
   color: var(--copper-bright);
+}
+
+/* Footer legal row: the Cookie Preferences button (132x22) and the Privacy /
+   Terms links (48x22, 41x22) all sat well under 44px on every route. */
+.footer-legal-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-right: 1.5rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.footer-bottom a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .footer-bottom {
@@ -1632,9 +1670,10 @@ p {
   flex-wrap: wrap;
 }
 
+/* Measured 38x38. WCAG 2.2 AA (2.5.8) asks 24px, but a thumb needs 44. */
 .footer-social a {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   background: rgba(245, 239, 230, 0.06);
   display: flex;
@@ -3305,7 +3344,10 @@ p {
 }
 .shop-select,
 .shop-input {
-  font-size: var(--fs-sm);
+  /* 16px: below this Safari auto-zooms on focus and never zooms back. Same
+     class of defect as .fc-postal, which the runtime pass measured directly.
+     See audit/FINDINGS.md F-32. */
+  font-size: var(--fs-base);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -4523,7 +4565,10 @@ html[data-theme='dark'] .paper-texture {
   width: 100%; max-width: 220px;
   border: 1px solid var(--line); border-radius: var(--radius-md);
   background: var(--surface); color: var(--ink);
-  padding: 0.7rem 0.85rem; font-family: var(--font-mono); font-size: var(--fs-sm);
+  padding: 0.7rem 0.85rem; font-family: var(--font-mono); /* 16px: below this Safari auto-zooms on focus and never zooms back. Measured
+     directly by the runtime pass — input.fc-postal at 14px on /design.
+     See audit/FINDINGS.md F-32. */
+  font-size: var(--fs-base);
   text-transform: uppercase;
 }
 .fc-postal:focus-visible { border-color: var(--copper); }

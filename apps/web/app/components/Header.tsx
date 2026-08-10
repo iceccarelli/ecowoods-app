@@ -321,10 +321,16 @@ export default function Header() {
       </header>
 
       {/* Mobile sheet */}
+      {/* `inert` is what actually removes the closed sheet from the tab order and
+          the accessibility tree. aria-hidden alone left every link inside it
+          focusable, which axe reported as aria-hidden-focus on 201 of 220
+          measured cells — a keyboard user tabbing any page fell into an
+          invisible off-screen menu. See audit/FINDINGS.md F-30. */}
       <div
         id="mobile-sheet"
         className={`mobile-sheet ${mobileOpen ? 'open' : ''}`}
         aria-hidden={!mobileOpen}
+        inert={!mobileOpen}
       >
         <nav aria-label="Mobile navigation">
           {navigation.map((item, idx) => {

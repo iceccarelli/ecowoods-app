@@ -971,3 +971,102 @@ mutually exclusive and correct as written.
 
 `DESIGN_SYSTEM.md` §4.2 now carries this two-category classification. The
 collapse itself waits for `audit/runtime-report.json`.
+
+---
+
+## 12. Measured findings from the runtime pass
+
+First real measurement in this series. 220 cells (11 public routes x 10 viewports
+x 2 themes), 0 errors, run against a production build via
+`audit/scripts/run-runtime-audit.sh`.
+
+```
+horizontal overflow        : 16 cells
+form control under 16px    :  6 cells
+tap target under 44px      : 201 cells
+axe violations             : 220 cells
+```
+
+**Prerequisite worth recording:** the run failed first with
+`libnspr4.so: cannot open shared object file`. `playwright install chromium`
+downloads the browser but not the system libraries it links against.
+`pnpm exec playwright install-deps chromium` fixes it. That belongs in
+`run-runtime-audit.sh` and is not there yet.
+
+### F-30 · The closed mobile sheet stayed in the tab order on every page · **P0**
+
+axe: `aria-hidden-focus`, **serious**, **201 of 220 cells** — the single most
+widespread defect measured.
+
+`Header.tsx:325` renders the sheet with `aria-hidden={!mobileOpen}`, and
+`globals.css:888` hides it with `transform: translateX(100%)` alone:
+
+```css
+.mobile-sheet { position: fixed; inset: 0; transform: translateX(100%); }
+```
+
+A transform moves an element; it does not remove it. `aria-hidden="true"` on a
+container whose descendants are still focusable is a spec violation precisely
+because of what it produces here: **a keyboard user tabbing through any page on
+the site falls into ~20 invisible off-screen navigation links** with no visual
+focus indicator to follow. The sheet also appeared in the overflow offender list
+at `L330 R660` — one viewport-width to the right of the document.
+
+**Fixed with the two things that actually remove it:** `inert` on the element
+when closed (removes it from the tab order and the a11y tree), and
+`visibility: hidden` on the closed state with the visibility change delayed
+380ms so the slide-out animation is unaffected.
+
+### F-31 · Every footer link was a 22px-tall tap target · **P0**
+
+201 of 220 cells reported a sub-44px tap target, and the measured list shows why
+it is not a page problem:
+
+| Element | Measured | Cells |
+|---|---|---|
+| `button` "Cookie Preferences" | 132x22 | **402** |
+| `a` "Privacy" / "Terms" | 48x22, 41x22 | 242 each |
+| `a` footer nav links ("Hardwood Installation", "North York", the phone number, …) | 236x22 | 80 each |
+| `a` social icons (Instagram, HomeStars, Facebook) | 38x38 | 160 each |
+| `a.brand-lockup` | 203x40 | 140 |
+| `a.btn` "Free Quote" | 143x37 | 80 |
+
+`globals.css:1606` set only `color`, `font-size` and a transition on
+`.footer-links a` — no padding, no min-height, so every link was exactly its
+line box. **The footer renders on all 66 routes**, which is the whole 201.
+
+Fixed by giving footer links and the legal row a 44px min-height with the text
+vertically centred — the baseline does not move, so the visual rhythm is
+unchanged — and taking the social icons from 38px to 44px.
+
+### F-32 · iOS auto-zoom confirmed on `/design` · P1
+
+`input.fc-postal` measured **14px computed**, on 6 cells — and only at
+ipad-pro-landscape and above, because below that width the configurator renders
+as a `MobileSheet` teaser and the field is not mounted. `.shop-select` /
+`.shop-input` share the defect at the same 14px.
+
+Both raised to `--fs-base` (16px). Below 16px, mobile Safari zooms the viewport
+on focus **and does not zoom back on blur**, leaving the user horizontally
+scrolled mid-form.
+
+### Still open after this patch — needs the offender tail
+
+`color-contrast` (**serious, 130 cells**), `document-title` and `html-has-lang`
+(**serious, 19 cells each**) are not fixed here.
+
+`html lang="en-CA"` *is* set at `app/layout.tsx:104`, so 19 cells failing
+`html-has-lang` means those pages did not render the root layout's `<html>` at
+all. Which routes, and why, is not yet known. `document-title` failing on the
+same count strongly suggests the same 19 cells. That is a serious
+machine-readability defect — a page with no `<title>` and no `lang` is close to
+unusable for a crawler — and it needs the per-route breakdown before it can be
+fixed.
+
+The overflow root cause is likewise **not** resolved. The offender lists are
+dominated by full-document-width chrome (`header.topbar`, `div.topbar-inner`,
+`div.progress-rail`) which are *consequences* of a wide document, not causes.
+The document measured 330px on `/`, 324 on `/products/floorforge`, 359 on
+`/service-areas` and 513 on `/service-areas/downtown-toronto` against a 320px
+viewport. Whatever sets those widths is further down the offender list than the
+first six entries captured. Do not guess it — pull the tail.
