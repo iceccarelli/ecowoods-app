@@ -1070,3 +1070,99 @@ The document measured 330px on `/`, 324 on `/products/floorforge`, 359 on
 `/service-areas` and 513 on `/service-areas/downtown-toronto` against a 320px
 viewport. Whatever sets those widths is further down the offender list than the
 first six entries captured. Do not guess it — pull the tail.
+
+---
+
+## 13. Contrast, measured (Phase 7b)
+
+### F-33 · The whole editorial surface was near-black text on a near-black background in dark mode · **P0**
+
+axe: `color-contrast`, **serious**, **130 of 220 cells**, concentrated exactly
+where the report says:
+
+| Route / theme | failing nodes |
+|---|---|
+| dark `/technical-library` | **30** |
+| dark `/blog` | 16 |
+| light `/technical-library` | 15 |
+| dark `/case-studies` | 10 |
+| light `/blog` | 8 |
+| light `/case-studies` | 5 |
+
+**Every text colour on the `.tlx-*` surface was a primitive that does not flip
+between themes, sitting on a surface that does.** Measured against `--paper` in
+dark (`#12100d`):
+
+| Token | Dark value | Contrast |
+|---|---|---|
+| `--walnut-950` | `#0b0906` | **~1.1:1** |
+| `--walnut-900` | `#17120d` | **~1.3:1** |
+| `--walnut-700` | `#4d3322` (never flips) | **1.64:1** |
+| `--maple-200` | `#6a5844` | **2.80:1** |
+| `--oak-500` | `#8b5e3c` (never flips) | **3.40:1** |
+
+`.tlx-page` itself set `color: var(--walnut-950)` on `background: var(--paper)`.
+The lede, every note, every card paragraph, every pull-quote, the breadcrumbs,
+the meta strip and the spec definitions were all in this family. In dark mode
+the technical library — the pages carrying the entire technical-authority
+argument, and the pages most likely to be cited — rendered as **near-black text
+on a near-black background**.
+
+Patch 01 converted the `.tlx-*` *surfaces* off primitives and stopped there.
+This completes it for the text: **17 declarations** across the namespace.
+
+| Was | Now | Dark | Light |
+|---|---|---|---|
+| `--walnut-950`, `--walnut-900` (×5) | `--ink` | **15.80** | **15.78** |
+| `--walnut-700` (×5) | `--ink-soft` | **12.49** | ≥ 10 |
+| `--maple-200` (×1) | `--muted-soft` | **5.20** | ≥ 4.5 |
+| `--oak-500` (×6) | `--muted` | **6.23** | **6.13** |
+
+**Lesson, and it is the same one twice:** a token census that fixes the
+backgrounds and not the foregrounds fixes half a bug. The rule from
+`DESIGN_SYSTEM.md` §1.1 — *no component rule may reference a primitive* — is
+the thing that would have caught both passes at once.
+
+### F-34 · `/register` renders without `<title>` and without `lang` · **P0, cause unconfirmed**
+
+axe: `document-title` and `html-has-lang`, both **serious**, both **19 of 20
+cells**, both on **`/register` only**. Every other route passes.
+
+`lang="en-CA"` is set at `app/layout.tsx:104`, so the root layout's `<html>` is
+not rendering for that route. There is **no `app/global-error.tsx`,
+`app/error.tsx` or `app/not-found.tsx`** in this repo, which means Next's
+built-in error boundary handles a thrown render — and that boundary emits its
+own bare `<html>` with no `lang` and no `<title>`. That fits the symptom
+exactly.
+
+What is *different* about `/register`: `app/(auth)/login/page.tsx` wraps its
+client form in `<Suspense>`; `app/(auth)/register/page.tsx` does not. Neither
+exports `metadata`. `RegisterForm` does not call `useSearchParams`, so the usual
+cause does not apply.
+
+**Not fixed here — the cause is a hypothesis, not a measurement.** A page with
+no `<title>` and no `lang` is close to unreadable for a crawler, and `/register`
+is an account-creation path, so this is the highest-priority item left. Confirm
+with:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3111/register
+curl -s http://localhost:3111/register | head -5
+```
+
+A 500, or an opening `<html>` with no `lang`, confirms it.
+
+### Overflow root cause — still unknown, and the collector is why
+
+`audit/scripts/runtime-audit.mjs` caps `offenders` at 25 **in DOM order**. The
+header chrome and the off-screen mobile sheet's ~20 links consume every slot, so
+the element actually setting the document width is never captured. The
+document measured 330 / 324 / 359 / **513** against a 320px viewport on `/`,
+`/products/floorforge`, `/service-areas` and
+`/service-areas/downtown-toronto` — and 513 held constant across every phone
+viewport, which still points at one fixed-width element.
+
+The collector needs to sort by `width` descending and exclude descendants of
+`#mobile-sheet` before the next run. Until then, **do not guess the cause** —
+every entry currently visible in the offender list is a `width: 100%` element
+stretched by an already-wide document, i.e. a consequence.
