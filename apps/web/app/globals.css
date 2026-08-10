@@ -7114,8 +7114,23 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   color: var(--ink); }
 .tlx-body pre code { background: none; padding: 0; border-radius: 0; }
 
-@media (max-width: 640px) {
-  .tlx-body table { display: block; overflow-x: auto; }
+/* Scroll container emitted around every article/case-study table by
+   lib/content/markdown.ts. The table itself is left alone, so it still fills
+   and aligns normally; only the wrapper scrolls. Replaces a
+   `max-width: 640px` rule that made the guard conditional on the VIEWPORT when
+   the real constraint is the 720px reading measure — everything from 641px up
+   was unprotected. See audit/FINDINGS.md F-29. */
+.tlx-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Keyboard users must be able to reach a scrollable region; the wrapper is
+   focusable (tabindex=0), so it needs a visible focus ring like anything else. */
+.tlx-table-wrap:focus-visible {
+  outline: 3px solid var(--copper-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* ── About / tags footer ── */

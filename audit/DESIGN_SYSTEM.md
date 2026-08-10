@@ -237,6 +237,22 @@ not a normalisation.
 | `max-width: 1140/1300/1380/1460px` | 4 | `lg`/`xl` | **off-scale** |
 | `min-width: 1600px` | 1 | `xl`+ | **off-scale** |
 
+**Two categories, and only one of them should be collapsed.**
+
+A *layout tier* answers "which device class is this". A *component threshold*
+answers "when does this particular element run out of room". They look identical
+in the stylesheet and are not the same thing.
+
+| Category | Examples here | What to do |
+|---|---|---|
+| Layout tier | 767 (x15), 1023 (x8), 768, 480 | already on the scale — keep |
+| Component threshold | 379 `.cmdk-trigger`, 400 `.brand-copy small`, 1140 `.login-btn`, 900/1180 `.fc-grid`, 860 `.pricing-grid`, 560 `.standard-grid` | do NOT snap to the scale; replace with intrinsic sizing (`minmax`, `flex-wrap`, `clamp`, container queries) once the breakage each was written for is observed |
+
+Snapping `.login-btn`'s 1140px down to 1024px leaves the header nav overflowing
+between 1024 and 1140. Snapping the configurator's 1180px down breaks a
+three-column grid whose result panel needs 320px. The magic number is a symptom;
+the container's real minimum is the cause, and finding it needs a rendered page.
+
 **Phase 2 method, per off-scale query:** find the specific breakage that prompted
 the magic number and solve it intrinsically — `min-width: 0` on a flex child,
 `flex-wrap`, `grid-template-columns: repeat(auto-fit, minmax(min(100%, Npx), 1fr))`,

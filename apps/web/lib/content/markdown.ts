@@ -24,7 +24,32 @@ export function stripLeadingH1(markdown: string): string {
   return markdown.replace(/^\s*#\s[^\n]+\n+/, '');
 }
 
+/**
+ * Wrap every rendered <table> in a horizontally scrollable container.
+ *
+ * `.tlx-body` is capped at a 720px reading measure, so a wide spec table
+ * overflows its column long before it overflows the viewport — and since
+ * nothing between the table and <body> clips, the whole document gains a
+ * horizontal scrollbar. The stylesheet only handled this below a 640px
+ * viewport, which left the entire 641px-and-up range unprotected on the six
+ * articles that carry tables (species-comparison-matrix has 44 table rows,
+ * water-based-vs-oil-based has 67).
+ *
+ * Wrapping is the intrinsic fix rather than another breakpoint: the constraint
+ * is the measure, not the viewport, so the guard should not be conditional on
+ * viewport width at all. `display: block; overflow-x: auto` directly on the
+ * <table> would also work but changes table layout at every width; a wrapper
+ * leaves the table rendering untouched. See audit/FINDINGS.md F-29.
+ */
+function wrapTables(html: string): string {
+  return html.replace(
+    /<table(?=[\s>])/g,
+    '<div class="tlx-table-wrap" role="region" tabindex="0"><table',
+  ).replace(/<\/table>/g, '</table></div>');
+}
+
 /** Convert a markdown body to HTML for dangerouslySetInnerHTML. */
 export function renderMarkdown(markdown: string): string {
-  return marked.parse(stripLeadingH1(markdown), { async: false, gfm: true }) as string;
+  const html = marked.parse(stripLeadingH1(markdown), { async: false, gfm: true }) as string;
+  return wrapTables(html);
 }

@@ -887,3 +887,87 @@ rather than repeating it. That is exactly what makes an entity resolvable to a
 crawler. `ROOT_AGGREGATE_RATING` is `null` with a comment explaining that
 self-serving review markup is not allowed — also correct, and it should stay
 null.
+
+---
+
+## 11. Article-table overflow (Phase 2 reconnaissance)
+
+### F-29 · Wide article tables overflowed the page at every width above 640px · **P0**
+
+`.tlx-body` is capped at a **720px** reading measure (`globals.css:7076`). The
+only guard on wide tables was:
+
+```css
+@media (max-width: 640px) { .tlx-body table { display: block; overflow-x: auto; } }
+```
+
+That makes the guard conditional on the **viewport**, when the constraint is the
+**measure**. A table wider than 720px overflows its column on a 1440px laptop
+exactly as it does on a phone — and nothing between the table and `<body>`
+clips, so the whole document gains a horizontal scrollbar.
+
+Every article carries tables:
+
+| Article | table rows |
+|---|---|
+| `water-based-vs-oil-based-polyurethane-chemistry` | 67 |
+| `species-comparison-matrix-toronto-renovations` | 44 |
+| `wood-acclimation-timeline-toronto-gta` | 26 |
+| `white-oak-vs-red-oak-tannin-behavior` | 25 |
+| `subfloor-moisture-testing-protocol` | 20 |
+| `dust-free-sanding-hepa-extraction-explained` | 12 |
+
+These are the pages a reader and a crawler spend the most time on, and the
+comparison matrices are the most quotable content on the site.
+
+**Fixed intrinsically rather than with another breakpoint.**
+`lib/content/markdown.ts` now wraps every rendered `<table>` in
+`<div class="tlx-table-wrap" role="region" tabindex="0">`, and the wrapper
+scrolls at all widths. The 640px media query is deleted.
+
+Why a wrapper and not `display: block` on the table itself: `display: block`
+also works, but it changes table layout at every width — the table stops
+filling its column. The wrapper leaves rendering untouched.
+
+`tabindex="0"` makes the scroll region keyboard-reachable, which a scrollable
+region must be; `.tlx-table-wrap:focus-visible` gives it the same focus ring as
+everything else.
+
+**Not yet measured.** This is a static fix for a statically-provable defect. The
+overflow sweep in the runtime pass is what confirms it — and confirms whether
+any *other* element overflows, which is the part I still cannot see.
+
+### Why the rest of Phase 2 is not in this patch
+
+The brief's premise is that 16 off-scale media-query widths are accretion to be
+collapsed onto a five-step scale. Reading all 72 queries, that is **half right**,
+and acting on the wrong half would break things:
+
+**Layout tiers — these belong on the scale.** `max-width: 767px` (15 uses),
+`max-width: 1023px` (8), `min-width: 768px` (3), `max-width: 480px` (4). Already
+on it.
+
+**Component thresholds — these are not viewport tiers and must not be moved
+blind.** Each is "when does *this component* run out of room":
+
+| Query | What it governs |
+|---|---|
+| `max-width: 379px` | hides `.cmdk-trigger` |
+| `max-width: 400px` | hides `.brand-copy small`; shrinks `.tlx-title` |
+| `max-width: 1140px` | hides `.login-btn` — the header nav's own limit |
+| `min-width: 900px` / `min-width: 1180px` | the `/design` configurator's 2-col then 3-col grid |
+| `max-width: 860px` | `.pricing-grid`, `.cov`, `.gc-modal` collapse |
+| `max-width: 560px` | `.standard-grid`, `.funnel-grid`, `.fc-spec` collapse |
+
+Snapping `.login-btn`'s 1140px to 1024px leaves the header overflowing between
+those widths. Snapping the configurator's 1180px to 1024px breaks a three-column
+grid that needs 320px for its result panel. **Each of these was put there
+because something broke at that width, and I cannot see what breaks if I move
+it.** The brief's own instruction is to find the specific breakage and solve it
+intrinsically — that requires the runtime pass.
+
+`max-width: 480px` / `min-width: 481px` is not an off-by-one defect: they are
+mutually exclusive and correct as written.
+
+`DESIGN_SYSTEM.md` §4.2 now carries this two-category classification. The
+collapse itself waits for `audit/runtime-report.json`.
