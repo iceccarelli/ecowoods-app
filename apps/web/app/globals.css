@@ -492,13 +492,28 @@ p {
   letter-spacing: 0.005em;
   border-radius: var(--radius-full);
   transition: all 250ms var(--ease-out-quart);
-  white-space: nowrap;
+  /* `white-space: nowrap` made every CTA as wide as its label, and the labels
+     are not short. Measured at a 320px viewport:
+        "Book your free in-home estimate"                      339px -> doc 359
+        "Get your fixed-price estimate in Toronto · Downtown"   493px -> doc 513
+     Those buttons ARE the horizontal overflow on /service-areas and every
+     /service-areas/[city] page: widest non-full element on the page, and
+     width + 20px shell padding equals the document width exactly. Everything
+     else in the offender list is a width:100% box stretched by the already-wide
+     document. See audit/FINDINGS.md F-35.
+
+     nowrap was a crutch for keeping the icon and arrow on one line, which
+     inline-flex already does. line-height 1 -> 1.2 because a button that can
+     wrap needs leading. */
+  white-space: normal;
+  text-wrap: balance;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
-  line-height: 1;
+  line-height: 1.2;
   box-shadow: var(--shadow-md);
 }
 

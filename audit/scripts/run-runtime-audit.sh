@@ -102,13 +102,17 @@ if [ -f audit/runtime-report.json ]; then
     const overflow = r.results.filter(x => x.top && x.top.overflow).length;
     const zoom = r.results.filter(x => x.top && x.top.iosZoom.length).length;
     const axe = r.results.filter(x => x.axe && x.axe.length).length;
+    const wcag = r.results.filter(x => x.top && x.top.tapBelowWcag && x.top.tapBelowWcag.length).length;
     const tap = r.results.filter(x => x.top && x.top.tapSmall.length).length;
+    const short = r.results.filter(x => x.top && x.top.tapShort && x.top.tapShort.length).length;
     const err = r.results.filter(x => x.error).length;
     console.log('── summary ─────────────────────────────');
     console.log('  cells (route x viewport x theme):', cells);
     console.log('  with horizontal overflow        :', overflow);
     console.log('  with a form control under 16px  :', zoom);
-    console.log('  with a tap target under 44px    :', tap);
+    console.log('  target under 24px (WCAG 2.5.8)  :', wcag);
+    console.log('  icon control under 44px (HIG)   :', tap, '(advisory)');
+    console.log('  text control under 44px tall    :', short, '(informational)');
     console.log('  with axe violations             :', axe);
     console.log('  errored                         :', err);
   "

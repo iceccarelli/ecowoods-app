@@ -79,7 +79,7 @@ if (!SKIP_AXE) {
 
 const IN_PAGE = () => {
   const vw = document.documentElement.clientWidth;
-  const out = { overflow: null, offenders: [], tapSmall: [], tapCrowded: [], iosZoom: [], fixedLayers: [] };
+  const out = { overflow: null, offenders: [], tapSmall: [], tapBelowWcag: [], tapShort: [], tapCrowded: [], iosZoom: [], fixedLayers: [] };
 
   /* --- horizontal overflow --- */
   const sw = document.documentElement.scrollWidth;
@@ -135,7 +135,21 @@ const IN_PAGE = () => {
     const label = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
     const desc = { sel: el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : ''), label, w: Math.round(r.width), h: Math.round(r.height) };
     boxes.push({ r, desc });
-    if (r.width < 44 || r.height < 44) out.tapSmall.push(desc);
+
+    /* The first version required >= 44 on BOTH axes and reported 201 of 220
+       cells. After footer links were given a 44px min-height the count went UP
+       to 220 — because a text link like "Terms" is now 41x44 and still fails a
+       44px WIDTH test. That is the checker being wrong, not the site: no
+       standard asks a text link to be 44px wide.
+
+       WCAG 2.2 SC 2.5.8 (AA) asks 24x24 CSS px or adequate spacing. Apple's HIG
+       asks 44x44, which is the right bar for controls with NO TEXT — icon
+       buttons, toggles — where there is nothing else to aim at. Reported
+       separately so a real failure is never buried in advisory noise. */
+    if (r.width < 24 || r.height < 24) out.tapBelowWcag.push(desc);          // SC 2.5.8
+    const iconOnly = label.length <= 2 || !(el.textContent || '').trim();
+    if (iconOnly && (r.width < 44 || r.height < 44)) out.tapSmall.push(desc); // HIG advisory
+    else if (!iconOnly && r.height < 44) out.tapShort.push(desc);             // informational
   }
   for (let i = 0; i < boxes.length; i++) {
     for (let j = i + 1; j < boxes.length; j++) {
@@ -213,7 +227,18 @@ for (const theme of THEMES) {
            and the wait either times out or returns at an arbitrary moment. */
         await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 45000 });
         await page.waitForLoadState('load').catch(() => {});
-        await page.waitForTimeout(800);            /* let fonts and .reveal settle */
+
+        /* .reveal starts at opacity:0 and its no-JS fallback is
+           `animation: reveal-fallback 0s 2s forwards` — a TWO SECOND delay. An
+           800ms wait measured contrast against invisible text, which is why
+           dark /technical-library reported 30 failing nodes on one run and 69
+           on the next with no CSS change between them.
+           Forcing the settled state is better than racing the timer: the audit
+           becomes deterministic instead of dependent on machine speed. */
+        await page.evaluate(() => {
+          document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+        });
+        await page.waitForTimeout(900);            /* fonts, then the reveal transition */
         const top = await page.evaluate(IN_PAGE);
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await page.waitForTimeout(400);
@@ -222,16 +247,27 @@ for (const theme of THEMES) {
         let axe = null;
         if (AxeBuilder) {
           const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
-          axe = r.violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, help: v.help }));
+          /* Node HTML, truncated. Without it a `color-contrast x133` line names
+             a rule and not a defect, and the fix has to be inferred from token
+             tables — which is exactly how F-33 got half-fixed the first time. */
+          axe = r.violations.map(v => ({
+            id: v.id, impact: v.impact, nodes: v.nodes.length, help: v.help,
+            samples: v.nodes.slice(0, 6).map(n => ({
+              html: (n.html || '').replace(/\s+/g, ' ').slice(0, 180),
+              target: Array.isArray(n.target) ? n.target.join(' ') : String(n.target || ''),
+              summary: (n.failureSummary || '').replace(/\s+/g, ' ').slice(0, 220),
+            })),
+          }));
         }
         if (SHOTS) {
           await page.evaluate(() => window.scrollTo(0, 0));
           await page.screenshot({ path: `audit/shots/${theme}_${vp.name}_${route.replace(/\W+/g, '_') || 'root'}.png`, fullPage: true });
         }
-        const bad = !!top.overflow || !!bottom.overflow || top.iosZoom.length || (axe && axe.length);
+        const bad = !!top.overflow || !!bottom.overflow || top.iosZoom.length
+          || top.tapBelowWcag.length || (axe && axe.length);
         if (bad) p0++;
         report.results.push({ theme, viewport: vp.name, route, top, bottom, axe });
-        console.log(`${bad ? 'FAIL' : ' ok '}  ${key}${top.overflow ? `  overflow +${top.overflow.excess}px` : ''}${top.iosZoom.length ? `  iosZoom x${top.iosZoom.length}` : ''}${axe && axe.length ? `  axe x${axe.length}` : ''}`);
+        console.log(`${bad ? 'FAIL' : ' ok '}  ${key}${top.overflow ? `  overflow +${top.overflow.excess}px` : ''}${top.iosZoom.length ? `  iosZoom x${top.iosZoom.length}` : ''}${top.tapBelowWcag.length ? `  tap<24 x${top.tapBelowWcag.length}` : ''}${axe && axe.length ? `  axe x${axe.length}` : ''}`);
       } catch (e) {
         report.results.push({ theme, viewport: vp.name, route, error: String(e.message).slice(0, 200) });
         console.log(`ERR   ${key}  ${e.message.slice(0, 90)}`);

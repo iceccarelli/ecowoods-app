@@ -1236,3 +1236,105 @@ browser but not the shared libraries it links against. The Codespaces base image
 ships almost none of them, so the first launch died with
 `libnspr4.so: cannot open shared object file` — which reads like a Playwright
 bug and is not one. `install-deps chromium` is now part of the script.
+
+---
+
+## 15. Second measurement pass — what moved, and two instrument corrections
+
+Same harness, same 220 cells, after patches 06, 07C and 10.
+
+| | run 1 | run 2 |
+|---|---|---|
+| axe violations | **220 cells** | **133 cells** |
+| form control under 16px | 6 | **0** |
+| `aria-hidden-focus` | 201 cells | **0** |
+| `document-title` / `html-has-lang` | 19 each | **0** |
+| horizontal overflow | 16 | 16 (untouched until F-35) |
+
+Remaining axe rules, in full: `color-contrast` and `target-size`. Nothing else
+fires. `document-title` / `html-has-lang` disappearing confirms the F-34
+withdrawal: the page was always fine and `waitUntil: 'networkidle'` was the bug.
+
+### F-35 · The overflow on every service-area page is one CTA button · **P0**
+
+With the collector ranking by intrinsic width instead of DOM order:
+
+| Route | widest non-full element | width | document |
+|---|---|---|---|
+| `/service-areas/downtown-toronto` | `a.btn.btn-copper.btn-lg` | **493px** | 513 |
+| `/service-areas` | `a.btn.btn-copper.btn-lg` | **339px** | 359 |
+| `/` | `a.btn.btn-copper` | 308px | 330 |
+| `/products/floorforge` | `div.reveal` | 138px | 324 |
+
+493 + 20px shell padding = 513. 339 + 20 = 359. Exact. The button *is* the
+document width, which is also why the excess tracked the viewport perfectly
+(320 → +193, 430 → +83, every sum 513): a fixed-width element on a variable
+viewport.
+
+`.btn` carried `white-space: nowrap`, so a CTA is as wide as its label:
+
+- `service-areas/page.tsx:38` — "Book your free in-home estimate"
+- `service-areas/[city]/page.tsx:152` — "Get your fixed-price estimate in {city.name}"
+
+Fixed with `white-space: normal`, `text-wrap: balance`, `max-width: 100%`, and
+`line-height` 1 → 1.2.
+
+### Correction 1 — the tap-target metric was mine, and it was wrong
+
+Run 1 reported 201 of 220. After the footer fix, run 2 reported **220** — worse.
+Not a regression in the site.
+
+The checker required **≥ 44px on both axes**. A 44px min-height made `a "Terms"`
+measure **41 × 44** — correct height, failing a 44px *width* test. **No standard
+asks a text link to be 44px wide.** WCAG 2.2 SC 2.5.8 asks 24 × 24 or adequate
+spacing; Apple's HIG asks 44 × 44, which is right for controls with no text.
+axe's own `target-size` rule fires on **8 cells** (both themes of `/`, 24 nodes
+each). That is the real number.
+
+Now reported as three separate figures: `tapBelowWcag` (< 24px — a real
+failure), `tapSmall` (icon-only control < 44px — HIG advisory), `tapShort` (text
+control under 44px tall — informational).
+
+### Correction 2 — the contrast count was racing the reveal animation
+
+Dark `/technical-library` reported **30** failing nodes in run 1 and **69** in
+run 2, with patch 07C *fixing* contrast in between. Both cannot be right.
+
+```css
+.reveal { opacity: 0; animation: reveal-fallback 0s 2s forwards; }
+```
+
+`.reveal` starts invisible and its no-JS fallback fires after **two seconds**.
+Run 1 navigated with `networkidle`, which took longer than that on content
+pages, so the reveals had fired. Run 2 navigated with `domcontentloaded` and
+waited 800ms — **axe measured contrast against text that was still at
+`opacity: 0`.**
+
+Fixed by forcing the settled state before measuring
+(`.reveal` → `classList.add('in')`) rather than waiting out a timer, so the
+result no longer depends on machine speed.
+
+**Both corrections are the same lesson, and it is now the fifth time in this
+series: when a number moves the wrong way after a fix that was verified in the
+code, suspect the instrument before the code.**
+
+### Still open: `color-contrast`
+
+Node counts per route/theme, run 2 (unreliable for the dark content pages until
+the reveal fix lands, reliable elsewhere):
+
+| | nodes |
+|---|---|
+| light `/technical-library` | 15 |
+| light `/blog` | 8 |
+| light `/case-studies` | 5 |
+| light `/`, `/products/floorforge`, `/authority` | 3 each |
+| dark `/`, `/authority`, `/login`, `/register`, `/design` | 1 each |
+
+The light-theme failures are real and were *not* affected by the reveal
+artifact — `/technical-library` at 15 nodes in light means patch 07C did not
+finish the job there. The dark content-page counts need a re-run to be trusted.
+
+The report now captures the failing node HTML, its selector and axe's failure
+summary (up to 6 per rule per cell), so the next pass names the elements instead
+of naming the rule.
