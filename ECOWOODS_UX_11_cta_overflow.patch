@@ -1,0 +1,205 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index e353d1c..7745f92 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -492,13 +492,29 @@ p {
+   letter-spacing: 0.005em;
+   border-radius: var(--radius-full);
+   transition: all 250ms var(--ease-out-quart);
+-  white-space: nowrap;
++  /* `white-space: nowrap` made every CTA as wide as its label, and the label is
++     not always short. Measured at a 320px viewport:
++        "Book your free in-home estimate"                 339px  -> doc 359
++        "Get your fixed-price estimate in Toronto · Downtown"  493px  -> doc 513
++     Those two buttons ARE the horizontal overflow on /service-areas and every
++     /service-areas/[city] page — the widest non-full element on the page in
++     both cases, matching the document width exactly once the 20px shell padding
++     is added. Everything else in the offender list (header, progress rail,
++     topbar-cta) is a width:100% box stretched by the already-wide document.
++
++     Letting the label wrap is the fix; nowrap was a crutch for keeping the
++     icon and arrow on one line, which `inline-flex` already handles.
++     line-height goes 1 -> 1.2 because a single-line-only button could get away
++     with 1 and a wrapping one cannot. See audit/FINDINGS.md F-35. */
++  white-space: normal;
++  text-wrap: balance;
++  max-width: 100%;
+   position: relative;
+   overflow: hidden;
+   cursor: pointer;
+   border: 1px solid transparent;
+   text-decoration: none;
+-  line-height: 1;
++  line-height: 1.2;
+   box-shadow: var(--shadow-md);
+ }
+ 
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index d1e3922..1edc5e6 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1166,3 +1166,91 @@ The collector needs to sort by `width` descending and exclude descendants of
+ `#mobile-sheet` before the next run. Until then, **do not guess the cause** —
+ every entry currently visible in the offender list is a `width: 100%` element
+ stretched by an already-wide document, i.e. a consequence.
++
++---
++
++## 15. Second measurement pass — what moved, and one instrument correction
++
++Same harness, same 220 cells, after patches 06, 07C and 10.
++
++| | run 1 | run 2 |
++|---|---|---|
++| axe violations | **220 cells** | **133 cells** |
++| form control under 16px | 6 | **0** |
++| `aria-hidden-focus` | 201 cells | **0** |
++| `document-title` / `html-has-lang` | 19 each | **0** |
++| horizontal overflow | 16 | 16 (untouched until now) |
++
++Remaining axe rules, in full: `color-contrast` **x133** and `target-size` **x8**.
++Nothing else fires.
++
++`document-title` and `html-has-lang` disappearing confirms the F-34 withdrawal
++was right: the page was always fine, and `waitUntil: 'networkidle'` was the bug —
++`/register` polls `/api/auth/session` continuously, so the wait returned at an
++arbitrary point and axe evaluated a half-built document.
++
++### F-35 · The overflow on every service-area page is one CTA button · **P0**
++
++With the collector ranking by intrinsic width instead of DOM order, the cause is
++unambiguous:
++
++| Route | widest non-full element | width | document |
++|---|---|---|---|
++| `/service-areas/downtown-toronto` | `a.btn.btn-copper.btn-lg` | **493px** | 513 |
++| `/service-areas` | `a.btn.btn-copper.btn-lg` | **339px** | 359 |
++| `/` | `a.btn.btn-copper` | 308px | 330 |
++| `/products/floorforge` | `div.reveal` | 138px | 324 |
++
++493 + 20px shell padding = 513, exactly the document width. 339 + 20 = 359,
++exactly. The button *is* the document.
++
++`.btn` carried `white-space: nowrap`, so every CTA is as wide as its label — and
++the labels are not short:
++
++- `service-areas/page.tsx:38` — "Book your free in-home estimate"
++- `service-areas/[city]/page.tsx:152` — "Get your fixed-price estimate in {city.name}",
++  which on `downtown-toronto` renders "…in Toronto · Downtown"
++
++That also explains why the excess tracked the viewport perfectly (320 → +193,
++430 → +83, all summing to 513): a fixed-width element on a variable viewport.
++
++`nowrap` was there to keep the icon and arrow on one line, which `inline-flex`
++already does. Replaced with `white-space: normal`, `text-wrap: balance`,
++`max-width: 100%`, and `line-height: 1` → `1.2` because a button that can wrap
++needs leading.
++
++### The tap-target metric was mine, and it was wrong
++
++Run 1 reported 201 of 220 cells. After the footer fix, run 2 reported **220** —
++worse. That is not a regression in the site.
++
++The checker required **≥ 44px on both axes**. Giving footer links a 44px
++min-height made `a "Terms"` measure **41 × 44** — correct height, and now failing
++a 44px *width* test. **No standard asks a text link to be 44px wide.**
++
++- **WCAG 2.2 SC 2.5.8 (AA)** asks 24 × 24 CSS px, or adequate spacing.
++- **Apple HIG** asks 44 × 44, which is the right bar for controls with **no
++  text** — icon buttons, toggles — where there is nothing else to aim at.
++
++axe's own `target-size` rule, which implements the actual criterion, fires on
++**8 cells**, both themes of `/`. That is the real number; 220 was an artefact.
++
++The collector now reports three separate figures — `tapBelowWcag` (< 24px, a
++real failure), `tapSmall` (icon-only control < 44px, HIG advisory), and
++`tapShort` (text control under 44px tall, informational) — so a genuine failure
++can never be buried in advisory noise again.
++
++**Lesson: when a metric moves the wrong way after a fix that was verified in the
++code, suspect the metric.** Run 1's 201 was not wrong about the footer — it was
++wrong about how many of those 201 mattered.
++
++### Still open: `color-contrast` x133
++
++Routes: light `/`, `/products/floorforge`, `/authority`, `/technical-library`,
++`/blog`, `/case-studies`; dark `/`, `/authority`.
++
++Patch 07C fixed the `.tlx-*` text primitives and the dark-mode counts dropped,
++but `/technical-library` and `/blog` still fail in **light**, and `/` and
++`/authority` fail in both. Those are different namespaces from the ones already
++swept. The failing node HTML is needed before this can be fixed — inferring it
++from token tables is how F-33 got half-fixed the first time.
+diff --git a/audit/scripts/run-runtime-audit.sh b/audit/scripts/run-runtime-audit.sh
+index 61efe35..36e23ac 100755
+--- a/audit/scripts/run-runtime-audit.sh
++++ b/audit/scripts/run-runtime-audit.sh
+@@ -93,13 +93,17 @@ if [ -f audit/runtime-report.json ]; then
+     const overflow = r.results.filter(x => x.top && x.top.overflow).length;
+     const zoom = r.results.filter(x => x.top && x.top.iosZoom.length).length;
+     const axe = r.results.filter(x => x.axe && x.axe.length).length;
++    const wcag = r.results.filter(x => x.top && x.top.tapBelowWcag && x.top.tapBelowWcag.length).length;
+     const tap = r.results.filter(x => x.top && x.top.tapSmall.length).length;
++    const short = r.results.filter(x => x.top && x.top.tapShort && x.top.tapShort.length).length;
+     const err = r.results.filter(x => x.error).length;
+     console.log('── summary ─────────────────────────────');
+     console.log('  cells (route x viewport x theme):', cells);
+     console.log('  with horizontal overflow        :', overflow);
+     console.log('  with a form control under 16px  :', zoom);
+-    console.log('  with a tap target under 44px    :', tap);
++    console.log('  target under 24px (WCAG 2.5.8)  :', wcag);
++    console.log('  icon control under 44px (HIG)   :', tap);
++    console.log('  text control under 44px tall    :', short, '(advisory)');
+     console.log('  with axe violations             :', axe);
+     console.log('  errored                         :', err);
+   "
+diff --git a/audit/scripts/runtime-audit.mjs b/audit/scripts/runtime-audit.mjs
+index 4682816..5c32c83 100644
+--- a/audit/scripts/runtime-audit.mjs
++++ b/audit/scripts/runtime-audit.mjs
+@@ -79,7 +79,7 @@ if (!SKIP_AXE) {
+ 
+ const IN_PAGE = () => {
+   const vw = document.documentElement.clientWidth;
+-  const out = { overflow: null, offenders: [], tapSmall: [], tapCrowded: [], iosZoom: [], fixedLayers: [] };
++  const out = { overflow: null, offenders: [], tapSmall: [], tapBelowWcag: [], tapShort: [], tapCrowded: [], iosZoom: [], fixedLayers: [] };
+ 
+   /* --- horizontal overflow --- */
+   const sw = document.documentElement.scrollWidth;
+@@ -111,7 +111,21 @@ const IN_PAGE = () => {
+     const label = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
+     const desc = { sel: el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : ''), label, w: Math.round(r.width), h: Math.round(r.height) };
+     boxes.push({ r, desc });
+-    if (r.width < 44 || r.height < 44) out.tapSmall.push(desc);
++
++    /* The first version required >= 44 on BOTH axes and reported 201 of 220
++       cells. After the footer links were given a 44px min-height the count went
++       UP to 220 — because a text link like "Terms" is now 41x44 and still fails
++       a 44px WIDTH test. That is the checker being wrong, not the site: no
++       standard asks a text link to be 44px wide.
++
++       WCAG 2.2 SC 2.5.8 (AA) asks for 24x24 CSS px, or adequate spacing.
++       Apple's HIG asks 44x44, and that is a good target for CONTROLS WITH NO
++       TEXT — icon buttons, toggles — where there is nothing else to aim at.
++       Reported separately so a real failure is never buried in advisory noise. */
++    if (r.width < 24 || r.height < 24) out.tapBelowWcag.push(desc);          // SC 2.5.8
++    const iconOnly = label.length <= 2 || (!el.textContent || !el.textContent.trim());
++    if (iconOnly && (r.width < 44 || r.height < 44)) out.tapSmall.push(desc); // HIG advisory
++    else if (r.height < 44 && !iconOnly) out.tapShort.push(desc);             // text control, short
+   }
+   for (let i = 0; i < boxes.length; i++) {
+     for (let j = i + 1; j < boxes.length; j++) {
+@@ -193,10 +207,11 @@ for (const theme of THEMES) {
+           await page.evaluate(() => window.scrollTo(0, 0));
+           await page.screenshot({ path: `audit/shots/${theme}_${vp.name}_${route.replace(/\W+/g, '_') || 'root'}.png`, fullPage: true });
+         }
+-        const bad = !!top.overflow || !!bottom.overflow || top.iosZoom.length || (axe && axe.length);
++        const bad = !!top.overflow || !!bottom.overflow || top.iosZoom.length
++          || top.tapBelowWcag.length || (axe && axe.length);
+         if (bad) p0++;
+         report.results.push({ theme, viewport: vp.name, route, top, bottom, axe });
+-        console.log(`${bad ? 'FAIL' : ' ok '}  ${key}${top.overflow ? `  overflow +${top.overflow.excess}px` : ''}${top.iosZoom.length ? `  iosZoom x${top.iosZoom.length}` : ''}${axe && axe.length ? `  axe x${axe.length}` : ''}`);
++        console.log(`${bad ? 'FAIL' : ' ok '}  ${key}${top.overflow ? `  overflow +${top.overflow.excess}px` : ''}${top.iosZoom.length ? `  iosZoom x${top.iosZoom.length}` : ''}${top.tapBelowWcag.length ? `  tap<24 x${top.tapBelowWcag.length}` : ''}${axe && axe.length ? `  axe x${axe.length}` : ''}`);
+       } catch (e) {
+         report.results.push({ theme, viewport: vp.name, route, error: String(e.message).slice(0, 200) });
+         console.log(`ERR   ${key}  ${e.message.slice(0, 90)}`);
