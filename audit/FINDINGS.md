@@ -1500,3 +1500,73 @@ investigation cycle were spent on a phantom regression.
 `/blog`, `/case-studies` and `/service-areas` are now clean in light at most
 viewports. `/technical-library`, `/`, `/authority` and the dark content pages
 still report one rule each — the next thing to name.
+
+---
+
+## 18. Fourth pass — the last named contrast nodes
+
+Run against a clean server (F-41 fixed), 220 cells: **axe 103**, overflow **2**,
+form controls under 16px **0**. Every remaining violation is `color-contrast`,
+one rule per cell, and the node data names all of them.
+
+### F-42 · `.tlx-card` — the surface 12B missed · **P0**
+
+12B converted every `.tlx-*` surface off non-flipping primitives **except the
+card**, which is the surface most of the content actually sits on. Measured in
+dark:
+
+```
+h3               1.11:1   #f2e9dc (--ink)        on #faf6ef (--cream-50)
+p                1.41:1   #dcd0be (--ink-soft)
+.tlx-card-tag    1.86:1   #eda877 (--copper-text)
+date / meta      2.82:1   #a2917f (--muted)
+```
+
+Every article card, case-study card and library card on `/technical-library`,
+`/blog` and `/case-studies`. The text flipped correctly; the card did not.
+
+**This is the fourth appearance of the identical violation** — F-05
+(cream-on-copper), F-33 (`.tlx-*` text), F-36 (`.tlx-*` surfaces), now the card.
+Each pass fixed the instances it could see and left the ones it could not.
+`DESIGN_SYSTEM.md` §1.1 has forbidden this from the beginning:
+
+> No component rule may reference a primitive.
+
+Four separate measurement cycles found the same rule violation because nothing
+checks it. `--cream-*` in `.tlx-*` is now **0**, but that is a fact about today,
+not a guarantee. The guarantee is a lint pass in `pnpm verify`.
+
+### F-43 · The CTA heading was invisible in LIGHT mode · **P0**
+
+```
+.tlx-cta h2   1.03:1   #1a1410 on #1a0f08
+```
+
+`globals.css:288` sets `h1, h2, h3, h4, h5, h6 { color: var(--ink) }`. That wins
+over the `color: var(--on-dark)` inherited from `.tlx-cta`, because inheritance
+loses to any matching rule. So the heading of the dark CTA band at the foot of
+**every** `/technical-library`, `/blog` and `/case-study` page rendered
+near-black on near-black — in the default theme.
+
+F-33 fixed `.tlx-cta p` and set `color` on the parent. Headings ignored it. The
+paragraph was fixed and the heading above it was not, for the same reason and in
+the same patch.
+
+### F-44 · Watermark numerals still failed after the first fix · P1
+
+`.funnel-step-num` / `.pfd-step-num` went `--line` → `--line-strong` in 12B:
+1.25:1 → **1.54:1**. Still under the 3:1 large-text bar. Both are hairline
+tokens; neither is a text colour. `--muted-soft` is the lightest token that
+clears it — **3.65:1** light, **4.88:1** dark.
+
+### F-45 · `.auth-footer a` at 4.45:1 · P1
+
+`--copper-deep` flips to `#b46e40` in dark and measures **4.45:1** on
+`--surface` — five hundredths under AA, which is still a fail. `--copper-text`
+carries the guarantee: 5.01:1 light, 8.89:1 dark.
+
+### `/authority` — still deliberately untouched
+
+`text-amber-600` 3.18:1, the CTA 3.18:1 light and **2.14:1** dark. Stock Tailwind
+utilities. Roughly 44 of the remaining 103 cells. Fixing the shades entrenches
+the second design language; the Q1 migration removes it and these with it.
