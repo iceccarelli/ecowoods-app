@@ -1427,3 +1427,76 @@ These are stock Tailwind amber utilities, not brand tokens. Patching the shades
 would entrench the second design language rather than remove it. The decision
 recorded against Q1 is to migrate `/authority` onto brand tokens — that is patch
 04, and it fixes these as a consequence.
+
+---
+
+## 17. The audit measured a stale build for three runs
+
+### F-41 · A leftover `next start` held :3111 and the runner never noticed · **tooling P0**
+
+Symptom, on a run immediately after patch 12B:
+
+```
+horizontal overflow        : 0      (real — F-35 landed)
+form control under 16px    : 0 -> 32
+target under 24px          : 8 -> 176
+axe violations             : 133 -> 220   (every cell, "axe x2")
+```
+
+Every route in both themes failing simultaneously, including routes that had
+been clean minutes earlier. The node data named the cause immediately:
+
+```
+html : <html id="__next_error__">
+input                 13.3333px   (Chrome's default — no CSS)
+a "Gallery"           48x17       (unstyled anchor)
+a.skip-link           97x17       (visible; it is meant to be hidden until focus)
+/design background    #ffffff     (not --bg #fdfbf6)
+```
+
+**The pages were rendered without `globals.css`.** All 176 "failures" were the
+same fact counted 176 times.
+
+**Cause.** An earlier manual test had started `next start -p 3111` and left it
+running — the `EADDRINUSE` in that session's output was the first sighting and I
+did not follow it up. The runner's health check is a plain `GET /`. The zombie
+answered it, so the check passed; the real server never bound the port; the
+audit then measured a **stale build** whose HTML referenced CSS chunks that no
+longer existed on disk.
+
+`trap cleanup` only killed the backgrounded subshell's PID. The actual
+`next start` is its child and survived every run since.
+
+Confirmed directly: `curl http://localhost:3111/` returned **200** with no audit
+running. After `pkill`, the same audit produced axe **103**, overflow **2**,
+iOS zoom **0** — consistent with the pre-regression baseline plus 12B's
+improvements.
+
+**Three guards added to `run-runtime-audit.sh`:**
+
+1. **Refuse to start** if anything already answers on the port, with the exact
+   `pkill` line to clear it.
+2. **Watch for `EADDRINUSE`** in the server log during the readiness loop — that
+   is the same failure seen from the other side.
+3. **Verify the served HTML references a stylesheet that returns 200** before
+   auditing a single cell. A stale build fails this instantly.
+
+Cleanup now also kills by port (`pkill -f "next start -p $PORT"` plus `fuser -k`)
+rather than only by the subshell PID.
+
+**An audit that can silently measure something other than what you built is
+worse than no audit, because it is believed.** Three runs and one full
+investigation cycle were spent on a phantom regression.
+
+### Where the numbers actually stand after 12B
+
+| | before 12B | after 12B |
+|---|---|---|
+| axe violations | 133 cells | **103** |
+| horizontal overflow | 16 → 2 | **2** (`/products/floorforge` @320, +4px) |
+| form control under 16px | 0 | **0** |
+| WCAG target < 24px | 134 | 134 |
+
+`/blog`, `/case-studies` and `/service-areas` are now clean in light at most
+viewports. `/technical-library`, `/`, `/authority` and the dark content pages
+still report one rule each — the next thing to name.

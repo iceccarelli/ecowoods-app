@@ -38,6 +38,12 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
+  # The subshell we backgrounded exits immediately; the real `next start` is its
+  # CHILD and survived every previous run. Kill by what is actually listening.
+  if [ -n "${PORT:-}" ]; then
+    pkill -f "next start -p $PORT" 2>/dev/null || true
+    if command -v fuser >/dev/null 2>&1; then fuser -k "${PORT}/tcp" 2>/dev/null || true; fi
+  fi
 }
 trap cleanup EXIT INT TERM
 
@@ -73,6 +79,36 @@ pnpm --filter @ecowoods/web exec prisma generate >/dev/null || exit 2
 pnpm --filter @ecowoods/web build || { echo "     build failed — fix that first"; exit 2; }
 
 echo "▸ 3/4  starting server on :$PORT"
+
+# ── The failure this guard exists for ────────────────────────────────────────
+# A `next start` from an earlier session survived on :3111. The health check
+# below is a plain GET, so the ZOMBIE answered it, the check passed, and the new
+# server never bound the port at all. Every subsequent run then audited a STALE
+# BUILD whose HTML referenced CSS chunks that no longer existed — 404 — so every
+# page rendered completely unstyled.
+#
+# It did not look like an infrastructure fault. It looked like a catastrophic
+# site regression: inputs at Chrome's default 13.3px, every nav link 17px tall,
+# the skip-link permanently visible, and `<html id="__next_error__">` on the
+# dynamic routes. axe reported 220 of 220 cells failing and "form control under
+# 16px" jumped from 0 to 32 — on routes that had never failed.
+#
+# An audit that can silently measure something other than what you built is
+# worse than no audit, because it is believed. Three guards, all cheap.
+# See audit/FINDINGS.md F-41.
+
+# 1. Refuse to start if anything already holds the port.
+if curl -sf -o /dev/null --max-time 2 "http://localhost:$PORT/" 2>/dev/null; then
+  echo "     ✗ something is ALREADY serving :$PORT."
+  echo "       This is almost certainly a next start left over from a previous run."
+  echo "       Auditing it would measure a stale build. Clear it and re-run:"
+  echo
+  echo "         pkill -f 'next start' ; pkill -f 'next-server' ; sleep 2"
+  echo "         curl -s -o /dev/null -w '%{http_code}\n' http://localhost:$PORT/   # expect 000"
+  echo
+  exit 2
+fi
+
 (cd apps/web && PORT="$PORT" pnpm exec next start -p "$PORT" >/tmp/ecowoods-audit-server.log 2>&1) &
 SERVER_PID=$!
 
@@ -86,9 +122,31 @@ for i in $(seq 1 60); do
     tail -20 /tmp/ecowoods-audit-server.log
     exit 2
   fi
+  # 2. EADDRINUSE is the other half of the same failure: our server exits, the
+  #    squatter keeps answering, and the loop above would break out happily.
+  if grep -q 'EADDRINUSE' /tmp/ecowoods-audit-server.log 2>/dev/null; then
+    echo "     ✗ our server could not bind :$PORT (EADDRINUSE) — something else has it."
+    echo "       pkill -f 'next start' ; pkill -f 'next-server' ; then re-run."
+    exit 2
+  fi
   sleep 1
   [ "$i" = 60 ] && { echo "     server never became ready"; tail -20 /tmp/ecowoods-audit-server.log; exit 2; }
 done
+
+# 3. Prove the served HTML actually has working styles before auditing 220 cells.
+#    A stale build serves HTML that references CSS chunks which 404.
+CSS_HREF=$(curl -s "http://localhost:$PORT/" | grep -o '/_next/static/css/[^"]*\.css' | head -1)
+if [ -z "$CSS_HREF" ]; then
+  echo "     ✗ the served homepage references no stylesheet at all. Refusing to audit."
+  exit 2
+fi
+CSS_CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT${CSS_HREF}")
+if [ "$CSS_CODE" != "200" ]; then
+  echo "     ✗ stylesheet $CSS_HREF returns $CSS_CODE — the server is serving a STALE BUILD."
+  echo "       Every page would measure as unstyled. Refusing to audit."
+  exit 2
+fi
+echo "     stylesheet OK ($CSS_HREF)"
 
 echo "▸ 4/4  running the audit"
 node audit/scripts/runtime-audit.mjs --base="http://localhost:$PORT" "$@"
