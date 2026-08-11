@@ -116,7 +116,14 @@ export default function PricingSection() {
       ariaLabel="Pricing tiers"
       srLabel={(t) => `${t.name}. ${t.pricePerSqFt} dollars per square foot. ${t.blurb}`}
       cardClassName="pfd-card--panel pfd-card--price"
-      tone="dark"
+      /* `tone` describes the SECTION BEHIND the deck, not the cards. The pricing
+         section is `.section .section--card .pricing`, which has no background
+         of its own and therefore sits on --bg. Marking it dark made
+         .pfd--dark .pfd-count and .pfd--dark .pfd-hint paint
+         rgba(245, 239, 230, …) — light text on a light page. axe measured
+         "1 / 3" at 1.07:1 and "Swipe through pricing · 3 tiers" at 1.06:1:
+         invisible. StandardDeck keeps tone="dark" because its section is.
+         See audit/FINDINGS.md F-39. */
       cta={{ href: '#quote', label: 'Get your exact price in writing' }}
       hint={`Swipe through pricing · ${TIERS.length} tiers`}
       renderCard={(t) => (

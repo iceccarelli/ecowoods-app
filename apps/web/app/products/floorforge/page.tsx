@@ -215,7 +215,7 @@ export default function FloorForgePage() {
           <div className="shell">
             <div style={{ maxWidth: '720px' }}>
               <div style={{ marginBottom: '1.5rem' }}>
-                <span className="eyebrow" style={{ color: 'var(--copper)' }}>
+                <span className="eyebrow" style={{ color: 'var(--copper-text)' }}>
                   Early Access · Pilot Program
                 </span>
               </div>
@@ -308,7 +308,7 @@ export default function FloorForgePage() {
                     gap: '0.75rem',
                   }}
                 >
-                  <div style={{ color: 'var(--copper)' }}>{item.icon}</div>
+                  <div style={{ color: 'var(--copper-text)' }}>{item.icon}</div>
                   <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>{item.title}</h3>
                   <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>{item.text}</p>
                 </div>
@@ -417,7 +417,7 @@ export default function FloorForgePage() {
               }}
             >
               <div className="reveal" style={{ padding: 'var(--space-lg)', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper)' }}>
+                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper-text)' }}>
                   ✓ Complete
                 </h3>
                 <ul style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', lineHeight: 1.8 }}>
@@ -430,7 +430,7 @@ export default function FloorForgePage() {
               </div>
 
               <div className="reveal" style={{ padding: 'var(--space-lg)', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper)' }}>
+                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper-text)' }}>
                   🔄 In Progress
                 </h3>
                 <ul style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', lineHeight: 1.8 }}>

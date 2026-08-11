@@ -3971,7 +3971,9 @@ p {
   font-family: var(--font-display);
   font-size: 1.8rem;
   font-weight: 300;
-  color: var(--line);
+  /* --line is a hairline alpha, not a text colour: measured 1.25:1 (#e7e5e3 on
+     #ffffff) at 28.8px. Large text still needs 3:1. See audit/FINDINGS.md F-38. */
+  color: var(--line-strong);
 }
 .funnel-step h4 {
   font-size: var(--fs-base);
@@ -5554,7 +5556,8 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   font-size: 2.6rem;
   font-weight: 300;
   line-height: 1;
-  color: var(--line);
+  /* 1.25:1 light, 1.36:1 dark at 41.6px — see F-38. */
+  color: var(--line-strong);
 }
 .pfd-step-title {
   margin: 0;
@@ -6997,9 +7000,20 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .gc-ic-pause { width: 12px; height: 13px; border-left: 3.5px solid var(--cream-50); border-right: 3.5px solid var(--cream-50); }
 .gc-counter { color: var(--cream-50); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; padding: 0 0.5rem; min-width: 52px; text-align: center; }
 
-.gc-dots { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; justify-content: center; max-width: 360px; }
-.gc-dot { width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: var(--line-strong); cursor: pointer; transition: transform 200ms var(--ease-out-quart), background 200ms; }
-.gc-dot.is-active { background: var(--copper-deep); transform: scale(1.4); }
+.gc-dots { display: flex; gap: 4px; margin-top: 1rem; flex-wrap: wrap; justify-content: center; max-width: 360px; }
+/* The only WCAG 2.2 SC 2.5.8 failures on the site: axe measured the gallery
+   pagination dots at 8x8 (11.2x11.2 active) with an 8px gap — "insufficient
+   size, should be at least 24px by 24px". The dot stays 8px visually; the
+   BUTTON becomes a 24px target with the dot drawn by ::before, so nothing
+   changes on screen and the thumb gets something to hit.
+   See audit/FINDINGS.md F-40. */
+.gc-dot { width: 24px; height: 24px; border-radius: 50%; border: 0; padding: 0;
+  background: transparent; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center;
+  transition: transform 200ms var(--ease-out-quart); }
+.gc-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--line-strong); transition: background 200ms; }
+.gc-dot.is-active::before { background: var(--copper-deep); transform: scale(1.4); }
 
 .gc-deck-hint { margin-top: 0.9rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
 .gc-hint-sep { margin: 0 0.4rem; opacity: 0.5; }
@@ -7099,10 +7113,21 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 
 /* ── Section scaffolding ── */
 .tlx-section { padding: 3.25rem 0; }
-.tlx-section + .tlx-section { border-top: 1px solid var(--cream-100); }
+/* The rest of F-33. Patch 07C moved the .tlx-* TEXT off non-flipping
+   primitives; these SURFACES were still --cream-50 / --cream-100, which never
+   flip. axe measured `.tlx-pillar h3` at 1.11:1 in dark — foreground #f2e9dc
+   (--ink, correctly flipped) on background #faf6ef (--cream-50, not flipped).
+   The pillars, spec tables and zebra rows stayed light while the text on them
+   went pale, so fixing the text made these blocks WORSE.
+   See audit/FINDINGS.md F-36. */
+.tlx-section + .tlx-section { border-top: 1px solid var(--line); }
 .tlx-section .shell { max-width: 1080px; }
 .tlx-kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--copper); margin: 0 0 0.6rem; }
+  /* --copper as TEXT measures 3.09:1 on --bg and 2.97:1 on --surface-1 — below
+     AA at the sizes these run at. --copper-text exists for exactly this and
+     measures 5.01:1. Same family as F-05, which fixed cream-ON-copper and left
+     copper-as-text. See audit/FINDINGS.md F-37. */
+  text-transform: uppercase; color: var(--copper-text); margin: 0 0 0.6rem; }
 .tlx-h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem;
   line-height: 1.2; margin: 0 0 0.75rem; }
 .tlx-note { color: var(--ink-soft); max-width: 60ch; margin: 0 0 2rem; line-height: 1.6; }
@@ -7120,14 +7145,14 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   line-height: 1.3; margin: 0; }
 .tlx-card p { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.55; margin: 0; }
 .tlx-card-tag { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--copper); }
-.tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--maple-200);
+  text-transform: uppercase; color: var(--copper-text); }
+.tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--line);
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
   color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
 .tlx-card-cta { color: var(--copper); font-weight: 600; font-size: 0.9rem; }
 
 /* ── Pillars ── */
-.tlx-pillar { background: var(--cream-50); border: 1px solid var(--cream-100);
+.tlx-pillar { background: var(--surface-1); border: 1px solid var(--line);
   border-left: 3px solid var(--copper); border-radius: 12px; padding: 1.5rem; }
 .tlx-pillar h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 0.5rem; }
 .tlx-pillar p { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.55; margin: 0 0 0.9rem; }
@@ -7137,10 +7162,10 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-pillar li::before { content: '✓ '; color: var(--copper); }
 
 /* ── Case-study spec strip (the job card) ── */
-.tlx-specs { display: grid; gap: 1px; background: var(--cream-100);
+.tlx-specs { display: grid; gap: 1px; background: var(--line);
   border: 1px solid var(--cream-100); border-radius: 12px; overflow: hidden;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 1.75rem; }
-.tlx-spec { background: var(--cream-50); padding: 0.85rem 1rem; }
+.tlx-spec { background: var(--surface-1); padding: 0.85rem 1rem; }
 .tlx-spec dt { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--muted); margin: 0 0 0.25rem; }
 .tlx-spec dd { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--ink); }
@@ -7166,7 +7191,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-body blockquote { margin: 1.5rem 0; padding: 0.9rem 1.25rem;
   border-left: 3px solid var(--copper); background: var(--cream-50);
   border-radius: 0 10px 10px 0; color: var(--ink-soft); font-style: italic; }
-.tlx-body hr { border: 0; border-top: 1px solid var(--cream-100); margin: 2.5rem 0; }
+.tlx-body hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
 
 /* The signature: measurement data on cream reading strips */
 .tlx-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0;
@@ -7174,9 +7199,9 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-body thead th { font-family: var(--font-mono); font-size: 0.7rem;
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
   text-align: left; padding: 0.55rem 0.8rem; border-bottom: 2px solid var(--copper); }
-.tlx-body tbody td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--cream-100);
+.tlx-body tbody td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line);
   font-variant-numeric: tabular-nums; vertical-align: top; }
-.tlx-body tbody tr:nth-child(odd) td { background: var(--cream-50); }
+.tlx-body tbody tr:nth-child(odd) td { background: var(--surface-1); }
 .tlx-body td:first-child, .tlx-body th:first-child { padding-left: 1rem; }
 .tlx-body code { font-family: var(--font-mono); font-size: 0.86em;
   background: var(--surface-2); border-radius: 5px; padding: 0.12em 0.4em; }

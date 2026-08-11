@@ -1338,3 +1338,92 @@ finish the job there. The dark content-page counts need a re-run to be trusted.
 The report now captures the failing node HTML, its selector and axe's failure
 summary (up to 6 per rule per cell), so the next pass names the elements instead
 of naming the rule.
+
+---
+
+## 16. Third pass — every failing node named, and fixed
+
+The collector now captures node HTML, selector and axe's failure summary, so
+this section quotes measurements instead of inferring them.
+
+**Overflow: 16 cells → 2.** F-35 (`.btn` wrapping) removed every service-area
+overflow. The survivors are `/products/floorforge` at 320px, +4px, offender
+`div.reveal` at 138px — a different and much smaller cause.
+
+### F-36 · The other half of the `.tlx-*` dark-mode failure · P0
+
+Patch 07C moved the `.tlx-*` **text** off non-flipping primitives. The
+**surfaces** were still `--cream-50` / `--cream-100`, which never flip. axe,
+dark theme:
+
+```
+.tlx-pillar > h3    1.11:1   fg #f2e9dc (--ink, flipped)
+                             bg #faf6ef (--cream-50, NOT flipped)
+.tlx-pillar > p     1.41:1
+.tlx-pillar > li    2.82:1
+```
+
+The pillars, spec tables, rules and zebra rows stayed light while the text on
+them correctly went pale — so fixing the text made those blocks *worse*, not
+better. Eight declarations moved to `--surface-1` / `--line`.
+
+**Third appearance of this exact shape** (F-05 cream-on-copper, F-33 tlx text,
+now tlx surfaces). `DESIGN_SYSTEM.md` §1.1 already says *no component rule may
+reference a primitive*. It is written down and nothing enforces it — a lint rule
+over `globals.css` would have caught all three in one pass.
+
+### F-37 · `--copper` used as text is 3.09:1 · P1
+
+```
+.tlx-kicker                              3.09:1   #c87e4f on #fdfbf6   11.52px
+.tlx-card-tag                            2.97:1   #c87e4f on #faf6ef   10.88px
+.eyebrow      (inline, /products/floorforge)   3.09:1   12px
+h3            (inline, /products/floorforge)   3.09:1   20px
+```
+
+`--copper-text` exists for exactly this and measures **5.01:1**. F-05 fixed
+cream-**on**-copper and left copper-**as**-text; this closes the family.
+
+### F-38 · Watermark numerals at 1.25:1 · P1
+
+`.funnel-step-num` and `.pfd-step-num` used `color: var(--line)` — a hairline
+alpha, not a text colour. Measured **1.25:1** light (#e7e5e3 on #ffffff) at
+28.8px / 41.6px and **1.36:1** dark. Large text still needs 3:1. Moved to
+`--line-strong`, which keeps the watermark look at a legible ratio.
+
+### F-39 · The pricing carousel was told it sits on a dark section · P1
+
+```
+.pfd-count  "1 / 3"                            1.07:1   #f7f2ea on #fdfbf6
+.pfd-hint   "Swipe through pricing · 3 tiers"  1.06:1   #f8f4ec on #fdfbf6
+```
+
+`SwipeDeck`'s `tone` prop describes **the section behind the deck**, not the
+cards. `PricingSection.tsx:119` passed `tone="dark"`, so `.pfd--dark .pfd-count`
+and `.pfd--dark .pfd-hint` painted `rgba(245, 239, 230, …)` on
+`.section--card .pricing`, which has no background of its own and therefore sits
+on `--bg`. The pagination counter and swipe hint on the pricing carousel were
+**invisible**. Prop removed. `StandardDeck` keeps `tone="dark"` because its
+section genuinely is dark.
+
+### F-40 · The gallery dots are the only real tap-target failure · P1
+
+axe `target-size`, both themes of `/`, 24 nodes:
+
+> Target has insufficient size (8px by 8px, should be at least 24px by 24px).
+> Target has insufficient space to its closest neighbors.
+
+`.gc-dot` was an 8×8 button (11.2×11.2 when active) with an 8px gap. The dot
+stays 8px visually; the **button** is now a 24px target with the dot drawn by
+`::before`, and the gap drops to 4px so the row keeps its width. Nothing changes
+on screen.
+
+### `/authority` — deliberately not fixed here
+
+axe, light: `text-amber-600` (#d97706 on #ffffff) **3.18:1**; the CTA (white on
+#d97706) **3.18:1**. Dark: white on `bg-amber-500` (#f59e0b) **2.14:1**.
+
+These are stock Tailwind amber utilities, not brand tokens. Patching the shades
+would entrench the second design language rather than remove it. The decision
+recorded against Q1 is to migrate `/authority` onto brand tokens — that is patch
+04, and it fixes these as a consequence.
