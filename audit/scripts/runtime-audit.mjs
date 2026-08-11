@@ -85,20 +85,44 @@ const IN_PAGE = () => {
   const sw = document.documentElement.scrollWidth;
   if (sw > vw + 1) {
     out.overflow = { scrollWidth: sw, clientWidth: vw, excess: sw - vw };
+    /* The first version of this collector kept the first 25 offenders in DOM
+       ORDER. The site chrome (header, progress rail) and the off-canvas mobile
+       sheet's ~20 links come first in the DOM and consumed every slot, so the
+       element actually SETTING the document width was never captured — and
+       every entry that was captured is a `width: 100%` box stretched by an
+       already-wide document, i.e. a consequence, not a cause.
+       Now: drop the consequences, drop the sheet's contents, rank by width. */
+    const sheet = document.getElementById('mobile-sheet');
     for (const el of document.querySelectorAll('body *')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
-      if (r.right > vw + 1 || r.left < -1) {
-        const cs = getComputedStyle(el);
-        if (cs.position === 'fixed' && cs.visibility === 'hidden') continue;
-        out.offenders.push({
-          sel: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : ''),
-          left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width),
-        });
+      if (!(r.right > vw + 1 || r.left < -1)) continue;
+      const cs = getComputedStyle(el);
+      if (cs.position === 'fixed' && cs.visibility === 'hidden') continue;
+      if (sheet && (el === sheet || sheet.contains(el))) continue;   // off-canvas menu
+      if (Math.round(r.width) >= sw - 2) continue;                   // stretched to the document
+      out.offenders.push({
+        sel: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : ''),
+        left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width),
+        pos: cs.position, ov: cs.overflowX,
+      });
+    }
+    out.offenders.sort((a, b) => b.width - a.width);
+    out.offenders = out.offenders.slice(0, 25);
+
+    /* Also record what the widest thing in the document actually is, whether or
+       not it crosses the viewport edge — that is usually the real culprit. */
+    let widest = null;
+    for (const el of document.querySelectorAll('body *')) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (sheet && (el === sheet || sheet.contains(el))) continue;
+      if (Math.round(r.width) >= sw - 2) continue;
+      if (!widest || r.width > widest.w) {
+        widest = { w: Math.round(r.width), sel: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : '') };
       }
     }
-    /* keep the outermost offenders — the inner ones are usually consequences */
-    out.offenders = out.offenders.slice(0, 25);
+    out.widestNonFull = widest;
   }
 
   /* --- tap targets --- */
@@ -152,6 +176,13 @@ const IN_PAGE = () => {
       if (o) out.fixedLayers.push({ a: a.sel, aZ: a.z, b: b.sel, bZ: b.z });
     }
   }
+  /* Recorded per cell because axe reported document-title and html-has-lang
+     failing on /register in 19 of 20 cells, while a direct request to the same
+     route returns 200 with a correct <title> and lang="en-CA". One of those two
+     observations is about the harness rather than the page; capturing the
+     values at the moment axe runs is what tells them apart. */
+  out.docTitle = document.title;
+  out.docLang = document.documentElement.lang;
   return out;
 };
 
@@ -177,8 +208,12 @@ for (const theme of THEMES) {
       const page = await ctx.newPage();
       const key = `${theme}|${vp.name}|${route}`;
       try {
-        await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 });
-        await page.waitForTimeout(400);            /* let .reveal settle */
+        /* NOT networkidle: /register and the other authenticated-shell routes
+           poll /api/auth/session continuously, so the network never goes idle
+           and the wait either times out or returns at an arbitrary moment. */
+        await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await page.waitForLoadState('load').catch(() => {});
+        await page.waitForTimeout(800);            /* let fonts and .reveal settle */
         const top = await page.evaluate(IN_PAGE);
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await page.waitForTimeout(400);

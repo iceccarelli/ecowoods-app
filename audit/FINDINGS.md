@@ -1166,3 +1166,73 @@ The collector needs to sort by `width` descending and exclude descendants of
 `#mobile-sheet` before the next run. Until then, **do not guess the cause** —
 every entry currently visible in the offender list is a `width: 100%` element
 stretched by an already-wide document, i.e. a consequence.
+
+---
+
+## 14. Corrections after direct measurement
+
+### F-34 · **WITHDRAWN** — `/register` renders correctly
+
+I proposed that `/register` was throwing at render, that Next's built-in error
+boundary was handling it, and that the boundary's bare `<html>` explained the
+`document-title` and `html-has-lang` failures. The evidence for it was
+circumstantial: 19 of 20 cells, that route only, no `global-error.tsx` in the
+repo, and `/login` wrapping its client form in `<Suspense>` where `/register`
+does not.
+
+Measured against a production build on `localhost:3111`:
+
+```
+status: 200
+title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans"
+lang : "en-CA"
+url  : http://localhost:3111/register
+```
+
+**The page is fine.** Correct status, correct title, correct lang, root layout
+present. The hypothesis is dead.
+
+That leaves the axe result unexplained rather than explained, which is the
+honest position. The difference between the two observations is the harness:
+`runtime-audit.mjs` navigated with `waitUntil: 'networkidle'`, and `/register`
+polls `/api/auth/session` continuously — visible in the dev server log — so the
+network never goes idle and the wait returns at an arbitrary moment. axe may
+have evaluated a document that was still assembling.
+
+**Not asserted, instrumented.** The collector now records `document.title` and
+`documentElement.lang` in every cell at the moment axe runs, and navigation uses
+`domcontentloaded` plus an explicit settle instead of `networkidle`. The next
+run answers it with a measurement rather than a third theory.
+
+This is the **fourth** confident-but-wrong lead in this series — after the
+reduced-motion false positives, the `<div onClick>` scrims and the two-`<h1>`
+files. The pattern is consistent enough to name: *a symptom that fits a
+mechanism is not evidence of that mechanism.* Every one of the four was caught
+by opening the thing rather than reasoning about it.
+
+### The overflow collector was measuring consequences
+
+`runtime-audit.mjs` kept the first 25 offenders **in DOM order**. The site
+chrome (`header.topbar`, `div.topbar-inner`, `div.progress-rail`) and the
+off-canvas mobile sheet's ~20 links come first in the DOM and consumed every
+slot. Worse, all of those are `width: 100%` boxes — they are stretched *by* an
+already-wide document, so the list was full of effects and contained no cause.
+
+Fixed: descendants of `#mobile-sheet` are skipped, any element as wide as the
+document is skipped, the rest are ranked by width descending, and a new
+`widestNonFull` field records the widest non-stretched element on the page
+whether or not it crosses the viewport edge.
+
+The measurements that still need explaining: the document was **330px** on `/`,
+**324** on `/products/floorforge`, **359** on `/service-areas` and **513** on
+`/service-areas/downtown-toronto` against a 320px viewport — and 513 held
+constant across every phone viewport from 320 to 430, which still points at one
+fixed-width element.
+
+### `playwright install-deps` is required and was missing
+
+`run-runtime-audit.sh` called `playwright install chromium`, which fetches the
+browser but not the shared libraries it links against. The Codespaces base image
+ships almost none of them, so the first launch died with
+`libnspr4.so: cannot open shared object file` — which reads like a Playwright
+bug and is not one. `install-deps chromium` is now part of the script.

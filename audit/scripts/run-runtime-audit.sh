@@ -51,6 +51,15 @@ pnpm exec playwright install chromium || {
   echo "     If this machine blocks the download host, run the audit somewhere that doesn't."
   exit 2
 }
+# `install chromium` fetches the BROWSER. It does not install the shared
+# libraries the browser links against, and the Codespaces base image ships
+# almost none of them. Without this the first launch dies with
+#   libnspr4.so: cannot open shared object file
+# which reads like a Playwright bug and is not one.
+pnpm exec playwright install-deps chromium || {
+  echo "     NOTE: install-deps failed (needs root/apt). If chromium will not"
+  echo "     launch, run it manually: pnpm exec playwright install-deps chromium"
+}
 
 if node -e "require('@axe-core/playwright')" 2>/dev/null; then
   echo "     @axe-core/playwright present — accessibility pass enabled"
