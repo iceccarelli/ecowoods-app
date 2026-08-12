@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "verify:facts": "node scripts/verify-business-facts.mjs",
     "verify:migrations": "node scripts/verify-migrations.mjs",
-    "verify": "pnpm verify:facts && pnpm verify:migrations",
+    "verify:tokens": "node scripts/verify-tokens.mjs",
+    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens",
     "hooks:install": "git config core.hooksPath scripts/hooks",
     "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm --filter @ecowoods/web build"
   },

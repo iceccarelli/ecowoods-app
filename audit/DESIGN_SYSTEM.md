@@ -37,8 +37,25 @@ Three layers. A rule may only reference the layer beneath it going down, never u
               Derived per-surface. Defined next to the component that owns it.
 ```
 
-**Today's violation count:** components reference primitives directly in a large
-number of rules — `color: var(--cream-50)` appears 36 times, `var(--walnut-700)`
+**Enforced since patch 15.** `scripts/verify-tokens.mjs` runs inside
+`pnpm verify` and fails the build when a component rule paints with
+`--walnut-*`, `--oak-*`, `--cream-*` or `--maple-*`. It ships with a baseline of
+the 50 uses that predate it — a ratchet, not a wall: the baseline may shrink and
+can never silently grow.
+
+This rule was written here from the start and went unenforced, so the identical
+violation was found **four separate times** by four full measurement cycles —
+F-05 (cream-on-copper, 10 components at 2.97:1), F-33 (`.tlx-*` text, 17
+declarations, 1.11:1 in dark), F-36 (`.tlx-*` surfaces, where fixing the text had
+made the blocks worse) and F-42 (`.tlx-card`, the surface the previous pass could
+not see). Each pass fixed what it could see. A grep would have found all four at
+once.
+
+    node scripts/verify-tokens.mjs --list      every use, baselined or not
+    node scripts/verify-tokens.mjs --update    shrink the baseline deliberately
+
+**Historical violation count:** components referenced primitives directly in a
+large number of rules — `color: var(--cream-50)` appears 36 times, `var(--walnut-700)`
 6 times, `var(--oak-500)` 7 times. Phase 1 converts these to semantic tokens.
 Each conversion must be checked against §1.3, because a primitive that does not
 flip between themes silently becomes a dark-mode bug when a component starts

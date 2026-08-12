@@ -1570,3 +1570,48 @@ carries the guarantee: 5.01:1 light, 8.89:1 dark.
 `text-amber-600` 3.18:1, the CTA 3.18:1 light and **2.14:1** dark. Stock Tailwind
 utilities. Roughly 44 of the remaining 103 cells. Fixing the shades entrenches
 the second design language; the Q1 migration removes it and these with it.
+
+---
+
+## 19. The rule is now enforced, not just written down
+
+### F-46 · The same violation was found four times because nothing checked it
+
+`DESIGN_SYSTEM.md` §1.1 has said since patch 00 that no component rule may
+reference a primitive token. Primitives (`--walnut-*`, `--oak-*`, `--cream-*`,
+`--maple-*`) do not flip between themes; semantic tokens do. So a component rule
+painted with a primitive is correct in one theme and **silently** wrong in the
+other — the light theme looks fine, which is why it survives review.
+
+Found, separately, by four full measurement cycles:
+
+| | what | measured |
+|---|---|---|
+| F-05 | cream on `--copper`, 10 components | 2.97:1 light, 2.43:1 dark |
+| F-33 | `.tlx-*` text, 17 declarations | `--walnut-950` at 1.11:1 dark |
+| F-36 | `.tlx-*` surfaces, 8 declarations | fixing the text made these worse |
+| F-42 | `.tlx-card` | `h3` 1.11:1, the card the previous pass could not see |
+
+Each pass fixed the instances it could see and left the ones it could not. Four
+audit runs, four patches, one rule.
+
+**`scripts/verify-tokens.mjs`**, wired into `pnpm verify` and therefore into the
+pre-push hook:
+
+- flags any `color` / `background` / `border-color` / `fill` / `stroke` /
+  `outline-color` in a component rule that references a primitive
+- ignores `:root` and `html[data-theme='dark']`, where primitives are *defined*
+- ships a baseline of the **50** uses that predate it, so it lands without
+  breaking the build
+- **fails on anything not in the baseline**
+- reports baseline entries that no longer exist, so the list shrinks and can
+  never silently grow
+- keys entries by *selector + property + token*, never line number, so ordinary
+  edits do not churn the baseline
+
+Verified against a live canary: adding `.lint-canary { color: var(--walnut-700) }`
+exits 1 and names the file, line, selector and the semantic token to use instead.
+
+The remaining 50 are mostly `--cream-50` as text on `--walnut-9xx` surfaces that
+are dark in both themes — legitimate in effect, but they should be `--on-dark`.
+That is a mechanical follow-up, and the baseline count is now the metric for it.
