@@ -140,8 +140,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
 
         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
-        <link rel="preconnect" href="https://images.unsplash.com" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
       <body id="top">
         <a href="#main" className="skip-link">Skip to content</a>

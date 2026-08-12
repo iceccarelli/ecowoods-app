@@ -10,7 +10,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
-import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
@@ -445,8 +444,12 @@ const onSubmit = (data: LeadFormData) => {
       />
       {/* 1 · HERO — minimalist authority */}
       <section className="hero" id="hero">
+        {/* RotatingBackground removed here and on #services: each instance
+            fetched /api/backgrounds (measured 6-8s per call in dev) and then
+            preloaded EVERY image in the pool, not just the visible one, on
+            every homepage visit. .hero-bg now draws the surface in CSS.
+            See audit/FINDINGS.md F-48. */}
         <div className="hero-bg" aria-hidden="true" />
-        <RotatingBackground />
         <div className="shell hero-content">
           <h1 className="reveal" data-delay="1">
             Hardwood, Done Once.<br />
@@ -505,7 +508,7 @@ const onSubmit = (data: LeadFormData) => {
         id="services"
         style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
       >
-        <RotatingBackground theme="craft" interval={9000} />
+        <div className="craft-bg" aria-hidden="true" />
         <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
             <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>

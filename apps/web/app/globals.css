@@ -985,12 +985,75 @@ p {
      now strongest at the left and releases toward the right, where the photo
      should actually be visible. Second layer lifts the bottom so the trust bar
      stays legible over pale floorboards. */
+  /* The third layer used to be a 2400px Unsplash JPEG loaded through CSS
+     url(). It was the homepage LCP element and next/image could not touch it:
+     no AVIF, no responsive srcset, no fetchpriority, and a DNS + TLS handshake
+     to a third party before the hero could paint. See audit/FINDINGS.md F-48.
+
+     Replaced with the brand's own wood-grain figure, drawn in CSS. It costs
+     zero bytes and zero requests, so the hero paints with the document.
+
+     The two scrim gradients above are UNCHANGED — they were measured against
+     the headline position (see the note above) and stay valid, because the
+     layer beneath them is still a warm dark surface. When a real Ecowoods
+     photograph exists it drops in as the last background-image layer here, or
+     better as a <next/image priority> behind .hero-content, and the scrims keep
+     working as-is. */
+  /* --surface-deep, not --walnut-950: the semantic token for a surface that is
+     dark in BOTH themes. scripts/verify-tokens.mjs rejected the primitive here
+     while this patch was being written — which is the guard doing its job. */
+  background-color: var(--surface-deep);
   background-image:
     linear-gradient(180deg, rgba(26, 15, 8, 0.15) 0%, transparent 30%, rgba(26, 15, 8, 0.45) 100%),
     linear-gradient(90deg, rgba(26, 15, 8, 0.84) 0%, rgba(26, 15, 8, 0.66) 38%, rgba(26, 15, 8, 0.32) 72%, rgba(26, 15, 8, 0.5) 100%),
-    url('https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=2400&q=80');
+    radial-gradient(ellipse at 68% 42%, rgba(139, 94, 60, 0.34) 0%, transparent 62%),
+    repeating-linear-gradient(
+      92deg,
+      transparent 0px,
+      rgba(255, 235, 200, 0.030) 1px,
+      transparent 3px,
+      rgba(255, 235, 200, 0.018) 7px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      92deg,
+      transparent 0px,
+      rgba(255, 235, 200, 0.045) 90px,
+      transparent 180px,
+      rgba(255, 235, 200, 0.028) 270px,
+      transparent 400px
+    );
   background-size: cover;
   background-position: center;
+}
+
+/* The #services band. Same reasoning as .hero-bg: it carried a second
+   RotatingBackground with its own /api/backgrounds fetch and full-pool preload.
+   The section already sets background-color: var(--walnut-950) inline, so this
+   only adds the grain and a warm bloom on top of it. */
+.craft-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse at 25% 20%, rgba(200, 126, 79, 0.20) 0%, transparent 58%),
+    repeating-linear-gradient(
+      88deg,
+      transparent 0px,
+      rgba(255, 235, 200, 0.026) 1px,
+      transparent 4px,
+      rgba(255, 235, 200, 0.014) 9px,
+      transparent 14px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      transparent 0px,
+      rgba(255, 235, 200, 0.038) 110px,
+      transparent 220px,
+      rgba(255, 235, 200, 0.022) 320px,
+      transparent 460px
+    );
 }
 
 .hero-bg::after {
@@ -4203,8 +4266,9 @@ html[data-theme='dark'] {
 }
 
 /* Photography carries most of the page's light. At night we pull it back
-   so the copper CTAs are the brightest thing on screen. */
-html[data-theme='dark'] .hero-bg,
+   so the copper CTAs are the brightest thing on screen.
+   .hero-bg is no longer photographic (F-48) — it is a drawn surface built from
+   --walnut-950, which already flips, so filtering it would darken it twice. */
 html[data-theme='dark'] .photo-bg-section img,
 html[data-theme='dark'] .gallery-tile img {
   filter: brightness(0.72) saturate(0.94);
