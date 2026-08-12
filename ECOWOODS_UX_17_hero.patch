@@ -1,0 +1,224 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 38d6533..4ce35b5 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -985,14 +985,77 @@ p {
+      now strongest at the left and releases toward the right, where the photo
+      should actually be visible. Second layer lifts the bottom so the trust bar
+      stays legible over pale floorboards. */
++  /* The third layer used to be a 2400px Unsplash JPEG loaded through CSS
++     url(). It was the homepage LCP element and next/image could not touch it:
++     no AVIF, no responsive srcset, no fetchpriority, and a DNS + TLS handshake
++     to a third party before the hero could paint. See audit/FINDINGS.md F-48.
++
++     Replaced with the brand's own wood-grain figure, drawn in CSS. It costs
++     zero bytes and zero requests, so the hero paints with the document.
++
++     The two scrim gradients above are UNCHANGED — they were measured against
++     the headline position (see the note above) and stay valid, because the
++     layer beneath them is still a warm dark surface. When a real Ecowoods
++     photograph exists it drops in as the last background-image layer here, or
++     better as a <next/image priority> behind .hero-content, and the scrims keep
++     working as-is. */
++  /* --surface-deep, not --walnut-950: the semantic token for a surface that is
++     dark in BOTH themes. scripts/verify-tokens.mjs rejected the primitive here
++     while this patch was being written — which is the guard doing its job. */
++  background-color: var(--surface-deep);
+   background-image:
+     linear-gradient(180deg, rgba(26, 15, 8, 0.15) 0%, transparent 30%, rgba(26, 15, 8, 0.45) 100%),
+     linear-gradient(90deg, rgba(26, 15, 8, 0.84) 0%, rgba(26, 15, 8, 0.66) 38%, rgba(26, 15, 8, 0.32) 72%, rgba(26, 15, 8, 0.5) 100%),
+-    url('https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=2400&q=80');
++    radial-gradient(ellipse at 68% 42%, rgba(139, 94, 60, 0.34) 0%, transparent 62%),
++    repeating-linear-gradient(
++      92deg,
++      transparent 0px,
++      rgba(255, 235, 200, 0.030) 1px,
++      transparent 3px,
++      rgba(255, 235, 200, 0.018) 7px,
++      transparent 12px
++    ),
++    repeating-linear-gradient(
++      92deg,
++      transparent 0px,
++      rgba(255, 235, 200, 0.045) 90px,
++      transparent 180px,
++      rgba(255, 235, 200, 0.028) 270px,
++      transparent 400px
++    );
+   background-size: cover;
+   background-position: center;
+ }
+ 
++/* The #services band. Same reasoning as .hero-bg: it carried a second
++   RotatingBackground with its own /api/backgrounds fetch and full-pool preload.
++   The section already sets background-color: var(--walnut-950) inline, so this
++   only adds the grain and a warm bloom on top of it. */
++.craft-bg {
++  position: absolute;
++  inset: 0;
++  z-index: 0;
++  pointer-events: none;
++  background-image:
++    radial-gradient(ellipse at 25% 20%, rgba(200, 126, 79, 0.20) 0%, transparent 58%),
++    repeating-linear-gradient(
++      88deg,
++      transparent 0px,
++      rgba(255, 235, 200, 0.026) 1px,
++      transparent 4px,
++      rgba(255, 235, 200, 0.014) 9px,
++      transparent 14px
++    ),
++    repeating-linear-gradient(
++      88deg,
++      transparent 0px,
++      rgba(255, 235, 200, 0.038) 110px,
++      transparent 220px,
++      rgba(255, 235, 200, 0.022) 320px,
++      transparent 460px
++    );
++}
++
+ .hero-bg::after {
+   content: '';
+   position: absolute;
+@@ -4203,8 +4266,9 @@ html[data-theme='dark'] {
+ }
+ 
+ /* Photography carries most of the page's light. At night we pull it back
+-   so the copper CTAs are the brightest thing on screen. */
+-html[data-theme='dark'] .hero-bg,
++   so the copper CTAs are the brightest thing on screen.
++   .hero-bg is no longer photographic (F-48) — it is a drawn surface built from
++   --walnut-950, which already flips, so filtering it would darken it twice. */
+ html[data-theme='dark'] .photo-bg-section img,
+ html[data-theme='dark'] .gallery-tile img {
+   filter: brightness(0.72) saturate(0.94);
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 842a7d5..c48513c 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -10,7 +10,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
+ import { toast } from 'sonner';
+ import { submitLead } from '@ecowoods/api-client';
+ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
+-import { RotatingBackground } from './components/RotatingBackground';
+ import PricingSection from './components/PricingSection';
+ import CountUp from './components/CountUp';
+ import SpecsCoverage from './components/SpecsCoverage';
+@@ -445,8 +444,12 @@ const onSubmit = (data: LeadFormData) => {
+       />
+       {/* 1 · HERO — minimalist authority */}
+       <section className="hero" id="hero">
++        {/* RotatingBackground removed here and on #services: each instance
++            fetched /api/backgrounds (measured 6-8s per call in dev) and then
++            preloaded EVERY image in the pool, not just the visible one, on
++            every homepage visit. .hero-bg now draws the surface in CSS.
++            See audit/FINDINGS.md F-48. */}
+         <div className="hero-bg" aria-hidden="true" />
+-        <RotatingBackground />
+         <div className="shell hero-content">
+           <h1 className="reveal" data-delay="1">
+             Hardwood, Done Once.<br />
+@@ -505,7 +508,7 @@ const onSubmit = (data: LeadFormData) => {
+         id="services"
+         style={{ color: 'var(--cream-50)', position: 'relative', overflow: 'hidden', backgroundColor: 'var(--walnut-950)' }}
+       >
+-        <RotatingBackground theme="craft" interval={9000} />
++        <div className="craft-bg" aria-hidden="true" />
+         <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
+           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+             <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index 9f8637e..6aef2b8 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -140,8 +140,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
+         />
+ 
+         {/* Unsplash serves the hero + gallery. Warm the connection early. */}
+-        <link rel="preconnect" href="https://images.unsplash.com" />
+-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+       </head>
+       <body id="top">
+         <a href="#main" className="skip-link">Skip to content</a>
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 1cf4064..b032aa9 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1688,3 +1688,76 @@ keyed by slug so the loader still owns the title, description and date.
+ - **"Articles Published: 6" as a credential.** A count of one's own articles is
+   not a credential. The number still appears, derived, where it is useful — as
+   the description of what the Technical Library contains.
++
++---
++
++## 21. The homepage stopped depending on a third party (Q4, partially)
++
++### F-48 · Three separate Unsplash dependencies before the hero could paint · **P0**
++
++Visible in every `pnpm dev` log across this whole engagement:
++
++```
++GET /api/backgrounds?theme=hero  200 in 8063ms
++GET /api/backgrounds?theme=craft 200 in 8015ms
++```
++
++Not one dependency — three.
++
++**1. `globals.css:978` — a 2400px Unsplash JPEG loaded through CSS `url()`.**
++This was the homepage LCP element and `next/image` could not touch it: no AVIF,
++no responsive `srcset`, no `fetchpriority`, and a DNS lookup plus TLS handshake
++to a third party before the hero could paint.
++
++**2 and 3. `home-client.tsx:449` and `:508` mounted `RotatingBackground` twice**
++— once for the hero, once for the `#services` band. Each fetched
++`/api/backgrounds`, which is where those two multi-second calls came from.
++
++And inside that component:
++
++```js
++useEffect(() => { images.forEach((img) => { const p = new Image(); p.src = img.url; }); }, [images]);
++```
++
++**It preloads every image in the pool** — not the one being displayed, all of
++them, on both instances, on every homepage visit. Then rotates on a 7s/9s timer.
++
++**Replaced with the brand's own surface, drawn in CSS.** `globals.css:419`
++already had `.wood-grain` and `.wood-grain-dark`; the hero now uses the same
++figure tuned for a full-bleed panel, plus a new `.craft-bg` for `#services`.
++Zero bytes, zero requests — the hero paints with the document.
++
++**The two scrim gradients are unchanged.** The comment above them records that
++their stops were measured against the headline position; the layer beneath is
++still a warm dark surface, so they stay valid.
++
++**The dark-theme `filter: brightness(0.72)` was removed from `.hero-bg`** and
++kept on the photographic elements. `.hero-bg` is now built from
++`--surface-deep`, which already flips, so filtering it would darken it twice.
++
++**Q4 is now partially answered, and honestly.** The decision recorded earlier
++was: kill the third-party round trips immediately, and do not fake a photograph.
++That is what this is. When Francisco supplies a real Ecowoods photograph it
++drops in as the last `background-image` layer, or better as a
++`<next/image priority>` behind `.hero-content`, and the scrims keep working
++unchanged. Until then the hero is fast and honest rather than fast and stock.
++
++### The token lint caught this patch while it was being written
++
++The first draft set `background-color: var(--walnut-950)` on `.hero-bg`.
++`scripts/verify-tokens.mjs` — shipped one patch earlier — rejected it and named
++`--surface-deep` as the semantic token for a surface that is dark in both
++themes.
++
++That is the fifth appearance of the primitive violation, and the first one
++caught **before** it reached a commit rather than by a later audit cycle. F-05,
++F-33, F-36 and F-42 each cost a full measurement pass. This one cost ten
++seconds.
++
++### Left in place deliberately
++
++`app/api/backgrounds/route.ts` and `app/components/RotatingBackground.tsx` still
++exist but now have **no callers**. API routes are explicitly out of scope for
++this series, and deleting a component in the same patch that changes the
++homepage's rendering would confuse the blast radius. Both are dead code and
++should be removed in a follow-up that touches nothing else.
