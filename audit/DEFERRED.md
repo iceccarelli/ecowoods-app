@@ -10,6 +10,20 @@ placed outside this patch series.
 
 ## 1. Questions that need an answer before code moves
 
+### Q1 — RESOLVED: `/authority` migrated onto brand tokens (patch 16)
+
+Answered by the evidence rather than by preference. The page carried ~44 of the
+site's remaining failing axe cells (`text-amber-600` 3.18:1, its CTA 2.14:1 in
+dark), was the only page on the site with zero brand classes, and its content
+had drifted from reality — claiming two case studies where the repo has five.
+
+Rebuilt on the `.tlx-*` editorial surface. Stock Tailwind utilities: 0.
+`dark:` variants: 0. Content derived from the content loaders and `BUSINESS_NAP`.
+See audit/FINDINGS.md F-47.
+
+<details>
+<summary>Original framing, kept for the record</summary>
+
 ### Q1 — Is `/authority` a separate surface, or a broken page? (blocks Phase 4)
 
 `/authority` is styled entirely in stock Tailwind `stone-*`/`amber-*` utilities
@@ -31,6 +45,8 @@ global config change, so it would also affect `RelatedContent.tsx` and any futur
 `dark:` usage. That is an argument for doing it regardless of the answer to (a).
 
 I am not deciding what this brand looks like. **Rule 6 of the brief applies.**
+
+</details>
 
 ### Q2 — Whole-card hover, or inner-link hover?
 

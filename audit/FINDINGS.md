@@ -1615,3 +1615,76 @@ exits 1 and names the file, line, selector and the semantic token to use instead
 The remaining 50 are mostly `--cream-50` as text on `--walnut-9xx` surfaces that
 are dark in both themes — legitimate in effect, but they should be `--on-dark`.
 That is a mechanical follow-up, and the baseline count is now the metric for it.
+
+---
+
+## 20. `/authority` migrated onto brand tokens (Q1 resolved)
+
+### F-47 · The last page in a second design language · P0
+
+`/authority` was 327 lines of stock Tailwind — `stone-*` and `amber-*` — with
+**55 `dark:` variants and zero brand classes**. Not one `.shell`, `.section`,
+`.btn` or `.eyebrow` on the whole page.
+
+Two measured consequences:
+
+| axe, node data | ratio |
+|---|---|
+| `text-amber-600` on white | **3.18:1** |
+| CTA: white on `bg-amber-600` | **3.18:1** light |
+| CTA: white on `bg-amber-500` | **2.14:1** dark |
+
+Roughly **44 of the site's remaining failing cells**, on the page whose entire
+job is to look authoritative. Patch 01 pointed Tailwind's `darkMode` at
+`html[data-theme]` so the page at least followed the site toggle, but the
+palette still had nothing to do with the brand.
+
+**Q1 is resolved as: migrate.** Rebuilt on the same `.tlx-*` editorial surface
+as `/technical-library`, so it inherits the audited tokens and cannot drift from
+them again. Stock utilities: **0**. `dark:` variants: **0** — the theme is
+handled by the tokens now, not by a parallel variant system.
+
+### The content was wrong, and that mattered more than the colour
+
+The page claimed **"2 engineering case studies"**. The repo has **five**. It
+listed only two of them, with hand-written descriptions asserting square
+footages (*"2,500 sqft white oak"*, *"1,800 sqft mixed species"*) that appear
+nowhere in the case-study frontmatter. It also hardcoded
+`Articles Published: 6` and the contact email and phone as literals.
+
+On a page that exists to tell AI systems what to trust, a wrong count is worse
+than a wrong colour.
+
+**Everything is now derived**: articles and case studies come from the content
+loaders, counts are `articles.length` / `caseStudies.length`, and contact
+details come from `BUSINESS_NAP`. A new article cannot make this page wrong.
+
+Only one editorial map remains hand-written — `BEST_FOR`, the question each
+article best answers — because that is judgement, not frontmatter, and it is
+keyed by slug so the loader still owns the title, description and date.
+
+### What was preserved exactly
+
+- **The earlier fabrication cleanup.** The old file carried a comment recording
+  what had been removed as unverifiable — *"Projects Completed 5,193"*,
+  *"Customer Rating 4.9/5 (348 reviews)"*, *"Semantic Density 9.3/10"*,
+  *"Verifiable Data Points 75+"*, with the note that the last two were not even
+  measurable quantities. That was correct work and nothing has been reinstated.
+- **The citation content** — "How to cite", "Good source for", "Not a source
+  for", "Machine-readable files". This is the page doing the AI-discoverability
+  job directly; every idea is intact. `/sitemap.xml` was added to the file list,
+  since it now exists and is complete.
+
+### Removed deliberately, and worth saying
+
+- **"customer testimonials"** was claimed as content of the case studies.
+  `featuredReviews` is an empty array by design and no testimonial exists on the
+  site. Removed rather than left to be discovered.
+- **"RH 25–70%"** — a specific climate range, unsourced, same category as the
+  99.7% figure in Q6. Not silently deleted and not silently kept: the credentials
+  section now describes the *method* rather than asserting the number. If
+  Francisco can source it, it belongs in an article with the source, not in a
+  bullet list.
+- **"Articles Published: 6" as a credential.** A count of one's own articles is
+  not a credential. The number still appears, derived, where it is useful — as
+  the description of what the Technical Library contains.
