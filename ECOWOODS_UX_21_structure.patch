@@ -1,0 +1,342 @@
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index 89b1713..c02b937 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -7,7 +7,7 @@ import Link from 'next/link';
+ 
+ export function ContentLibraryPromo() {
+   return (
+-    <section className="section-tight paper-texture">
++    <section className="section-tight section--tint">
+       <div className="shell">
+         <div className="section-head reveal" style={{ maxWidth: '640px' }}>
+           <span className="eyebrow">Still researching?</span>
+diff --git a/apps/web/app/components/PricingSection.tsx b/apps/web/app/components/PricingSection.tsx
+index 958905d..a0ab4ee 100644
+--- a/apps/web/app/components/PricingSection.tsx
++++ b/apps/web/app/components/PricingSection.tsx
+@@ -135,7 +135,7 @@ export default function PricingSection() {
+   );
+ 
+   return (
+-    <section className="section section--card pricing" id="pricing">
++    <section className="section section--card section--tint pricing" id="pricing">
+       <div className="shell">
+         <div className="section-head reveal">
+           <span className="eyebrow">Straight Answer</span>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 38d6533..6781a3a 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -458,6 +458,22 @@ p {
+     );
+ }
+ 
++/* SECTION RHYTHM — the reason the page read as "a salad with no coordination".
++   Light sections were landing on two nearly identical creams in no order:
++   --bg (#fdfbf6) for a bare `.section`, --surface-1 (#faf6ef) wherever
++   `.paper-texture` happened to be. Down the homepage that produced
++   tint, DARK, base, base, base, tint, base, base, tint, DARK — three base
++   sections running together, then a tint, with a 0.4% lightness difference
++   doing the work. A difference that small either reads as a mistake or is not
++   seen at all; neither is a rhythm.
++
++   The rule, documented in audit/DESIGN_SYSTEM.md §3.2 and applied in the
++   markup: light sections STRICTLY alternate base -> tint -> base -> tint, and
++   the full-bleed dark bands are the chapter breaks between them.
++   .section--tint is the named handle; .paper-texture stays as its texture
++   layer, so the surfaces themselves are unchanged — only where they land.
++   See audit/FINDINGS.md F-54. */
++.section--tint,
+ .paper-texture {
+   background-color: var(--surface-1);
+   background-image:
+@@ -708,13 +724,21 @@ p {
+   font-weight: 500;
+ }
+ 
++/* THE HEADER OVERLAP. .brand-lockup and .topbar-cta are both `flex: 0 0 auto`
++   — they refuse to shrink. This nav was `flex: 1 1 auto; min-width: 0`, so it
++   absorbed the whole shortfall and could shrink BELOW its own content width.
++   Its links are nowrap, so they did not wrap — and because the nav is CENTRED,
++   the overflow spilled out of BOTH sides at once: left onto the brand lockup,
++   right under the search and theme buttons. That is also why "EST. 2000"
++   looked misaligned: it was being overprinted. See F-50. */
+ .topbar-nav {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 0;
+-  flex: 1 1 auto;
+-  min-width: 0;
++  flex: 0 1 auto;
++  min-width: max-content;
++  overflow: clip;
+ }
+ 
+ .topbar-nav a {
+@@ -4765,8 +4789,11 @@ html[data-theme='dark'] .paper-texture {
+   .login-btn { display: none; }
+ }
+ 
+-/* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
+-@media (max-width: 1023px) {
++/* 5. Nav becomes the hamburger — and the freed space earns the labels back.
++   Raised 1023 -> 1199: with the fix above the nav can no longer hide a
++   shortfall by shrinking, and 1024-1199 is exactly where eight labels plus the
++   brand plus the CTA cluster run out of room. See F-51. */
++@media (max-width: 1199px) {
+   .topbar-nav { display: none; }
+   .hamburger { display: inline-flex; }
+   .cmdk-trigger-label { display: inline; }
+@@ -6154,17 +6181,37 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+    single cheapest "section distinction" trick they use, and it costs two
+    properties.
+    ============================================================ */
++/* THE FOOTER CARD — why it "does not align with anything".
++   It was `max-width: calc(--shell-max + --shell-pad*2 + 4rem)`. --shell-pad is
++   itself `clamp(1.25rem, 4vw, 3rem)`, so the cap MOVED WITH THE VIEWPORT in a
++   way nothing else on the page did — the card's edges tracked no other edge.
++   Worse, below roughly 1424px the computed cap EXCEEDED the viewport, so the
++   card was not inset at all and its rounded top corners cut flush against the
++   window edge: two random notches instead of a card. The radius also stepped
++   28px -> 22px at exactly 767px, so it jumped rather than scaled.
++
++   Now: a gutter that always exists, a cap that does not move with the
++   viewport, and a radius that scales continuously. Inset at EVERY width, so
++   the corners always have page background to curve into. See F-53. */
+ .site-footer {
+-  /* aws-style card */
+-  margin: 0 auto;
+-  max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
+-  border-radius: 28px 28px 0 0;
++  --footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem);
++  --footer-radius: clamp(18px, 2.2vw, 32px);
++
++  width: calc(100% - (var(--footer-gutter) * 2));
++  max-width: calc(var(--shell-max) + 10rem);
++  margin-inline: auto;
++  margin-top: clamp(2rem, 4vw, 3.5rem);
++  border-radius: var(--footer-radius) var(--footer-radius) 0 0;
+   overflow: hidden;
+ }
+-@media (max-width: 767px) {
+-  .site-footer {
+-    margin: 0 0.75rem;
+-    border-radius: 22px 22px 0 0;
++
++/* Reserve the chat dock's footprint beside the footer's legal row. .rg-dock is
++   position:fixed, z-index 130 — scrolled to the bottom it sat on top of
++   .footer-bottom and covered "Terms". Desktop only: on mobile --fab-inset
++   already rises to 88px for the sticky CTA bar. See F-52. */
++@media (min-width: 768px) {
++  .footer-bottom {
++    padding-right: calc(64px + var(--fab-inset-x) + 1rem);
+   }
+ }
+ 
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 842a7d5..edad08e 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -485,7 +485,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* 5 · RESULTS — curated proof */}
+-      <section className="section paper-texture" id="gallery">
++      <section className="section" id="gallery">
+         <div className="shell">
+           <div className="section-head reveal">
+             <span className="eyebrow">The Collection</span>
+@@ -531,6 +531,16 @@ const onSubmit = (data: LeadFormData) => {
+           Re-enable by uncommenting the next line. */}
+       {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
+ 
++      {/* 3 · THE NUMBER — moved here from position 9 (it used to sit after the
++             FAQ). This section's own first line is "Every other Toronto floor
++             company makes you book a visit to hear a number. Here's the range
++             up front." Nine screens down is not up front, and the one claim
++             that separates this business from every competitor in the GTA was
++             the last thing a visitor reached. It now lands immediately after
++             the proof band that earns it. See audit/FINDINGS.md F-55. */}
++
++      <PricingSection />
++
+       {/* 4 · HOW IT WORKS — 4-step funnel */}
+       <section className="section" id="process">
+         <div className="shell">
+@@ -549,7 +559,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* THE CRAFT — educational machine & tool gallery */}
+-      <section className="section" id="craft">
++      <section className="section section--tint" id="craft">
+         <div className="shell">
+           <div className="section-head reveal">
+             <span className="eyebrow">The Craft</span>
+@@ -589,7 +599,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* 2 · PROOF & AUTHORITY */}
+-      <section className="section paper-texture" id="reviews">
++      <section className="section section--tint" id="reviews">
+         <div className="shell">
+           <div className="section-head reveal" style={{ maxWidth: '780px' }}>
+             <span className="eyebrow">The Verdict</span>
+@@ -670,11 +680,7 @@ const onSubmit = (data: LeadFormData) => {
+         </div>
+       </section>
+ 
+-      {/* 5c · PRICING — transparent range before the ask */}
+-
+-      <PricingSection />
+-
+-      {/* 5d · CONTENT LIBRARY — for the researcher, after the price is on the
++      {/* 5c · CONTENT LIBRARY — for the researcher, after the price is on the
+              table. Two article cards; never a detour before the ask. */}
+       {contentPromo}
+ 
+diff --git a/audit/DESIGN_SYSTEM.md b/audit/DESIGN_SYSTEM.md
+index cc37dd8..2d8c6fd 100644
+--- a/audit/DESIGN_SYSTEM.md
++++ b/audit/DESIGN_SYSTEM.md
+@@ -197,6 +197,40 @@ scale — those are fluid and correct as they stand:
+ | `--section-y-tight` | `clamp(2.25rem, 3.5vw, 3.5rem)` |
+ | `--section-head-gap` | `clamp(2rem, 3vw, 3rem)` |
+ 
++### 3.2 Page structure and section rhythm
++
++**Order answers the buyer's questions in the order they ask them.** Not the
++order the sections were built in.
++
++| # | section | surface | the question it answers |
++|---|---|---|---|
++| 1 | hero | **DARK** | who are you |
++| 2 | #gallery | base | what could my floor look like |
++| 3 | #services | **DARK** | why can you promise that |
++| 4 | pricing | tint | **what does it cost** |
++| 5 | #process | base | how does it work |
++| 6 | #craft | tint | who actually does it |
++| 7 | #design | base | can I try it |
++| 8 | #reviews | tint | who says so |
++| 9 | #faq | base | what could go wrong |
++| 10 | library | tint | I want the depth |
++| 11 | #quote | **DARK** | book |
++| 12 | footer | **DARK** | — |
++
++Two rules, and they are the whole system:
++
++1. **Light sections strictly alternate** base → tint → base → tint. A new
++   section takes whichever step its neighbour is not. If it cannot say which
++   step it is, it is in the wrong place.
++2. **Dark bands are chapter breaks**, never decoration. Four of them, at the
++   open, after desire, at the ask, and the footer.
++
++| step | class | surface |
++|---|---|---|
++| base | `.section` | `--bg` |
++| tint | `.section--tint` | `--surface-1` + paper texture |
++| break | `.photo-bg-section`, `.wood-grain-dark` | full-bleed dark |
++
+ ### 3.1 Containment
+ 
+ | Token | Value |
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 1cf4064..dbf03b4 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1688,3 +1688,94 @@ keyed by slug so the loader still owns the title, description and date.
+ - **"Articles Published: 6" as a credential.** A count of one's own articles is
+   not a credential. The number still appears, derived, where it is useful — as
+   the description of what the Technical Library contains.
++
++---
++
++## 23. Structure, rhythm and chrome
++
++### F-55 · The one claim that differentiates this business was ninth on the page · **P0**
++
++`PricingSection` opens with:
++
++> Every other Toronto floor company makes you book a visit to hear a number.
++> Here's the range up front.
++
++It rendered at **position 9 of 12**, after the gallery, the standard, the
++process, the machines, the configurator teaser, the reviews and the FAQ. Nine
++screens down is not "up front". The site made the claim and then contradicted it
++with its own layout.
++
++Moved to **position 4**, immediately after the dark proof band that earns it.
++Nothing else was reordered; this is one component moving, and it is reverted by
++moving it back.
++
++The resulting page answers a homeowner's questions in the order they ask them:
++who are you → what could my floor look like → why can you promise that → **what
++does it cost** → how does it work → who does it → can I try it → who says so →
++what could go wrong → I want the depth → book.
++
++### F-54 · The page had no section rhythm · P1
++
++Measured down the homepage before this patch:
++
++```
++tint, DARK, base, base, base, tint, base, base, tint, DARK
++```
++
++Three base sections running together, then a tint — and the two surfaces differ
++by `--bg #fdfbf6` vs `--surface-1 #faf6ef`, about **0.4% lightness**. A
++difference that small either reads as a mistake or is not seen at all. Neither
++is a rhythm. The tint was applied by whichever utility happened to be on the
++element (`.paper-texture`), not by any decision about where the section sits.
++
++Now strict alternation with the dark bands as chapter breaks, documented in
++`DESIGN_SYSTEM.md` §3.2:
++
++```
++hero DARK · gallery base · services DARK · pricing tint · process base
++· craft tint · design base · reviews tint · faq base · library tint
++· quote DARK · footer DARK
++```
++
++**No photographic section was touched.** The hero, `#services` and `#quote` keep
++their images exactly as they are.
++
++### F-53 · The footer card was not a card at most widths · **P0**
++
++The owner: it "does not align with anything". Correct, and the formula shows
++why:
++
++```css
++max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
++```
++
++`--shell-pad` is itself `clamp(1.25rem, 4vw, 3rem)`, so the cap **moved with the
++viewport** in a way nothing else on the page did — the card's edges tracked no
++other edge on the page. And below roughly 1424px the computed cap **exceeded the
++viewport**, so the card was not inset at all: its rounded top corners cut flush
++against the window edge and read as two random notches. The radius also stepped
++28px → 22px at exactly 767px, so it jumped instead of scaling.
++
++Now `--footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem)` that always exists, a cap
++that does not move with the viewport, `--footer-radius: clamp(18px, 2.2vw, 32px)`
++that scales continuously, and `margin-top` so the page background completes the
++corner. Inset at **every** width.
++
++### F-50 · The header nav overprinted the brand and the icon buttons · **P0**
++
++`.brand-lockup` and `.topbar-cta` are both `flex: 0 0 auto`. `.topbar-nav` was
++`flex: 1 1 auto; min-width: 0`, so it absorbed the entire shortfall and could
++shrink **below its own content width**; its links are `nowrap`, and because the
++nav is centred the overflow spilled out of **both sides at once**. That is why
++"EST. 2000" looked misaligned — it was being overprinted. Fixed with
++`min-width: max-content` and `overflow: clip`.
++
++### F-51 · The hamburger handover fired after the collision · P1
++
++`max-width: 1023px` → **1199px**. 1024–1199 is exactly where eight labels plus
++the brand plus the CTA cluster run out of room.
++
++### F-52 · The chat dock covered the footer's legal links · P1
++
++`.rg-dock` is `position: fixed`, `z-index: 130`; scrolled to the bottom it
++covered **"Terms"**. The legal row reserves its footprint, desktop only.
