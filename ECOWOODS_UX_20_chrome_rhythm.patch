@@ -1,0 +1,309 @@
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index 89b1713..c02b937 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -7,7 +7,7 @@ import Link from 'next/link';
+ 
+ export function ContentLibraryPromo() {
+   return (
+-    <section className="section-tight paper-texture">
++    <section className="section-tight section--tint">
+       <div className="shell">
+         <div className="section-head reveal" style={{ maxWidth: '640px' }}>
+           <span className="eyebrow">Still researching?</span>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 38d6533..2796301 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -458,6 +458,22 @@ p {
+     );
+ }
+ 
++/* SECTION RHYTHM — the reason the page read as having "no pattern".
++   Light sections were landing on two nearly identical creams in no order:
++   --bg (#fdfbf6) for a bare `.section`, --surface-1 (#faf6ef) wherever
++   `.paper-texture` happened to be applied. Down the homepage that produced
++   tint, DARK, base, base, base, tint, base, base, tint, DARK — three base
++   sections in a row, then a tint, with a 0.4% lightness difference doing the
++   work. A difference that small either reads as a mistake or is not seen at
++   all; neither is a rhythm.
++
++   The rule, now documented in audit/DESIGN_SYSTEM.md §3.2 and applied in the
++   markup: light sections STRICTLY alternate base -> tint -> base -> tint, and
++   full-bleed dark bands (hero, #services, #quote, footer) are the chapter
++   breaks between them. .section--tint is the named handle for the tinted step;
++   .paper-texture stays as its texture layer so nothing about the surface
++   itself changes. See audit/FINDINGS.md F-54. */
++.section--tint,
+ .paper-texture {
+   background-color: var(--surface-1);
+   background-image:
+@@ -708,13 +724,22 @@ p {
+   font-weight: 500;
+ }
+ 
++/* THE HEADER OVERLAP. .brand-lockup and .topbar-cta are both `flex: 0 0 auto`
++   — they refuse to shrink. This nav was `flex: 1 1 auto; min-width: 0`, so it
++   absorbed the whole shortfall and could shrink BELOW its own content width.
++   Its links are `white-space: nowrap`, so they did not wrap — and because the
++   nav is CENTRED, the overflow spilled out of BOTH sides at once: left onto
++   "Ecowoods / TORONTO · EST. 2000", right under the search and theme buttons.
++   That is also why the brand's second line looked misaligned: it was being
++   overprinted, not mis-set. See audit/FINDINGS.md F-50. */
+ .topbar-nav {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 0;
+-  flex: 1 1 auto;
+-  min-width: 0;
++  flex: 0 1 auto;
++  min-width: max-content;   /* can never shrink below its own content */
++  overflow: clip;           /* and can never paint outside its own box */
+ }
+ 
+ .topbar-nav a {
+@@ -4765,8 +4790,11 @@ html[data-theme='dark'] .paper-texture {
+   .login-btn { display: none; }
+ }
+ 
+-/* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
+-@media (max-width: 1023px) {
++/* 5. Nav becomes the hamburger — and the freed space earns the labels back.
++   Raised 1023 -> 1199: with the fix above the nav can no longer hide a
++   shortfall by shrinking, and 1024-1199 is exactly where eight labels plus the
++   brand plus the CTA cluster run out of room. See F-51. */
++@media (max-width: 1199px) {
+   .topbar-nav { display: none; }
+   .hamburger { display: inline-flex; }
+   .cmdk-trigger-label { display: inline; }
+@@ -6154,17 +6182,43 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+    single cheapest "section distinction" trick they use, and it costs two
+    properties.
+    ============================================================ */
++/* THE FOOTER CARD — why it looked like it "shrinks and does not scale".
++   It was `max-width: calc(--shell-max + --shell-pad*2 + 4rem)`. --shell-pad is
++   itself `clamp(1.25rem, 4vw, 3rem)`, so the cap moved with the viewport in a
++   way nothing else on the page did — and below roughly 1424px the computed cap
++   EXCEEDED the viewport, so the card was not inset at all. Its rounded top
++   corners then cut flush against the window edge and read as two random
++   notches instead of a card. The radius also stepped 28px -> 22px at exactly
++   767px, so it jumped rather than scaled.
++
++   Now: an explicit gutter that always exists, a cap that does not move with
++   the viewport, and a radius that scales continuously. The card is inset at
++   every width, so the corners always have page background to curve into.
++   See audit/FINDINGS.md F-53. */
+ .site-footer {
+-  /* aws-style card */
+-  margin: 0 auto;
+-  max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
+-  border-radius: 28px 28px 0 0;
++  --footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem);
++  --footer-radius: clamp(18px, 2.2vw, 32px);
++
++  width: calc(100% - (var(--footer-gutter) * 2));
++  max-width: calc(var(--shell-max) + 10rem);
++  margin-inline: auto;
++  /* Space above so the page background completes the corner — without it the
++     curve cuts against whichever section ended above and reads as a seam. */
++  margin-top: clamp(2rem, 4vw, 3.5rem);
++  border-radius: var(--footer-radius) var(--footer-radius) 0 0;
+   overflow: hidden;
+ }
+-@media (max-width: 767px) {
+-  .site-footer {
+-    margin: 0 0.75rem;
+-    border-radius: 22px 22px 0 0;
++
++/* Reserve the chat dock's footprint beside the footer's legal row. ChatWidget
++   renders .rg-dock at position:fixed, z-index 130 — scrolled to the bottom it
++   sat on top of .footer-bottom and covered "Terms", one of two policy links.
++   Desktop only: on mobile --fab-inset rises to 88px to clear the sticky CTA
++   bar, so the dock already sits above this row and a ~96px gutter on a 320px
++   screen would be worse than the defect. Moving the dock was rejected — it
++   would fight the sticky CTA, which is a revenue control. See F-52. */
++@media (min-width: 768px) {
++  .footer-bottom {
++    padding-right: calc(64px + var(--fab-inset-x) + 1rem);
+   }
+ }
+ 
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 842a7d5..045bdf8 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -485,7 +485,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* 5 · RESULTS — curated proof */}
+-      <section className="section paper-texture" id="gallery">
++      <section className="section" id="gallery">
+         <div className="shell">
+           <div className="section-head reveal">
+             <span className="eyebrow">The Collection</span>
+@@ -532,7 +532,7 @@ const onSubmit = (data: LeadFormData) => {
+       {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
+ 
+       {/* 4 · HOW IT WORKS — 4-step funnel */}
+-      <section className="section" id="process">
++      <section className="section section--tint" id="process">
+         <div className="shell">
+           <div className="section-head reveal">
+             <span className="eyebrow">The Process</span>
+@@ -570,7 +570,7 @@ const onSubmit = (data: LeadFormData) => {
+       {/* 5b · DESIGN YOUR FLOOR — teaser only. The full configurator lives at
+              /design so the landing page stays short; researchers click through,
+              buyers keep scrolling toward pricing and the estimate. */}
+-      <section className="section-tight" id="design">
++      <section className="section-tight section--tint" id="design">
+         <div className="shell">
+           <div className="section-head reveal" style={{ maxWidth: '640px' }}>
+             <span className="eyebrow">Design your floor</span>
+@@ -589,7 +589,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* 2 · PROOF & AUTHORITY */}
+-      <section className="section paper-texture" id="reviews">
++      <section className="section" id="reviews">
+         <div className="shell">
+           <div className="section-head reveal" style={{ maxWidth: '780px' }}>
+             <span className="eyebrow">The Verdict</span>
+@@ -635,7 +635,7 @@ const onSubmit = (data: LeadFormData) => {
+       </section>
+ 
+       {/* Objection-handling FAQ — directly above the conversion moment */}
+-      <section className="section" id="faq">
++      <section className="section section--tint" id="faq">
+         <div className="shell">
+           <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+             <span className="eyebrow">Straight Answers</span>
+diff --git a/audit/DESIGN_SYSTEM.md b/audit/DESIGN_SYSTEM.md
+index cc37dd8..b2312e4 100644
+--- a/audit/DESIGN_SYSTEM.md
++++ b/audit/DESIGN_SYSTEM.md
+@@ -197,6 +197,29 @@ scale — those are fluid and correct as they stand:
+ | `--section-y-tight` | `clamp(2.25rem, 3.5vw, 3.5rem)` |
+ | `--section-head-gap` | `clamp(2rem, 3vw, 3rem)` |
+ 
++### 3.2 Section rhythm — the rule the page did not have
++
++Light sections **strictly alternate** between two surfaces, and full-bleed dark
++bands are the chapter breaks between them.
++
++| step | class | surface |
++|---|---|---|
++| base | `.section` | `--bg` |
++| tint | `.section--tint` | `--surface-1` + the paper texture |
++| break | `.photo-bg-section`, `.wood-grain-dark` | full-bleed dark |
++
++Homepage, in order: hero **DARK** → gallery base → services **DARK** → process
++tint → craft base → design tint → reviews base → faq tint → pricing base →
++library tint → quote **DARK** → footer **DARK**.
++
++Before this the order was tint, DARK, base, base, base, tint, base, base, tint,
++DARK — three base sections in a row, with a 0.4% lightness difference doing the
++work of a rhythm. A difference that small either reads as a mistake or is not
++seen at all.
++
++**A new section takes whichever step its neighbour is not.** That is the whole
++rule; if a section cannot say which step it is, it is in the wrong place.
++
+ ### 3.1 Containment
+ 
+ | Token | Value |
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 1cf4064..a44dd34 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1688,3 +1688,90 @@ keyed by slug so the loader still owns the title, description and date.
+ - **"Articles Published: 6" as a credential.** A count of one's own articles is
+   not a credential. The number still appears, derived, where it is useful — as
+   the description of what the Technical Library contains.
++
++---
++
++## 23. Chrome and rhythm defects, reported from screenshots
++
++### F-50 · The header nav overprinted the brand and the icon buttons · **P0**
++
++`.brand-lockup` and `.topbar-cta` are both `flex: 0 0 auto` — they refuse to
++shrink. `.topbar-nav` was `flex: 1 1 auto; min-width: 0`, so it absorbed the
++entire shortfall and could shrink **below its own content width**. Its links are
++`white-space: nowrap`, so they did not wrap. And because the nav is
++`justify-content: center`, the overflow spilled out of **both sides at once** —
++left onto "Ecowoods / TORONTO · EST. 2000", right under the search and theme
++buttons.
++
++That also answers the owner's note that "EST 2000 does not align". It aligns
++fine; it was being overprinted.
++
++Fixed structurally: `min-width: max-content` so the nav can never shrink below
++its content, `overflow: clip` so it can never paint outside its box.
++
++### F-51 · The hamburger handover happened after the collision, not before
++
++`display: none` fired at `max-width: 1023px`; 1024–1199px is exactly where eight
++labels plus the brand plus the CTA cluster run out of room. Raised to **1199px**.
++The sheet carries the same eight links.
++
++### F-52 · The chat dock covered the footer's legal links · P1
++
++`.rg-dock` is `position: fixed`, `z-index: 130`. Scrolled to the bottom it sat
++on `.footer-bottom` and covered **"Terms"**. The row now reserves the dock's
++footprint, desktop only — on mobile `--fab-inset` already rises to 88px for the
++sticky CTA bar.
++
++### F-53 · The footer card was not actually a card at most widths · **P0**
++
++The owner's words: it "shrinks and does not scale properly". Correct, and the
++formula shows why:
++
++```css
++max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
++```
++
++`--shell-pad` is itself `clamp(1.25rem, 4vw, 3rem)`, so the cap **moved with the
++viewport** in a way nothing else on the page did. Worse, below roughly 1424px
++the computed cap **exceeded the viewport** — so the card was not inset at all,
++and its rounded top corners cut flush against the window edge. They read as two
++random notches rather than as a card, which is the opposite of the pattern's
++purpose. The radius also stepped 28px → 22px at exactly 767px, so it jumped
++instead of scaling.
++
++Now: an explicit `--footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem)` that always
++exists, a cap that does not move with the viewport
++(`--shell-max + 10rem`), a `--footer-radius: clamp(18px, 2.2vw, 32px)` that
++scales continuously, and `margin-top` so the page background completes the
++corner. The card is inset at **every** width.
++
++### F-54 · The page had no section rhythm · **P1**
++
++The owner: "some sections have different colors and some have other, we do NOT
++have a pattern." Measured down the homepage:
++
++```
++tint, DARK, base, base, base, tint, base, base, tint, DARK
++```
++
++Three base sections in a row, then a tint, with the two surfaces differing by
++`--bg #fdfbf6` vs `--surface-1 #faf6ef` — about 0.4% lightness. A difference
++that small either reads as a mistake or is not seen at all. Neither is a rhythm.
++
++The tint was also applied by whichever utility happened to be on the element
++(`.paper-texture`), not by a decision about where the section sits.
++
++Now a documented rule (`DESIGN_SYSTEM.md` §3.2): light sections **strictly
++alternate** base → tint → base → tint, and the full-bleed dark bands are the
++chapter breaks. `.section--tint` is the named handle for the tinted step;
++`.paper-texture` remains its texture layer, so the surfaces themselves are
++unchanged — only *where* they land.
++
++```
++hero DARK · gallery base · services DARK · process tint · craft base
++· design tint · reviews base · faq tint · pricing base · library tint
++· quote DARK · footer DARK
++```
++
++**No photographic section was touched.** The hero, `#services` and `#quote` keep
++their images exactly as they are.
