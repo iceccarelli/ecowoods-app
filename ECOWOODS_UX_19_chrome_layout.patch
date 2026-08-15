@@ -1,0 +1,180 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 38d6533..663588d 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -708,13 +708,32 @@ p {
+   font-weight: 500;
+ }
+ 
++/* THE HEADER OVERLAP, and why it happened.
++   .brand-lockup and .topbar-cta are `flex: 0 0 auto` — they refuse to shrink.
++   This nav was `flex: 1 1 auto; min-width: 0`, so it absorbed all the shortfall
++   and could shrink BELOW its own content width. Its links are `white-space:
++   nowrap`, so they did not wrap — and because the nav is CENTRED, the overflow
++   spilled out of BOTH sides at once: left onto "Ecowoods / TORONTO · EST. 2000",
++   right under the search and theme buttons. That is the collision in the
++   screenshot, and it is why the brand's second line looked misaligned — it was
++   not; it was being overprinted.
++
++   Two changes make it structural rather than a tuned number:
++     min-width: max-content   the nav can no longer shrink below its content,
++                              so it can never overflow its own box
++     overflow: clip           belt and braces: even if a future item is added,
++                              nothing can paint outside the nav's box
++   With min-width honoured, the flex line would rather overflow the CONTAINER
++   than overlap — and the breakpoint below hands over to the hamburger before
++   that can happen. See audit/FINDINGS.md F-50. */
+ .topbar-nav {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 0;
+-  flex: 1 1 auto;
+-  min-width: 0;
++  flex: 0 1 auto;
++  min-width: max-content;
++  overflow: clip;
+ }
+ 
+ .topbar-nav a {
+@@ -1666,6 +1685,15 @@ p {
+   min-height: 44px;
+ }
+ 
++/* The ChatWidget dock is `position: fixed; bottom/right: var(--fab-inset)` at
++   z-index 130 — it floats above everything, including this row, and covered
++   "Terms" in the footer once the page was scrolled to the bottom. The legal
++   links are the last thing a visitor reaches and two of them are policy links,
++   so they cannot be the thing that gets sat on.
++
++   Reserving the dock's own footprint keeps them clear at every width without
++   moving the dock, which would fight the sticky CTA on mobile.
++   64px button + inset + breathing room. See audit/FINDINGS.md F-51. */
+ .footer-bottom {
+   padding-top: 2rem;
+   border-top: 1px solid rgba(245, 239, 230, 0.1);
+@@ -4765,8 +4793,15 @@ html[data-theme='dark'] .paper-texture {
+   .login-btn { display: none; }
+ }
+ 
+-/* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
+-@media (max-width: 1023px) {
++/* 5. Nav becomes the hamburger — and the freed space earns the labels back.
++
++   Raised 1023 -> 1199. At 1024-1199 the eight nav labels, the brand lockup and
++   the CTA cluster together need more than the container gives, which is exactly
++   the band where the collision above appeared. The nav can no longer shrink to
++   hide that (see .topbar-nav), so the header must hand over to the hamburger
++   before it is reached rather than after. The hamburger sheet carries the same
++   eight links, so nothing becomes unreachable. */
++@media (max-width: 1199px) {
+   .topbar-nav { display: none; }
+   .hamburger { display: inline-flex; }
+   .cmdk-trigger-label { display: inline; }
+@@ -6160,14 +6195,32 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
+   border-radius: 28px 28px 0 0;
+   overflow: hidden;
++  /* The card is inset from the page edge, so its rounded top corners were
++     cutting against whatever section happened to end above it — the curve read
++     as a seam rather than as the page ending. Lifting the card slightly and
++     letting the page background show through completes the corner, which is
++     what makes the shape read as one object instead of two edges meeting.
++     See audit/FINDINGS.md F-52. */
++  margin-top: clamp(2rem, 4vw, 3.5rem);
+ }
++
+ @media (max-width: 767px) {
+   .site-footer {
+-    margin: 0 0.75rem;
++    margin: clamp(1.5rem, 5vw, 2.5rem) 0.75rem 0;
+     border-radius: 22px 22px 0 0;
+   }
+ }
+ 
++/* Reserve the chat dock's footprint beside the footer's legal row.
++   Desktop only: on mobile --fab-inset rises to 88px to clear the sticky CTA
++   bar, so the dock already sits well above this row, and a ~96px gutter on a
++   320px screen would be worse than the problem. See audit/FINDINGS.md F-51. */
++@media (min-width: 768px) {
++  .footer-bottom {
++    padding-right: calc(64px + var(--fab-inset-x) + 1rem);
++  }
++}
++
+ /* ---- compact contact line in #quote (replaces the duplicated stack) ---- */
+ .quote-contact {
+   display: flex;
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 1cf4064..581add1 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1688,3 +1688,68 @@ keyed by slug so the loader still owns the title, description and date.
+ - **"Articles Published: 6" as a credential.** A count of one's own articles is
+   not a credential. The number still appears, derived, where it is useful — as
+   the description of what the Technical Library contains.
++
++---
++
++## 23. Chrome layout defects, reported from screenshots
++
++Four defects the owner photographed. All reproduced in the CSS.
++
++### F-50 · The header nav overprinted the brand and the icon buttons · **P0**
++
++Visible in the screenshot: "Gallery" and "Services" painted on top of
++"Ecowoods / TORONTO · EST. 2000", and the search and theme buttons painted on
++top of "Reviews" and "FAQ".
++
++`.brand-lockup` and `.topbar-cta` are both `flex: 0 0 auto` — they refuse to
++shrink. `.topbar-nav` was `flex: 1 1 auto; min-width: 0`, so it absorbed the
++entire shortfall and could shrink **below its own content width**. Its links are
++`white-space: nowrap`, so they did not wrap. And because the nav is
++`justify-content: center`, the overflow spilled out of **both sides at once** —
++left onto the brand, right under the buttons.
++
++That also explains the owner's note that "EST 2000 does not align". It aligns
++fine; it was being overprinted.
++
++Fixed structurally rather than by tuning a number:
++
++```css
++flex: 0 1 auto;
++min-width: max-content;   /* can no longer shrink below its own content */
++overflow: clip;           /* nothing can ever paint outside the nav's box */
++```
++
++### F-51 · The hamburger handover happened after the collision, not before
++
++`.topbar-nav { display: none }` fired at `max-width: 1023px`. With F-50's fix
++the nav can no longer hide a shortfall by shrinking, so the band from 1024px to
++roughly 1199px — eight nav labels plus the brand plus the CTA cluster — is
++exactly where it runs out of room.
++
++Raised to **1199px**. The hamburger sheet carries the same eight links, so
++nothing becomes unreachable; the header simply hands over while it still fits.
++
++### F-52 · The chat dock covered the footer's legal links · P1
++
++`ChatWidget.tsx:132` renders `.rg-dock` at `position: fixed`, `z-index: 130`,
++`bottom/right: var(--fab-inset)`. Scrolled to the bottom of the page it sits on
++top of `.footer-bottom` and covered **"Terms"** — one of two policy links, and
++the last thing a visitor reaches.
++
++`.footer-bottom` now reserves the dock's footprint
++(`64px + --fab-inset-x + 1rem`), **desktop only**. On mobile `--fab-inset` rises
++to 88px to clear the sticky CTA bar, so the dock already sits above this row and
++a ~96px gutter on a 320px screen would be worse than the defect.
++
++Moving the dock was rejected: it would fight the sticky CTA on mobile, which is
++a revenue control.
++
++### F-53 · The footer card's rounded corners read as a seam · P2
++
++`.site-footer` is an inset card with `border-radius: 28px 28px 0 0`. With no
++space above it, the curve cut directly against whichever section ended above —
++so it read as two edges meeting rather than as the page ending, which is the
++whole point of the pattern.
++
++Added `margin-top: clamp(2rem, 4vw, 3.5rem)` (and a matching mobile value) so
++the page background completes the corner.
