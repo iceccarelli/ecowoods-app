@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export function ContentLibraryPromo() {
   return (
-    <section className="section-tight paper-texture">
+    <section className="section-tight section--tint">
       <div className="shell">
         <div className="section-head reveal" style={{ maxWidth: '640px' }}>
           <span className="eyebrow">Still researching?</span>

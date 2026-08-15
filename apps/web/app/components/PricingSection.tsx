@@ -135,7 +135,7 @@ export default function PricingSection() {
   );
 
   return (
-    <section className="section section--card pricing" id="pricing">
+    <section className="section section--card section--tint pricing" id="pricing">
       <div className="shell">
         <div className="section-head reveal">
           <span className="eyebrow">Straight Answer</span>

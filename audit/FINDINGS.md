@@ -1688,3 +1688,94 @@ keyed by slug so the loader still owns the title, description and date.
 - **"Articles Published: 6" as a credential.** A count of one's own articles is
   not a credential. The number still appears, derived, where it is useful — as
   the description of what the Technical Library contains.
+
+---
+
+## 23. Structure, rhythm and chrome
+
+### F-55 · The one claim that differentiates this business was ninth on the page · **P0**
+
+`PricingSection` opens with:
+
+> Every other Toronto floor company makes you book a visit to hear a number.
+> Here's the range up front.
+
+It rendered at **position 9 of 12**, after the gallery, the standard, the
+process, the machines, the configurator teaser, the reviews and the FAQ. Nine
+screens down is not "up front". The site made the claim and then contradicted it
+with its own layout.
+
+Moved to **position 4**, immediately after the dark proof band that earns it.
+Nothing else was reordered; this is one component moving, and it is reverted by
+moving it back.
+
+The resulting page answers a homeowner's questions in the order they ask them:
+who are you → what could my floor look like → why can you promise that → **what
+does it cost** → how does it work → who does it → can I try it → who says so →
+what could go wrong → I want the depth → book.
+
+### F-54 · The page had no section rhythm · P1
+
+Measured down the homepage before this patch:
+
+```
+tint, DARK, base, base, base, tint, base, base, tint, DARK
+```
+
+Three base sections running together, then a tint — and the two surfaces differ
+by `--bg #fdfbf6` vs `--surface-1 #faf6ef`, about **0.4% lightness**. A
+difference that small either reads as a mistake or is not seen at all. Neither
+is a rhythm. The tint was applied by whichever utility happened to be on the
+element (`.paper-texture`), not by any decision about where the section sits.
+
+Now strict alternation with the dark bands as chapter breaks, documented in
+`DESIGN_SYSTEM.md` §3.2:
+
+```
+hero DARK · gallery base · services DARK · pricing tint · process base
+· craft tint · design base · reviews tint · faq base · library tint
+· quote DARK · footer DARK
+```
+
+**No photographic section was touched.** The hero, `#services` and `#quote` keep
+their images exactly as they are.
+
+### F-53 · The footer card was not a card at most widths · **P0**
+
+The owner: it "does not align with anything". Correct, and the formula shows
+why:
+
+```css
+max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
+```
+
+`--shell-pad` is itself `clamp(1.25rem, 4vw, 3rem)`, so the cap **moved with the
+viewport** in a way nothing else on the page did — the card's edges tracked no
+other edge on the page. And below roughly 1424px the computed cap **exceeded the
+viewport**, so the card was not inset at all: its rounded top corners cut flush
+against the window edge and read as two random notches. The radius also stepped
+28px → 22px at exactly 767px, so it jumped instead of scaling.
+
+Now `--footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem)` that always exists, a cap
+that does not move with the viewport, `--footer-radius: clamp(18px, 2.2vw, 32px)`
+that scales continuously, and `margin-top` so the page background completes the
+corner. Inset at **every** width.
+
+### F-50 · The header nav overprinted the brand and the icon buttons · **P0**
+
+`.brand-lockup` and `.topbar-cta` are both `flex: 0 0 auto`. `.topbar-nav` was
+`flex: 1 1 auto; min-width: 0`, so it absorbed the entire shortfall and could
+shrink **below its own content width**; its links are `nowrap`, and because the
+nav is centred the overflow spilled out of **both sides at once**. That is why
+"EST. 2000" looked misaligned — it was being overprinted. Fixed with
+`min-width: max-content` and `overflow: clip`.
+
+### F-51 · The hamburger handover fired after the collision · P1
+
+`max-width: 1023px` → **1199px**. 1024–1199 is exactly where eight labels plus
+the brand plus the CTA cluster run out of room.
+
+### F-52 · The chat dock covered the footer's legal links · P1
+
+`.rg-dock` is `position: fixed`, `z-index: 130`; scrolled to the bottom it
+covered **"Terms"**. The legal row reserves its footprint, desktop only.

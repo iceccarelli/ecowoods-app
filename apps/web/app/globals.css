@@ -458,6 +458,22 @@ p {
     );
 }
 
+/* SECTION RHYTHM — the reason the page read as "a salad with no coordination".
+   Light sections were landing on two nearly identical creams in no order:
+   --bg (#fdfbf6) for a bare `.section`, --surface-1 (#faf6ef) wherever
+   `.paper-texture` happened to be. Down the homepage that produced
+   tint, DARK, base, base, base, tint, base, base, tint, DARK — three base
+   sections running together, then a tint, with a 0.4% lightness difference
+   doing the work. A difference that small either reads as a mistake or is not
+   seen at all; neither is a rhythm.
+
+   The rule, documented in audit/DESIGN_SYSTEM.md §3.2 and applied in the
+   markup: light sections STRICTLY alternate base -> tint -> base -> tint, and
+   the full-bleed dark bands are the chapter breaks between them.
+   .section--tint is the named handle; .paper-texture stays as its texture
+   layer, so the surfaces themselves are unchanged — only where they land.
+   See audit/FINDINGS.md F-54. */
+.section--tint,
 .paper-texture {
   background-color: var(--surface-1);
   background-image:
@@ -708,13 +724,21 @@ p {
   font-weight: 500;
 }
 
+/* THE HEADER OVERLAP. .brand-lockup and .topbar-cta are both `flex: 0 0 auto`
+   — they refuse to shrink. This nav was `flex: 1 1 auto; min-width: 0`, so it
+   absorbed the whole shortfall and could shrink BELOW its own content width.
+   Its links are nowrap, so they did not wrap — and because the nav is CENTRED,
+   the overflow spilled out of BOTH sides at once: left onto the brand lockup,
+   right under the search and theme buttons. That is also why "EST. 2000"
+   looked misaligned: it was being overprinted. See F-50. */
 .topbar-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: max-content;
+  overflow: clip;
 }
 
 .topbar-nav a {
@@ -4765,8 +4789,11 @@ html[data-theme='dark'] .paper-texture {
   .login-btn { display: none; }
 }
 
-/* 5. Nav becomes the hamburger — and the freed space earns the labels back. */
-@media (max-width: 1023px) {
+/* 5. Nav becomes the hamburger — and the freed space earns the labels back.
+   Raised 1023 -> 1199: with the fix above the nav can no longer hide a
+   shortfall by shrinking, and 1024-1199 is exactly where eight labels plus the
+   brand plus the CTA cluster run out of room. See F-51. */
+@media (max-width: 1199px) {
   .topbar-nav { display: none; }
   .hamburger { display: inline-flex; }
   .cmdk-trigger-label { display: inline; }
@@ -6154,17 +6181,37 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
    single cheapest "section distinction" trick they use, and it costs two
    properties.
    ============================================================ */
+/* THE FOOTER CARD — why it "does not align with anything".
+   It was `max-width: calc(--shell-max + --shell-pad*2 + 4rem)`. --shell-pad is
+   itself `clamp(1.25rem, 4vw, 3rem)`, so the cap MOVED WITH THE VIEWPORT in a
+   way nothing else on the page did — the card's edges tracked no other edge.
+   Worse, below roughly 1424px the computed cap EXCEEDED the viewport, so the
+   card was not inset at all and its rounded top corners cut flush against the
+   window edge: two random notches instead of a card. The radius also stepped
+   28px -> 22px at exactly 767px, so it jumped rather than scaled.
+
+   Now: a gutter that always exists, a cap that does not move with the
+   viewport, and a radius that scales continuously. Inset at EVERY width, so
+   the corners always have page background to curve into. See F-53. */
 .site-footer {
-  /* aws-style card */
-  margin: 0 auto;
-  max-width: calc(var(--shell-max) + (var(--shell-pad) * 2) + 4rem);
-  border-radius: 28px 28px 0 0;
+  --footer-gutter: clamp(0.75rem, 2.5vw, 2.5rem);
+  --footer-radius: clamp(18px, 2.2vw, 32px);
+
+  width: calc(100% - (var(--footer-gutter) * 2));
+  max-width: calc(var(--shell-max) + 10rem);
+  margin-inline: auto;
+  margin-top: clamp(2rem, 4vw, 3.5rem);
+  border-radius: var(--footer-radius) var(--footer-radius) 0 0;
   overflow: hidden;
 }
-@media (max-width: 767px) {
-  .site-footer {
-    margin: 0 0.75rem;
-    border-radius: 22px 22px 0 0;
+
+/* Reserve the chat dock's footprint beside the footer's legal row. .rg-dock is
+   position:fixed, z-index 130 — scrolled to the bottom it sat on top of
+   .footer-bottom and covered "Terms". Desktop only: on mobile --fab-inset
+   already rises to 88px for the sticky CTA bar. See F-52. */
+@media (min-width: 768px) {
+  .footer-bottom {
+    padding-right: calc(64px + var(--fab-inset-x) + 1rem);
   }
 }
 

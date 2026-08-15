@@ -197,6 +197,40 @@ scale — those are fluid and correct as they stand:
 | `--section-y-tight` | `clamp(2.25rem, 3.5vw, 3.5rem)` |
 | `--section-head-gap` | `clamp(2rem, 3vw, 3rem)` |
 
+### 3.2 Page structure and section rhythm
+
+**Order answers the buyer's questions in the order they ask them.** Not the
+order the sections were built in.
+
+| # | section | surface | the question it answers |
+|---|---|---|---|
+| 1 | hero | **DARK** | who are you |
+| 2 | #gallery | base | what could my floor look like |
+| 3 | #services | **DARK** | why can you promise that |
+| 4 | pricing | tint | **what does it cost** |
+| 5 | #process | base | how does it work |
+| 6 | #craft | tint | who actually does it |
+| 7 | #design | base | can I try it |
+| 8 | #reviews | tint | who says so |
+| 9 | #faq | base | what could go wrong |
+| 10 | library | tint | I want the depth |
+| 11 | #quote | **DARK** | book |
+| 12 | footer | **DARK** | — |
+
+Two rules, and they are the whole system:
+
+1. **Light sections strictly alternate** base → tint → base → tint. A new
+   section takes whichever step its neighbour is not. If it cannot say which
+   step it is, it is in the wrong place.
+2. **Dark bands are chapter breaks**, never decoration. Four of them, at the
+   open, after desire, at the ask, and the footer.
+
+| step | class | surface |
+|---|---|---|
+| base | `.section` | `--bg` |
+| tint | `.section--tint` | `--surface-1` + paper texture |
+| break | `.photo-bg-section`, `.wood-grain-dark` | full-bleed dark |
+
 ### 3.1 Containment
 
 | Token | Value |

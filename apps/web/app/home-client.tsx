@@ -485,7 +485,7 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* 5 · RESULTS — curated proof */}
-      <section className="section paper-texture" id="gallery">
+      <section className="section" id="gallery">
         <div className="shell">
           <div className="section-head reveal">
             <span className="eyebrow">The Collection</span>
@@ -531,6 +531,16 @@ const onSubmit = (data: LeadFormData) => {
           Re-enable by uncommenting the next line. */}
       {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
 
+      {/* 3 · THE NUMBER — moved here from position 9 (it used to sit after the
+             FAQ). This section's own first line is "Every other Toronto floor
+             company makes you book a visit to hear a number. Here's the range
+             up front." Nine screens down is not up front, and the one claim
+             that separates this business from every competitor in the GTA was
+             the last thing a visitor reached. It now lands immediately after
+             the proof band that earns it. See audit/FINDINGS.md F-55. */}
+
+      <PricingSection />
+
       {/* 4 · HOW IT WORKS — 4-step funnel */}
       <section className="section" id="process">
         <div className="shell">
@@ -549,7 +559,7 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* THE CRAFT — educational machine & tool gallery */}
-      <section className="section" id="craft">
+      <section className="section section--tint" id="craft">
         <div className="shell">
           <div className="section-head reveal">
             <span className="eyebrow">The Craft</span>
@@ -589,7 +599,7 @@ const onSubmit = (data: LeadFormData) => {
       </section>
 
       {/* 2 · PROOF & AUTHORITY */}
-      <section className="section paper-texture" id="reviews">
+      <section className="section section--tint" id="reviews">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '780px' }}>
             <span className="eyebrow">The Verdict</span>
@@ -670,11 +680,7 @@ const onSubmit = (data: LeadFormData) => {
         </div>
       </section>
 
-      {/* 5c · PRICING — transparent range before the ask */}
-
-      <PricingSection />
-
-      {/* 5d · CONTENT LIBRARY — for the researcher, after the price is on the
+      {/* 5c · CONTENT LIBRARY — for the researcher, after the price is on the
              table. Two article cards; never a detour before the ask. */}
       {contentPromo}
 
