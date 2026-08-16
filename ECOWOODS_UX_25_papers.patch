@@ -1,0 +1,1386 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index 0498c7b..726994c 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -2,6 +2,7 @@ import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
+ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, PROFILE_LINKS } from '@ecowoods/shared';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
++import { getPapers } from '@/lib/papers';
+ 
+ export const dynamic = 'force-static';
+ 
+@@ -78,6 +79,28 @@ export async function GET() {
+     '',
+   );
+ 
++  const papers = getPapers();
++  if (papers.length) {
++    push(
++      '## Technical papers — the most citable material on this site',
++      '',
++      'Each paper is published in full as an HTML page and also as a PDF. The HTML',
++      'page is canonical: cite that URL, not the PDF.',
++      '',
++      ...papers.flatMap((p) => [
++        `### ${p.title} — ${p.subtitle}`,
++        `${SITE_URL}/papers/${p.slug}`,
++        p.abstract,
++        `Sections: ${p.sections.map((sec) => sec.heading).join('; ')}`,
++        `Topics: ${p.topics.join(', ')}`,
++        `Audience: ${p.audience}`,
++        `Version: ${p.version} · Published: ${p.publishedAt}`,
++        `PDF: ${SITE_URL}/papers/${p.pdf}`,
++        '',
++      ]),
++    );
++  }
++
+   if (articles.length) {
+     push(
+       '## Technical articles — cite these for how-and-why questions',
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index ef2a5ae..cdde2b2 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7585,3 +7585,242 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+      object — the shorthand ran second and discarded the longhand. */
+   margin: 0 auto var(--space-lg);
+ }
++
++/* ============================================================
++   TECHNICAL PAPERS (.wp-*) — /papers and /papers/<slug>
++   ------------------------------------------------------------
++   Sits on the .tlx-* editorial system, not .shell/.section: these are
++   documents that get read, which is the rule in DESIGN_SYSTEM.md. Everything
++   here composes with .tlx-page / .tlx-hero / .tlx-section rather than
++   redefining them — a third design language is the bug, not the goal.
++   Semantic tokens only.
++   ============================================================ */
++
++.wp-hero-sub {
++  font-family: var(--font-display);
++  font-size: 1.25rem;
++  line-height: 1.35;
++  color: var(--copper-text);
++  margin: 0.35rem 0 0.9rem;
++}
++.wp-hero-actions { margin: 1.75rem 0 0; }
++
++/* ── index list ── */
++.wp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
++.wp-item {
++  display: grid;
++  gap: 1.5rem;
++  grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
++  align-items: start;
++  padding: 1.75rem;
++  background: var(--surface-1);
++  border: 1px solid var(--line);
++  border-radius: 14px;
++}
++@media (max-width: 767px) {
++  .wp-item { grid-template-columns: 1fr; padding: 1.35rem; }
++}
++.wp-item-main { min-width: 0; }
++.wp-item-title { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem;
++  line-height: 1.2; margin: 0.45rem 0 0.2rem; }
++.wp-item-title a { color: inherit; text-decoration: none; }
++.wp-item-title a:hover, .wp-item-title a:focus-visible { color: var(--copper-text); }
++.wp-item-sub { color: var(--copper-text); font-size: 0.95rem; margin: 0 0 0.65rem; }
++.wp-item-abstract { color: var(--ink-soft); line-height: 1.6; margin: 0; max-width: 62ch; }
++
++.wp-topics { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem;
++  margin: 1rem 0 0; padding: 0; }
++.wp-topics li {
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  color: var(--muted);
++  border: 1px solid var(--line);
++  border-radius: var(--radius-full);
++  padding: 0.3rem 0.7rem;
++}
++
++.wp-item-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
++.wp-specs { grid-template-columns: 1fr 1fr; }
++
++/* ── buttons. min-height 44px from the start: F-60 was three controls that
++      were only ever styled inside one media query, or with padding: 0. ── */
++.wp-btn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.45rem;
++  min-height: 44px;
++  padding: 0.7rem 1.1rem;
++  border-radius: var(--radius-md);
++  border: 1px solid transparent;
++  background: var(--copper-surface);
++  color: var(--on-copper);
++  font-weight: 600;
++  font-size: var(--fs-sm);
++  text-align: center;
++  text-decoration: none;
++  transition: filter 160ms ease, border-color 160ms ease;
++}
++.wp-btn:hover, .wp-btn:focus-visible { filter: brightness(1.06); }
++.wp-btn:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
++.wp-btn--ghost {
++  background: transparent;
++  color: var(--copper-text);
++  border-color: var(--line-strong);
++}
++.wp-btn--ghost:hover, .wp-btn--ghost:focus-visible { border-color: var(--copper); }
++.wp-ext { font-size: 0.9em; }
++
++/* Visually hidden, still read aloud — the "(opens in a new tab)" every PDF
++   link needs and no sighted user should have to see. */
++.wp-sr {
++  position: absolute;
++  width: 1px; height: 1px;
++  padding: 0; margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++/* ── detail: contents rail + article ── */
++.wp-layout {
++  display: grid;
++  gap: clamp(2rem, 4vw, 3.5rem);
++  grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
++  align-items: start;
++  padding-top: 3rem;
++  padding-bottom: 3rem;
++  max-width: 1080px;
++}
++@media (max-width: 1023px) {
++  .wp-layout { grid-template-columns: 1fr; }
++}
++
++.wp-toc { position: sticky; top: calc(var(--header-h, 72px) + 1.5rem); min-width: 0; }
++@media (max-width: 1023px) {
++  .wp-toc {
++    position: static;
++    border: 1px solid var(--line);
++    border-radius: 12px;
++    padding: 1.1rem 1.25rem;
++    background: var(--surface-1);
++  }
++}
++.wp-toc-label {
++  font-family: var(--font-mono);
++  font-size: 0.7rem;
++  letter-spacing: 0.14em;
++  text-transform: uppercase;
++  color: var(--muted);
++  margin: 0 0 0.75rem;
++}
++.wp-toc ol { list-style: none; margin: 0; padding: 0; counter-reset: wp; }
++.wp-toc li { counter-increment: wp; margin: 0; }
++.wp-toc a {
++  display: flex;
++  gap: 0.6rem;
++  align-items: baseline;
++  min-height: 44px;
++  padding: 0.35rem 0 0.35rem 0.75rem;
++  margin-left: -0.75rem;
++  color: var(--ink-soft);
++  text-decoration: none;
++  font-size: 0.92rem;
++  line-height: 1.4;
++  border-left: 2px solid transparent;
++}
++.wp-toc a::before {
++  content: counter(wp, decimal-leading-zero);
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  color: var(--muted-soft);
++}
++.wp-toc a:hover, .wp-toc a:focus-visible {
++  color: var(--copper-text);
++  border-left-color: var(--copper);
++}
++
++.wp-article { min-width: 0; max-width: 72ch; }
++.wp-section { scroll-margin-top: calc(var(--header-h, 72px) + 1.5rem); }
++.wp-section + .wp-section { margin-top: 2.75rem; }
++.wp-article h2 {
++  font-family: var(--font-display);
++  font-weight: 600;
++  font-size: 1.55rem;
++  line-height: 1.25;
++  margin: 0 0 0.9rem;
++}
++.wp-article p { color: var(--ink-soft); line-height: 1.75; margin: 0 0 1.1rem; }
++
++.wp-bullets, .wp-steps { color: var(--ink-soft); line-height: 1.7; margin: 0 0 1.25rem; }
++.wp-bullets { list-style: none; padding: 0; }
++.wp-bullets li { padding: 0.2rem 0 0.2rem 1.4rem; position: relative; }
++.wp-bullets li::before {
++  content: '';
++  position: absolute;
++  left: 0.15rem; top: 0.85rem;
++  width: 6px; height: 6px;
++  border-radius: 50%;
++  background: var(--copper-text);
++}
++.wp-steps { padding-left: 1.35rem; }
++.wp-steps li { padding: 0.2rem 0; }
++.wp-steps li::marker { color: var(--copper-text); font-weight: 600; }
++
++/* Scrolls at EVERY width, not below a breakpoint — the article column is the
++   constraint, not the viewport. Same reasoning as F-29. */
++.wp-table-wrap {
++  overflow-x: auto;
++  margin: 0 0 1.5rem;
++  border: 1px solid var(--line);
++  border-radius: 10px;
++}
++.wp-table-wrap:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
++.wp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
++.wp-table caption {
++  caption-side: top;
++  text-align: left;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--muted);
++  padding: 0.85rem 1rem 0.6rem;
++}
++.wp-table th, .wp-table td {
++  padding: 0.7rem 1rem;
++  text-align: left;
++  border-top: 1px solid var(--line);
++  vertical-align: top;
++}
++.wp-table thead th {
++  border-top: 0;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--muted);
++  background: var(--surface-1);
++}
++.wp-table tbody th { font-weight: 600; color: var(--ink); }
++.wp-table tbody td { color: var(--ink-soft); }
++
++.wp-callout {
++  border-left: 3px solid var(--copper-surface);
++  background: var(--surface-1);
++  border-radius: 0 10px 10px 0;
++  padding: 1.1rem 1.25rem;
++  margin: 0 0 1.5rem;
++}
++.wp-callout-label {
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++  color: var(--copper-text);
++  margin: 0 0 0.4rem !important;
++}
++.wp-callout p:last-child { margin-bottom: 0 !important; color: var(--ink); }
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 0d9bdb4..f72cf55 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -1,5 +1,6 @@
+ import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
+ import { getArticles } from '@/lib/content/loader';
++import { getPapers } from '@/lib/papers';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ 
+ export const dynamic = 'force-static';
+@@ -53,12 +54,26 @@ export async function GET() {
+   lines.push(`- Technical library: ${SITE_URL}/technical-library`);
+   lines.push(`- Articles: ${SITE_URL}/blog`);
+   lines.push(`- Case studies: ${SITE_URL}/case-studies`);
++  lines.push(`- Technical papers: ${SITE_URL}/papers`);
+   lines.push(`- Floor configurator: ${SITE_URL}/design`);
+   lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
+   lines.push(`- The craft (machines and process): ${SITE_URL}/#craft`);
+   lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
+   lines.push('');
+ 
++  const papers = getPapers();
++  if (papers.length) {
++    lines.push('## Technical papers');
++    lines.push(
++      'Each paper is published in full as an HTML page and also as a PDF. Cite the HTML page.'
++    );
++    for (const p of papers) {
++      lines.push(`- [${p.title} — ${p.subtitle}](${SITE_URL}/papers/${p.slug}): ${p.abstract}`);
++      lines.push(`  PDF: ${SITE_URL}/papers/${p.pdf}`);
++    }
++    lines.push('');
++  }
++
+   if (articles.length) {
+     lines.push('## Technical articles');
+     for (const a of articles) {
+diff --git a/apps/web/app/papers/[slug]/page.tsx b/apps/web/app/papers/[slug]/page.tsx
+new file mode 100644
+index 0000000..cae034e
+--- /dev/null
++++ b/apps/web/app/papers/[slug]/page.tsx
+@@ -0,0 +1,266 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { notFound } from 'next/navigation';
++import { getPaper, getPapers, pdfHref, pdfIsPublished, type Paper } from '@/lib/papers';
++import { SchemaScripts } from '@/lib/schema/components';
++
++const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
++
++export function generateStaticParams() {
++  return getPapers().map((p) => ({ slug: p.slug }));
++}
++
++export async function generateMetadata({
++  params,
++}: {
++  params: Promise<{ slug: string }>;
++}): Promise<Metadata> {
++  const { slug } = await params;
++  const paper = getPaper(slug);
++  if (!paper) return {};
++  const url = `${SITE_URL}/papers/${paper.slug}`;
++  return {
++    title: `${paper.title} — ${paper.subtitle} | EcoWoods`,
++    description: paper.abstract,
++    alternates: { canonical: url },
++    openGraph: {
++      title: `${paper.title} — EcoWoods Technical Paper`,
++      description: paper.abstract,
++      type: 'article',
++      url,
++      publishedTime: paper.publishedAt,
++    },
++  };
++}
++
++const fmt = (iso: string) =>
++  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-CA', {
++    year: 'numeric',
++    month: 'long',
++    day: 'numeric',
++    timeZone: 'UTC',
++  });
++
++function schemasFor(paper: Paper) {
++  const url = `${SITE_URL}/papers/${paper.slug}`;
++  return [
++    {
++      '@context': 'https://schema.org',
++      '@type': 'TechArticle',
++      '@id': `${url}#article`,
++      headline: paper.title,
++      alternativeHeadline: paper.subtitle,
++      abstract: paper.abstract,
++      description: paper.abstract,
++      url,
++      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
++      inLanguage: 'en-CA',
++      datePublished: paper.publishedAt,
++      dateModified: paper.publishedAt,
++      version: paper.version,
++      proficiencyLevel: 'Expert',
++      // Both point at the organization node the entity graph already defines,
++      // so a paper attaches to the existing entity instead of creating a
++      // second, unlinked identity for the same business.
++      author: { '@id': `${SITE_URL}/#organization` },
++      publisher: { '@id': `${SITE_URL}/#organization` },
++      about: paper.topics.map((t) => ({ '@type': 'Thing', name: t })),
++      spatialCoverage: {
++        '@type': 'Place',
++        name: 'Toronto and the Greater Toronto Area',
++      },
++      articleSection: paper.sections.map((s) => s.heading),
++      ...(pdfIsPublished(paper)
++        ? {
++            associatedMedia: {
++              '@type': 'DigitalDocument',
++              name: `${paper.title} (PDF)`,
++              encodingFormat: 'application/pdf',
++              contentUrl: `${SITE_URL}${pdfHref(paper)}`,
++            },
++          }
++        : {}),
++    },
++    {
++      '@context': 'https://schema.org',
++      '@type': 'BreadcrumbList',
++      itemListElement: [
++        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
++        { '@type': 'ListItem', position: 2, name: 'Technical Papers', item: `${SITE_URL}/papers` },
++        { '@type': 'ListItem', position: 3, name: paper.title, item: url },
++      ],
++    },
++  ];
++}
++
++export default async function PaperPage({ params }: { params: Promise<{ slug: string }> }) {
++  const { slug } = await params;
++  const paper = getPaper(slug);
++  if (!paper) notFound();
++
++  const others = getPapers().filter((p) => p.slug !== paper.slug);
++
++  return (
++    <div className="tlx-page">
++      <SchemaScripts schemas={schemasFor(paper)} />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link>
++            <span aria-hidden>/</span>
++            <Link href="/papers">Technical Papers</Link>
++            <span aria-hidden>/</span>
++            <span>{paper.title}</span>
++          </nav>
++          <p className="tlx-kicker">Technical paper · v{paper.version}</p>
++          <h1 className="tlx-title">{paper.title}</h1>
++          <p className="wp-hero-sub">{paper.subtitle}</p>
++          <p className="tlx-lede">{paper.summary}</p>
++
++          <div className="tlx-meta">
++            <span>
++              Published <strong>{fmt(paper.publishedAt)}</strong>
++            </span>
++            <span>
++              <strong>{paper.pages}</strong> pages
++            </span>
++            <span>
++              <strong>{paper.readingMinutes} min</strong> read
++            </span>
++            <span>
++              For <strong>{paper.audience}</strong>
++            </span>
++          </div>
++
++          {pdfIsPublished(paper) && (
++            <p className="wp-hero-actions">
++              <a className="wp-btn" href={pdfHref(paper)} target="_blank" rel="noopener">
++                Download PDF
++                <span className="wp-ext" aria-hidden="true">
++                  ↗
++                </span>
++                <span className="wp-sr"> (PDF, opens in a new tab)</span>
++              </a>
++            </p>
++          )}
++        </div>
++      </header>
++
++      <div className="wp-layout shell">
++        <nav className="wp-toc" aria-label="Contents">
++          <p className="wp-toc-label">Contents</p>
++          <ol>
++            {paper.sections.map((s) => (
++              <li key={s.id}>
++                <a href={`#${s.id}`}>{s.heading}</a>
++              </li>
++            ))}
++          </ol>
++        </nav>
++
++        <article className="wp-article">
++          {paper.sections.map((section) => (
++            <section key={section.id} id={section.id} className="wp-section">
++              <h2>{section.heading}</h2>
++
++              {section.body.map((p, i) => (
++                <p key={i}>{p}</p>
++              ))}
++
++              {section.bullets && (
++                <ul className="wp-bullets">
++                  {section.bullets.map((b) => (
++                    <li key={b}>{b}</li>
++                  ))}
++                </ul>
++              )}
++
++              {section.ordered && (
++                <ol className="wp-steps">
++                  {section.ordered.map((b) => (
++                    <li key={b}>{b}</li>
++                  ))}
++                </ol>
++              )}
++
++              {section.table && (
++                <div className="wp-table-wrap" role="region" tabIndex={0} aria-label={section.table.caption ?? `${section.heading} table`}>
++                  <table className="wp-table">
++                    {section.table.caption && <caption>{section.table.caption}</caption>}
++                    <thead>
++                      <tr>
++                        {section.table.head.map((h) => (
++                          <th key={h} scope="col">
++                            {h}
++                          </th>
++                        ))}
++                      </tr>
++                    </thead>
++                    <tbody>
++                      {section.table.rows.map((row, i) => (
++                        <tr key={i}>
++                          {row.map((cell, j) =>
++                            j === 0 ? (
++                              <th key={j} scope="row">
++                                {cell}
++                              </th>
++                            ) : (
++                              <td key={j}>{cell}</td>
++                            )
++                          )}
++                        </tr>
++                      ))}
++                    </tbody>
++                  </table>
++                </div>
++              )}
++
++              {section.callout && (
++                <aside className="wp-callout">
++                  <p className="wp-callout-label">{section.callout.label}</p>
++                  <p>{section.callout.text}</p>
++                </aside>
++              )}
++            </section>
++          ))}
++
++          {pdfIsPublished(paper) && (
++            <section className="wp-section" aria-label="Download">
++              <div className="tlx-cta">
++                <h2>Take it with you</h2>
++                <p>The full paper, formatted for print and for sending on.</p>
++                <a className="btn btn-copper" href={pdfHref(paper)} target="_blank" rel="noopener">
++                  Download the PDF
++                  <span className="wp-sr"> (opens in a new tab)</span>
++                </a>
++              </div>
++            </section>
++          )}
++        </article>
++      </div>
++
++      {others.length > 0 && (
++        <section className="tlx-section" aria-label="More papers">
++          <div className="shell">
++            <p className="tlx-kicker">Also published</p>
++            <h2 className="tlx-h2">More technical papers</h2>
++            <div className="tlx-grid">
++              {others.map((p) => (
++                <Link key={p.slug} className="tlx-card" href={`/papers/${p.slug}`}>
++                  <span className="tlx-card-tag">Technical paper</span>
++                  <h3>{p.title}</h3>
++                  <p>{p.abstract}</p>
++                  <div className="tlx-card-data">
++                    <span>{p.pages} pages</span>
++                    <span>{p.readingMinutes} min read</span>
++                  </div>
++                </Link>
++              ))}
++            </div>
++          </div>
++        </section>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/app/papers/page.tsx b/apps/web/app/papers/page.tsx
+new file mode 100644
+index 0000000..da38e30
+--- /dev/null
++++ b/apps/web/app/papers/page.tsx
+@@ -0,0 +1,151 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { getPapers, pdfHref, pdfIsPublished } from '@/lib/papers';
++import { SchemaScript } from '@/lib/schema/components';
++
++const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
++
++export const metadata: Metadata = {
++  title: 'Technical Papers | EcoWoods',
++  description:
++    'Downloadable engineering papers on hardwood flooring in Toronto and the GTA: moisture protocol, climate behaviour, species selection, installed cost, and how to evaluate an installer.',
++  alternates: { canonical: `${SITE_URL}/papers` },
++  openGraph: {
++    title: 'Technical Papers — EcoWoods',
++    description:
++      'Engineering papers on hardwood flooring in Toronto: moisture protocol, species selection, installed cost, and installer evaluation.',
++    type: 'website',
++    url: `${SITE_URL}/papers`,
++  },
++};
++
++const fmt = (iso: string) =>
++  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-CA', {
++    year: 'numeric',
++    month: 'long',
++    timeZone: 'UTC',
++  });
++
++export default function PapersIndexPage() {
++  const papers = getPapers();
++
++  const schema = {
++    '@context': 'https://schema.org',
++    '@type': 'CollectionPage',
++    '@id': `${SITE_URL}/papers#collection`,
++    name: 'EcoWoods Technical Papers',
++    description: metadata.description,
++    url: `${SITE_URL}/papers`,
++    inLanguage: 'en-CA',
++    isPartOf: { '@id': `${SITE_URL}/#website` },
++    publisher: { '@id': `${SITE_URL}/#organization` },
++    hasPart: papers.map((p) => ({
++      '@type': 'TechArticle',
++      '@id': `${SITE_URL}/papers/${p.slug}#article`,
++      headline: p.title,
++      abstract: p.abstract,
++      url: `${SITE_URL}/papers/${p.slug}`,
++      datePublished: p.publishedAt,
++    })),
++  };
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript schema={schema} />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link>
++            <span aria-hidden>/</span>
++            <span>Technical Papers</span>
++          </nav>
++          <h1 className="tlx-title">Technical Papers</h1>
++          <p className="tlx-lede">
++            The engineering behind the work, written down and published. Each paper is readable in
++            full on this site and downloadable as a PDF.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Papers">
++        <div className="shell">
++          <p className="tlx-kicker">Library</p>
++          <h2 className="tlx-h2">Published papers</h2>
++          <p className="tlx-note">
++            Written for homeowners, designers and trades working with hardwood in Toronto and the
++            Greater Toronto Area.
++          </p>
++
++          <ul className="wp-list">
++            {papers.map((paper) => (
++              <li key={paper.slug} className="wp-item">
++                <div className="wp-item-main">
++                  <p className="tlx-card-tag">
++                    Technical paper · v{paper.version} · {fmt(paper.publishedAt)}
++                  </p>
++                  <h3 className="wp-item-title">
++                    <Link href={`/papers/${paper.slug}`}>{paper.title}</Link>
++                  </h3>
++                  <p className="wp-item-sub">{paper.subtitle}</p>
++                  <p className="wp-item-abstract">{paper.abstract}</p>
++
++                  <ul className="wp-topics">
++                    {paper.topics.map((t) => (
++                      <li key={t}>{t}</li>
++                    ))}
++                  </ul>
++                </div>
++
++                <div className="wp-item-side">
++                  <dl className="tlx-specs wp-specs">
++                    <div className="tlx-spec">
++                      <dt>Pages</dt>
++                      <dd>{paper.pages}</dd>
++                    </div>
++                    <div className="tlx-spec">
++                      <dt>Read</dt>
++                      <dd>{paper.readingMinutes} min</dd>
++                    </div>
++                  </dl>
++                  <Link className="wp-btn" href={`/papers/${paper.slug}`}>
++                    Read the paper
++                  </Link>
++                  {pdfIsPublished(paper) && (
++                    <a
++                      className="wp-btn wp-btn--ghost"
++                      href={pdfHref(paper)}
++                      target="_blank"
++                      rel="noopener"
++                    >
++                      Download PDF
++                      <span className="wp-ext" aria-hidden="true">
++                        ↗
++                      </span>
++                      <span className="wp-sr"> (PDF, opens in a new tab)</span>
++                    </a>
++                  )}
++                </div>
++              </li>
++            ))}
++          </ul>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Keep reading">
++        <div className="shell">
++          <div className="tlx-cta">
++            <h2>Want the deeper reference?</h2>
++            <p>
++              The Technical Library carries the full set of articles and case studies behind these
++              papers.
++            </p>
++            <Link className="btn btn-copper" href="/technical-library">
++              Open the Technical Library
++            </Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index e18c729..1de214e 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -7,6 +7,7 @@ import type { MetadataRoute } from 'next';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { CITIES } from '@/lib/seo-data';
++import { getPapers } from '@/lib/papers';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+@@ -35,6 +36,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+       changeFrequency: 'weekly',
+       priority: 0.95,
+     },
++    {
++      url: `${SITE_URL}/papers`,
++      lastModified: new Date(),
++      changeFrequency: 'monthly',
++      priority: 0.9,
++    },
+     {
+       url: `${SITE_URL}/products/floorforge`,
+       lastModified: new Date(),
+@@ -98,5 +105,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     priority: 0.8,
+   }));
+ 
+-  return [...basePages, ...cityPages, ...articlePages, ...caseStudyPages];
++  const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
++    url: `${SITE_URL}/papers/${paper.slug}`,
++    lastModified: new Date(paper.publishedAt),
++    changeFrequency: 'yearly' as const,
++    priority: 0.85,
++  }));
++
++  return [...basePages, ...paperPages, ...cityPages, ...articlePages, ...caseStudyPages];
+ }
+diff --git a/apps/web/app/technical-library/page.tsx b/apps/web/app/technical-library/page.tsx
+index 34a0db5..f9d7ea2 100644
+--- a/apps/web/app/technical-library/page.tsx
++++ b/apps/web/app/technical-library/page.tsx
+@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
+ import Link from 'next/link';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
++import { getPapers } from '@/lib/papers';
+ import { buildWebPageSchema } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { formatDate } from '@/lib/content/utils';
+@@ -83,6 +84,30 @@ export default async function TechnicalLibraryPage() {
+         </div>
+       </header>
+ 
++      <section className="tlx-section" aria-label="Technical papers">
++        <div className="shell">
++          <p className="tlx-kicker">Papers</p>
++          <h2 className="tlx-h2">Technical papers</h2>
++          <p className="tlx-note">
++            Long-form engineering references, readable in full on this site and downloadable as
++            PDFs.
++          </p>
++          <div className="tlx-grid">
++            {getPapers().map((paper) => (
++              <Link key={paper.slug} className="tlx-card" href={`/papers/${paper.slug}`}>
++                <span className="tlx-card-tag">Technical paper · v{paper.version}</span>
++                <h3>{paper.title}</h3>
++                <p>{paper.abstract}</p>
++                <div className="tlx-card-data">
++                  <span>{paper.pages} pages</span>
++                  <span>{paper.readingMinutes} min read</span>
++                </div>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
+       <section className="tlx-section" aria-label="Core technical pillars">
+         <div className="shell">
+           <p className="tlx-kicker">Foundations</p>
+diff --git a/apps/web/lib/papers.ts b/apps/web/lib/papers.ts
+new file mode 100644
+index 0000000..614f607
+--- /dev/null
++++ b/apps/web/lib/papers.ts
+@@ -0,0 +1,338 @@
++/**
++ * Technical papers — the manifest.
++ *
++ * WHY THE SUBSTANCE LIVES HERE AND NOT ONLY IN THE PDF
++ *
++ * A PDF is close to invisible to a language model next to an HTML page. AWS
++ * whitepapers get quoted because AWS also publishes the substance as HTML; the
++ * PDF is what a person downloads, the page is what gets crawled, chunked,
++ * embedded and cited. So every paper carries its abstract, its sections and its
++ * tables here as structured data, rendered as real HTML at /papers/<slug>, with
++ * the PDF as the download beside it.
++ *
++ * CONTENT RULE
++ *
++ * Everything in this file is drawn from the paper it describes. No figure is
++ * introduced here that is not in the source document, and no figure from a
++ * source document is restated here as a claim about the business — see
++ * scripts/verify-business-facts.mjs for the list that must never come back.
++ */
++
++export type PaperTable = {
++  caption?: string;
++  head: string[];
++  rows: string[][];
++};
++
++export type PaperSection = {
++  id: string;
++  heading: string;
++  body: string[];
++  bullets?: string[];
++  ordered?: string[];
++  table?: PaperTable;
++  callout?: { label: string; text: string };
++};
++
++export type Paper = {
++  slug: string;
++  title: string;
++  subtitle: string;
++  /** One sentence. Used on the card, in <meta>, in schema `abstract`. */
++  abstract: string;
++  /** 2-3 sentences. The lede on the detail page. */
++  summary: string;
++  version: string;
++  /** ISO date. Publication month, not export date. */
++  publishedAt: string;
++  pages: number;
++  readingMinutes: number;
++  audience: string;
++  topics: string[];
++  /** Filename under public/papers/. */
++  pdf: string;
++  sections: PaperSection[];
++};
++
++export const PAPERS: Paper[] = [
++  {
++    slug: 'toronto-hardwood-climate-moisture-protocol',
++    title: 'Climate Mastery',
++    subtitle: 'Why hardwood succeeds or fails in Toronto',
++    abstract:
++      "The physical science, moisture protocol and non-negotiable steps that decide whether a hardwood floor becomes a permanent asset or a permanent liability in Toronto's climate.",
++    summary:
++      "Toronto's indoor relative humidity swings from the high teens in winter to above sixty percent in summer — one of the most aggressive annual ranges of any major North American residential market. This paper sets out what that does to wood, the measurements that have to happen before a single board is laid, and the failure modes that appear when any step is skipped.",
++    version: '1.0',
++    publishedAt: '2026-08-01',
++    pages: 13,
++    readingMinutes: 9,
++    audience: 'Homeowners, designers, general contractors, property managers',
++    topics: ['Moisture', 'Acclimation', 'Substrate', 'Installation method', 'Failure modes'],
++    pdf: 'ecowoods-toronto-hardwood-climate-moisture-protocol-v1.0-2026-08.pdf',
++    sections: [
++      {
++        id: 'climate-reality',
++        heading: "Toronto's climate reality",
++        body: [
++          'Wood is hygroscopic and anisotropic: it exchanges moisture with the surrounding air continuously, and it moves. Expansion and contraction occur primarily across the grain — length change is minimal, width change is significant and cumulative. Every board arrives with its own moisture history.',
++          'The question is never whether a floor will move. It is whether the floor was specified, tested, acclimated and installed to survive decades of that movement.',
++        ],
++        table: {
++          caption: 'Indoor relative humidity, Toronto residential',
++          head: ['Condition', 'Relative humidity'],
++          rows: [
++            ['Winter indoor low', '18–25% RH'],
++            ['Summer indoor high', 'above 60% RH'],
++            ['Safe operating band for hardwood', '35–55% RH'],
++          ],
++        },
++        callout: {
++          label: 'Core truth',
++          text: 'Wood will move. The only question is whether the floor was specified, tested, acclimated and installed to survive decades of that movement.',
++        },
++      },
++      {
++        id: 'moisture-testing',
++        heading: 'Moisture testing — the first non-negotiable',
++        body: [
++          'A floor installed over a wet subfloor, or with boards that have not equalized, will cup, crown, gap or buckle. There is no warranty language that can override physics.',
++        ],
++        ordered: [
++          'Subfloor moisture content must be measured.',
++          'Flooring material moisture content must be measured.',
++          "Both readings must sit within the manufacturer's and EcoWoods' acceptable delta.",
++          'Testing occurs at the free estimate, and again immediately before installation.',
++        ],
++      },
++      {
++        id: 'solid-vs-engineered',
++        heading: 'Solid versus engineered in the GTA',
++        body: [
++          'Solid hardwood is typically 3/4" (19 mm) with a generational wear layer, highly sensitive to RH swings, and best over plywood with a nail-down installation.',
++          'Engineered hardwood pairs a real hardwood wear layer with a 90° cross-ply core. That construction is what gives it dimensional stability over concrete, in condominiums, and above radiant heat.',
++        ],
++        callout: {
++          label: 'Position',
++          text: 'Engineered is the correct specification for the majority of Toronto projects. We specify what the house can support. We never sell what will fail.',
++        },
++      },
++      {
++        id: 'method-and-substrate',
++        heading: 'Correct method matched to substrate',
++        body: [
++          'Installation method is not a preference and not a sales option. It is determined by the substrate, the product construction, and the climate load the floor will face for decades.',
++        ],
++        table: {
++          head: ['Method', 'When it is correct'],
++          rows: [
++            ['Nail-down', 'Solid hardwood over plywood'],
++            ['Glue-down', 'Engineered over concrete, or in condominiums'],
++            ['Floating', 'Engineered over radiant, or where acoustic separation is required'],
++          ],
++        },
++      },
++      {
++        id: 'protocol',
++        heading: 'The EcoWoods non-negotiable protocol',
++        body: [
++          'These steps prevent physical failure, and they are what make a lifetime workmanship warranty something a company can offer and still sleep at night.',
++        ],
++        ordered: [
++          'Moisture testing of subfloor and material, documented.',
++          'Minimum 72-hour acclimation in the actual conditioned space.',
++          'Correct installation method matched to substrate.',
++          'Proper expansion gaps at all fixed objects and walls.',
++          'HEPA dust containment throughout the process.',
++        ],
++      },
++      {
++        id: 'failure-modes',
++        heading: 'What happens when a step is skipped',
++        body: [
++          'These are not aesthetic issues. They are permanent, visible records of process failure that no amount of later refinishing can fully erase.',
++        ],
++        bullets: [
++          'Cupping — edges higher than the centre of the board',
++          'Crowning — centre higher than the edges',
++          'Seasonal gapping',
++          'Buckling and tenting',
++          'Edge peaking and finish failure',
++        ],
++      },
++      {
++        id: 'what-to-demand',
++        heading: 'What an informed homeowner should demand',
++        body: [
++          'Any company that cannot or will not provide these is optimizing for speed and lowest bid, not for decades of performance.',
++        ],
++        ordered: [
++          'Written moisture readings of both subfloor and material before any deposit.',
++          'Explicit confirmation of minimum 72-hour acclimation in the actual space.',
++          'A fixed price in writing, with no open-ended "unforeseen conditions" language.',
++          'Confirmation that salaried artisans, not subcontractors, will perform the work.',
++          'Lifetime workmanship warranty language in the contract.',
++          'Willingness to refuse the job if conditions are wrong.',
++        ],
++      },
++    ],
++  },
++
++  {
++    slug: 'hardwood-selection-and-cost-framework-gta',
++    title: "The Intelligent Homeowner's Decision Framework",
++    subtitle: 'How to choose hardwood that performs, appreciates, and never becomes a liability',
++    abstract:
++      'A decision framework for hardwood in the Greater Toronto Area: installed cost ranges, species hierarchy by Janka hardness, the solid-versus-engineered decision tree, and a checklist for evaluating any installer.',
++    summary:
++      'Hardwood is one of the few renovations that reliably returns more than it costs — when the physics and the process are both handled correctly. This paper covers what installation actually costs in the GTA, how to choose a species, how the substrate decides the product, and the six questions that separate a competent installer from a cheap one.',
++    version: '1.0',
++    publishedAt: '2026-08-01',
++    pages: 13,
++    readingMinutes: 8,
++    audience: 'Homeowners planning a renovation, designers, realtors',
++    topics: ['Cost', 'Species selection', 'Janka hardness', 'Resale', 'Installer evaluation'],
++    pdf: 'ecowoods-hardwood-selection-and-cost-framework-gta-v1.0-2026-08.pdf',
++    sections: [
++      {
++        id: 'roi',
++        heading: 'Hardwood as a renovation investment',
++        body: [
++          'A correctly specified and installed hardwood floor is one of the few renovations that reliably returns more than it costs. It is the strongest visual signal to buyers, and a fixed-price installation removes the change-order risk that makes buyers nervous about a renovated home.',
++        ],
++        bullets: [
++          '70–100%+ cost recovery on resale in the GTA',
++          'Strongest visual and emotional signal to buyers',
++          'Removes the primary buyer fear: future change orders and failure',
++        ],
++      },
++      {
++        id: 'installed-cost',
++        heading: 'Installed cost in the GTA',
++        body: [
++          'These ranges assume professional installation, correct product, and the full protocol. Bargain pricing almost always means skipped moisture testing, shorter acclimation, or subcontracted labour.',
++        ],
++        table: {
++          caption: 'Fully installed pricing, Greater Toronto Area',
++          head: ['Scope', 'Range'],
++          rows: [
++            ['Fully installed, average', '≈ $13 / sq ft'],
++            ['Fully installed, typical range', '$8 – $18 / sq ft'],
++            ['Screen and recoat', '$2.50 – $4.00 / sq ft'],
++            ['Full sand and finish', '$4.75 – $7.50 / sq ft'],
++            ['Premium new install (wide-plank, oil finishes, stairs)', '$11 – $18 / sq ft'],
++          ],
++        },
++      },
++      {
++        id: 'species',
++        heading: 'Species hierarchy',
++        body: [
++          'Wide-plank European white oak currently dominates both aesthetics and resale signalling across the Greater Toronto Area. Hardness is only one variable — stability, grain character and finish performance matter equally.',
++        ],
++        table: {
++          caption: 'Janka hardness and role in the GTA',
++          head: ['Species', 'Janka', 'Role'],
++          rows: [
++            ['White oak / European oak', '≈1360', 'Current aesthetic and resale sovereign'],
++            ['Hard maple', '1450', 'High-traffic workhorse'],
++            ['Red oak (northern)', '≈1290', 'Traditional default'],
++            ['Hickory', '1820', 'Extreme durability'],
++            ['Black walnut', '1010', 'Luxury accent'],
++          ],
++        },
++      },
++      {
++        id: 'decision-tree',
++        heading: 'Solid versus engineered — the decision tree',
++        body: [
++          'The substrate decides the product, not the budget and not the preference.',
++        ],
++        ordered: [
++          'Is the substrate plywood over joists? → Solid is possible.',
++          'Is the substrate concrete, condo slab, or radiant? → Engineered is required.',
++          'Is the home subject to large seasonal RH swings? → Engineered preferred.',
++          'Does the client want maximum future refinishing cycles? → Solid, only if the substrate allows.',
++        ],
++        callout: {
++          label: 'Rule',
++          text: 'We specify. We never sell what the house cannot support for decades. The correct product is the one that will still look and perform correctly in twenty years.',
++        },
++      },
++      {
++        id: 'fixed-price',
++        heading: 'What a fixed price actually protects',
++        body: [
++          'A fixed price is not a marketing slogan. It is proof that the company has already performed the due diligence most installers skip — because it forces them to own every decision before work begins.',
++        ],
++        bullets: [
++          'The number written on the estimate is the number that will be paid',
++          'No change orders for "unforeseen conditions" that should have been tested on day one',
++          'Removes the renovation anxiety that destroys buyer confidence',
++        ],
++      },
++      {
++        id: 'installer-checklist',
++        heading: 'How to evaluate any installer',
++        body: ['Any "no" answer is a red flag.'],
++        ordered: [
++          'Do they moisture-test at the free estimate, and document the readings?',
++          'Do they require a minimum 72-hour acclimation in the actual space?',
++          'Is the price fixed in writing, with no open-ended change-order language?',
++          'Are the installers salaried employees, or day-labour subcontractors?',
++          'Will they refuse the job if the substrate or conditions are wrong?',
++          'Is there a true lifetime workmanship warranty in the contract?',
++        ],
++      },
++      {
++        id: 'action-plan',
++        heading: 'Homeowner action plan',
++        body: [],
++        ordered: [
++          'Request a free in-home estimate that includes moisture testing and samples.',
++          'Insist on a written fixed-price proposal with the full protocol listed.',
++          'Confirm that only salaried artisans will perform the work.',
++          'Verify the lifetime workmanship warranty language before signing.',
++          'Keep indoor RH between 35% and 55% year-round after installation.',
++        ],
++      },
++    ],
++  },
++];
++
++export const getPapers = (): Paper[] =>
++  [...PAPERS].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
++
++export const getPaper = (slug: string): Paper | undefined =>
++  PAPERS.find((p) => p.slug === slug);
++
++/** Public URL of the PDF. Served from apps/web/public/papers/. */
++export const pdfHref = (paper: Paper): string => `/papers/${paper.pdf}`;
++
++/**
++ * Is the PDF actually published yet?
++ *
++ * The two source PDFs still carry two retired claims on their title slide — the
++ * founding-year drift and the invented home count (facts-allow: this comment
++ * has to name the shape of the problem to explain it). Both are listed in
++ * scripts/verify-business-facts.mjs — they were removed from the entire
++ * codebase in the business-facts remediation, and that guard now reads PDF text
++ * as well, so dropping them into public/ turns the build red on purpose.
++ *
++ * So the pages ship first and the download appears the moment a corrected
++ * export lands in apps/web/public/papers/. The HTML is the citable artifact
++ * either way; the PDF is the thing a person emails to their spouse.
++ *
++ * Resolved at build time on the server. Never called from a client component.
++ */
++export function pdfIsPublished(paper: Paper): boolean {
++  try {
++     
++    const { existsSync } = require('node:fs') as typeof import('node:fs');
++     
++    const { join } = require('node:path') as typeof import('node:path');
++    return existsSync(join(process.cwd(), 'public', 'papers', paper.pdf));
++  } catch {
++    return false;
++  }
++}
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 8e0eb88..7484197 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -2139,3 +2139,87 @@ only knows the lies it has already been told cannot catch the next one.**
+ currently matches, so that it no longer does, makes the guard fail with that
+ question named; restoring it makes it pass. Six entries are baselined; the
+ baseline can shrink and cannot silently grow.
++
++---
++
++## 27. Technical papers — `/papers`
++
++### F-63 · A PDF is close to invisible to a language model · design decision
++
++Two papers arrived as PDFs. Published as PDFs alone they would have been close
++to unreachable for the systems the site is being built for. AWS whitepapers get
++quoted because AWS also publishes the substance as HTML documentation — the PDF
++is what a person downloads, the page is what gets crawled, chunked, embedded and
++cited.
++
++So the artifact is the page, not the file:
++
++```
++/papers                index — abstract, topics, page count, reading time
++/papers/<slug>         the paper in full: every section, every table, in HTML
++/papers/<slug>.pdf     the download, opened in a new tab
++```
++
++`lib/papers.ts` holds each paper as structured data — sections, ordered steps,
++tables, callouts — so the RH band, the Janka scale, the installed-cost ranges,
++the protocol and the installer checklist all render as real `<table>` markup a
++crawler can parse, rather than as pixels inside a document.
++
++On the `.tlx-*` editorial system, per DESIGN_SYSTEM.md: these are documents that
++get read. `.wp-*` is a component namespace inside it, the same relationship
++`.ff-*` has to `.shell`/`.section`. Two design systems, not three.
++
++`TechArticle` per paper, with `author` and `publisher` pointing at the existing
++organization node by `@id` — so a paper attaches to the entity graph built in
++patch 08 instead of creating a second, unlinked identity for the same business.
++Plus `BreadcrumbList`, a `CollectionPage` on the index, `spatialCoverage`,
++`articleSection` mirroring the real headings, and `associatedMedia` for the PDF.
++Wired into `sitemap.ts`, `/llms.txt` and `/ai.txt`, and surfaced at the top of
++`/technical-library`.
++
++**No header nav item.** F-50 and F-51 were the nav overprinting the brand
++between 1024 and 1199px with eight items. A ninth walks straight back into it.
++`/papers` is reached from `/technical-library`, the sitemap, and both machine
++files.
++
++### F-64 · `verify:facts` could not read the format most likely to be quoted · **P0**
++
++`SCAN_DIRS` has always included `apps/web/public`. `SCAN_EXT` was
++`.ts .tsx .js .jsx .txt .md .mdx .json` — **not `.pdf`**. Anything served from
++`public/` is machine-facing whatever its format: Google and every AI crawler in
++`robots.txt` index the text inside a PDF, and a figure quoted out of a
++downloadable paper is the most citable form a claim can take.
++
++The guard now extracts text from every PDF under `apps/web/public` with
++`pdftotext` and runs the same `BANNED` list over it. **If `pdftotext` is missing
++it fails rather than skips** — a guard that silently skips the file it cannot
++read is precisely how F-23 shipped green.
++
++**It caught the papers on the first run:**
++
++```
++✗ 4 retired business claim(s) found:
++  …climate-moisture-protocol-v1.0-2026-08.pdf:15   Est. 1998 / 2000
++  …climate-moisture-protocol-v1.0-2026-08.pdf:23   5,200+ Homes
++  …selection-and-cost-framework-gta-v1.0-2026-08.pdf:15   Est. 1998 / 2000
++  …selection-and-cost-framework-gta-v1.0-2026-08.pdf:23   5,200+ Homes
++```
++
++Both strings are on the retired list by name. They were removed from the entire
++codebase in the business-facts remediation; a PDF in `public/` would have put
++them back in front of every crawler, with the guard green.
++
++So the PDFs are staged at `docs/papers-pending/` and `pdfIsPublished()` gates
++every download button and the `associatedMedia` node at build time. The pages
++ship complete today; the download appears the moment a corrected export lands in
++`apps/web/public/papers/`. One `git mv`, no code change.
++
++The HTML is the citable artifact either way. That is the point of F-63.
++
++### Not published
++
++`ecowoods-architecture-review-2026-08.pdf` moved to `docs/internal/`, outside
++`public/`, so Next cannot serve it. It states which revenue paths are live and
++which are dormant, names the full hidden stack, and prints the lead pipeline
++including which steps are best-effort. If it should be public, it is one line in
++`lib/papers.ts` and a `git mv` — but that is a decision, not an oversight.
+diff --git a/ecowoods-architecture-review-2026-08.pdf b/docs/internal/ecowoods-architecture-review-2026-08.pdf
+similarity index 100%
+rename from ecowoods-architecture-review-2026-08.pdf
+rename to docs/internal/ecowoods-architecture-review-2026-08.pdf
+diff --git a/ecowoods-hardwood-selection-and-cost-framework-gta-v1.0-2026-08.pdf b/docs/papers-pending/ecowoods-hardwood-selection-and-cost-framework-gta-v1.0-2026-08.pdf
+similarity index 100%
+rename from ecowoods-hardwood-selection-and-cost-framework-gta-v1.0-2026-08.pdf
+rename to docs/papers-pending/ecowoods-hardwood-selection-and-cost-framework-gta-v1.0-2026-08.pdf
+diff --git a/ecowoods-toronto-hardwood-climate-moisture-protocol-v1.0-2026-08.pdf b/docs/papers-pending/ecowoods-toronto-hardwood-climate-moisture-protocol-v1.0-2026-08.pdf
+similarity index 100%
+rename from ecowoods-toronto-hardwood-climate-moisture-protocol-v1.0-2026-08.pdf
+rename to docs/papers-pending/ecowoods-toronto-hardwood-climate-moisture-protocol-v1.0-2026-08.pdf
+diff --git a/scripts/verify-business-facts.mjs b/scripts/verify-business-facts.mjs
+index 2b52e8c..ebad44f 100755
+--- a/scripts/verify-business-facts.mjs
++++ b/scripts/verify-business-facts.mjs
+@@ -26,6 +26,7 @@
+  */
+ 
+ import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { execFileSync } from 'node:child_process';
+ import { join, relative, extname } from 'node:path';
+ 
+ const ROOT = process.cwd();
+@@ -83,9 +84,77 @@ function walk(dir, out = []) {
+   return out;
+ }
+ 
++/** Same walk, filtered to one extension. Used for the PDF pass below. */
++function walkExt(dir, ext, out = []) {
++  let entries;
++  try { entries = readdirSync(dir); } catch { return out; }
++  for (const name of entries) {
++    if (SKIP_DIR.has(name)) continue;
++    const full = join(dir, name);
++    if (statSync(full).isDirectory()) walkExt(full, ext, out);
++    else if (extname(name).toLowerCase() === ext) out.push(full);
++  }
++  return out;
++}
++
+ const files = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)));
++
++/* ── PDFs served from public/ ──────────────────────────────────────────────
++ *
++ * A PDF under apps/web/public is machine-facing exactly like a .txt: Google
++ * and every AI crawler in robots.txt index the text inside it, and a claim
++ * quoted out of a downloadable paper is the most citable form a claim can
++ * take. This scanner read eight text extensions and none of them was .pdf, so
++ * a retired figure could return in the one format nothing here could see.
++ *
++ * If pdftotext is missing we FAIL rather than skip. A silent skip is exactly
++ * how F-23 shipped: the guard was green and the file was not clean.
++ */
++const pdfs = SCAN_DIRS.flatMap((d) => walkExt(join(ROOT, d), '.pdf'));
++let pdftotextOk = true;
++if (pdfs.length) {
++  try {
++    execFileSync('pdftotext', ['-v'], { stdio: 'ignore' });
++  } catch {
++    pdftotextOk = false;
++  }
++}
++if (pdfs.length && !pdftotextOk) {
++  console.error(
++    `\n✗ ${pdfs.length} PDF(s) are served from public/ and pdftotext is not installed,` +
++      `\n  so their text cannot be checked for retired claims.\n` +
++      `\n  Install it (Debian/Ubuntu/Codespaces):  sudo apt-get install -y poppler-utils` +
++      `\n\n  This is deliberately a failure and not a skip. A guard that silently` +
++      `\n  skips the file it cannot read is how F-23 shipped.\n`
++  );
++  process.exit(1);
++}
++
+ const violations = [];
+ 
++for (const pdf of pdfs) {
++  const rel = relative(ROOT, pdf);
++  if (ALLOWLIST.some((a) => rel === a || rel.startsWith(a))) continue;
++  let text = '';
++  try {
++    text = execFileSync('pdftotext', ['-q', '-nopgbrk', pdf, '-'], {
++      encoding: 'utf8',
++      maxBuffer: 64 * 1024 * 1024,
++    });
++  } catch {
++    violations.push({ rel, line: 0, text: '(pdftotext could not read this file)', why: 'A PDF served from public/ must be readable so its text can be checked.' });
++    continue;
++  }
++  text.split('\n').forEach((line, i) => {
++    if (line.includes(OPT_OUT)) return;
++    for (const rule of BANNED) {
++      if (rule.pattern.test(line)) {
++        violations.push({ rel, line: i + 1, text: line.trim().slice(0, 110), why: rule.why });
++      }
++    }
++  });
++}
++
+ for (const file of files) {
+   const rel = relative(ROOT, file);
+   if (ALLOWLIST.some((a) => rel === a || rel.startsWith(a))) continue;
+@@ -102,7 +171,9 @@ for (const file of files) {
+ }
+ 
+ if (violations.length === 0) {
+-  console.log(`✓ business facts verified — ${files.length} files, no retired claims found`);
++  console.log(
++    `✓ business facts verified — ${files.length} file(s) + ${pdfs.length} PDF(s), no retired claims found`
++  );
+   process.exit(0);
+ }
+ 
