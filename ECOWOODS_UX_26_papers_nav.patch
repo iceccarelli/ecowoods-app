@@ -1,0 +1,132 @@
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index c02b937..53a91b2 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -1,7 +1,7 @@
+ /**
+  * ContentLibraryPromo — compact homepage teaser below Pricing.
+- * No cards: headline block + one button into the technical library,
+- * mirroring the "Design your floor" teaser above it.
++ * No cards: headline block + two buttons, into the papers and into the
++ * technical library, mirroring the "Design your floor" teaser above it.
+  */
+ import Link from 'next/link';
+ 
+@@ -18,9 +18,14 @@ export function ContentLibraryPromo() {
+             Moisture testing, finish chemistry, dust-free methodology — the technical standards
+             the estimate is built on, documented from the job site.
+           </p>
+-          <Link href="/technical-library" className="btn btn-copper">
+-            Browse the technical library <span aria-hidden>→</span>
+-          </Link>
++          <div className="clp-actions">
++            <Link href="/papers" className="btn btn-copper">
++              Read the technical papers <span aria-hidden>→</span>
++            </Link>
++            <Link href="/technical-library" className="btn btn-ghost">
++              Browse the library
++            </Link>
++          </div>
+         </div>
+       </div>
+     </section>
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 972e454..557a38f 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -45,6 +45,7 @@ const navigation = [
+   { label: 'Process', href: '#process' },
+   { label: 'The Craft', href: '#craft' },
+   { label: 'Technical Library', href: '/technical-library' },
++  { label: 'Papers', href: '/papers' },
+   { label: 'FloorForge', href: '/products/floorforge' },
+   { label: 'Reviews', href: '#reviews' },
+   { label: 'FAQ', href: '#faq' },
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 3cf034b..117c1f9 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -142,6 +142,19 @@ export default function SiteFooter() {
+             </div>
+           </FooterCol>
+ 
++          {/* Learn — every page on the site that is written to be read.
++              Until this existed, /papers and /case-studies were reachable only
++              from the header or from inside another article. */}
++          <FooterCol title="Learn" mobile={m}>
++            <div className="footer-links">
++              <a href="/papers">Technical Papers</a>
++              <a href="/technical-library">Technical Library</a>
++              <a href="/blog">Articles</a>
++              <a href="/case-studies">Case Studies</a>
++              <a href="/design">Floor Designer</a>
++            </div>
++          </FooterCol>
++
+           {/* Service Areas */}
+           <FooterCol title="Service Areas" mobile={m}>
+             <div className="footer-links">
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index cdde2b2..f32b0a5 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7824,3 +7824,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   margin: 0 0 0.4rem !important;
+ }
+ .wp-callout p:last-child { margin-bottom: 0 !important; color: var(--ink); }
++
++/* Two destinations under the homepage library teaser, wrapping on narrow
++   screens instead of overflowing. */
++.clp-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 7484197..3a6172b 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -2223,3 +2223,47 @@ The HTML is the citable artifact either way. That is the point of F-63.
+ which are dormant, names the full hidden stack, and prints the lead pipeline
+ including which steps are best-effort. If it should be public, it is one line in
+ `lib/papers.ts` and a `git mv` — but that is a decision, not an oversight.
++
++---
++
++### F-65 · `/papers` shipped with no route into it from the site chrome · **P0, my error**
++
++Patch 25 built the pages, the schema, the sitemap entry and both machine files,
++and added a card block to `/technical-library`. It added **no header nav item,
++no footer link, and nothing on the homepage.** A visitor who did not already
++know the URL could reach the papers only by opening `/technical-library` first.
++
++The reasoning was F-50 and F-51 — the header nav overprinting the brand between
++1024 and 1199px with eight items — and the conclusion that a ninth would walk
++back into it. That was asserted, not measured, which is the exact failure this
++document keeps recording.
++
++**Measured in Chromium**, the real `.topbar-inner` / `.topbar-nav` /
++`.brand-lockup` / `.topbar-cta` markup against the real stylesheet, at every
++width where the nav is visible at all (the hamburger takes over at ≤1199px):
++
++| items | 1200px | 1280px | 1366px | 1440px | 1920px |
++|---|---|---|---|---|---|
++| 8 (before) | 42px clear | 76px | 31px | 30px | 29px |
++| 9 (+ Papers) | **12px clear** | 44px | 12px | 12px | 12px |
++
++Zero clipping, zero brand/nav or nav/CTA overlap, zero document overflow at
++every width. It fits. The margin at 1200px narrows from 42px to 12px, which is
++thin — but `.topbar-nav a` already scales its padding and font-size with the
++viewport, and `.topbar-nav` carries `overflow: clip`, so the failure mode if a
++tenth item is ever added is clipping, not the overprinting of F-50.
++
++Fixed on four surfaces:
++
++- **Header nav** — `Papers`, after `Technical Library`. The mobile sheet maps
++  the same `navigation` array, so this covers both.
++- **Footer** — a new `Learn` column: Technical Papers, Technical Library,
++  Articles, Case Studies, Floor Designer. The footer had columns for Services,
++  Service Areas and the showroom and **nothing at all for the content the site
++  publishes** — `/case-studies` and `/blog` were in the same position.
++- **Homepage** — the library teaser under Pricing now offers both destinations
++  instead of one.
++- **`/technical-library`** — the card block, already in patch 25.
++
++**Do not add a tenth nav item without re-running that measurement.** 12px is the
++budget that remains.
