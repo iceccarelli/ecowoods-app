@@ -1,0 +1,175 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index ab81e35..ef2a5ae 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -343,7 +343,16 @@ p {
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 0.18em;
+-  color: var(--copper-deep);
++  /* was --copper-deep. In dark that resolves to #b46e40, which measures
++     4.45:1 on --surface-1 (#1b1712) — under 4.5:1 by 0.05, at 12px, so it is
++     normal text and it fails. It passed on --bg (4.74:1), which is why four
++     contrast passes missed it: only .fc (the floor configurator, the one
++     --surface-1 section on /design) was dark enough to tip it over, and only
++     above 1180px where the desktop configurator renders instead of the mobile
++     teaser. --copper-text is the documented semantic text token: 8.89:1 dark,
++     and 4.81:1 light where --copper-deep gave 4.53:1. Better in both.
++     See audit/FINDINGS.md F-59. */
++  color: var(--copper-text);
+   font-family: var(--font-body);
+ }
+ 
+@@ -4784,7 +4793,12 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
+ @media (max-width: 1300px) {
+   .phone-pill-label { display: none; }
+   .phone-pill {
+-    width: 38px; padding: 0; justify-content: center;
++    /* padding: 0 collapsed this to 38x18. The pointer:coarse block further
++       down raises it to 44x44 on touch, but a 1280px laptop with a mouse is
++       pointer:fine and got the 18px box — and WCAG 2.5.8 does not care which
++       pointer is attached. Square is also what an icon button should be.
++       See audit/FINDINGS.md F-60. */
++    width: 38px; min-height: 38px; padding: 0; justify-content: center;
+     border-color: var(--line);
+   }
+ }
+@@ -6032,6 +6046,33 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   color: var(--copper-bright);
+ }
+ 
++/* "Back to top" was styled ONLY inside the max-width:767px block below, so
++   above 767px it rendered as an unstyled <button>: 90x22, no padding, no
++   affordance at all. This is the base; the mobile block still overrides it.
++   See audit/FINDINGS.md F-60. */
++.footer-top-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.5rem;
++  min-height: 44px;
++  padding: 0.7rem 1.1rem;
++  border: 0;
++  background: none;
++  color: var(--on-dark);
++  font-size: var(--fs-sm);
++  font-weight: 500;
++  cursor: pointer;
++}
++.footer-top-btn:active { opacity: 0.7; }
++
++/* The legal row's own button already reserves 44px (.footer-legal-btn), and
++   these two anchors sat beside it at 16px tall. Same row, same job, same box. */
++.footer-legal a {
++  display: inline-flex;
++  align-items: center;
++  min-height: 44px;
++}
++
+ /* ---- AWS-pattern footer bottom (mobile) ----
+    AWS orders it: social -> back to top -> legal links -> copyright, with the
+    social row as BARE GLYPHS rather than chips. The chips read as buttons and
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 69db41a..b4eeaef 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -1959,3 +1959,100 @@ Below 560px the status tiles stack instead of staying in two columns. That is
+ the overflow fix, not a layout preference.
+ - **`99.7% dust capture`** appears in the tile copy on this page. That is Q6 in
+   `DEFERRED.md` and a content decision. Untouched.
++
++---
++
++## 25. The 15 Aug runtime pass — what it closed, and what it over-reported
++
++First full run against the current build (220 cells). Two of the series' headline
++numbers are now settled by the instrument rather than by argument:
++
++| | before | after |
++|---|---|---|
++| horizontal overflow | 2 cells (`/products/floorforge` @320, both themes) | **0** |
++| axe violations | 103 cells | **3** |
++| form control under 16px | 0 | 0 |
++
++`/technical-library` and `/authority` are axe-clean in **both** themes. Their 20
++and 20 cells in the 11 August report were against pre-12B/14B/16 CSS. The report
++had been stale for four days while its numbers were still being quoted. **Re-run
++the audit before citing it, every time.**
++
++### F-59 · `.eyebrow` failed by 0.05, on one section, above one breakpoint · P1
++
++The three surviving axe cells were all the same node:
++
++```
++dark | ipad-pro-landscape | /design   color-contrast  .eyebrow
++dark | laptop             | /design   color-contrast  .eyebrow
++dark | desktop-wide       | /design   color-contrast  .eyebrow
++```
++
++`.eyebrow` painted with `--copper-deep`, which flips to `#b46e40` in dark.
++Measured in Chromium:
++
++| | on `--surface-1` `#1b1712` | on `--bg` `#12100d` |
++|---|---|---|
++| `--copper-deep` (dark) | **4.45:1** | 4.74:1 |
++| `--copper-text` (dark) | 8.89:1 | 9.47:1 |
++
++12px at weight 600 is normal text, so the bar is 4.5:1 and it missed by
++**0.05**. That is why four full contrast passes walked past it: it only fails on
++`--surface-1`, the only `--surface-1` section carrying an eyebrow is `.fc` (the
++floor configurator), and `.fc` only renders above 1180px — below that
++`ConfiguratorSection` returns the mobile teaser instead. One node, one surface,
++one breakpoint, one theme, 0.05 short.
++
++Fixed by moving `.eyebrow` to `--copper-text`, the documented semantic text
++token (§1.2). Light improves too: 4.53:1 → **4.81:1**.
++
++**This is the fifth time the same class of defect has been found** — a component
++rule painting from a token chosen for one theme. F-05, F-33, F-36, F-42, now
++F-59. `verify-tokens.mjs` cannot catch this one: `--copper-deep` is not in the
++primitive families it guards. The guard checks the layer, not the measurement.
++
++### F-60 · The 122 tap-target cells are four components and a lot of exempt text · P2
++
++`target under 24px (WCAG 2.5.8)` reported 122 of 220 cells across 52 distinct
++selectors. Opened every one. **Four are real.**
++
++| selector | measured | why it is real |
++|---|---|---|
++| `a.phone-pill` | 38×18, 11 routes | `padding: 0` at ≤1300px collapses the tap-to-call to an 18px box. The `pointer: coarse` block raises it to 44×44 on touch — but a 1280px laptop with a mouse is `pointer: fine`, and 2.5.8 does not care which pointer is attached. |
++| `button.footer-top-btn` | 90×22, 11 routes | styled **only** inside `@media (max-width: 767px)`. Above 767px it is an unstyled `<button>`. |
++| `.footer-legal a` (Privacy, Terms) | 85×16, 100×16 | sit in the same row as `.footer-legal-btn`, which already reserves `min-height: 44px`. Inconsistent with their own sibling. |
++| `.fc-*` controls | various | already covered by the `pointer: coarse` block; left alone. |
++
++The other 48 selectors are **not defects**, and the next pass should not
++re-derive them:
++
++- **`div.pfd-sr` at 1×1** (×3) — `position: absolute; width: 1px; height: 1px;
++  clip: rect(0,0,0,0)`. Visually-hidden carousel instructions for screen
++  readers. **Not a target at all.** The checker has no concept of
++  visually-hidden and counted an accessibility aid as an accessibility failure.
++- **Unsplash photo credits** — `216×18`, `217×18`, `211×18`, `199×18`, `172×18`,
++  `161×18`. Attribution links inside a line of text. 2.5.8's *Inline* exception
++  is written for exactly this. Note the widths: only the **height** fails, and
++  the height is the line-height of the sentence they sit in.
++- **The ten nearby-city links on `/service-areas/[city]`** — 12 to 16 per cell,
++  every viewport, every theme; the single largest cluster in the report, and
++  the reason that page looked like the priority. They are
++  `nearby.map(c => <span><Link>{c.name}</Link> · </span>)` — inline links in a
++  sentence, separated by middots. Exempt. Whether ten interior links belong in
++  a run of prose is a design question, not an accessibility defect, and it is
++  not mine to decide.
++- **Breadcrumbs** (`Home` 32×18, `Technical Library` 135×18) — inline, and
++  `.tlx-crumbs a` already expands under `@media (pointer: coarse)`.
++- **`Sign in`, `Create one — it's free`** — inline inside a sentence on the auth
++  pages.
++
++**Read the other two tap columns as noise until proven otherwise.**
++`icon control under 44px (HIG)` is Apple's guideline, not a standard, and the
++report already marks it advisory. `text control under 44px tall` reads **220 of
++220** — literally every cell — which is the signature of a check measuring
++something universal and harmless, not a site-wide defect.
++
++This is the second time this metric has misled the project. The first was the
++"regression 201 → 220" that turned out to be a checker demanding 44px on both
++axes and failing text links on width. **The count is a starting point for
++opening files, never a finding.**
