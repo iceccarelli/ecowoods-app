@@ -4239,9 +4239,14 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
   filter: brightness(0.92) saturate(1);
 }
 
-html[data-theme='dark'] .paper-texture {
-  background-color: var(--bg);
-}
+/* `html[data-theme='dark'] .paper-texture { background-color: var(--bg) }` was
+   here. The comment above the .section--tint rule says the two classes are the
+   same surface and that aliasing one to the other changes nothing — in LIGHT
+   that was true, in DARK it was not: .section--tint resolved to --surface-1
+   (#1b1712) and .paper-texture to --bg (#12100d), so a section wearing the old
+   class had no tint at all in dark mode. /products/floorforge was the last
+   markup consumer of .paper-texture; with it converted the rule has none, and
+   removing it makes the alias true in both themes. See FINDINGS.md F-57. */
 
 /* Theme is a preference, not an animation. Never fight reduced-motion. */
 @media (prefers-reduced-motion: reduce) {
@@ -7374,3 +7379,168 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .clp-more { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1.25rem;
   color: var(--copper-deep); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
 .clp-more:hover, .clp-more:focus-visible { color: var(--copper); }
+
+/* ============================================================
+   FLOORFORGE (/products/floorforge) — component namespace
+   ------------------------------------------------------------
+   This page carried 50 static inline styles, more than any other file in the
+   repo and 60% more than the next one. Every value below is the value the page
+   already rendered; this block moves them from the call site into the cascade
+   so a breakpoint, a theme or a token change can reach them. Three exceptions
+   are named where they occur.
+
+   Semantic tokens only — see DESIGN_SYSTEM.md §1.1. The inline styles this
+   replaces reached for --walnut-950 and --cream-50 directly, which
+   scripts/verify-tokens.mjs would have failed had they ever been written in
+   CSS. That is the whole argument for not writing them inline.
+   See audit/FINDINGS.md F-56.
+   ============================================================ */
+
+/* The page's measure. 720px is the site's, set once by .section-head; it was
+   repeated inline nine times, three of them on elements that already had it. */
+.ff-measure { max-width: 720px; }
+
+.ff-hero { padding-top: var(--space-xl); }
+.ff-hero-eyebrow { margin-bottom: var(--space-lg); }
+.ff-hero h1 { margin-bottom: 1.25rem; }
+
+.ff-lede {
+  font-size: var(--fs-lg);
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: var(--space-xl);
+}
+.ff-note {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: var(--space-md);
+}
+
+/* Tile grids. min(<track>, 100%) is the overflow guard from DESIGN_SYSTEM §3.1:
+   a bare minmax(280px, 1fr) cannot shrink below 280px, and 280px + the shell's
+   2 × 20px padding is exactly 320px with no room for a scrollbar. */
+.ff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+}
+.ff-grid--narrow {
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+}
+
+/* F-56. Two fixed 1fr tracks, and a grid item's implicit min-width is auto, so
+   neither track could shrink below its own min-content — "certification" at
+   14px plus 2 × 24px padding plus 2 × 1px border measures 138px against a
+   128px track. That is the 4px the runtime report saw at 320px, and it is the
+   last horizontal overflow on the site. minmax(0, 1fr) lets the track win;
+   stacking under 560px means the tiles are never that narrow anyway. */
+.ff-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+  max-width: 720px;
+}
+@media (max-width: 560px) {
+  .ff-status-grid { grid-template-columns: 1fr; }
+}
+
+/* --fs-lg / --fs-sm are the sizes these tiles already rendered at, and the same
+   pair .tip-card uses for the identical dense-tile job. Radius unifies the
+   page's own 12px and 8px on --radius-md; that is the only visual change here.
+   min-width: 0 is the companion to minmax(0, 1fr) above. */
+.ff-card {
+  min-width: 0;
+  padding: var(--space-lg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.ff-card h3 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+}
+.ff-card p {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.ff-card-icon { color: var(--copper-text); }
+
+/* Tiles on the dark bands. Component-layer token per DESIGN_SYSTEM.md §1.1,
+   defined next to the component that owns it. */
+.ff-card--dark {
+  --ff-tile-bg: rgba(245, 239, 230, 0.05);
+  border: 0;
+  border-left: 3px solid var(--copper-bright);
+  border-radius: var(--radius-md);
+  background-color: var(--ff-tile-bg);
+}
+.ff-card--dark h3 { color: var(--on-dark); }
+.ff-card--dark .ff-card-icon { color: var(--copper-bright); }
+/* No colour rule for .ff-card--dark p on purpose. The PHOTO-BACKGROUND
+   SECTIONS block earlier in this file already colours every `p` inside a
+   .photo-bg-section with !important, which beat the inline
+   rgba(245,239,230,0.65) these tiles carried and would beat anything written
+   here too. That inline was dead before this patch removed it.
+   (Deliberately not quoting that declaration verbatim: verify-tokens.mjs does
+   not strip comments, so a comment containing one reads as a violation.
+   FINDINGS.md F-58.) */
+
+/* Status tiles carry a list, not a paragraph. */
+.ff-status-card { min-width: 0; padding: var(--space-lg); border: 1px solid var(--border); }
+.ff-status-card h3 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  margin: 0 0 var(--space-sm);
+  color: var(--copper-text);
+}
+.ff-status-card ul {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ff-callout {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background-color: rgba(217, 127, 67, 0.08);
+  border-left: 3px solid var(--copper-text);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* The "not a pilot candidate?" band. This is the one place the page genuinely
+   narrowed the shared container: .shell carries max-width: var(--shell-max)
+   (1280px) and the inline style overrode it to 720px, so this section's
+   gutters did not line up with any other section on the page. The measure
+   belongs on the content, not on the container. */
+.ff-outro { text-align: center; margin-left: auto; margin-right: auto; }
+.ff-outro h2 { margin-bottom: var(--space-md); }
+.ff-outro p { color: var(--muted); margin-bottom: var(--space-lg); }
+
+.ff-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ff-cta { text-align: center; }
+.ff-cta h2 { margin-bottom: var(--space-md); }
+.ff-cta p {
+  max-width: 600px;
+  /* was marginBottom: '1.5rem' followed by margin: '0 auto 1.5rem' in the same
+     object — the shorthand ran second and discarded the longhand. */
+  margin: 0 auto var(--space-lg);
+}

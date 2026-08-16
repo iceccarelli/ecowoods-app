@@ -1779,3 +1779,183 @@ the brand plus the CTA cluster run out of room.
 
 `.rg-dock` is `position: fixed`, `z-index: 130`; scrolled to the bottom it
 covered **"Terms"**. The legal row reserves its footprint, desktop only.
+
+---
+
+## 24. `/products/floorforge` — measured against the brief that assigned it
+
+The task was stated as: *"9 inline `maxWidth` and 14 inline `fontSize` … that is
+why its column reads narrow and its type matches nothing else on the site."*
+The counts are exactly right. **The mechanism is not**, and the difference
+changes what the correct fix is. What follows is the measurement.
+
+### The type was already on the scale
+
+All 14 `fontSize` values are `var(--fs-lg)` (×5) or `var(--fs-sm)` (×9). Not one
+is a raw `px`, `rem` or `clamp`. There is nothing off-scale to bring onto the
+scale — the instruction "use the `--fs-*` scale" was already satisfied at every
+one of the 14 sites.
+
+More usefully: **20px title over 14px body is the site's own dense-tile pairing.**
+
+| rule | title | body |
+|---|---|---|
+| `.tip-card` | `--fs-lg` | `--fs-sm` |
+| `.standard-pillar` | `--fs-base` | `--fs-sm` |
+| `.funnel-step` | `--fs-base` | `--fs-sm` |
+| floorforge tiles (inline) | `--fs-lg` | `--fs-sm` |
+
+Taking the instruction literally — deleting the inline `fontSize` and letting
+the cascade land — would have made it **worse**, not better: global `h3` is
+`clamp(1.5rem, 2.8vw, 2.25rem)`, so every tile heading would jump from 20px to
+as much as 36px inside a 280px card. The inline sizes were holding the page at
+the right size by the wrong mechanism. They are now in `.ff-card h3` / `.ff-card p`
+at the identical values. **No rendered type size on this page changes.**
+
+### Three of the nine `maxWidth` were no-ops, and one was harmful
+
+`.section-head` is already `max-width: 720px` (globals.css:385).
+
+| line | element | effect |
+|---|---|---|
+| 216 | bare `<div>`, hero | real — the only cap on the hero measure |
+| 331 | `.section-head` | **no-op**, duplicates the class |
+| 405 | `.section-head` | **no-op** |
+| 416 | status grid | real |
+| 473 | `<p>` inside `.section-head` | **harmful** — `.section-head > p` is `max-width: 62ch`; 720px overrides the measure *wider* |
+| 527 | `.section-head` | **no-op** |
+| 532 | `.faq-list` | real |
+| 560 | `.shell` | real — `--shell-max` 1280px overridden to 720px |
+| 591 | CTA `<p>` | real (600px) |
+
+**Line 560 is the entire "column reads narrow" symptom, and it is one section.**
+The "Not a pilot candidate?" band narrowed the shared container itself, so its
+gutters lined up with nothing else on the page. The other eight cap *content*
+at the same 720px the rest of the site uses. The measure now sits on the
+content (`.ff-measure`, `.ff-outro`) and `.shell` is left alone.
+
+### It was not a third design system — it was a copy of the homepage's
+
+`home-client.tsx:504` opens its dark band with
+
+    className="section photo-bg-section section--card"
+    style={{ color: 'var(--cream-50)', backgroundColor: 'var(--walnut-950)', … }}
+
+followed by `<div className="section-head reveal" style={{ maxWidth: '720px' }}>`
+and `<span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>`.
+floorforge's two dark sections are that markup, character for character,
+including the redundant inline `maxWidth`. Whatever else is true, this page was
+not inventing a language; it was repeating the homepage's, at greater length.
+
+Both files' inline `color` on those elements is dead anyway: the
+PHOTO-BACKGROUND SECTIONS block colours `h2`, `p` and `.eyebrow` inside a
+`.photo-bg-section` with `!important`, which beats an inline declaration.
+
+### F-56 · The last horizontal overflow on the site was the status grid · **P0**
+
+`audit/runtime-report.json` (2026-08-11), all 220 cells:
+
+    light | 320-min | /products/floorforge | +4px | div.reveal.in@138
+    dark  | 320-min | /products/floorforge | +4px | div.reveal.in@138
+
+Every other route, viewport and theme is clean. §6 of the handoff records
+"Horizontal overflow 16 cells → **0**"; the report says **16 → 2**, and both
+survivors are this page.
+
+Cause: `gridTemplateColumns: '1fr 1fr'` with no lower bound. A grid item's
+implicit `min-width` is `auto`, so neither track can shrink below its own
+min-content — "certification" at `--fs-sm`, plus 2 × `--space-lg` padding and
+2 × 1px border, measures 138px against a 128px track. `minmax(0, 1fr)` lets the
+track win; under 560px the tiles stack, so they are never that narrow.
+
+Measured in Chromium against this stylesheet, before and after, `data-theme=light`:
+
+| width | before | after |
+|---|---|---|
+| 320px | scrollWidth 376, excess **56** | **0** |
+| 360px | scrollWidth 376, excess **16** | **0** |
+| 480 / 560 / 768px | 0 | 0 |
+
+The harness substitutes a system font for Plus Jakarta Sans, which is why its
+excess is larger than production's measured 4px; the offending element and the
+mechanism are the ones the report names, and the fix reaches zero against a
+*wider* font than production ships. It has not yet been re-measured by
+`run-runtime-audit.sh` — see "Not run" below.
+
+### F-57 · `.paper-texture` and `.section--tint` were the same surface in light and different in dark · P1
+
+Patch 21 aliased the two and left a comment saying "the surfaces themselves are
+unchanged — only where they land." True in light. In dark there was a second
+rule, `html[data-theme='dark'] .paper-texture { background-color: var(--bg) }`,
+with no `.section--tint` counterpart. Measured in Chromium:
+
+| theme | `.section--tint` | `.paper-texture` |
+|---|---|---|
+| light | `#faf6ef` | `#faf6ef` |
+| dark (before) | `#1b1712` | **`#12100d`** — i.e. `--bg`, no tint at all |
+| dark (after) | `#1b1712` | `#1b1712` |
+
+So `/products/floorforge` had **no tint anywhere in dark mode**: its two tinted
+sections rendered on the base surface, and the alternation the patch is meant to
+establish existed in one theme only. Converting the markup to `.section--tint`
+is a no-op in light and a real fix in dark. floorforge was the last markup
+consumer of `.paper-texture`; the divergent dark rule now has none and is gone,
+which makes the alias true in both themes.
+
+### F-58 · `verify-tokens.mjs` reads CSS comments as declarations · P3
+
+`scripts/verify-tokens.mjs` never strips `/* … */` before matching, so a comment
+that quotes a forbidden declaration is reported as a violation at that line. It
+fired on a comment written for this patch explaining why a rule was *omitted*.
+Worked around by rewording; the guard is untouched. It has not misfired before
+only because no existing comment quotes a `--walnut/oak/cream/maple` reference
+in `prop: value` shape. Cheap fix when someone is in that file for another
+reason: strip comments before the line scan.
+
+### Section rhythm
+
+Before → after, with DESIGN_SYSTEM.md §3.2 applied:
+
+    base   DARK  base   base   base  base   DARK      (hero, problem, solution,
+                                                       status, who, faq, outro, cta)
+    base   tint  DARK   base   tint  base   tint  DARK
+
+The dark bands stay where they were — after the promise, and at the ask. The
+light sections now strictly alternate across them, the same way the homepage
+does (`gallery` base → `services` DARK → `pricing` tint). "Not a pilot
+candidate?" takes the tint step its neighbours are not, which is also what stops
+`faq` and `outro` from running as two consecutive base sections.
+
+### What this patch deliberately does not touch
+
+- **The form.** Every edit is above line 526; the modal, `handleSubmit`, and the
+  `/api/pilot-leads` POST are byte-identical. Three inline styles remain inside
+  it, including the fourteenth `fontSize`, and stay there.
+- `backgroundColor: var(--walnut-950)` on the two dark `<section>`s. Moving it
+  into CSS would put a primitive token in a component rule and fail
+  `verify-tokens.mjs`. The correct fix is a semantic dark-band surface token
+  applied to `home-client.tsx` and here together — a site-wide change, not a
+  floorforge one.
+- `.section--card` is all but dead: the LANDING UNIFY block at the end of
+  `globals.css` neutralises it on purpose ("sections bleed full-width"), so of
+  the earlier definition at globals.css:6271 only `overflow: hidden` and
+  `isolation: isolate` still reach the element — the max-width, margins and
+  radius are all overridden. Deliberate and documented; left alone, and noted
+  here only so the next person does not re-derive it as a cascade bug. It was
+  read as one during this pass before the comment at globals.css:6956 was found.
+
+### What changes visually
+
+Nothing about type, measure or layout above 560px. Three deliberate small
+changes, all in the "consistency" column rather than the "brand" column:
+
+| | before | after | why |
+|---|---|---|---|
+| tile radius | 12px light tiles, 8px dark tiles | `--radius-md` (10px) both | one page, one radius |
+| tile border | `rgba(128,128,128,0.15)` | `var(--line)` | the literal does not flip between themes; the token does |
+| dark tint | base surface (F-57) | `--surface-1` | the alternation now exists in dark mode too |
+
+Below 560px the status tiles stack instead of staying in two columns. That is
+the overflow fix, not a layout preference.
+- **`99.7% dust capture`** appears in the tile copy on this page. That is Q6 in
+  `DEFERRED.md` and a content decision. Untouched.

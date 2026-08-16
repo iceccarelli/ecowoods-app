@@ -211,27 +211,20 @@ export default function FloorForgePage() {
 
       <div>
         {/* ─────────────────── HERO ─────────────────── */}
-        <section className="section" style={{ paddingTop: 'var(--space-xl)' }}>
+        <section className="section ff-hero">
           <div className="shell">
-            <div style={{ maxWidth: '720px' }}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <span className="eyebrow" style={{ color: 'var(--copper-text)' }}>
+            <div className="ff-measure">
+              <div className="ff-hero-eyebrow">
+                <span className="eyebrow">
                   Early Access · Pilot Program
                 </span>
               </div>
-              <h1 style={{ marginBottom: '1.25rem' }}>
+              <h1>
                 Meet FloorForge.
                 <br />
                 <em>The future of floor refinishing.</em>
               </h1>
-              <p
-                style={{
-                  fontSize: 'var(--fs-lg)',
-                  lineHeight: 1.6,
-                  color: 'var(--muted)',
-                  marginBottom: '2rem',
-                }}
-              >
+              <p className="ff-lede">
                 An autonomous floor refinishing robot designed to reduce labor strain, eliminate dust and odor, and
                 deliver consistency across every job. FloorForge is currently in the software + hardware alignment stage,
                 with contractor pilots opening in 2026.
@@ -245,7 +238,7 @@ export default function FloorForgePage() {
                 <span className="btn-arrow">{Icon.arrow}</span>
               </button>
 
-              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: '1rem' }}>
+              <p className="ff-note">
                 ⚠️ Honest disclosure: FloorForge is <strong>not a finished product</strong>. We are testing hardware and
                 software integration. Early pilot participants will help shape the final design. No delivery date or
                 pricing promised.
@@ -255,7 +248,7 @@ export default function FloorForgePage() {
         </section>
 
         {/* ─────────────────── THE PROBLEM ─────────────────── */}
-        <section className="section paper-texture">
+        <section className="section section--tint">
           <div className="shell">
             <div className="section-head reveal">
               <span className="eyebrow">The Challenge</span>
@@ -266,14 +259,7 @@ export default function FloorForgePage() {
               </h2>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: 'var(--space-lg)',
-                marginTop: 'var(--space-xl)',
-              }}
-            >
+            <div className="ff-grid">
               {[
                 {
                   icon: Icon.robot,
@@ -296,21 +282,10 @@ export default function FloorForgePage() {
                   text: 'A 1,500 sq ft job takes 5–7 days. Machine work alone accounts for 2–3 of those days. That is labor-intensive capacity.',
                 },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className="reveal"
-                  style={{
-                    padding: 'var(--space-lg)',
-                    border: '1px solid rgba(128,128,128,0.15)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                  }}
-                >
-                  <div style={{ color: 'var(--copper-text)' }}>{item.icon}</div>
-                  <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>{item.title}</h3>
-                  <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>{item.text}</p>
+                <div key={i} className="ff-card reveal">
+                  <div className="ff-card-icon">{item.icon}</div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
                 </div>
               ))}
             </div>
@@ -328,16 +303,16 @@ export default function FloorForgePage() {
           }}
         >
           <div className="shell" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="section-head reveal" style={{ maxWidth: '720px' }}>
-              <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
+            <div className="section-head reveal">
+              <span className="eyebrow">
                 Early-Stage Hardware + Software
               </span>
-              <h2 style={{ color: 'var(--cream-50)' }}>
+              <h2>
                 FloorForge handles the machine work.
                 <br />
                 <span className="serif-italic">You handle the craft.</span>
               </h2>
-              <p style={{ color: 'rgba(245, 239, 230, 0.75)' }}>
+              <p>
                 FloorForge is designed to automate the repetitive, physical parts of floor refinishing: sanding passes,
                 HEPA dust capture, finish application, and cure monitoring. What it cannot do — what humans will always do
                 — is assess wood grain, choose the right species, hand-sand edges, apply custom inlays, and make aesthetic
@@ -345,14 +320,7 @@ export default function FloorForgePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: 'var(--space-lg)',
-                marginTop: 'var(--space-xl)',
-              }}
-            >
+            <div className="ff-grid">
               {[
                 {
                   icon: Icon.robot,
@@ -375,24 +343,10 @@ export default function FloorForgePage() {
                   text: 'Every pass, grit, pressure, and finish application is logged. Reproducible work. Auditable quality.',
                 },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className="reveal"
-                  style={{
-                    padding: 'var(--space-lg)',
-                    borderLeft: `3px solid var(--copper-bright)`,
-                    backgroundColor: 'rgba(245, 239, 230, 0.05)',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                  }}
-                >
-                  <div style={{ color: 'var(--copper-bright)' }}>{item.icon}</div>
-                  <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, color: 'var(--cream-50)' }}>{item.title}</h3>
-                  <p style={{ color: 'rgba(245, 239, 230, 0.65)', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>
-                    {item.text}
-                  </p>
+                <div key={i} className="ff-card ff-card--dark reveal">
+                  <div className="ff-card-icon">{item.icon}</div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
                 </div>
               ))}
             </div>
@@ -402,25 +356,15 @@ export default function FloorForgePage() {
         {/* ─────────────────── STATUS ─────────────────── */}
         <section className="section">
           <div className="shell">
-            <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+            <div className="section-head reveal">
               <span className="eyebrow">Development Status</span>
               <h2>Where we are today.</h2>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 'var(--space-lg)',
-                marginTop: 'var(--space-xl)',
-                maxWidth: '720px',
-              }}
-            >
-              <div className="reveal" style={{ padding: 'var(--space-lg)', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper-text)' }}>
-                  ✓ Complete
-                </h3>
-                <ul style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', lineHeight: 1.8 }}>
+            <div className="ff-status-grid">
+              <div className="ff-status-card reveal">
+                <h3>✓ Complete</h3>
+                <ul>
                   <li>• Sanding head mechanical design</li>
                   <li>• HEPA dust capture system</li>
                   <li>• Finish spray nozzle prototype</li>
@@ -429,11 +373,9 @@ export default function FloorForgePage() {
                 </ul>
               </div>
 
-              <div className="reveal" style={{ padding: 'var(--space-lg)', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--copper-text)' }}>
-                  🔄 In Progress
-                </h3>
-                <ul style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', lineHeight: 1.8 }}>
+              <div className="ff-status-card reveal">
+                <h3>🔄 In Progress</h3>
+                <ul>
                   <li>• Hardware + software integration</li>
                   <li>• Real-world job testing (partner shops)</li>
                   <li>• Dust capture performance validation</li>
@@ -443,17 +385,7 @@ export default function FloorForgePage() {
               </div>
             </div>
 
-            <p
-              style={{
-                marginTop: 'var(--space-lg)',
-                padding: 'var(--space-md)',
-                backgroundColor: 'rgba(217, 127, 67, 0.08)',
-                borderRadius: '8px',
-                fontSize: 'var(--fs-sm)',
-                color: 'var(--muted)',
-                borderLeft: '3px solid var(--copper)',
-              }}
-            >
+            <p className="ff-callout">
               <strong>Realistic Timeline:</strong> We expect hardware integration to be complete by mid-2026. Pilot programs
               with select contractors will begin in 2026–2027. Commercial availability depends on real-world testing and
               regulatory alignment. No delivery date or pricing is confirmed.
@@ -461,8 +393,8 @@ export default function FloorForgePage() {
           </div>
         </section>
 
-        {/* ─────────────────── WHO WE\RE LOOKING FOR ─────────────────── */}
-        <section className="section paper-texture">
+        {/* ─────────────────── WHO WE'RE LOOKING FOR ─────────────────── */}
+        <section className="section section--tint">
           <div className="shell">
             <div className="section-head reveal">
               <span className="eyebrow">Pilot Partners</span>
@@ -470,7 +402,7 @@ export default function FloorForgePage() {
                 We are looking for <span className="serif-italic">contractors and flooring specialists</span> who want
                 to help shape the future.
               </h2>
-              <p style={{ maxWidth: '720px' }}>
+              <p>
                 Early pilots are for contractors, flooring specialists, property managers, and general builders who
                 handle hardwood flooring regularly and want to test new technology. Pilots are not for consumers. If you
                 are a homeowner, you can still use Ecowoods' full-service hardwood flooring, sanding, and finishing
@@ -478,14 +410,7 @@ export default function FloorForgePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: 'var(--space-lg)',
-                marginTop: 'var(--space-xl)',
-              }}
-            >
+            <div className="ff-grid ff-grid--narrow">
               {[
                 {
                   title: 'Contractors',
@@ -504,17 +429,9 @@ export default function FloorForgePage() {
                   text: 'You handle full home or commercial builds and work with flooring subcontractors. You want faster, more reliable turnaround.',
                 },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className="reveal"
-                  style={{
-                    padding: 'var(--space-lg)',
-                    border: '1px solid rgba(128,128,128,0.15)',
-                    borderRadius: '12px',
-                  }}
-                >
-                  <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: '0.75rem' }}>{item.title}</h3>
-                  <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>{item.text}</p>
+                <div key={i} className="ff-card reveal">
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
                 </div>
               ))}
             </div>
@@ -524,12 +441,12 @@ export default function FloorForgePage() {
         {/* ─────────────────── FAQ ─────────────────── */}
         <section className="section">
           <div className="shell">
-            <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+            <div className="section-head reveal">
               <span className="eyebrow">Questions</span>
               <h2>Everything you want to know.</h2>
             </div>
 
-            <div className="faq-list reveal" style={{ maxWidth: '720px', marginTop: 'var(--space-xl)' }}>
+            <div className="faq-list ff-measure reveal" style={{ marginTop: 'var(--space-xl)' }}>
               {faqItems.map((item, i) => {
                 const isOpen = openFaq === i;
                 return (
@@ -556,22 +473,24 @@ export default function FloorForgePage() {
         </section>
 
         {/* ─────────────────── BACK TO ECOWOODS ─────────────────── */}
-        <section className="section">
-          <div className="shell" style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto' }}>
-            <h2 style={{ marginBottom: '1rem' }}>
+        <section className="section section--tint">
+          <div className="shell">
+            <div className="ff-outro ff-measure">
+            <h2>
               <em>Not a pilot candidate?</em>
             </h2>
-            <p style={{ color: 'var(--muted)', marginBottom: '1.5rem' }}>
+            <p>
               Ecowoods offers full-service hardwood flooring installation, refinishing, and dust-free sanding for
               homeowners across the GTA. We are not going anywhere.
             </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="ff-actions">
               <a href="/#quote" className="btn btn-copper btn-lg">
                 Get Your Free Estimate
               </a>
               <a href="/technical-library" className="btn btn-ghost btn-lg">
                 Browse Technical Library
               </a>
+            </div>
             </div>
           </div>
         </section>
@@ -584,11 +503,11 @@ export default function FloorForgePage() {
             color: 'var(--cream-50)',
           }}
         >
-          <div className="shell" style={{ textAlign: 'center' }}>
-            <h2 style={{ color: 'var(--cream-50)', marginBottom: '1rem' }}>
+          <div className="shell ff-cta">
+            <h2>
               Ready to join the <span className="serif-italic">FloorForge pilot?</span>
             </h2>
-            <p style={{ color: 'rgba(245, 239, 230, 0.75)', marginBottom: '1.5rem', maxWidth: '600px', margin: '0 auto 1.5rem' }}>
+            <p>
               Share your company info and use case. We will review applications and contact you within 2 business days
               with pilot details and next steps.
             </p>
