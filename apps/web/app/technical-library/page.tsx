@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { getPapers } from '@/lib/papers';
 import { buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { formatDate } from '@/lib/content/utils';
@@ -82,6 +83,30 @@ export default async function TechnicalLibraryPage() {
           </p>
         </div>
       </header>
+
+      <section className="tlx-section" aria-label="Technical papers">
+        <div className="shell">
+          <p className="tlx-kicker">Papers</p>
+          <h2 className="tlx-h2">Technical papers</h2>
+          <p className="tlx-note">
+            Long-form engineering references, readable in full on this site and downloadable as
+            PDFs.
+          </p>
+          <div className="tlx-grid">
+            {getPapers().map((paper) => (
+              <Link key={paper.slug} className="tlx-card" href={`/papers/${paper.slug}`}>
+                <span className="tlx-card-tag">Technical paper · v{paper.version}</span>
+                <h3>{paper.title}</h3>
+                <p>{paper.abstract}</p>
+                <div className="tlx-card-data">
+                  <span>{paper.pages} pages</span>
+                  <span>{paper.readingMinutes} min read</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="Core technical pillars">
         <div className="shell">

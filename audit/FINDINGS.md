@@ -1959,3 +1959,311 @@ Below 560px the status tiles stack instead of staying in two columns. That is
 the overflow fix, not a layout preference.
 - **`99.7% dust capture`** appears in the tile copy on this page. That is Q6 in
   `DEFERRED.md` and a content decision. Untouched.
+
+---
+
+## 25. The 15 Aug runtime pass — what it closed, and what it over-reported
+
+First full run against the current build (220 cells). Two of the series' headline
+numbers are now settled by the instrument rather than by argument:
+
+| | before | after |
+|---|---|---|
+| horizontal overflow | 2 cells (`/products/floorforge` @320, both themes) | **0** |
+| axe violations | 103 cells | **3** |
+| form control under 16px | 0 | 0 |
+
+`/technical-library` and `/authority` are axe-clean in **both** themes. Their 20
+and 20 cells in the 11 August report were against pre-12B/14B/16 CSS. The report
+had been stale for four days while its numbers were still being quoted. **Re-run
+the audit before citing it, every time.**
+
+### F-59 · `.eyebrow` failed by 0.05, on one section, above one breakpoint · P1
+
+The three surviving axe cells were all the same node:
+
+```
+dark | ipad-pro-landscape | /design   color-contrast  .eyebrow
+dark | laptop             | /design   color-contrast  .eyebrow
+dark | desktop-wide       | /design   color-contrast  .eyebrow
+```
+
+`.eyebrow` painted with `--copper-deep`, which flips to `#b46e40` in dark.
+Measured in Chromium:
+
+| | on `--surface-1` `#1b1712` | on `--bg` `#12100d` |
+|---|---|---|
+| `--copper-deep` (dark) | **4.45:1** | 4.74:1 |
+| `--copper-text` (dark) | 8.89:1 | 9.47:1 |
+
+12px at weight 600 is normal text, so the bar is 4.5:1 and it missed by
+**0.05**. That is why four full contrast passes walked past it: it only fails on
+`--surface-1`, the only `--surface-1` section carrying an eyebrow is `.fc` (the
+floor configurator), and `.fc` only renders above 1180px — below that
+`ConfiguratorSection` returns the mobile teaser instead. One node, one surface,
+one breakpoint, one theme, 0.05 short.
+
+Fixed by moving `.eyebrow` to `--copper-text`, the documented semantic text
+token (§1.2). Light improves too: 4.53:1 → **4.81:1**.
+
+**This is the fifth time the same class of defect has been found** — a component
+rule painting from a token chosen for one theme. F-05, F-33, F-36, F-42, now
+F-59. `verify-tokens.mjs` cannot catch this one: `--copper-deep` is not in the
+primitive families it guards. The guard checks the layer, not the measurement.
+
+### F-60 · The 122 tap-target cells are four components and a lot of exempt text · P2
+
+`target under 24px (WCAG 2.5.8)` reported 122 of 220 cells across 52 distinct
+selectors. Opened every one. **Four are real.**
+
+| selector | measured | why it is real |
+|---|---|---|
+| `a.phone-pill` | 38×18, 11 routes | `padding: 0` at ≤1300px collapses the tap-to-call to an 18px box. The `pointer: coarse` block raises it to 44×44 on touch — but a 1280px laptop with a mouse is `pointer: fine`, and 2.5.8 does not care which pointer is attached. |
+| `button.footer-top-btn` | 90×22, 11 routes | styled **only** inside `@media (max-width: 767px)`. Above 767px it is an unstyled `<button>`. |
+| `.footer-legal a` (Privacy, Terms) | 85×16, 100×16 | sit in the same row as `.footer-legal-btn`, which already reserves `min-height: 44px`. Inconsistent with their own sibling. |
+| `.fc-*` controls | various | already covered by the `pointer: coarse` block; left alone. |
+
+The other 48 selectors are **not defects**, and the next pass should not
+re-derive them:
+
+- **`div.pfd-sr` at 1×1** (×3) — `position: absolute; width: 1px; height: 1px;
+  clip: rect(0,0,0,0)`. Visually-hidden carousel instructions for screen
+  readers. **Not a target at all.** The checker has no concept of
+  visually-hidden and counted an accessibility aid as an accessibility failure.
+- **Unsplash photo credits** — `216×18`, `217×18`, `211×18`, `199×18`, `172×18`,
+  `161×18`. Attribution links inside a line of text. 2.5.8's *Inline* exception
+  is written for exactly this. Note the widths: only the **height** fails, and
+  the height is the line-height of the sentence they sit in.
+- **The ten nearby-city links on `/service-areas/[city]`** — 12 to 16 per cell,
+  every viewport, every theme; the single largest cluster in the report, and
+  the reason that page looked like the priority. They are
+  `nearby.map(c => <span><Link>{c.name}</Link> · </span>)` — inline links in a
+  sentence, separated by middots. Exempt. Whether ten interior links belong in
+  a run of prose is a design question, not an accessibility defect, and it is
+  not mine to decide.
+- **Breadcrumbs** (`Home` 32×18, `Technical Library` 135×18) — inline, and
+  `.tlx-crumbs a` already expands under `@media (pointer: coarse)`.
+- **`Sign in`, `Create one — it's free`** — inline inside a sentence on the auth
+  pages.
+
+**Read the other two tap columns as noise until proven otherwise.**
+`icon control under 44px (HIG)` is Apple's guideline, not a standard, and the
+report already marks it advisory. `text control under 44px tall` reads **220 of
+220** — literally every cell — which is the signature of a check measuring
+something universal and harmless, not a site-wide defect.
+
+This is the second time this metric has misled the project. The first was the
+"regression 201 → 220" that turned out to be a checker demanding 44px on both
+axes and failing text links on width. **The count is a starting point for
+opening files, never a finding.**
+
+---
+
+## 26. The machine surface now has a guard
+
+### F-61 · The same four questions, answered differently depending on the page · P1
+
+`DEFERRED.md` Q5 records this as "the homepage FAQ's visible answers differ from
+the JSON-LD copy on two of four questions" and frames it as a Google compliance
+problem. Traced it before writing any code. **Both halves of that are wrong, and
+the real shape is worse for what the site is trying to do.**
+
+There is no Google violation. Every page's markup matches its own visible
+content: `/` renders its local `faqItems` array and builds its JSON-LD from that
+same array (`home-client.tsx:438`), and `/service-areas/[city]` renders
+`FAQ_ITEMS` visibly at line 130 and emits `faqPageSchema(FAQ_ITEMS)` at line 38.
+Each page is internally consistent, which is precisely why nothing flagged it.
+
+The divergence is **between** pages, and it is **three** of four, not two:
+
+| question | `/` | 16 service-area pages + `/llms.txt` |
+|---|---|---|
+| Can we stay in the house? | "HEPA-sealed **Festool and Bona Atomic** systems" | "HEPA-sealed systems" |
+| What warranty? | "…and we pass every one through…make it right. **No runaround.**" | "…passed through…make it right." |
+| How long? | "sanding, staining**,** and finishing" | "sanding, staining and finishing" |
+
+Only "Is the estimate really fixed?" is identical in both.
+
+Why it matters here rather than in a compliance report: an answer engine that
+reads two Ecowoods pages gets two different answers to the same question from
+one business. Inconsistent self-description is what makes a model hedge instead
+of recommend, and hedging is indistinguishable from not being found. Separately,
+"Festool and Bona Atomic" is a supplier claim published on exactly one page and
+verified nowhere.
+
+There is also a **third** copy: `HOMEPAGE_FAQ_ITEMS` / `HOMEPAGE_FAQ_SCHEMA` in
+`lib/schema/root-schema.ts:166,197`, left behind when F-27 removed `FAQPage`
+from the root layout. Not currently injected — and one `import` from being live.
+
+**Not fixed here.** Choosing the surviving wording decides whether Ecowoods
+names two supplier brands across 16 city pages and in the file it hands to
+language models. That is positioning, it is the owner's, and it is Q5. Both
+variants are baselined so the guard ships green and the answer becomes a
+one-line change.
+
+### F-62 · `verify:schema` — a guard for the surface only machines read · tooling
+
+`scripts/verify-schema.mjs`, wired into `pnpm verify` as the fourth check.
+Dependency-free, no network, ratchet-with-baseline in the same shape as
+`verify-tokens.mjs`.
+
+Three rules:
+
+1. **One FAQ source.** Extracts every `{ q, a }` pair in `apps/web` and
+   `packages`, groups by question, fails when one question has two answers.
+2. **`FAQPage` stays where it belongs.** Emission — the literal `@type`, or a
+   call to `faqPageSchema()` / `buildFAQPage()` — is allowlisted per file.
+   Comment lines are skipped, so `app/layout.tsx`, whose comment *explains* why
+   `FAQPage` is absent, is correctly not reported. That comment is the F-27 fix.
+3. **No unsourced numbers in machine-facing files.** In the eight files written
+   for crawlers, a figure shaped like an authority claim — a percentage, a star,
+   a count of reviews / projects / homes / clients / words, or years-of — must
+   derive from `packages/shared/constants` or carry `(facts-allow)`. Service
+   description is deliberately exempt: "1,000–1,500 sq ft" and "5 to 7 working
+   days" describe the job, not the company, and flagging them would bury the
+   signal.
+
+**Run against the current tree, it independently rediscovered both open
+questions** — the three FAQ divergences (Q5) and all three occurrences of
+`99.7%` in machine-facing files (Q6, `seo-data.ts:45`, `seo-data.ts:57`,
+`root-schema.ts:95`). Neither was given to it.
+
+Rule 3 is the one that matters most. It is the rule that would have caught every
+F-23 string — `⭐⭐⭐⭐⭐ Verified Specialist`, `Total Word Count: 25,000+`,
+`Years of Data: 27` — before they were served to the systems most likely to
+repeat them verbatim. `verify:facts` waved all four through, because it matches
+a list of literals and had never been told those particular ones. **A guard that
+only knows the lies it has already been told cannot catch the next one.**
+
+**Regression test, run before shipping:** editing the one FAQ answer that
+currently matches, so that it no longer does, makes the guard fail with that
+question named; restoring it makes it pass. Six entries are baselined; the
+baseline can shrink and cannot silently grow.
+
+---
+
+## 27. Technical papers — `/papers`
+
+### F-63 · A PDF is close to invisible to a language model · design decision
+
+Two papers arrived as PDFs. Published as PDFs alone they would have been close
+to unreachable for the systems the site is being built for. AWS whitepapers get
+quoted because AWS also publishes the substance as HTML documentation — the PDF
+is what a person downloads, the page is what gets crawled, chunked, embedded and
+cited.
+
+So the artifact is the page, not the file:
+
+```
+/papers                index — abstract, topics, page count, reading time
+/papers/<slug>         the paper in full: every section, every table, in HTML
+/papers/<slug>.pdf     the download, opened in a new tab
+```
+
+`lib/papers.ts` holds each paper as structured data — sections, ordered steps,
+tables, callouts — so the RH band, the Janka scale, the installed-cost ranges,
+the protocol and the installer checklist all render as real `<table>` markup a
+crawler can parse, rather than as pixels inside a document.
+
+On the `.tlx-*` editorial system, per DESIGN_SYSTEM.md: these are documents that
+get read. `.wp-*` is a component namespace inside it, the same relationship
+`.ff-*` has to `.shell`/`.section`. Two design systems, not three.
+
+`TechArticle` per paper, with `author` and `publisher` pointing at the existing
+organization node by `@id` — so a paper attaches to the entity graph built in
+patch 08 instead of creating a second, unlinked identity for the same business.
+Plus `BreadcrumbList`, a `CollectionPage` on the index, `spatialCoverage`,
+`articleSection` mirroring the real headings, and `associatedMedia` for the PDF.
+Wired into `sitemap.ts`, `/llms.txt` and `/ai.txt`, and surfaced at the top of
+`/technical-library`.
+
+**No header nav item.** F-50 and F-51 were the nav overprinting the brand
+between 1024 and 1199px with eight items. A ninth walks straight back into it.
+`/papers` is reached from `/technical-library`, the sitemap, and both machine
+files.
+
+### F-64 · `verify:facts` could not read the format most likely to be quoted · **P0**
+
+`SCAN_DIRS` has always included `apps/web/public`. `SCAN_EXT` was
+`.ts .tsx .js .jsx .txt .md .mdx .json` — **not `.pdf`**. Anything served from
+`public/` is machine-facing whatever its format: Google and every AI crawler in
+`robots.txt` index the text inside a PDF, and a figure quoted out of a
+downloadable paper is the most citable form a claim can take.
+
+The guard now extracts text from every PDF under `apps/web/public` with
+`pdftotext` and runs the same `BANNED` list over it. **If `pdftotext` is missing
+it fails rather than skips** — a guard that silently skips the file it cannot
+read is precisely how F-23 shipped green.
+
+**It caught the papers on the first run:**
+
+```
+✗ 4 retired business claim(s) found:
+  …climate-moisture-protocol-v1.0-2026-08.pdf:15   Est. 1998 / 2000
+  …climate-moisture-protocol-v1.0-2026-08.pdf:23   5,200+ Homes
+  …selection-and-cost-framework-gta-v1.0-2026-08.pdf:15   Est. 1998 / 2000
+  …selection-and-cost-framework-gta-v1.0-2026-08.pdf:23   5,200+ Homes
+```
+
+Both strings are on the retired list by name. They were removed from the entire
+codebase in the business-facts remediation; a PDF in `public/` would have put
+them back in front of every crawler, with the guard green.
+
+So the PDFs are staged at `docs/papers-pending/` and `pdfIsPublished()` gates
+every download button and the `associatedMedia` node at build time. The pages
+ship complete today; the download appears the moment a corrected export lands in
+`apps/web/public/papers/`. One `git mv`, no code change.
+
+The HTML is the citable artifact either way. That is the point of F-63.
+
+### Not published
+
+`ecowoods-architecture-review-2026-08.pdf` moved to `docs/internal/`, outside
+`public/`, so Next cannot serve it. It states which revenue paths are live and
+which are dormant, names the full hidden stack, and prints the lead pipeline
+including which steps are best-effort. If it should be public, it is one line in
+`lib/papers.ts` and a `git mv` — but that is a decision, not an oversight.
+
+---
+
+### F-65 · `/papers` shipped with no route into it from the site chrome · **P0, my error**
+
+Patch 25 built the pages, the schema, the sitemap entry and both machine files,
+and added a card block to `/technical-library`. It added **no header nav item,
+no footer link, and nothing on the homepage.** A visitor who did not already
+know the URL could reach the papers only by opening `/technical-library` first.
+
+The reasoning was F-50 and F-51 — the header nav overprinting the brand between
+1024 and 1199px with eight items — and the conclusion that a ninth would walk
+back into it. That was asserted, not measured, which is the exact failure this
+document keeps recording.
+
+**Measured in Chromium**, the real `.topbar-inner` / `.topbar-nav` /
+`.brand-lockup` / `.topbar-cta` markup against the real stylesheet, at every
+width where the nav is visible at all (the hamburger takes over at ≤1199px):
+
+| items | 1200px | 1280px | 1366px | 1440px | 1920px |
+|---|---|---|---|---|---|
+| 8 (before) | 42px clear | 76px | 31px | 30px | 29px |
+| 9 (+ Papers) | **12px clear** | 44px | 12px | 12px | 12px |
+
+Zero clipping, zero brand/nav or nav/CTA overlap, zero document overflow at
+every width. It fits. The margin at 1200px narrows from 42px to 12px, which is
+thin — but `.topbar-nav a` already scales its padding and font-size with the
+viewport, and `.topbar-nav` carries `overflow: clip`, so the failure mode if a
+tenth item is ever added is clipping, not the overprinting of F-50.
+
+Fixed on four surfaces:
+
+- **Header nav** — `Papers`, after `Technical Library`. The mobile sheet maps
+  the same `navigation` array, so this covers both.
+- **Footer** — a new `Learn` column: Technical Papers, Technical Library,
+  Articles, Case Studies, Floor Designer. The footer had columns for Services,
+  Service Areas and the showroom and **nothing at all for the content the site
+  publishes** — `/case-studies` and `/blog` were in the same position.
+- **Homepage** — the library teaser under Pricing now offers both destinations
+  instead of one.
+- **`/technical-library`** — the card block, already in patch 25.
+
+**Do not add a tenth nav item without re-running that measurement.** 12px is the
+budget that remains.

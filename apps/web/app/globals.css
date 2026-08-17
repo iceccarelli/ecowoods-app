@@ -343,7 +343,16 @@ p {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--copper-deep);
+  /* was --copper-deep. In dark that resolves to #b46e40, which measures
+     4.45:1 on --surface-1 (#1b1712) — under 4.5:1 by 0.05, at 12px, so it is
+     normal text and it fails. It passed on --bg (4.74:1), which is why four
+     contrast passes missed it: only .fc (the floor configurator, the one
+     --surface-1 section on /design) was dark enough to tip it over, and only
+     above 1180px where the desktop configurator renders instead of the mobile
+     teaser. --copper-text is the documented semantic text token: 8.89:1 dark,
+     and 4.81:1 light where --copper-deep gave 4.53:1. Better in both.
+     See audit/FINDINGS.md F-59. */
+  color: var(--copper-text);
   font-family: var(--font-body);
 }
 
@@ -4784,7 +4793,12 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
 @media (max-width: 1300px) {
   .phone-pill-label { display: none; }
   .phone-pill {
-    width: 38px; padding: 0; justify-content: center;
+    /* padding: 0 collapsed this to 38x18. The pointer:coarse block further
+       down raises it to 44x44 on touch, but a 1280px laptop with a mouse is
+       pointer:fine and got the 18px box — and WCAG 2.5.8 does not care which
+       pointer is attached. Square is also what an icon button should be.
+       See audit/FINDINGS.md F-60. */
+    width: 38px; min-height: 38px; padding: 0; justify-content: center;
     border-color: var(--line);
   }
 }
@@ -6030,6 +6044,33 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   font-size: var(--fs-md);
   font-weight: 600;
   color: var(--copper-bright);
+}
+
+/* "Back to top" was styled ONLY inside the max-width:767px block below, so
+   above 767px it rendered as an unstyled <button>: 90x22, no padding, no
+   affordance at all. This is the base; the mobile block still overrides it.
+   See audit/FINDINGS.md F-60. */
+.footer-top-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1.1rem;
+  border: 0;
+  background: none;
+  color: var(--on-dark);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.footer-top-btn:active { opacity: 0.7; }
+
+/* The legal row's own button already reserves 44px (.footer-legal-btn), and
+   these two anchors sat beside it at 16px tall. Same row, same job, same box. */
+.footer-legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 /* ---- AWS-pattern footer bottom (mobile) ----
@@ -7544,3 +7585,246 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
      object — the shorthand ran second and discarded the longhand. */
   margin: 0 auto var(--space-lg);
 }
+
+/* ============================================================
+   TECHNICAL PAPERS (.wp-*) — /papers and /papers/<slug>
+   ------------------------------------------------------------
+   Sits on the .tlx-* editorial system, not .shell/.section: these are
+   documents that get read, which is the rule in DESIGN_SYSTEM.md. Everything
+   here composes with .tlx-page / .tlx-hero / .tlx-section rather than
+   redefining them — a third design language is the bug, not the goal.
+   Semantic tokens only.
+   ============================================================ */
+
+.wp-hero-sub {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--copper-text);
+  margin: 0.35rem 0 0.9rem;
+}
+.wp-hero-actions { margin: 1.75rem 0 0; }
+
+/* ── index list ── */
+.wp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
+.wp-item {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
+  align-items: start;
+  padding: 1.75rem;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+@media (max-width: 767px) {
+  .wp-item { grid-template-columns: 1fr; padding: 1.35rem; }
+}
+.wp-item-main { min-width: 0; }
+.wp-item-title { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem;
+  line-height: 1.2; margin: 0.45rem 0 0.2rem; }
+.wp-item-title a { color: inherit; text-decoration: none; }
+.wp-item-title a:hover, .wp-item-title a:focus-visible { color: var(--copper-text); }
+.wp-item-sub { color: var(--copper-text); font-size: 0.95rem; margin: 0 0 0.65rem; }
+.wp-item-abstract { color: var(--ink-soft); line-height: 1.6; margin: 0; max-width: 62ch; }
+
+.wp-topics { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin: 1rem 0 0; padding: 0; }
+.wp-topics li {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.7rem;
+}
+
+.wp-item-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.wp-specs { grid-template-columns: 1fr 1fr; }
+
+/* ── buttons. min-height 44px from the start: F-60 was three controls that
+      were only ever styled inside one media query, or with padding: 0. ── */
+.wp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-align: center;
+  text-decoration: none;
+  transition: filter 160ms ease, border-color 160ms ease;
+}
+.wp-btn:hover, .wp-btn:focus-visible { filter: brightness(1.06); }
+.wp-btn:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.wp-btn--ghost {
+  background: transparent;
+  color: var(--copper-text);
+  border-color: var(--line-strong);
+}
+.wp-btn--ghost:hover, .wp-btn--ghost:focus-visible { border-color: var(--copper); }
+.wp-ext { font-size: 0.9em; }
+
+/* Visually hidden, still read aloud — the "(opens in a new tab)" every PDF
+   link needs and no sighted user should have to see. */
+.wp-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── detail: contents rail + article ── */
+.wp-layout {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+  align-items: start;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+  max-width: 1080px;
+}
+@media (max-width: 1023px) {
+  .wp-layout { grid-template-columns: 1fr; }
+}
+
+.wp-toc { position: sticky; top: calc(var(--header-h, 72px) + 1.5rem); min-width: 0; }
+@media (max-width: 1023px) {
+  .wp-toc {
+    position: static;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface-1);
+  }
+}
+.wp-toc-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+.wp-toc ol { list-style: none; margin: 0; padding: 0; counter-reset: wp; }
+.wp-toc li { counter-increment: wp; margin: 0; }
+.wp-toc a {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  min-height: 44px;
+  padding: 0.35rem 0 0.35rem 0.75rem;
+  margin-left: -0.75rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+}
+.wp-toc a::before {
+  content: counter(wp, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted-soft);
+}
+.wp-toc a:hover, .wp-toc a:focus-visible {
+  color: var(--copper-text);
+  border-left-color: var(--copper);
+}
+
+.wp-article { min-width: 0; max-width: 72ch; }
+.wp-section { scroll-margin-top: calc(var(--header-h, 72px) + 1.5rem); }
+.wp-section + .wp-section { margin-top: 2.75rem; }
+.wp-article h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  margin: 0 0 0.9rem;
+}
+.wp-article p { color: var(--ink-soft); line-height: 1.75; margin: 0 0 1.1rem; }
+
+.wp-bullets, .wp-steps { color: var(--ink-soft); line-height: 1.7; margin: 0 0 1.25rem; }
+.wp-bullets { list-style: none; padding: 0; }
+.wp-bullets li { padding: 0.2rem 0 0.2rem 1.4rem; position: relative; }
+.wp-bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0.15rem; top: 0.85rem;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--copper-text);
+}
+.wp-steps { padding-left: 1.35rem; }
+.wp-steps li { padding: 0.2rem 0; }
+.wp-steps li::marker { color: var(--copper-text); font-weight: 600; }
+
+/* Scrolls at EVERY width, not below a breakpoint — the article column is the
+   constraint, not the viewport. Same reasoning as F-29. */
+.wp-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.wp-table-wrap:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.wp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.wp-table caption {
+  caption-side: top;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.85rem 1rem 0.6rem;
+}
+.wp-table th, .wp-table td {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+.wp-table thead th {
+  border-top: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-1);
+}
+.wp-table tbody th { font-weight: 600; color: var(--ink); }
+.wp-table tbody td { color: var(--ink-soft); }
+
+.wp-callout {
+  border-left: 3px solid var(--copper-surface);
+  background: var(--surface-1);
+  border-radius: 0 10px 10px 0;
+  padding: 1.1rem 1.25rem;
+  margin: 0 0 1.5rem;
+}
+.wp-callout-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--copper-text);
+  margin: 0 0 0.4rem !important;
+}
+.wp-callout p:last-child { margin-bottom: 0 !important; color: var(--ink); }
+
+/* Two destinations under the homepage library teaser, wrapping on narrow
+   screens instead of overflowing. */
+.clp-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }

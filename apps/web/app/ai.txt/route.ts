@@ -2,6 +2,7 @@ import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, PROFILE_LINKS } from '@ecowoods/shared';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { getPapers } from '@/lib/papers';
 
 export const dynamic = 'force-static';
 
@@ -77,6 +78,28 @@ export async function GET() {
     ...CITIES.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
     '',
   );
+
+  const papers = getPapers();
+  if (papers.length) {
+    push(
+      '## Technical papers — the most citable material on this site',
+      '',
+      'Each paper is published in full as an HTML page and also as a PDF. The HTML',
+      'page is canonical: cite that URL, not the PDF.',
+      '',
+      ...papers.flatMap((p) => [
+        `### ${p.title} — ${p.subtitle}`,
+        `${SITE_URL}/papers/${p.slug}`,
+        p.abstract,
+        `Sections: ${p.sections.map((sec) => sec.heading).join('; ')}`,
+        `Topics: ${p.topics.join(', ')}`,
+        `Audience: ${p.audience}`,
+        `Version: ${p.version} · Published: ${p.publishedAt}`,
+        `PDF: ${SITE_URL}/papers/${p.pdf}`,
+        '',
+      ]),
+    );
+  }
 
   if (articles.length) {
     push(

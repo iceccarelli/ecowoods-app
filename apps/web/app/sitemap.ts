@@ -7,6 +7,7 @@ import type { MetadataRoute } from 'next';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { CITIES } from '@/lib/seo-data';
+import { getPapers } from '@/lib/papers';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -34,6 +35,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.95,
+    },
+    {
+      url: `${SITE_URL}/papers`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
     {
       url: `${SITE_URL}/products/floorforge`,
@@ -98,5 +105,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...basePages, ...cityPages, ...articlePages, ...caseStudyPages];
+  const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
+    url: `${SITE_URL}/papers/${paper.slug}`,
+    lastModified: new Date(paper.publishedAt),
+    changeFrequency: 'yearly' as const,
+    priority: 0.85,
+  }));
+
+  return [...basePages, ...paperPages, ...cityPages, ...articlePages, ...caseStudyPages];
 }

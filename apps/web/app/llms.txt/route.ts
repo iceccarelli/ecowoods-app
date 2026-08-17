@@ -1,5 +1,6 @@
 import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
 import { getArticles } from '@/lib/content/loader';
+import { getPapers } from '@/lib/papers';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 
 export const dynamic = 'force-static';
@@ -53,11 +54,25 @@ export async function GET() {
   lines.push(`- Technical library: ${SITE_URL}/technical-library`);
   lines.push(`- Articles: ${SITE_URL}/blog`);
   lines.push(`- Case studies: ${SITE_URL}/case-studies`);
+  lines.push(`- Technical papers: ${SITE_URL}/papers`);
   lines.push(`- Floor configurator: ${SITE_URL}/design`);
   lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
   lines.push(`- The craft (machines and process): ${SITE_URL}/#craft`);
   lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
   lines.push('');
+
+  const papers = getPapers();
+  if (papers.length) {
+    lines.push('## Technical papers');
+    lines.push(
+      'Each paper is published in full as an HTML page and also as a PDF. Cite the HTML page.'
+    );
+    for (const p of papers) {
+      lines.push(`- [${p.title} — ${p.subtitle}](${SITE_URL}/papers/${p.slug}): ${p.abstract}`);
+      lines.push(`  PDF: ${SITE_URL}/papers/${p.pdf}`);
+    }
+    lines.push('');
+  }
 
   if (articles.length) {
     lines.push('## Technical articles');

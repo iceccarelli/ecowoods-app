@@ -26,6 +26,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, relative, extname } from 'node:path';
 
 const ROOT = process.cwd();
@@ -83,8 +84,76 @@ function walk(dir, out = []) {
   return out;
 }
 
+/** Same walk, filtered to one extension. Used for the PDF pass below. */
+function walkExt(dir, ext, out = []) {
+  let entries;
+  try { entries = readdirSync(dir); } catch { return out; }
+  for (const name of entries) {
+    if (SKIP_DIR.has(name)) continue;
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) walkExt(full, ext, out);
+    else if (extname(name).toLowerCase() === ext) out.push(full);
+  }
+  return out;
+}
+
 const files = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)));
+
+/* ── PDFs served from public/ ──────────────────────────────────────────────
+ *
+ * A PDF under apps/web/public is machine-facing exactly like a .txt: Google
+ * and every AI crawler in robots.txt index the text inside it, and a claim
+ * quoted out of a downloadable paper is the most citable form a claim can
+ * take. This scanner read eight text extensions and none of them was .pdf, so
+ * a retired figure could return in the one format nothing here could see.
+ *
+ * If pdftotext is missing we FAIL rather than skip. A silent skip is exactly
+ * how F-23 shipped: the guard was green and the file was not clean.
+ */
+const pdfs = SCAN_DIRS.flatMap((d) => walkExt(join(ROOT, d), '.pdf'));
+let pdftotextOk = true;
+if (pdfs.length) {
+  try {
+    execFileSync('pdftotext', ['-v'], { stdio: 'ignore' });
+  } catch {
+    pdftotextOk = false;
+  }
+}
+if (pdfs.length && !pdftotextOk) {
+  console.error(
+    `\n✗ ${pdfs.length} PDF(s) are served from public/ and pdftotext is not installed,` +
+      `\n  so their text cannot be checked for retired claims.\n` +
+      `\n  Install it (Debian/Ubuntu/Codespaces):  sudo apt-get install -y poppler-utils` +
+      `\n\n  This is deliberately a failure and not a skip. A guard that silently` +
+      `\n  skips the file it cannot read is how F-23 shipped.\n`
+  );
+  process.exit(1);
+}
+
 const violations = [];
+
+for (const pdf of pdfs) {
+  const rel = relative(ROOT, pdf);
+  if (ALLOWLIST.some((a) => rel === a || rel.startsWith(a))) continue;
+  let text = '';
+  try {
+    text = execFileSync('pdftotext', ['-q', '-nopgbrk', pdf, '-'], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch {
+    violations.push({ rel, line: 0, text: '(pdftotext could not read this file)', why: 'A PDF served from public/ must be readable so its text can be checked.' });
+    continue;
+  }
+  text.split('\n').forEach((line, i) => {
+    if (line.includes(OPT_OUT)) return;
+    for (const rule of BANNED) {
+      if (rule.pattern.test(line)) {
+        violations.push({ rel, line: i + 1, text: line.trim().slice(0, 110), why: rule.why });
+      }
+    }
+  });
+}
 
 for (const file of files) {
   const rel = relative(ROOT, file);
@@ -102,7 +171,9 @@ for (const file of files) {
 }
 
 if (violations.length === 0) {
-  console.log(`✓ business facts verified — ${files.length} files, no retired claims found`);
+  console.log(
+    `✓ business facts verified — ${files.length} file(s) + ${pdfs.length} PDF(s), no retired claims found`
+  );
   process.exit(0);
 }
 

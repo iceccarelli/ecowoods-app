@@ -13,7 +13,8 @@
     "verify:facts": "node scripts/verify-business-facts.mjs",
     "verify:migrations": "node scripts/verify-migrations.mjs",
     "verify:tokens": "node scripts/verify-tokens.mjs",
-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens",
+    "verify:schema": "node scripts/verify-schema.mjs",
+    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema",
     "hooks:install": "git config core.hooksPath scripts/hooks",
     "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm --filter @ecowoods/web build"
   },

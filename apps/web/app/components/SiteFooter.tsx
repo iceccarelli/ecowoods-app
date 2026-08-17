@@ -142,6 +142,19 @@ export default function SiteFooter() {
             </div>
           </FooterCol>
 
+          {/* Learn — every page on the site that is written to be read.
+              Until this existed, /papers and /case-studies were reachable only
+              from the header or from inside another article. */}
+          <FooterCol title="Learn" mobile={m}>
+            <div className="footer-links">
+              <a href="/papers">Technical Papers</a>
+              <a href="/technical-library">Technical Library</a>
+              <a href="/blog">Articles</a>
+              <a href="/case-studies">Case Studies</a>
+              <a href="/design">Floor Designer</a>
+            </div>
+          </FooterCol>
+
           {/* Service Areas */}
           <FooterCol title="Service Areas" mobile={m}>
             <div className="footer-links">
