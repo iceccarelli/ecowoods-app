@@ -7828,3 +7828,76 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 /* Two destinations under the homepage library teaser, wrapping on narrow
    screens instead of overflowing. */
 .clp-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+/* ============================================================
+   /design — alignment, symmetry, and the empty half-page
+   ------------------------------------------------------------
+   Three measured defects, all visible on the live page. See F-66.
+   ============================================================ */
+
+/* 1. THE EMPTY HALF-PAGE.
+   `.tlx-page { min-height: 100vh }` pushed the footer a full viewport down on
+   any page whose content is shorter than the window — measured at 1788x2240:
+   772px of blank cream between the configurator and the footer, with
+   .tlx-page exactly 2240px tall. /design is the shortest .tlx-page, so it is
+   where this shows.
+
+   The rule existed to guarantee the paper background covered the viewport. It
+   never needed to: --paper and --bg are the SAME value in BOTH themes
+   (#fdfbf6 light, #12100d dark), so the body behind it already paints the
+   identical colour. The declaration bought nothing and cost a screen of
+   emptiness. */
+.tlx-page { min-height: 0; }
+
+/* 2. THE THREE COLUMNS ENDED AT THREE DIFFERENT HEIGHTS.
+   `align-items: start` left each column at its natural height: measured
+   preview 1102, result 1102, controls 1366 — a 264px ragged bottom edge on
+   every desktop width. Stretch them, then anchor the content inside each card
+   to BOTH edges so the extra room reads as deliberate padding instead of a
+   hole: plank and spec at the top, notes at the bottom; price at the top of
+   the result card, CTA at the bottom. That is the same shape a pricing card
+   uses, and it makes the three bottom edges line up exactly. */
+@media (min-width: 900px) {
+  .fc-grid { align-items: stretch; }
+
+  .fc-preview { display: flex; flex-direction: column; }
+  .fc-preview .fc-note:first-of-type { margin-top: auto; padding-top: 1rem; }
+  .fc-preview .fc-note:last-of-type { margin-bottom: 0; }
+
+  .fc-result { display: flex; flex-direction: column; }
+  .fc-result-inner { flex: 1 1 auto; }
+  .fc-result-inner > * { display: flex; flex-direction: column; height: 100%; }
+  .fc-result-inner .fc-actions { margin-top: auto; }
+}
+
+/* 3. THE CHIP ROWS WERE RAGGED.
+   `.fc-swatches` and `.fc-pills` were flex-wrap with `flex: 1 1 <basis>`, so a
+   short last row STRETCHED to fill: 5 species became 3 wide + 2 wider, 4
+   patterns became 3 + 1 full-width "Chevron". Every control ended up a
+   different size from its siblings, which is the asymmetry the page reads as
+   broken. A grid with equal columns gives every chip the same width and leaves
+   the empty cell empty — which is what an aligned grid looks like. */
+.fc-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.fc-pills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+/* Four patterns read best as 2x2 — three-up would orphan one. The count is
+   set on the wrapper by the component, so this keys off it rather than
+   hard-coding an nth-of-type that breaks when a pattern is added. */
+.fc-pills[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fc-pills[data-count='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* The grid supplies the sizing now; the flex basis would fight it. */
+.fc-swatch, .fc-pill { flex: none; }
+.fc-pill { text-align: center; }
+
+@media (max-width: 479px) {
+  .fc-swatches, .fc-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fc-pills[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

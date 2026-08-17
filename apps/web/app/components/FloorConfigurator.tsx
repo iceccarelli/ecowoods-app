@@ -179,7 +179,7 @@ export default function FloorConfigurator() {
 
             <fieldset className="fc-field">
               <legend><span className="fc-step">02</span> Finish</legend>
-              <div className="fc-pills">
+              <div className="fc-pills" data-count={FINISH_OPTIONS.length}>
                 {FINISH_OPTIONS.map((f) => (
                   <button key={f.id} type="button" className="fc-pill" aria-pressed={f.id === finishId} onClick={() => setFinishId(f.id)}>
                     {f.label}
@@ -190,7 +190,7 @@ export default function FloorConfigurator() {
 
             <fieldset className="fc-field">
               <legend><span className="fc-step">03</span> Pattern</legend>
-              <div className="fc-pills">
+              <div className="fc-pills" data-count={PATTERN_OPTIONS.length}>
                 {PATTERN_OPTIONS.map((p) => (
                   <button key={p.id} type="button" className="fc-pill" aria-pressed={p.id === patternId} onClick={() => setPatternId(p.id)}>
                     {p.label}

@@ -2267,3 +2267,55 @@ Fixed on four surfaces:
 
 **Do not add a tenth nav item without re-running that measurement.** 12px is the
 budget that remains.
+
+---
+
+## 28. `/design` — the layout defects, measured
+
+### F-66 · Three defects on the shortest page on the site · P1
+
+Reported as "white space, empty sections, nothing lines up". All three are real
+and all three are measurable. Reproduced in Chromium against the real
+stylesheet, before and after.
+
+| | before | after |
+|---|---|---|
+| blank between the configurator and the footer @1788×2240 | **772px** | **0** |
+| `.tlx-page` height @1788×2240 | 2240 — exactly the viewport | 1484 — its content |
+| bottom-edge spread across the three columns | **264–269px** at every desktop width | **0px** |
+| distinct chip widths per control group | 2 | **1** |
+
+**1 — the empty half-page.** `.tlx-page { min-height: 100vh }` (globals.css:7190)
+stretched the wrapper to the full window on any page whose content is shorter
+than it, pushing the footer down by the difference. `/design` is the shortest
+`.tlx-page`, so it is where it shows; on a tall monitor or a full-page
+screenshot it is most of a screen of nothing.
+
+The rule existed to guarantee the paper background covered the viewport. **It
+never needed to.** `--paper` and `--bg` are the same value in both themes —
+`#fdfbf6` light, `#12100d` dark — so the body behind it already paints the
+identical colour. The declaration bought nothing and cost a screen.
+
+**2 — the three columns ended at three different heights.** `.fc-grid` carried
+`align-items: start`, so each column sat at its natural height: preview 1102,
+result 1102, controls 1366. A 264px ragged bottom edge, at every width from
+900px up.
+
+Fixed by stretching them and then anchoring the content inside each card to
+*both* edges, so the extra room reads as deliberate padding rather than a hole —
+plank and spec at the top of the preview, notes at the bottom; price at the top
+of the result card, CTA at the bottom. That is the shape a pricing card already
+uses. The three bottom edges now match exactly.
+
+**3 — the chip rows were ragged.** `.fc-swatches` and `.fc-pills` were
+`flex-wrap` with `flex: 1 1 <basis>`, so a short final row **stretched to fill**:
+five species rendered as three narrow plus two wider, and four patterns as three
+plus one full-width "Chevron". Every control was a different size from its
+siblings, which is what read as broken.
+
+Now a grid with equal columns — three-up for the five-item groups, and a 2×2 for
+patterns, keyed off `data-count` on the wrapper so adding a pattern does not
+silently orphan one. Measured: one distinct width per group, at every width.
+
+**Verified:** four guards green, parse-scan 0, undefined tokens 0, no type
+errors in `FloorConfigurator.tsx` or `globals.css`.
