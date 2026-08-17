@@ -7244,7 +7244,18 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 
 /* ── Hero ── */
 .tlx-hero { border-bottom: 1px solid var(--line); padding: 4.5rem 0 3rem; }
-.tlx-hero .shell { max-width: 860px; }
+/* ONE SPINE.
+   This was 860px while `.tlx-section .shell` is 1080px. Both are centred, so
+   the hero column and every section below it sat on DIFFERENT left edges —
+   measured 110px apart at 1280px and 1440px, 82px at 1024px. The <h1> started
+   110px to the right of the <h2> underneath it, on /papers, /papers/<slug>,
+   /technical-library, /blog, /case-studies, /case-studies/<slug>, /authority,
+   /design and every article and case study. Each column looked fine on its own,
+   which is why it survived this long.
+   The container aligns; the TEXT keeps its own measure — .tlx-lede already
+   carries max-width: 62ch, so widening the column does not lengthen a line.
+   See audit/FINDINGS.md F-68. */
+.tlx-hero .shell { max-width: 1080px; }
 .tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
