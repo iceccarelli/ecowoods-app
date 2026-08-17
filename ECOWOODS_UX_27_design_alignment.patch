@@ -1,0 +1,163 @@
+diff --git a/apps/web/app/components/FloorConfigurator.tsx b/apps/web/app/components/FloorConfigurator.tsx
+index cd58c5d..6d160dc 100644
+--- a/apps/web/app/components/FloorConfigurator.tsx
++++ b/apps/web/app/components/FloorConfigurator.tsx
+@@ -179,7 +179,7 @@ export default function FloorConfigurator() {
+ 
+             <fieldset className="fc-field">
+               <legend><span className="fc-step">02</span> Finish</legend>
+-              <div className="fc-pills">
++              <div className="fc-pills" data-count={FINISH_OPTIONS.length}>
+                 {FINISH_OPTIONS.map((f) => (
+                   <button key={f.id} type="button" className="fc-pill" aria-pressed={f.id === finishId} onClick={() => setFinishId(f.id)}>
+                     {f.label}
+@@ -190,7 +190,7 @@ export default function FloorConfigurator() {
+ 
+             <fieldset className="fc-field">
+               <legend><span className="fc-step">03</span> Pattern</legend>
+-              <div className="fc-pills">
++              <div className="fc-pills" data-count={PATTERN_OPTIONS.length}>
+                 {PATTERN_OPTIONS.map((p) => (
+                   <button key={p.id} type="button" className="fc-pill" aria-pressed={p.id === patternId} onClick={() => setPatternId(p.id)}>
+                     {p.label}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index f32b0a5..89ffd91 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7828,3 +7828,76 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ /* Two destinations under the homepage library teaser, wrapping on narrow
+    screens instead of overflowing. */
+ .clp-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
++
++/* ============================================================
++   /design — alignment, symmetry, and the empty half-page
++   ------------------------------------------------------------
++   Three measured defects, all visible on the live page. See F-66.
++   ============================================================ */
++
++/* 1. THE EMPTY HALF-PAGE.
++   `.tlx-page { min-height: 100vh }` pushed the footer a full viewport down on
++   any page whose content is shorter than the window — measured at 1788x2240:
++   772px of blank cream between the configurator and the footer, with
++   .tlx-page exactly 2240px tall. /design is the shortest .tlx-page, so it is
++   where this shows.
++
++   The rule existed to guarantee the paper background covered the viewport. It
++   never needed to: --paper and --bg are the SAME value in BOTH themes
++   (#fdfbf6 light, #12100d dark), so the body behind it already paints the
++   identical colour. The declaration bought nothing and cost a screen of
++   emptiness. */
++.tlx-page { min-height: 0; }
++
++/* 2. THE THREE COLUMNS ENDED AT THREE DIFFERENT HEIGHTS.
++   `align-items: start` left each column at its natural height: measured
++   preview 1102, result 1102, controls 1366 — a 264px ragged bottom edge on
++   every desktop width. Stretch them, then anchor the content inside each card
++   to BOTH edges so the extra room reads as deliberate padding instead of a
++   hole: plank and spec at the top, notes at the bottom; price at the top of
++   the result card, CTA at the bottom. That is the same shape a pricing card
++   uses, and it makes the three bottom edges line up exactly. */
++@media (min-width: 900px) {
++  .fc-grid { align-items: stretch; }
++
++  .fc-preview { display: flex; flex-direction: column; }
++  .fc-preview .fc-note:first-of-type { margin-top: auto; padding-top: 1rem; }
++  .fc-preview .fc-note:last-of-type { margin-bottom: 0; }
++
++  .fc-result { display: flex; flex-direction: column; }
++  .fc-result-inner { flex: 1 1 auto; }
++  .fc-result-inner > * { display: flex; flex-direction: column; height: 100%; }
++  .fc-result-inner .fc-actions { margin-top: auto; }
++}
++
++/* 3. THE CHIP ROWS WERE RAGGED.
++   `.fc-swatches` and `.fc-pills` were flex-wrap with `flex: 1 1 <basis>`, so a
++   short last row STRETCHED to fill: 5 species became 3 wide + 2 wider, 4
++   patterns became 3 + 1 full-width "Chevron". Every control ended up a
++   different size from its siblings, which is the asymmetry the page reads as
++   broken. A grid with equal columns gives every chip the same width and leaves
++   the empty cell empty — which is what an aligned grid looks like. */
++.fc-swatches {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 0.6rem;
++}
++.fc-pills {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 0.5rem;
++}
++/* Four patterns read best as 2x2 — three-up would orphan one. The count is
++   set on the wrapper by the component, so this keys off it rather than
++   hard-coding an nth-of-type that breaks when a pattern is added. */
++.fc-pills[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++.fc-pills[data-count='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++
++/* The grid supplies the sizing now; the flex basis would fight it. */
++.fc-swatch, .fc-pill { flex: none; }
++.fc-pill { text-align: center; }
++
++@media (max-width: 479px) {
++  .fc-swatches, .fc-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++  .fc-pills[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++}
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 3a6172b..1a40d92 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -2267,3 +2267,55 @@ Fixed on four surfaces:
+ 
+ **Do not add a tenth nav item without re-running that measurement.** 12px is the
+ budget that remains.
++
++---
++
++## 28. `/design` — the layout defects, measured
++
++### F-66 · Three defects on the shortest page on the site · P1
++
++Reported as "white space, empty sections, nothing lines up". All three are real
++and all three are measurable. Reproduced in Chromium against the real
++stylesheet, before and after.
++
++| | before | after |
++|---|---|---|
++| blank between the configurator and the footer @1788×2240 | **772px** | **0** |
++| `.tlx-page` height @1788×2240 | 2240 — exactly the viewport | 1484 — its content |
++| bottom-edge spread across the three columns | **264–269px** at every desktop width | **0px** |
++| distinct chip widths per control group | 2 | **1** |
++
++**1 — the empty half-page.** `.tlx-page { min-height: 100vh }` (globals.css:7190)
++stretched the wrapper to the full window on any page whose content is shorter
++than it, pushing the footer down by the difference. `/design` is the shortest
++`.tlx-page`, so it is where it shows; on a tall monitor or a full-page
++screenshot it is most of a screen of nothing.
++
++The rule existed to guarantee the paper background covered the viewport. **It
++never needed to.** `--paper` and `--bg` are the same value in both themes —
++`#fdfbf6` light, `#12100d` dark — so the body behind it already paints the
++identical colour. The declaration bought nothing and cost a screen.
++
++**2 — the three columns ended at three different heights.** `.fc-grid` carried
++`align-items: start`, so each column sat at its natural height: preview 1102,
++result 1102, controls 1366. A 264px ragged bottom edge, at every width from
++900px up.
++
++Fixed by stretching them and then anchoring the content inside each card to
++*both* edges, so the extra room reads as deliberate padding rather than a hole —
++plank and spec at the top of the preview, notes at the bottom; price at the top
++of the result card, CTA at the bottom. That is the shape a pricing card already
++uses. The three bottom edges now match exactly.
++
++**3 — the chip rows were ragged.** `.fc-swatches` and `.fc-pills` were
++`flex-wrap` with `flex: 1 1 <basis>`, so a short final row **stretched to fill**:
++five species rendered as three narrow plus two wider, and four patterns as three
++plus one full-width "Chevron". Every control was a different size from its
++siblings, which is what read as broken.
++
++Now a grid with equal columns — three-up for the five-item groups, and a 2×2 for
++patterns, keyed off `data-count` on the wrapper so adding a pattern does not
++silently orphan one. Measured: one distinct width per group, at every width.
++
++**Verified:** four guards green, parse-scan 0, undefined tokens 0, no type
++errors in `FloorConfigurator.tsx` or `globals.css`.
