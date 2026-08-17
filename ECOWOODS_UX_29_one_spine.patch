@@ -1,0 +1,83 @@
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 1b535bd..2beed91 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7244,7 +7244,18 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ 
+ /* ── Hero ── */
+ .tlx-hero { border-bottom: 1px solid var(--line); padding: 4.5rem 0 3rem; }
+-.tlx-hero .shell { max-width: 860px; }
++/* ONE SPINE.
++   This was 860px while `.tlx-section .shell` is 1080px. Both are centred, so
++   the hero column and every section below it sat on DIFFERENT left edges —
++   measured 110px apart at 1280px and 1440px, 82px at 1024px. The <h1> started
++   110px to the right of the <h2> underneath it, on /papers, /papers/<slug>,
++   /technical-library, /blog, /case-studies, /case-studies/<slug>, /authority,
++   /design and every article and case study. Each column looked fine on its own,
++   which is why it survived this long.
++   The container aligns; the TEXT keeps its own measure — .tlx-lede already
++   carries max-width: 62ch, so widening the column does not lengthen a line.
++   See audit/FINDINGS.md F-68. */
++.tlx-hero .shell { max-width: 1080px; }
+ .tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+   text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index c336add..67448e9 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -2357,3 +2357,54 @@ and chevron already worked this way; diagonal was the odd one out.
+ Reduced motion flattens it back to the honest top-down swatch: a still image
+ with strong 3-D perspective is exactly the kind of thing that unsettles a
+ vestibular-sensitive reader, and the colour information survives the flattening.
++
++---
++
++## 29. Site-wide alignment sweep
++
++### F-68 · The `<h1>` sat 110px right of the `<h2>` under it, on nine routes · **P1**
++
++`.tlx-hero .shell` was `max-width: 860px`. `.tlx-section .shell` is
++`max-width: 1080px`. Both are centred, so the hero column and every section
++below it sat on **different left edges**. Measured in Chromium against the live
++stylesheet:
++
++| viewport | hero column left | section column left | misalignment |
++|---|---|---|---|
++| 1440px | 290 | 180 | **110px** |
++| 1280px | 210 | 100 | **110px** |
++| 1024px | 82 | 0 | **82px** |
++
++Every `.tlx-*` route: `/papers`, `/papers/<slug>`, `/technical-library`,
++`/blog`, `/case-studies`, `/case-studies/<slug>`, `/authority`, `/design`, plus
++every article and every case study through `ArticleLayout` and
++`case-study-layout`.
++
++It survived this long because **each column looks correct on its own** — both
++are centred and neither overflows. The defect only exists in the relationship
++between them, which no single-element check can see.
++
++Fixed by giving them one spine. The container aligns; the text keeps its own
++measure — `.tlx-lede` already carried `max-width: 62ch`, so widening the column
++does not lengthen a line. After: h1, lede, kicker and h2 all start at the same
++x at 1440, 1280, 1024 and 768, and the lede is still 607px wide.
++
++**Rule going in: a container sets the spine, a text element sets the measure.
++Never use the container to do both** — that is what put two different spines on
++the same page.
++
++### Two related items, measured but deliberately NOT changed
++
++**`.tlx-body` is centred inside the section, not aligned to it.**
++`max-width: 720px; margin: 0 auto` inside a 1080px column puts article body
++copy 180px right of its own `<h2>`. Left-aligning it would put all 360px of
++slack on one side of a page that is nothing but body copy, which trades one
++imbalance for a worse one. The real answer is to narrow the *section* to the
++body measure on article routes — a layout change to `ArticleLayout` and
++`case-study-layout`, not a one-line CSS edit, and it should be looked at with
++the pages open.
++
++**`.tlx-page { min-height: 100vh }` is still at globals.css:7243.** Patch 27's
++`min-height: 0` is appended later and wins on cascade order, so the behaviour is
++correct — but two rules are now arguing about the same property in one file.
++Worth collapsing to one declaration the next time that region is edited.
