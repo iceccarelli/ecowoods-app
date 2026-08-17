@@ -2319,3 +2319,41 @@ silently orphan one. Measured: one distinct width per group, at every width.
 
 **Verified:** four guards green, parse-scan 0, undefined tokens 0, no type
 errors in `FloorConfigurator.tsx` or `globals.css`.
+
+---
+
+### F-67 · The floor preview was a swatch, not a floor · P2
+
+`/design` sells a surface you stand on and look **across**. The preview was a
+flat top-down rectangle of stripes: it told you the colour and nothing about the
+floor. Rebuilt as a perspective plane receding to a horizon, with a wall behind
+it and the boards running away from the viewer — that convergence is the whole
+reason it reads as three-dimensional.
+
+CSS transforms only. No canvas, no WebGL, no new dependency, nothing to
+hydrate, and the global reduced-motion reset already covers the transitions.
+Three layers on the existing markup, so the component's `role="img"` and its
+per-configuration `aria-label` are untouched:
+
+- `.fc-plank` — the room: `perspective: 640px` plus a wall gradient above the
+  horizon.
+- `::before` — the floor plane, laid down with `rotateX(66deg)` from a top
+  origin. Board seams are vertical in the untransformed plane so they converge;
+  end joints are horizontal so they compress toward the horizon.
+- `::after` — finish tint, plus the depth perspective alone cannot give: the
+  floor darkens into the horizon and the corners fall away.
+- `.fc-plank-sheen` — a specular return that runs with the boards and brightens
+  toward the viewer, scaled by the per-finish `--fc-sheen`, so matte barely
+  lifts and satin reads wet.
+
+**One defect caught by rendering all 24 species × finish × pattern combinations
+rather than trusting the code:** `diagonal` was written as
+`transform: rotateX(66deg) rotate(45deg)`, which rotated the **plane**, not the
+pattern — the plane's own corner cut a hard diagonal across the wall above the
+horizon and the floor stopped being a floor. Fixed by rotating the gradient
+angles instead and leaving every pattern on the one shared `rotateX`. Herringbone
+and chevron already worked this way; diagonal was the odd one out.
+
+Reduced motion flattens it back to the honest top-down swatch: a still image
+with strong 3-D perspective is exactly the kind of thing that unsettles a
+vestibular-sensitive reader, and the colour information survives the flattening.
