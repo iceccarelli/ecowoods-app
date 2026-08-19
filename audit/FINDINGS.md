@@ -2522,3 +2522,81 @@ export exists.
 and several are still corruption-damaged (recorded during the second corruption
 wave). Clearing them is a repo-hygiene pass of its own, not something to fold
 into a papers patch.
+
+---
+
+## 30. One command that runs everything
+
+### F-71 · The checks were correct, complete, and nobody ran them · **P1**
+
+This repository has, at last count, **fourteen separate things that measure it**:
+four guards behind `pnpm verify`, a mandatory parse scan, eight static auditors
+under `audit/scripts/`, a runtime sweep behind its own shell script, and a set of
+grep invariants that existed only as prose in a handoff document.
+
+Every one of them works. Not one of them was run on a schedule, because running
+them all meant remembering fourteen invocations in the right order — and the one
+that matters most (`parse-scan.mjs`) is the one furthest from muscle memory.
+
+The cost is already on the record. `origin/main` served a build **four patches
+behind** for days (§26) while `git status` looked clean, and `audit/runtime-report.json`
+has been quoted in three documents while describing a stylesheet that no longer
+exists. Neither of those was a hard problem to detect. Both were invisible
+because detection was optional.
+
+**`scripts/audit-all.sh`** collapses all fourteen into one command that never
+stops at the first failure and ends with a table. Exit code is the number of
+failed sections, so CI can gate on it directly.
+
+```
+bash scripts/audit-all.sh            # everything except the runtime sweep
+bash scripts/audit-all.sh --full     # also boots a server and sweeps 220 cells
+bash scripts/audit-all.sh --quick    # skip install/typecheck/build
+```
+
+Eight sections: repository state, the non-negotiables as executable assertions,
+build stack, guards, source integrity, static auditors, technical papers,
+runtime sweep. The non-negotiables are the interesting ones — `<RotatingBackground`
+must appear exactly twice in `home-client.tsx` and `images.unsplash.com` exactly
+once in `globals.css`. Those two numbers were the most important rule in the
+handoff and they lived in a paragraph. They are now assertions that fail a build.
+
+### F-72 · `verify-papers.mjs` — the fifth guard · P2
+
+`lib/papers.ts` fans out into two routes, three schema blocks, the sitemap,
+`/llms.txt`, `/ai.txt`, the `/technical-library` cards and the cross-links
+between papers. That is the point of a manifest. It also means one bad field is
+wrong in eight places at once, and most of those places are only ever read by a
+crawler.
+
+The specific failure it exists to catch: **`pdfIsPublished()` fails soft.** If
+the filename is a typo, the download button simply does not render — which is
+byte-for-byte what "not published yet" looks like. That state can persist
+indefinitely. The guard now distinguishes `PUBLISHED` / `staged` /
+`awaiting export` / `MISSING`, where the third is legitimate (a matching `.tex`
+is staged) and the fourth is a defect.
+
+It also catches duplicate section ids (a dead anchor in the contents rail),
+slug collisions, non-ISO dates, ragged tables, and any derived surface that
+stopped reading `getPapers`.
+
+Current state: `3 paper(s), 21 sections, pdf: 0 published / 2 staged / 1 awaiting export`.
+
+### Two shell traps, both found by the new script failing correctly
+
+**`set -o pipefail` + `grep -q` reports failure *because* the match succeeded.**
+The PDF text scan ran `pdftotext "$f" - | grep -qE '5,?200\+? *Homes'` and
+reported PASS on two PDFs that both contain the retired claim. `grep -q` exits
+the instant it finds a match; `pdftotext` is still writing, takes `SIGPIPE`, and
+`pipefail` surfaces *that* as the pipeline's status. The scan was inverted.
+Fixed by reading into a variable and matching with a here-string.
+
+This is the same family as the `grep -c` trap recorded in §26 — a tool that
+reports on stdout *and* in the exit code, and the two disagreeing. Both traps
+now have a comment at the site of the fix, because both cost a full
+investigation cycle.
+
+**`audit/runtime-report.json` is four patches stale**, which the script now says
+out loud: it compares `generatedAt` against the last commit that touched
+`globals.css` and warns when the report is older. The numbers in that file are
+quoted in this document. They currently describe a build that no longer exists.

@@ -14,7 +14,11 @@
     "verify:migrations": "node scripts/verify-migrations.mjs",
     "verify:tokens": "node scripts/verify-tokens.mjs",
     "verify:schema": "node scripts/verify-schema.mjs",
-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema",
+    "verify:papers": "node scripts/verify-papers.mjs",
+    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers",
+    "audit": "bash scripts/audit-all.sh",
+    "audit:full": "bash scripts/audit-all.sh --full",
+    "audit:quick": "bash scripts/audit-all.sh --quick",
     "hooks:install": "git config core.hooksPath scripts/hooks",
     "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm --filter @ecowoods/web build"
   },
