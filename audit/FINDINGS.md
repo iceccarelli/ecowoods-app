@@ -2600,3 +2600,171 @@ investigation cycle.
 out loud: it compares `generatedAt` against the last commit that touched
 `globals.css` and warns when the report is older. The numbers in that file are
 quoted in this document. They currently describe a build that no longer exists.
+
+---
+
+## 31. The link graph, and a feed
+
+### F-73 · Three routes in the sitemap that nothing on the site links to · **P0**
+
+F-65 was `/papers` shipping with no way in. It was recorded as a one-off. It was
+not a one-off — it was the third instance of the same failure, and the other two
+were still live.
+
+Measured across all 244 source files, counting `href="/x"`, `href={'/x'}` and the
+`href: '/x'` object form the nav arrays use:
+
+| route | inbound links | in header or footer |
+|---|---|---|
+| `/authority` | **0** | no |
+| `/service-areas` | 1 | **no** |
+| `/service-areas/<city>` × 16 | 0 each | no |
+| `/verify-email` | 0 | no — legitimate |
+
+`/authority` is the page whose entire stated purpose is to be found and cited by
+answer engines. It has never had a single inbound link from anywhere in the
+application. It is in the sitemap, it is in `llms.txt`, and no human or crawler
+following links has ever arrived at it.
+
+The `/service-areas` case is worse commercially. Sixteen city pages are
+prerendered, declared in the sitemap at priority 0.85, and written for the
+highest-intent local queries a Toronto trade business can rank for — and the
+footer column literally titled **Service Areas** pointed all seven of its links
+at `#areas`, an anchor on the homepage. The pages existed; the site behaved as
+though they did not.
+
+A sitemap entry is a claim that a page exists. An internal link is a statement
+that it matters. Every ranking system and every answer engine reads the second
+one, and neither treats the first as a substitute.
+
+**Fixed:** the footer's Learn column gains `/authority` and `/feed.xml`; the
+Service Areas column is now derived from `CITIES` and points at the real routes,
+so it cannot drift from what `generateStaticParams` builds.
+
+### F-74 · The failure now has a mechanism, not a memory · P1
+
+Three occurrences of one bug, each found by a human noticing, is not a process.
+`scripts/verify-links.mjs` enumerates every public route, counts inbound
+references across the whole app, and **fails the build on any route with zero**.
+
+Ratchet, not a wall — the same shape as `verify-tokens` and `verify-schema`.
+Legitimately unlinked routes live in `scripts/links-baseline.json` **with a
+written reason**; `/verify-email` is the only entry, because it is reached from
+a signed token in an email and a chrome link to it would be meaningless. The
+guard also fails on a *stale* waiver — a baseline entry for a route that is no
+longer an orphan, which would silently grant cover to the next real one.
+
+Chained into `pnpm verify` and into `scripts/audit-all.sh`.
+
+### F-75 · No feed — the one surface that reports change rather than existence · P1
+
+The site publishes three kinds of dated material (3 technical papers, 6
+articles, 5 engineering case studies) and offered no way to subscribe to any of
+it. A sitemap tells a crawler what *exists*. A feed tells it what *changed*, and
+it is the only surface an aggregator, a newsletter tool or a syndication partner
+can consume without scraping.
+
+**`/feed.xml`** is RSS 2.0 over all three content types, sorted newest-first,
+derived entirely from the content loaders and `lib/papers.ts` — no hand-
+maintained list, so a new article cannot be missing from it and it cannot
+advertise something that was never published. Declared for autodiscovery via
+`alternates.types` in the root layout, and advertised in both `/llms.txt` and
+`/ai.txt`.
+
+The reference implementation is AWS's *What's New* feed: small dated entries,
+one canonical URL each, published relentlessly. That feed is a large part of why
+the industry learns about AWS from AWS rather than from a competitor's
+comparison page.
+
+---
+
+## 32. The framework, the guides, and the assessment
+
+### F-76 · Everything published so far persuades one reader at a time · **P0 — strategic**
+
+Three technical papers, six articles, five case studies. All of it is good, and
+all of it has the same structural limit: it argues a position to whoever happens
+to read it. None of it changes the terms other people argue on.
+
+AWS's most consequential publication is not documentation and not a whitepaper.
+It is the Well-Architected Framework — a named, versioned set of pillars with a
+question set per pillar, and a free tool that scores your workload against it.
+Publishing the standard is different in kind from participating in the
+comparison: competitors now describe their own architectures in AWS's
+vocabulary.
+
+**`/framework` is the hardwood equivalent.** Six pillars, twenty-seven binary
+criteria, version 1.0, published under CC BY with permanent criterion ids so
+"Well-Installed Framework v1.0, criterion 2.4" resolves to one fixed thing
+forever. Renumbering in place is what makes a standard worthless; the guard
+below prevents it.
+
+**`/framework/assess`** scores any quote against all twenty-seven — ours or
+anyone else's. Every competitor's quote in the GTA becomes an input to an
+Ecowoods instrument.
+
+### F-77 · The assessment posts nothing, deliberately · P1
+
+The obvious build is a lead form: collect the answers, email the report, capture
+the address. That is also the build that destroys the thing being built. A tool
+whose purpose is to score a *competitor's* quote is only worth linking to if it
+is not also a lead capture, and the honest answer to "should I trust this
+scoring?" becomes no the moment it posts anywhere.
+
+So it runs entirely in component state. No fetch, no analytics event, no
+`localStorage`, no hidden field, no account. The result is printed by the
+browser. The page says so in plain language, above the fold.
+
+That constraint is the distribution strategy, not a concession to it. Something
+a homeowner will forward to a friend who is *not* an Ecowoods customer is worth
+more than the addresses the form would have collected.
+
+### F-78 · Provenance is enforced by a guard, not by intent · **P1**
+
+Every criterion in the framework and every claim in every guide carries
+`source: { paper, section }`. **`scripts/verify-framework.mjs` resolves all 47
+citations against `lib/papers.ts` and fails the build on any that does not
+exist.**
+
+This is the guard that matters most on the site. A framework that quietly
+accumulates unsourced assertions is worth less than no framework: it is exactly
+what a competitor attacks, and exactly what an answer engine learns to discount
+after catching one bad figure. If a criterion belongs in the framework and no
+paper supports it yet, **the paper is written first.**
+
+It also enforces what makes a citation URL durable: unique criterion ids,
+criterion numbers that match their pillar number (a criterion numbered 3.x
+sitting inside pillar 2 makes every external citation to it wrong), unique guide
+slugs, no guide pointing at a pillar id that does not exist, and a parseable
+version string.
+
+Nothing in this patch introduces a technical claim, a figure or a threshold that
+was not already published at `/papers`. Everything is restructured, not
+invented — which is why 47 citations resolve and why the six pillars read as
+the protocol, the installer checklist and the demand list that were already
+there, reorganised into something that can be scored.
+
+### F-79 · Six guides, in two shapes · P2
+
+A **decision guide** answers a question where the choice is still open: what
+decides it, in what order, and what the answer is. A **reference installation**
+is one scenario fully resolved — substrate, product, method, sequence,
+watchpoints — the artifact a designer forwards to a client.
+
+Three of each, all derived from the papers: solid versus engineered · nail-down,
+glue-down or floating · how to evaluate a quote · condominium over concrete slab
+· radiant heat main floor · refinishing an existing floor.
+
+### The nav had to pay for itself
+
+`.topbar-nav` is `overflow: clip` with `min-width: max-content` (F-50). An item
+added to a nine-item nav without removing width somewhere is an item that clips
+silently at 1200px — which is how F-65 happened. "Technical Library" is
+therefore shortened to "Library" to pay for "Framework": seventeen characters
+out, sixteen in, so the nav is **narrower than before this patch**, not wider.
+That is a label change and it is reversible; if Francisco wants the long form
+back, the framework link moves to the footer, where the guides already sit.
+
+Re-measure on the next `--full` runtime pass regardless. Asserting that
+something fits is what caused F-65; this one is at least arithmetically safe
+rather than confidently guessed.

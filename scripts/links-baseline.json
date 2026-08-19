@@ -1,0 +1,3 @@
+{
+  "/verify-email": "Landing page for the address-confirmation email. Reached from a signed token in the message body; a link to it from the site chrome would be meaningless without that token."
+}

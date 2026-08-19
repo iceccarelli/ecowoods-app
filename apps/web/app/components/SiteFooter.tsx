@@ -20,6 +20,7 @@
  */
 
 import { EW_MARK } from '@/lib/brand';
+import { CITIES } from '@/lib/seo-data';
 import { BUSINESS_NAP, REVIEW_PROFILES } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
@@ -147,24 +148,34 @@ export default function SiteFooter() {
               from the header or from inside another article. */}
           <FooterCol title="Learn" mobile={m}>
             <div className="footer-links">
+              <a href="/framework">The Well-Installed Framework</a>
+              <a href="/framework/assess">Score a quote</a>
+              <a href="/guides">Decision Guides</a>
               <a href="/papers">Technical Papers</a>
               <a href="/technical-library">Technical Library</a>
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>
               <a href="/design">Floor Designer</a>
+              <a href="/authority">Citation Guide</a>
+              <a href="/feed.xml">RSS Feed</a>
             </div>
           </FooterCol>
 
-          {/* Service Areas */}
+          {/* Service Areas — real routes, not homepage anchors.
+              Every entry here used to be href="#areas", which scrolled to a
+              section of the homepage. Meanwhile /service-areas/<city> existed,
+              was prerendered for all 16 cities, and was declared in the sitemap
+              — with a single inbound link in the entire app. The highest
+              commercial-intent surface on a local trade site had no internal
+              link equity at all. Derived from CITIES so this column cannot
+              drift from the routes that are actually built.
+              See audit/FINDINGS.md F-73. */}
           <FooterCol title="Service Areas" mobile={m}>
             <div className="footer-links">
-              <a href="#areas">Toronto · Downtown</a>
-              <a href="#areas">North York</a>
-              <a href="#areas">Etobicoke</a>
-              <a href="#areas">Scarborough</a>
-              <a href="#areas">Vaughan & Markham</a>
-              <a href="#areas">Richmond Hill</a>
-              <a href="#areas">Mississauga · Oakville</a>
+              {CITIES.slice(0, 8).map((c) => (
+                <a key={c.slug} href={`/service-areas/${c.slug}`}>{c.name}</a>
+              ))}
+              <a href="/service-areas">All service areas →</a>
             </div>
           </FooterCol>
 

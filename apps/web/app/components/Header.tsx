@@ -44,8 +44,14 @@ const navigation = [
   { label: 'Services', href: '#services' },
   { label: 'Process', href: '#process' },
   { label: 'The Craft', href: '#craft' },
-  { label: 'Technical Library', href: '/technical-library' },
+  // "Technical Library" was shortened to "Library" to pay for "Framework" in
+  // character width. The nav is `overflow: clip` with `min-width: max-content`
+  // (see F-50), so an item added without removing width somewhere is an item
+  // that clips silently at 1200px. Net width here is NARROWER than before:
+  // 17 characters out, 7 + 9 in. Re-measure on the next --full runtime pass.
+  { label: 'Library', href: '/technical-library' },
   { label: 'Papers', href: '/papers' },
+  { label: 'Framework', href: '/framework' },
   { label: 'FloorForge', href: '/products/floorforge' },
   { label: 'Reviews', href: '#reviews' },
   { label: 'FAQ', href: '#faq' },

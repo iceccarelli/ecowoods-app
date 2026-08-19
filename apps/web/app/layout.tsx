@@ -68,7 +68,13 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: 'Ecowoods',
-  alternates: { canonical: '/' },
+  // The RSS autodiscovery link. Feed readers, aggregators and several answer
+  // engines look for exactly this element and nothing else; a feed that is not
+  // declared here is a feed only someone who already knows the URL can find.
+  alternates: {
+    canonical: '/',
+    types: { 'application/rss+xml': [{ url: '/feed.xml', title: 'Ecowoods — Technical Publications' }] },
+  },
   keywords: [
     'hardwood flooring Toronto',
     'floor refinishing Toronto',

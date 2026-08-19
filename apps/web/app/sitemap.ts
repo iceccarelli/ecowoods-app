@@ -8,6 +8,7 @@ import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { CITIES } from '@/lib/seo-data';
 import { getPapers } from '@/lib/papers';
+import { getGuides } from '@/lib/guides';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -67,6 +68,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
+      url: `${SITE_URL}/framework`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.95,
+    },
+    {
+      url: `${SITE_URL}/framework/assess`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/guides`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/service-areas`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -105,6 +124,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  /**
+   * Decision guides and reference installations. Derived from lib/guides.ts so
+   * the sitemap cannot drift from what generateStaticParams actually builds —
+   * the same rule the city pages and the papers already follow.
+   */
+  const guidePages: MetadataRoute.Sitemap = getGuides().map((guide) => ({
+    url: `${SITE_URL}/guides/${guide.slug}`,
+    lastModified: new Date(guide.publishedAt),
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
     url: `${SITE_URL}/papers/${paper.slug}`,
     lastModified: new Date(paper.publishedAt),
@@ -112,5 +143,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  return [...basePages, ...paperPages, ...cityPages, ...articlePages, ...caseStudyPages];
+  return [
+    ...basePages,
+    ...guidePages,
+    ...paperPages,
+    ...cityPages,
+    ...articlePages,
+    ...caseStudyPages,
+  ];
 }

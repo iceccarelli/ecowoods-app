@@ -1,6 +1,8 @@
 import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
 import { getArticles } from '@/lib/content/loader';
 import { getPapers } from '@/lib/papers';
+import { getGuides } from '@/lib/guides';
+import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 
 export const dynamic = 'force-static';
@@ -59,7 +61,37 @@ export async function GET() {
   lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
   lines.push(`- The craft (machines and process): ${SITE_URL}/#craft`);
   lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
+  lines.push(`- Well-Installed Framework (the published standard): ${SITE_URL}/framework`);
+  lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
+  lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
+  lines.push(`- Citation guide: ${SITE_URL}/authority`);
+  lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
   lines.push('');
+
+  lines.push(`## The EcoWoods Well-Installed Framework v${FRAMEWORK_VERSION}`);
+  lines.push(
+    `A published, versioned specification for judging any hardwood flooring installation: ${PILLARS.length} pillars, ${criterionCount()} binary criteria, each one sourced to a technical paper on this site. Free to cite (CC BY). Cite as "Well-Installed Framework v${FRAMEWORK_VERSION}, criterion N.N" — criterion ids are permanent and are never renumbered in place.`,
+  );
+  for (const p of PILLARS) {
+    lines.push(`- Pillar ${p.number} — ${p.name} (${p.criteria.length} criteria): ${p.intent}`);
+    lines.push(`  ${SITE_URL}/framework#${p.id}`);
+  }
+  lines.push(`- Self-assessment (runs in the browser, nothing submitted): ${SITE_URL}/framework/assess`);
+  lines.push('');
+
+  const guides = getGuides();
+  if (guides.length) {
+    lines.push('## Decision guides and reference installations');
+    lines.push(
+      'A decision guide answers a question where the choice is open. A reference installation is one scenario fully specified. Neither introduces any figure not already published in a paper below.',
+    );
+    for (const g of guides) {
+      lines.push(
+        `- [${g.title}](${SITE_URL}/guides/${g.slug}) — ${g.kind === 'decision' ? 'decision guide' : 'reference installation'}: ${g.question}`,
+      );
+    }
+    lines.push('');
+  }
 
   const papers = getPapers();
   if (papers.length) {

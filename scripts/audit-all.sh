@@ -113,6 +113,8 @@ run "verify:migrations"   node scripts/verify-migrations.mjs
 run "verify:tokens"       node scripts/verify-tokens.mjs
 run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-papers.mjs ] && run "verify:papers" node scripts/verify-papers.mjs
+[ -f scripts/verify-links.mjs ]  && run "verify:links"  node scripts/verify-links.mjs
+[ -f scripts/verify-framework.mjs ] && run "verify:framework" node scripts/verify-framework.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"
@@ -131,6 +133,9 @@ done
 section "7 · technical papers"
 if [ -f scripts/verify-papers.mjs ]; then
   node scripts/verify-papers.mjs --list 2>&1 | sed -n '/Technical papers/,$p' | sed 's/^/  /'
+fi
+if [ -f scripts/verify-framework.mjs ]; then
+  node scripts/verify-framework.mjs --list 2>&1 | sed -n '/Framework/,$p' | sed 's/^/  /'
 fi
 note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
 note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
