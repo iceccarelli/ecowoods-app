@@ -1,0 +1,2476 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index 3408477..ca3e20e 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -164,6 +164,8 @@ export async function GET() {
+     `Crawler policy: ${SITE_URL}/robots.txt`,
+     `Short brief: ${SITE_URL}/llms.txt`,
+     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
++    `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
++    `Decision guides and reference installations: ${SITE_URL}/guides`,
+   );
+ 
+   return new Response(L.join('\n'), {
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 557a38f..9d86c4d 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -44,8 +44,14 @@ const navigation = [
+   { label: 'Services', href: '#services' },
+   { label: 'Process', href: '#process' },
+   { label: 'The Craft', href: '#craft' },
+-  { label: 'Technical Library', href: '/technical-library' },
++  // "Technical Library" was shortened to "Library" to pay for "Framework" in
++  // character width. The nav is `overflow: clip` with `min-width: max-content`
++  // (see F-50), so an item added without removing width somewhere is an item
++  // that clips silently at 1200px. Net width here is NARROWER than before:
++  // 17 characters out, 7 + 9 in. Re-measure on the next --full runtime pass.
++  { label: 'Library', href: '/technical-library' },
+   { label: 'Papers', href: '/papers' },
++  { label: 'Framework', href: '/framework' },
+   { label: 'FloorForge', href: '/products/floorforge' },
+   { label: 'Reviews', href: '#reviews' },
+   { label: 'FAQ', href: '#faq' },
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 7adb735..fd30965 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -148,6 +148,9 @@ export default function SiteFooter() {
+               from the header or from inside another article. */}
+           <FooterCol title="Learn" mobile={m}>
+             <div className="footer-links">
++              <a href="/framework">The Well-Installed Framework</a>
++              <a href="/framework/assess">Score a quote</a>
++              <a href="/guides">Decision Guides</a>
+               <a href="/papers">Technical Papers</a>
+               <a href="/technical-library">Technical Library</a>
+               <a href="/blog">Articles</a>
+diff --git a/apps/web/app/framework/assess/AssessClient.tsx b/apps/web/app/framework/assess/AssessClient.tsx
+new file mode 100644
+index 0000000..64a53a1
+--- /dev/null
++++ b/apps/web/app/framework/assess/AssessClient.tsx
+@@ -0,0 +1,195 @@
++'use client';
++
++import { useMemo, useState } from 'react';
++import Link from 'next/link';
++import {
++  PILLARS,
++  FRAMEWORK_VERSION,
++  score,
++  pillarScore,
++  criterionCount,
++  type Answer,
++} from '@/lib/framework';
++
++/**
++ * The self-assessment.
++ *
++ * DESIGN DECISION — NOTHING IS SENT ANYWHERE.
++ *
++ * This scores a quote the visitor received, very often from a competitor. The
++ * moment it posts anywhere it becomes a lead-capture form wearing a tool's
++ * clothes, and the honest answer to "should I trust this scoring?" becomes no.
++ * So the whole thing runs in component state: no fetch, no analytics event, no
++ * localStorage, no hidden field. The result is printed by the browser.
++ *
++ * That constraint is also what makes it credible enough to be linked to by
++ * someone who is not a customer, which is the entire distribution strategy.
++ */
++
++const VERDICT: Record<
++  string,
++  { label: string; tone: 'bad' | 'warn' | 'ok' | 'good' | 'neutral'; text: string }
++> = {
++  incomplete: {
++    label: 'Not enough answered',
++    tone: 'neutral',
++    text: 'Answer more of the criteria to get a verdict. If you cannot answer a question from the quote in front of you, that is itself the finding — mark it Unsure and ask.',
++  },
++  defect: {
++    label: 'Unresolved defect',
++    tone: 'bad',
++    text: 'At least one critical criterion is answered no. A critical failure is not offset by a high score elsewhere: it is a specific, physical, predictable way this floor fails. Resolve it before signing anything.',
++  },
++  weak: {
++    label: 'Weak',
++    tone: 'warn',
++    text: 'No critical failures, but a large share of the framework is unmet or unanswered. Most of these are questions the contractor can still answer — go back and ask them in writing.',
++  },
++  sound: {
++    label: 'Sound',
++    tone: 'ok',
++    text: 'No critical failures and most of the framework is met. Close the remaining gaps in writing before the deposit, not after.',
++  },
++  strong: {
++    label: 'Strong',
++    tone: 'good',
++    text: 'This quote meets nearly all of the framework. Whoever wrote it has done the diligence before quoting rather than after.',
++  },
++};
++
++export default function AssessClient() {
++  const [answers, setAnswers] = useState<Record<string, Answer>>({});
++  const result = useMemo(() => score(answers), [answers]);
++  const answered = Object.keys(answers).length;
++  const verdict = VERDICT[result.verdict];
++
++  const set = (id: string, a: Answer) =>
++    setAnswers((prev) => (prev[id] === a ? (({ [id]: _drop, ...rest }) => rest)(prev) : { ...prev, [id]: a }));
++
++  const unmet = PILLARS.flatMap((p) => p.criteria).filter((c) => answers[c.id] === 'no');
++  const unsure = PILLARS.flatMap((p) => p.criteria).filter((c) => answers[c.id] === 'unsure');
++
++  return (
++    <>
++      <div className="fw-scorebar" role="status" aria-live="polite">
++        <div className="shell fw-scorebar-inner">
++          <div className="fw-score-figure">
++            <span className="fw-score-pct">{result.pct}%</span>
++            <span className="fw-score-of">
++              {answered} of {criterionCount()} answered
++            </span>
++          </div>
++          <div className={`fw-verdict fw-verdict--${verdict.tone}`}>
++            <strong>{verdict.label}</strong>
++            <span>{verdict.text}</span>
++          </div>
++          <div className="fw-scorebar-actions">
++            <button type="button" className="fw-btn" onClick={() => window.print()}>
++              Print / save as PDF
++            </button>
++            <button type="button" className="fw-btn fw-btn--ghost" onClick={() => setAnswers({})}>
++              Reset
++            </button>
++          </div>
++        </div>
++      </div>
++
++      {PILLARS.map((pillar) => {
++        const ps = pillarScore(pillar, answers);
++        return (
++          <section key={pillar.id} className="tlx-section" aria-label={pillar.name}>
++            <div className="shell">
++              <p className="tlx-kicker">Pillar {pillar.number}</p>
++              <div className="fw-pillar-head">
++                <h2 className="tlx-h2">{pillar.name}</h2>
++                <span className="fw-pillar-score">{ps.pct}%</span>
++              </div>
++              <p className="tlx-note">{pillar.intent}</p>
++
++              <ul className="fw-q-list">
++                {pillar.criteria.map((c) => {
++                  const a = answers[c.id];
++                  return (
++                    <li key={c.id} className={`fw-q${a === 'no' ? ' fw-q--no' : ''}`}>
++                      <div className="fw-q-text">
++                        <span className="fw-id">{c.id}</span>
++                        <p>{c.question}</p>
++                        {a === 'no' && <p className="fw-risk">{c.risk}</p>}
++                      </div>
++                      <div
++                        className="fw-choice"
++                        role="group"
++                        aria-label={`Criterion ${c.id}: ${c.question}`}
++                      >
++                        {(['yes', 'unsure', 'no'] as Answer[]).map((v) => (
++                          <button
++                            key={v}
++                            type="button"
++                            className={`fw-choice-btn fw-choice-btn--${v}${a === v ? ' is-on' : ''}`}
++                            aria-pressed={a === v}
++                            onClick={() => set(c.id, v)}
++                          >
++                            {v === 'yes' ? 'Yes' : v === 'unsure' ? 'Unsure' : 'No'}
++                          </button>
++                        ))}
++                      </div>
++                    </li>
++                  );
++                })}
++              </ul>
++            </div>
++          </section>
++        );
++      })}
++
++      {(unmet.length > 0 || unsure.length > 0) && (
++        <section className="tlx-section" aria-label="What to ask next">
++          <div className="shell">
++            <p className="tlx-kicker">Result</p>
++            <h2 className="tlx-h2">What to take back to them, in writing</h2>
++            {unmet.length > 0 && (
++              <>
++                <h3 className="fw-sub">Unmet — {unmet.length}</h3>
++                <ul className="fw-followup">
++                  {unmet.map((c) => (
++                    <li key={c.id}>
++                      <span className={`fw-sev fw-sev--${c.severity}`}>{c.severity}</span>
++                      <div>
++                        <p>{c.question}</p>
++                        <p className="fw-risk">{c.risk}</p>
++                      </div>
++                    </li>
++                  ))}
++                </ul>
++              </>
++            )}
++            {unsure.length > 0 && (
++              <>
++                <h3 className="fw-sub">Unanswered by the quote — {unsure.length}</h3>
++                <p className="tlx-note">
++                  A quote that does not answer these is not necessarily wrong. It is incomplete, and
++                  the answers should arrive before a deposit rather than after.
++                </p>
++                <ul className="fw-followup">
++                  {unsure.map((c) => (
++                    <li key={c.id}>
++                      <span className="fw-sev fw-sev--advisory">ask</span>
++                      <div>
++                        <p>{c.question}</p>
++                      </div>
++                    </li>
++                  ))}
++                </ul>
++              </>
++            )}
++            <p className="tlx-note">
++              Scored against{' '}
++              <Link href="/framework">Well-Installed Framework v{FRAMEWORK_VERSION}</Link>. Every
++              criterion above is sourced to a paper published on this site.
++            </p>
++          </div>
++        </section>
++      )}
++    </>
++  );
++}
+diff --git a/apps/web/app/framework/assess/page.tsx b/apps/web/app/framework/assess/page.tsx
+new file mode 100644
+index 0000000..7800373
+--- /dev/null
++++ b/apps/web/app/framework/assess/page.tsx
+@@ -0,0 +1,58 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import AssessClient from './AssessClient';
++import { FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const metadata: Metadata = {
++  title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION} | EcoWoods`,
++  description:
++    'Score any hardwood flooring quote against 27 published criteria across six pillars. Runs entirely in your browser — nothing is sent anywhere. Works on any contractor, including us.',
++  alternates: { canonical: '/framework/assess' },
++  openGraph: {
++    title: 'Score a hardwood flooring quote',
++    description:
++      'A free self-assessment against a published, versioned framework. Nothing is submitted or stored.',
++    type: 'website',
++    url: `${SITE_URL}/framework/assess`,
++  },
++};
++
++export default function AssessPage() {
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Framework', url: `${SITE_URL}/framework` },
++          { name: 'Self-assessment', url: `${SITE_URL}/framework/assess` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
++            <Link href="/framework">Framework</Link> <span aria-hidden="true">/</span>{' '}
++            <span>Self-assessment</span>
++          </nav>
++          <h1 className="tlx-title">Score a quote</h1>
++          <p className="tlx-lede">
++            {criterionCount()} questions across six pillars, drawn from the technical papers on this
++            site. Answer them against the quote in front of you — ours or anyone else&rsquo;s — and
++            the result tells you which questions to go back and ask in writing.
++          </p>
++          <p className="fw-privacy">
++            Nothing here is sent anywhere. No submission, no account, no stored answers, no tracking
++            of what you enter. The result is printed by your browser. That is deliberate: a tool for
++            scoring someone else&rsquo;s quote is only worth using if it is not also a lead form.
++          </p>
++        </div>
++      </header>
++
++      <AssessClient />
++    </div>
++  );
++}
+diff --git a/apps/web/app/framework/page.tsx b/apps/web/app/framework/page.tsx
+new file mode 100644
+index 0000000..c7a49a0
+--- /dev/null
++++ b/apps/web/app/framework/page.tsx
+@@ -0,0 +1,228 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import {
++  PILLARS,
++  FRAMEWORK_NAME,
++  FRAMEWORK_VERSION,
++  FRAMEWORK_PUBLISHED_AT,
++  criterionCount,
++  severityCount,
++  sourceHref,
++} from '@/lib/framework';
++import { getGuides } from '@/lib/guides';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++/**
++ * /framework — the published specification.
++ *
++ * This page exists to be cited, not to convert. Every criterion has a stable
++ * public id and an anchor, so "Well-Installed Framework v1.0, criterion 2.4"
++ * resolves to a URL that will still mean the same thing in five years. That
++ * durability is the whole product: a standard that renumbers itself is not a
++ * standard.
++ *
++ * Built on the .tlx-* editorial surface, with a .fw-* component namespace
++ * inside it — the same relationship .wp-* has to the papers. Not a third design
++ * system.
++ */
++
++export const metadata: Metadata = {
++  title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION} | EcoWoods`,
++  description:
++    'A published, versioned specification for judging a hardwood flooring installation: six pillars, twenty-seven binary criteria, every one sourced to a technical paper. Use it on any contractor, including us.',
++  alternates: { canonical: '/framework' },
++  openGraph: {
++    title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}`,
++    description:
++      'Six pillars and twenty-seven criteria for judging a hardwood installation. Publicly versioned, fully sourced, free to cite.',
++    type: 'article',
++    url: `${SITE_URL}/framework`,
++  },
++};
++
++const SEVERITY_LABEL: Record<string, string> = {
++  critical: 'Critical',
++  major: 'Major',
++  advisory: 'Advisory',
++};
++
++export default function FrameworkPage() {
++  const guides = getGuides();
++
++  const schema = {
++    '@context': 'https://schema.org',
++    '@type': 'TechArticle',
++    '@id': `${SITE_URL}/framework#specification`,
++    headline: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}`,
++    description:
++      'A versioned public specification for judging a hardwood flooring installation across six pillars.',
++    url: `${SITE_URL}/framework`,
++    datePublished: FRAMEWORK_PUBLISHED_AT,
++    version: FRAMEWORK_VERSION,
++    inLanguage: 'en-CA',
++    isAccessibleForFree: true,
++    license: 'https://creativecommons.org/licenses/by/4.0/',
++    author: { '@id': `${SITE_URL}/#organization` },
++    publisher: { '@id': `${SITE_URL}/#organization` },
++    hasPart: PILLARS.map((p) => ({
++      '@type': 'CreativeWork',
++      name: `Pillar ${p.number} — ${p.name}`,
++      url: `${SITE_URL}/framework#${p.id}`,
++      description: p.intent,
++    })),
++  };
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript schema={schema} />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Framework', url: `${SITE_URL}/framework` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Framework</span>
++          </nav>
++          <h1 className="tlx-title">{FRAMEWORK_NAME}</h1>
++          <p className="tlx-lede">
++            A published specification for judging a hardwood flooring installation — six pillars and{' '}
++            {criterionCount()} binary criteria. Every criterion is sourced to a technical paper on
++            this site. It is written to be used on any contractor in the GTA, including us.
++          </p>
++          <p className="fw-meta">
++            <span>Version {FRAMEWORK_VERSION}</span>
++            <span aria-hidden="true">·</span>
++            <span>Published {FRAMEWORK_PUBLISHED_AT}</span>
++            <span aria-hidden="true">·</span>
++            <span>{severityCount('critical')} critical criteria</span>
++            <span aria-hidden="true">·</span>
++            <span>Free to cite</span>
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta" href="/framework/assess">
++              Score a quote against the framework →
++            </Link>
++            <Link className="fw-cta fw-cta--ghost" href="/papers">
++              Read the source papers
++            </Link>
++          </div>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="How to use this framework">
++        <div className="shell">
++          <p className="tlx-kicker">How to use it</p>
++          <h2 className="tlx-h2">Three ways this is meant to be used</h2>
++          <div className="fw-use">
++            <div className="fw-use-item">
++              <h3>As a homeowner</h3>
++              <p>
++                Take the criteria to every quote you are holding. Any critical criterion answered
++                &ldquo;no&rdquo; is an unresolved defect in that quote, regardless of the price.
++              </p>
++            </div>
++            <div className="fw-use-item">
++              <h3>As a contractor</h3>
++              <p>
++                Use it as a pre-installation checklist. It is published under CC BY — attribute the
++                version and you may reproduce it.
++              </p>
++            </div>
++            <div className="fw-use-item">
++              <h3>As a citation</h3>
++              <p>
++                Every criterion has a permanent id. Cite as{' '}
++                <code>Well-Installed Framework v{FRAMEWORK_VERSION}, criterion 2.4</code>; ids are
++                never reused or renumbered in place.
++              </p>
++            </div>
++          </div>
++        </div>
++      </section>
++
++      {PILLARS.map((pillar) => (
++        <section key={pillar.id} id={pillar.id} className="tlx-section" aria-label={pillar.name}>
++          <div className="shell">
++            <p className="tlx-kicker">Pillar {pillar.number}</p>
++            <h2 className="tlx-h2">{pillar.name}</h2>
++            <p className="tlx-note">{pillar.intent}</p>
++
++            <ol className="fw-criteria">
++              {pillar.criteria.map((c) => {
++                const href = sourceHref(c);
++                return (
++                  <li key={c.id} id={`c-${c.id}`} className="fw-criterion">
++                    <div className="fw-criterion-head">
++                      <span className="fw-id">{c.id}</span>
++                      <span className={`fw-sev fw-sev--${c.severity}`}>
++                        {SEVERITY_LABEL[c.severity]}
++                      </span>
++                    </div>
++                    <p className="fw-question">{c.question}</p>
++                    <p className="fw-risk">
++                      <strong>If not:</strong> {c.risk}
++                    </p>
++                    {href && (
++                      <p className="fw-source">
++                        Source: <Link href={href}>{c.source.section.replace(/-/g, ' ')}</Link>
++                      </p>
++                    )}
++                  </li>
++                );
++              })}
++            </ol>
++          </div>
++        </section>
++      ))}
++
++      <section className="tlx-section" aria-label="Related guides">
++        <div className="shell">
++          <p className="tlx-kicker">Applied</p>
++          <h2 className="tlx-h2">Guides that apply the framework</h2>
++          <p className="tlx-note">
++            The framework says what to check. These say what to do about the answer.
++          </p>
++          <div className="tlx-grid">
++            {guides.map((g) => (
++              <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                <span className="tlx-card-tag">
++                  {g.kind === 'decision' ? 'Decision guide' : 'Reference installation'}
++                </span>
++                <h3>{g.title}</h3>
++                <p>{g.question}</p>
++                <div className="tlx-card-data">
++                  <span>{g.readingMinutes} min</span>
++                </div>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Versioning">
++        <div className="shell">
++          <p className="tlx-kicker">Contract</p>
++          <h2 className="tlx-h2">What the version number promises</h2>
++          <p className="tlx-note">
++            Criterion ids are permanent. Adding, removing or rewording a criterion is a minor version
++            bump. Changing what a pillar means is a major one. A criterion is never edited in place
++            without the version moving, so a citation to v{FRAMEWORK_VERSION} will always resolve to
++            the text that was published on {FRAMEWORK_PUBLISHED_AT}.
++          </p>
++          <p className="tlx-note">
++            No criterion in this framework asserts anything that is not already published in a paper
++            on this site. That constraint is enforced by a build guard, not by editorial intent —{' '}
++            <code>scripts/verify-framework.mjs</code> resolves every citation and fails the build on
++            any that does not exist.
++          </p>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 2beed91..8a80bd3 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -7965,3 +7965,234 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   .fc-swatches, .fc-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+   .fc-pills[data-count='4'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ }
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   FRAMEWORK  ·  .fw-*   —  the Well-Installed Framework and its self-assessment
++
++   A component namespace INSIDE the .tlx-* editorial system, exactly as .wp-* is
++   for the papers. Not a third design system: every surface, line and text
++   colour below comes from the same semantic tokens .tlx-* uses, so the two
++   cannot drift apart and neither needs its own theme pass.
++
++   No primitive token (--walnut-*, --oak-*, --cream-*, --maple-*) is referenced
++   here. Status colour comes from --success / --warning / --danger, which carry
++   measured contrast ratios in the token block at the top of this file.
++   ═════════════════════════════════════════════════════════════════════════ */
++
++.fw-meta { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; margin: 1.1rem 0 0;
++  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.05em;
++  text-transform: uppercase; color: var(--muted); }
++
++.fw-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.6rem; }
++.fw-cta { display: inline-flex; align-items: center; min-height: 44px;
++  padding: 0.7rem 1.35rem; border-radius: 999px; text-decoration: none;
++  font-weight: 600; font-size: 0.95rem; line-height: 1.2;
++  background: var(--copper); color: var(--on-dark);
++  border: 1px solid var(--copper);
++  transition: background-color 160ms ease, transform 160ms ease; }
++.fw-cta:hover { background: var(--copper-deep); border-color: var(--copper-deep);
++  transform: translateY(-1px); }
++.fw-cta:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
++.fw-cta--ghost { background: transparent; color: var(--copper-text);
++  border-color: var(--line); }
++.fw-cta--ghost:hover { background: var(--surface-2); border-color: var(--copper);
++  color: var(--copper-text); }
++
++.fw-privacy { margin: 1.4rem 0 0; padding: 1rem 1.2rem; border-radius: 12px;
++  background: var(--surface-2); border: 1px solid var(--line);
++  color: var(--ink-soft); font-size: 0.9rem; line-height: 1.6;
++  max-width: 68ch; }
++
++/* ── the specification: one addressable criterion per list item ── */
++.fw-use { display: grid; gap: 1rem; margin-top: 1.4rem;
++  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
++.fw-use-item { background: var(--surface-1); border: 1px solid var(--line);
++  border-left: 3px solid var(--copper); border-radius: 12px; padding: 1.25rem 1.35rem; }
++.fw-use-item h3 { font-family: var(--font-display); font-size: 1.02rem; margin: 0 0 0.45rem; }
++.fw-use-item p { color: var(--ink-soft); font-size: 0.9rem; line-height: 1.6; margin: 0; }
++.fw-use-item code { font-family: var(--font-mono); font-size: 0.8em; }
++
++.fw-criteria { list-style: none; margin: 1.4rem 0 0; padding: 0;
++  display: grid; gap: 0.85rem; }
++.fw-criterion { background: var(--surface-1); border: 1px solid var(--line);
++  border-radius: 12px; padding: 1.15rem 1.3rem; scroll-margin-top: 6rem; }
++.fw-criterion-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
++.fw-id { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
++  letter-spacing: 0.06em; color: var(--copper-text); }
++.fw-question { font-size: 1rem; line-height: 1.55; margin: 0 0 0.5rem; color: var(--ink); }
++.fw-risk { font-size: 0.88rem; line-height: 1.6; margin: 0; color: var(--ink-soft); }
++.fw-source { margin: 0.6rem 0 0; font-family: var(--font-mono); font-size: 0.72rem;
++  letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
++.fw-source a { color: var(--copper-text); }
++
++.fw-sev { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.09em;
++  text-transform: uppercase; font-weight: 600; padding: 0.2rem 0.5rem;
++  border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
++.fw-sev--critical { color: var(--danger); }
++.fw-sev--major    { color: var(--warning); }
++.fw-sev--advisory { color: var(--muted); }
++
++.fw-sub { font-family: var(--font-display); font-size: 1.05rem; margin: 1.6rem 0 0.6rem; }
++
++/* ── the assessment ── */
++.fw-scorebar { position: sticky; top: 0; z-index: 20;
++  background: var(--surface-2); border-bottom: 1px solid var(--line); }
++.fw-scorebar-inner { display: grid; gap: 0.9rem; padding: 0.9rem 0;
++  align-items: center; grid-template-columns: minmax(0, 1fr); }
++@media (min-width: 900px) {
++  .fw-scorebar-inner { grid-template-columns: auto minmax(0, 1fr) auto; gap: 1.5rem; }
++}
++.fw-score-figure { display: flex; align-items: baseline; gap: 0.5rem; }
++.fw-score-pct { font-family: var(--font-display); font-size: 2rem; font-weight: 700;
++  line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
++.fw-score-of { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em;
++  text-transform: uppercase; color: var(--muted); }
++.fw-verdict { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;
++  border-left: 3px solid var(--line); padding-left: 0.85rem; }
++.fw-verdict strong { font-size: 0.95rem; }
++.fw-verdict span { font-size: 0.85rem; line-height: 1.5; color: var(--ink-soft); }
++.fw-verdict--bad     { border-left-color: var(--danger); }
++.fw-verdict--bad strong     { color: var(--danger); }
++.fw-verdict--warn    { border-left-color: var(--warning); }
++.fw-verdict--warn strong    { color: var(--warning); }
++.fw-verdict--ok      { border-left-color: var(--copper); }
++.fw-verdict--ok strong      { color: var(--copper-text); }
++.fw-verdict--good    { border-left-color: var(--success); }
++.fw-verdict--good strong    { color: var(--success); }
++.fw-verdict--neutral { border-left-color: var(--line); }
++
++.fw-scorebar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
++.fw-btn { min-height: 44px; padding: 0.55rem 1rem; border-radius: 10px; cursor: pointer;
++  font-family: inherit; font-size: 0.85rem; font-weight: 600; line-height: 1.2;
++  background: var(--copper); color: var(--on-dark); border: 1px solid var(--copper); }
++.fw-btn:hover { background: var(--copper-deep); border-color: var(--copper-deep); }
++.fw-btn:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
++.fw-btn--ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
++.fw-btn--ghost:hover { background: var(--surface-1); color: var(--ink); border-color: var(--copper); }
++
++.fw-pillar-head { display: flex; align-items: baseline; justify-content: space-between;
++  gap: 1rem; flex-wrap: wrap; }
++.fw-pillar-score { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600;
++  color: var(--copper-text); font-variant-numeric: tabular-nums; }
++
++.fw-q-list { list-style: none; margin: 1.3rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
++.fw-q { display: grid; gap: 0.8rem; padding: 1.05rem 1.2rem;
++  background: var(--surface-1); border: 1px solid var(--line); border-radius: 12px;
++  grid-template-columns: minmax(0, 1fr); }
++@media (min-width: 760px) {
++  .fw-q { grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 1.25rem; }
++}
++.fw-q--no { border-color: var(--danger); }
++.fw-q-text { min-width: 0; }
++.fw-q-text p { margin: 0.3rem 0 0; font-size: 0.97rem; line-height: 1.55; color: var(--ink); }
++.fw-q-text .fw-risk { margin-top: 0.5rem; }
++
++.fw-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
++@media (min-width: 760px) { .fw-choice { grid-template-columns: repeat(3, 5.2rem); } }
++.fw-choice-btn { min-height: 44px; padding: 0.5rem 0.4rem; border-radius: 10px; cursor: pointer;
++  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.05em;
++  text-transform: uppercase; font-weight: 600; line-height: 1.2;
++  background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line);
++  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease; }
++.fw-choice-btn:hover { border-color: var(--copper); color: var(--ink); }
++.fw-choice-btn:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
++.fw-choice-btn--yes.is-on    { background: var(--success); color: var(--on-dark);
++  border-color: var(--success); }
++.fw-choice-btn--unsure.is-on { background: var(--warning); color: var(--on-dark);
++  border-color: var(--warning); }
++.fw-choice-btn--no.is-on     { background: var(--danger);  color: var(--on-dark);
++  border-color: var(--danger); }
++
++.fw-followup { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
++.fw-followup li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.8rem;
++  align-items: start; padding: 0.9rem 1.1rem; background: var(--surface-1);
++  border: 1px solid var(--line); border-radius: 12px; }
++.fw-followup p { margin: 0; font-size: 0.94rem; line-height: 1.55; }
++.fw-followup .fw-risk { margin-top: 0.35rem; }
++
++/* The scorebar is chrome, not content: it should not be part of a printed
++   result, and neither should the answer controls once the answers are visible
++   in the follow-up list. */
++@media print {
++  .fw-scorebar { position: static; }
++  .fw-scorebar-actions, .fw-choice { display: none; }
++  .fw-criterion, .fw-q, .fw-followup li { break-inside: avoid; }
++}
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   GUIDES  ·  .gd-*   —  decision guides and reference installations
++   Same rule as .fw-*: a component namespace inside .tlx-*, semantic tokens only.
++   ═════════════════════════════════════════════════════════════════════════ */
++
++.gd-kind { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.11em;
++  text-transform: uppercase; color: var(--copper-text); margin: 0 0 0.6rem; }
++.gd-question { font-family: var(--font-display); font-size: clamp(1.05rem, 2vw, 1.3rem);
++  line-height: 1.4; color: var(--ink); margin: 0 0 0.9rem; max-width: 60ch; }
++
++.gd-criteria { list-style: none; counter-reset: gdc; margin: 1.3rem 0 0; padding: 0;
++  display: grid; gap: 0.85rem; }
++.gd-criteria li { counter-increment: gdc; background: var(--surface-1);
++  border: 1px solid var(--line); border-radius: 12px; padding: 1.15rem 1.3rem; }
++.gd-criteria h3 { font-family: var(--font-display); font-size: 1.02rem; margin: 0 0 0.4rem; }
++.gd-criteria h3::before { content: counter(gdc) '. '; color: var(--copper-text);
++  font-family: var(--font-mono); font-size: 0.85em; }
++.gd-criteria p { margin: 0; color: var(--ink-soft); font-size: 0.93rem; line-height: 1.6; }
++
++.gd-options { display: grid; gap: 1rem; margin-top: 1.3rem;
++  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
++.gd-option { background: var(--surface-1); border: 1px solid var(--line);
++  border-top: 3px solid var(--copper); border-radius: 12px; padding: 1.3rem 1.4rem; }
++.gd-option h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 0.6rem; }
++.gd-when { margin: 0 0 0.7rem; font-size: 0.93rem; line-height: 1.6; color: var(--ink); }
++.gd-option ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft);
++  font-size: 0.9rem; line-height: 1.6; }
++.gd-option li { margin-bottom: 0.3rem; }
++
++.gd-spec { display: grid; gap: 1px; margin: 1.3rem 0 0; background: var(--line);
++  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
++.gd-spec-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.15rem;
++  background: var(--surface-1); padding: 0.85rem 1.15rem; }
++@media (min-width: 640px) {
++  .gd-spec-row { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 1rem;
++    align-items: baseline; }
++}
++.gd-spec dt { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em;
++  text-transform: uppercase; color: var(--muted); }
++.gd-spec dd { margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--ink); }
++
++.gd-table-wrap { margin-top: 1.3rem; overflow-x: auto; border: 1px solid var(--line);
++  border-radius: 12px; }
++.gd-table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
++.gd-table th, .gd-table td { text-align: left; padding: 0.8rem 1.1rem;
++  border-bottom: 1px solid var(--line); }
++.gd-table thead th { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em;
++  text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
++.gd-table tbody tr:last-child td { border-bottom: 0; }
++.gd-table td:first-child { font-weight: 600; color: var(--ink); }
++
++.gd-tree { list-style: none; counter-reset: gdt; margin: 1.3rem 0 0; padding: 0;
++  display: grid; gap: 0.55rem; }
++.gd-tree li { counter-increment: gdt; position: relative;
++  padding: 0.85rem 1.15rem 0.85rem 3.1rem;
++  background: var(--surface-1); border: 1px solid var(--line); border-radius: 12px;
++  font-size: 0.95rem; line-height: 1.55; color: var(--ink); }
++.gd-tree li::before { content: counter(gdt); position: absolute; left: 1.1rem; top: 0.85rem;
++  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
++  color: var(--copper-text); }
++
++.gd-watch { list-style: none; margin: 1.3rem 0 0; padding: 0; display: grid; gap: 0.55rem; }
++.gd-watch li { padding: 0.9rem 1.15rem; background: var(--surface-1);
++  border: 1px solid var(--line); border-left: 3px solid var(--warning);
++  border-radius: 0 12px 12px 0; font-size: 0.93rem; line-height: 1.6; color: var(--ink-soft); }
++
++.gd-reco { margin: 1.2rem 0 0; padding: 1.3rem 1.5rem; border-radius: 14px;
++  background: var(--surface-2); border: 1px solid var(--line);
++  border-left: 3px solid var(--copper);
++  font-size: 1.02rem; line-height: 1.65; color: var(--ink); max-width: 68ch; }
++.gd-conditions { margin: 1rem 0 0; padding-left: 1.2rem; color: var(--ink-soft);
++  font-size: 0.92rem; line-height: 1.65; max-width: 68ch; }
++.gd-conditions li { margin-bottom: 0.4rem; }
++
++.gd-sources { list-style: none; margin: 1.1rem 0 0; padding: 0; display: grid; gap: 0.4rem; }
++.gd-sources li { font-size: 0.92rem; line-height: 1.55; }
++.gd-sources a { color: var(--copper-text); }
+diff --git a/apps/web/app/guides/[slug]/page.tsx b/apps/web/app/guides/[slug]/page.tsx
+new file mode 100644
+index 0000000..b7edb35
+--- /dev/null
++++ b/apps/web/app/guides/[slug]/page.tsx
+@@ -0,0 +1,309 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { notFound } from 'next/navigation';
++import { getGuide, getGuides, GUIDES } from '@/lib/guides';
++import { pillarById } from '@/lib/framework';
++import { getPaper } from '@/lib/papers';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export function generateStaticParams() {
++  return GUIDES.map((g) => ({ slug: g.slug }));
++}
++
++export async function generateMetadata({
++  params,
++}: {
++  params: Promise<{ slug: string }>;
++}): Promise<Metadata> {
++  const { slug } = await params;
++  const guide = getGuide(slug);
++  if (!guide) return { title: 'Not found | EcoWoods' };
++  return {
++    title: `${guide.title} | EcoWoods`,
++    description: guide.summary,
++    alternates: { canonical: `/guides/${guide.slug}` },
++    openGraph: {
++      title: guide.question,
++      description: guide.summary,
++      type: 'article',
++      url: `${SITE_URL}/guides/${guide.slug}`,
++      publishedTime: guide.publishedAt,
++    },
++  };
++}
++
++export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
++  const { slug } = await params;
++  const guide = getGuide(slug);
++  if (!guide) notFound();
++
++  const kindLabel = guide.kind === 'decision' ? 'Decision guide' : 'Reference installation';
++  const siblings = getGuides(guide.kind).filter((g) => g.slug !== guide.slug);
++
++  const schema = {
++    '@context': 'https://schema.org',
++    '@type': 'TechArticle',
++    '@id': `${SITE_URL}/guides/${guide.slug}#article`,
++    headline: guide.title,
++    alternativeHeadline: guide.question,
++    description: guide.summary,
++    url: `${SITE_URL}/guides/${guide.slug}`,
++    datePublished: guide.publishedAt,
++    inLanguage: 'en-CA',
++    isAccessibleForFree: true,
++    author: { '@id': `${SITE_URL}/#organization` },
++    publisher: { '@id': `${SITE_URL}/#organization` },
++    isPartOf: { '@id': `${SITE_URL}/#website` },
++    citation: guide.sources
++      .filter((s) => getPaper(s.paper))
++      .map((s) => ({
++        '@type': 'CreativeWork',
++        url: `${SITE_URL}/papers/${s.paper}#${s.section}`,
++      })),
++  };
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript schema={schema} />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Guides', url: `${SITE_URL}/guides` },
++          { name: guide.title, url: `${SITE_URL}/guides/${guide.slug}` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
++            <Link href="/guides">Guides</Link> <span aria-hidden="true">/</span>{' '}
++            <span>{guide.title}</span>
++          </nav>
++          <p className="gd-kind">{kindLabel}</p>
++          <h1 className="tlx-title">{guide.title}</h1>
++          <p className="gd-question">{guide.question}</p>
++          <p className="tlx-lede">{guide.summary}</p>
++          <p className="fw-meta">
++            <span>{guide.readingMinutes} min read</span>
++            <span aria-hidden="true">·</span>
++            <span>Published {guide.publishedAt}</span>
++          </p>
++        </div>
++      </header>
++
++      {guide.criteria && guide.criteria.length > 0 && (
++        <section className="tlx-section" aria-label="What decides this">
++          <div className="shell">
++            <p className="tlx-kicker">First</p>
++            <h2 className="tlx-h2">What actually decides this</h2>
++            <ol className="gd-criteria">
++              {guide.criteria.map((c) => (
++                <li key={c.name}>
++                  <h3>{c.name}</h3>
++                  <p>{c.why}</p>
++                </li>
++              ))}
++            </ol>
++          </div>
++        </section>
++      )}
++
++      {guide.options && guide.options.length > 0 && (
++        <section className="tlx-section" aria-label="The options">
++          <div className="shell">
++            <p className="tlx-kicker">Options</p>
++            <h2 className="tlx-h2">The choices, and when each is correct</h2>
++            <div className="gd-options">
++              {guide.options.map((o) => (
++                <div key={o.name} className="gd-option">
++                  <h3>{o.name}</h3>
++                  <p className="gd-when">
++                    <strong>Correct when:</strong> {o.whenCorrect}
++                  </p>
++                  {o.notes && (
++                    <ul>
++                      {o.notes.map((n) => (
++                        <li key={n}>{n}</li>
++                      ))}
++                    </ul>
++                  )}
++                </div>
++              ))}
++            </div>
++          </div>
++        </section>
++      )}
++
++      {guide.spec && guide.spec.length > 0 && (
++        <section className="tlx-section" aria-label="Specification">
++          <div className="shell">
++            <p className="tlx-kicker">Specification</p>
++            <h2 className="tlx-h2">The assembled specification</h2>
++            <dl className="gd-spec">
++              {guide.spec.map((s) => (
++                <div key={s.label} className="gd-spec-row">
++                  <dt>{s.label}</dt>
++                  <dd>{s.value}</dd>
++                </div>
++              ))}
++            </dl>
++          </div>
++        </section>
++      )}
++
++      {guide.table && (
++        <section className="tlx-section" aria-label="Comparison">
++          <div className="shell">
++            <p className="tlx-kicker">Reference</p>
++            <h2 className="tlx-h2">{guide.table.caption ?? 'Comparison'}</h2>
++            <div className="gd-table-wrap">
++              <table className="gd-table">
++                <thead>
++                  <tr>
++                    {guide.table.head.map((h) => (
++                      <th key={h} scope="col">
++                        {h}
++                      </th>
++                    ))}
++                  </tr>
++                </thead>
++                <tbody>
++                  {guide.table.rows.map((row, i) => (
++                    <tr key={i}>
++                      {row.map((cell, j) => (
++                        <td key={j}>{cell}</td>
++                      ))}
++                    </tr>
++                  ))}
++                </tbody>
++              </table>
++            </div>
++          </div>
++        </section>
++      )}
++
++      {guide.decisionTree && guide.decisionTree.length > 0 && (
++        <section className="tlx-section" aria-label="Decision tree">
++          <div className="shell">
++            <p className="tlx-kicker">Decide</p>
++            <h2 className="tlx-h2">The decision tree, in the order we walk it</h2>
++            <ol className="gd-tree">
++              {guide.decisionTree.map((step, i) => (
++                <li key={i}>{step}</li>
++              ))}
++            </ol>
++          </div>
++        </section>
++      )}
++
++      {guide.sequence && guide.sequence.length > 0 && (
++        <section className="tlx-section" aria-label="Sequence">
++          <div className="shell">
++            <p className="tlx-kicker">Sequence</p>
++            <h2 className="tlx-h2">The sequence, start to finish</h2>
++            <ol className="gd-tree">
++              {guide.sequence.map((step, i) => (
++                <li key={i}>{step}</li>
++              ))}
++            </ol>
++          </div>
++        </section>
++      )}
++
++      {guide.watchpoints && guide.watchpoints.length > 0 && (
++        <section className="tlx-section" aria-label="Where this goes wrong">
++          <div className="shell">
++            <p className="tlx-kicker">Failure modes</p>
++            <h2 className="tlx-h2">Where this goes wrong</h2>
++            <ul className="gd-watch">
++              {guide.watchpoints.map((w) => (
++                <li key={w}>{w}</li>
++              ))}
++            </ul>
++          </div>
++        </section>
++      )}
++
++      <section className="tlx-section" aria-label="Recommendation">
++        <div className="shell">
++          <p className="tlx-kicker">Answer</p>
++          <h2 className="tlx-h2">What we recommend</h2>
++          <p className="gd-reco">{guide.recommendation.text}</p>
++          {guide.recommendation.conditions && (
++            <ul className="gd-conditions">
++              {guide.recommendation.conditions.map((c) => (
++                <li key={c}>{c}</li>
++              ))}
++            </ul>
++          )}
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Sources and framework">
++        <div className="shell">
++          <p className="tlx-kicker">Provenance</p>
++          <h2 className="tlx-h2">Where every claim on this page comes from</h2>
++          <ul className="gd-sources">
++            {guide.sources.map((s) => {
++              const paper = getPaper(s.paper);
++              if (!paper) return null;
++              return (
++                <li key={`${s.paper}#${s.section}`}>
++                  <Link href={`/papers/${s.paper}#${s.section}`}>
++                    {paper.title} — {s.section.replace(/-/g, ' ')}
++                  </Link>
++                </li>
++              );
++            })}
++          </ul>
++
++          {guide.pillars && guide.pillars.length > 0 && (
++            <>
++              <h3 className="fw-sub">Framework pillars this bears on</h3>
++              <ul className="gd-sources">
++                {guide.pillars.map((id) => {
++                  const p = pillarById(id);
++                  if (!p) return null;
++                  return (
++                    <li key={id}>
++                      <Link href={`/framework#${p.id}`}>
++                        Pillar {p.number} — {p.name}
++                      </Link>
++                    </li>
++                  );
++                })}
++              </ul>
++            </>
++          )}
++
++          <div className="fw-actions">
++            <Link className="fw-cta" href="/framework/assess">
++              Score your quote against the framework →
++            </Link>
++          </div>
++        </div>
++      </section>
++
++      {siblings.length > 0 && (
++        <section className="tlx-section" aria-label="More guides">
++          <div className="shell">
++            <p className="tlx-kicker">Next</p>
++            <h2 className="tlx-h2">More {guide.kind === 'decision' ? 'decision guides' : 'reference installations'}</h2>
++            <div className="tlx-grid">
++              {siblings.map((g) => (
++                <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                  <span className="tlx-card-tag">{kindLabel}</span>
++                  <h3>{g.title}</h3>
++                  <p>{g.question}</p>
++                </Link>
++              ))}
++            </div>
++          </div>
++        </section>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/app/guides/page.tsx b/apps/web/app/guides/page.tsx
+new file mode 100644
+index 0000000..bdde345
+--- /dev/null
++++ b/apps/web/app/guides/page.tsx
+@@ -0,0 +1,134 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { getGuides } from '@/lib/guides';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const metadata: Metadata = {
++  title: 'Decision Guides & Reference Installations | EcoWoods',
++  description:
++    'Structured answers to the decisions a Toronto homeowner actually faces — solid versus engineered, nail-down versus glue-down versus floating, how to evaluate a quote — plus complete reference specifications for the common GTA scenarios.',
++  alternates: { canonical: '/guides' },
++  openGraph: {
++    title: 'Decision Guides & Reference Installations — EcoWoods',
++    description:
++      'The decision, the criteria that settle it, and the complete specification for the common Toronto scenarios.',
++    type: 'website',
++    url: `${SITE_URL}/guides`,
++  },
++};
++
++export default function GuidesPage() {
++  const decisions = getGuides('decision');
++  const references = getGuides('reference');
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildWebPageSchema({
++          title: 'Decision Guides & Reference Installations — EcoWoods',
++          description:
++            'Structured decision guides and complete reference specifications for hardwood flooring in Toronto and the GTA.',
++          url: `${SITE_URL}/guides`,
++          items: [...decisions, ...references].map((g) => ({
++            '@type': 'TechArticle' as const,
++            headline: g.title,
++            url: `${SITE_URL}/guides/${g.slug}`,
++            description: g.question,
++            datePublished: g.publishedAt,
++          })),
++        })}
++      />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Guides', url: `${SITE_URL}/guides` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Guides</span>
++          </nav>
++          <h1 className="tlx-title">Decision guides</h1>
++          <p className="tlx-lede">
++            Two kinds of document. A <strong>decision guide</strong> answers a question where the
++            choice is still open — what actually decides it, in what order, and what the answer is.
++            A <strong>reference installation</strong> shows one scenario fully resolved, end to end,
++            so it can be checked against or handed to someone else.
++          </p>
++          <p className="tlx-note">
++            Nothing here introduces a figure that is not already published in a{' '}
++            <Link href="/papers">technical paper</Link> on this site, and a build guard enforces it.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Decision guides">
++        <div className="shell">
++          <p className="tlx-kicker">Choose</p>
++          <h2 className="tlx-h2">Decision guides</h2>
++          <p className="tlx-note">The question, the criteria that settle it, and the answer.</p>
++          <div className="tlx-grid">
++            {decisions.map((g) => (
++              <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                <span className="tlx-card-tag">Decision guide</span>
++                <h3>{g.title}</h3>
++                <p>{g.question}</p>
++                <div className="tlx-card-data">
++                  <span>{g.readingMinutes} min</span>
++                  <span>{g.publishedAt}</span>
++                </div>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Reference installations">
++        <div className="shell">
++          <p className="tlx-kicker">Assembled</p>
++          <h2 className="tlx-h2">Reference installations</h2>
++          <p className="tlx-note">
++            One scenario, fully specified: substrate, product, method, sequence and the places it
++            goes wrong.
++          </p>
++          <div className="tlx-grid">
++            {references.map((g) => (
++              <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                <span className="tlx-card-tag">Reference installation</span>
++                <h3>{g.title}</h3>
++                <p>{g.question}</p>
++                <div className="tlx-card-data">
++                  <span>{g.readingMinutes} min</span>
++                  <span>{g.publishedAt}</span>
++                </div>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="The framework">
++        <div className="shell">
++          <p className="tlx-kicker">Underneath</p>
++          <h2 className="tlx-h2">All of this sits on one framework</h2>
++          <p className="tlx-note">
++            Every guide points back at the pillars it bears on. The framework says what to check on
++            any quote; the guides say what to do about the answer.
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta" href="/framework/assess">
++              Score a quote against it →
++            </Link>
++            <Link className="fw-cta fw-cta--ghost" href="/framework">
++              Read the specification
++            </Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index b31e0bf..6a12d5a 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -1,6 +1,8 @@
+ import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
+ import { getArticles } from '@/lib/content/loader';
+ import { getPapers } from '@/lib/papers';
++import { getGuides } from '@/lib/guides';
++import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ 
+ export const dynamic = 'force-static';
+@@ -59,10 +61,38 @@ export async function GET() {
+   lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
+   lines.push(`- The craft (machines and process): ${SITE_URL}/#craft`);
+   lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
++  lines.push(`- Well-Installed Framework (the published standard): ${SITE_URL}/framework`);
++  lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
++  lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
+   lines.push(`- Citation guide: ${SITE_URL}/authority`);
+   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
+   lines.push('');
+ 
++  lines.push(`## The EcoWoods Well-Installed Framework v${FRAMEWORK_VERSION}`);
++  lines.push(
++    `A published, versioned specification for judging any hardwood flooring installation: ${PILLARS.length} pillars, ${criterionCount()} binary criteria, each one sourced to a technical paper on this site. Free to cite (CC BY). Cite as "Well-Installed Framework v${FRAMEWORK_VERSION}, criterion N.N" — criterion ids are permanent and are never renumbered in place.`,
++  );
++  for (const p of PILLARS) {
++    lines.push(`- Pillar ${p.number} — ${p.name} (${p.criteria.length} criteria): ${p.intent}`);
++    lines.push(`  ${SITE_URL}/framework#${p.id}`);
++  }
++  lines.push(`- Self-assessment (runs in the browser, nothing submitted): ${SITE_URL}/framework/assess`);
++  lines.push('');
++
++  const guides = getGuides();
++  if (guides.length) {
++    lines.push('## Decision guides and reference installations');
++    lines.push(
++      'A decision guide answers a question where the choice is open. A reference installation is one scenario fully specified. Neither introduces any figure not already published in a paper below.',
++    );
++    for (const g of guides) {
++      lines.push(
++        `- [${g.title}](${SITE_URL}/guides/${g.slug}) — ${g.kind === 'decision' ? 'decision guide' : 'reference installation'}: ${g.question}`,
++      );
++    }
++    lines.push('');
++  }
++
+   const papers = getPapers();
+   if (papers.length) {
+     lines.push('## Technical papers');
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 1de214e..3ed6275 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -8,6 +8,7 @@ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { CITIES } from '@/lib/seo-data';
+ import { getPapers } from '@/lib/papers';
++import { getGuides } from '@/lib/guides';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+@@ -66,6 +67,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+       changeFrequency: 'monthly',
+       priority: 0.7,
+     },
++    {
++      url: `${SITE_URL}/framework`,
++      lastModified: new Date(),
++      changeFrequency: 'monthly',
++      priority: 0.95,
++    },
++    {
++      url: `${SITE_URL}/framework/assess`,
++      lastModified: new Date(),
++      changeFrequency: 'monthly',
++      priority: 0.9,
++    },
++    {
++      url: `${SITE_URL}/guides`,
++      lastModified: new Date(),
++      changeFrequency: 'weekly',
++      priority: 0.9,
++    },
+     {
+       url: `${SITE_URL}/service-areas`,
+       lastModified: new Date(),
+@@ -105,6 +124,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     priority: 0.8,
+   }));
+ 
++  /**
++   * Decision guides and reference installations. Derived from lib/guides.ts so
++   * the sitemap cannot drift from what generateStaticParams actually builds —
++   * the same rule the city pages and the papers already follow.
++   */
++  const guidePages: MetadataRoute.Sitemap = getGuides().map((guide) => ({
++    url: `${SITE_URL}/guides/${guide.slug}`,
++    lastModified: new Date(guide.publishedAt),
++    changeFrequency: 'monthly' as const,
++    priority: 0.85,
++  }));
++
+   const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
+     url: `${SITE_URL}/papers/${paper.slug}`,
+     lastModified: new Date(paper.publishedAt),
+@@ -112,5 +143,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     priority: 0.85,
+   }));
+ 
+-  return [...basePages, ...paperPages, ...cityPages, ...articlePages, ...caseStudyPages];
++  return [
++    ...basePages,
++    ...guidePages,
++    ...paperPages,
++    ...cityPages,
++    ...articlePages,
++    ...caseStudyPages,
++  ];
+ }
+diff --git a/apps/web/lib/framework.ts b/apps/web/lib/framework.ts
+new file mode 100644
+index 0000000..3ec6a15
+--- /dev/null
++++ b/apps/web/lib/framework.ts
+@@ -0,0 +1,400 @@
++/**
++ * The EcoWoods Well-Installed Framework — the manifest.
++ *
++ * WHY THIS EXISTS
++ *
++ * A whitepaper persuades one reader at a time. A framework changes the terms of
++ * every comparison in the market at once. AWS did not win architectural
++ * mindshare by writing better documentation than anyone else — it published the
++ * Well-Architected Framework, a named and versioned set of pillars with a
++ * question set per pillar, and competitors now describe their own systems in
++ * that vocabulary. Publishing the standard is different in kind from
++ * participating in the comparison.
++ *
++ * This is the hardwood equivalent: six pillars, twenty-four binary questions,
++ * and a self-assessment at /framework/assess that scores ANY contractor's quote
++ * — not only ours.
++ *
++ * CONTENT RULE — READ BEFORE EDITING
++ *
++ * Nothing in this file is new. Every criterion is drawn from a section of a
++ * paper already published at /papers, and carries a `source` naming the paper
++ * slug and the section id it came from. scripts/verify-framework.mjs resolves
++ * every one of those references against lib/papers.ts and FAILS THE BUILD if a
++ * criterion cites a paper or a section that does not exist.
++ *
++ * That guard is the point. A framework that quietly accumulates unsourced
++ * assertions is worth less than no framework at all: it is exactly the kind of
++ * document a competitor attacks, and exactly the kind an answer engine learns
++ * to discount. If a criterion belongs in the framework and no paper supports it
++ * yet, the paper is written first.
++ *
++ * VERSIONING
++ *
++ * The version is part of the public contract. Anyone may cite
++ * "Well-Installed Framework v1.0, pillar 2, criterion 2.3" and have that mean
++ * one fixed thing forever. Adding, removing or rewording a criterion is a minor
++ * version bump; changing what a pillar means is a major one. Never edit a
++ * criterion in place without moving the version.
++ */
++
++import { getPaper } from './papers';
++
++export type Severity = 'critical' | 'major' | 'advisory';
++
++export type FrameworkCriterion = {
++  /** Stable public id, e.g. "2.3". Cited externally — never renumber in place. */
++  id: string;
++  /** The question, phrased so a homeowner can ask it of any contractor. */
++  question: string;
++  /** What physically or commercially fails when the answer is no. */
++  risk: string;
++  severity: Severity;
++  /** Provenance. Verified against lib/papers.ts by scripts/verify-framework.mjs. */
++  source: { paper: string; section: string };
++};
++
++export type FrameworkPillar = {
++  id: string;
++  number: number;
++  name: string;
++  /** One sentence: what this pillar is protecting against. */
++  intent: string;
++  criteria: FrameworkCriterion[];
++};
++
++export const FRAMEWORK_VERSION = '1.0';
++export const FRAMEWORK_PUBLISHED_AT = '2026-08-19';
++export const FRAMEWORK_NAME = 'The EcoWoods Well-Installed Framework';
++
++const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
++const P_COST = 'hardwood-selection-and-cost-framework-gta';
++const P_CRAFT = 'hardwood-refinishing-machines-and-sequence';
++
++export const PILLARS: FrameworkPillar[] = [
++  {
++    id: 'moisture',
++    number: 1,
++    name: 'Moisture and acclimation',
++    intent:
++      'Wood exchanges moisture with the air continuously and moves as it does. This pillar establishes that the movement was measured and planned for before anything was fastened down.',
++    criteria: [
++      {
++        id: '1.1',
++        question: 'Was the subfloor moisture content measured, and were the readings written down?',
++        risk: 'A floor installed over a wet subfloor will cup, crown, gap or buckle. No warranty language overrides physics.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'moisture-testing' },
++      },
++      {
++        id: '1.2',
++        question: 'Was the flooring material itself moisture-tested, separately from the subfloor?',
++        risk: 'Every board arrives with its own moisture history. Testing only the subfloor measures half the system.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'moisture-testing' },
++      },
++      {
++        id: '1.3',
++        question:
++          "Do both readings sit inside the manufacturer's stated acceptable difference between material and subfloor?",
++        risk: 'A large moisture differential guarantees dimensional change after installation, regardless of how well the floor was laid.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'moisture-testing' },
++      },
++      {
++        id: '1.4',
++        question:
++          'Was testing performed twice — at the estimate, and again immediately before installation begins?',
++        risk: 'Conditions change between quoting and installation. A single reading months earlier describes a building that no longer exists.',
++        severity: 'major',
++        source: { paper: P_CLIMATE, section: 'moisture-testing' },
++      },
++      {
++        id: '1.5',
++        question:
++          'Will the material acclimate for a minimum of 72 hours in the actual conditioned space where it will be installed?',
++        risk: 'Acclimating in a garage, a hallway or an unheated room conditions the wood to the wrong environment.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'protocol' },
++      },
++    ],
++  },
++  {
++    id: 'substrate',
++    number: 2,
++    name: 'Substrate and method',
++    intent:
++      'Installation method is determined by what the floor is going onto, not by preference, habit or price. This pillar establishes that the substrate decided the method.',
++    criteria: [
++      {
++        id: '2.1',
++        question: 'Was the substrate identified explicitly — plywood over joists, concrete slab, or radiant?',
++        risk: 'Every downstream decision depends on this answer. A method chosen before the substrate is known is a guess.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'method-and-substrate' },
++      },
++      {
++        id: '2.2',
++        question: 'Does the proposed method match the substrate — nail-down on plywood, glue-down on concrete, floating over radiant or where acoustic separation is required?',
++        risk: 'Method mismatched to substrate is the failure that cannot be corrected later without lifting the floor.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'method-and-substrate' },
++      },
++      {
++        id: '2.3',
++        question: 'Was the substrate assessed for flatness and condition before the price was fixed?',
++        risk: 'Substrate correction discovered mid-job is the single most common source of change orders on a hardwood project.',
++        severity: 'major',
++        source: { paper: P_COST, section: 'fixed-price' },
++      },
++      {
++        id: '2.4',
++        question:
++          'If the substrate is concrete, a condominium slab, or radiant heat, was engineered construction specified rather than solid?',
++        risk: 'Solid hardwood over concrete or radiant has no cross-ply core to resist seasonal movement. The construction is what provides the stability.',
++        severity: 'critical',
++        source: { paper: P_COST, section: 'decision-tree' },
++      },
++    ],
++  },
++  {
++    id: 'specification',
++    number: 3,
++    name: 'Product specification',
++    intent:
++      'The correct product is the one that will still look and perform correctly in twenty years. This pillar establishes that the house specified the floor, not the budget.',
++    criteria: [
++      {
++        id: '3.1',
++        question:
++          'Was the solid-versus-engineered decision explained in terms of the substrate and the climate load, rather than price or preference?',
++        risk: 'A product sold on margin instead of specified on physics is a failure with a delay built in.',
++        severity: 'critical',
++        source: { paper: P_COST, section: 'decision-tree' },
++      },
++      {
++        id: '3.2',
++        question:
++          'Was species hardness discussed against the actual traffic and household this floor will carry?',
++        risk: 'Species selection made on appearance alone produces a floor that looks correct on handover and wears wrong within a few years.',
++        severity: 'major',
++        source: { paper: P_COST, section: 'species' },
++      },
++      {
++        id: '3.3',
++        question:
++          'If the home sees large seasonal humidity swings, was that raised as a reason to prefer engineered construction?',
++        risk: 'Toronto indoor RH runs from below 25% in winter to above 60% in summer. A product specified without reference to that range was specified for a different city.',
++        severity: 'major',
++        source: { paper: P_CLIMATE, section: 'climate-reality' },
++      },
++      {
++        id: '3.4',
++        question: 'Was the finish system named specifically, rather than described only as "polyurethane"?',
++        risk: 'Finish system determines cure time, recoat interval and how the floor is maintained for its whole life. An unnamed system cannot be maintained correctly.',
++        severity: 'advisory',
++        source: { paper: P_CRAFT, section: 'sequence' },
++      },
++    ],
++  },
++  {
++    id: 'movement',
++    number: 4,
++    name: 'Expansion and movement',
++    intent:
++      'The question is never whether a floor will move. This pillar establishes that room for the movement was designed in rather than discovered later.',
++    criteria: [
++      {
++        id: '4.1',
++        question:
++          'Are expansion gaps specified at every wall and every fixed object — not only at the perimeter?',
++        risk: 'A floor with nowhere to expand will buckle or tent. Fixed objects mid-field are where this is most often missed.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'protocol' },
++      },
++      {
++        id: '4.2',
++        question:
++          'Was the safe indoor humidity band the floor needs to live in — and who is responsible for maintaining it — stated in writing?',
++        risk: 'A floor handed over without a stated operating range has no defensible warranty boundary, in either direction.',
++        severity: 'major',
++        source: { paper: P_CLIMATE, section: 'climate-reality' },
++      },
++      {
++        id: '4.3',
++        question:
++          'Were the specific failure modes — cupping, crowning, seasonal gapping, buckling, edge peaking — named and explained rather than dismissed?',
++        risk: 'A contractor who will not name the failure modes either does not know them or does not intend to be accountable for them.',
++        severity: 'advisory',
++        source: { paper: P_CLIMATE, section: 'failure-modes' },
++      },
++    ],
++  },
++  {
++    id: 'containment',
++    number: 5,
++    name: 'Dust containment and sequence',
++    intent:
++      'Sanding and finishing is a sequence of machines, each of which does something the others cannot. This pillar establishes that the sequence was complete and the dust was contained.',
++    criteria: [
++      {
++        id: '5.1',
++        question: 'Is HEPA dust containment used throughout the process, not only at final cleanup?',
++        risk: 'Dust generated during sanding is respirable and travels through the whole building. Cleanup afterwards addresses what settled, not what was breathed.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'protocol' },
++      },
++      {
++        id: '5.2',
++        question:
++          'Does the plan include an edger on every perimeter and detail, with grits matching the field?',
++        risk: 'A big machine cannot reach a perimeter. Skipping or under-gritting the edger leaves a visible halo around every room that only shows once the finish goes on.',
++        severity: 'major',
++        source: { paper: P_CRAFT, section: 'edger' },
++      },
++      {
++        id: '5.3',
++        question: 'Is a planetary or multi-disc pass included to blend the field into the edges?',
++        risk: 'Without a blending pass, the boundary between what the belt sander reached and what the edger reached stays visible for the life of the floor.',
++        severity: 'major',
++        source: { paper: P_CRAFT, section: 'planetary' },
++      },
++      {
++        id: '5.4',
++        question: 'Is intercoat screening between finish coats part of the quoted scope?',
++        risk: 'Skipping intercoat screening is invisible on handover day and produces an uneven surface and weaker coat adhesion.',
++        severity: 'major',
++        source: { paper: P_CRAFT, section: 'sequence' },
++      },
++      {
++        id: '5.5',
++        question:
++          'Was a cure period stated — distinct from "dry to walk on" — with what may and may not go back on the floor during it?',
++        risk: 'Furniture and rugs returned to an uncured finish mark it permanently. Dry and cured are different dates.',
++        severity: 'major',
++        source: { paper: P_CRAFT, section: 'sequence' },
++      },
++    ],
++  },
++  {
++    id: 'accountability',
++    number: 6,
++    name: 'Commercial accountability',
++    intent:
++      'Every pillar above is only as good as the contract behind it. This pillar establishes that someone is accountable in writing when the floor is five years old.',
++    criteria: [
++      {
++        id: '6.1',
++        question:
++          'Is the price fixed in writing, with no open-ended "unforeseen conditions" change-order language?',
++        risk: 'An open-ended price transfers the cost of the contractor\'s missing due diligence onto the homeowner, after the deposit.',
++        severity: 'critical',
++        source: { paper: P_COST, section: 'fixed-price' },
++      },
++      {
++        id: '6.2',
++        question: 'Will the work be performed by salaried employees rather than day-labour subcontractors?',
++        risk: 'A crew that will not be there next season has no stake in how the floor performs next season.',
++        severity: 'major',
++        source: { paper: P_COST, section: 'installer-checklist' },
++      },
++      {
++        id: '6.3',
++        question: 'Is there true lifetime workmanship warranty language in the contract itself?',
++        risk: 'A warranty described in conversation and absent from the contract is not a warranty.',
++        severity: 'critical',
++        source: { paper: P_COST, section: 'installer-checklist' },
++      },
++      {
++        id: '6.4',
++        question:
++          'Would they refuse the job if the substrate or the conditions were wrong — and have they said so plainly?',
++        risk: 'A contractor who will install over any condition is quoting on volume. The willingness to walk away is the only real evidence of a standard.',
++        severity: 'critical',
++        source: { paper: P_CLIMATE, section: 'what-to-demand' },
++      },
++      {
++        id: '6.5',
++        question: 'Were the written moisture readings provided before any deposit was requested?',
++        risk: 'Testing after the deposit inverts the incentive: the finding can no longer change the decision.',
++        severity: 'major',
++        source: { paper: P_CLIMATE, section: 'what-to-demand' },
++      },
++      {
++        id: '6.6',
++        question:
++          'Are manufacturer warranties passed through in writing, naming the manufacturer and the product?',
++        risk: 'A manufacturer warranty that is never registered or documented cannot be claimed against years later.',
++        severity: 'advisory',
++        source: { paper: P_COST, section: 'installer-checklist' },
++      },
++    ],
++  },
++];
++
++/* ── derived helpers ──────────────────────────────────────────────────────── */
++
++export const allCriteria = (): FrameworkCriterion[] => PILLARS.flatMap((p) => p.criteria);
++
++export const criterionCount = () => allCriteria().length;
++
++export const severityCount = (s: Severity) => allCriteria().filter((c) => c.severity === s).length;
++
++export const pillarById = (id: string) => PILLARS.find((p) => p.id === id);
++
++/** Resolve a criterion's citation to the live paper URL. Returns null if the paper is gone. */
++export const sourceHref = (c: FrameworkCriterion): string | null =>
++  getPaper(c.source.paper) ? `/papers/${c.source.paper}#${c.source.section}` : null;
++
++/**
++ * Scoring. Deliberately simple and deliberately harsh on the criticals: a floor
++ * is not "83% installed correctly". Any single critical answered "no" means the
++ * quote has an unresolved defect, and the verdict says so regardless of the
++ * total.
++ */
++export type Answer = 'yes' | 'no' | 'unsure';
++
++export const WEIGHT: Record<Severity, number> = { critical: 3, major: 2, advisory: 1 };
++
++export function score(answers: Record<string, Answer>) {
++  const criteria = allCriteria();
++  let earned = 0;
++  let possible = 0;
++  const failedCritical: FrameworkCriterion[] = [];
++  const unanswered: FrameworkCriterion[] = [];
++
++  for (const c of criteria) {
++    const w = WEIGHT[c.severity];
++    possible += w;
++    const a = answers[c.id];
++    if (a === 'yes') earned += w;
++    else if (a === 'no' && c.severity === 'critical') failedCritical.push(c);
++    else if (a === undefined) unanswered.push(c);
++    // "unsure" earns nothing and is not a failure — it is a question to go back and ask.
++  }
++
++  const pct = possible === 0 ? 0 : Math.round((earned / possible) * 100);
++  const verdict: 'incomplete' | 'defect' | 'weak' | 'sound' | 'strong' =
++    unanswered.length > criteria.length / 2
++      ? 'incomplete'
++      : failedCritical.length > 0
++        ? 'defect'
++        : pct >= 90
++          ? 'strong'
++          : pct >= 70
++            ? 'sound'
++            : 'weak';
++
++  return { earned, possible, pct, failedCritical, unanswered, verdict };
++}
++
++export function pillarScore(pillar: FrameworkPillar, answers: Record<string, Answer>) {
++  let earned = 0;
++  let possible = 0;
++  for (const c of pillar.criteria) {
++    const w = WEIGHT[c.severity];
++    possible += w;
++    if (answers[c.id] === 'yes') earned += w;
++  }
++  return { earned, possible, pct: possible === 0 ? 0 : Math.round((earned / possible) * 100) };
++}
+diff --git a/apps/web/lib/guides.ts b/apps/web/lib/guides.ts
+new file mode 100644
+index 0000000..79d052a
+--- /dev/null
++++ b/apps/web/lib/guides.ts
+@@ -0,0 +1,375 @@
++/**
++ * Decision guides and reference installations — the manifest.
++ *
++ * TWO CONTENT TYPES, ONE STRUCTURE
++ *
++ * A decision guide answers "which of these is right for me?" — the highest
++ * commercial-intent question a homeowner asks, and the one nobody in this
++ * market answers in public. A reference installation answers "show me the whole
++ * thing assembled for my situation" — the artifact an architect or a designer
++ * forwards to a client.
++ *
++ * AWS publishes both, in fixed formats, and they are the two most-shared things
++ * it produces. They share a shape here because they are the same object seen
++ * from two sides: a decision guide is a reference installation with the choice
++ * still open, and a reference installation is a decision guide already resolved
++ * for one scenario.
++ *
++ * CONTENT RULE — READ BEFORE EDITING
++ *
++ * Every guide carries `sources`, naming the paper slug and section id each
++ * claim came from. scripts/verify-framework.mjs resolves all of them against
++ * lib/papers.ts and fails the build on any that does not exist. No guide
++ * introduces a figure, a threshold or a claim that is not already published at
++ * /papers. If the substance is not in a paper yet, the paper is written first —
++ * see the same note at the top of lib/framework.ts.
++ */
++
++export type GuideKind = 'decision' | 'reference';
++
++export type GuideOption = {
++  name: string;
++  /** The condition under which this option is the correct one. */
++  whenCorrect: string;
++  notes?: string[];
++};
++
++export type GuideTable = { caption?: string; head: string[]; rows: string[][] };
++
++export type Guide = {
++  slug: string;
++  kind: GuideKind;
++  title: string;
++  /** The question, phrased the way it is actually asked. Used as the H2 and in FAQ schema. */
++  question: string;
++  summary: string;
++  publishedAt: string;
++  readingMinutes: number;
++  /** What actually decides the answer, in priority order. */
++  criteria?: { name: string; why: string }[];
++  options?: GuideOption[];
++  table?: GuideTable;
++  /** Ordered decision steps. Each is a condition → consequence. */
++  decisionTree?: string[];
++  /** For reference installations: the assembled specification. */
++  spec?: { label: string; value: string }[];
++  /** Ordered build sequence. */
++  sequence?: string[];
++  /** What goes wrong here specifically. */
++  watchpoints?: string[];
++  recommendation: { text: string; conditions?: string[] };
++  sources: { paper: string; section: string }[];
++  /** Framework pillar ids this guide bears on. Rendered as cross-links. */
++  pillars?: string[];
++};
++
++const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
++const P_COST = 'hardwood-selection-and-cost-framework-gta';
++const P_CRAFT = 'hardwood-refinishing-machines-and-sequence';
++
++export const GUIDES: Guide[] = [
++  /* ── decision guides ───────────────────────────────────────────────────── */
++  {
++    slug: 'solid-vs-engineered-hardwood-toronto',
++    kind: 'decision',
++    title: 'Solid or engineered hardwood',
++    question: 'Should I install solid or engineered hardwood in my Toronto home?',
++    summary:
++      'The substrate decides this, not the budget and not the preference. This guide walks the same decision tree we use on site, in the order we walk it.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 5,
++    criteria: [
++      {
++        name: 'The substrate',
++        why: 'Plywood over joists, a concrete slab and a radiant assembly impose different constraints. This is decided before anything else is considered.',
++      },
++      {
++        name: 'Seasonal humidity range',
++        why: 'Toronto indoor RH runs from below 25% in winter to above 60% in summer. Wider swings favour the more dimensionally stable construction.',
++      },
++      {
++        name: 'Future refinishing cycles',
++        why: 'A generational wear layer is the one genuine advantage solid retains — but only where the substrate permits solid at all.',
++      },
++    ],
++    options: [
++      {
++        name: 'Solid hardwood',
++        whenCorrect: 'Plywood subfloor over joists, in a home with a controlled humidity range.',
++        notes: [
++          'Typically 3/4" (19 mm), with a generational wear layer.',
++          'Highly sensitive to relative-humidity swings.',
++          'Nail-down installation.',
++        ],
++      },
++      {
++        name: 'Engineered hardwood',
++        whenCorrect:
++          'Concrete slab, condominium, radiant heat, or any home with a wide seasonal humidity range.',
++        notes: [
++          'A real hardwood wear layer over a 90° cross-ply core.',
++          'The cross-ply construction is what provides dimensional stability.',
++          'Glue-down over concrete; floating over radiant or where acoustic separation is required.',
++        ],
++      },
++    ],
++    table: {
++      caption: 'Indoor relative humidity, Toronto residential',
++      head: ['Condition', 'Relative humidity'],
++      rows: [
++        ['Winter indoor low', '18–25% RH'],
++        ['Summer indoor high', 'above 60% RH'],
++        ['Safe operating band for hardwood', '35–55% RH'],
++      ],
++    },
++    decisionTree: [
++      'Is the substrate plywood over joists? → Solid is possible.',
++      'Is the substrate concrete, a condominium slab, or radiant? → Engineered is required.',
++      'Is the home subject to large seasonal RH swings? → Engineered preferred.',
++      'Does the client want maximum future refinishing cycles? → Solid, only if the substrate allows.',
++    ],
++    recommendation: {
++      text: 'Engineered is the correct specification for the majority of Toronto projects. We specify what the house can support, and we do not sell what will fail.',
++      conditions: [
++        'Solid remains correct over plywood in a humidity-controlled home where maximum refinishing cycles matter.',
++        'No budget argument changes the answer when the substrate is concrete or radiant.',
++      ],
++    },
++    sources: [
++      { paper: P_COST, section: 'decision-tree' },
++      { paper: P_CLIMATE, section: 'solid-vs-engineered' },
++      { paper: P_CLIMATE, section: 'climate-reality' },
++    ],
++    pillars: ['substrate', 'specification'],
++  },
++  {
++    slug: 'nail-down-glue-down-or-floating',
++    kind: 'decision',
++    title: 'Nail-down, glue-down or floating',
++    question: 'Which hardwood installation method is correct for my subfloor?',
++    summary:
++      'Installation method is not a preference and not a sales option. It is determined by the substrate, the product construction, and the climate load the floor will face for decades.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 4,
++    criteria: [
++      {
++        name: 'What the floor is going onto',
++        why: 'Plywood accepts fasteners. Concrete does not. Radiant assemblies constrain both fastening and adhesive choice.',
++      },
++      {
++        name: 'Product construction',
++        why: 'Solid and engineered do not accept the same methods. The construction and the substrate must agree before a method is chosen.',
++      },
++      {
++        name: 'Acoustic requirements',
++        why: 'Condominium boards commonly impose sound-transmission requirements that the assembly, not the flooring, has to satisfy.',
++      },
++    ],
++    table: {
++      head: ['Method', 'When it is correct'],
++      rows: [
++        ['Nail-down', 'Solid hardwood over plywood'],
++        ['Glue-down', 'Engineered over concrete, or in condominiums'],
++        ['Floating', 'Engineered over radiant, or where acoustic separation is required'],
++      ],
++    },
++    decisionTree: [
++      'Plywood over joists, solid product → nail-down.',
++      'Concrete slab or condominium, engineered product → glue-down.',
++      'Radiant heat, or an acoustic separation requirement → floating.',
++      'Any combination not on this list → the substrate or the product is wrong, not the method.',
++    ],
++    recommendation: {
++      text: 'Match the method to the substrate and the product construction, in that order. A method chosen before the substrate has been identified is a guess with a delay built into it.',
++      conditions: [
++        'If a contractor proposes a method without naming your substrate, that is criterion 2.1 of the framework failing.',
++      ],
++    },
++    sources: [
++      { paper: P_CLIMATE, section: 'method-and-substrate' },
++      { paper: P_COST, section: 'decision-tree' },
++    ],
++    pillars: ['substrate'],
++  },
++  {
++    slug: 'how-to-evaluate-a-hardwood-quote',
++    kind: 'decision',
++    title: 'How to evaluate a hardwood quote',
++    question: 'How do I tell a good hardwood flooring quote from a bad one?',
++    summary:
++      'Six questions that separate a company that has done the diligence from one that intends to discover the problems after your deposit has cleared. Any "no" is a red flag.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 4,
++    criteria: [
++      {
++        name: 'Was anything measured before the price was set?',
++        why: 'A price quoted without moisture readings and a substrate assessment is an estimate of a building nobody has examined.',
++      },
++      {
++        name: 'Is the price closed or open?',
++        why: 'Open-ended change-order language transfers the cost of missing diligence onto the homeowner, after commitment.',
++      },
++      {
++        name: 'Who actually performs the work?',
++        why: 'A crew that will not be there next season has no stake in how the floor performs next season.',
++      },
++    ],
++    decisionTree: [
++      'Do they moisture-test at the free estimate, and document the readings? → If no, stop here.',
++      'Do they require a minimum 72-hour acclimation in the actual space? → If no, the warranty is decorative.',
++      'Is the price fixed in writing, with no open-ended change-order language? → If no, the quoted number is not the price.',
++      'Are the installers salaried employees, or day-labour subcontractors?',
++      'Will they refuse the job if the substrate or conditions are wrong?',
++      'Is there true lifetime workmanship warranty language in the contract itself?',
++    ],
++    recommendation: {
++      text: 'Run all six against every quote you hold, including ours. The self-assessment scores the full twenty-four-criterion framework and tells you which questions to go back and ask.',
++      conditions: [
++        'Any company that cannot or will not provide these is optimizing for speed and lowest bid, not for decades of performance.',
++      ],
++    },
++    sources: [
++      { paper: P_COST, section: 'installer-checklist' },
++      { paper: P_CLIMATE, section: 'what-to-demand' },
++      { paper: P_COST, section: 'fixed-price' },
++    ],
++    pillars: ['accountability', 'moisture'],
++  },
++
++  /* ── reference installations ───────────────────────────────────────────── */
++  {
++    slug: 'reference-condominium-concrete-slab',
++    kind: 'reference',
++    title: 'Condominium over concrete slab',
++    question: 'What does a correct hardwood installation over a Toronto condo slab look like, end to end?',
++    summary:
++      'The most common non-trivial scenario in the GTA: an engineered floor glued to a concrete slab, in a building with acoustic requirements and no forgiving substrate.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 5,
++    spec: [
++      { label: 'Substrate', value: 'Concrete slab' },
++      { label: 'Product construction', value: 'Engineered — hardwood wear layer over 90° cross-ply core' },
++      { label: 'Method', value: 'Glue-down' },
++      { label: 'Acclimation', value: 'Minimum 72 hours in the actual conditioned space' },
++      { label: 'Moisture testing', value: 'Slab and material, documented, at estimate and again before installation' },
++      { label: 'Operating band', value: '35–55% RH' },
++      { label: 'Dust containment', value: 'HEPA throughout the process' },
++    ],
++    sequence: [
++      'Moisture-test the slab and the material; document both readings.',
++      'Confirm both readings sit inside the acceptable delta before ordering.',
++      'Acclimate a minimum of 72 hours in the actual conditioned space.',
++      'Assess and correct slab flatness before the price is fixed.',
++      'Confirm the building\'s acoustic requirement and how the assembly satisfies it.',
++      'Glue-down installation, with expansion gaps at every wall and fixed object.',
++      'HEPA containment maintained throughout.',
++    ],
++    watchpoints: [
++      'Solid hardwood over a slab has no cross-ply core to resist seasonal movement. This is the substitution that fails most often.',
++      'Slab flatness discovered after the deposit is the single most common source of change orders.',
++      'Expansion gaps are missed at fixed objects mid-field far more often than at the perimeter.',
++    ],
++    recommendation: {
++      text: 'Engineered, glued down, over a slab that has been tested and flattened before the price was fixed. Nothing in this scenario is negotiable on budget grounds.',
++    },
++    sources: [
++      { paper: P_CLIMATE, section: 'method-and-substrate' },
++      { paper: P_CLIMATE, section: 'protocol' },
++      { paper: P_COST, section: 'decision-tree' },
++      { paper: P_COST, section: 'fixed-price' },
++    ],
++    pillars: ['substrate', 'moisture', 'movement'],
++  },
++  {
++    slug: 'reference-radiant-heat-main-floor',
++    kind: 'reference',
++    title: 'Radiant heat main floor',
++    question: 'What does a correct hardwood installation over radiant heat look like, end to end?',
++    summary:
++      'Radiant assemblies impose a thermal cycle on top of the seasonal one. Product construction and method are both constrained, and neither is a preference.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 5,
++    spec: [
++      { label: 'Substrate', value: 'Radiant heat assembly' },
++      { label: 'Product construction', value: 'Engineered — required, for dimensional stability under thermal cycling' },
++      { label: 'Method', value: 'Floating' },
++      { label: 'Acclimation', value: 'Minimum 72 hours in the actual conditioned space' },
++      { label: 'Moisture testing', value: 'Substrate and material, documented, twice' },
++      { label: 'Operating band', value: '35–55% RH' },
++      { label: 'Dust containment', value: 'HEPA throughout the process' },
++    ],
++    sequence: [
++      'Identify the radiant assembly explicitly before any product is proposed.',
++      'Moisture-test substrate and material; document both readings.',
++      'Acclimate a minimum of 72 hours in the actual conditioned space, with the system at normal operating temperature.',
++      'Floating installation, with expansion gaps at every wall and fixed object.',
++      'State the safe operating humidity band and who maintains it, in writing, at handover.',
++    ],
++    watchpoints: [
++      'Solid hardwood over radiant is the specification error with the longest delay before it shows.',
++      'A floor handed over without a stated operating range has no defensible warranty boundary in either direction.',
++      'Thermal cycling compounds the seasonal RH swing rather than replacing it.',
++    ],
++    recommendation: {
++      text: 'Engineered construction, floated, with the humidity operating band and the responsibility for maintaining it written into the handover.',
++    },
++    sources: [
++      { paper: P_CLIMATE, section: 'method-and-substrate' },
++      { paper: P_CLIMATE, section: 'climate-reality' },
++      { paper: P_CLIMATE, section: 'protocol' },
++    ],
++    pillars: ['substrate', 'movement', 'specification'],
++  },
++  {
++    slug: 'reference-refinishing-existing-hardwood',
++    kind: 'reference',
++    title: 'Refinishing an existing hardwood floor',
++    question: 'What is the correct machine sequence for refinishing a hardwood floor?',
++    summary:
++      'Four machines, each doing something the others cannot, in an order where every skipped step is a future liability that is invisible on handover day.',
++    publishedAt: '2026-08-19',
++    readingMinutes: 6,
++    spec: [
++      { label: 'Machine 1', value: 'Belt floor sander — progressive grits, field only' },
++      { label: 'Machine 2', value: 'Floor edger — matching grits, every perimeter and detail' },
++      { label: 'Machine 3', value: 'Planetary / multi-disc — refining, blending field into edges' },
++      { label: 'Machine 4', value: 'Buffer / screening — final uniform surface and intercoat' },
++      { label: 'Dust containment', value: 'HEPA throughout the process' },
++    ],
++    sequence: [
++      'Moisture testing and acclimation — minimum 72 hours in the actual conditioned space.',
++      'Belt sander, progressive grits, field only.',
++      'Edger, matching grits, on every perimeter and detail.',
++      'Planetary / multi-disc, refining and blending field into edges.',
++      'Buffer / screening for a final uniform surface.',
++      'Vacuum, tack, apply the finish system.',
++      'Intercoat screening with the buffer between coats.',
++      'Final coat.',
++    ],
++    watchpoints: [
++      'A big machine cannot reach a perimeter. Skipping or under-gritting the edger leaves a visible halo around every room that only appears once the finish goes on.',
++      'Without the blending pass, the boundary between what the belt sander reached and what the edger reached stays visible for the life of the floor.',
++      'Intercoat screening is invisible on handover day and produces an uneven surface and weaker adhesion when skipped.',
++      'Dry to walk on and fully cured are different dates. Furniture returned to an uncured finish marks it permanently.',
++    ],
++    recommendation: {
++      text: 'All four machines, in sequence, with intercoat screening. Equipment is not the difference between companies — the sequence and the discipline to complete it are.',
++    },
++    sources: [
++      { paper: P_CRAFT, section: 'sequence' },
++      { paper: P_CRAFT, section: 'the-four-machines' },
++      { paper: P_CRAFT, section: 'edger' },
++      { paper: P_CRAFT, section: 'planetary' },
++      { paper: P_CRAFT, section: 'equipment-is-not-the-moat' },
++    ],
++    pillars: ['containment'],
++  },
++];
++
++export const getGuides = (kind?: GuideKind): Guide[] =>
++  kind ? GUIDES.filter((g) => g.kind === kind) : GUIDES;
++
++export const getGuide = (slug: string): Guide | undefined => GUIDES.find((g) => g.slug === slug);
++
++export const guidesForPillar = (pillarId: string): Guide[] =>
++  GUIDES.filter((g) => g.pillars?.includes(pillarId));
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index ad244f1..d23b18d 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -2675,3 +2675,96 @@ The reference implementation is AWS's *What's New* feed: small dated entries,
+ one canonical URL each, published relentlessly. That feed is a large part of why
+ the industry learns about AWS from AWS rather than from a competitor's
+ comparison page.
++
++---
++
++## 32. The framework, the guides, and the assessment
++
++### F-76 · Everything published so far persuades one reader at a time · **P0 — strategic**
++
++Three technical papers, six articles, five case studies. All of it is good, and
++all of it has the same structural limit: it argues a position to whoever happens
++to read it. None of it changes the terms other people argue on.
++
++AWS's most consequential publication is not documentation and not a whitepaper.
++It is the Well-Architected Framework — a named, versioned set of pillars with a
++question set per pillar, and a free tool that scores your workload against it.
++Publishing the standard is different in kind from participating in the
++comparison: competitors now describe their own architectures in AWS's
++vocabulary.
++
++**`/framework` is the hardwood equivalent.** Six pillars, twenty-seven binary
++criteria, version 1.0, published under CC BY with permanent criterion ids so
++"Well-Installed Framework v1.0, criterion 2.4" resolves to one fixed thing
++forever. Renumbering in place is what makes a standard worthless; the guard
++below prevents it.
++
++**`/framework/assess`** scores any quote against all twenty-seven — ours or
++anyone else's. Every competitor's quote in the GTA becomes an input to an
++Ecowoods instrument.
++
++### F-77 · The assessment posts nothing, deliberately · P1
++
++The obvious build is a lead form: collect the answers, email the report, capture
++the address. That is also the build that destroys the thing being built. A tool
++whose purpose is to score a *competitor's* quote is only worth linking to if it
++is not also a lead capture, and the honest answer to "should I trust this
++scoring?" becomes no the moment it posts anywhere.
++
++So it runs entirely in component state. No fetch, no analytics event, no
++`localStorage`, no hidden field, no account. The result is printed by the
++browser. The page says so in plain language, above the fold.
++
++That constraint is the distribution strategy, not a concession to it. Something
++a homeowner will forward to a friend who is *not* an Ecowoods customer is worth
++more than the addresses the form would have collected.
++
++### F-78 · Provenance is enforced by a guard, not by intent · **P1**
++
++Every criterion in the framework and every claim in every guide carries
++`source: { paper, section }`. **`scripts/verify-framework.mjs` resolves all 47
++citations against `lib/papers.ts` and fails the build on any that does not
++exist.**
++
++This is the guard that matters most on the site. A framework that quietly
++accumulates unsourced assertions is worth less than no framework: it is exactly
++what a competitor attacks, and exactly what an answer engine learns to discount
++after catching one bad figure. If a criterion belongs in the framework and no
++paper supports it yet, **the paper is written first.**
++
++It also enforces what makes a citation URL durable: unique criterion ids,
++criterion numbers that match their pillar number (a criterion numbered 3.x
++sitting inside pillar 2 makes every external citation to it wrong), unique guide
++slugs, no guide pointing at a pillar id that does not exist, and a parseable
++version string.
++
++Nothing in this patch introduces a technical claim, a figure or a threshold that
++was not already published at `/papers`. Everything is restructured, not
++invented — which is why 47 citations resolve and why the six pillars read as
++the protocol, the installer checklist and the demand list that were already
++there, reorganised into something that can be scored.
++
++### F-79 · Six guides, in two shapes · P2
++
++A **decision guide** answers a question where the choice is still open: what
++decides it, in what order, and what the answer is. A **reference installation**
++is one scenario fully resolved — substrate, product, method, sequence,
++watchpoints — the artifact a designer forwards to a client.
++
++Three of each, all derived from the papers: solid versus engineered · nail-down,
++glue-down or floating · how to evaluate a quote · condominium over concrete slab
++· radiant heat main floor · refinishing an existing floor.
++
++### The nav had to pay for itself
++
++`.topbar-nav` is `overflow: clip` with `min-width: max-content` (F-50). An item
++added to a nine-item nav without removing width somewhere is an item that clips
++silently at 1200px — which is how F-65 happened. "Technical Library" is
++therefore shortened to "Library" to pay for "Framework": seventeen characters
++out, sixteen in, so the nav is **narrower than before this patch**, not wider.
++That is a label change and it is reversible; if Francisco wants the long form
++back, the framework link moves to the footer, where the guides already sit.
++
++Re-measure on the next `--full` runtime pass regardless. Asserting that
++something fits is what caused F-65; this one is at least arithmetically safe
++rather than confidently guessed.
+diff --git a/package.json b/package.json
+index 99ac1fa..0c28bfa 100644
+--- a/package.json
++++ b/package.json
+@@ -16,7 +16,8 @@
+     "verify:schema": "node scripts/verify-schema.mjs",
+     "verify:papers": "node scripts/verify-papers.mjs",
+     "verify:links": "node scripts/verify-links.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links",
++    "verify:framework": "node scripts/verify-framework.mjs",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index cef14ae..e5ef280 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -114,6 +114,7 @@ run "verify:tokens"       node scripts/verify-tokens.mjs
+ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-papers.mjs ] && run "verify:papers" node scripts/verify-papers.mjs
+ [ -f scripts/verify-links.mjs ]  && run "verify:links"  node scripts/verify-links.mjs
++[ -f scripts/verify-framework.mjs ] && run "verify:framework" node scripts/verify-framework.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+@@ -133,6 +134,9 @@ section "7 · technical papers"
+ if [ -f scripts/verify-papers.mjs ]; then
+   node scripts/verify-papers.mjs --list 2>&1 | sed -n '/Technical papers/,$p' | sed 's/^/  /'
+ fi
++if [ -f scripts/verify-framework.mjs ]; then
++  node scripts/verify-framework.mjs --list 2>&1 | sed -n '/Framework/,$p' | sed 's/^/  /'
++fi
+ note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ if command -v pdftotext >/dev/null 2>&1; then
+diff --git a/scripts/verify-framework.mjs b/scripts/verify-framework.mjs
+new file mode 100644
+index 0000000..a8f22ce
+--- /dev/null
++++ b/scripts/verify-framework.mjs
+@@ -0,0 +1,184 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-framework.mjs
++ *
++ * Every claim in the framework and in every guide must trace to a section of a
++ * published paper. This resolves those citations and fails the build when one
++ * does not exist.
++ *
++ * WHY THIS EXISTS
++ *
++ * The framework and the guides are the two surfaces on this site whose entire
++ * value is that they are trustworthy. A framework that quietly accumulates
++ * unsourced assertions is worth less than no framework: it is exactly what a
++ * competitor attacks, and exactly what an answer engine learns to discount
++ * after catching one bad figure.
++ *
++ * The rule is therefore mechanical rather than editorial — every criterion and
++ * every guide carries `source: { paper, section }`, and this guard checks that
++ * the paper exists in lib/papers.ts and that the section id exists inside it.
++ * A criterion that cannot cite a published paper does not ship; the paper gets
++ * written first.
++ *
++ * It also enforces the things that make a citation URL durable: unique
++ * criterion ids, ids that match their pillar number, no duplicate guide slugs,
++ * and a version string that is present and parseable.
++ *
++ *   node scripts/verify-framework.mjs
++ *   node scripts/verify-framework.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const LIST = process.argv.includes('--list');
++const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
++
++for (const f of ['apps/web/lib/papers.ts', 'apps/web/lib/framework.ts', 'apps/web/lib/guides.ts']) {
++  if (!fs.existsSync(path.join(ROOT, f))) {
++    console.error(`verify-framework: ${f} not found — run from the repo root.`);
++    process.exit(2);
++  }
++}
++
++const papersSrc = read('apps/web/lib/papers.ts');
++const fwSrc = read('apps/web/lib/framework.ts');
++const gdSrc = read('apps/web/lib/guides.ts');
++
++const problems = [];
++const fail = (m) => problems.push(m);
++
++/* ── what the papers actually contain ────────────────────────────────────── */
++// Parsed as text, like verify-papers.mjs: this has to run without a build step.
++const paperSections = new Map(); // slug -> Set(sectionId)
++{
++  const blocks = papersSrc.split(/\n  \{\n/).slice(1);
++  for (const b of blocks) {
++    const slug = (b.match(/\bslug: '([^']*)'/) || [])[1];
++    if (!slug) continue;
++    const ids = new Set([...b.matchAll(/\n        id: '([^']+)'/g)].map((m) => m[1]));
++    paperSections.set(slug, ids);
++  }
++}
++if (!paperSections.size) fail('No papers parsed out of lib/papers.ts — the file shape changed.');
++
++/* ── every citation, from both manifests ─────────────────────────────────── */
++const citations = [];
++for (const [label, src] of [
++  ['framework', fwSrc],
++  ['guides', gdSrc],
++]) {
++  // Constants indirect the slug (P_CLIMATE etc). Resolve them first so the
++  // citation check reads real slugs rather than identifiers.
++  const consts = new Map(
++    [...src.matchAll(/const (P_[A-Z_]+) = '([^']+)';/g)].map((m) => [m[1], m[2]]),
++  );
++  for (const m of src.matchAll(/\{\s*paper:\s*(P_[A-Z_]+|'[^']+'),\s*section:\s*'([^']+)'\s*\}/g)) {
++    const raw = m[1];
++    const slug = raw.startsWith("'") ? raw.slice(1, -1) : consts.get(raw);
++    citations.push({ label, slug: slug ?? `UNRESOLVED(${raw})`, section: m[2] });
++  }
++}
++if (!citations.length) fail('No source citations found in framework.ts or guides.ts.');
++
++for (const c of citations) {
++  const sections = paperSections.get(c.slug);
++  if (!sections) {
++    fail(`${c.label}: cites paper "${c.slug}", which is not in lib/papers.ts`);
++  } else if (!sections.has(c.section)) {
++    fail(
++      `${c.label}: cites ${c.slug}#${c.section}, but that paper has no section with that id.\n` +
++        `      Sections available: ${[...sections].join(', ')}`,
++    );
++  }
++}
++
++/* ── the framework's own invariants ──────────────────────────────────────── */
++const version = (fwSrc.match(/FRAMEWORK_VERSION = '([^']+)'/) || [])[1];
++if (!version) fail('FRAMEWORK_VERSION is missing.');
++else if (!/^\d+\.\d+$/.test(version)) fail(`FRAMEWORK_VERSION "${version}" is not major.minor.`);
++
++const publishedAt = (fwSrc.match(/FRAMEWORK_PUBLISHED_AT = '([^']+)'/) || [])[1];
++if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedAt || '')) {
++  fail(`FRAMEWORK_PUBLISHED_AT "${publishedAt}" is not ISO yyyy-mm-dd.`);
++}
++
++const pillars = [...fwSrc.matchAll(/\n    id: '([a-z-]+)',\n    number: (\d+),\n    name: '([^']+)'/g)].map(
++  (m) => ({ id: m[1], number: Number(m[2]), name: m[3] }),
++);
++if (!pillars.length) fail('No pillars parsed out of framework.ts.');
++
++const critIds = [...fwSrc.matchAll(/\n        id: '(\d+\.\d+)',/g)].map((m) => m[1]);
++for (const id of new Set(critIds)) {
++  if (critIds.filter((x) => x === id).length > 1) {
++    fail(`duplicate criterion id "${id}" — criterion ids are cited externally and must be unique`);
++  }
++}
++// A criterion numbered 3.x inside pillar 2 makes every external citation wrong.
++{
++  let cursor = 0;
++  for (const m of fwSrc.matchAll(/\n    number: (\d+),|\n        id: '(\d+)\.\d+',/g)) {
++    if (m[1]) cursor = Number(m[1]);
++    else if (m[2] && Number(m[2]) !== cursor) {
++      fail(`criterion ${m[2]}.x sits inside pillar ${cursor} — the numbers must agree`);
++    }
++  }
++}
++for (const p of pillars) {
++  if (!fwSrc.includes(`id: '${p.id}'`)) fail(`pillar ${p.number} has no id`);
++}
++
++/* ── the guides' invariants ──────────────────────────────────────────────── */
++const guideSlugs = [...gdSrc.matchAll(/\n    slug: '([^']+)',\n    kind: '(decision|reference)'/g)].map(
++  (m) => ({ slug: m[1], kind: m[2] }),
++);
++if (!guideSlugs.length) fail('No guides parsed out of guides.ts.');
++for (const g of guideSlugs) {
++  if (!/^[a-z0-9-]+$/.test(g.slug)) fail(`guide slug is not url-safe: ${g.slug}`);
++  if (guideSlugs.filter((x) => x.slug === g.slug).length > 1) fail(`duplicate guide slug: ${g.slug}`);
++}
++// A guide that points at a pillar id which does not exist renders a dead link.
++const pillarIds = new Set(pillars.map((p) => p.id));
++for (const m of gdSrc.matchAll(/pillars: \[([^\]]*)\]/g)) {
++  for (const raw of m[1].split(',')) {
++    const id = raw.trim().replace(/^'|'$/g, '');
++    if (id && !pillarIds.has(id)) fail(`a guide references pillar "${id}", which does not exist`);
++  }
++}
++
++/* ── the derived surfaces still derive ───────────────────────────────────── */
++const derives = [
++  ['apps/web/app/sitemap.ts', 'getGuides', 'sitemap.ts no longer emits the guides'],
++  ['apps/web/app/sitemap.ts', '/framework', 'sitemap.ts does not emit /framework'],
++  ['apps/web/app/llms.txt/route.ts', '/framework', '/llms.txt does not advertise the framework'],
++];
++for (const [file, needle, why] of derives) {
++  if (!fs.existsSync(path.join(ROOT, file))) fail(`missing file: ${file}`);
++  else if (!read(file).includes(needle)) fail(why);
++}
++
++/* ── report ──────────────────────────────────────────────────────────────── */
++if (LIST) {
++  console.log(`\n${'Well-Installed Framework'} v${version} · ${publishedAt}\n`);
++  for (const p of pillars) {
++    const n = critIds.filter((c) => c.startsWith(`${p.number}.`)).length;
++    console.log(`  ${p.number}. ${p.name.padEnd(30)} ${n} criteria`);
++  }
++  console.log('\nGuides\n');
++  for (const g of guideSlugs) console.log(`  ${g.kind.padEnd(10)} /guides/${g.slug}`);
++  console.log('');
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} framework problem(s):\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ framework verified — v${version}, ${pillars.length} pillars, ${critIds.length} criteria, ` +
++    `${guideSlugs.filter((g) => g.kind === 'decision').length} decision guide(s), ` +
++    `${guideSlugs.filter((g) => g.kind === 'reference').length} reference installation(s), ` +
++    `${citations.length} citations all resolved`,
++);
