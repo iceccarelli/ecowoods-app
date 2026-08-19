@@ -1,0 +1,419 @@
+% ============================================================================
+%  CORRECTED 2026-08-17.  Two edits, both required before this exports to a
+%  PDF that can be served from ecowoods.ca:
+%
+%  1. TITLE STRIP.  Was "Est. 1998 / 2000 | 5,200+ Homes".  Both strings are
+%     on the retired-claims list in scripts/verify-business-facts.mjs — the
+%     home count is invented and the founding year is BUSINESS_NAP.foundedYear
+%     (2000).  They were removed from the whole codebase in the business-facts
+%     remediation, and the guard now reads PDF text as well, so a PDF carrying
+%     them turns the build red on purpose.
+%
+%  2. FOOTER.  Was "Vincenzo Ceccarelli Grimaldi | Grid Networks Engineer |
+%     LinkedIn | GitHub" on every page.  A homeowner reading about belt sanders
+%     does not need a Grid Networks Engineer's GitHub, and it quietly
+%     reassigns authorship of an EcoWoods document to a different entity in a
+%     different industry.
+%
+%  Re-export from Overleaf with the four machine .jpg files in the same folder,
+%  then:  mv docs/papers-pending/*.pdf apps/web/public/papers/
+%  The download buttons appear automatically — pdfIsPublished() checks the file.
+% ============================================================================
+
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage{textcomp}
+\usetheme{Madrid}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,fit,backgrounds,shadows}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{textcomp}
+
+% ========== ECOWOODS COLOR SYSTEM ==========
+\definecolor{ecodark}{RGB}{16,20,28}
+\definecolor{ecowood}{RGB}{145,95,45}
+\definecolor{ecoaccent}{RGB}{0,100,120}
+\definecolor{ecolite}{RGB}{250,247,242}
+\definecolor{ecolightblue}{RGB}{220,232,242}
+\definecolor{ecogray}{RGB}{65,75,85}
+
+\setbeamercolor{structure}{fg=ecoaccent}
+\setbeamercolor{frametitle}{bg=ecodark,fg=white}
+\setbeamercolor{title}{fg=ecodark}
+\setbeamercolor{block title}{bg=ecodark,fg=white}
+\setbeamercolor{block body}{bg=ecolite}
+\setbeamercolor{alerted text}{fg=ecowood}
+\setbeamercolor{block title alerted}{bg=ecowood,fg=white}
+\setbeamercolor{block body alerted}{bg=ecolite}
+\setbeamercolor{author in head/foot}{bg=ecolightblue,fg=ecodark}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=5ex,dp=3.2ex,leftskip=1.2em,rightskip=1.2em]{author in head/foot}%
+    \scriptsize\color{ecodark}
+    \textbf{EcoWoods} \quad|\quad Hardwood, Done Once. Done Right. \quad|\quad
+    \href{https://ecowoods.ca}{ecowoods.ca} \quad|\quad (647) 244-5156
+    \hfill
+    \insertframenumber/\inserttotalframenumber
+  \end{beamercolorbox}%
+  }%
+  \vskip0pt%
+}
+
+\newcommand{\framedimage}[2][]{%
+  \begin{tikzpicture}
+    \node[inner sep=1.2pt, draw=ecodark!30, line width=0.7pt, rounded corners=1.8pt] {
+      \includegraphics[#1]{#2}
+    };
+  \end{tikzpicture}%
+}
+
+\begin{document}
+
+% ========== 1. TITLE ==========
+\begin{frame}
+\begin{center}
+\vspace{0.3cm}
+{\fontsize{22}{26}\selectfont\textbf{\color{ecodark}THE CRAFT OF HARDWOOD FLOORING}}\\[0.12cm]
+{\fontsize{17}{21}\selectfont\textbf{\color{ecodark}Machines, Process \& Mastery}}\\[0.35cm]
+{\large An Educational Framework for Understanding\\How Professional Hardwood Companies Actually Work}\\[0.4cm]
+{\large\textit{Hardwood, Done Once. Done Right.}}\\[0.22cm]
+{\small ecowoods.ca \quad|\quad Est. 2000 \quad|\quad Toronto \& the GTA \quad|\quad Lifetime Workmanship Warranty}
+\end{center}
+\end{frame}
+
+% ========== 2. LEARNING OBJECTIVES ==========
+\begin{frame}{Learning Objectives}
+\vspace{0.05cm}
+\begin{enumerate}
+  \item What a professional hardwood flooring company actually does
+  \item The EcoWoods difference: protocol over speed
+  \item The four core machines that define the craft
+  \item Machine 1 — Belt Floor Sander (the big machine)
+  \item Machine 2 — Floor Edger
+  \item Machine 3 — Planetary / Multi-Disc Sander
+  \item Machine 4 — Floor Buffer \& Screening
+  \item How the full sequence produces a floor that lasts decades
+  \item Why equipment + people + process = mastery
+\end{enumerate}
+\end{frame}
+
+% ========== 3. WHAT COMPANIES DO ==========
+\begin{frame}{What Hardwood Flooring Companies Actually Do}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\begin{itemize}
+  \item Assess the house (moisture, substrate, RH history)
+  \item Specify the correct product (solid vs engineered)
+  \item Install or fully refinish with progressive sanding
+  \item Apply finish systems that perform for 25–35+ years
+  \item Protect the client from change orders and callbacks
+\end{itemize}
+\end{column}
+\begin{column}{0.45\textwidth}
+\begin{alertblock}{Core Truth}
+A hardwood floor is a living system.\\
+The company that masters both the forest and the machines becomes the only rational choice.
+\end{alertblock}
+\end{column}
+\end{columns}
+\vspace{0.25cm}
+\begin{center}
+Most market players optimise for lowest bid and speed.\\
+Master companies optimise for zero callbacks and lifetime performance.
+\end{center}
+\end{frame}
+
+% ========== 4. ECOWOODS DIFFERENCE ==========
+\begin{frame}{The EcoWoods Standard}
+\begin{itemize}
+  \item Fixed price in writing — no open-ended change orders
+  \item Zero dust (99.7\% HEPA containment — Festool \& Bona systems)
+  \item Only salaried master artisans (many 10+ years) — never subcontractors
+  \item Moisture testing + documented protocol on every job
+  \item Lifetime workmanship warranty in the contract
+  \item Ability and willingness to refuse jobs that will fail
+\end{itemize}
+\vspace{0.2cm}
+\begin{block}{Educational Principle}
+Restraint is a competitive advantage.\\
+The machines are only as good as the people and the protocol that control them.
+\end{block}
+\end{frame}
+
+% ========== 5. THE FOUR MACHINES OVERVIEW ==========
+\begin{frame}{The Four Core Machines}
+\begin{center}
+\begin{tabular}{cl}
+\toprule
+\textbf{\#} & \textbf{Machine} \\
+\midrule
+1 & Belt Floor Sander (Big Machine) — field leveling \& finish removal \\
+2 & Floor Edger — walls, corners, stairs, tight spaces \\
+3 & Planetary / Multi-Disc Sander — refining \& blending \\
+4 & Floor Buffer / Screening Machine — final prep \& intercoat abrasion \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{0.3cm}
+\begin{center}
+These four machines, used in sequence with progressive grits and proper dust control,\\
+are the mechanical backbone of every professional hardwood refinishing or site-finished installation.
+\end{center}
+\end{frame}
+
+% ========== 6. MACHINE 1 ==========
+\begin{frame}{Machine 1 — Belt Floor Sander}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+  \item Primary ``big machine''
+  \item Continuous abrasive belt over a drum ($\approx$200\,mm)
+  \item Removes old finish, levels the floor
+  \item Progressive grits: 36 $\rightarrow$ 60 $\rightarrow$ 80/100
+  \item Walk-behind, high material removal rate
+\end{itemize}
+\vspace{0.12cm}
+\begin{alertblock}{Key Skill}
+Keep it moving. Stopping creates divots. Pressure and tracking determine quality.
+\end{alertblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{center}
+\framedimage[width=0.95\textwidth]{01_belt_sander.jpg}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ========== 7. MACHINE 1 DETAIL ==========
+\begin{frame}{Belt Sander — Why It Matters}
+\begin{itemize}
+  \item Handles $\approx$80\% of material removal on a typical refinish
+  \item Creates the flat plane that every subsequent machine builds upon
+  \item Incorrect use leaves chatter, waves, or side-cut marks that are extremely difficult to erase
+  \item At EcoWoods: always paired with HEPA extraction; operated only by salaried artisans
+\end{itemize}
+\vspace{0.25cm}
+\begin{block}{Educational Takeaway}
+The belt sander is the foundation of the mechanical process.\\
+Mastery here determines whether the floor will look and perform correctly for decades.
+\end{block}
+\end{frame}
+
+% ========== 8. MACHINE 2 ==========
+\begin{frame}{Machine 2 — Floor Edger}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+  \item High-speed rotating disc
+  \item Reaches every place the belt cannot
+  \item Walls, baseboards, closets, stairs, under cabinets
+  \item Must match the grit sequence of the field
+  \item Most aggressive of the four machines
+\end{itemize}
+\vspace{0.12cm}
+\begin{alertblock}{Key Skill}
+Technique is everything. Swirl marks from poor edging are highly visible under finish.
+\end{alertblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{center}
+\framedimage[width=0.95\textwidth]{02_edger.jpg}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ========== 9. MACHINE 2 DETAIL ==========
+\begin{frame}{Edger — Why It Matters}
+\begin{itemize}
+  \item Edges are where most low-quality jobs fail visually
+  \item Must be blended carefully into the field (never edge too far out)
+  \item Corners and detail areas often still require hand work after the edger
+  \item Dust control is harder than on the big machine — HEPA connection is non-negotiable
+\end{itemize}
+\vspace{0.25cm}
+\begin{block}{Educational Takeaway}
+The edger reveals the true skill level of the crew.\\
+At EcoWoods, salaried artisans treat the perimeter with the same care as the open field.
+\end{block}
+\end{frame}
+
+% ========== 10. MACHINE 3 ==========
+\begin{frame}{Machine 3 — Planetary / Multi-Disc Sander}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+  \item Multiple counter-rotating discs (Trio-style)
+  \item Creates random, multi-directional scratch pattern
+  \item Erases belt lines and edger swirls
+  \item Excellent for flattening and blending
+  \item Forgiving yet highly effective
+\end{itemize}
+\vspace{0.12cm}
+\begin{alertblock}{Key Skill}
+This is the refining stage. It turns an aggressive cut into a uniform surface ready for finish.
+\end{alertblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{center}
+\framedimage[width=0.95\textwidth]{03_planetary_sander.jpg}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ========== 11. MACHINE 3 DETAIL ==========
+\begin{frame}{Planetary Sander — Why It Matters}
+\begin{itemize}
+  \item Separates a ``good'' sanding job from a master-level result
+  \item Ideal for multi-species floors and soft/hard grain differences
+  \item Prepares the surface so stain and finish absorb evenly
+  \item Modern dust-free systems integrate planetary action with high-efficiency extraction
+\end{itemize}
+\vspace{0.25cm}
+\begin{block}{Educational Takeaway}
+Skipping or rushing the planetary pass is one of the most common reasons floors show machine marks after finishing.
+\end{block}
+\end{frame}
+
+% ========== 12. MACHINE 4 ==========
+\begin{frame}{Machine 4 — Floor Buffer \& Screening}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+  \item Large circular drive plate (16–20'')
+  \item Screens the floor with fine mesh (100–150 grit)
+  \item Creates uniform microscopic scratch for adhesion
+  \item Used between coats (intercoat abrasion)
+  \item Final mechanical step before finish
+\end{itemize}
+\vspace{0.12cm}
+\begin{alertblock}{Key Skill}
+Screening is light abrasion only — not aggressive sanding. Technique prevents burnishing or residual swirl.
+\end{alertblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{center}
+\framedimage[width=0.95\textwidth]{04_buffer.jpg}
+\end{center}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ========== 13. MACHINE 4 DETAIL ==========
+\begin{frame}{Buffer — Why It Matters}
+\begin{itemize}
+  \item Last chance to create a perfect substrate for the finish system
+  \item Mandatory between coats on multi-coat water-based finishes
+  \item At EcoWoods: always performed inside the full HEPA dust-containment protocol
+  \item Enables the low-VOC, GreenGuard Gold finishes we specify
+\end{itemize}
+\vspace{0.25cm}
+\begin{block}{Educational Takeaway}
+The buffer does not correct bad sanding — it prepares a correctly sanded floor for decades of performance.
+\end{block}
+\end{frame}
+
+% ========== 14. FULL SEQUENCE ==========
+\begin{frame}{The Full Professional Sequence}
+\begin{enumerate}
+  \item Moisture testing \& acclimation (minimum 72 hours in the actual space)
+  \item Belt sander — progressive grits, field only
+  \item Edger — matching grits on all perimeters and details
+  \item Planetary / multi-disc — refine and blend field + edges
+  \item Buffer / screening — final uniform surface
+  \item Vacuum, tack, apply finish system (water-based, low-VOC)
+  \item Intercoat screening with buffer between coats
+  \item Final coat + documented lifetime workmanship warranty
+\end{enumerate}
+\vspace{0.15cm}
+\begin{center}
+\textbf{Any skipped step is a future liability.}
+\end{center}
+\end{frame}
+
+% ========== 15. WHY THIS MATTERS ==========
+\begin{frame}{Equipment + People + Process = Mastery}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{block}{Market Average}
+\begin{itemize}
+  \item Lowest bid
+  \item Subcontractors
+  \item Optional moisture testing
+  \item Speed over protocol
+\end{itemize}
+\end{block}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{alertblock}{EcoWoods}
+\begin{itemize}
+  \item Fixed price
+  \item Salaried master artisans
+  \item Moisture testing as first gate
+  \item Zero-callback protocol
+\end{itemize}
+\end{alertblock}
+\end{column}
+\end{columns}
+\vspace{0.25cm}
+\begin{center}
+The machines are available to everyone.\\
+The combination of machines + trained people + documented restraint is rare.
+\end{center}
+\end{frame}
+
+% ========== 16. ACTION FOR STUDENTS ==========
+\begin{frame}{How to Use This Material}
+\begin{enumerate}
+  \item Study each machine image and explanation from the accompanying zip
+  \item Film short educational clips: one machine per video, showing purpose and correct use
+  \item Emphasize that the machines only produce mastery when controlled by protocol and skilled artisans
+  \item Link every demonstration back to the EcoWoods standard: fixed price, zero dust, lifetime warranty
+\end{enumerate}
+\vspace{0.25cm}
+\begin{block}{Final Teaching Point}
+The floor will declare the competence of the people and the process that created it.\\
+Make sure it only ever declares mastery.
+\end{block}
+\end{frame}
+
+% ========== 17. KEY TAKEAWAYS ==========
+\begin{frame}{Key Educational Takeaways}
+\begin{enumerate}
+  \item Four machines form the mechanical core of professional hardwood work
+  \item Sequence and progressive grits are non-negotiable
+  \item Dust control (HEPA) is part of modern professional standard
+  \item People and protocol matter more than any single machine
+  \item EcoWoods integrates all of the above into a fixed-price, lifetime-warrantied system
+\end{enumerate}
+\end{frame}
+
+% ========== 18. FINAL ==========
+\begin{frame}{Final Mandate}
+\begin{center}
+\Huge
+The floor will declare your competence.\\[0.35em]
+{\large Make sure it only ever declares mastery.}
+\end{center}
+\vspace{0.5cm}
+\begin{center}
+{\LARGE\textbf{EcoWoods}}\\[0.1em]
+Hardwood, Done Once. Done Right.\\[0.22em]
+{\small ecowoods.ca \quad · \quad (647) 244-5156}\\[0.08em]
+{\footnotesize 32 Norfield Crescent, Toronto}
+\end{center}
+\end{frame}
+
+\end{document}

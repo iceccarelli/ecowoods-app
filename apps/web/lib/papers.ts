@@ -298,6 +298,142 @@ export const PAPERS: Paper[] = [
       },
     ],
   },
+
+  {
+    slug: 'hardwood-refinishing-machines-and-sequence',
+    title: 'The Craft',
+    subtitle: 'The four machines that refinish a hardwood floor, and the order they run in',
+    abstract:
+      'What each of the four core hardwood refinishing machines does, the progressive grit sequence they run in, and why the order — not the equipment — is what separates a master-level floor from a callback.',
+    summary:
+      'Belt sander, edger, planetary, buffer. Every professional hardwood refinish in North America runs on these four machines, and every one of them is available to anyone with a rental account. What is rare is the sequence: progressive grits, matched between field and perimeter, refined before finishing, screened between coats. This paper explains each machine, what it can and cannot fix, and what a skipped step looks like years later.',
+    version: '1.0',
+    publishedAt: '2026-08-17',
+    pages: 18,
+    readingMinutes: 11,
+    audience: 'Homeowners, trade apprentices, designers, property managers',
+    topics: ['Belt sander', 'Edger', 'Planetary sander', 'Buffer', 'Grit sequence', 'Dust extraction'],
+    pdf: 'ecowoods-hardwood-refinishing-machines-and-sequence-v1.0-2026-08.pdf',
+    sections: [
+      {
+        id: 'the-four-machines',
+        heading: 'The four machines',
+        body: [
+          'Used in sequence with progressive grits and proper dust control, these four machines are the mechanical backbone of every professional hardwood refinish and every site-finished installation.',
+          'They are also available to anyone. The machines are not the moat — the sequence, the people running them and the discipline to not skip a stage are.',
+        ],
+        table: {
+          caption: 'The mechanical core of a professional refinish',
+          head: ['#', 'Machine', 'What it does'],
+          rows: [
+            ['1', 'Belt floor sander', 'Levels the open field and removes the old finish'],
+            ['2', 'Floor edger', 'Walls, baseboards, closets, stairs, under cabinets'],
+            ['3', 'Planetary / multi-disc sander', 'Refines and blends field and perimeter together'],
+            ['4', 'Buffer / screening machine', 'Final surface prep and abrasion between finish coats'],
+          ],
+        },
+      },
+      {
+        id: 'belt-sander',
+        heading: '1 — Belt floor sander, the big machine',
+        body: [
+          'A continuous abrasive belt runs over a cylindrical drum roughly 200 mm (8 inches) wide, with the operator walking behind at a steady pace. It is the primary material-removal machine: it strips old finish, levels high spots, takes out cupping and crowning, and establishes the flat plane every later machine builds on.',
+          'It handles roughly 80% of total material removal on a typical refinish. Drum pressure is adjustable in steps, and the standard progression is 36 → 60 → 80/100 grit.',
+        ],
+        bullets: [
+          'Keep it moving. Stopping or hesitating creates a permanent low spot.',
+          'Belt tracking and consistent forward speed decide the final quality.',
+          'Incorrect technique leaves waves, side-cut marks or chatter that later machines struggle to erase.',
+          'Always run with high-efficiency dust extraction.',
+        ],
+        callout: {
+          label: 'Why it matters',
+          text: 'The belt sander is the foundation of the mechanical process. Mastery here decides whether the floor looks and performs correctly for decades — nothing downstream fully recovers from a bad first pass.',
+        },
+      },
+      {
+        id: 'edger',
+        heading: '2 — Floor edger',
+        body: [
+          'A high-speed rotating disc, typically 150–178 mm (6–7 inches), in a body compact enough to reach walls, baseboards, closets, stairs and the space under cabinets — everywhere the belt sander physically cannot go.',
+          'Per square centimetre it is the most aggressive of the four, and it must follow the exact same progressive grit sequence as the field. Corners and detail areas often still need hand scraping or orbital detail sanding afterwards.',
+        ],
+        bullets: [
+          'Edges and transitions are where most low-quality jobs fail visually.',
+          'Poor technique leaves swirl marks that are highly visible under a clear finish.',
+          'Never edge ahead of the field — always match the grit of the current pass.',
+          'Dust control is harder here than on the big machine.',
+        ],
+        callout: {
+          label: 'Why it matters',
+          text: 'The edger reveals the true skill level of a crew. The perimeter takes the same protocol as the open field, or the difference shows under finish for the life of the floor.',
+        },
+      },
+      {
+        id: 'planetary',
+        heading: '3 — Planetary / multi-disc sander',
+        body: [
+          'Three or more counter-rotating discs mounted on a head that itself rotates. Because the discs spin independently while the head turns, the scratch pattern comes out random and multi-directional rather than aligned to a direction of travel.',
+          'This is the refining and blending stage: it erases belt lines, edger swirls and cross-grain scratches, and leaves a uniform microscopic surface so stain and finish absorb evenly. It is particularly valuable on multi-species floors, on mixed hard and soft grain, and on engineered floors where aggressive belt sanding risks cutting through the wear layer.',
+        ],
+        callout: {
+          label: 'Why it matters',
+          text: 'This is a refining tool, not a stock-removal machine. Skipping or rushing the planetary pass is one of the most common reasons a floor shows machine marks after finishing — at which point the only fix is to start again.',
+        },
+      },
+      {
+        id: 'buffer',
+        heading: '4 — Buffer and screening machine',
+        body: [
+          'A single-disc rotary machine with a large drive plate, typically 16–20 inches (400–500 mm), fitted with fine mesh screens around 100–150 grit or with abrasive pads. It removes microns, not wood.',
+          'It does two jobs: final screening before the first coat of finish, and intercoat abrasion between successive coats. Both exist to create a uniform microscopic scratch pattern so the next layer of finish bonds properly.',
+        ],
+        bullets: [
+          'Mandatory between coats on multi-coat water-based systems.',
+          'Screening is light abrasion — excessive pressure or dwell burnishes the surface or leaves swirl.',
+          'Keep the machine moving in overlapping passes.',
+          'It does not correct bad sanding. It only prepares a correctly sanded floor.',
+        ],
+      },
+      {
+        id: 'sequence',
+        heading: 'The full sequence',
+        body: [
+          'Any skipped step is a future liability, and most of them are invisible on handover day.',
+        ],
+        ordered: [
+          'Moisture testing and acclimation — minimum 72 hours in the actual conditioned space.',
+          'Belt sander, progressive grits, field only.',
+          'Edger, matching grits, on every perimeter and detail.',
+          'Planetary / multi-disc, refining and blending field into edges.',
+          'Buffer / screening for a final uniform surface.',
+          'Vacuum, tack, apply the finish system.',
+          'Intercoat screening with the buffer between coats.',
+          'Final coat.',
+        ],
+      },
+      {
+        id: 'equipment-is-not-the-moat',
+        heading: 'Equipment is not the difference',
+        body: [
+          'Every machine in this paper can be rented in the Greater Toronto Area this afternoon. What cannot be rented is the sequence being followed when nobody is watching, on the section behind the door, at the end of a long day.',
+        ],
+        table: {
+          head: ['', 'Market average', 'What the protocol requires'],
+          rows: [
+            ['Bid', 'Lowest', 'Fixed in writing'],
+            ['Labour', 'Subcontracted', 'Salaried artisans'],
+            ['Moisture testing', 'Optional', 'The first gate — before any deposit'],
+            ['Optimised for', 'Speed', 'Zero callbacks'],
+          ],
+        },
+        callout: {
+          label: 'The point',
+          text: 'The machines are available to everyone. The combination of machines, trained people and documented restraint is what is rare — and it is the only thing a floor can still prove twenty years later.',
+        },
+      },
+    ],
+  },
 ];
 
 export const getPapers = (): Paper[] =>

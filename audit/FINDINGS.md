@@ -2408,3 +2408,59 @@ the pages open.
 `min-height: 0` is appended later and wins on cascade order, so the behaviour is
 correct — but two rules are now arguing about the same property in one file.
 Worth collapsing to one declaration the next time that region is edited.
+
+---
+
+### F-69 · Third paper — and the manifest paid for itself · P3
+
+`The Craft — the four machines that refinish a hardwood floor, and the order
+they run in` is published at `/papers/hardwood-refinishing-machines-and-sequence`.
+
+**It is one entry in one file.** `lib/papers.ts` gained a `Paper` object and
+nothing else changed: the route, the `TechArticle` and `BreadcrumbList` schema,
+the `CollectionPage` `hasPart`, the sitemap entry, the `/llms.txt` block, the
+`/ai.txt` citation block, the `/technical-library` card and the "more papers"
+cross-links all derive from the manifest. That was the argument for building it
+this way in F-63, and this is the first proof of it.
+
+Content is drawn from the four machine explainers supplied with the deck. Every
+figure in the paper — 200 mm drum, 36 → 60 → 80/100 grits, 150–178 mm edger
+disc, 16–20 inch buffer plate, 100–150 grit screens, ~80% of material removal —
+comes from those source documents. Nothing was added.
+
+**The PDF is staged, not published — for the third time, for the same reason.**
+`pdftotext` on the supplied export finds the retired claims on the title slide:
+
+```
+15:  Est. 1998 / 2000
+23:  5,200+ Homes
+```
+
+`pdfIsPublished()` keeps the download button and the `associatedMedia` node off
+the page, exactly as with the first two. **The uncorrected PDF is deliberately
+not committed** — there is no reason to carry a binary into the repo that the
+guard would refuse to serve. The corrected `.tex` is what ships; the PDF arrives
+when it is re-exported from it.
+
+**This time the source is fixed rather than reported.** The `.tex` is included
+alongside the PDF with two corrections and a header explaining both:
+
+- Title strip → `ecowoods.ca | Est. 2000 | Toronto & the GTA | Lifetime
+  Workmanship Warranty`. `foundedYear` is 2000; the home count has no verified
+  figure and a paper this technical does not need one.
+- Page footer → `EcoWoods | Hardwood, Done Once. Done Right. | ecowoods.ca |
+  (647) 244-5156`. It previously read
+  `Vincenzo Ceccarelli Grimaldi | Grid Networks Engineer | LinkedIn | GitHub`
+  on every page, which reassigns authorship of an EcoWoods customer document to
+  a different entity in a different industry.
+
+Re-export from Overleaf with the four machine images in the folder, then
+`mv docs/papers-pending/*.pdf apps/web/public/papers/` and all three download
+buttons appear at once. No code change.
+
+**The machine photographs are deliberately not included.** The four supplied
+images are AI-generated product renders, which is the same category as
+`public/images/gbp/` and its `PLACEHOLDER-NOTICE.md`. The HTML paper stands on
+text and tables — which is what makes it citable in the first place (F-63) — and
+real photographs of the shop's own machines would be a straight upgrade whenever
+they exist. That is shot 3 and shot 4 on `audit/PHOTO_SHOT_LIST.md`.
