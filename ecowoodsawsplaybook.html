@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ecowoods — The AWS Playbook</title>
+<style>
+:root{
+  --ink:#1c1613; --ink-2:#4a3f38; --ink-3:#7a6c62;
+  --paper:#fbf8f4; --card:#ffffff; --line:#e6ddd2;
+  --copper:#a8551f; --copper-soft:#f3e4d8; --walnut:#3d2b1f;
+  --good:#2f6b3f; --warn:#8a6100; --bad:#9b2c1f;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px}
+header.hero{background:var(--walnut);color:#f6efe7;padding:64px 0 56px;margin-bottom:56px}
+header.hero .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#d9a273;margin-bottom:18px}
+header.hero h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:0 0 18px;letter-spacing:-.02em;font-weight:700}
+header.hero p{margin:0;max-width:64ch;color:#cdbcac;font-size:17px}
+h2{font-size:clamp(22px,3.2vw,30px);line-height:1.2;letter-spacing:-.015em;margin:64px 0 8px;font-weight:700}
+h2 .num{font:600 13px/1 var(--mono);color:var(--copper);display:block;margin-bottom:10px;letter-spacing:.12em}
+h3{font-size:19px;line-height:1.3;margin:36px 0 8px;font-weight:650;letter-spacing:-.01em}
+h4{font-size:15px;margin:22px 0 6px;font-weight:650;color:var(--ink-2)}
+p{margin:0 0 14px;color:var(--ink-2);max-width:74ch}
+strong{color:var(--ink);font-weight:650}
+.lede{font-size:17px;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:56px 0}
+code{font:13px/1.5 var(--mono);background:var(--copper-soft);color:#7a3d13;padding:1px 5px;border-radius:3px}
+pre{background:var(--walnut);color:#e8dccd;padding:16px 18px;border-radius:8px;overflow-x:auto;font:13px/1.6 var(--mono)}
+pre code{background:none;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:18px 0;font-size:14.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:650;border-bottom:2px solid var(--line)}
+td:first-child{font-weight:600;color:var(--ink)}
+.grid{display:grid;gap:16px;margin:22px 0}
+@media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px}
+.card h4{margin-top:0}
+.card p:last-child{margin-bottom:0}
+.mech{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--copper);
+  border-radius:0 10px 10px 0;padding:22px 24px;margin:22px 0}
+.mech h3{margin-top:0}
+.mech .becomes{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.mech .becomes .lbl{font:600 11px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--copper);display:block;margin-bottom:8px}
+.pill{display:inline-block;font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 9px;border-radius:99px;vertical-align:middle}
+.p-done{background:#e2efe5;color:var(--good)}
+.p-gap{background:#fbe6e2;color:var(--bad)}
+.p-part{background:#fbf0d8;color:var(--warn)}
+ul,ol{color:var(--ink-2);max-width:74ch;padding-left:22px}
+li{margin-bottom:7px}
+.callout{background:#fbe6e2;border:1px solid #f0c9c1;border-radius:10px;padding:20px 22px;margin:24px 0}
+.callout.warn{background:#fbf0d8;border-color:#ecd7a4}
+.callout.info{background:#e9eef3;border-color:#ccd8e2}
+.callout h4{margin-top:0;color:var(--ink)}
+.callout p:last-child{margin-bottom:0}
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0}
+.q .qn{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--copper);display:block;margin-bottom:7px}
+.q p{margin-bottom:0}
+footer{margin:80px 0 60px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-3);font-size:13.5px}
+.tocbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin-bottom:8px}
+.tocbox ol{margin:0;padding-left:20px;column-gap:32px}
+@media(min-width:720px){.tocbox ol{columns:2}}
+.tocbox a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent}
+.tocbox a:hover{color:var(--copper);border-bottom-color:var(--copper)}
+</style></head><body>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Strategy · August 2026</div>
+  <h1>The AWS Playbook, applied to hardwood flooring</h1>
+  <p>Why AWS became the default reference for its industry, which of those mechanisms transfer to a Toronto trade business, and the measured gap between ecowoods.ca today and the site that owns this category.</p>
+</div></header>
+
+<div class="wrap">
+
+<div class="tocbox"><ol>
+  <li><a href="#p1">Why AWS is at the forefront</a></li>
+  <li><a href="#p2">The seven mechanisms, transferred</a></li>
+  <li><a href="#p3">What's missing, measured</a></li>
+  <li><a href="#p4">The build order</a></li>
+  <li><a href="#p5">The two risks that outrank everything</a></li>
+  <li><a href="#p6">What only Francisco can decide</a></li>
+</ol></div>
+
+<h2 id="p1"><span class="num">PART ONE</span>Why AWS is at the forefront</h2>
+
+<p class="lede">AWS did not win developer mindshare by having the best marketing site. It won by <strong>publishing the reference material its own industry needed and then never stopping.</strong> The competitive moat is not the content — it's that the content is produced by <em>mechanisms</em> rather than by campaigns.</p>
+
+<p>That distinction matters more than any individual tactic on this page. A campaign produces ten articles and ends. A mechanism produces an article every week for six years because the process, not a person's enthusiasm, generates it. Amazon's own internal phrasing for this is blunt: <strong>good intentions don't work, mechanisms do.</strong> Every item below is a mechanism.</p>
+
+<p>Strip away the scale and AWS runs a content ladder with seven rungs, each answering a different question at a different depth. Almost nobody in the trades runs more than two.</p>
+
+<table>
+<thead><tr><th>Rung</th><th>Answers</th><th>Ecowoods today</th></tr></thead>
+<tbody>
+<tr><td>Marketing page</td><td>What is this?</td><td><span class="pill p-done">strong</span></td></tr>
+<tr><td>Documentation</td><td>How exactly does it work?</td><td><span class="pill p-part">technical library</span></td></tr>
+<tr><td>Whitepaper</td><td>Why is this the right approach?</td><td><span class="pill p-done">3 papers</span></td></tr>
+<tr><td>Decision guide</td><td>Which option is right for me?</td><td><span class="pill p-gap">missing</span></td></tr>
+<tr><td>Reference architecture</td><td>Show me the whole thing assembled</td><td><span class="pill p-gap">missing</span></td></tr>
+<tr><td>Dated feed</td><td>What changed?</td><td><span class="pill p-part">now shipping</span></td></tr>
+<tr><td>Framework + assessment</td><td>How do I judge quality?</td><td><span class="pill p-gap">missing — the big one</span></td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2 id="p2"><span class="num">PART TWO</span>The seven mechanisms, transferred</h2>
+
+<div class="mech">
+<h3>1 · The Well-Architected Framework</h3>
+<p>AWS's single most consequential publication is not a product. It is a <strong>named, versioned, opinionated framework</strong> — six pillars, a question set per pillar, and a free tool that scores your workload against it. It converted AWS's opinion into the industry's measuring stick. Competitors now describe their own architectures in AWS's vocabulary.</p>
+<p>The mechanism: <em>publish the standard, and you are no longer a participant in the comparison — you are the axis it runs along.</em></p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p><strong>The Ecowoods Well-Installed Framework — a versioned public specification for judging a hardwood installation.</strong> Six pillars, each with a pass/fail question set: moisture &amp; acclimation, substrate &amp; flatness, fastening or adhesive system, finish system &amp; cure, dust containment &amp; site protection, sequence &amp; handover.</p>
+<p>Then the part that makes it a weapon: <strong>a self-assessment tool at <code>/framework/assess</code></strong> where a homeowner scores <em>the quote they just received from someone else</em> against it, and gets a PDF report naming what is missing. Every competitor's quote in Toronto becomes an input to an Ecowoods instrument. That is the highest-leverage single build available to this business, and it is entirely mechanism — no advertising spend, no invented claims.</p>
+</div></div>
+
+<div class="mech">
+<h3>2 · Decision guides</h3>
+<p>"Choosing an AWS analytics service." A fixed format: the criteria that actually matter → a comparison table → a decision tree → a recommendation with the conditions under which it changes. These rank for the highest-intent queries in existence, because they match the exact shape of the question a buyer is already asking.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p>A <code>/guides/</code> surface with the same fixed schema. <strong>Solid vs engineered</strong> · <strong>site-finished vs prefinished</strong> · <strong>oil-modified vs waterborne vs hardwax oil</strong> · <strong>refinish vs replace</strong> · <strong>species selection for radiant heat</strong> · <strong>nail vs glue vs float</strong>. Six guides covers essentially every real decision a Toronto homeowner faces. The <code>/design</code> configurator is already half of this — it does the choosing, but publishes none of the reasoning.</p>
+</div></div>
+
+<div class="mech">
+<h3>3 · The dated feed — "What's New"</h3>
+<p>Small entries. One canonical URL each. Published relentlessly, with RSS. It is why the industry hears about AWS <em>from AWS</em> rather than from a competitor's comparison page — and why crawlers return daily instead of monthly.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p><strong><code>/feed.xml</code> — shipped in patch 33</strong>, RSS 2.0 over all papers, articles and case studies, derived from the loaders so it cannot drift. The next step is the thing it feeds: a <strong><code>/whats-new</code></strong> surface with a genuinely high cadence — new species in stock, a machine added to the fleet, a finish system qualified, a code or standard update, a seasonal humidity advisory for the GTA. Short entries, dated, cheap to write, compounding.</p>
+</div></div>
+
+<div class="mech">
+<h3>4 · Published pricing and a calculator</h3>
+<p>AWS publishes per-unit pricing for every service and gives away a calculator that estimates your bill before you sign anything. In an industry built on opaque quoting, that was a shock — and it became the reason buyers started their research on AWS's own site.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p>Flooring is <em>more</em> opaque than cloud computing was. Nobody publishes prices. <strong>A documented, honest cost model at <code>/pricing</code> with a real calculator</strong> — square footage, species band, substrate condition, stairs, finish system, removal of existing — producing a range with the assumptions stated. Not a lead-capture form with a number behind it. The actual model, visible.</p>
+<p>This is the highest-risk, highest-reward item on the list, and it is <strong>entirely Francisco's call</strong> — the numbers are his. But note that <code>lib/pricing.ts</code> is currently eight lines, and one of the three published papers already has a section called <em>fixed-price</em>. The intent exists; the surface does not.</p>
+</div></div>
+
+<div class="mech">
+<h3>5 · Reference architectures</h3>
+<p>Complete, diagrammed, downloadable solutions to a whole problem — not a component. They are the most-shared artifacts AWS produces because they let someone else look competent in a meeting.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p><strong>Reference installations.</strong> "Radiant-heat main floor, 1920s Toronto semi, engineered white oak" as a complete published spec: substrate condition, moisture targets, acclimation schedule, fastening system, finish build, cure timeline, expected seasonal movement — diagrammed, downloadable, reusable. Six of these cover most of the GTA housing stock. They are also, not incidentally, exactly what an architect or designer forwards to a client.</p>
+</div></div>
+
+<div class="mech">
+<h3>6 · Machine-readability as a first-class product</h3>
+<p>Every AWS surface has an API, a CLI and an SDK. Nothing is human-only. The consequence in 2026 is that AI agents can operate AWS directly, and a service an agent can use is a service an agent recommends.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p>Ecowoods is already unusually far ahead here — <code>/llms.txt</code>, <code>/ai.txt</code>, a schema.org entity graph with <code>@id</code> cross-references, and now an RSS feed. The next two steps are genuinely frontier for a trade business:</p>
+<ul>
+<li><strong>A public JSON knowledge API</strong> — <code>/api/knowledge</code> returning the full corpus (papers, guides, framework, glossary) as structured JSON under a permissive citation licence.</li>
+<li><strong>An MCP server</strong> at <code>/mcp</code>, so Claude, ChatGPT and any agent can query Ecowoods' knowledge base as a tool rather than scraping a page. Almost no business in any trade has this. It is a small build on top of the manifest architecture that already exists.</li>
+</ul>
+</div></div>
+
+<div class="mech">
+<h3>7 · Owning the vocabulary</h3>
+<p>AWS defines its terms, publishes a glossary, and the industry adopts the definitions. Whoever writes the definition that language models quote has already won the question.</p>
+<div class="becomes"><span class="lbl">Becomes</span>
+<p><strong>A canonical glossary at <code>/glossary</code></strong>, one addressable page per term, each with <code>DefinedTerm</code> schema: acclimation, MC differential, cupping, crowning, telegraphing, overwood, lippage, sanding sequence, screen-and-recoat, dry-back time, sub-floor flatness tolerance. When someone asks an assistant "what is cupping in hardwood floors," the answer should be sourced from ecowoods.ca. This is cheap to build, mechanically derived from a manifest exactly like <code>papers.ts</code>, and disproportionately effective for AI citation.</p>
+</div></div>
+
+<hr>
+
+<h2 id="p3"><span class="num">PART THREE</span>What's missing, measured</h2>
+
+<p>Not impressions — counts from the repository at commit <code>24c7939</code>.</p>
+
+<table>
+<thead><tr><th>Surface</th><th>Now</th><th>Assessment</th></tr></thead>
+<tbody>
+<tr><td>Technical papers</td><td>3 (21 sections)</td><td>Genuinely strong. Ahead of every competitor in the GTA. <strong>All three PDFs are still unpublished.</strong></td></tr>
+<tr><td>Articles</td><td>6</td><td>Thin for an authority play. AWS's equivalent ratio would be hundreds.</td></tr>
+<tr><td>Case studies</td><td>5</td><td>Rich schema, but see the provenance risk below.</td></tr>
+<tr><td>Service-area pages</td><td>16 cities</td><td>Built, in the sitemap — and until patch 33, <strong>almost no internal links</strong>.</td></tr>
+<tr><td>Decision guides</td><td>0</td><td>The single biggest content gap by search intent.</td></tr>
+<tr><td>Glossary terms</td><td>0</td><td>Cheapest high-leverage build on the list.</td></tr>
+<tr><td>Named framework</td><td>0</td><td>The category-defining move. Nobody in this market has one.</td></tr>
+<tr><td>Published pricing</td><td>8 lines of code</td><td>Francisco's decision, not mine.</td></tr>
+<tr><td>Verified photographs</td><td><strong>0</strong></td><td>A flooring site with no verified photographs of its own work.</td></tr>
+<tr><td>Dated feed</td><td>shipping now</td><td>Patch 33.</td></tr>
+<tr><td>MCP / knowledge API</td><td>0</td><td>Frontier. Small build. Nobody in the trade has it.</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2 id="p4"><span class="num">PART FOUR</span>The build order</h2>
+
+<p>Sequenced by leverage per unit of effort, not by appeal.</p>
+
+<div class="grid two">
+<div class="card"><h4>Patch 33 <span class="pill p-done">ready</span></h4>
+<p>The link graph and the feed. Three orphaned routes wired into the chrome, the 16 city pages linked for real, <code>/feed.xml</code>, and <code>verify-links.mjs</code> — a guard that fails the build on any route with no way in, so the <code>/papers</code> failure cannot recur a fourth time.</p></div>
+
+<div class="card"><h4>34 · Glossary</h4>
+<p>25–40 terms, manifest-driven exactly like <code>papers.ts</code>, <code>DefinedTerm</code> schema on each, cross-linked from every paper. Pure structure — the definitions come from the papers that already exist.</p></div>
+
+<div class="card"><h4>35 · Decision guides</h4>
+<p>The <code>/guides</code> surface plus the first two guides in a fixed schema. Highest commercial-intent content type that does not exist yet.</p></div>
+
+<div class="card"><h4>36 · The Framework</h4>
+<p><code>/framework</code> — six pillars, versioned, published as a specification with a permanent citation URL. The document, not yet the tool.</p></div>
+
+<div class="card"><h4>37 · The assessment tool</h4>
+<p><code>/framework/assess</code>. Scores any contractor's quote against the framework and returns a PDF. The PDF pipeline already exists for invoices and quotes.</p></div>
+
+<div class="card"><h4>38 · MCP server + knowledge API</h4>
+<p><code>/mcp</code> and <code>/api/knowledge</code>. Makes the corpus directly queryable by agents rather than scrapeable.</p></div>
+</div>
+
+<hr>
+
+<h2 id="p5"><span class="num">PART FIVE</span>The two risks that outrank everything above</h2>
+
+<div class="callout">
+<h4>1 · The case studies may contain claims nobody measured</h4>
+<p>The five case studies carry precise engineering assertions — <em>"zero adhesion failure and stair deflection &lt;1mm over 18 months"</em>, moisture readings to one decimal place, cure-day counts — and one carries a <strong>specific residential street address</strong>. They were produced during the earlier autonomous agent run.</p>
+<p><strong>If those numbers were not measured on those jobs, every item in this playbook is built on sand.</strong> An answer engine that catches one fabricated figure discounts the entire domain, and the authority strategy inverts into a liability. The street address is separately a privacy problem regardless of provenance.</p>
+<p>This is the one thing to resolve before publishing anything further. Either the readings exist in Francisco's records and stay, or they come out. There is no third option.</p>
+</div>
+
+<div class="callout warn">
+<h4>2 · Zero verified photographs</h4>
+<p>This is a <em>hardwood flooring</em> business with no verified photographs of its own completed work. Every mechanism above raises the ceiling on credibility; photographs are the floor. A homeowner deciding on a five-figure job looks at pictures before they read a whitepaper, and an authority strategy with no evidence of craft reads as a content operation rather than a trade.</p>
+<p><code>audit/PHOTO_SHOT_LIST.md</code> already specifies what to capture. This is the highest-value non-code action available and it needs nothing from me.</p>
+</div>
+
+<hr>
+
+<h2 id="p6"><span class="num">PART SIX</span>What only Francisco can decide</h2>
+
+<div class="q"><span class="qn">Q1 · Pricing</span><p>Do we publish a real cost model with a calculator? It is the strongest differentiator on the list and the one that cannot be walked back. The numbers are yours.</p></div>
+<div class="q"><span class="qn">Q2 · The framework's content</span><p>I can build the structure, the versioning, the schema and the assessment tool. The six pillars and their pass/fail thresholds are trade judgment — they have to come from you, and they have to be defensible when a competitor attacks them.</p></div>
+<div class="q"><span class="qn">Q3 · Case-study provenance</span><p>Were those measurements taken? Which of the five describe real Ecowoods jobs, and may the address be published?</p></div>
+<div class="q"><span class="qn">Q4 · Publication cadence</span><p>A feed with nothing new in it is worse than no feed. What can this business actually sustain — weekly, biweekly, monthly? Answer honestly; the mechanism has to survive a busy season.</p></div>
+<div class="q"><span class="qn">Q5 · Naming</span><p>"The Ecowoods Well-Installed Framework" is a placeholder. The name matters more than usual, because the goal is for other people to say it.</p></div>
+
+<footer>
+<p><strong>Ecowoods — The AWS Playbook</strong> · Generated 19 August 2026 against <code>24c7939</code>. Counts are from the repository, not from memory. Nothing in this document invents a business fact, a metric or a claim; every open question about content is listed in Part Six rather than answered.</p>
+</footer>
+
+</div></body></html>
