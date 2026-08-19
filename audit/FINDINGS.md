@@ -2464,3 +2464,61 @@ images are AI-generated product renders, which is the same category as
 text and tables — which is what makes it citable in the first place (F-63) — and
 real photographs of the shop's own machines would be a straight upgrade whenever
 they exist. That is shot 3 and shot 4 on `audit/PHOTO_SHOT_LIST.md`.
+
+---
+
+### F-70 · Cross-reference: what was where, and where it belongs · P3
+
+Cloned `main` at `7bc71d5` and inventoried every artifact the papers work
+touches.
+
+**Eight files were sitting at the repository root:**
+
+```
+01_belt_sander.jpg            170 KB     01_belt_sander_explained.md
+02_edger.jpg                  204 KB     02_edger_explained.md
+03_planetary_sander.jpg       150 KB     03_planetary_sander_explained.md
+04_buffer.jpg                 165 KB     04_buffer_explained.md
+```
+
+The four `.md` explainers are the source notes the machines paper's HTML
+sections were written from — keeping them at the root duplicates a source of
+truth that now lives in `lib/papers.ts`. The four `.jpg` figures are what the
+`.tex` includes by bare filename, so they have to sit next to it to compile.
+Both sets moved to `docs/papers-pending/`, which is where the `.tex` already is.
+
+689 KB of images also left the repository root, where every clone pays for them
+and nothing references them.
+
+**`apps/web/public/papers/` does not exist**, so all three download buttons are
+still off. The `mv docs/papers-pending/*.pdf apps/web/public/papers/` that ran
+before the apply chain was undone by the chain itself:
+
+```
+Would remove apps/web/public/papers/
+Removing apps/web/public/papers/
+```
+
+`git reset --hard` restored the two tracked PDFs to `docs/papers-pending/`, and
+`git clean -fd` removed `apps/web/public/papers/` because nothing had ever been
+committed into it — an untracked directory. **Nothing was lost, and the outcome
+was correct anyway**: those two exports still carry the retired claims, so
+serving them would have failed `verify:facts` at the next build.
+
+The sequencing that actually works is now written into
+`docs/papers-pending/README.md`: move the PDF **and `git add` it in the same
+step**, before the next apply chain runs. A `mv` on its own does not survive
+`git clean -fd`.
+
+**Everything else is where it should be.** `docs/internal/` holds the
+architecture review outside `public/`. `docs/papers-pending/` holds sources and
+unpublishable exports. `apps/web/public/` — the only directory Next serves —
+contains no paper artifacts at all, which is exactly right until a corrected
+export exists.
+
+**Noted, not acted on:** the repository root still carries roughly 35 legacy
+`.md` reports from the autonomous agent run — `EXECUTION_REPORT_*`, `SOUL.md`,
+`IDENTITY.md`, `HEARTBEAT.md`, `PHASE_2_SUMMARY.md` and the rest. They are inert
+and several are still corruption-damaged (recorded during the second corruption
+wave). Clearing them is a repo-hygiene pass of its own, not something to fold
+into a papers patch.
