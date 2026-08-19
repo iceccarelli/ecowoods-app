@@ -38,8 +38,6 @@
  * criterion in place without moving the version.
  */
 
-import { getPaper } from './papers';
-
 export type Severity = 'critical' | 'major' | 'advisory';
 
 export type FrameworkCriterion = {
@@ -342,9 +340,24 @@ export const severityCount = (s: Severity) => allCriteria().filter((c) => c.seve
 
 export const pillarById = (id: string) => PILLARS.find((p) => p.id === id);
 
-/** Resolve a criterion's citation to the live paper URL. Returns null if the paper is gone. */
-export const sourceHref = (c: FrameworkCriterion): string | null =>
-  getPaper(c.source.paper) ? `/papers/${c.source.paper}#${c.source.section}` : null;
+/**
+ * Resolve a criterion's citation to the paper URL.
+ *
+ * This deliberately does NOT check that the paper exists at runtime, and that
+ * is a correctness improvement rather than a shortcut. It used to import
+ * getPaper() from ./papers and return null for a missing paper — which broke
+ * the production build, because lib/papers.ts reaches for node:fs to decide
+ * whether a PDF has been published, and this module is imported by
+ * AssessClient.tsx, which is a client component. Webpack followed
+ * AssessClient -> framework -> papers -> node:fs and failed. See F-80.
+ *
+ * The check was redundant anyway. scripts/verify-framework.mjs resolves every
+ * citation in this file against lib/papers.ts and fails the build when one does
+ * not exist, which is strictly stronger: a broken citation stops the deploy
+ * instead of silently rendering as a missing link nobody notices.
+ */
+export const sourceHref = (c: FrameworkCriterion): string =>
+  `/papers/${c.source.paper}#${c.source.section}`;
 
 /**
  * Scoring. Deliberately simple and deliberately harsh on the criticals: a floor

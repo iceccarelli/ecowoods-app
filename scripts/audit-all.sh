@@ -115,6 +115,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-papers.mjs ] && run "verify:papers" node scripts/verify-papers.mjs
 [ -f scripts/verify-links.mjs ]  && run "verify:links"  node scripts/verify-links.mjs
 [ -f scripts/verify-framework.mjs ] && run "verify:framework" node scripts/verify-framework.mjs
+[ -f scripts/verify-client-boundary.mjs ] && run "verify:client" node scripts/verify-client-boundary.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"

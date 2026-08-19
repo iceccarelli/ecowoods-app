@@ -168,11 +168,11 @@ export default function FrameworkPage() {
                     <p className="fw-risk">
                       <strong>If not:</strong> {c.risk}
                     </p>
-                    {href && (
+                    {href ? (
                       <p className="fw-source">
                         Source: <Link href={href}>{c.source.section.replace(/-/g, ' ')}</Link>
                       </p>
-                    )}
+                    ) : null}
                   </li>
                 );
               })}

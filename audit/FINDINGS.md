@@ -2768,3 +2768,85 @@ back, the framework link moves to the footer, where the guides already sit.
 Re-measure on the next `--full` runtime pass regardless. Asserting that
 something fits is what caused F-65; this one is at least arithmetically safe
 rather than confidently guessed.
+
+---
+
+## 33. The one that got through
+
+### F-80 · A client component reached `node:fs` three modules deep · **P0, my error**
+
+`origin/main` at `8aa0b69` does not build. The deploy failed. I shipped it.
+
+```
+Import trace for requested module:
+node:path
+./lib/papers.ts
+./lib/framework.ts
+./app/framework/assess/AssessClient.tsx
+```
+
+`AssessClient.tsx` is a client component. It imports `lib/framework.ts` for the
+pillars and the scoring function. `lib/framework.ts` imported `getPaper` from
+`lib/papers.ts` — **one function, used on one server-rendered page, to decide
+whether to render a source link**. And `lib/papers.ts` reaches for `node:fs` to
+test whether a PDF has been published. Webpack followed that chain into the
+browser bundle and refused.
+
+**Every guard passed. `tsc --noEmit` passed. `parse-scan` passed.** Nothing was
+type-incorrect and nothing was structurally wrong; the module graph was wrong,
+three hops deep, and no check in this repository looked at module graphs.
+
+**Why I did not catch it.** `prisma generate` needs `binaries.prisma.sh`, which
+is blocked in the environment I develop in, so `next build` cannot run there at
+all. I said so plainly when handing over patch 34 — *"section 3 of the audit is
+the real gate"* — and that was accurate. It was also not a substitute for
+reasoning about the import I had just written. The import chain was three lines
+long and I could have read it.
+
+**The fix** removes the import rather than working around it. `sourceHref()` no
+longer checks that the paper exists, because that check was already redundant:
+`scripts/verify-framework.mjs` resolves every citation against `lib/papers.ts`
+and fails the build when one does not exist. That is strictly stronger than the
+runtime check it replaces — a broken citation now stops the deploy instead of
+silently rendering as a missing link nobody notices.
+
+### F-81 · The failure becomes a guard · P1
+
+`scripts/verify-client-boundary.mjs` finds every file that declares
+`'use client'`, walks its relative and `@/` imports transitively, and fails if
+any module in that graph imports a Node builtin. It prints the full chain,
+because the chain is the part that cannot be seen by reading one file.
+
+Reintroducing the exact bug reproduces webpack's own trace:
+
+```
+✗ 1 client component(s) can reach a Node builtin:
+  · apps/web/app/framework/assess/AssessClient.tsx  →  node:fs
+      apps/web/app/framework/assess/AssessClient.tsx
+        └─ apps/web/lib/framework.ts
+          └─ apps/web/lib/papers.ts
+            └─ node:fs   ← webpack follows this into the browser bundle
+```
+
+`next build` already catches this, so the guard is not about detection. It is
+about catching it in two seconds instead of two minutes, **and in an environment
+where `next build` cannot run at all** — which is exactly the environment that
+shipped F-80.
+
+**One false-positive class, found and fixed before shipping.** The first run
+flagged three admin invoice forms. All three import `lib/actions/invoices.ts`,
+which is `'use server'` — a server-action boundary that Next replaces with an
+RPC stub, so nothing behind it is bundled for the browser. Traversal now stops
+at any `'use server'` module. Current state: 53 client components, zero
+violations.
+
+### The pattern, stated plainly
+
+This is the fourth guard in this project written in response to a specific
+failure rather than in anticipation of one: `verify-schema` after the FAQ
+duplication, `verify-links` after `/papers` shipped unreachable, `verify-papers`
+after a PDF filename went missing in silence, and now `verify-client-boundary`.
+
+That ratio is not a good sign about foresight, and it is a very good sign about
+the shape of the repository. A failure that produces a guard cannot recur. A
+failure that produces only an apology recurs on a schedule.
