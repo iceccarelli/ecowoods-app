@@ -1,0 +1,1094 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index e4d5a8e..91ee9f3 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -165,6 +165,7 @@ export async function GET() {
+     `Short brief: ${SITE_URL}/llms.txt`,
+     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
+     `Resource index (everything published, grouped by reader intent): ${SITE_URL}/resources`,
++    `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
+     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
+     `Decision guides and reference installations: ${SITE_URL}/guides`,
+     `Glossary: ${SITE_URL}/glossary — canonical definitions, one addressable page per term, each sourced to a paper.`,
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index 19235bf..296a176 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -3,6 +3,7 @@ import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
++import { getFigures } from '@/lib/figures';
+ import {
+   PILLARS,
+   FRAMEWORK_NAME,
+@@ -144,6 +145,18 @@ function build() {
+     source: url(`/papers/${t.source.paper}#${t.source.section}`),
+   }));
+ 
++  const figures = getFigures().map((f) => ({
++    id: `figure:${f.id}`,
++    number: f.number,
++    title: f.title,
++    caption: f.caption,
++    kind: f.kind,
++    unit: f.unit,
++    url: url(`/data#fig-${f.id}`),
++    rows: f.kind === 'range' ? f.rangeRows : f.barRows,
++    source: url(`/papers/${f.source.paper}#${f.source.section}`),
++  }));
++
+   const business = {
+     name: BUSINESS.name,
+     region: BUSINESS.region,
+@@ -154,7 +167,7 @@ function build() {
+     serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
+   };
+ 
+-  return { papers, framework, guides, glossary, business };
++  return { papers, framework, guides, glossary, figures, business };
+ }
+ 
+ export async function GET(request: NextRequest) {
+@@ -177,7 +190,7 @@ export async function GET(request: NextRequest) {
+       sitemap: url('/sitemap.xml'),
+       feed: url('/feed.xml'),
+     },
+-    collections: ['papers', 'framework', 'guides', 'glossary', 'business'],
++    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'business'],
+     usage: {
+       all: url('/api/knowledge'),
+       byCollection: url('/api/knowledge?collection=glossary'),
+@@ -188,6 +201,7 @@ export async function GET(request: NextRequest) {
+       frameworkCriteria: all.framework.criterionCount,
+       guides: all.guides.length,
+       glossaryTerms: all.glossary.length,
++      figures: all.figures.length,
+       serviceAreas: all.business.serviceAreas.length,
+     },
+   };
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index c51f7fe..dc299df 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -128,6 +128,9 @@ export function ContentLibraryPromo() {
+               <li>
+                 <a href="/feed.xml">RSS feed</a>
+               </li>
++              <li>
++                <Link href="/data">Data &amp; figures</Link>
++              </li>
+               <li>
+                 <a href="/api/knowledge">Public JSON API</a>
+               </li>
+diff --git a/apps/web/app/components/Figure.tsx b/apps/web/app/components/Figure.tsx
+new file mode 100644
+index 0000000..2614c88
+--- /dev/null
++++ b/apps/web/app/components/Figure.tsx
+@@ -0,0 +1,213 @@
++import type { Figure as Fig } from '@/lib/figures';
++
++/**
++ * Figure — a server-rendered inline SVG chart with a data table beneath it.
++ *
++ * DESIGN DECISIONS, AND WHY
++ *
++ * ONE SERIES, ONE HUE. Both figures show a single measure across categories.
++ * The first draft encoded them with the site's status colours; running the
++ * palette validator killed it — `--copper-text` and `--danger` sit at ΔE 6.7
++ * for normal vision, which is below the 15 floor, meaning a reader with full
++ * colour vision cannot reliably tell them apart. `--success` and `--warning`
++ * failed too, at 11.7.
++ *
++ * That failure was the useful part. Neither chart actually needs two colours:
++ * the safe humidity band is not a second series, it is a REFERENCE REGION —
++ * context drawn recessively behind the marks, which is the standard way to show
++ * "target range versus actual" and a better chart than the one I started with.
++ * With one hue, the categorical colour problem does not exist.
++ *
++ * NO LEGEND. A legend is mandatory at two or more series and wrong at one — the
++ * title names the measure, and every mark is directly labelled.
++ *
++ * NO CLIENT JAVASCRIPT. These are static figures inside documents. A hover
++ * tooltip's job is to reveal a value the mark does not show; every value here is
++ * already printed beside its bar, so a tooltip layer would add a hydration cost
++ * and a print-time failure mode to reveal what is already on screen. `<title>`
++ * elements carry the same information to a screen reader, and the table beneath
++ * is the accessible view rather than a hidden alternative.
++ *
++ * DARK MODE IS SELECTED, NOT FLIPPED. Every colour is a semantic token whose
++ * dark value was measured separately in globals.css.
++ *
++ * `approx` renders "≈" and `openEnded` renders an arrow rather than a closed
++ * bar, because the sources say "≈1360" and "above 60%". Rendering those as
++ * 1360 and 70 would invent two numbers.
++ */
++
++const W = 790;
++// 250, not 210. At 210 the longest row label — "Safe operating band for
++// hardwood" — rendered as "operating band for hardwood": SVG text does not
++// wrap and does not overflow visibly, it just gets cut off by the viewBox with
++// no warning. Nothing in the guard, the typecheck or the build catches that;
++// only rendering the figure and looking at it does. The measured longest label
++// needs ~228px at 13px, so this is the widest label plus a 22px gutter.
++const PAD_L = 250;
++const PAD_R = 64;
++const ROW_H = 44;
++const BAR_H = 18;
++const AXIS_H = 34;
++
++export function FigureChart({ figure }: { figure: Fig }) {
++  const rows = figure.kind === 'range' ? (figure.rangeRows ?? []) : (figure.barRows ?? []);
++  const height = rows.length * ROW_H + AXIS_H + 8;
++  const plotW = W - PAD_L - PAD_R;
++  const x = (v: number) => PAD_L + (Math.min(v, figure.axisMax) / figure.axisMax) * plotW;
++  const titleId = `fig-${figure.id}-title`;
++  const descId = `fig-${figure.id}-desc`;
++
++  return (
++    <figure className="fig" id={`fig-${figure.id}`}>
++      <figcaption className="fig-head">
++        <span className="fig-number">Figure {figure.number}</span>
++        <h3>{figure.title}</h3>
++      </figcaption>
++
++      <div className="fig-plot">
++        <svg
++          viewBox={`0 0 ${W} ${height}`}
++          width="100%"
++          height="auto"
++          role="img"
++          aria-labelledby={`${titleId} ${descId}`}
++          preserveAspectRatio="xMidYMid meet"
++        >
++          <title id={titleId}>{figure.title}</title>
++          <desc id={descId}>{figure.caption}</desc>
++
++          {/* Grid first, so every mark sits above it. Recessive by design. */}
++          {figure.axisTicks.map((t) => (
++            <line
++              key={`g${t}`}
++              x1={x(t)}
++              x2={x(t)}
++              y1={0}
++              y2={height - AXIS_H}
++              className="fig-grid"
++            />
++          ))}
++
++          {figure.kind === 'range' &&
++            (figure.rangeRows ?? []).map((r, i) => {
++              const y = i * ROW_H + (ROW_H - BAR_H) / 2;
++              const x1 = x(r.from);
++              const x2 = x(r.to);
++              return (
++                <g key={r.label}>
++                  <title>
++                    {r.label}: {r.openEnded ? `above ${r.from}` : `${r.from}–${r.to}`} {figure.unit}
++                  </title>
++                  <text x={PAD_L - 14} y={y + BAR_H / 2 + 4} className="fig-label" textAnchor="end">
++                    {r.label}
++                  </text>
++                  <rect
++                    x={x1}
++                    y={r.reference ? y - 6 : y}
++                    width={Math.max(2, x2 - x1)}
++                    height={r.reference ? BAR_H + 12 : BAR_H}
++                    rx={r.reference ? 3 : 4}
++                    className={r.reference ? 'fig-band' : 'fig-bar'}
++                  />
++                  {r.openEnded && (
++                    <polygon
++                      points={`${x2 - 2},${y} ${x2 + 12},${y + BAR_H / 2} ${x2 - 2},${y + BAR_H}`}
++                      className="fig-bar"
++                    />
++                  )}
++                  <text
++                    x={(r.openEnded ? x2 + 16 : x2) + 8}
++                    y={y + BAR_H / 2 + 4}
++                    className="fig-value"
++                  >
++                    {r.openEnded ? `${r.from}+` : `${r.from}–${r.to}`}
++                  </text>
++                </g>
++              );
++            })}
++
++          {figure.kind === 'bar' &&
++            (figure.barRows ?? []).map((r, i) => {
++              const y = i * ROW_H + (ROW_H - BAR_H) / 2;
++              return (
++                <g key={r.label}>
++                  <title>
++                    {r.label}: {r.approx ? 'approximately ' : ''}
++                    {r.value} {figure.unit}
++                  </title>
++                  <text x={PAD_L - 14} y={y + BAR_H / 2 + 4} className="fig-label" textAnchor="end">
++                    {r.label}
++                  </text>
++                  <rect
++                    x={PAD_L}
++                    y={y}
++                    width={Math.max(2, x(r.value) - PAD_L)}
++                    height={BAR_H}
++                    rx={4}
++                    className="fig-bar"
++                  />
++                  <text x={x(r.value) + 8} y={y + BAR_H / 2 + 4} className="fig-value">
++                    {r.approx ? '≈' : ''}
++                    {r.value.toLocaleString('en-CA')}
++                  </text>
++                </g>
++              );
++            })}
++
++          {/* Axis last. */}
++          <line
++            x1={PAD_L}
++            x2={W - PAD_R}
++            y1={height - AXIS_H}
++            y2={height - AXIS_H}
++            className="fig-axis"
++          />
++          {figure.axisTicks.map((t) => (
++            <text key={`t${t}`} x={x(t)} y={height - AXIS_H + 18} className="fig-tick">
++              {t.toLocaleString('en-CA')}
++            </text>
++          ))}
++          <text x={W - PAD_R} y={height - 4} className="fig-unit" textAnchor="end">
++            {figure.unit}
++          </text>
++        </svg>
++      </div>
++
++      <p className="fig-caption">{figure.caption}</p>
++
++      {/* The table is the accessible view and the printable one. It is visible,
++          not hidden behind a toggle: a reader who wants the exact numbers should
++          not have to discover a control to get them. */}
++      <table className="fig-table">
++        <caption>Figure {figure.number} — source data</caption>
++        <thead>
++          <tr>
++            <th scope="col">{figure.kind === 'range' ? 'Condition' : 'Species'}</th>
++            <th scope="col">{figure.unit}</th>
++            <th scope="col">Note</th>
++          </tr>
++        </thead>
++        <tbody>
++          {figure.kind === 'range'
++            ? (figure.rangeRows ?? []).map((r) => (
++                <tr key={r.label}>
++                  <th scope="row">{r.label}</th>
++                  <td>{r.openEnded ? `above ${r.from}%` : `${r.from}–${r.to}%`}</td>
++                  <td>{r.note ?? ''}</td>
++                </tr>
++              ))
++            : (figure.barRows ?? []).map((r) => (
++                <tr key={r.label}>
++                  <th scope="row">{r.label}</th>
++                  <td>
++                    {r.approx ? '≈' : ''}
++                    {r.value.toLocaleString('en-CA')}
++                  </td>
++                  <td>{r.note ?? ''}</td>
++                </tr>
++              ))}
++        </tbody>
++      </table>
++    </figure>
++  );
++}
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 7db2362..9060350 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -153,6 +153,7 @@ export default function SiteFooter() {
+               <a href="/framework/assess">Score a quote</a>
+               <a href="/guides">Decision Guides</a>
+               <a href="/glossary">Glossary</a>
++              <a href="/data">Data &amp; Figures</a>
+               <a href="/papers">Technical Papers</a>
+               <a href="/technical-library">Technical Library</a>
+               <a href="/blog">Articles</a>
+diff --git a/apps/web/app/data/page.tsx b/apps/web/app/data/page.tsx
+new file mode 100644
+index 0000000..4366ee7
+--- /dev/null
++++ b/apps/web/app/data/page.tsx
+@@ -0,0 +1,139 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { getFigures } from '@/lib/figures';
++import { getPaper } from '@/lib/papers';
++import { FigureChart } from '../components/Figure';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++/**
++ * /data — the figures, each independently citable.
++ *
++ * Scientific publishing solved this a century ago: number the figures, caption
++ * them, and let each be referenced without the document around it. A figure with
++ * a permalink and a caption is the artifact that ends up in someone else's slide
++ * deck with a URL under it. A table inside a paper is not.
++ *
++ * Each figure emits ImageObject schema pointing at its own anchor, so an answer
++ * engine asked for "Toronto indoor humidity chart" has something addressable to
++ * return rather than a page it would have to describe.
++ */
++
++export const metadata: Metadata = {
++  title: 'Data & Figures | EcoWoods',
++  description:
++    'Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. Every value is drawn from a published technical paper and free to reuse under CC BY 4.0.',
++  alternates: { canonical: '/data' },
++  openGraph: {
++    title: 'Data & Figures — EcoWoods',
++    description:
++      'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
++    type: 'website',
++    url: `${SITE_URL}/data`,
++  },
++};
++
++export default function DataPage() {
++  const figures = getFigures();
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={{
++          '@context': 'https://schema.org',
++          '@type': 'Dataset',
++          '@id': `${SITE_URL}/data#dataset`,
++          name: 'EcoWoods hardwood flooring figures',
++          description:
++            'Charted data on hardwood flooring in Toronto and the GTA, each figure drawn from a published technical paper.',
++          url: `${SITE_URL}/data`,
++          license: 'https://creativecommons.org/licenses/by/4.0/',
++          isAccessibleForFree: true,
++          creator: { '@id': `${SITE_URL}/#organization` },
++          distribution: {
++            '@type': 'DataDownload',
++            encodingFormat: 'application/json',
++            contentUrl: `${SITE_URL}/api/knowledge?collection=figures`,
++          },
++          hasPart: figures.map((f) => ({
++            '@type': 'ImageObject',
++            '@id': `${SITE_URL}/data#fig-${f.id}`,
++            name: `Figure ${f.number} — ${f.title}`,
++            caption: f.caption,
++            url: `${SITE_URL}/data#fig-${f.id}`,
++          })),
++        }}
++      />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Data & Figures', url: `${SITE_URL}/data` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Data &amp; Figures</span>
++          </nav>
++          <h1 className="tlx-title">Data &amp; figures</h1>
++          <p className="tlx-lede">
++            {figures.length} numbered figures, each drawn from a{' '}
++            <Link href="/papers">technical paper</Link> on this site and each with its own
++            permalink. Every one carries the table it was built from, so the numbers can be checked
++            rather than trusted.
++          </p>
++          <p className="fw-meta">
++            <span>CC BY 4.0 — reuse with attribution</span>
++            <span aria-hidden="true">·</span>
++            <span>
++              <a href="/api/knowledge?collection=figures">JSON</a>
++            </span>
++            <span aria-hidden="true">·</span>
++            <span>Print → Save as PDF</span>
++          </p>
++        </div>
++      </header>
++
++      {figures.map((f) => {
++        const paper = getPaper(f.source.paper);
++        return (
++          <section key={f.id} className="tlx-section" aria-label={`Figure ${f.number}`}>
++            <div className="shell">
++              <FigureChart figure={f} />
++              <p className="fig-source">
++                Source:{' '}
++                <Link href={`/papers/${f.source.paper}#${f.source.section}`}>
++                  {paper ? paper.title : f.source.paper} — {f.source.section.replace(/-/g, ' ')}
++                </Link>{' '}
++                · Permalink: <a href={`/data#fig-${f.id}`}>/data#fig-{f.id}</a>
++              </p>
++            </div>
++          </section>
++        );
++      })}
++
++      <section className="tlx-section" aria-label="Reuse">
++        <div className="shell">
++          <p className="tlx-kicker">Reuse</p>
++          <h2 className="tlx-h2">These are meant to be taken</h2>
++          <p className="tlx-note">
++            Screenshot them, embed them, redraw them from the tables. The licence is CC BY 4.0 and
++            the only condition is attribution by URL. Every figure is server-rendered SVG with the
++            underlying table beside it, so nothing here requires JavaScript, and the machine-readable
++            version of the same data is at <a href="/api/knowledge?collection=figures">/api/knowledge</a>.
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta fw-cta--ghost" href="/resources">
++              All resources
++            </Link>
++            <Link className="fw-cta fw-cta--ghost" href="/authority">
++              Citation guide
++            </Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 14cabc8..c792a87 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8406,3 +8406,74 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ 
+   @page { margin: 16mm 14mm; }
+ }
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   FIGURES  ·  .fig-*   —  numbered, captioned, citable charts
++
++   ONE HUE. Both figures carry a single series; the humidity band is a reference
++   region rather than a second series, so no categorical palette is involved and
++   the pair-separation problem that killed two earlier colour plans does not
++   arise. See the comment block in app/components/Figure.tsx.
++
++   Grid and axis are recessive — --line, never --ink. Values and labels wear
++   text tokens, never the series colour: the bar carries identity, the number
++   beside it carries the value.
++   ═════════════════════════════════════════════════════════════════════════ */
++
++.fig { margin: 2rem 0 0; padding: 1.6rem 1.7rem; border-radius: 14px;
++  background: var(--surface-1); border: 1px solid var(--line);
++  scroll-margin-top: 6rem; }
++.fig-head { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.1rem; }
++.fig-number { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
++  text-transform: uppercase; color: var(--copper-text); }
++.fig-head h3 { font-family: var(--font-display); font-size: 1.14rem; font-weight: 600;
++  line-height: 1.3; margin: 0; color: var(--ink); }
++
++.fig-plot { width: 100%; overflow-x: auto; }
++.fig-plot svg { display: block; width: 100%; min-width: 520px; height: auto; }
++
++.fig-bar   { fill: var(--copper); }
++/* The reference region is context. It must read as behind the data, which means
++   low chroma and no border competing with the marks. */
++.fig-band  { fill: color-mix(in srgb, var(--copper) 14%, transparent); }
++/* 14% of copper over a cream surface reads as a soft tint; over the near-black
++   dark surface the same mix nearly disappears. Rendered both and measured — the
++   dark step is chosen, not derived, which is the rule for every dark value in
++   this file. */
++html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, transparent); }
++.fig-grid  { stroke: var(--line); stroke-width: 1; }
++.fig-axis  { stroke: var(--line); stroke-width: 1; }
++.fig-label { fill: var(--ink-soft); font-family: var(--font-body); font-size: 13px; }
++.fig-value { fill: var(--ink); font-family: var(--font-mono); font-size: 12px;
++  font-variant-numeric: tabular-nums; }
++.fig-tick  { fill: var(--muted); font-family: var(--font-mono); font-size: 11px;
++  text-anchor: middle; }
++.fig-unit  { fill: var(--muted); font-family: var(--font-mono); font-size: 11px;
++  letter-spacing: 0.05em; }
++
++.fig-caption { margin: 1.1rem 0 0; font-size: 0.92rem; line-height: 1.65;
++  color: var(--ink-soft); max-width: 72ch; }
++
++.fig-table { width: 100%; border-collapse: collapse; margin-top: 1.25rem; font-size: 0.88rem; }
++.fig-table caption { text-align: left; font-family: var(--font-mono); font-size: 0.68rem;
++  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
++  padding-bottom: 0.5rem; }
++.fig-table th, .fig-table td { text-align: left; padding: 0.5rem 0.75rem;
++  border-bottom: 1px solid var(--line); }
++.fig-table thead th { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.07em;
++  text-transform: uppercase; color: var(--muted); }
++.fig-table tbody th { font-weight: 600; color: var(--ink); }
++.fig-table td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
++.fig-table tbody tr:last-child th, .fig-table tbody tr:last-child td { border-bottom: 0; }
++
++@media print {
++  .fig { border: 0; border-top: 1px solid #999; border-radius: 0; padding: 0.6rem 0;
++    break-inside: avoid; }
++  .fig-plot { overflow: visible; }
++  .fig-plot svg { min-width: 0; }
++  /* currentColor would resolve to the print ink; the bars need to stay filled. */
++  .fig-bar { fill: #6b3410; }
++  .fig-band { fill: #e6d8cc; }
++}
++.fig-source { margin: 0.9rem 0 0; font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
++.fig-source a { color: var(--copper-text); }
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index f261598..f97a003 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -3,6 +3,7 @@ import { getArticles } from '@/lib/content/loader';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
++import { getFigures } from '@/lib/figures';
+ import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ 
+@@ -67,6 +68,7 @@ export async function GET() {
+   lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
+   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
+   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
++  lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
+   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
+   lines.push(`- Citation guide: ${SITE_URL}/authority`);
+   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
+@@ -97,6 +99,19 @@ export async function GET() {
+     lines.push('');
+   }
+ 
++  const figures = getFigures();
++  if (figures.length) {
++    lines.push('## Figures — charted data, free to reuse under CC BY 4.0');
++    lines.push(
++      'Each figure is drawn from the paper section it cites and is published with the table it was built from. Cite by permalink.',
++    );
++    for (const f of figures) {
++      lines.push(`- Figure ${f.number} — ${f.title}: ${f.caption}`);
++      lines.push(`  ${SITE_URL}/data#fig-${f.id} (source: ${SITE_URL}/papers/${f.source.paper}#${f.source.section})`);
++    }
++    lines.push('');
++  }
++
+   const terms = getTerms();
+   if (terms.length) {
+     lines.push('## Glossary — canonical definitions');
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index 31a496a..ddc5f48 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -284,6 +284,10 @@ export default async function ResourcesPage() {
+             also styled for print, so Print → Save as PDF produces a clean, attributed document.
+           </p>
+           <ul className="gd-sources">
++            <li>
++              <Link href="/data">/data</Link> — numbered, captioned, citable figures with their
++              source tables
++            </li>
+             <li>
+               <a href="/api/knowledge">/api/knowledge</a> — the entire corpus as JSON, CORS-open, no
+               key
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 5d9ee4f..da573c0 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -86,6 +86,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+       changeFrequency: 'weekly',
+       priority: 0.95,
+     },
++    {
++      url: `${SITE_URL}/data`,
++      lastModified: new Date(),
++      changeFrequency: 'monthly',
++      priority: 0.85,
++    },
+     {
+       url: `${SITE_URL}/glossary`,
+       lastModified: new Date(),
+diff --git a/apps/web/lib/figures.ts b/apps/web/lib/figures.ts
+new file mode 100644
+index 0000000..3f30d3b
+--- /dev/null
++++ b/apps/web/lib/figures.ts
+@@ -0,0 +1,123 @@
++/**
++ * Figures — numbered, captioned, citable visualisations of published data.
++ *
++ * WHY THIS EXISTS
++ *
++ * Every number in this manifest is already published in a paper on this site,
++ * inside a table. A table is precise and almost unshareable. A figure with a
++ * number, a caption and a permalink is the thing that gets screenshotted into a
++ * slide deck, quoted in an article, and cited back — which is the entire point.
++ * Scientific publishing figured this out a century ago: number the figures,
++ * caption them, and let them be referenced independently of the document.
++ *
++ * CONTENT RULE — READ BEFORE EDITING
++ *
++ * Same rule as the framework, the guides and the glossary, and enforced harder.
++ * Every figure carries `source: { paper, section }`, and
++ * scripts/verify-figures.mjs does not merely check that the section exists — it
++ * checks that **every numeric value in the figure appears in that section's
++ * table**. A figure whose numbers drift from the paper it claims to visualise is
++ * worse than no figure: it is a confident, shareable, wrong artifact carrying
++ * this site's name.
++ *
++ * ON PRECISION
++ *
++ * `approx` and `openEnded` exist because the source says "≈1360" and "above
++ * 60%", and a chart that silently renders those as 1360 and 70 has invented two
++ * numbers. The renderer shows "≈" and an open-ended bar respectively. Rounding
++ * a hedge away is the most common way a visualisation lies.
++ */
++
++export type FigureKind = 'range' | 'bar';
++
++export type RangeRow = {
++  label: string;
++  from: number;
++  to: number;
++  /** The upper bound is not known — the source says "above N". */
++  openEnded?: boolean;
++  /** Draw recessively, behind the marks: this is context, not a series. */
++  reference?: boolean;
++  note?: string;
++};
++
++export type BarRow = {
++  label: string;
++  value: number;
++  approx?: boolean;
++  note?: string;
++};
++
++export type Figure = {
++  /** Permanent id. Cited as "Figure 1" and linked as /data#fig-<id>. */
++  id: string;
++  number: number;
++  kind: FigureKind;
++  title: string;
++  /** One or two sentences. Appears under the figure and in the API. */
++  caption: string;
++  /** What the axis measures, e.g. "% relative humidity". */
++  unit: string;
++  axisMax: number;
++  axisTicks: number[];
++  rangeRows?: RangeRow[];
++  barRows?: BarRow[];
++  source: { paper: string; section: string };
++};
++
++const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
++const P_COST = 'hardwood-selection-and-cost-framework-gta';
++
++export const FIGURES: Figure[] = [
++  {
++    id: 'toronto-indoor-humidity',
++    number: 1,
++    kind: 'range',
++    title: 'Indoor relative humidity against the band hardwood needs',
++    caption:
++      'Toronto indoor air spends much of the year outside the range hardwood is dimensionally stable in. The shaded band is the safe operating range; the two bars are the seasonal extremes an installed floor actually experiences. The gap between them is why moisture testing, acclimation and expansion gaps are not optional in this city.',
++    unit: '% relative humidity',
++    axisMax: 75,
++    axisTicks: [0, 15, 30, 45, 60, 75],
++    rangeRows: [
++      {
++        label: 'Safe operating band for hardwood',
++        from: 35,
++        to: 55,
++        reference: true,
++        note: 'Where the material is dimensionally stable',
++      },
++      { label: 'Winter indoor low', from: 18, to: 25, note: 'Heating season' },
++      {
++        label: 'Summer indoor high',
++        from: 60,
++        to: 75,
++        openEnded: true,
++        note: 'Source states "above 60%" — the upper bound is not published',
++      },
++    ],
++    source: { paper: P_CLIMATE, section: 'climate-reality' },
++  },
++  {
++    id: 'janka-hardness-gta',
++    number: 2,
++    kind: 'bar',
++    title: 'Janka hardness of the species used in the GTA',
++    caption:
++      'Resistance to denting, for the five species that account for most Greater Toronto Area hardwood work. Hardness is one variable among several — stability, grain character and finish performance matter equally, and a species chosen on this number alone produces a floor that wears wrong.',
++    unit: 'Janka rating',
++    axisMax: 2000,
++    axisTicks: [0, 500, 1000, 1500, 2000],
++    barRows: [
++      { label: 'Hickory', value: 1820, note: 'Extreme durability' },
++      { label: 'Hard maple', value: 1450, note: 'High-traffic workhorse' },
++      { label: 'White oak / European oak', value: 1360, approx: true, note: 'Current aesthetic and resale sovereign' },
++      { label: 'Red oak (northern)', value: 1290, approx: true, note: 'Traditional default' },
++      { label: 'Black walnut', value: 1010, note: 'Luxury accent' },
++    ],
++    source: { paper: P_COST, section: 'species' },
++  },
++];
++
++export const getFigures = (): Figure[] => [...FIGURES].sort((a, b) => a.number - b.number);
++export const getFigure = (id: string): Figure | undefined => FIGURES.find((f) => f.id === id);
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index a89f55f..2c8cf46 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3180,3 +3180,97 @@ should still be re-measured on the next `--full` pass.
+ 
+ Both `/papers` and `/technical-library` keep their footer entries and are the
+ first two sections of `/resources`, so neither loses a chrome path.
++
++---
++
++## 38. Figures
++
++### F-95 · Every number on this site was locked inside a table · **P1**
++
++Three papers, a framework, six guides, 32 glossary terms — and the actual
++*numbers* (the humidity bands, the Janka ratings) existed only as table rows
++inside documents. A table is precise and almost unshareable. Nobody screenshots
++a table row into a slide deck.
++
++Scientific publishing solved this a century ago: **number the figures, caption
++them, and let each one be referenced without the document around it.** A figure
++with a permalink and a caption is the artifact that ends up in someone else's
++deck with a URL underneath it — which is the entire distribution mechanism for
++authority.
++
++`/data` now carries two numbered figures, each with its own anchor, its caption,
++the source table printed beneath it, and a link to the paper section it came
++from. Both emit `ImageObject` inside a `Dataset` licensed CC BY 4.0, and both
++appear in `/api/knowledge?collection=figures`.
++
++Server-rendered inline SVG. No chart library, no client JavaScript, no
++hydration — which means they work in the print stylesheet shipped in patch 38,
++work for a crawler with JS disabled, and cost nothing at runtime.
++
++### F-96 · The palette validator killed two colour plans, and improved the chart · P2
++
++First draft encoded the humidity figure with the site's status colours. Running
++the validator:
++
++```
++[FAIL] Normal-vision floor   worst adjacent #9f5c32↔#b04848 ΔE 6.7 (normal)
++                             — below 15, hard to tell apart even with full colour vision
++```
++
++`--copper-text` and `--danger` are effectively the same colour to a reader with
++full colour vision. `--success` and `--warning` failed too, at ΔE 11.7. Both
++plans would have shipped as a chart nobody could read, and neither failure is
++visible by looking — which is exactly why the check is a script rather than a
++judgement.
++
++The fix was not a different palette. **Neither figure needs two colours.** The
++safe humidity band is not a second series; it is a *reference region* — context
++drawn recessively behind the marks, which is the standard way to show "target
++range versus actual" and a better chart than the one I started with. One hue,
++one series, no legend (a legend is mandatory at two series and wrong at one),
++every mark directly labelled.
++
++`approx` and `openEnded` exist for the same reason. The sources say "≈1360" and
++"above 60%"; rendering those as `1360` and `70` invents two numbers. The chart
++prints "≈" and draws an open-ended arrow instead. **Rounding a hedge away is the
++most common way a visualisation lies.**
++
++### F-97 · A label was silently cut in half, and only rendering it showed that · P1
++
++The first render came out with the row label reading `operating band for
++hardwood`. The full text is *"Safe operating band for hardwood"* — SVG text does
++not wrap and does not overflow visibly; it is clipped by the viewBox with no
++warning anywhere.
++
++Ten guards passed. `tsc` passed. `parse-scan` passed. The build passed. Nothing
++in this repository can see a truncated SVG label, and nothing ever will —
++**the only check that catches it is rendering the figure and looking at it.**
++
++Fixed by measuring the longest label and setting the gutter to 250px. Both
++figures were then re-rendered and inspected in light and dark, and the dark step
++for the reference band was chosen against the dark surface rather than derived
++from the light one — 14% copper over cream reads as a soft tint and nearly
++vanishes over near-black; the dark value is 26%.
++
++### F-98 · The figure guard checks numbers, not just citations · **P1**
++
++`verify-figures.mjs` is the tenth guard, and it is deliberately stricter than
++the other provenance checks. `verify-framework` and `verify-glossary` confirm
++that a cited paper *section exists* — enough for prose, because prose restates
++and a human reviews the restatement.
++
++It is not enough for a chart. A figure is the most portable artifact this site
++produces; it travels detached from the page that explains it. So this guard
++extracts **every plotted number** and requires each one to appear in the cited
++section of `lib/papers.ts`. Drift a single value and the build fails:
++
++```
++✗ janka-hardness-gta: plots value=1900, which does not appear in
++    hardwood-selection-and-cost-framework-gta#species.
++```
++
++It also enforces unique, gapless figure numbers — "Figure 2" is a citation, and
++two of them breaks every reference — that `axisMax` covers every plotted value
++so no bar is silently clipped, that ticks are ascending and in range, and that
++every figure has a caption, because the caption is what travels with the
++screenshot.
+diff --git a/package.json b/package.json
+index c797b61..af88aad 100644
+--- a/package.json
++++ b/package.json
+@@ -19,7 +19,8 @@
+     "verify:framework": "node scripts/verify-framework.mjs",
+     "verify:client": "node scripts/verify-client-boundary.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary",
++    "verify:figures": "node scripts/verify-figures.mjs",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index feb7e73..f3ddc59 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -124,6 +124,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-framework.mjs ] && run "verify:framework" node scripts/verify-framework.mjs
+ [ -f scripts/verify-client-boundary.mjs ] && run "verify:client" node scripts/verify-client-boundary.mjs
+ [ -f scripts/verify-glossary.mjs ] && run "verify:glossary" node scripts/verify-glossary.mjs
++[ -f scripts/verify-figures.mjs ] && run "verify:figures" node scripts/verify-figures.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+@@ -149,6 +150,9 @@ fi
+ if [ -f scripts/verify-glossary.mjs ]; then
+   node scripts/verify-glossary.mjs 2>&1 | tail -1 | sed 's/^/  /'
+ fi
++if [ -f scripts/verify-figures.mjs ]; then
++  node scripts/verify-figures.mjs 2>&1 | tail -1 | sed 's/^/  /'
++fi
+ note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ if command -v pdftotext >/dev/null 2>&1; then
+diff --git a/scripts/verify-figures.mjs b/scripts/verify-figures.mjs
+new file mode 100644
+index 0000000..931a8b4
+--- /dev/null
++++ b/scripts/verify-figures.mjs
+@@ -0,0 +1,198 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-figures.mjs
++ *
++ * A figure must show the numbers the paper it cites actually publishes.
++ *
++ * WHY THIS IS STRICTER THAN THE OTHER PROVENANCE GUARDS
++ *
++ * verify-framework and verify-glossary check that a cited paper SECTION exists.
++ * That is enough for prose, because prose restates and a human reviews the
++ * restatement. It is not enough for a chart. A figure is the most shareable
++ * artifact this site produces — it gets screenshotted into slide decks and
++ * quoted in articles, detached from the page that explains it — and a bar drawn
++ * at the wrong height is a confident, portable, wrong claim carrying this
++ * business's name on it.
++ *
++ * So this extracts every numeric value from every figure and requires each one
++ * to appear in the cited section of lib/papers.ts. If a paper's table is edited
++ * and a figure is not, the build fails. That is the only relationship between
++ * the two that can be trusted over time.
++ *
++ * It also enforces:
++ *   · unique figure ids and unique, gapless figure numbers — "Figure 2" is a
++ *     citation, and two of them, or a missing one, breaks every reference to it
++ *   · axisMax >= every plotted value, or the chart silently clips a bar
++ *   · ticks inside the axis, and sorted
++ *   · a caption on every figure, since the caption is what travels with the
++ *     screenshot
++ *
++ *   node scripts/verify-figures.mjs
++ *   node scripts/verify-figures.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const LIST = process.argv.includes('--list');
++const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
++const exists = (p) => fs.existsSync(path.join(ROOT, p));
++
++for (const f of ['apps/web/lib/papers.ts', 'apps/web/lib/figures.ts']) {
++  if (!exists(f)) {
++    console.error(`verify-figures: ${f} not found — run from the repo root.`);
++    process.exit(2);
++  }
++}
++
++const papersSrc = read('apps/web/lib/papers.ts');
++const figSrc = read('apps/web/lib/figures.ts');
++const problems = [];
++const fail = (m) => problems.push(m);
++
++/* ── the text of every paper section, so numbers can be looked up in it ──── */
++const sectionText = new Map(); // "slug#id" -> raw source of that section
++for (const b of papersSrc.split(/\n  \{\n/).slice(1)) {
++  const slug = (b.match(/\bslug: '([^']*)'/) || [])[1];
++  if (!slug) continue;
++  // Split the paper body on section boundaries and keep each chunk whole, so a
++  // table's rows stay with the id that owns them.
++  const parts = b.split(/\n      \{\n/);
++  for (const p of parts) {
++    const id = (p.match(/^\s*id: '([^']+)'/) || [])[1];
++    if (id) sectionText.set(`${slug}#${id}`, p);
++  }
++}
++
++/* ── parse figures ───────────────────────────────────────────────────────── */
++const consts = new Map([...figSrc.matchAll(/const (P_[A-Z_]+) = '([^']+)';/g)].map((m) => [m[1], m[2]]));
++const blocks = figSrc.split(/\n  \{\n/).slice(1);
++
++const figures = blocks
++  .map((b) => {
++    const one = (k) => {
++      const m = b.match(new RegExp(`\\b${k}:\\s*'([^']*)'`)) || b.match(new RegExp(`\\b${k}:\\s*"([^"]*)"`));
++      return m ? m[1] : undefined;
++    };
++    const num = (k) => {
++      const m = b.match(new RegExp(`\\b${k}:\\s*(\\d+)`));
++      return m ? Number(m[1]) : undefined;
++    };
++    const srcM = b.match(/source: \{\s*paper:\s*(P_[A-Z_]+|'[^']+'),\s*section:\s*'([^']+)'\s*\}/);
++    const rawPaper = srcM ? srcM[1] : undefined;
++
++    // Every plotted number, with the field it came from so the error can say.
++    const values = [];
++    for (const m of b.matchAll(/\bfrom:\s*(\d+)/g)) values.push(['from', Number(m[1])]);
++    for (const m of b.matchAll(/\bto:\s*(\d+)/g)) values.push(['to', Number(m[1])]);
++    for (const m of b.matchAll(/\bvalue:\s*(\d+)/g)) values.push(['value', Number(m[1])]);
++
++    const ticksM = b.match(/axisTicks:\s*\[([^\]]*)\]/);
++    const ticks = ticksM ? [...ticksM[1].matchAll(/(\d+)/g)].map((m) => Number(m[1])) : [];
++
++    // A row flagged openEnded has an upper bound the source does not publish;
++    // its `to` is a drawing decision, not a claim, and is exempt from the
++    // number check. Capture which values those are.
++    const openEndedTos = [];
++    for (const m of b.matchAll(/from:\s*(\d+),\s*\n?\s*to:\s*(\d+),\s*\n?\s*openEnded: true/g)) {
++      openEndedTos.push(Number(m[2]));
++    }
++
++    return {
++      id: one('id'),
++      number: num('number'),
++      title: one('title'),
++      caption: one('caption'),
++      axisMax: num('axisMax'),
++      ticks,
++      values,
++      openEndedTos,
++      source: srcM
++        ? { paper: rawPaper.startsWith("'") ? rawPaper.slice(1, -1) : consts.get(rawPaper), section: srcM[2] }
++        : undefined,
++    };
++  })
++  .filter((f) => f.id);
++
++if (!figures.length) fail('No figures parsed out of lib/figures.ts — the file shape changed.');
++
++/* ── checks ──────────────────────────────────────────────────────────────── */
++const nums = figures.map((f) => f.number);
++for (const f of figures) {
++  if (!/^[a-z0-9-]+$/.test(f.id)) fail(`figure id is not url-safe: ${f.id}`);
++  if (figures.filter((x) => x.id === f.id).length > 1) fail(`duplicate figure id: ${f.id}`);
++  if (nums.filter((n) => n === f.number).length > 1) {
++    fail(`two figures numbered ${f.number} — "Figure ${f.number}" is a citation and must resolve to one thing`);
++  }
++  if (!f.caption) fail(`${f.id}: no caption. The caption is what travels with a screenshot.`);
++  if (!f.title) fail(`${f.id}: no title`);
++
++  for (const [field, v] of f.values) {
++    if (f.axisMax !== undefined && v > f.axisMax) {
++      fail(`${f.id}: ${field}=${v} exceeds axisMax ${f.axisMax} — the chart would clip it silently`);
++    }
++  }
++  for (const t of f.ticks) {
++    if (f.axisMax !== undefined && t > f.axisMax) fail(`${f.id}: tick ${t} is beyond axisMax ${f.axisMax}`);
++  }
++  if (f.ticks.some((t, i) => i > 0 && t <= f.ticks[i - 1])) fail(`${f.id}: axisTicks are not ascending`);
++
++  if (!f.source || !f.source.paper) {
++    fail(`${f.id}: no source citation`);
++    continue;
++  }
++  const key = `${f.source.paper}#${f.source.section}`;
++  const text = sectionText.get(key);
++  if (!text) {
++    fail(`${f.id}: cites ${key}, which is not a section of any paper in lib/papers.ts`);
++    continue;
++  }
++  // The number check. Values are matched with a digit boundary so 25 does not
++  // match inside 250.
++  for (const [field, v] of f.values) {
++    if (f.openEndedTos.includes(v)) continue;
++    if (!new RegExp(`(^|[^\\d.,])${v}([^\\d]|$)`).test(text)) {
++      fail(
++        `${f.id}: plots ${field}=${v}, which does not appear in ${key}.\n` +
++          `      A figure must show the numbers its source publishes. Either the paper changed\n` +
++          `      and this figure did not, or the figure invented a value.`,
++      );
++    }
++  }
++}
++// Numbers must be 1..n with no gaps.
++const sorted = [...nums].sort((a, b) => a - b);
++sorted.forEach((n, i) => {
++  if (n !== i + 1) fail(`figure numbers must run 1..${nums.length} with no gaps — found ${sorted.join(', ')}`);
++});
++
++/* ── derived surfaces ────────────────────────────────────────────────────── */
++for (const [file, needle, why] of [
++  ['apps/web/app/sitemap.ts', '/data', 'sitemap.ts does not emit /data'],
++  ['apps/web/app/llms.txt/route.ts', '/data', '/llms.txt does not advertise the figures'],
++  ['apps/web/app/api/knowledge/route.ts', 'getFigures', '/api/knowledge no longer serves the figures'],
++]) {
++  if (!exists(file)) fail(`missing file: ${file}`);
++  else if (!read(file).includes(needle)) fail(why);
++}
++
++/* ── report ──────────────────────────────────────────────────────────────── */
++if (LIST) {
++  console.log('\nFigures\n');
++  for (const f of figures.sort((a, b) => a.number - b.number)) {
++    console.log(`  Figure ${f.number}  ${f.title}`);
++    console.log(`    /data#fig-${f.id}   ${f.values.length} values, source ${f.source?.paper}#${f.source?.section}\n`);
++  }
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} figure problem(s):\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++const total = figures.reduce((n, f) => n + f.values.length, 0);
++console.log(
++  `✓ figures verified — ${figures.length} figure(s), ${total} plotted value(s), all present in their source papers`,
++);
+diff --git a/scripts/verify-links.mjs b/scripts/verify-links.mjs
+index bce5591..aea9dfa 100644
+--- a/scripts/verify-links.mjs
++++ b/scripts/verify-links.mjs
+@@ -144,7 +144,7 @@ if (orphans.length || stale.length) {
+  */
+ const HOME_ENTRY = path.join(APP, 'page.tsx');
+ const HOME_HUBS = [
+-  '/resources', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
++  '/resources', '/data', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
+   '/technical-library', '/case-studies', '/blog', '/service-areas',
+   '/glossary',
+ ];
