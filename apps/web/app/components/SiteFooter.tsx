@@ -150,6 +150,7 @@ export default function SiteFooter() {
             <div className="footer-links">
               <a href="/resources">All resources</a>
               <a href="/whats-new">What&rsquo;s New</a>
+              <a href="/market">What Moves a Quote</a>
               <a href="/standards">Standards Register</a>
               <a href="/framework">The Well-Installed Framework</a>
               <a href="/framework/assess">Score a quote</a>

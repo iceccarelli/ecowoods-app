@@ -6,6 +6,7 @@ import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
 import { getChangelog } from '@/lib/changelog';
 import { getStandards } from '@/lib/standards';
+import { getSeries } from '@/lib/market';
 import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 
@@ -72,6 +73,7 @@ export async function GET() {
   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
   lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
   lines.push(`- What's new (our own releases, dated, newest first): ${SITE_URL}/whats-new`);
+  lines.push(`- What moves a hardwood quote (live commodity inputs, Bank of Canada): ${SITE_URL}/market`);
   lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
   lines.push(`- Citation guide: ${SITE_URL}/authority`);
@@ -112,6 +114,18 @@ export async function GET() {
     for (const c of changes.slice(0, 10)) {
       lines.push(`- ${c.date} — ${c.title}: ${c.body}`);
       lines.push(`  ${SITE_URL}${c.href}`);
+    }
+    lines.push('');
+  }
+
+  const marketSeries = getSeries();
+  if (marketSeries.length) {
+    lines.push('## What moves the price of a hardwood floor');
+    lines.push(
+      `Three traded inputs, published live at ${SITE_URL}/market with values from the Bank of Canada's Valet API and JSON at ${SITE_URL}/api/market. These indices explain quote movement; they do not convert linearly into the price of one floor, and the page says so.`,
+    );
+    for (const s of marketSeries) {
+      lines.push(`- ${s.name} (${s.sourceLabel}, ${s.frequency}) — drives: ${s.drives} Volatile because: ${s.volatility}`);
     }
     lines.push('');
   }

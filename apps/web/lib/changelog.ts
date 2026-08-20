@@ -37,6 +37,22 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'market-v1',
+    date: '2026-08-20',
+    kind: 'data',
+    title: 'What moves a hardwood quote — three commodity inputs, live',
+    body: 'Forestry, energy and USD/CAD, pulled hourly from the Bank of Canada, with the mechanism behind each and why it is volatile. Published so a price change can be evaluated rather than suspected. A source that cannot be reached shows as missing rather than as the last cached number.',
+    href: '/market',
+  },
+  {
+    id: 'standards-v1',
+    date: '2026-08-20',
+    kind: 'data',
+    title: 'A standards register, with the date we last checked each entry',
+    body: 'The external documents this trade answers to — ASTM concrete moisture and floor-preparation methods, NWFA guidelines — each mapped to the framework criteria that depend on it, linked to the issuing body, and stamped with a verification date the build warns about when it goes stale.',
+    href: '/standards',
+  },
+  {
     id: 'figures-v1',
     date: '2026-08-20',
     kind: 'figure',

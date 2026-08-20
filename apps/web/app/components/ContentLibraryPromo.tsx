@@ -132,6 +132,9 @@ export function ContentLibraryPromo() {
                 <Link href="/whats-new">What&rsquo;s new</Link>
               </li>
               <li>
+                <Link href="/market">What moves a quote</Link>
+              </li>
+              <li>
                 <Link href="/standards">Standards register</Link>
               </li>
               <li>

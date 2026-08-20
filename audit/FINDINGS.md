@@ -3362,3 +3362,100 @@ the pillars are judgement and the citations are enforced.
 Eleven guards now. Seven of them were written in response to a specific failure
 rather than in anticipation of one. That ratio still says nothing good about
 foresight and everything good about the shape of the repository.
+
+---
+
+## 40. What moves a quote
+
+### F-102 · The most common question in this trade had no answer on the site · **P1**
+
+*"Why is this more than the quote I got last year?"* The usual answer is a shrug
+about material costs. The real answer is that a hardwood floor is an assembly of
+**traded inputs** — sawn wood, petrochemical-derived finish and adhesive,
+freight — most of it priced in US dollars before it reaches a Canadian invoice,
+and every one of those moves independently of the installer.
+
+Publishing the actual indices with the mechanism explained does something a
+price list cannot: **it makes the quote legible.** A homeowner who can see that
+the forestry index moved can *evaluate* a price change instead of suspecting
+one. Same trade AWS made by publishing per-unit pricing into an industry that
+quoted everything bespoke.
+
+### F-103 · One source, verified live, no key · P1
+
+Three series, all from the **Bank of Canada Valet API** — keyless, official, one
+endpoint format, and each identifier queried against it before being written
+down:
+
+| Series | What it is | What it drives in a floor |
+|---|---|---|
+| `M.FOPR` | Monthly BCPI Forestry | The sawn wood — solid boards, and the wear layer and cross-ply core of engineered |
+| `M.ENER` | Monthly BCPI Energy | Freight on every pallet, **and** the petrochemical feedstock behind polyurethane, adhesives and membranes |
+| `FXUSDCAD` | Daily USD/CAD | Almost everything imported — most engineered product, finish systems and machine consumables |
+
+The energy series earns its place twice: it reaches a floor as the finish system
+and again as the truck, and it is simultaneously the most volatile input in the
+assembly and the least visible in a quote.
+
+Candidate sources that were considered and rejected: FRED (requires a key),
+StatCan WDS (real and keyless, but the vector identifiers for the lumber IPPI
+could not be confirmed by GET, and publishing an unverified series identifier is
+exactly the defect these guards exist to prevent).
+
+### F-104 · Failure is an output, not an exception · **P1**
+
+If the Bank cannot be reached, a series comes back with `latest: null` and the
+page prints an em dash and the words *"Source unreachable. No figure is shown
+rather than a stale one."*
+
+The tempting alternative — fall back to the last cached value — is the **stale
+runtime report defect** (F-41) rebuilt on purpose. A number that is *present*
+gets trusted whether or not it is current, and a commodity index carrying
+yesterday's value with today's framing is worse than a blank.
+
+### F-105 · What the page deliberately refuses to do · P1
+
+It does not convert an index into a dollar figure for a floor.
+
+The relationship is real but **not linear**: at job level, labour, substrate
+condition and scope dominate, and a slab that needs flattening moves a quote
+further than a quarter of forestry movement ever will. Drawing a line from
+"forestry index up 6%" to "your floor costs 6% more" would be a fabrication
+dressed as data. The page says this in its own words, links to the published
+installed-cost ranges instead, and `verify-market.mjs` enforces the disclaimer's
+presence as a build check rather than a copy review.
+
+### F-106 · The market guard checks a category of risk the others do not · **P1**
+
+This page publishes numbers this repository does not own. `verify-market.mjs`
+(the twelfth guard) checks accordingly:
+
+1. **One source, named.** Every URL in the market code must be `bankofcanada.ca`.
+   A second host means data arriving from somewhere never verified, under a page
+   that claims to say where every number comes from.
+2. **No hardcoded index values.** A literal like `487.23` in the market code is
+   either a fallback that will silently rot or a figure someone typed. Both are
+   the same defect.
+3. **Every series explained and dated** — `drives`, `volatility`, `sourceLabel`
+   and `verifiedAt` are mandatory, and the label is what the Bank actually
+   returns so a reader can confirm we are showing the series we claim.
+4. **Paper references resolve**, like every other manifest.
+5. **The disclaimer exists**, in both the page and the API payload.
+6. **`robots.txt` allows `/api/market`** — it sits under the blanket `/api/`
+   disallow, which would have hidden it exactly as it nearly hid
+   `/api/knowledge` (F-90).
+
+**The guard's own first run was a false positive**, and worth recording. It
+reported a missing disclaimer that was sitting in the markup: JSX had wrapped
+*"This is not investment information"* across two lines, so a naive regex saw
+two tokens where a reader sees one sentence. Whitespace is normalised before
+matching now. Same family as F-58 — a guard that cannot read the thing it is
+guarding is worse than no guard, because its failure looks like a finding.
+
+### The word that had to be clarified first
+
+The request named a commodity I could not identify with confidence. Rather than
+guess and spend a patch building the wrong thing, I asked, with the options and
+what each would produce. The answer — **input commodity costs, live from public
+APIs** — is what is built above. Asking cost one message; guessing would have
+cost a patch and been discovered only after it shipped.

@@ -126,6 +126,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-glossary.mjs ] && run "verify:glossary" node scripts/verify-glossary.mjs
 [ -f scripts/verify-figures.mjs ] && run "verify:figures" node scripts/verify-figures.mjs
 [ -f scripts/verify-changelog.mjs ] && run "verify:changelog" node scripts/verify-changelog.mjs
+[ -f scripts/verify-market.mjs ] && run "verify:market" node scripts/verify-market.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"
