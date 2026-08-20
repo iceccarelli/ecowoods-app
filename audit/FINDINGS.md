@@ -3105,3 +3105,78 @@ page break.
 
 Print → Save as PDF on any reference route now produces a clean, attributed
 document. That unblocks *today* what the exports have been blocking for weeks.
+
+---
+
+## 37. Navigation, and eight dead links in the footer
+
+### F-92 · The footer's Services column and its call to action were dead on 64 of 65 routes · **P0**
+
+`href="#services"` works on the homepage. On `/glossary/cupping`, on
+`/papers/...`, on any of the sixteen city pages, it scrolls nowhere at all —
+silently. The browser does not error, no crawler reports a broken link, and
+nothing looks wrong.
+
+The footer carried **eight** of them: seven service links and the primary
+call-to-action `#quote`. That is the entire Services column plus the CTA, dead
+on every route except one.
+
+The header was already correct — its nav array holds bare fragments and the
+component prefixes them with the base URL at render time. The footer never got
+that treatment, and the difference had never been measured because both look
+identical in the source.
+
+All eight are now absolute (`/#services`, `/#quote`).
+
+### F-93 · The guard that catches both shapes of dead anchor · P1
+
+`verify-links.mjs` gains a third check over the chrome components:
+
+1. **A literal `href="#…"` fails.** It deliberately matches the literal JSX
+   attribute rather than every fragment, because the header's array form gets
+   prefixed at render and is correct. The distinction between a value that is
+   prefixed and one that ships as written is the entire bug.
+2. **Any anchor, absolute or not, must target an id that exists in
+   `home-client.tsx`.** This is what would have caught `#areas` — seven footer
+   links pointing at a section that had been commented out (F-85).
+
+Comments are stripped before scanning. `verify-tokens.mjs` does not do this, and
+a comment quoting a forbidden declaration reads to it as a violation (F-58);
+repeating that in a new guard would have been inexcusable — and the footer
+contains a comment quoting `href="#areas"` that would have tripped it on the
+first run.
+
+Reintroducing both bugs produces 15 findings. Removing them clears.
+
+### F-94 · `/resources` — the corpus outgrew the navigation · **P1**
+
+Ten flat nav items, mixing homepage anchors with routes, in front of: three
+papers, a versioned framework, a self-assessment, three decision guides, three
+reference installations, 32 glossary terms, a technical library, six articles,
+five case studies, sixteen city pages, a JSON API and five machine files.
+
+Every one of those was reachable. None of it was **organised**. A visitor who
+does not yet know whether they need a guide or a paper had no way to find out
+except by opening both.
+
+AWS puts all of it behind one entry — Documentation — and groups what is behind
+it by **what the reader is trying to do**, not by what produced it.
+`/resources` does the same, in seven sections that ask the reader's question
+back to them:
+
+> If you are choosing · If you are holding a quote · If you want the whole thing
+> specified · If you want the engineering · If you want to see it applied · If
+> you want to know whether we work near you · If you are a researcher, a
+> journalist or an AI system
+
+Every count on the page is derived from the manifests.
+
+**The nav got shorter, not longer.** "Library" and "Papers" (13 characters) come
+out; "Resources" (9) goes in. Nine items instead of ten, and narrower —
+`.topbar-nav` is `overflow: clip` with `min-width: max-content` (F-50), so an
+entry added without removing width clips silently at 1200px. That is how F-65
+happened. This one is arithmetically safe rather than confidently guessed, and
+should still be re-measured on the next `--full` pass.
+
+Both `/papers` and `/technical-library` keep their footer entries and are the
+first two sections of `/resources`, so neither loses a chrome path.

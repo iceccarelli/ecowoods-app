@@ -62,6 +62,7 @@ export async function GET() {
   lines.push(`- Floor collection: ${SITE_URL}/#gallery`);
   lines.push(`- The craft (machines and process): ${SITE_URL}/#craft`);
   lines.push(`- Book an estimate: ${SITE_URL}/#quote`);
+  lines.push(`- ALL RESOURCES, organised by intent — start here: ${SITE_URL}/resources`);
   lines.push(`- Well-Installed Framework (the published standard): ${SITE_URL}/framework`);
   lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);

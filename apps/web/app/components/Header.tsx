@@ -49,8 +49,16 @@ const navigation = [
   // (see F-50), so an item added without removing width somewhere is an item
   // that clips silently at 1200px. Net width here is NARROWER than before:
   // 17 characters out, 7 + 9 in. Re-measure on the next --full runtime pass.
-  { label: 'Library', href: '/technical-library' },
-  { label: 'Papers', href: '/papers' },
+  // One entry, not three. The corpus outgrew a flat nav: papers, a versioned
+  // framework, an assessment, six guides, 32 glossary terms, a library, a JSON
+  // API. AWS puts all of that behind a single "Documentation" entry and groups
+  // it by intent on the page it leads to; /resources does the same.
+  //
+  // Width is the hard constraint here — .topbar-nav is `overflow: clip` with
+  // `min-width: max-content` (F-50), so an item added without removing width
+  // clips silently at 1200px. "Library" + "Papers" (13 characters) out,
+  // "Resources" (9) in: the nav is one item shorter and narrower than before.
+  { label: 'Resources', href: '/resources' },
   { label: 'Framework', href: '/framework' },
   { label: 'FloorForge', href: '/products/floorforge' },
   { label: 'Reviews', href: '#reviews' },

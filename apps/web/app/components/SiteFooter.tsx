@@ -97,7 +97,7 @@ export default function SiteFooter() {
     <footer className="site-footer">
       <div className="shell">
         {m && (
-          <a href="#quote" className="footer-cta">
+          <a href="/#quote" className="footer-cta">
             Get your free estimate
           </a>
         )}
@@ -133,13 +133,13 @@ export default function SiteFooter() {
           {/* Services */}
           <FooterCol title="Services" mobile={m}>
             <div className="footer-links">
-              <a href="#services">Hardwood Installation</a>
-              <a href="#services">Refinishing & Restoration</a>
-              <a href="#services">Dust-Free Sanding</a>
-              <a href="#services">Custom Stain Matching</a>
-              <a href="#services">Stair Refinishing</a>
-              <a href="#services">Custom Inlays & Borders</a>
-              <a href="#services">Commercial Projects</a>
+              <a href="/#services">Hardwood Installation</a>
+              <a href="/#services">Refinishing & Restoration</a>
+              <a href="/#services">Dust-Free Sanding</a>
+              <a href="/#services">Custom Stain Matching</a>
+              <a href="/#services">Stair Refinishing</a>
+              <a href="/#services">Custom Inlays & Borders</a>
+              <a href="/#services">Commercial Projects</a>
             </div>
           </FooterCol>
 
@@ -148,6 +148,7 @@ export default function SiteFooter() {
               from the header or from inside another article. */}
           <FooterCol title="Learn" mobile={m}>
             <div className="footer-links">
+              <a href="/resources">All resources</a>
               <a href="/framework">The Well-Installed Framework</a>
               <a href="/framework/assess">Score a quote</a>
               <a href="/guides">Decision Guides</a>

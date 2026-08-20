@@ -111,6 +111,9 @@ export function ContentLibraryPromo() {
             <h3>Also published</h3>
             <ul className="clp-links">
               <li>
+                <Link href="/resources">Every resource, in one index</Link>
+              </li>
+              <li>
                 <Link href="/technical-library">Technical library</Link>
               </li>
               <li>
@@ -124,6 +127,9 @@ export function ContentLibraryPromo() {
               </li>
               <li>
                 <a href="/feed.xml">RSS feed</a>
+              </li>
+              <li>
+                <a href="/api/knowledge">Public JSON API</a>
               </li>
             </ul>
           </div>

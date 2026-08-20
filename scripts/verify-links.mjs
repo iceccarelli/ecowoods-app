@@ -144,7 +144,7 @@ if (orphans.length || stale.length) {
  */
 const HOME_ENTRY = path.join(APP, 'page.tsx');
 const HOME_HUBS = [
-  '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
+  '/resources', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
   '/technical-library', '/case-studies', '/blog', '/service-areas',
   '/glossary',
 ];
@@ -198,9 +198,73 @@ if (unreachedFromHome.length) {
   process.exit(1);
 }
 
+/* ── 3. anchors in the chrome ────────────────────────────────────────────── */
+/**
+ * Two failures, one check.
+ *
+ * A bare `href="#services"` in the header or footer works on the homepage and
+ * scrolls NOWHERE on every other route. The footer carried eight of them —
+ * seven service links and the primary CTA — which meant that on 64 of this
+ * site's 65 routes, the footer's entire Services column and its call to action
+ * were dead. They were not broken links a crawler would report; they were
+ * links that silently did nothing. See F-92.
+ *
+ * The header was already correct: its nav array holds bare fragments and the
+ * component prefixes them with `/` at render time. That is why this checks
+ * literal `href="#…"` JSX attributes rather than every occurrence of a fragment
+ * — the distinction between a value that gets prefixed and one that ships as
+ * written is the whole point.
+ *
+ * The second half catches the other shape: an anchor, absolute or not, pointing
+ * at an id the homepage does not have. `#areas` survived in the footer for an
+ * unknown length of time after the section that defined it was commented out.
+ *
+ * Comments are stripped first. verify-tokens.mjs does not do this and a comment
+ * quoting a forbidden declaration reads to it as a violation (F-58); repeating
+ * that mistake in a new guard would be inexcusable.
+ */
+const stripComments = (t) =>
+  t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+const HOME_CLIENT = path.join(APP, 'home-client.tsx');
+const homeIds = fs.existsSync(HOME_CLIENT)
+  ? new Set([...fs.readFileSync(HOME_CLIENT, 'utf8').matchAll(/id="([a-z0-9-]+)"/g)].map((m) => m[1]))
+  : new Set();
+
+const anchorProblems = [];
+for (const [file, text] of sources) {
+  if (!/components[/\\](Header|SiteFooter)\.tsx$/.test(file)) continue;
+  const clean = stripComments(text);
+
+  for (const m of clean.matchAll(/href="#([a-z0-9-]+)"/g)) {
+    anchorProblems.push(
+      `${path.relative(ROOT, file)}: href="#${m[1]}" is bare — it scrolls nowhere on every route ` +
+        `except the homepage. Write it as "/#${m[1]}".`,
+    );
+  }
+  // Both forms — the header's array and any absolute literal — must target a
+  // real element.
+  for (const m of clean.matchAll(/href[=:]\s*["'`]\/?#([a-z0-9-]+)["'`]/g)) {
+    if (homeIds.size && !homeIds.has(m[1])) {
+      anchorProblems.push(
+        `${path.relative(ROOT, file)}: #${m[1]} does not exist on the homepage — ` +
+          `no element carries id="${m[1]}" in home-client.tsx.`,
+      );
+    }
+  }
+}
+
+if (anchorProblems.length) {
+  console.error('');
+  console.error(`✗ ${anchorProblems.length} anchor problem(s) in the site chrome:\n`);
+  for (const p of anchorProblems) console.error(`  · ${p}`);
+  console.error('');
+  process.exit(1);
+}
+
 const noChrome = rows.filter((r) => r.total > 0 && r.chrome === 0).length;
 console.log(
   `✓ links verified — ${rows.length} public route(s), 0 orphans, ` +
     `${Object.keys(baseline).length} waived, ${noChrome} reachable but not in the chrome, ` +
-    `${HOME_HUBS.length} hub(s) linked from the homepage`,
+    `${HOME_HUBS.length} hub(s) from the homepage, chrome anchors all resolve`,
 );
