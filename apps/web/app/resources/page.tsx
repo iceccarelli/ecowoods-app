@@ -285,6 +285,10 @@ export default async function ResourcesPage() {
           </p>
           <ul className="gd-sources">
             <li>
+              <Link href="/data">/data</Link> — numbered, captioned, citable figures with their
+              source tables
+            </li>
+            <li>
               <a href="/api/knowledge">/api/knowledge</a> — the entire corpus as JSON, CORS-open, no
               key
             </li>

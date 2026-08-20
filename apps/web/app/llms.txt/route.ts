@@ -3,6 +3,7 @@ import { getArticles } from '@/lib/content/loader';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
+import { getFigures } from '@/lib/figures';
 import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 
@@ -67,6 +68,7 @@ export async function GET() {
   lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
+  lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
   lines.push(`- Citation guide: ${SITE_URL}/authority`);
   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
@@ -93,6 +95,19 @@ export async function GET() {
       lines.push(
         `- [${g.title}](${SITE_URL}/guides/${g.slug}) — ${g.kind === 'decision' ? 'decision guide' : 'reference installation'}: ${g.question}`,
       );
+    }
+    lines.push('');
+  }
+
+  const figures = getFigures();
+  if (figures.length) {
+    lines.push('## Figures — charted data, free to reuse under CC BY 4.0');
+    lines.push(
+      'Each figure is drawn from the paper section it cites and is published with the table it was built from. Cite by permalink.',
+    );
+    for (const f of figures) {
+      lines.push(`- Figure ${f.number} — ${f.title}: ${f.caption}`);
+      lines.push(`  ${SITE_URL}/data#fig-${f.id} (source: ${SITE_URL}/papers/${f.source.paper}#${f.source.section})`);
     }
     lines.push('');
   }

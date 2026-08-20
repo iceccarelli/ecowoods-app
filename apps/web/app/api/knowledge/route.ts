@@ -3,6 +3,7 @@ import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
+import { getFigures } from '@/lib/figures';
 import {
   PILLARS,
   FRAMEWORK_NAME,
@@ -144,6 +145,18 @@ function build() {
     source: url(`/papers/${t.source.paper}#${t.source.section}`),
   }));
 
+  const figures = getFigures().map((f) => ({
+    id: `figure:${f.id}`,
+    number: f.number,
+    title: f.title,
+    caption: f.caption,
+    kind: f.kind,
+    unit: f.unit,
+    url: url(`/data#fig-${f.id}`),
+    rows: f.kind === 'range' ? f.rangeRows : f.barRows,
+    source: url(`/papers/${f.source.paper}#${f.source.section}`),
+  }));
+
   const business = {
     name: BUSINESS.name,
     region: BUSINESS.region,
@@ -154,7 +167,7 @@ function build() {
     serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
   };
 
-  return { papers, framework, guides, glossary, business };
+  return { papers, framework, guides, glossary, figures, business };
 }
 
 export async function GET(request: NextRequest) {
@@ -177,7 +190,7 @@ export async function GET(request: NextRequest) {
       sitemap: url('/sitemap.xml'),
       feed: url('/feed.xml'),
     },
-    collections: ['papers', 'framework', 'guides', 'glossary', 'business'],
+    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'business'],
     usage: {
       all: url('/api/knowledge'),
       byCollection: url('/api/knowledge?collection=glossary'),
@@ -188,6 +201,7 @@ export async function GET(request: NextRequest) {
       frameworkCriteria: all.framework.criterionCount,
       guides: all.guides.length,
       glossaryTerms: all.glossary.length,
+      figures: all.figures.length,
       serviceAreas: all.business.serviceAreas.length,
     },
   };

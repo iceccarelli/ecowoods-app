@@ -144,7 +144,7 @@ if (orphans.length || stale.length) {
  */
 const HOME_ENTRY = path.join(APP, 'page.tsx');
 const HOME_HUBS = [
-  '/resources', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
+  '/resources', '/data', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
   '/technical-library', '/case-studies', '/blog', '/service-areas',
   '/glossary',
 ];

@@ -165,6 +165,7 @@ export async function GET() {
     `Short brief: ${SITE_URL}/llms.txt`,
     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
     `Resource index (everything published, grouped by reader intent): ${SITE_URL}/resources`,
+    `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
     `Decision guides and reference installations: ${SITE_URL}/guides`,
     `Glossary: ${SITE_URL}/glossary — canonical definitions, one addressable page per term, each sourced to a paper.`,

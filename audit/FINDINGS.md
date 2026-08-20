@@ -3180,3 +3180,97 @@ should still be re-measured on the next `--full` pass.
 
 Both `/papers` and `/technical-library` keep their footer entries and are the
 first two sections of `/resources`, so neither loses a chrome path.
+
+---
+
+## 38. Figures
+
+### F-95 · Every number on this site was locked inside a table · **P1**
+
+Three papers, a framework, six guides, 32 glossary terms — and the actual
+*numbers* (the humidity bands, the Janka ratings) existed only as table rows
+inside documents. A table is precise and almost unshareable. Nobody screenshots
+a table row into a slide deck.
+
+Scientific publishing solved this a century ago: **number the figures, caption
+them, and let each one be referenced without the document around it.** A figure
+with a permalink and a caption is the artifact that ends up in someone else's
+deck with a URL underneath it — which is the entire distribution mechanism for
+authority.
+
+`/data` now carries two numbered figures, each with its own anchor, its caption,
+the source table printed beneath it, and a link to the paper section it came
+from. Both emit `ImageObject` inside a `Dataset` licensed CC BY 4.0, and both
+appear in `/api/knowledge?collection=figures`.
+
+Server-rendered inline SVG. No chart library, no client JavaScript, no
+hydration — which means they work in the print stylesheet shipped in patch 38,
+work for a crawler with JS disabled, and cost nothing at runtime.
+
+### F-96 · The palette validator killed two colour plans, and improved the chart · P2
+
+First draft encoded the humidity figure with the site's status colours. Running
+the validator:
+
+```
+[FAIL] Normal-vision floor   worst adjacent #9f5c32↔#b04848 ΔE 6.7 (normal)
+                             — below 15, hard to tell apart even with full colour vision
+```
+
+`--copper-text` and `--danger` are effectively the same colour to a reader with
+full colour vision. `--success` and `--warning` failed too, at ΔE 11.7. Both
+plans would have shipped as a chart nobody could read, and neither failure is
+visible by looking — which is exactly why the check is a script rather than a
+judgement.
+
+The fix was not a different palette. **Neither figure needs two colours.** The
+safe humidity band is not a second series; it is a *reference region* — context
+drawn recessively behind the marks, which is the standard way to show "target
+range versus actual" and a better chart than the one I started with. One hue,
+one series, no legend (a legend is mandatory at two series and wrong at one),
+every mark directly labelled.
+
+`approx` and `openEnded` exist for the same reason. The sources say "≈1360" and
+"above 60%"; rendering those as `1360` and `70` invents two numbers. The chart
+prints "≈" and draws an open-ended arrow instead. **Rounding a hedge away is the
+most common way a visualisation lies.**
+
+### F-97 · A label was silently cut in half, and only rendering it showed that · P1
+
+The first render came out with the row label reading `operating band for
+hardwood`. The full text is *"Safe operating band for hardwood"* — SVG text does
+not wrap and does not overflow visibly; it is clipped by the viewBox with no
+warning anywhere.
+
+Ten guards passed. `tsc` passed. `parse-scan` passed. The build passed. Nothing
+in this repository can see a truncated SVG label, and nothing ever will —
+**the only check that catches it is rendering the figure and looking at it.**
+
+Fixed by measuring the longest label and setting the gutter to 250px. Both
+figures were then re-rendered and inspected in light and dark, and the dark step
+for the reference band was chosen against the dark surface rather than derived
+from the light one — 14% copper over cream reads as a soft tint and nearly
+vanishes over near-black; the dark value is 26%.
+
+### F-98 · The figure guard checks numbers, not just citations · **P1**
+
+`verify-figures.mjs` is the tenth guard, and it is deliberately stricter than
+the other provenance checks. `verify-framework` and `verify-glossary` confirm
+that a cited paper *section exists* — enough for prose, because prose restates
+and a human reviews the restatement.
+
+It is not enough for a chart. A figure is the most portable artifact this site
+produces; it travels detached from the page that explains it. So this guard
+extracts **every plotted number** and requires each one to appear in the cited
+section of `lib/papers.ts`. Drift a single value and the build fails:
+
+```
+✗ janka-hardness-gta: plots value=1900, which does not appear in
+    hardwood-selection-and-cost-framework-gta#species.
+```
+
+It also enforces unique, gapless figure numbers — "Figure 2" is a citation, and
+two of them breaks every reference — that `axisMax` covers every plotted value
+so no bar is silently clipped, that ticks are ascending and in range, and that
+every figure has a caption, because the caption is what travels with the
+screenshot.

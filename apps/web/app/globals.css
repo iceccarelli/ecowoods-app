@@ -8406,3 +8406,74 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 
   @page { margin: 16mm 14mm; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIGURES  ·  .fig-*   —  numbered, captioned, citable charts
+
+   ONE HUE. Both figures carry a single series; the humidity band is a reference
+   region rather than a second series, so no categorical palette is involved and
+   the pair-separation problem that killed two earlier colour plans does not
+   arise. See the comment block in app/components/Figure.tsx.
+
+   Grid and axis are recessive — --line, never --ink. Values and labels wear
+   text tokens, never the series colour: the bar carries identity, the number
+   beside it carries the value.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.fig { margin: 2rem 0 0; padding: 1.6rem 1.7rem; border-radius: 14px;
+  background: var(--surface-1); border: 1px solid var(--line);
+  scroll-margin-top: 6rem; }
+.fig-head { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.1rem; }
+.fig-number { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--copper-text); }
+.fig-head h3 { font-family: var(--font-display); font-size: 1.14rem; font-weight: 600;
+  line-height: 1.3; margin: 0; color: var(--ink); }
+
+.fig-plot { width: 100%; overflow-x: auto; }
+.fig-plot svg { display: block; width: 100%; min-width: 520px; height: auto; }
+
+.fig-bar   { fill: var(--copper); }
+/* The reference region is context. It must read as behind the data, which means
+   low chroma and no border competing with the marks. */
+.fig-band  { fill: color-mix(in srgb, var(--copper) 14%, transparent); }
+/* 14% of copper over a cream surface reads as a soft tint; over the near-black
+   dark surface the same mix nearly disappears. Rendered both and measured — the
+   dark step is chosen, not derived, which is the rule for every dark value in
+   this file. */
+html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, transparent); }
+.fig-grid  { stroke: var(--line); stroke-width: 1; }
+.fig-axis  { stroke: var(--line); stroke-width: 1; }
+.fig-label { fill: var(--ink-soft); font-family: var(--font-body); font-size: 13px; }
+.fig-value { fill: var(--ink); font-family: var(--font-mono); font-size: 12px;
+  font-variant-numeric: tabular-nums; }
+.fig-tick  { fill: var(--muted); font-family: var(--font-mono); font-size: 11px;
+  text-anchor: middle; }
+.fig-unit  { fill: var(--muted); font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.05em; }
+
+.fig-caption { margin: 1.1rem 0 0; font-size: 0.92rem; line-height: 1.65;
+  color: var(--ink-soft); max-width: 72ch; }
+
+.fig-table { width: 100%; border-collapse: collapse; margin-top: 1.25rem; font-size: 0.88rem; }
+.fig-table caption { text-align: left; font-family: var(--font-mono); font-size: 0.68rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  padding-bottom: 0.5rem; }
+.fig-table th, .fig-table td { text-align: left; padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line); }
+.fig-table thead th { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--muted); }
+.fig-table tbody th { font-weight: 600; color: var(--ink); }
+.fig-table td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.fig-table tbody tr:last-child th, .fig-table tbody tr:last-child td { border-bottom: 0; }
+
+@media print {
+  .fig { border: 0; border-top: 1px solid #999; border-radius: 0; padding: 0.6rem 0;
+    break-inside: avoid; }
+  .fig-plot { overflow: visible; }
+  .fig-plot svg { min-width: 0; }
+  /* currentColor would resolve to the print ink; the bars need to stay filled. */
+  .fig-bar { fill: #6b3410; }
+  .fig-band { fill: #e6d8cc; }
+}
+.fig-source { margin: 0.9rem 0 0; font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
+.fig-source a { color: var(--copper-text); }
