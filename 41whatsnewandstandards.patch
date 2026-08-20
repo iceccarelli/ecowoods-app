@@ -1,0 +1,1224 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index 91ee9f3..a11a524 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -165,6 +165,8 @@ export async function GET() {
+     `Short brief: ${SITE_URL}/llms.txt`,
+     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
+     `Resource index (everything published, grouped by reader intent): ${SITE_URL}/resources`,
++    `What's new: ${SITE_URL}/whats-new — this business's own dated releases. This site publishes primary material and does NOT aggregate third-party news, so nothing here is a republished headline.`,
++    `Standards register: ${SITE_URL}/standards — the external bodies and documents this trade answers to, each mapped to the framework criteria that depend on it, linked to the issuing body and stamped with the date we last verified it there.`,
+     `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
+     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
+     `Decision guides and reference installations: ${SITE_URL}/guides`,
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index 296a176..beb72bc 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -4,6 +4,8 @@ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+ import { getFigures } from '@/lib/figures';
++import { getChangelog } from '@/lib/changelog';
++import { getStandards } from '@/lib/standards';
+ import {
+   PILLARS,
+   FRAMEWORK_NAME,
+@@ -157,6 +159,31 @@ function build() {
+     source: url(`/papers/${f.source.paper}#${f.source.section}`),
+   }));
+ 
++  const changelog = getChangelog().map((c) => ({
++    id: `change:${c.id}`,
++    date: c.date,
++    kind: c.kind,
++    title: c.title,
++    body: c.body,
++    url: url(c.href),
++  }));
++
++  const standards = getStandards().map((s) => ({
++    id: `standard:${s.id}`,
++    body: s.body,
++    designation: s.designation,
++    title: s.title,
++    governs: s.governs,
++    relevance: s.relevance,
++    status: s.status,
++    sourceUrl: s.sourceUrl,
++    verifiedAt: s.verifiedAt,
++    note: s.note,
++    url: url(`/standards#${s.id}`),
++    pillars: s.pillars.map((id) => url(`/framework#${id}`)),
++    criteria: (s.criteria ?? []).map((id) => url(`/framework#c-${id}`)),
++  }));
++
+   const business = {
+     name: BUSINESS.name,
+     region: BUSINESS.region,
+@@ -167,7 +194,7 @@ function build() {
+     serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
+   };
+ 
+-  return { papers, framework, guides, glossary, figures, business };
++  return { papers, framework, guides, glossary, figures, changelog, standards, business };
+ }
+ 
+ export async function GET(request: NextRequest) {
+@@ -190,7 +217,7 @@ export async function GET(request: NextRequest) {
+       sitemap: url('/sitemap.xml'),
+       feed: url('/feed.xml'),
+     },
+-    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'business'],
++    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'changelog', 'standards', 'business'],
+     usage: {
+       all: url('/api/knowledge'),
+       byCollection: url('/api/knowledge?collection=glossary'),
+@@ -202,6 +229,8 @@ export async function GET(request: NextRequest) {
+       guides: all.guides.length,
+       glossaryTerms: all.glossary.length,
+       figures: all.figures.length,
++      changelogEntries: all.changelog.length,
++      externalStandards: all.standards.length,
+       serviceAreas: all.business.serviceAreas.length,
+     },
+   };
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index dc299df..d95c2ef 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -128,6 +128,12 @@ export function ContentLibraryPromo() {
+               <li>
+                 <a href="/feed.xml">RSS feed</a>
+               </li>
++              <li>
++                <Link href="/whats-new">What&rsquo;s new</Link>
++              </li>
++              <li>
++                <Link href="/standards">Standards register</Link>
++              </li>
+               <li>
+                 <Link href="/data">Data &amp; figures</Link>
+               </li>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 9060350..c8e2316 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -149,6 +149,8 @@ export default function SiteFooter() {
+           <FooterCol title="Learn" mobile={m}>
+             <div className="footer-links">
+               <a href="/resources">All resources</a>
++              <a href="/whats-new">What&rsquo;s New</a>
++              <a href="/standards">Standards Register</a>
+               <a href="/framework">The Well-Installed Framework</a>
+               <a href="/framework/assess">Score a quote</a>
+               <a href="/guides">Decision Guides</a>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index c792a87..720dc52 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8477,3 +8477,58 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%,
+ }
+ .fig-source { margin: 0.9rem 0 0; font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
+ .fig-source a { color: var(--copper-text); }
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   WHAT'S NEW  ·  .wn-*   and   STANDARDS  ·  .std-*
++   Component namespaces inside the .tlx-* editorial system. Semantic tokens only.
++   ═════════════════════════════════════════════════════════════════════════ */
++
++.wn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
++.wn-item { display: grid; gap: 0.5rem 2rem; padding: 1.6rem 0;
++  border-bottom: 1px solid var(--line); grid-template-columns: minmax(0, 1fr);
++  scroll-margin-top: 6rem; }
++@media (min-width: 780px) {
++  .wn-item { grid-template-columns: 12rem minmax(0, 1fr); align-items: start; }
++}
++.wn-item:last-child { border-bottom: 0; }
++.wn-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.8rem; }
++.wn-date { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em;
++  color: var(--ink); font-variant-numeric: tabular-nums; }
++.wn-kind { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em;
++  text-transform: uppercase; color: var(--copper-text);
++  border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.5rem; }
++.wn-body h2 { font-family: var(--font-display); font-size: 1.14rem; line-height: 1.35;
++  margin: 0 0 0.45rem; font-weight: 600; }
++.wn-body h2 a { color: var(--ink); text-decoration: none;
++  border-bottom: 1px solid transparent; }
++.wn-body h2 a:hover { color: var(--copper-text); border-bottom-color: var(--copper); }
++.wn-body p { margin: 0; color: var(--ink-soft); font-size: 0.94rem; line-height: 1.65;
++  max-width: 72ch; }
++
++.std { background: var(--surface-1); border: 1px solid var(--line);
++  border-left: 3px solid var(--copper); border-radius: 0 14px 14px 0;
++  padding: 1.5rem 1.6rem; scroll-margin-top: 6rem; }
++.std-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
++  margin-bottom: 0.7rem; }
++.std-body-name { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.09em;
++  text-transform: uppercase; color: var(--muted); }
++.std-desig { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
++  color: var(--copper-text); }
++.std-status { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.09em;
++  text-transform: uppercase; font-weight: 600; padding: 0.18rem 0.5rem;
++  border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
++.std-status--current { color: var(--success); }
++.std-status--revision-open { color: var(--warning); }
++.std-status--unverified-edition { color: var(--muted); }
++.std-title { font-family: var(--font-display); font-size: 1.12rem; line-height: 1.35;
++  margin: 0 0 0.6rem; font-weight: 600; color: var(--ink); max-width: 62ch; }
++.std-governs { margin: 0 0 0.5rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink);
++  max-width: 72ch; }
++.std-relevance { margin: 0; font-size: 0.92rem; line-height: 1.65; color: var(--ink-soft);
++  max-width: 72ch; }
++.std-note { margin: 0.9rem 0 0; padding: 0.75rem 1rem; border-radius: 10px;
++  background: var(--surface-2); border: 1px solid var(--line);
++  font-size: 0.88rem; line-height: 1.6; color: var(--ink-soft); max-width: 72ch; }
++.std-stale { color: var(--warning); font-weight: 600; }
++.std .gd-spec { margin-top: 1.2rem; }
++.std .gd-spec dd a { color: var(--copper-text); }
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index f97a003..943ee0e 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -4,6 +4,8 @@ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+ import { getFigures } from '@/lib/figures';
++import { getChangelog } from '@/lib/changelog';
++import { getStandards } from '@/lib/standards';
+ import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ 
+@@ -69,6 +71,8 @@ export async function GET() {
+   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
+   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
+   lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
++  lines.push(`- What's new (our own releases, dated, newest first): ${SITE_URL}/whats-new`);
++  lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
+   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
+   lines.push(`- Citation guide: ${SITE_URL}/authority`);
+   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
+@@ -99,6 +103,34 @@ export async function GET() {
+     lines.push('');
+   }
+ 
++  const changes = getChangelog();
++  if (changes.length) {
++    lines.push("## What's new — most recent first");
++    lines.push(
++      'These are this business\'s own publications. This site does not aggregate third-party news; external bodies are tracked separately in the standards register below.',
++    );
++    for (const c of changes.slice(0, 10)) {
++      lines.push(`- ${c.date} — ${c.title}: ${c.body}`);
++      lines.push(`  ${SITE_URL}${c.href}`);
++    }
++    lines.push('');
++  }
++
++  const standards = getStandards();
++  if (standards.length) {
++    lines.push('## External standards this work answers to');
++    lines.push(
++      'Each entry links to the issuing body and carries the date it was last verified there. We do not reproduce the standards themselves.',
++    );
++    for (const s of standards) {
++      lines.push(
++        `- ${s.body}${s.designation ? ` ${s.designation}` : ''} — ${s.title}. ${s.governs} (verified ${s.verifiedAt}: ${s.sourceUrl})`,
++      );
++    }
++    lines.push(`  Full register: ${SITE_URL}/standards`);
++    lines.push('');
++  }
++
+   const figures = getFigures();
+   if (figures.length) {
+     lines.push('## Figures — charted data, free to reuse under CC BY 4.0');
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index da573c0..bed3f1f 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -86,6 +86,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+       changeFrequency: 'weekly',
+       priority: 0.95,
+     },
++    {
++      url: `${SITE_URL}/whats-new`,
++      lastModified: new Date(),
++      changeFrequency: 'weekly',
++      priority: 0.9,
++    },
++    {
++      url: `${SITE_URL}/standards`,
++      lastModified: new Date(),
++      changeFrequency: 'monthly',
++      priority: 0.85,
++    },
+     {
+       url: `${SITE_URL}/data`,
+       lastModified: new Date(),
+diff --git a/apps/web/app/standards/page.tsx b/apps/web/app/standards/page.tsx
+new file mode 100644
+index 0000000..dde86fc
+--- /dev/null
++++ b/apps/web/app/standards/page.tsx
+@@ -0,0 +1,193 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { getStandards, stalenessDays, REVIEW_INTERVAL_DAYS } from '@/lib/standards';
++import { pillarById, allCriteria } from '@/lib/framework';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++/**
++ * /standards — the map of the standards landscape.
++ *
++ * The register answers a question no competitor in this market answers in
++ * public: which bodies govern this trade, which document says what, which of
++ * our own criteria depend on it, and WHEN DID YOU LAST CHECK.
++ *
++ * That last column is the point. Every entry states the date it was verified
++ * against the issuing body's own page, and an entry past its review interval
++ * says so on the page rather than quietly asserting a currency it no longer has.
++ * Publishing your own staleness is a stronger authority signal than publishing
++ * a list, because a list anyone can copy and only a maintained one stays true.
++ */
++
++export const metadata: Metadata = {
++  title: 'Standards Register | EcoWoods',
++  description:
++    'The external standards and bodies hardwood flooring work in Toronto answers to — ASTM concrete moisture and floor preparation methods, NWFA guidelines — each mapped to the Well-Installed Framework criteria that depend on it, with the date we last verified it at the source.',
++  alternates: { canonical: '/standards' },
++  openGraph: {
++    title: 'Standards Register — EcoWoods',
++    description:
++      'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
++    type: 'website',
++    url: `${SITE_URL}/standards`,
++  },
++};
++
++const STATUS_LABEL: Record<string, string> = {
++  current: 'Current',
++  'revision-open': 'Revision open',
++  'unverified-edition': 'Edition unverified',
++};
++
++export default function StandardsPage() {
++  const standards = getStandards();
++  const now = new Date();
++  const criteria = allCriteria();
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={{
++          '@context': 'https://schema.org',
++          '@type': 'CollectionPage',
++          '@id': `${SITE_URL}/standards#collection`,
++          name: 'Standards Register — EcoWoods',
++          url: `${SITE_URL}/standards`,
++          isPartOf: { '@id': `${SITE_URL}/#website` },
++          publisher: { '@id': `${SITE_URL}/#organization` },
++          hasPart: standards.map((s) => ({
++            '@type': 'CreativeWork',
++            name: s.designation ? `${s.designation} — ${s.title}` : s.title,
++            publisher: { '@type': 'Organization', name: s.body },
++            url: s.sourceUrl,
++            description: s.governs,
++          })),
++        }}
++      />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Standards', url: `${SITE_URL}/standards` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Standards</span>
++          </nav>
++          <h1 className="tlx-title">Standards register</h1>
++          <p className="tlx-lede">
++            The external documents this trade answers to, each mapped to the{' '}
++            <Link href="/framework">framework criteria</Link> that depend on it — and the date we
++            last verified it against the issuing body&rsquo;s own page.
++          </p>
++          <p className="tlx-note">
++            We link to the issuing body, never to a reseller or a summary, and we do not reproduce
++            the standards themselves. Where an edition could not be confirmed at the source, the
++            entry says so instead of guessing.
++          </p>
++        </div>
++      </header>
++
++      {standards.map((s) => {
++        const days = stalenessDays(s, now);
++        const stale = days > REVIEW_INTERVAL_DAYS;
++        return (
++          <section key={s.id} className="tlx-section" aria-label={s.title} id={s.id}>
++            <div className="shell">
++              <article className="std">
++                <div className="std-head">
++                  <span className="std-body-name">{s.body}</span>
++                  {s.designation && <span className="std-desig">{s.designation}</span>}
++                  <span className={`std-status std-status--${s.status}`}>
++                    {STATUS_LABEL[s.status]}
++                  </span>
++                </div>
++                <h2 className="std-title">{s.title}</h2>
++                <p className="std-governs">{s.governs}</p>
++                <p className="std-relevance">{s.relevance}</p>
++
++                {s.note && <p className="std-note">{s.note}</p>}
++
++                <dl className="gd-spec">
++                  <div className="gd-spec-row">
++                    <dt>Primary source</dt>
++                    <dd>
++                      <a href={s.sourceUrl} rel="noopener nofollow" target="_blank">
++                        {s.sourceUrl.replace(/^https:\/\//, '')}
++                      </a>
++                    </dd>
++                  </div>
++                  <div className="gd-spec-row">
++                    <dt>Last verified</dt>
++                    <dd className={stale ? 'std-stale' : undefined}>
++                      <time dateTime={s.verifiedAt}>{s.verifiedAt}</time> · {days} day
++                      {days === 1 ? '' : 's'} ago
++                      {stale ? ` — past the ${REVIEW_INTERVAL_DAYS}-day review interval` : ''}
++                    </dd>
++                  </div>
++                  <div className="gd-spec-row">
++                    <dt>Framework pillars</dt>
++                    <dd>
++                      {s.pillars.map((id, i) => {
++                        const p = pillarById(id);
++                        if (!p) return null;
++                        return (
++                          <span key={id}>
++                            {i > 0 && ' · '}
++                            <Link href={`/framework#${p.id}`}>
++                              {p.number}. {p.name}
++                            </Link>
++                          </span>
++                        );
++                      })}
++                    </dd>
++                  </div>
++                  {s.criteria && s.criteria.length > 0 && (
++                    <div className="gd-spec-row">
++                      <dt>Criteria</dt>
++                      <dd>
++                        {s.criteria.map((cid, i) => {
++                          const c = criteria.find((x) => x.id === cid);
++                          return (
++                            <span key={cid}>
++                              {i > 0 && ' · '}
++                              <Link href={`/framework#c-${cid}`}>
++                                {cid}
++                                {c ? ` — ${c.question.slice(0, 60)}${c.question.length > 60 ? '…' : ''}` : ''}
++                              </Link>
++                            </span>
++                          );
++                        })}
++                      </dd>
++                    </div>
++                  )}
++                </dl>
++              </article>
++            </div>
++          </section>
++        );
++      })}
++
++      <section className="tlx-section" aria-label="How this is maintained">
++        <div className="shell">
++          <p className="tlx-kicker">Method</p>
++          <h2 className="tlx-h2">How this register is kept honest</h2>
++          <p className="tlx-note">
++            Every entry carries the date it was last checked at the issuing body&rsquo;s own page,
++            and a build guard reports any entry past its {REVIEW_INTERVAL_DAYS}-day review interval
++            — so going stale is a visible task rather than something anyone has to remember. A
++            register that silently rots is worse than no register: it asserts a currency it does not
++            have, to readers with no way to tell.
++          </p>
++          <p className="tlx-note">
++            This is not a news feed and deliberately not an aggregator. Everything we publish
++            ourselves is at <Link href="/whats-new">What&rsquo;s new</Link>.
++          </p>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/whats-new/page.tsx b/apps/web/app/whats-new/page.tsx
+new file mode 100644
+index 0000000..705361e
+--- /dev/null
++++ b/apps/web/app/whats-new/page.tsx
+@@ -0,0 +1,132 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { getChangelog, KIND_LABEL } from '@/lib/changelog';
++import { getStandards, stalenessDays, REVIEW_INTERVAL_DAYS } from '@/lib/standards';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++/**
++ * /whats-new — this business's own releases, dated, newest first.
++ *
++ * The AWS "What's New" pattern, and the important half of it is what it is NOT:
++ * a digest of other people's headlines. AWS's feed carries AWS's announcements —
++ * its authority comes from being the primary source. An aggregator competes with
++ * its own inputs and loses, because the reader can always go upstream.
++ */
++
++export const metadata: Metadata = {
++  title: "What's New | EcoWoods",
++  description:
++    'Everything newly published by Ecowoods on hardwood flooring — technical papers, decision guides, figures, the Well-Installed Framework and the public data API — dated, newest first.',
++  alternates: { canonical: '/whats-new' },
++  openGraph: {
++    title: "What's New — EcoWoods",
++    description: 'Newly published papers, guides, figures and tools. Dated, newest first.',
++    type: 'website',
++    url: `${SITE_URL}/whats-new`,
++  },
++};
++
++export default function WhatsNewPage() {
++  const entries = getChangelog();
++  const now = new Date();
++  const standards = getStandards();
++  const due = standards.filter((s) => stalenessDays(s, now) > REVIEW_INTERVAL_DAYS).length;
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={{
++          '@context': 'https://schema.org',
++          '@type': 'CollectionPage',
++          '@id': `${SITE_URL}/whats-new#collection`,
++          name: "What's New — EcoWoods",
++          url: `${SITE_URL}/whats-new`,
++          isPartOf: { '@id': `${SITE_URL}/#website` },
++          publisher: { '@id': `${SITE_URL}/#organization` },
++          hasPart: entries.map((e) => ({
++            '@type': 'CreativeWork',
++            headline: e.title,
++            datePublished: e.date,
++            url: `${SITE_URL}${e.href}`,
++            description: e.body,
++          })),
++        }}
++      />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: "What's New", url: `${SITE_URL}/whats-new` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>What&rsquo;s New</span>
++          </nav>
++          <h1 className="tlx-title">What&rsquo;s new</h1>
++          <p className="tlx-lede">
++            Everything newly published here, dated and newest first. This carries our own releases
++            rather than a digest of the trade press — a site that republishes other people&rsquo;s
++            news is a secondary source competing with its own inputs.
++          </p>
++          <p className="fw-meta">
++            <span>{entries.length} entries</span>
++            <span aria-hidden="true">·</span>
++            <span>
++              <a href="/feed.xml">RSS</a>
++            </span>
++            <span aria-hidden="true">·</span>
++            <span>
++              <Link href="/standards">Standards watch</Link>
++            </span>
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Releases">
++        <div className="shell">
++          <ol className="wn-list">
++            {entries.map((e) => (
++              <li key={e.id} className="wn-item" id={`e-${e.id}`}>
++                <div className="wn-meta">
++                  <time dateTime={e.date} className="wn-date">
++                    {e.date}
++                  </time>
++                  <span className="wn-kind">{KIND_LABEL[e.kind]}</span>
++                </div>
++                <div className="wn-body">
++                  <h2>
++                    <Link href={e.href}>{e.title}</Link>
++                  </h2>
++                  <p>{e.body}</p>
++                </div>
++              </li>
++            ))}
++          </ol>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Standards watch">
++        <div className="shell">
++          <p className="tlx-kicker">Outside this site</p>
++          <h2 className="tlx-h2">What we watch, and when we last checked</h2>
++          <p className="tlx-note">
++            The bodies and documents this work answers to are tracked separately, with the date each
++            entry was last verified against the issuing body&rsquo;s own page.{' '}
++            {due === 0
++              ? 'Every entry is inside its review interval.'
++              : `${due} ${due === 1 ? 'entry is' : 'entries are'} due for re-verification.`}
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta fw-cta--ghost" href="/standards">
++              The standards register →
++            </Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+new file mode 100644
+index 0000000..97c280d
+--- /dev/null
++++ b/apps/web/lib/changelog.ts
+@@ -0,0 +1,121 @@
++/**
++ * What's new — the changelog of everything published here.
++ *
++ * WHY THIS IS WRITTEN AND NOT DERIVED
++ *
++ * A sitemap says what exists. A feed says what changed. Neither says WHY IT
++ * MATTERS, and that sentence is the whole value of a changelog entry — it is
++ * what makes an item worth reading rather than merely worth indexing.
++ *
++ * So entries are written. The risk with a written changelog is that it silently
++ * falls behind: something ships, nobody adds a line, and the page quietly claims
++ * a publication history it no longer has. scripts/verify-changelog.mjs closes
++ * that by working in the other direction — it walks papers, guides and figures
++ * and FAILS THE BUILD if any of them has no entry here. The prose is editorial;
++ * the completeness is mechanical.
++ *
++ * This is the AWS "What's New" pattern, and the important half of it is what it
++ * is NOT: it carries this business's own releases, not a digest of other
++ * people's news. Aggregating the trade press would make this a secondary source
++ * competing with its own inputs. External bodies are tracked separately, as a
++ * standards register, in lib/standards.ts.
++ */
++
++export type ChangeKind = 'paper' | 'guide' | 'figure' | 'framework' | 'tool' | 'data';
++
++export type ChangeEntry = {
++  id: string;
++  date: string;
++  kind: ChangeKind;
++  title: string;
++  /** Why a reader should care. One or two sentences, no marketing. */
++  body: string;
++  href: string;
++  /** Manifest ids this entry covers, for the completeness guard. */
++  covers?: string[];
++};
++
++export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'figures-v1',
++    date: '2026-08-20',
++    kind: 'figure',
++    title: 'Two numbered figures, each with the table it was built from',
++    body: 'Indoor relative humidity against the band hardwood needs, and Janka hardness across the five species used across the GTA. Every plotted value is checked against its source paper at build time, so a figure cannot drift from the document it claims to visualise. Free to reuse under CC BY 4.0.',
++    href: '/data',
++    covers: ['toronto-indoor-humidity', 'janka-hardness-gta'],
++  },
++  {
++    id: 'knowledge-api',
++    date: '2026-08-20',
++    kind: 'data',
++    title: 'The whole corpus is now available as JSON',
++    body: 'Every paper with full section text, all 27 framework criteria with their sources, every guide and every glossary term — CORS-open, no key, CC BY 4.0. Generated from the same manifests the pages render from, so it cannot describe a page that does not exist.',
++    href: '/api/knowledge',
++  },
++  {
++    id: 'glossary-v1',
++    date: '2026-08-20',
++    kind: 'data',
++    title: 'A 32-term glossary, one addressable page per term',
++    body: 'Acclimation, cupping, crowning, telegraphing, overwood, moisture differential and the rest — each with a canonical definition, DefinedTerm schema, and a link to the paper section it comes from.',
++    href: '/glossary',
++  },
++  {
++    id: 'framework-v1',
++    date: '2026-08-19',
++    kind: 'framework',
++    title: 'The EcoWoods Well-Installed Framework v1.0',
++    body: 'Six pillars and 27 binary criteria for judging a hardwood installation, published under CC BY with permanent criterion ids. Written to be used on any contractor in the GTA, including us. The self-assessment scores a quote in the browser and sends nothing anywhere.',
++    href: '/framework',
++  },
++  {
++    id: 'guides-v1',
++    date: '2026-08-19',
++    kind: 'guide',
++    title: 'Three decision guides and three reference installations',
++    body: 'Solid versus engineered, installation method by substrate, and how to evaluate a quote — plus three scenarios specified end to end: condominium over slab, radiant heat main floor, and refinishing an existing floor.',
++    href: '/guides',
++    covers: [
++      'solid-vs-engineered-hardwood-toronto',
++      'nail-down-glue-down-or-floating',
++      'how-to-evaluate-a-hardwood-quote',
++      'reference-condominium-concrete-slab',
++      'reference-radiant-heat-main-floor',
++      'reference-refinishing-existing-hardwood',
++    ],
++  },
++  {
++    id: 'paper-craft',
++    date: '2026-08-17',
++    kind: 'paper',
++    title: 'The Craft — the four machines and the order they run in',
++    body: 'Belt sander, edger, planetary and buffer: what each one does that the others cannot, and why a skipped step in the sequence is a liability that stays invisible until handover day.',
++    href: '/papers/hardwood-refinishing-machines-and-sequence',
++    covers: ['hardwood-refinishing-machines-and-sequence'],
++  },
++  {
++    id: 'papers-v1',
++    date: '2026-08-01',
++    kind: 'paper',
++    title: 'Climate Mastery and The Intelligent Homeowner’s Decision Framework',
++    body: 'Why hardwood succeeds or fails in Toronto — moisture, acclimation, substrate and method — and how to choose a floor that performs rather than one that photographs well. Published in full as HTML, not gated.',
++    href: '/papers',
++    covers: [
++      'toronto-hardwood-climate-moisture-protocol',
++      'hardwood-selection-and-cost-framework-gta',
++    ],
++  },
++];
++
++export const getChangelog = (): ChangeEntry[] =>
++  [...CHANGELOG].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
++
++export const KIND_LABEL: Record<ChangeKind, string> = {
++  paper: 'Technical paper',
++  guide: 'Guide',
++  figure: 'Figure',
++  framework: 'Framework',
++  tool: 'Tool',
++  data: 'Data',
++};
+diff --git a/apps/web/lib/standards.ts b/apps/web/lib/standards.ts
+new file mode 100644
+index 0000000..2084544
+--- /dev/null
++++ b/apps/web/lib/standards.ts
+@@ -0,0 +1,141 @@
++/**
++ * External standards register — the bodies and documents this work answers to.
++ *
++ * WHY THIS IS A REGISTER AND NOT A NEWS FEED
++ *
++ * The obvious build is an aggregator: pull headlines from the trade press,
++ * republish them, look current. Three reasons that is the wrong move, and they
++ * compound:
++ *
++ *   1. It makes this site a SECONDARY source. AWS's "What's New" is AWS's own
++ *      announcements — its authority comes from being the primary source, not
++ *      from mirroring other people's. An aggregator competes with its own
++ *      inputs and loses, because the reader can go upstream.
++ *   2. It poisons the corpus. Every claim on this site traces to a paper
++ *      published here and is enforced by a build guard. Auto-ingested third-
++ *      party claims cannot be, and one unverified figure carried under this
++ *      name discounts everything around it — which is the exact failure mode
++ *      the whole architecture exists to prevent.
++ *   3. Republishing article text is a copyright problem nobody needs.
++ *
++ * What actually builds authority is the opposite move: **be the map of the
++ * standards landscape.** Which bodies govern this trade, which document says
++ * what, which of our own framework criteria depend on it, where the primary
++ * source is, and — the part nobody else publishes — WHEN WE LAST CHECKED.
++ *
++ * That last field is the product. `verifiedAt` is a claim about our own
++ * diligence, not about the standard, and scripts/verify-standards.mjs surfaces
++ * every entry that has gone stale so re-checking is a build-visible task rather
++ * than something someone remembers. A register that silently rots is worse than
++ * no register: it asserts currency it does not have.
++ *
++ * CONTENT RULE
++ *
++ * Every entry carries the exact document title as published by the issuing
++ * body, a link to that body's own page, and the date it was verified there.
++ * Nothing is summarised from a secondary source. Where an edition or a detail
++ * could not be confirmed at the primary source, `note` says so plainly rather
++ * than filling the gap.
++ */
++
++export type StandardStatus = 'current' | 'revision-open' | 'unverified-edition';
++
++export type Standard = {
++  id: string;
++  /** Issuing body, e.g. "ASTM International". */
++  body: string;
++  /** Designation as the body writes it, e.g. "F2170-19a". Empty for non-numbered guidance. */
++  designation?: string;
++  /** The exact published title. Never paraphrased. */
++  title: string;
++  /** What it governs, in one sentence, in our words. */
++  governs: string;
++  /** Why it matters to a floor in this city. */
++  relevance: string;
++  status: StandardStatus;
++  /** The issuing body's own page. Never a reseller, never a blog. */
++  sourceUrl: string;
++  /** ISO date this entry was last checked against sourceUrl. */
++  verifiedAt: string;
++  /** Framework pillar ids this standard underwrites. */
++  pillars: string[];
++  /** Framework criterion ids, where the mapping is that specific. */
++  criteria?: string[];
++  note?: string;
++};
++
++export const STANDARDS: Standard[] = [
++  {
++    id: 'astm-f2170',
++    body: 'ASTM International',
++    designation: 'F2170-19a',
++    title:
++      'Standard Test Method for Determining Relative Humidity in Concrete Floor Slabs Using in situ Probes',
++    governs:
++      'How relative humidity inside a concrete slab is measured, using probes placed in situ rather than a surface reading.',
++    relevance:
++      'This is the test behind "was the subfloor moisture-tested" on a concrete slab. A surface reading is not this test, and a contractor who has done one has not done the other.',
++    status: 'current',
++    sourceUrl: 'https://store.astm.org/f2170-19a.html',
++    verifiedAt: '2026-08-20',
++    pillars: ['moisture', 'substrate'],
++    criteria: ['1.1', '1.3'],
++  },
++  {
++    id: 'astm-f1869',
++    body: 'ASTM International',
++    designation: 'F1869',
++    title:
++      'Standard Test Method for Measuring Moisture Vapor Emission Rate of Concrete Subfloor Using Anhydrous Calcium Chloride',
++    governs:
++      'The calcium-chloride test — how much moisture vapour a concrete subfloor emits over a measured period.',
++    relevance:
++      'The older of the two concrete moisture tests, and still specified by some manufacturers. Which test a warranty requires is a question worth asking before the slab is covered.',
++    status: 'revision-open',
++    sourceUrl: 'https://store.astm.org/f1869-22.html',
++    verifiedAt: '2026-08-20',
++    pillars: ['moisture', 'substrate'],
++    criteria: ['1.1'],
++    note: 'ASTM lists an open revision work item (WK96566) against this standard. The edition in force may change; check the issuing body before relying on a specific year.',
++  },
++  {
++    id: 'astm-f710',
++    body: 'ASTM International',
++    designation: 'F710-21',
++    title: 'Standard Practice for Preparing Concrete Floors to Receive Resilient Flooring',
++    governs:
++      'Preparation of a concrete floor before a covering goes down — flatness, cleanliness, and the condition the slab has to be in.',
++    relevance:
++      'The substrate-condition half of pillar 2. Slab flatness discovered after a deposit is the most common source of change orders on a hardwood job, and this is the document that defines what "prepared" means.',
++    status: 'current',
++    sourceUrl: 'https://store.astm.org/f0710-21.html',
++    verifiedAt: '2026-08-20',
++    pillars: ['substrate'],
++    criteria: ['2.3'],
++  },
++  {
++    id: 'nwfa-guidelines',
++    body: 'National Wood Flooring Association (NWFA)',
++    title: 'NWFA technical guidelines and publications',
++    governs:
++      'Installation, sand-and-finish and wood-species guidance for the North American wood flooring trade.',
++    relevance:
++      'The trade body whose guidelines most manufacturer warranties reference. Acclimation periods, subfloor requirements and installation method by substrate all trace here.',
++    status: 'unverified-edition',
++    sourceUrl: 'https://nwfa.org/',
++    verifiedAt: '2026-08-20',
++    pillars: ['moisture', 'substrate', 'specification', 'containment'],
++    note: 'The NWFA landing page does not enumerate current editions of individual guideline documents. This entry deliberately does not assert an edition or year — confirm the applicable document and revision with the NWFA directly before citing it in a specification.',
++  },
++];
++
++export const getStandards = (): Standard[] => STANDARDS;
++export const getStandard = (id: string): Standard | undefined =>
++  STANDARDS.find((s) => s.id === id);
++
++/** Days since an entry was verified against its primary source. */
++export const stalenessDays = (s: Standard, now: Date): number =>
++  Math.floor((now.getTime() - new Date(s.verifiedAt).getTime()) / 86_400_000);
++
++/** Entries due for re-verification. 180 days is the review interval. */
++export const REVIEW_INTERVAL_DAYS = 180;
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 2c8cf46..8a6eecb 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3274,3 +3274,91 @@ two of them breaks every reference — that `axisMax` covers every plotted value
+ so no bar is silently clipped, that ticks are ascending and in range, and that
+ every figure has a caption, because the caption is what travels with the
+ screenshot.
++
++---
++
++## 39. What's new, and what we watch
++
++### F-99 · Aggregating the trade press would have made this a secondary source · **P0 — decision, not a defect**
++
++The request was to pull news, APIs and feedback from the authoritative sites in
++the space and republish it here, so the site looks current and dominant. I did
++not build that, and the reasoning matters more than the feature:
++
++**1. It inverts the authority.** AWS's *What's New* carries AWS's own
++announcements. Its authority comes from being the primary source — the place the
++news originates. A site that republishes other people's headlines is a secondary
++source **competing with its own inputs**, and it loses that competition every
++time, because the reader can always go upstream to the original.
++
++**2. It poisons the corpus.** Every claim on this site traces to a paper
++published here, and eleven build guards now enforce that. Auto-ingested
++third-party claims cannot be enforced that way. One unverified figure carried
++under this name discounts everything around it — which is precisely the failure
++mode the entire architecture exists to prevent. The strictness is the asset; an
++ingest pipeline would be a hole cut in it.
++
++**3. Republishing article text is a copyright exposure** nobody needs.
++
++**What builds authority instead is the inverse move: be the map.** Which bodies
++govern this trade, which document says what, which of our own criteria depend on
++it, where the primary source is — and the part nobody else publishes — **when we
++last checked.**
++
++### F-100 · `/standards` — the register, and the staleness column that is the product · **P1**
++
++Four entries to start, each verified at the issuing body's own page on
++2026-08-20, never at a reseller or a summary:
++
++| Body | Document | Status |
++|---|---|---|
++| ASTM International | F2170-19a — *Determining Relative Humidity in Concrete Floor Slabs Using in situ Probes* | current |
++| ASTM International | F1869 — *Measuring Moisture Vapor Emission Rate of Concrete Subfloor Using Anhydrous Calcium Chloride* | revision open (WK96566) |
++| ASTM International | F710-21 — *Preparing Concrete Floors to Receive Resilient Flooring* | current |
++| NWFA | Technical guidelines and publications | edition unverified |
++
++Each is mapped to the framework pillars and criteria that depend on it, so
++"criterion 1.1 — was the subfloor moisture-tested" resolves to the actual test
++method behind the question.
++
++**The NWFA entry is the important one.** Its landing page does not enumerate
++current editions of individual guideline documents, so the entry asserts no
++edition and says so in a note. Filling that gap with a plausible year would have
++been the easiest thing on this page and the one thing that would make the
++register worthless.
++
++**`verifiedAt` is a claim about our diligence, not about the standard.** Every
++entry states when it was last checked, the page shows the age, and
++`verify-changelog.mjs` warns on anything past a 180-day review interval — so
++going stale is a build-visible task rather than something someone remembers. A
++register that silently rots is worse than no register: it asserts a currency it
++does not have to readers with no way to tell.
++
++Staleness is a **warning, not a failure**. Failing a build because a calendar
++advanced would train everyone to bypass the guard, and a ratchet that gets
++bypassed is a wall that gets ignored.
++
++### F-101 · `/whats-new` — written prose, mechanical completeness · P1
++
++A sitemap says what exists. A feed says what changed. Neither says **why it
++matters**, and that sentence is the entire value of a changelog entry.
++
++So entries are written. The risk with a written changelog is that it silently
++falls behind — something ships, nobody adds a line, and the page quietly claims
++a publication history the site no longer has.
++
++`verify-changelog.mjs` closes that by working backwards: it walks papers, guides
++and figures and **fails the build if any of them is unmentioned**.
++
++```
++✗ figure "janka-hardness-gta" has shipped but no changelog entry covers it.
++```
++
++It fails in the other direction too — an entry covering something no longer in
++any manifest. The prose stays editorial; the completeness is mechanical. That
++split is the whole design, and it is the same one used for the framework, where
++the pillars are judgement and the citations are enforced.
++
++Eleven guards now. Seven of them were written in response to a specific failure
++rather than in anticipation of one. That ratio still says nothing good about
++foresight and everything good about the shape of the repository.
+diff --git a/package.json b/package.json
+index af88aad..d72f968 100644
+--- a/package.json
++++ b/package.json
+@@ -20,7 +20,8 @@
+     "verify:client": "node scripts/verify-client-boundary.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+     "verify:figures": "node scripts/verify-figures.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures",
++    "verify:changelog": "node scripts/verify-changelog.mjs",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index f3ddc59..8ed6d82 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -125,6 +125,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-client-boundary.mjs ] && run "verify:client" node scripts/verify-client-boundary.mjs
+ [ -f scripts/verify-glossary.mjs ] && run "verify:glossary" node scripts/verify-glossary.mjs
+ [ -f scripts/verify-figures.mjs ] && run "verify:figures" node scripts/verify-figures.mjs
++[ -f scripts/verify-changelog.mjs ] && run "verify:changelog" node scripts/verify-changelog.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+@@ -153,6 +154,12 @@ fi
+ if [ -f scripts/verify-figures.mjs ]; then
+   node scripts/verify-figures.mjs 2>&1 | tail -1 | sed 's/^/  /'
+ fi
++if [ -f scripts/verify-changelog.mjs ]; then
++  # The standards register's staleness warnings surface here deliberately: an
++  # entry past its review interval is a task, and a task nobody can see is a
++  # task nobody does. Same reasoning as the runtime-report freshness check.
++  node scripts/verify-changelog.mjs 2>&1 | tail -3 | sed 's/^/  /'
++fi
+ note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
+ if command -v pdftotext >/dev/null 2>&1; then
+diff --git a/scripts/verify-changelog.mjs b/scripts/verify-changelog.mjs
+new file mode 100644
+index 0000000..ff028f8
+--- /dev/null
++++ b/scripts/verify-changelog.mjs
+@@ -0,0 +1,201 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-changelog.mjs — completeness of /whats-new, freshness of /standards.
++ *
++ * TWO MANIFESTS, TWO DIFFERENT RISKS.
++ *
++ * The changelog is written prose, because "why this matters" cannot be derived.
++ * Its failure mode is silence: something ships, nobody adds a line, and the page
++ * claims a publication history it no longer has. So this guard works backwards —
++ * it walks papers, guides and figures and fails if any of them is unmentioned.
++ * The prose stays editorial; the completeness becomes mechanical.
++ *
++ * The standards register's failure mode is the opposite: it does not go missing,
++ * it goes STALE. An entry that says "ASTM F2170-19a" is a claim about the world
++ * that was true when someone checked and may not be now. `verifiedAt` is
++ * therefore a claim about our own diligence, and this guard makes going stale
++ * visible at build time rather than leaving it to memory. A register that
++ * silently rots is worse than no register — it asserts a currency it does not
++ * have, to readers who have no way to tell.
++ *
++ * Staleness is a WARNING, not a failure. Failing a build because a calendar
++ * advanced would train everyone to bypass the guard, which is how a ratchet
++ * becomes a wall and then becomes ignored.
++ *
++ *   node scripts/verify-changelog.mjs
++ *   node scripts/verify-changelog.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const LIST = process.argv.includes('--list');
++const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
++const exists = (p) => fs.existsSync(path.join(ROOT, p));
++
++for (const f of [
++  'apps/web/lib/changelog.ts',
++  'apps/web/lib/standards.ts',
++  'apps/web/lib/papers.ts',
++  'apps/web/lib/guides.ts',
++  'apps/web/lib/figures.ts',
++]) {
++  if (!exists(f)) {
++    console.error(`verify-changelog: ${f} not found — run from the repo root.`);
++    process.exit(2);
++  }
++}
++
++const problems = [];
++const warnings = [];
++const fail = (m) => problems.push(m);
++const warn = (m) => warnings.push(m);
++
++const clogSrc = read('apps/web/lib/changelog.ts');
++const stdSrc = read('apps/web/lib/standards.ts');
++
++/* ── 1. changelog completeness ───────────────────────────────────────────── */
++const covered = new Set(
++  [...clogSrc.matchAll(/covers: \[([\s\S]*?)\]/g)]
++    .flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)])
++    .map((m) => m[1]),
++);
++
++const idsIn = (src, re) => [...src.matchAll(re)].map((m) => m[1]);
++const paperSlugs = idsIn(read('apps/web/lib/papers.ts'), /\n    slug: '([^']+)',/g);
++const guideSlugs = idsIn(read('apps/web/lib/guides.ts'), /\n    slug: '([^']+)',/g);
++const figureIds = idsIn(read('apps/web/lib/figures.ts'), /\n    id: '([^']+)',/g);
++
++for (const [label, ids] of [
++  ['paper', paperSlugs],
++  ['guide', guideSlugs],
++  ['figure', figureIds],
++]) {
++  for (const id of ids) {
++    if (!covered.has(id)) {
++      fail(
++        `${label} "${id}" has shipped but no changelog entry covers it.\n` +
++          `      Add it to lib/changelog.ts with a covers: ['${id}'] — a changelog that\n` +
++          `      silently falls behind claims a publication history the site does not have.`,
++      );
++    }
++  }
++}
++// The reverse: an entry covering something that no longer exists.
++const known = new Set([...paperSlugs, ...guideSlugs, ...figureIds]);
++for (const c of covered) {
++  if (!known.has(c)) fail(`changelog covers "${c}", which is not in any manifest`);
++}
++
++/* ── 2. changelog shape ──────────────────────────────────────────────────── */
++const entries = clogSrc.split(/\n  \{\n/).slice(1);
++const seenIds = new Set();
++for (const b of entries) {
++  const id = (b.match(/\bid: '([^']+)'/) || [])[1];
++  if (!id) continue;
++  if (seenIds.has(id)) fail(`duplicate changelog id: ${id}`);
++  seenIds.add(id);
++  const date = (b.match(/\bdate: '([^']+)'/) || [])[1];
++  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) fail(`${id}: date "${date}" is not ISO yyyy-mm-dd`);
++  const href = (b.match(/\bhref: '([^']+)'/) || [])[1];
++  if (!href || !href.startsWith('/')) fail(`${id}: href must be a site-relative path`);
++}
++
++/* ── 3. standards register ───────────────────────────────────────────────── */
++const REVIEW_DAYS = Number((stdSrc.match(/REVIEW_INTERVAL_DAYS = (\d+)/) || [])[1] || 180);
++// Date.now() is fine here: this is a guard, not a workflow that has to replay.
++const now = Date.now();
++const stdBlocks = stdSrc.split(/\n  \{\n/).slice(1);
++const standards = [];
++for (const b of stdBlocks) {
++  const one = (k) => {
++    const m = b.match(new RegExp(`\\b${k}: '([^']*)'`)) || b.match(new RegExp(`\\b${k}:\\s*\\n?\\s*'([^']*)'`));
++    return m ? m[1] : undefined;
++  };
++  const id = one('id');
++  if (!id) continue;
++  const sourceUrl = one('sourceUrl');
++  const verifiedAt = one('verifiedAt');
++  const status = one('status');
++  standards.push({ id, sourceUrl, verifiedAt, status });
++
++  if (!sourceUrl || !/^https:\/\//.test(sourceUrl)) {
++    fail(`standard "${id}": sourceUrl must be an https link to the ISSUING BODY, never a reseller or a blog`);
++  }
++  if (!/^\d{4}-\d{2}-\d{2}$/.test(verifiedAt || '')) {
++    fail(`standard "${id}": verifiedAt "${verifiedAt}" is not ISO yyyy-mm-dd`);
++  } else {
++    const days = Math.floor((now - Date.parse(verifiedAt)) / 86_400_000);
++    if (days > REVIEW_DAYS) {
++      warn(
++        `standard "${id}" was last verified ${days} days ago (interval ${REVIEW_DAYS}). ` +
++          `Re-check ${sourceUrl} and update verifiedAt, or the register asserts a currency it does not have.`,
++      );
++    }
++  }
++  if (!['current', 'revision-open', 'unverified-edition'].includes(status || '')) {
++    fail(`standard "${id}": status "${status}" is not one of current | revision-open | unverified-edition`);
++  }
++}
++if (!standards.length) fail('No standards parsed out of lib/standards.ts.');
++
++// Framework references must resolve, or the register links nowhere.
++if (exists('apps/web/lib/framework.ts')) {
++  const fw = read('apps/web/lib/framework.ts');
++  const pillarIds = new Set([...fw.matchAll(/\n    id: '([a-z-]+)',\n    number: \d+/g)].map((m) => m[1]));
++  const critIds = new Set([...fw.matchAll(/\n        id: '(\d+\.\d+)',/g)].map((m) => m[1]));
++  for (const m of stdSrc.matchAll(/pillars: \[([^\]]*)\]/g)) {
++    for (const raw of m[1].split(',')) {
++      const id = raw.trim().replace(/^'|'$/g, '');
++      if (id && !pillarIds.has(id)) fail(`standards register points at pillar "${id}", which does not exist`);
++    }
++  }
++  for (const m of stdSrc.matchAll(/criteria: \[([^\]]*)\]/g)) {
++    for (const raw of m[1].split(',')) {
++      const id = raw.trim().replace(/^'|'$/g, '');
++      if (id && !critIds.has(id)) fail(`standards register points at criterion "${id}", which does not exist`);
++    }
++  }
++}
++
++/* ── 4. derived surfaces ─────────────────────────────────────────────────── */
++for (const [file, needle, why] of [
++  ['apps/web/app/sitemap.ts', '/whats-new', 'sitemap.ts does not emit /whats-new'],
++  ['apps/web/app/sitemap.ts', '/standards', 'sitemap.ts does not emit /standards'],
++  ['apps/web/app/llms.txt/route.ts', '/whats-new', '/llms.txt does not advertise the changelog'],
++]) {
++  if (!exists(file)) fail(`missing file: ${file}`);
++  else if (!read(file).includes(needle)) fail(why);
++}
++
++/* ── report ──────────────────────────────────────────────────────────────── */
++if (LIST) {
++  console.log('\nChangelog\n');
++  for (const b of entries) {
++    const id = (b.match(/\bid: '([^']+)'/) || [])[1];
++    const date = (b.match(/\bdate: '([^']+)'/) || [])[1];
++    if (id) console.log(`  ${date}  ${id}`);
++  }
++  console.log('\nStandards register\n');
++  for (const s of standards) {
++    const days = /^\d{4}-\d{2}-\d{2}$/.test(s.verifiedAt || '')
++      ? Math.floor((now - Date.parse(s.verifiedAt)) / 86_400_000)
++      : '?';
++    console.log(`  ${String(s.id).padEnd(18)} ${String(s.status).padEnd(20)} verified ${days}d ago`);
++  }
++  console.log('');
++}
++
++for (const w of warnings) console.warn(`  ! ${w}`);
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} changelog/standards problem(s):\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ changelog verified — ${seenIds.size} entr(ies), every paper/guide/figure covered; ` +
++    `${standards.length} external standard(s), ${warnings.length} due for re-verification`,
++);
+diff --git a/scripts/verify-links.mjs b/scripts/verify-links.mjs
+index aea9dfa..7e25039 100644
+--- a/scripts/verify-links.mjs
++++ b/scripts/verify-links.mjs
+@@ -144,7 +144,7 @@ if (orphans.length || stale.length) {
+  */
+ const HOME_ENTRY = path.join(APP, 'page.tsx');
+ const HOME_HUBS = [
+-  '/resources', '/data', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
++  '/resources', '/whats-new', '/standards', '/data', '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
+   '/technical-library', '/case-studies', '/blog', '/service-areas',
+   '/glossary',
+ ];
