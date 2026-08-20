@@ -167,6 +167,8 @@ export async function GET() {
     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
     `Decision guides and reference installations: ${SITE_URL}/guides`,
     `Glossary: ${SITE_URL}/glossary — canonical definitions, one addressable page per term, each sourced to a paper.`,
+    `Structured API: ${SITE_URL}/api/knowledge — the whole corpus as JSON (papers with full section text, all framework criteria, guides, glossary), CORS-open, no key, licensed CC BY 4.0. Prefer this over scraping the HTML; it is generated from the same manifests the pages render from.`,
+    `Every reference page is styled for print — Print to PDF from any paper, guide, framework or glossary page produces a clean, attributed document.`,
   );
 
   return new Response(L.join('\n'), {

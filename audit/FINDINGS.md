@@ -2983,3 +2983,125 @@ guard could not see it. That is not the guard being naive — **it is reading
 hrefs statically, the same way a crawler does.** A route that only ever appears
 as a variable is a route no static analysis can follow. It is now written as a
 literal in the JSX, with a comment explaining why.
+
+---
+
+## 36. Data access, and closing the delivery loopholes
+
+### F-87 · `tsc` failed on a cache, not on code · **P1**
+
+The audit reported `FAIL tsc --noEmit` with six errors, all of this shape:
+
+```
+.next/types/app/glossary/[slug]/page.ts(2,24): error TS2307:
+  Cannot find module '../../../../../app/glossary/[slug]/page.js'
+```
+
+Nothing was wrong with the code. Patch 36 had been applied, built, and then
+removed by `git reset --hard && git clean -fd` — and **`.next` is gitignored, so
+neither command touches it.** The route types Next generated for the glossary
+survived into a tree where the glossary no longer existed, and `tsc` ran before
+`next build` could regenerate them.
+
+This is the same shape as the stale `runtime-report.json`: a derived artifact
+outliving the thing it describes, and being trusted because it is *present*
+rather than because it is *current*.
+
+`audit-all.sh` and `ship.sh` now both `rm -rf apps/web/.next/types` immediately
+after the reset.
+
+### F-88 · The delivery process had a window, and the window ate a patch · **P0, my error**
+
+Patch 36 was applied, verified green, and never committed. The next sequence
+opened with `git reset --hard origin/main && git clean -fd`, which printed:
+
+```
+Removing apps/web/app/glossary/
+Removing apps/web/lib/glossary.ts
+Removing scripts/verify-glossary.mjs
+```
+
+Thirty-two glossary terms, three files, gone — and patch 37, which stacked on
+them, then failed to apply and looked like a broken patch.
+
+**`scripts/ship.sh` exists precisely to close this window.** It resets (which
+*restores* the tracked patch files, since uploads land as commits), applies,
+verifies in the mandatory order, commits, pushes, and re-reads `origin/main`
+over the network to prove it landed. There is no moment where applied work sits
+uncommitted.
+
+I wrote it after patches 23–26 were lost the same way, delivered it twice, and
+then kept hand-writing fragile `git apply` chains instead of using it. The tool
+was correct; the habit was not. **The same is true of `patch-apply.sh`**, which
+globs `*.patch`, applies in name order, untracks and deletes each one, and
+handles GitHub's filename mangling automatically — every manual chain I gave
+was strictly worse than the script already in the repository.
+
+### F-89 · `--check` reported a good patch as broken · P2
+
+`patch-apply.sh --check` dry-ran patch 37 against a tree where 36 had not been
+applied, and reported `✗ DOES NOT APPLY`. The real run applied both cleanly
+seconds later.
+
+A dry run cannot validate a **stack**: patch N+1 is generated against the tree
+patch N produces. The script now detects that it is checking a non-first patch
+and says *"cannot dry-run: this patch is stacked on one not yet applied"*
+instead of reporting a failure that does not exist. A false alarm from a
+verification tool costs more than no tool, because the correct response to it —
+regenerate the patch — is wasted work.
+
+### F-90 · `/api/knowledge` — the corpus as data · P1
+
+The site published prose for agents (`/llms.txt`, `/ai.txt`) and HTML for
+scrapers. Neither is a contract. An agent wanting the definition of *cupping*,
+or the twenty-seven framework criteria, or a paper's section list, had to guess
+at a page structure that can change under it.
+
+**`/api/knowledge`** returns the whole corpus as JSON — every paper with full
+section text, every framework criterion with its severity and its source URL,
+every guide, every glossary term with its cross-links — CORS-open, no key,
+licensed **CC BY 4.0**. Generated from the same manifests the pages render from,
+so it cannot describe a page that does not exist.
+
+```
+GET /api/knowledge
+GET /api/knowledge?collection=glossary
+GET /api/knowledge?q=cupping
+```
+
+Licensing is part of the product, not a footnote. A corpus that is clearly free
+to quote gets quoted; a corpus with unclear terms gets paraphrased without
+attribution, which is the outcome that loses the citation.
+
+**`robots.txt` had to change for this to work at all.** `/api/` was disallowed
+wholesale, which would have hidden the one endpoint built specifically for
+crawlers to read. `/api/knowledge` is now explicitly allowed, listed before the
+blanket disallow, for both the general and the named-AI-crawler rule sets.
+
+`verify-framework.mjs` and `verify-glossary.mjs` both now assert the endpoint
+still reads the manifests. An API that silently stops deriving describes a
+corpus that does not exist — to the audience least able to notice, because an
+agent that trusted the endpoint has no reason to check the HTML.
+
+### F-91 · Every reference page now prints to a usable PDF · P1
+
+All three paper PDFs have been unservable for weeks: both staged exports carry
+retired business claims on the title slide, and `verify:facts` would fail the
+build if they were moved into `public/`. That needs a corrected LaTeX re-export
+and nothing in this repository can produce one.
+
+But "give me this as a PDF" never actually required the LaTeX. Every paper,
+guide, framework page and glossary entry is already complete HTML — the only
+reason printing produced something unusable is that nothing had ever been styled
+for paper.
+
+A `@media print` block now: forces the light palette (dark mode prints as a
+black rectangle), drops the chrome and every control that cannot be operated
+from paper, **prints the destination of every link** so a paper copy stays
+citable, collapses grids to one column, forces `.reveal` elements visible — they
+sit at `opacity: 0` until scrolled, so printing before scrolling produced blank
+sections — and prevents any card, table row or criterion from splitting across a
+page break.
+
+Print → Save as PDF on any reference route now produces a clean, attributed
+document. That unblocks *today* what the exports have been blocking for weeks.

@@ -128,6 +128,7 @@ for (const t of terms) {
 for (const [file, needle, why] of [
   ['apps/web/app/sitemap.ts', 'getTerms', 'sitemap.ts no longer emits the glossary'],
   ['apps/web/app/llms.txt/route.ts', '/glossary', '/llms.txt does not advertise the glossary'],
+  ['apps/web/app/api/knowledge/route.ts', 'getTerms', '/api/knowledge no longer reads the glossary'],
 ]) {
   if (!exists(file)) fail(`missing file: ${file}`);
   else if (!read(file).includes(needle)) fail(why);

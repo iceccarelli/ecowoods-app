@@ -100,6 +100,13 @@ section "3 · build stack"
 if [ "$QUICK" = 1 ]; then
   printf '  %s····%s  skipped (--quick)\n' "$DIM" "$OFF"
 else
+  # Next writes route types into .next/types. They are NOT removed by
+  # `git clean -fd` — .next is gitignored — so a tree that had a route deleted
+  # since the last build keeps type files pointing at pages that no longer
+  # exist, and `tsc` fails on a cache rather than on the code. That is exactly
+  # what happened after patch 36 was applied, wiped by a clean, and typechecked
+  # against the build it left behind. See F-87.
+  rm -rf apps/web/.next/types
   run "pnpm install"        pnpm install --silent
   run "prisma generate"     pnpm --filter @ecowoods/web exec prisma generate
   run "tsc --noEmit"        pnpm --filter @ecowoods/web exec tsc --noEmit

@@ -66,6 +66,7 @@ export async function GET() {
   lines.push(`- Score any quote against it: ${SITE_URL}/framework/assess`);
   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
+  lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
   lines.push(`- Citation guide: ${SITE_URL}/authority`);
   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
   lines.push('');

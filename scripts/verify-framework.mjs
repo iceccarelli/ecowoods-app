@@ -151,6 +151,11 @@ const derives = [
   ['apps/web/app/sitemap.ts', 'getGuides', 'sitemap.ts no longer emits the guides'],
   ['apps/web/app/sitemap.ts', '/framework', 'sitemap.ts does not emit /framework'],
   ['apps/web/app/llms.txt/route.ts', '/framework', '/llms.txt does not advertise the framework'],
+  // The public JSON API is generated from these manifests. If it stops reading
+  // them it starts describing a corpus that does not exist, to the exact
+  // audience least able to notice — an agent that trusted the endpoint.
+  ['apps/web/app/api/knowledge/route.ts', 'PILLARS', '/api/knowledge no longer reads the framework'],
+  ['apps/web/app/api/knowledge/route.ts', 'getGuides', '/api/knowledge no longer reads the guides'],
 ];
 for (const [file, needle, why] of derives) {
   if (!fs.existsSync(path.join(ROOT, file))) fail(`missing file: ${file}`);

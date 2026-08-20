@@ -12,7 +12,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        // /api/knowledge is the public JSON corpus and is meant to be fetched.
+        // It sits under /api/, which is disallowed wholesale below, and a
+        // blanket Disallow: /api/ would have hidden the one endpoint built
+        // specifically for crawlers and agents to read. Allow is listed first
+        // and is more specific, which is how every major crawler resolves the
+        // conflict. See F-89.
+        allow: ['/', '/api/knowledge'],
         // /docs/{contract,invoice,quote}/[id] renders a specific customer's
         // paperwork from a URL. It was never disallowed.
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
@@ -35,7 +41,7 @@ export default function robots(): MetadataRoute.Robots {
           'PerplexityBot', 'Perplexity-User',
           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
         ],
-        allow: '/',
+        allow: ['/', '/api/knowledge'],
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
     ],

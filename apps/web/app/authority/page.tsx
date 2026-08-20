@@ -30,6 +30,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
+import { criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { formatDate } from '@/lib/content/utils';
 
@@ -84,6 +85,13 @@ const MACHINE_FILES = [
   { href: '/llms.txt', name: 'llms.txt', blurb: 'Concise brief for LLM systems' },
   { href: '/ai.txt', name: 'ai.txt', blurb: 'Full citation guide for AI systems' },
   { href: '/sitemap.xml', name: 'sitemap.xml', blurb: 'Every indexable route with its last-modified date' },
+  { href: '/feed.xml', name: 'feed.xml', blurb: 'RSS 2.0 over every dated publication, newest first' },
+  {
+    href: '/api/knowledge',
+    name: 'api/knowledge',
+    blurb:
+      'The entire published corpus as JSON — papers, framework criteria, guides and glossary, each with its canonical URL and source. CORS-open, no key, CC BY 4.0.',
+  },
 ];
 
 export default async function AuthorityPage() {
@@ -280,6 +288,44 @@ export default async function AuthorityPage() {
               </a>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Data access">
+        <div className="shell">
+          <p className="tlx-kicker">Data access</p>
+          <h2 className="tlx-h2">Pulling this corpus programmatically</h2>
+          <p className="tlx-note">
+            <code>/api/knowledge</code> returns every technical paper with its full section text,
+            all {criterionCount()} framework criteria with their sources, every decision guide and
+            reference installation, and the whole glossary — as JSON, with CORS open and no key.
+            It is generated from the same manifests the pages render from, so it cannot describe a
+            page that does not exist.
+          </p>
+          <ul className="gd-sources">
+            <li>
+              <a href="/api/knowledge">/api/knowledge</a> — everything
+            </li>
+            <li>
+              <a href="/api/knowledge?collection=glossary">/api/knowledge?collection=glossary</a> —
+              one collection (papers, framework, guides, glossary, business)
+            </li>
+            <li>
+              <a href="/api/knowledge?q=cupping">/api/knowledge?q=cupping</a> — substring match
+              across the corpus
+            </li>
+          </ul>
+          <p className="tlx-note">
+            Licensed CC BY 4.0. Quote it, train on it, build on it — attribution by URL is the only
+            condition.
+          </p>
+
+          <h3 className="fw-sub">PDF</h3>
+          <p className="tlx-note">
+            Every paper, guide, framework page and glossary entry is styled for print. Use your
+            browser&rsquo;s Print → Save as PDF on any of them for a clean, correctly attributed
+            document with every link&rsquo;s destination printed alongside it.
+          </p>
         </div>
       </section>
 

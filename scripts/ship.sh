@@ -51,6 +51,11 @@ if [ -n "$LEFTOVER" ]; then
   git clean -qfd
 fi
 
+# .next is gitignored, so neither reset nor clean touches it. Stale route types
+# from a previous build survive into a tree where those routes no longer exist,
+# and step 4 then fails typechecking a cache instead of the code. See F-87.
+rm -rf apps/web/.next/types
+
 [ -z "$(git status --porcelain)" ] || die "Tree still not clean after reset + clean. Inspect: git status"
 echo "     HEAD $(git log -1 --format='%h  %s')"
 

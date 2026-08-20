@@ -8302,3 +8302,107 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   border-bottom: 1px solid transparent; }
 .clp-areas a:hover { color: var(--copper-text); border-bottom-color: var(--copper); }
 .clp-areas a:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRINT  —  every reference surface produces a clean PDF from the browser
+
+   WHY THIS EXISTS
+
+   The three papers each have a PDF that cannot be served, because both exports
+   still carry retired business claims on the title slide. That has blocked all
+   three download buttons for weeks, and there is nothing in the codebase that
+   can fix it — it needs a corrected LaTeX re-export.
+
+   But "give me this as a PDF" does not actually require the LaTeX. Every paper,
+   guide, framework page and glossary entry is already complete HTML; the only
+   reason printing produced something unusable was that nothing had ever been
+   styled for paper. Ctrl-P → Save as PDF now yields a clean, readable,
+   correctly-attributed document on every reference route.
+
+   That matters beyond convenience: a person who wants to hand the framework to
+   a contractor, or forward a reference installation to a designer, can do it
+   today rather than when the exports are fixed.
+
+   Rules applied below: drop the chrome, drop interactive controls, un-tint every
+   surface so it does not burn ink, print the destination of every link so a
+   paper copy is still citable, and never break a card or a table row across a
+   page.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  :root {
+    /* Force the light palette regardless of the theme toggle — dark mode prints
+       as a solid black rectangle on most printers. */
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --ink: #000000;
+    --ink-soft: #1a1a1a;
+    --muted: #444444;
+    --line: #999999;
+    --copper: #6b3410;
+    --copper-text: #6b3410;
+    --copper-deep: #6b3410;
+    --on-dark: #000000;
+  }
+
+  html, body { background: #fff !important; color: #000 !important; }
+
+  /* Chrome and anything that cannot be acted on from paper. */
+  header.topbar, .topbar, .mobile-sheet, .site-footer, footer.site-footer,
+  .fw-scorebar-actions, .fw-choice, .gl-jump, .clp-card-actions,
+  .theme-toggle, .topbar-cta, .btn, .fw-cta, .clp-more, .tlx-card-cta {
+    display: none !important;
+  }
+
+  /* The editorial surfaces run edge to edge on paper. */
+  .tlx-page, .tlx-hero, .tlx-section, .section, .section--tint {
+    background: #fff !important;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+  .shell { max-width: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+
+  /* A printed page that cites a URL is still a citable document. */
+  a[href^="/"]::after  { content: " (ecowoods.ca" attr(href) ")"; font-size: 0.78em; color: #444; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.78em; color: #444; }
+  a[href^="#"]::after, a[href^="tel:"]::after, a[href^="mailto:"]::after { content: ""; }
+  a { color: #000 !important; text-decoration: underline; }
+
+  /* Nothing splits across a page break mid-thought. */
+  .fw-criterion, .fw-q, .fw-followup li, .fw-use-item,
+  .gd-option, .gd-spec-row, .gd-tree li, .gd-watch li, .gd-reco,
+  .gl-entry, .clp-card, .tlx-card, .wp-section, tr, figure, blockquote {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  h2 { margin-top: 1.4rem; }
+
+  /* Cards become rules on paper — borders and shadows waste ink and add nothing. */
+  .fw-criterion, .fw-q, .gl-entry, .clp-card, .tlx-card, .gd-option {
+    border: 0 !important;
+    border-top: 1px solid #999 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.5rem 0 !important;
+    transform: none !important;
+  }
+  .gd-reco, .fw-privacy, .gl-definition {
+    border: 0 !important;
+    border-left: 3px solid #6b3410 !important;
+    background: #fff !important;
+  }
+
+  /* Grids collapse to a single column; two columns of body copy on A4 is worse
+     than one, and the reveal animation leaves content at opacity 0 if it never
+     ran — which is exactly what happens when a page is printed before scroll. */
+  .tlx-grid, .fw-use, .gd-options, .gl-list, .clp-cards, .clp-secondary, .clp-areas {
+    display: block !important;
+  }
+  .reveal { opacity: 1 !important; transform: none !important; }
+
+  table { width: 100% !important; border-collapse: collapse !important; }
+  th, td { border: 1px solid #999 !important; padding: 0.3rem 0.5rem !important; }
+
+  @page { margin: 16mm 14mm; }
+}

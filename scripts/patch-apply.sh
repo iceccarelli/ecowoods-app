@@ -64,7 +64,9 @@ APPLIED=0
 SKIPPED=0
 FAILED=0
 
+IDX=0
 for f in "${FILES[@]}"; do
+  IDX=$((IDX + 1))
   echo "── $f"
   if [ ! -f "$f" ]; then echo "     missing on disk — skipping"; continue; fi
 
@@ -77,6 +79,13 @@ for f in "${FILES[@]}"; do
       continue
     fi
     git apply "$f" && echo "     applied" && APPLIED=$((APPLIED + 1))
+  elif [ "$CHECK_ONLY" = 1 ] && [ "$IDX" -gt 1 ]; then
+    # A dry run cannot validate a STACK. Patch N+1 is generated against the tree
+    # patch N produces, so checking it against the current tree reports a failure
+    # that is not one — which is exactly what happened with 36 and 37, and sent
+    # a real, correct patch back for regeneration. Say so instead of lying.
+    echo "     cannot dry-run: this patch is stacked on one not yet applied"
+    echo "       Run without --check to apply the stack in order."
   else
     echo "     ✗ DOES NOT APPLY. Most likely the base drifted."
     echo "       Ask for a regenerated patch against $(git rev-parse --short HEAD)."
