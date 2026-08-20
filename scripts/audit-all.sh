@@ -125,6 +125,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-client-boundary.mjs ] && run "verify:client" node scripts/verify-client-boundary.mjs
 [ -f scripts/verify-glossary.mjs ] && run "verify:glossary" node scripts/verify-glossary.mjs
 [ -f scripts/verify-figures.mjs ] && run "verify:figures" node scripts/verify-figures.mjs
+[ -f scripts/verify-changelog.mjs ] && run "verify:changelog" node scripts/verify-changelog.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"
@@ -152,6 +153,12 @@ if [ -f scripts/verify-glossary.mjs ]; then
 fi
 if [ -f scripts/verify-figures.mjs ]; then
   node scripts/verify-figures.mjs 2>&1 | tail -1 | sed 's/^/  /'
+fi
+if [ -f scripts/verify-changelog.mjs ]; then
+  # The standards register's staleness warnings surface here deliberately: an
+  # entry past its review interval is a task, and a task nobody can see is a
+  # task nobody does. Same reasoning as the runtime-report freshness check.
+  node scripts/verify-changelog.mjs 2>&1 | tail -3 | sed 's/^/  /'
 fi
 note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
 note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"

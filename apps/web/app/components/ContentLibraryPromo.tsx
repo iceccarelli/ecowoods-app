@@ -129,6 +129,12 @@ export function ContentLibraryPromo() {
                 <a href="/feed.xml">RSS feed</a>
               </li>
               <li>
+                <Link href="/whats-new">What&rsquo;s new</Link>
+              </li>
+              <li>
+                <Link href="/standards">Standards register</Link>
+              </li>
+              <li>
                 <Link href="/data">Data &amp; figures</Link>
               </li>
               <li>

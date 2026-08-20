@@ -4,6 +4,8 @@ import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
+import { getChangelog } from '@/lib/changelog';
+import { getStandards } from '@/lib/standards';
 import {
   PILLARS,
   FRAMEWORK_NAME,
@@ -157,6 +159,31 @@ function build() {
     source: url(`/papers/${f.source.paper}#${f.source.section}`),
   }));
 
+  const changelog = getChangelog().map((c) => ({
+    id: `change:${c.id}`,
+    date: c.date,
+    kind: c.kind,
+    title: c.title,
+    body: c.body,
+    url: url(c.href),
+  }));
+
+  const standards = getStandards().map((s) => ({
+    id: `standard:${s.id}`,
+    body: s.body,
+    designation: s.designation,
+    title: s.title,
+    governs: s.governs,
+    relevance: s.relevance,
+    status: s.status,
+    sourceUrl: s.sourceUrl,
+    verifiedAt: s.verifiedAt,
+    note: s.note,
+    url: url(`/standards#${s.id}`),
+    pillars: s.pillars.map((id) => url(`/framework#${id}`)),
+    criteria: (s.criteria ?? []).map((id) => url(`/framework#c-${id}`)),
+  }));
+
   const business = {
     name: BUSINESS.name,
     region: BUSINESS.region,
@@ -167,7 +194,7 @@ function build() {
     serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
   };
 
-  return { papers, framework, guides, glossary, figures, business };
+  return { papers, framework, guides, glossary, figures, changelog, standards, business };
 }
 
 export async function GET(request: NextRequest) {
@@ -190,7 +217,7 @@ export async function GET(request: NextRequest) {
       sitemap: url('/sitemap.xml'),
       feed: url('/feed.xml'),
     },
-    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'business'],
+    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'changelog', 'standards', 'business'],
     usage: {
       all: url('/api/knowledge'),
       byCollection: url('/api/knowledge?collection=glossary'),
@@ -202,6 +229,8 @@ export async function GET(request: NextRequest) {
       guides: all.guides.length,
       glossaryTerms: all.glossary.length,
       figures: all.figures.length,
+      changelogEntries: all.changelog.length,
+      externalStandards: all.standards.length,
       serviceAreas: all.business.serviceAreas.length,
     },
   };

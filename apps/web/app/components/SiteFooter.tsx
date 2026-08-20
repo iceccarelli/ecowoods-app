@@ -149,6 +149,8 @@ export default function SiteFooter() {
           <FooterCol title="Learn" mobile={m}>
             <div className="footer-links">
               <a href="/resources">All resources</a>
+              <a href="/whats-new">What&rsquo;s New</a>
+              <a href="/standards">Standards Register</a>
               <a href="/framework">The Well-Installed Framework</a>
               <a href="/framework/assess">Score a quote</a>
               <a href="/guides">Decision Guides</a>

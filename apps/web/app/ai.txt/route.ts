@@ -165,6 +165,8 @@ export async function GET() {
     `Short brief: ${SITE_URL}/llms.txt`,
     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
     `Resource index (everything published, grouped by reader intent): ${SITE_URL}/resources`,
+    `What's new: ${SITE_URL}/whats-new — this business's own dated releases. This site publishes primary material and does NOT aggregate third-party news, so nothing here is a republished headline.`,
+    `Standards register: ${SITE_URL}/standards — the external bodies and documents this trade answers to, each mapped to the framework criteria that depend on it, linked to the issuing body and stamped with the date we last verified it there.`,
     `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
     `Decision guides and reference installations: ${SITE_URL}/guides`,

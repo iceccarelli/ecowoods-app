@@ -3274,3 +3274,91 @@ two of them breaks every reference — that `axisMax` covers every plotted value
 so no bar is silently clipped, that ticks are ascending and in range, and that
 every figure has a caption, because the caption is what travels with the
 screenshot.
+
+---
+
+## 39. What's new, and what we watch
+
+### F-99 · Aggregating the trade press would have made this a secondary source · **P0 — decision, not a defect**
+
+The request was to pull news, APIs and feedback from the authoritative sites in
+the space and republish it here, so the site looks current and dominant. I did
+not build that, and the reasoning matters more than the feature:
+
+**1. It inverts the authority.** AWS's *What's New* carries AWS's own
+announcements. Its authority comes from being the primary source — the place the
+news originates. A site that republishes other people's headlines is a secondary
+source **competing with its own inputs**, and it loses that competition every
+time, because the reader can always go upstream to the original.
+
+**2. It poisons the corpus.** Every claim on this site traces to a paper
+published here, and eleven build guards now enforce that. Auto-ingested
+third-party claims cannot be enforced that way. One unverified figure carried
+under this name discounts everything around it — which is precisely the failure
+mode the entire architecture exists to prevent. The strictness is the asset; an
+ingest pipeline would be a hole cut in it.
+
+**3. Republishing article text is a copyright exposure** nobody needs.
+
+**What builds authority instead is the inverse move: be the map.** Which bodies
+govern this trade, which document says what, which of our own criteria depend on
+it, where the primary source is — and the part nobody else publishes — **when we
+last checked.**
+
+### F-100 · `/standards` — the register, and the staleness column that is the product · **P1**
+
+Four entries to start, each verified at the issuing body's own page on
+2026-08-20, never at a reseller or a summary:
+
+| Body | Document | Status |
+|---|---|---|
+| ASTM International | F2170-19a — *Determining Relative Humidity in Concrete Floor Slabs Using in situ Probes* | current |
+| ASTM International | F1869 — *Measuring Moisture Vapor Emission Rate of Concrete Subfloor Using Anhydrous Calcium Chloride* | revision open (WK96566) |
+| ASTM International | F710-21 — *Preparing Concrete Floors to Receive Resilient Flooring* | current |
+| NWFA | Technical guidelines and publications | edition unverified |
+
+Each is mapped to the framework pillars and criteria that depend on it, so
+"criterion 1.1 — was the subfloor moisture-tested" resolves to the actual test
+method behind the question.
+
+**The NWFA entry is the important one.** Its landing page does not enumerate
+current editions of individual guideline documents, so the entry asserts no
+edition and says so in a note. Filling that gap with a plausible year would have
+been the easiest thing on this page and the one thing that would make the
+register worthless.
+
+**`verifiedAt` is a claim about our diligence, not about the standard.** Every
+entry states when it was last checked, the page shows the age, and
+`verify-changelog.mjs` warns on anything past a 180-day review interval — so
+going stale is a build-visible task rather than something someone remembers. A
+register that silently rots is worse than no register: it asserts a currency it
+does not have to readers with no way to tell.
+
+Staleness is a **warning, not a failure**. Failing a build because a calendar
+advanced would train everyone to bypass the guard, and a ratchet that gets
+bypassed is a wall that gets ignored.
+
+### F-101 · `/whats-new` — written prose, mechanical completeness · P1
+
+A sitemap says what exists. A feed says what changed. Neither says **why it
+matters**, and that sentence is the entire value of a changelog entry.
+
+So entries are written. The risk with a written changelog is that it silently
+falls behind — something ships, nobody adds a line, and the page quietly claims
+a publication history the site no longer has.
+
+`verify-changelog.mjs` closes that by working backwards: it walks papers, guides
+and figures and **fails the build if any of them is unmentioned**.
+
+```
+✗ figure "janka-hardness-gta" has shipped but no changelog entry covers it.
+```
+
+It fails in the other direction too — an entry covering something no longer in
+any manifest. The prose stays editorial; the completeness is mechanical. That
+split is the whole design, and it is the same one used for the framework, where
+the pillars are judgement and the citations are enforced.
+
+Eleven guards now. Seven of them were written in response to a specific failure
+rather than in anticipation of one. That ratio still says nothing good about
+foresight and everything good about the shape of the repository.

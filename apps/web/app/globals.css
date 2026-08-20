@@ -8477,3 +8477,58 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
 }
 .fig-source { margin: 0.9rem 0 0; font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
 .fig-source a { color: var(--copper-text); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHAT'S NEW  ·  .wn-*   and   STANDARDS  ·  .std-*
+   Component namespaces inside the .tlx-* editorial system. Semantic tokens only.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.wn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.wn-item { display: grid; gap: 0.5rem 2rem; padding: 1.6rem 0;
+  border-bottom: 1px solid var(--line); grid-template-columns: minmax(0, 1fr);
+  scroll-margin-top: 6rem; }
+@media (min-width: 780px) {
+  .wn-item { grid-template-columns: 12rem minmax(0, 1fr); align-items: start; }
+}
+.wn-item:last-child { border-bottom: 0; }
+.wn-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.8rem; }
+.wn-date { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em;
+  color: var(--ink); font-variant-numeric: tabular-nums; }
+.wn-kind { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--copper-text);
+  border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.5rem; }
+.wn-body h2 { font-family: var(--font-display); font-size: 1.14rem; line-height: 1.35;
+  margin: 0 0 0.45rem; font-weight: 600; }
+.wn-body h2 a { color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid transparent; }
+.wn-body h2 a:hover { color: var(--copper-text); border-bottom-color: var(--copper); }
+.wn-body p { margin: 0; color: var(--ink-soft); font-size: 0.94rem; line-height: 1.65;
+  max-width: 72ch; }
+
+.std { background: var(--surface-1); border: 1px solid var(--line);
+  border-left: 3px solid var(--copper); border-radius: 0 14px 14px 0;
+  padding: 1.5rem 1.6rem; scroll-margin-top: 6rem; }
+.std-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  margin-bottom: 0.7rem; }
+.std-body-name { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--muted); }
+.std-desig { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+  color: var(--copper-text); }
+.std-status { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.09em;
+  text-transform: uppercase; font-weight: 600; padding: 0.18rem 0.5rem;
+  border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.std-status--current { color: var(--success); }
+.std-status--revision-open { color: var(--warning); }
+.std-status--unverified-edition { color: var(--muted); }
+.std-title { font-family: var(--font-display); font-size: 1.12rem; line-height: 1.35;
+  margin: 0 0 0.6rem; font-weight: 600; color: var(--ink); max-width: 62ch; }
+.std-governs { margin: 0 0 0.5rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink);
+  max-width: 72ch; }
+.std-relevance { margin: 0; font-size: 0.92rem; line-height: 1.65; color: var(--ink-soft);
+  max-width: 72ch; }
+.std-note { margin: 0.9rem 0 0; padding: 0.75rem 1rem; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 0.88rem; line-height: 1.6; color: var(--ink-soft); max-width: 72ch; }
+.std-stale { color: var(--warning); font-weight: 600; }
+.std .gd-spec { margin-top: 1.2rem; }
+.std .gd-spec dd a { color: var(--copper-text); }

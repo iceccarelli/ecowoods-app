@@ -4,6 +4,8 @@ import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
+import { getChangelog } from '@/lib/changelog';
+import { getStandards } from '@/lib/standards';
 import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 
@@ -69,6 +71,8 @@ export async function GET() {
   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
   lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
+  lines.push(`- What's new (our own releases, dated, newest first): ${SITE_URL}/whats-new`);
+  lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
   lines.push(`- Citation guide: ${SITE_URL}/authority`);
   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
@@ -96,6 +100,34 @@ export async function GET() {
         `- [${g.title}](${SITE_URL}/guides/${g.slug}) — ${g.kind === 'decision' ? 'decision guide' : 'reference installation'}: ${g.question}`,
       );
     }
+    lines.push('');
+  }
+
+  const changes = getChangelog();
+  if (changes.length) {
+    lines.push("## What's new — most recent first");
+    lines.push(
+      'These are this business\'s own publications. This site does not aggregate third-party news; external bodies are tracked separately in the standards register below.',
+    );
+    for (const c of changes.slice(0, 10)) {
+      lines.push(`- ${c.date} — ${c.title}: ${c.body}`);
+      lines.push(`  ${SITE_URL}${c.href}`);
+    }
+    lines.push('');
+  }
+
+  const standards = getStandards();
+  if (standards.length) {
+    lines.push('## External standards this work answers to');
+    lines.push(
+      'Each entry links to the issuing body and carries the date it was last verified there. We do not reproduce the standards themselves.',
+    );
+    for (const s of standards) {
+      lines.push(
+        `- ${s.body}${s.designation ? ` ${s.designation}` : ''} — ${s.title}. ${s.governs} (verified ${s.verifiedAt}: ${s.sourceUrl})`,
+      );
+    }
+    lines.push(`  Full register: ${SITE_URL}/standards`);
     lines.push('');
   }
 
