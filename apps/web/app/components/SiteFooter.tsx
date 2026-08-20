@@ -151,6 +151,7 @@ export default function SiteFooter() {
               <a href="/framework">The Well-Installed Framework</a>
               <a href="/framework/assess">Score a quote</a>
               <a href="/guides">Decision Guides</a>
+              <a href="/glossary">Glossary</a>
               <a href="/papers">Technical Papers</a>
               <a href="/technical-library">Technical Library</a>
               <a href="/blog">Articles</a>

@@ -125,8 +125,82 @@ if (orphans.length || stale.length) {
   process.exit(1);
 }
 
+/* ── 2. the homepage must be a door, not a dead end ──────────────────────── */
+/**
+ * Measured 2026-08-20: the homepage body contained FIVE outbound internal links
+ * — tel:, /design, #quote, /papers, /technical-library — across 875 lines. The
+ * framework, the assessment, the guides, the glossary and all sixteen city
+ * pages had no presence at all on the single page that receives nearly all of
+ * this site's inbound crawl equity. See F-84.
+ *
+ * A hub reachable only from the footer is reachable. It is not surfaced. Both
+ * crawlers and humans treat the two differently, and the footer is where links
+ * go to be ignored.
+ *
+ * The graph is walked from app/page.tsx rather than from a hardcoded list of
+ * components, because the homepage renders server components passed as props
+ * (ContentLibraryPromo) and a name-based check would silently stop working the
+ * first time one is renamed.
+ */
+const HOME_ENTRY = path.join(APP, 'page.tsx');
+const HOME_HUBS = [
+  '/papers', '/framework', '/framework/assess', '/guides', '/glossary',
+  '/technical-library', '/case-studies', '/blog', '/service-areas',
+  '/glossary',
+];
+
+const EXTS = ['.ts', '.tsx'];
+const resolveLocal = (fromFile, spec) => {
+  let base;
+  if (spec.startsWith('@/')) base = path.join(APP, '..', spec.slice(2));
+  else if (spec.startsWith('.')) base = path.resolve(path.dirname(fromFile), spec);
+  else return null;
+  for (const e of EXTS) if (fs.existsSync(base + e)) return base + e;
+  for (const e of EXTS) {
+    const idx = path.join(base, 'index' + e);
+    if (fs.existsSync(idx)) return idx;
+  }
+  return null;
+};
+
+let homeText = '';
+if (fs.existsSync(HOME_ENTRY)) {
+  const seenH = new Set();
+  const queue = [HOME_ENTRY];
+  while (queue.length) {
+    const f = queue.shift();
+    if (seenH.has(f) || !fs.existsSync(f)) continue;
+    seenH.add(f);
+    const text = fs.readFileSync(f, 'utf8');
+    homeText += '\n' + text;
+    for (const m of text.matchAll(/(?:^|\n)\s*import[^'"`;]*['"`]([^'"`]+)['"`]/g)) {
+      // Do not follow into lib/: a manifest mentioning a path in a comment is
+      // not the homepage linking to it. Only components can render a link.
+      if (/^[@.]/.test(m[1]) && !m[1].includes('/lib/')) {
+        const next = resolveLocal(f, m[1]);
+        if (next && !seenH.has(next)) queue.push(next);
+      }
+    }
+  }
+}
+
+const unreachedFromHome = HOME_HUBS.filter((h) => inbound(homeText, h) === 0);
+if (unreachedFromHome.length) {
+  console.error('');
+  console.error('✗ the homepage does not link to:');
+  for (const h of unreachedFromHome) console.error(`    ${h}`);
+  console.error(
+    '\n  Nearly all inbound crawl equity enters at the homepage and distributes by\n' +
+      '  links. A hub reachable only from the footer is reachable, not surfaced.\n' +
+      '  Surface it in a homepage section, or remove it from HOME_HUBS in this\n' +
+      '  script with a reason.\n',
+  );
+  process.exit(1);
+}
+
 const noChrome = rows.filter((r) => r.total > 0 && r.chrome === 0).length;
 console.log(
   `✓ links verified — ${rows.length} public route(s), 0 orphans, ` +
-    `${Object.keys(baseline).length} waived, ${noChrome} reachable but not in the chrome`,
+    `${Object.keys(baseline).length} waived, ${noChrome} reachable but not in the chrome, ` +
+    `${HOME_HUBS.length} hub(s) linked from the homepage`,
 );

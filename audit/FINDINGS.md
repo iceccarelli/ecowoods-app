@@ -2850,3 +2850,136 @@ after a PDF filename went missing in silence, and now `verify-client-boundary`.
 That ratio is not a good sign about foresight, and it is a very good sign about
 the shape of the repository. A failure that produces a guard cannot recur. A
 failure that produces only an apology recurs on a schedule.
+
+---
+
+## 34. The glossary
+
+### F-82 · Nothing on this site owned a definition · **P1**
+
+Ask an assistant "what is cupping in hardwood floors" and it answers from
+whatever it absorbed. Whoever wrote the definition it learned from has already
+won the question — and until now that was never going to be this site, because
+this site had no page that was *about* a term.
+
+The papers argue positions to a reader who arrived with a decision. That is a
+different job from answering someone — or something — that arrived with a word.
+An encyclopedia outranks an essay on a term query for structural reasons: one
+addressable page per entity, dense cross-linking, every claim cited.
+
+**`/glossary`** is 32 terms, one page each, **119 cross-links**, zero orphans.
+Every entry emits `DefinedTerm` with `inDefinedTermSet` pointing back at the
+index, so the two halves of the schema graph reference each other the way the
+papers already reference `#organization` and `#website`.
+
+Each page carries the definition, the explanation, the terms it depends on,
+**the terms that point at it**, the paper the definition came from, and the
+framework pillars it is material to. The back-link section is the part that
+makes it a graph rather than a list.
+
+### F-83 · Same provenance rule, third guard · P1
+
+`scripts/verify-glossary.mjs` is the ninth guard and enforces four things:
+
+1. Every `source: { paper, section }` resolves against `lib/papers.ts`. A
+   definition **restates** a published paper; it does not extend the corpus. If
+   a term needs substance no paper covers, the paper is written first.
+2. Every slug in a `related` array is a real term. This is the failure that
+   would otherwise be invisible — the link renders, the page 404s, and the
+   densest link graph on the site quietly rots.
+3. Every `pillars` id exists in `lib/framework.ts`.
+4. Slugs unique and url-safe; no term listing itself as related.
+
+It also reports terms with no inbound link, which is how `hepa-dust-containment`
+was caught sitting outside the graph and wired into the belt sander and edger
+entries.
+
+### The parser bug, again, in a new costume
+
+First run reported **thirty missing `short` definitions** — every one of them
+present in the file. `short:` is often long enough that prettier wraps the value
+onto its own line, and the regex required the value on the same line as the key.
+
+This is the third instance of the same family in this project: a hand-rolled
+parser meeting a shape the file was always allowed to take. First the
+single-quote-only regex against a double-quoted title containing an apostrophe
+(`verify-papers`), then `grep -c` reporting on stdout and in the exit code, now
+`: ` versus `:\s*`.
+
+All three guards parse TypeScript as text because they must run without a build
+step, and that constraint is still correct — the alternative is a guard that
+cannot run in the environment where it is most needed. But the pattern is now
+established well enough to state as a rule: **a guard's first run is a test of
+the guard, not of the data.** All thirty findings were false. The fix is
+recorded at the site of the regex, as with the other two.
+
+---
+
+## 35. The homepage was a dead end
+
+### F-84 · Five outbound links on the page that receives all the crawl equity · **P0**
+
+Measured across all 875 lines of `home-client.tsx` plus everything it renders,
+on 2026-08-20:
+
+| target | links |
+|---|---|
+| `tel:+1647...` | 1 |
+| `#quote` | 1 |
+| `/design` | 1 |
+| `/papers` | 1 |
+| `/technical-library` | 1 |
+| **everything else on the site** | **0** |
+
+Zero to the framework. Zero to the self-assessment. Zero to the six guides.
+Zero to the 32 glossary terms. Zero to the sixteen city pages. Zero to the case
+studies, the articles, the citation guide or the feed.
+
+This is the third and largest instance of the pattern behind F-65 and F-73:
+things get built, get into the sitemap, get into `llms.txt`, and never get a
+path a person or a crawler actually walks. Nearly all inbound authority enters
+a site at its homepage and distributes through links. There were five, and two
+of them were on the same destination.
+
+The site had accumulated a technical corpus — a versioned standard, an
+interactive assessment, six guides, a 32-term glossary — reachable only from the
+nav and the footer. **The footer is where links go to be ignored.**
+
+**Fixed:** `ContentLibraryPromo` was a two-button teaser; it is now the
+reference-library section, with four cards (framework, papers, guides,
+glossary), a secondary column linking the library, case studies, articles, the
+citation guide and the feed, and all sixteen city pages. Every count in it is
+derived from the manifests, so a new paper or term cannot make it wrong.
+
+### F-85 · The footer's Service Areas column pointed at an anchor that did not exist · P1
+
+A detail found while measuring F-84 and worth recording separately, because it
+is worse than F-73 recorded at the time.
+
+Before patch 33 the footer column titled **Service Areas** contained seven links
+to `#areas`. There is no element with `id="areas"` on the homepage. The
+`SpecsCoverage` component that once rendered it is commented out at
+`home-client.tsx:532`.
+
+So those seven links did not merely point at the homepage instead of the city
+pages — **they scrolled nowhere at all.** Seven dead links in the site chrome,
+on every page, for an unknown length of time, in the column advertising the
+highest-commercial-intent surface the business has.
+
+### F-86 · The homepage-reach ratchet · P1
+
+`verify-links.mjs` gains a second check: it walks the import graph from
+`app/page.tsx` — not a hardcoded component list, because the homepage renders
+server components passed as props and a name-based check breaks the first time
+one is renamed — collects every href in that graph, and **fails the build if any
+content hub is not linked from the homepage.**
+
+Ten hubs are required: papers, framework, assess, guides, glossary, technical
+library, case studies, blog, service areas.
+
+One thing this forced, worth stating because it will come up again: the
+assessment link had been threaded through the card data as `ctaHref`, and the
+guard could not see it. That is not the guard being naive — **it is reading
+hrefs statically, the same way a crawler does.** A route that only ever appears
+as a variable is a route no static analysis can follow. It is now written as a
+literal in the JSX, with a comment explaining why.

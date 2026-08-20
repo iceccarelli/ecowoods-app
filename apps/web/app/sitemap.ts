@@ -9,6 +9,7 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { CITIES } from '@/lib/seo-data';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
+import { getTerms } from '@/lib/glossary';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -80,6 +81,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${SITE_URL}/glossary`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/guides`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -136,6 +143,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  /**
+   * One URL per glossary term. Derived from lib/glossary.ts, like every other
+   * generated set here — a term that exists but is not in the sitemap is a term
+   * an answer engine has to find by luck.
+   */
+  const glossaryPages: MetadataRoute.Sitemap = getTerms().map((term) => ({
+    url: `${SITE_URL}/glossary/${term.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
   const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
     url: `${SITE_URL}/papers/${paper.slug}`,
     lastModified: new Date(paper.publishedAt),
@@ -146,6 +165,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...basePages,
     ...guidePages,
+    ...glossaryPages,
     ...paperPages,
     ...cityPages,
     ...articlePages,

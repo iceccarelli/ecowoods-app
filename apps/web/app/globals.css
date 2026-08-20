@@ -8196,3 +8196,109 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .gd-sources { list-style: none; margin: 1.1rem 0 0; padding: 0; display: grid; gap: 0.4rem; }
 .gd-sources li { font-size: 0.92rem; line-height: 1.55; }
 .gd-sources a { color: var(--copper-text); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOSSARY  ·  .gl-*   —  one addressable page per term
+
+   Component namespace inside .tlx-*, semantic tokens only, same rule as .fw-*
+   and .gd-*. No primitive token is referenced here.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.gl-jump { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 1.4rem; }
+.gl-jump a { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2.4rem; min-height: 2.4rem; padding: 0.25rem 0.5rem; border-radius: 8px;
+  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+  text-decoration: none; color: var(--copper-text);
+  background: var(--surface-1); border: 1px solid var(--line); }
+.gl-jump a:hover { border-color: var(--copper); color: var(--ink); }
+.gl-jump a:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+.gl-letter { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
+  color: var(--copper-text); margin: 0 0 0.9rem; padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line); scroll-margin-top: 6rem; }
+
+.gl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+.gl-entry { display: flex; flex-direction: column; gap: 0.3rem; height: 100%;
+  padding: 1.05rem 1.2rem; border-radius: 12px; text-decoration: none;
+  background: var(--surface-1); border: 1px solid var(--line);
+  transition: border-color 160ms ease, transform 160ms ease; }
+.gl-entry:hover { border-color: var(--copper); transform: translateY(-2px); }
+.gl-entry:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.gl-term { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600;
+  color: var(--ink); line-height: 1.3; }
+.gl-aka { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); }
+.gl-short { font-size: 0.9rem; line-height: 1.55; color: var(--ink-soft); }
+
+.gl-aka-head { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 0.9rem; }
+.gl-definition { font-family: var(--font-display); font-size: clamp(1.05rem, 2.1vw, 1.32rem);
+  line-height: 1.5; color: var(--ink); margin: 0; max-width: 62ch;
+  padding-left: 1rem; border-left: 3px solid var(--copper); }
+
+.gl-body { max-width: 68ch; }
+.gl-body p { font-size: 1rem; line-height: 1.75; color: var(--ink-soft); margin: 0 0 1rem; }
+.gl-body p:last-child { margin-bottom: 0; }
+
+.gl-backlinks { list-style: none; margin: 1.1rem 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.gl-backlinks li { margin: 0; }
+.gl-backlinks a { display: inline-flex; align-items: center; min-height: 2.4rem;
+  padding: 0.4rem 0.85rem; border-radius: 999px; text-decoration: none;
+  font-size: 0.88rem; color: var(--copper-text);
+  background: var(--surface-1); border: 1px solid var(--line); }
+.gl-backlinks a:hover { border-color: var(--copper); color: var(--ink); }
+.gl-backlinks a:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+/* ── homepage reference-library section (.clp-* continued) ──────────────────
+   The homepage lives in the .shell/.section system, not the .tlx-* editorial
+   one, so these are homepage-system components rather than reused .tlx-card
+   rules. Copying a card style across the boundary is how a third design system
+   starts. Semantic tokens only.
+   ------------------------------------------------------------------------- */
+
+.clp-cards { display: grid; gap: 1rem; margin-top: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.clp-card { display: flex; flex-direction: column; gap: 0.55rem;
+  padding: 1.6rem 1.7rem; border-radius: 16px;
+  background: var(--surface-1); border: 1px solid var(--line);
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease; }
+.clp-card:hover { border-color: var(--copper); transform: translateY(-3px);
+  box-shadow: 0 14px 34px rgba(67, 48, 31, 0.10); }
+.clp-card-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--copper-text); }
+.clp-card h3 { font-family: var(--font-display); font-size: 1.18rem; font-weight: 600;
+  line-height: 1.3; margin: 0; }
+.clp-card h3 a { color: var(--ink); text-decoration: none; }
+.clp-card h3 a:hover { color: var(--copper-text); }
+.clp-card h3 a:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px;
+  border-radius: 4px; }
+.clp-card > p { margin: 0; font-size: 0.93rem; line-height: 1.6; color: var(--ink-soft); }
+.clp-card-meta { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); }
+.clp-card-actions { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem;
+  margin-top: auto; padding-top: 0.85rem; border-top: 1px dashed var(--line); }
+.clp-more--strong { font-weight: 700; }
+
+.clp-secondary { display: grid; gap: 2rem; margin-top: 2.75rem;
+  padding-top: 2rem; border-top: 1px solid var(--line); }
+@media (min-width: 860px) { .clp-secondary { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 3rem; } }
+.clp-secondary-col h3 { font-family: var(--font-display); font-size: 1.02rem; font-weight: 600;
+  margin: 0 0 0.9rem; color: var(--ink); }
+
+.clp-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.clp-links a { font-size: 0.94rem; color: var(--ink-soft); text-decoration: none;
+  border-bottom: 1px solid transparent; }
+.clp-links a:hover { color: var(--copper-text); border-bottom-color: var(--copper); }
+.clp-links a:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
+
+.clp-areas { list-style: none; margin: 0 0 1.1rem; padding: 0;
+  display: grid; gap: 0.35rem 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
+.clp-areas a { display: inline-flex; align-items: center; min-height: 2.2rem;
+  font-size: 0.9rem; color: var(--ink-soft); text-decoration: none;
+  border-bottom: 1px solid transparent; }
+.clp-areas a:hover { color: var(--copper-text); border-bottom-color: var(--copper); }
+.clp-areas a:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }

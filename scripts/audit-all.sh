@@ -116,6 +116,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-links.mjs ]  && run "verify:links"  node scripts/verify-links.mjs
 [ -f scripts/verify-framework.mjs ] && run "verify:framework" node scripts/verify-framework.mjs
 [ -f scripts/verify-client-boundary.mjs ] && run "verify:client" node scripts/verify-client-boundary.mjs
+[ -f scripts/verify-glossary.mjs ] && run "verify:glossary" node scripts/verify-glossary.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"
@@ -137,6 +138,9 @@ if [ -f scripts/verify-papers.mjs ]; then
 fi
 if [ -f scripts/verify-framework.mjs ]; then
   node scripts/verify-framework.mjs --list 2>&1 | sed -n '/Framework/,$p' | sed 's/^/  /'
+fi
+if [ -f scripts/verify-glossary.mjs ]; then
+  node scripts/verify-glossary.mjs 2>&1 | tail -1 | sed 's/^/  /'
 fi
 note "public/papers pdfs"  "$(ls apps/web/public/papers/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
 note "staged in docs/"     "$(ls docs/papers-pending/*.pdf 2>/dev/null | wc -l | tr -d ' ')"
