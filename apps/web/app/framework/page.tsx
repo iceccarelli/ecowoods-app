@@ -40,6 +40,7 @@ export const metadata: Metadata = {
       'Six pillars and twenty-seven criteria for judging a hardwood installation. Publicly versioned, fully sourced, free to cite.',
     type: 'article',
     url: `${SITE_URL}/framework`,
+    images: [{ url: '/illustrations/og-framework.webp', width: 1200, height: 630 }],
   },
 };
 

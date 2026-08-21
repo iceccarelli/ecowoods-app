@@ -24,6 +24,7 @@ export const metadata: Metadata = {
       'Canonical, sourced definitions for the terms that decide whether a hardwood floor succeeds or fails.',
     type: 'website',
     url: `${SITE_URL}/glossary`,
+    images: [{ url: '/illustrations/og-glossary.webp', width: 1200, height: 630 }],
   },
 };
 

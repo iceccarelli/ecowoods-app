@@ -8622,3 +8622,91 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
   .ill-frame { border-radius: 0; border-color: #999; break-inside: avoid; }
   .ill--pending { display: none; }
 }
+
+/* ── Illustration: caption row and the full-size link ──────────────────────
+   NO KEN BURNS HERE, DELIBERATELY.
+
+   The site already runs Ken Burns on all three photographic surfaces — the two
+   RotatingBackground mounts (kb-pan) and the FloorCatalog / MachineCatalog
+   tiles, which alternate between four variants (kb0–kb3) so consecutive photos
+   never drift the same way. That is the right place for it: on a photograph the
+   slow push is atmosphere, and there is nothing in the frame a reader is trying
+   to hold still and trace.
+
+   A technical cross-section is the opposite case. Someone reading
+   `pillar-substrate` is following a fastener from a board into a joist, and a
+   frame that is slowly scaling under them makes that harder, not more alive.
+   Motion on an explanatory diagram costs comprehension to buy atmosphere the
+   diagram does not need.
+
+   These get the site's existing scroll reveal instead — one fade, then still. */
+.ill { --ill-gap: 0.75rem; }
+.ill-caption { display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0.4rem 1rem; }
+.ill-full { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--copper-text); text-decoration: none;
+  white-space: nowrap; border-bottom: 1px solid transparent; }
+.ill-full:hover { border-bottom-color: var(--copper); }
+.ill-full:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+@media print { .ill-full { display: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VISUAL LIBRARY  ·  .lib-*  /  .rt-*
+
+   Two treatments in one grid, and the difference is the point: photographs
+   rotate with Ken Burns, diagrams are still. Both share the tile geometry so
+   the page reads as one system rather than two galleries stacked.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.lib-grid { list-style: none; margin: 1.4rem 0 0; padding: 0; display: grid; gap: 1.1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+.lib-item { min-width: 0; }
+
+.lib-card { display: flex; flex-direction: column; gap: 0.7rem; height: 100%;
+  padding: 0.9rem; border-radius: 14px; background: var(--surface-1);
+  border: 1px solid var(--line); text-decoration: none; color: inherit;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+a.lib-card:hover, a.lib-card:focus-visible { border-color: var(--copper);
+  transform: translateY(-2px); box-shadow: 0 10px 28px rgba(67, 48, 31, 0.10); }
+a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+/* Diagrams: contained, never cropped. A cross-section with its edge cut off is
+   a cross-section that no longer explains anything, so object-fit is `contain`
+   here and `cover` on the photographs. */
+.lib-shot { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 9px;
+  overflow: hidden; background: var(--surface-2); }
+.lib-img { width: 100%; height: 100%; object-fit: contain; }
+
+.lib-caption { display: flex; flex-direction: column; gap: 0.15rem;
+  font-size: 0.85rem; line-height: 1.5; color: var(--ink-soft); }
+.lib-caption strong { font-family: var(--font-display); font-size: 0.98rem;
+  font-weight: 600; color: var(--ink); }
+
+/* Photographs: cropped to fill, and moving. */
+.lib-card--photo { cursor: default; }
+.rt { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 9px;
+  overflow: hidden; background: var(--surface-2); }
+.rt-layer { position: absolute; inset: 0; opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: opacity; }
+.rt-layer.is-on { opacity: 1; }
+
+.rt-dots { position: absolute; bottom: 0.55rem; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 0.3rem; z-index: 2; }
+.rt-dots span { width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transition: background-color 300ms ease, transform 300ms ease; }
+.rt-dots span.is-on { background: rgba(255, 255, 255, 0.95); transform: scale(1.35); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The global reset already zeroes the Ken Burns transform. This also stops the
+     crossfade, so a viewer who asked for less motion gets one still frame
+     rather than a slower slideshow. */
+  .rt-layer { transition: none; }
+}
+
+@media print {
+  .lib-grid { display: block; }
+  .lib-card { border: 0; border-top: 1px solid #999; border-radius: 0; break-inside: avoid; }
+  .rt-dots { display: none; }
+}

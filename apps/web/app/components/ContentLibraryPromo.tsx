@@ -141,6 +141,9 @@ export function ContentLibraryPromo() {
                 <Link href="/data">Data &amp; figures</Link>
               </li>
               <li>
+                <Link href="/library">Visual library</Link>
+              </li>
+              <li>
                 <a href="/api/knowledge">Public JSON API</a>
               </li>
             </ul>

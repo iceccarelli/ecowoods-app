@@ -285,6 +285,10 @@ export default async function ResourcesPage() {
           </p>
           <ul className="gd-sources">
             <li>
+              <Link href="/library">/library</Link> — every diagram and photograph, indexed and
+              linked to what explains it
+            </li>
+            <li>
               <Link href="/data">/data</Link> — numbered, captioned, citable figures with their
               source tables
             </li>

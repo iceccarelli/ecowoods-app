@@ -72,6 +72,7 @@ export async function GET() {
   lines.push(`- Decision guides and reference installations: ${SITE_URL}/guides`);
   lines.push(`- Glossary (canonical definitions, one page per term): ${SITE_URL}/glossary`);
   lines.push(`- Data and figures (charted, each with its source table): ${SITE_URL}/data`);
+  lines.push(`- Visual library (every diagram and photograph, each linked to what explains it): ${SITE_URL}/library`);
   lines.push(`- What's new (our own releases, dated, newest first): ${SITE_URL}/whats-new`);
   lines.push(`- What moves a hardwood quote (live commodity inputs, Bank of Canada): ${SITE_URL}/market`);
   lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);

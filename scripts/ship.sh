@@ -59,6 +59,23 @@ rm -rf apps/web/.next/types
 [ -z "$(git status --porcelain)" ] || die "Tree still not clean after reset + clean. Inspect: git status"
 echo "     HEAD $(git log -1 --format='%h  %s')"
 
+# ── 1b. binary assets that a patch cannot carry ───────────────────────────
+# Step 1 removes every untracked file, which is correct and once cost this
+# project its entire illustration set. The images were generated locally from a
+# zip, never committed, wiped by the reset here, and then deployed WITHOUT them —
+# every diagram on the live site became a broken-image icon while every guard
+# passed, because the code and the files were never in one tree at one commit.
+#
+# The real fix is that the images are tracked now, so nothing can remove them.
+# This is the belt: if a slot is published and its file is missing but the source
+# zip is sitting here, rebuild it rather than shipping a page full of 404s.
+if [ -f scripts/prepare-illustrations.sh ] && ls ./ecowoods-illustrations-*.zip >/dev/null 2>&1; then
+  if ! node scripts/verify-images.mjs >/dev/null 2>&1; then
+    step "1b/7  rebuilding illustrations from the uploaded zip"
+    bash scripts/prepare-illustrations.sh "$(ls ./ecowoods-illustrations-*.zip | head -1)" | tail -2
+  fi
+fi
+
 # ── 2. apply whatever arrived by upload ───────────────────────────────────
 step "2/7  applying uploaded patches"
 if ls ./*.patch >/dev/null 2>&1; then
@@ -112,6 +129,13 @@ printf '     %-34s %s\n' "tracked .patch files on main" "$REMOTE_PATCHES  (want 
 [ "$REMOTE_PATCHES" = 0 ] || die "Patch files are still tracked on main. They will be replayed on the next run.
        git rm --cached *.patch && git commit && git push"
 
-printf '\n\033[32m✓ on origin/main.\033[0m Now deploy:  vercel --prod\n'
+printf '\n\033[32m✓ on origin/main.\033[0m\n'
+printf '  Deploy NOW, and only because this succeeded:\n\n'
+printf '    vercel --prod\n\n'
+# Why the emphasis: `bash ship.sh ... ` and `vercel --prod` on two lines of a
+# pasted block are two independent commands. When this script exits non-zero the
+# shell runs vercel anyway, and a half-applied tree goes to production. That is
+# exactly how a deploy went out with the illustration code and none of the
+# illustration files. Chain them with && or read this line before pasting.
 printf '  Then verify live, with a cache-buster:\n'
 printf '    curl -s -o /dev/null -w "%%{http_code}\\n" "https://ecowoods.ca/papers?cb=$(date +%%s)"\n\n'

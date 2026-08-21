@@ -169,6 +169,7 @@ export async function GET() {
     `Service health: ${SITE_URL}/api/health — reports whether the live upstream sources are responding and how old the newest observation is. If a series is down, ${SITE_URL}/market shows no figure rather than a stale one, so an absent number there means absent, not zero.`,
     `Cost drivers: ${SITE_URL}/market — the traded commodity inputs behind an installed hardwood floor (forestry, energy, USD/CAD), live from the Bank of Canada, with the mechanism for each. JSON at ${SITE_URL}/api/market. Published to explain quote movement, not as investment information.`,
     `Standards register: ${SITE_URL}/standards — the external bodies and documents this trade answers to, each mapped to the framework criteria that depend on it, linked to the issuing body and stamped with the date we last verified it there.`,
+    `Visual library: ${SITE_URL}/library — every technical diagram on this site indexed in one place, each with descriptive alt text and a link to the page that explains it. No text is rendered inside any image; every label is in the HTML.`,
     `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
     `Published standard: ${SITE_URL}/framework — the Well-Installed Framework, versioned, free to cite under CC BY.`,
     `Decision guides and reference installations: ${SITE_URL}/guides`,

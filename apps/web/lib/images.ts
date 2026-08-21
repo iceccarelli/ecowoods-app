@@ -45,6 +45,19 @@
 export type ImageKind = 'diagram' | 'illustration' | 'photograph';
 export type ImageStatus = 'pending' | 'published';
 
+/**
+ * The status both helpers stamp on the entries they build.
+ *
+ * All 28 files are on disk, so this is 'published' and verify-images.mjs
+ * asserts every one exists AND matches its declared dimensions.
+ *
+ * A NEW slot added later must be written as a full object literal with
+ * `status: 'pending'` until its file lands — deliberately more work than
+ * calling a helper, so the awkward path is the one that ships a placeholder to
+ * production.
+ */
+const DEFAULT_STATUS: ImageStatus = 'published';
+
 export type SiteImage = {
   /** Stable id, used in code. */
   id: string;
@@ -63,10 +76,98 @@ export type SiteImage = {
   prompt?: string;
   /** Where a photograph came from. Required when kind is photograph. */
   provenance?: string;
+  /** The page that explains this image. Makes /library a navigation surface. */
+  href?: string;
 };
 
 /* Two sizes, so the whole set is visually consistent and every slot is
    predictable: 16:9 for inline explanatory art, 1200x630 for social cards. */
+
+/**
+ * Intrinsic size per image, measured from the files on disk.
+ *
+ * The delivered art was uniformly 1600x900, but the drawing inside it was not —
+ * mean fill was 52%, and `failure-cupping` used 21% of its frame. At a fixed
+ * 16:9 box that empty margin is rendered as page, so a cross-section displayed
+ * at 1000px wide was drawing its content at a fraction of that.
+ *
+ * Each inline diagram is therefore trimmed to its own content plus a uniform
+ * margin, and carries its own true dimensions here. `pillar-substrate` went from
+ * 1600x900 at 32% fill to 1647x359 at ~90%: same layout width, roughly two and a
+ * half times the drawn detail.
+ *
+ * The five og-* cards keep 1600x900's sibling 1200x630 exactly, because social
+ * platforms require that ratio and will letterbox or crop anything else.
+ *
+ * scripts/prepare-illustrations.sh produces these files deterministically and
+ * verify-images.mjs reads the WebP headers on disk and fails if any file
+ * disagrees with the number below it.
+ */
+/**
+ * Where each image is explained.
+ *
+ * Without this, /library is a gallery — 28 pictures a visitor looks at and then
+ * leaves. With it every tile is a door into the page that explains it, and the
+ * index becomes the fastest route into the corpus for someone who thinks
+ * visually. verify-images.mjs checks each target is a real route.
+ */
+const HREFS: Record<string, string> = {
+  'pillar-moisture': '/framework#moisture',
+  'pillar-substrate': '/framework#substrate',
+  'pillar-specification': '/framework#specification',
+  'pillar-movement': '/framework#movement',
+  'pillar-containment': '/framework#containment',
+  'pillar-accountability': '/framework#accountability',
+  'failure-cupping': '/glossary/cupping',
+  'failure-crowning': '/glossary/crowning',
+  'failure-gapping': '/glossary/seasonal-gapping',
+  'failure-buckling': '/glossary/buckling',
+  'concept-expansion-gap': '/glossary/expansion-gap',
+  'concept-acclimation': '/glossary/acclimation',
+  'concept-mc-differential': '/glossary/moisture-differential',
+  'concept-edger-halo': '/papers/hardwood-refinishing-machines-and-sequence#edger',
+  'paper-climate': '/papers/toronto-hardwood-climate-moisture-protocol',
+  'paper-selection': '/papers/hardwood-selection-and-cost-framework-gta',
+  'paper-craft': '/papers/hardwood-refinishing-machines-and-sequence',
+  'guide-solid-vs-engineered': '/guides/solid-vs-engineered-hardwood-toronto',
+  'guide-method': '/guides/nail-down-glue-down-or-floating',
+  'guide-evaluate-quote': '/guides/how-to-evaluate-a-hardwood-quote',
+  'guide-ref-condo': '/guides/reference-condominium-concrete-slab',
+  'guide-ref-radiant': '/guides/reference-radiant-heat-main-floor',
+  'guide-ref-refinish': '/guides/reference-refinishing-existing-hardwood',
+  'og-framework': '/framework',
+  'og-market': '/market',
+  'og-glossary': '/glossary',
+  'og-standards': '/standards',
+  'og-data': '/data',
+};
+
+const DIMS: Record<string, [number, number]> = {
+  'concept-acclimation': [1728, 867],
+  'concept-edger-halo': [1564, 883],
+  'concept-expansion-gap': [1538, 681],
+  'concept-mc-differential': [1463, 817],
+  'failure-buckling': [1599, 644],
+  'failure-crowning': [1636, 314],
+  'failure-cupping': [1576, 247],
+  'failure-gapping': [1676, 997],
+  'guide-evaluate-quote': [1378, 719],
+  'guide-method': [1586, 328],
+  'guide-ref-condo': [1058, 1044],
+  'guide-ref-radiant': [1320, 493],
+  'guide-ref-refinish': [1622, 421],
+  'guide-solid-vs-engineered': [1371, 683],
+  'paper-climate': [1375, 852],
+  'paper-craft': [1609, 534],
+  'paper-selection': [1442, 705],
+  'pillar-accountability': [895, 859],
+  'pillar-containment': [1481, 894],
+  'pillar-moisture': [1492, 856],
+  'pillar-movement': [1514, 856],
+  'pillar-specification': [1568, 632],
+  'pillar-substrate': [1647, 359],
+};
+
 const W = 1600;
 const H = 900;
 const OG_W = 1200;
@@ -89,11 +190,12 @@ const d = (
   id,
   file: `${id}.webp`,
   kind,
-  status: 'pending',
-  width: W,
-  height: H,
+  status: DEFAULT_STATUS,
+  width: DIMS[id]?.[0] ?? W,
+  height: DIMS[id]?.[1] ?? H,
   alt,
   caption,
+  href: HREFS[id],
   prompt: `${prompt} ${STYLE_SUFFIX}`,
 });
 
@@ -101,10 +203,11 @@ const og = (id: string, alt: string, prompt: string): SiteImage => ({
   id,
   file: `${id}.webp`,
   kind: 'illustration',
-  status: 'pending',
+  status: DEFAULT_STATUS,
   width: OG_W,
   height: OG_H,
   alt,
+  href: HREFS[id],
   prompt: `${prompt} ${OG_STYLE_SUFFIX}`,
 });
 

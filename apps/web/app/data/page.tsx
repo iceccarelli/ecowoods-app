@@ -31,6 +31,7 @@ export const metadata: Metadata = {
       'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
     type: 'website',
     url: `${SITE_URL}/data`,
+    images: [{ url: '/illustrations/og-data.webp', width: 1200, height: 630 }],
   },
 };
 

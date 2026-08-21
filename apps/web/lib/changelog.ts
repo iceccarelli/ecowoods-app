@@ -37,6 +37,22 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'library-v1',
+    date: '2026-08-21',
+    kind: 'data',
+    title: 'A visual library — 136 images, indexed and linked',
+    body: 'Every diagram and photograph on this site in one place: 28 technical cross-sections, each a link to the page that explains it, plus the twelve floors and twelve machines. The photographs rotate with a staggered Ken Burns push in four alternating variants, paused while off-screen. The diagrams do not move — a frame scaling under a cross-section makes it harder to read, not more alive.',
+    href: '/library',
+  },
+  {
+    id: 'illustrations-v1',
+    date: '2026-08-21',
+    kind: 'data',
+    title: '28 technical diagrams across the framework, guides and glossary',
+    body: 'Cross-sections of the three substrate assemblies, the four failure modes, the expansion gap, acclimation and the machine sequence. Flat vector, one palette, and no text baked into any image — every label stays in the HTML where a screen reader can read it and a crawler can index it. Each diagram is trimmed to its own content, so it carries its true aspect ratio rather than sitting in an empty 16:9 box.',
+    href: '/framework',
+  },
+  {
     id: 'market-v1',
     date: '2026-08-20',
     kind: 'data',

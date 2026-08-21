@@ -54,6 +54,12 @@ export function Illustration({
     );
   }
 
+  /* The full-size link is a plain anchor to the file, not a lightbox.
+     There are already two lightboxes on this site (FloorCatalog, MachineCatalog)
+     and a third would be a third way to do one thing — the same mistake the
+     design system rule exists to prevent. An anchor also works with no
+     JavaScript, works from a keyboard for free, survives the print stylesheet,
+     and is what technical documentation actually does. */
   return (
     <figure className={`ill ${className}`.trim()}>
       <div className="ill-frame" style={{ aspectRatio: ratio }}>
@@ -67,7 +73,18 @@ export function Illustration({
           className="ill-img"
         />
       </div>
-      {img.caption && <figcaption className="ill-caption">{img.caption}</figcaption>}
+      <figcaption className="ill-caption">
+        {img.caption}
+        <a
+          className="ill-full"
+          href={`${IMAGE_DIR}/${img.file}`}
+          target="_blank"
+          rel="noopener"
+        >
+          View full size <span aria-hidden="true">↗</span>
+          <span className="sr-only"> — {img.alt}</span>
+        </a>
+      </figcaption>
     </figure>
   );
 }

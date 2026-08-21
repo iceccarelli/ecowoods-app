@@ -144,11 +144,120 @@ for (const f of onDisk) {
     fail(`public/illustrations/${f} is not referenced by any manifest entry — remove it or add the entry`);
   }
 }
-const DEFAULT_PENDING = /status: 'pending'/.test(src);
+/* Helper-built entries take their status from DEFAULT_STATUS; a hand-written
+   literal carries its own. The first version inferred the default by grepping
+   the whole file for "status: 'pending'" — which every helper hardcoded, so the
+   regex always matched and the exists-on-disk check never ran on anything. It
+   reported "28 pending" and looked correct because at the time all 28 were. */
+const DEFAULT_STATUS =
+  (src.match(/const DEFAULT_STATUS: ImageStatus = '(pending|published)'/) || [])[1] ?? 'pending';
 for (const e of entries) {
-  const st = DEFAULT_PENDING ? 'pending' : statusOf(e.id);
+  const st = e.helper === 'literal' ? (e.status ?? statusOf(e.id)) : DEFAULT_STATUS;
   if (st === 'published' && !onDisk.includes(`${e.id}.webp`)) {
     fail(`"${e.id}" is marked published but public/illustrations/${e.id}.webp does not exist`);
+  }
+}
+
+/* ── every href must go somewhere real ───────────────────────────────────── */
+/**
+ * /library turns each diagram into a link, which is what makes it an index
+ * rather than a gallery. A link to a route that does not exist turns it back
+ * into a gallery with a 404 in it — and nothing else here would notice, because
+ * the manifest is internally consistent either way.
+ *
+ * Static routes are read from the filesystem; dynamic ones are resolved against
+ * the manifests that generate them, so a glossary term renamed in glossary.ts
+ * breaks this build rather than the visitor's click.
+ */
+{
+  const APP = path.join(ROOT, 'apps/web/app');
+  const staticRoutes = new Set();
+  (function walk(dir, prefix) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name === 'node_modules' || e.name.startsWith('[')) continue;
+      const next = `${prefix}/${e.name}`;
+      if (fs.existsSync(path.join(dir, e.name, 'page.tsx'))) staticRoutes.add(next);
+      walk(path.join(dir, e.name), next);
+    }
+  })(APP, '');
+
+  const slugsFrom = (file, re) =>
+    fs.existsSync(path.join(ROOT, file))
+      ? [...fs.readFileSync(path.join(ROOT, file), 'utf8').matchAll(re)].map((m) => m[1])
+      : [];
+  const dynamic = new Set([
+    ...slugsFrom('apps/web/lib/glossary.ts', /\n    slug: '([^']+)',/g).map((s) => `/glossary/${s}`),
+    ...slugsFrom('apps/web/lib/guides.ts', /\n    slug: '([^']+)',/g).map((s) => `/guides/${s}`),
+    ...slugsFrom('apps/web/lib/papers.ts', /\n    slug: '([^']+)',/g).map((s) => `/papers/${s}`),
+  ]);
+
+  for (const e of entries) {
+    const href = (src.match(new RegExp(`'${e.id}': '([^']+)'`)) || [])[1];
+    if (!href) continue;
+    const route = href.split('#')[0];
+    if (!staticRoutes.has(route) && !dynamic.has(route)) {
+      fail(
+        `"${e.id}" links to ${href}, which is not a route on this site.\n` +
+          `      /library renders every diagram as a link; a dead one is a 404 the visitor finds.`,
+      );
+    }
+  }
+}
+
+/* ── the file on disk must be the size the manifest claims ───────────────── */
+/**
+ * The manifest's width and height are what next/image uses to reserve space
+ * before the bytes arrive. If they disagree with the actual file the browser
+ * reflows on load — cumulative layout shift, on every page carrying that image,
+ * invisible to every other check here because the source code is perfectly
+ * consistent with itself.
+ *
+ * Reads the WebP header directly rather than adding an image dependency: RIFF
+ * container, then VP8 / VP8L / VP8X, each of which stores its dimensions in a
+ * different place.
+ */
+function webpSize(file) {
+  const b = fs.readFileSync(file).subarray(0, 40);
+  if (b.length < 30 || b.toString('ascii', 0, 4) !== 'RIFF' || b.toString('ascii', 8, 12) !== 'WEBP') {
+    return null;
+  }
+  const fmt = b.toString('ascii', 12, 16);
+  if (fmt === 'VP8X') {
+    return [b.readUIntLE(24, 3) + 1, b.readUIntLE(27, 3) + 1];
+  }
+  if (fmt === 'VP8L') {
+    const n = b.readUInt32LE(21);
+    return [(n & 0x3fff) + 1, ((n >> 14) & 0x3fff) + 1];
+  }
+  if (fmt === 'VP8 ') {
+    return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+  }
+  return null;
+}
+
+const dims = new Map(
+  [...src.matchAll(/^  '([a-z0-9-]+)': \[(\d+), (\d+)\],$/gm)].map((m) => [
+    m[1],
+    [Number(m[2]), Number(m[3])],
+  ]),
+);
+const FALLBACK = { d: [Number(W), Number(H)], og: [Number(OGW), Number(OGH)] };
+
+for (const e of entries) {
+  const file = path.join(PUBLIC_DIR, `${e.id}.webp`);
+  if (!fs.existsSync(file)) continue;
+  const actual = webpSize(file);
+  if (!actual) {
+    fail(`"${e.id}": public/illustrations/${e.id}.webp is not a readable WebP`);
+    continue;
+  }
+  const declared = dims.get(e.id) ?? FALLBACK[e.helper === 'og' ? 'og' : 'd'];
+  if (actual[0] !== declared[0] || actual[1] !== declared[1]) {
+    fail(
+      `"${e.id}": file is ${actual[0]}x${actual[1]} but the manifest declares ${declared[0]}x${declared[1]}.\n` +
+        `      next/image reserves space from the manifest, so a mismatch reflows the page on load.\n` +
+        `      Re-run scripts/prepare-illustrations.sh, or update the DIMS entry to match.`,
+    );
   }
 }
 

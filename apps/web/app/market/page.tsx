@@ -30,6 +30,7 @@ export const metadata: Metadata = {
       'Forestry, energy and FX: the three inputs that move the price of a hardwood floor, live from the Bank of Canada.',
     type: 'website',
     url: `${SITE_URL}/market`,
+    images: [{ url: '/illustrations/og-market.webp', width: 1200, height: 630 }],
   },
 };
 

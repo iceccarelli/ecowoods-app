@@ -46,6 +46,7 @@ export const metadata: Metadata = {
       'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
     type: 'website',
     url: `${SITE_URL}/standards`,
+    images: [{ url: '/illustrations/og-standards.webp', width: 1200, height: 630 }],
   },
 };
 
