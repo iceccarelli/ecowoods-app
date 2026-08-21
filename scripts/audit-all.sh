@@ -131,6 +131,8 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-images.mjs ] && run "verify:images" node scripts/verify-images.mjs
 [ -f scripts/verify-canonical.mjs ] && run "verify:canonical" node scripts/verify-canonical.mjs
 [ -f scripts/verify-sitemap.mjs ] && run "verify:sitemap" node scripts/verify-sitemap.mjs
+[ -f scripts/verify-indexnow.mjs ] && run "verify:indexnow" node scripts/verify-indexnow.mjs
+[ -f scripts/verify-markdown.mjs ] && run "verify:markdown" node scripts/verify-markdown.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"

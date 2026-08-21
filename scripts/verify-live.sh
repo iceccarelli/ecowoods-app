@@ -147,6 +147,42 @@ else
   FAILED=$((FAILED + 1))
 fi
 
+printf '\n%s── machine-readable editions %s\n' "$BOLD" "$OFF"
+#
+# The llms.txt proposal asks for clean markdown at each page's URL with `.md`
+# appended. App Router cannot express `[slug].md` as a segment, so these URLs
+# exist only because a rewrite in next.config.js points them at handlers under
+# /md/. A rewrite that does not fire produces a 404 on every one of them while
+# tsc, every guard and next build all pass — which is F-131, F-138 and F-144
+# three times over. So the rewrite is checked where it either works or does not:
+# on the deployed site.
+#
+# Each is required to return 200 AND to look like the document, not like an
+# HTML error page dressed as a 200.
+md_check() {
+  LABEL="$1"; URL="$2"; WANT="$3"
+  BODY="$(curl -s -L --max-time 20 "$URL?$CB" 2>/dev/null || true)"
+  STATUS="$(code "$URL?$CB")"
+  if [ "$STATUS" != "200" ]; then
+    printf '  %sFAIL%s  %-34s HTTP %s\n' "$RED" "$OFF" "$LABEL" "$STATUS"
+    FAILED=$((FAILED + 1))
+  elif printf '%s' "$BODY" | grep -qi '<!DOCTYPE html'; then
+    printf '  %sFAIL%s  %-34s 200, but served HTML — the rewrite did not fire\n' "$RED" "$OFF" "$LABEL"
+    FAILED=$((FAILED + 1))
+  elif ! printf '%s' "$BODY" | grep -q "$WANT"; then
+    printf '  %sFAIL%s  %-34s 200, but does not contain %s\n' "$RED" "$OFF" "$LABEL" "$WANT"
+    FAILED=$((FAILED + 1))
+  else
+    BYTES="$(printf '%s' "$BODY" | wc -c | tr -d ' ')"
+    printf '  %sPASS%s  %-34s %s bytes, markdown\n' "$GRN" "$OFF" "$LABEL" "$BYTES"
+  fi
+}
+
+md_check "/papers/{slug}.md"   "$BASE/papers/hardwood-refinishing-machines-and-sequence.md" "## Provenance"
+md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toronto.md"       "## Provenance"
+md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
+md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete technical corpus"
+
 printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
 #
 # F-142. The root layout declared alternates.canonical = '/', Next merged it

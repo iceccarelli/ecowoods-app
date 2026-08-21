@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'machine-editions-v1',
+    date: '2026-08-21',
+    kind: 'data',
+    title: 'Every document, as clean Markdown, at its own URL',
+    body: 'Append .md to any paper, guide or glossary URL and you get the document itself \u2014 headings, tables and ordered protocols intact, with its canonical URL and citation line attached. The whole corpus is also served in one file at /llms-full.txt. Both are generated from the same source as the pages, so neither can drift from what the site says, and neither summarises anything: an agent quoting us should be quoting the sentence we published, not a paraphrase of it.',
+    href: '/llms-full.txt',
+  },
+  {
     id: 'nwfa-installation-2025',
     date: '2026-08-21',
     kind: 'data',

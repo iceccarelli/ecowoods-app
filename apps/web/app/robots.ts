@@ -13,12 +13,19 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         // /api/knowledge is the public JSON corpus and is meant to be fetched.
+        // /llms-full.txt and /md/ are the machine-readable editions: the whole
+        // corpus in one fetch, and the clean-markdown companion of each page
+        // (served at /papers/{slug}.md and friends by a rewrite in
+        // next.config.js). Both are already covered by Allow: '/'. They are
+        // named anyway, because robots.txt is the first file an agent reads and
+        // an editions list that appears there costs one line.
+        //
         // It sits under /api/, which is disallowed wholesale below, and a
         // blanket Disallow: /api/ would have hidden the one endpoint built
         // specifically for crawlers and agents to read. Allow is listed first
         // and is more specific, which is how every major crawler resolves the
         // conflict. See F-89.
-        allow: ['/', '/api/knowledge', '/api/market', '/api/health'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
         // /docs/{contract,invoice,quote}/[id] renders a specific customer's
         // paperwork from a URL. It was never disallowed.
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
@@ -41,7 +48,7 @@ export default function robots(): MetadataRoute.Robots {
           'PerplexityBot', 'Perplexity-User',
           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
         ],
-        allow: ['/', '/api/knowledge', '/api/market', '/api/health'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
     ],

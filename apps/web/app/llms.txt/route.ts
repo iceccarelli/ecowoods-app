@@ -83,6 +83,20 @@ export async function GET() {
   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
   lines.push('');
 
+  // The two things the llms.txt proposal actually asks for beyond this index:
+  // clean markdown at the same URL with `.md` appended, and — by de-facto
+  // convention rather than by the spec — the whole corpus in one file. Both are
+  // useless if an agent has to guess they exist, so they are named here, at the
+  // top of the section an agent reads first.
+  lines.push('## Machine-readable editions');
+  lines.push(
+    `Every document below is served as clean Markdown at its own URL with \`.md\` appended — ${SITE_URL}/papers/{slug}.md, ${SITE_URL}/guides/{slug}.md, ${SITE_URL}/glossary/{slug}.md. Headings, tables and ordered protocols survive intact, and each file carries its canonical URL and citation line. Prefer these to parsing the HTML.`,
+  );
+  lines.push('');
+  lines.push(`- ENTIRE CORPUS, one fetch, full text: ${SITE_URL}/llms-full.txt`);
+  lines.push(`- Structured JSON of the same material: ${SITE_URL}/api/knowledge`);
+  lines.push('');
+
   lines.push(`## The EcoWoods Well-Installed Framework v${FRAMEWORK_VERSION}`);
   lines.push(
     `A published, versioned specification for judging any hardwood flooring installation: ${PILLARS.length} pillars, ${criterionCount()} binary criteria, each one sourced to a technical paper on this site. Free to cite (CC BY). Cite as "Well-Installed Framework v${FRAMEWORK_VERSION}, criterion N.N" — criterion ids are permanent and are never renumbered in place.`,

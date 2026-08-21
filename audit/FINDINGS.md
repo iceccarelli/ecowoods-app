@@ -4251,3 +4251,105 @@ by people who could never see the composed result. All seventeen now set the
 bare title; `openGraph.title` and `twitter.title` keep the brand, correctly,
 because a share card has no page around it to give it context. The brand check
 lives in `verify-canonical.mjs` — same file, same class of bug, same fix.
+
+### F-144 · The IndexNow submitter read two URLs that do not exist, and exited 0 · P1
+
+`apps/web/scripts/notify-indexnow.mjs` opened with:
+
+```js
+const sitemaps = [`${SITE}/sitemap/0.xml`, `${SITE}/sitemap/1.xml`];
+```
+
+Next serves `/sitemap/N.xml` only when a sitemap route calls
+`generateSitemaps()`. `app/sitemap.ts` does not — it serves one file at
+`/sitemap.xml`. Both fetches were 404. The loop logged a `WARN` for each and
+continued. `urls.length` was 0, and the script finished:
+
+```js
+console.error("No URLs found in sitemaps; skipping.");
+process.exit(0);
+```
+
+Exit zero. Success.
+
+It was also referenced by nothing — not `ship.sh`, not `package.json`, not a
+workflow. A submitter nobody called, that could not have worked if called,
+reporting success when it failed.
+
+This is the third finding in a row with one shape: **the code was right and the
+path was wrong.** F-131, a directory that was never served. F-138, a key file at
+that same unserved path, which meant every IndexNow submission this site ever
+made was rejected at ownership verification. Now a sitemap URL that does not
+exist. In all three the logic reads correctly, `tsc` passes, every guard passes,
+and the thing simply is not there.
+
+IndexNow is the worst possible place for this, because it has no feedback worth
+the name: a rejected submission and an accepted one look identical from here.
+Nothing was ever going to tell us.
+
+Rewritten. It reads `/sitemap.xml`; it verifies the key file is live **and that
+its body equals the key** before submitting anything; it fails loudly on every
+condition that means nothing was submitted; it chunks at the protocol's 10,000
+URL limit; and it is called from `ship.sh`'s deploy line and `pnpm
+notify:indexnow`.
+
+One reversal worth naming: the key is no longer read from `INDEXNOW_KEY`. It is
+read from the name of the route directory that serves it. The key is public by
+construction — the entire ownership check is that anyone can fetch it at the URL
+— so there was nothing to protect by putting it in an environment variable, and
+one more unvalidated way for the whole path to be broken and look fine. The key
+submitted and the key served are now the same fact rather than two facts kept in
+sync by hand. `INDEXNOW_KEY` still overrides, for testing against another host.
+
+`scripts/verify-indexnow.mjs` checks all five joins: exactly one key route, its
+body matching its own directory name, no `process.env` in that route, a sitemap
+path the sitemap route actually produces, and something that calls the
+submitter.
+
+### F-145 · The llms.txt proposal asks for two things and we served one · P1
+
+`/llms.txt` has been served since F-23 and is a good index. The proposal (v2,
+llmstxt.org) asks for a second thing, and it is the half that does the work:
+
+> pages with information that agents might need provide a clean markdown version
+> of those pages at the same URL as the original page, either with `.md`
+> appended (`page.html.md`) or with the extension replaced by `.md` (`page.md`)
+
+Without it, an agent that wants to quote this site has to fetch a Next.js page,
+walk a DOM of layout wrappers, `tlx-` class names, nav chrome and a footer, and
+guess which text is content. Every guess is a chance to attribute a navigation
+label to a technical claim, or to drop the sentence carrying the qualification —
+on a site whose entire strategy is being the thing that gets quoted correctly.
+
+Now served: `/papers/{slug}.md`, `/guides/{slug}.md`, `/glossary/{slug}.md`, and
+`/llms-full.txt` — the whole corpus, 70 KB, one fetch. `llms-full.txt` is *not*
+in the spec; it is a de-facto convention, and it is here because an agent
+answering a question about Toronto hardwood should not need eighty-seven
+requests to find out what this site says.
+
+Three things about how it is built, each of which is the point:
+
+- **One source.** `lib/markdown-export.ts` renders the same manifests the HTML
+  pages render. There is nowhere in it to type a sentence. A claim that is not
+  in `papers.ts`, `guides.ts` or `glossary.ts` cannot appear, which is why
+  `verify-business-facts` polices this edition for free.
+- **Nothing is summarised.** Summarising is where an export starts making claims
+  of its own.
+- **Every file carries its own provenance** — canonical URL, publisher, contact,
+  source paper and section, citation guide. A paragraph quoted out of one of
+  these is still holding the URL it came from.
+
+App Router cannot express `[slug].md`: a segment is wholly dynamic or wholly
+literal. The URLs come from rewrites in `next.config.js`. That pattern was
+checked against the `path-to-regexp` build Next actually ships rather than
+assumed — `/papers/:slug.md` compiles to
+`/^\/papers(?:\/([^\/#\?]+?))\.md[\/#\?]?$/i`, so `.md` is stripped from the
+captured slug — because getting it wrong would have 404'd every advertised URL
+while everything in the repository stayed green. That sentence has now been
+written four times in this file.
+
+`scripts/verify-markdown.mjs` requires every rewrite destination to resolve to a
+handler on disk, every handler to prebuild and to send `text/markdown`, and
+`/llms.txt` to name both editions — an advertised URL that 404s is worse than
+one never offered, because it is the first thing an agent tries.
+`verify-live.sh` fetches all four from production and fails if any returns HTML.

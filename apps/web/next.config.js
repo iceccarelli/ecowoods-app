@@ -45,6 +45,34 @@ const nextConfig = {
     return config;
   },
 
+  /**
+   * The `.md` companion URLs the llms.txt proposal (v2) asks for:
+   *
+   *   > pages with information that agents might need provide a clean markdown
+   *   > version of those pages at the same URL as the original page, either
+   *   > with `.md` appended or with the extension replaced by `.md`
+   *
+   * App Router cannot express `[slug].md` as a segment — a directory name is
+   * either wholly dynamic (`[slug]`) or wholly literal (`llms.txt`), never
+   * both. So the handlers live under /md/ and these rewrites put them at the
+   * advertised URL.
+   *
+   * The pattern was checked against the path-to-regexp build that Next ships
+   * rather than assumed: `/papers/:slug.md` compiles to
+   * `/^\/papers(?:\/([^\/#\?]+?))\.md[\/#\?]?$/i`, so `.md` is stripped from
+   * the captured slug and a nested path does not match. Getting that wrong
+   * silently would have produced a 404 on every one of these URLs while every
+   * guard in the repository passed — which is the shape of the last four
+   * findings, so it was tested instead.
+   */
+  async rewrites() {
+    return [
+      { source: '/papers/:slug.md', destination: '/md/papers/:slug' },
+      { source: '/guides/:slug.md', destination: '/md/guides/:slug' },
+      { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
+    ];
+  },
+
   async headers() {
     return [
       {
