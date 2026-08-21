@@ -1,0 +1,890 @@
+diff --git a/apps/web/app/components/Illustration.tsx b/apps/web/app/components/Illustration.tsx
+new file mode 100644
+index 0000000..12d9996
+--- /dev/null
++++ b/apps/web/app/components/Illustration.tsx
+@@ -0,0 +1,73 @@
++import Image from 'next/image';
++import { getImage, IMAGE_DIR } from '@/lib/images';
++
++/**
++ * Illustration — one image slot, rendered from the manifest.
++ *
++ * WHY THE PENDING STATE EXISTS
++ *
++ * The slots ship before the art does. A component that rendered nothing while
++ * waiting would let every page reflow the moment the files arrive, and a
++ * component that rendered a broken <img> would ship a broken page. This renders
++ * a labelled placeholder at the exact final aspect ratio, so the layout that is
++ * live today is the layout that will be live after the upload — the only thing
++ * that changes is what fills the box.
++ *
++ * `width` and `height` always come from the manifest and are always passed to
++ * next/image. That is what holds cumulative layout shift at zero; a responsive
++ * image without intrinsic dimensions is the single most common cause of CLS on
++ * a content site.
++ *
++ * The alt text is not optional and is not decorative filler. It describes the
++ * INFORMATION in the diagram, because for a screen reader and for a crawler
++ * that alt string is the diagram. Every prompt in the manifest forbids text
++ * inside the image for the same reason: a label baked into a picture is
++ * invisible to everything except human eyes.
++ */
++
++export function Illustration({
++  id,
++  sizes = '(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px',
++  priority = false,
++  className = '',
++}: {
++  id: string;
++  sizes?: string;
++  priority?: boolean;
++  className?: string;
++}) {
++  const img = getImage(id);
++  if (!img) return null;
++
++  const ratio = `${img.width} / ${img.height}`;
++
++  if (img.status === 'pending') {
++    return (
++      <figure className={`ill ill--pending ${className}`.trim()}>
++        <div className="ill-frame" style={{ aspectRatio: ratio }} role="img" aria-label={img.alt}>
++          <span className="ill-pending-mark" aria-hidden="true">
++            {img.kind === 'diagram' ? 'Diagram' : 'Illustration'}
++          </span>
++        </div>
++        {img.caption && <figcaption className="ill-caption">{img.caption}</figcaption>}
++      </figure>
++    );
++  }
++
++  return (
++    <figure className={`ill ${className}`.trim()}>
++      <div className="ill-frame" style={{ aspectRatio: ratio }}>
++        <Image
++          src={`${IMAGE_DIR}/${img.file}`}
++          alt={img.alt}
++          width={img.width}
++          height={img.height}
++          sizes={sizes}
++          priority={priority}
++          className="ill-img"
++        />
++      </div>
++      {img.caption && <figcaption className="ill-caption">{img.caption}</figcaption>}
++    </figure>
++  );
++}
+diff --git a/apps/web/app/framework/page.tsx b/apps/web/app/framework/page.tsx
+index efef06a..c407704 100644
+--- a/apps/web/app/framework/page.tsx
++++ b/apps/web/app/framework/page.tsx
+@@ -10,6 +10,7 @@ import {
+   sourceHref,
+ } from '@/lib/framework';
+ import { getGuides } from '@/lib/guides';
++import { Illustration } from '../components/Illustration';
+ import { SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+@@ -153,6 +154,8 @@ export default function FrameworkPage() {
+             <h2 className="tlx-h2">{pillar.name}</h2>
+             <p className="tlx-note">{pillar.intent}</p>
+ 
++            <Illustration id={`pillar-${pillar.id}`} />
++
+             <ol className="fw-criteria">
+               {pillar.criteria.map((c) => {
+                 const href = sourceHref(c);
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 8f15802..a97183a 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8588,3 +8588,37 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%,
+   .spark-line { stroke: #6b3410; }
+   .spark-dot { fill: #6b3410; stroke: #fff; }
+ }
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   ILLUSTRATIONS  ·  .ill-*
++
++   The frame carries the aspect ratio from the manifest, so a pending slot
++   occupies exactly the space its image will occupy. That is what makes it safe
++   to ship the layout before the art: nothing reflows when the files land.
++   ═════════════════════════════════════════════════════════════════════════ */
++
++.ill { margin: 1.8rem 0 0; }
++.ill-frame { position: relative; width: 100%; overflow: hidden;
++  border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); }
++.ill-img { display: block; width: 100%; height: auto; }
++
++.ill--pending .ill-frame { display: flex; align-items: center; justify-content: center;
++  /* A pending slot must read as intentional, not as a failed image. A flat tint
++     with a quiet label says "this is coming"; a grey box with a broken icon says
++     "this is broken", and the two are one CSS rule apart. */
++  background: repeating-linear-gradient(
++    135deg,
++    var(--surface-2) 0 10px,
++    color-mix(in srgb, var(--copper) 5%, var(--surface-2)) 10px 20px
++  );
++  border-style: dashed; }
++.ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
++  text-transform: uppercase; color: var(--muted); }
++
++.ill-caption { margin: 0.75rem 0 0; font-size: 0.88rem; line-height: 1.6;
++  color: var(--ink-soft); max-width: 72ch; }
++
++@media print {
++  .ill-frame { border-radius: 0; border-color: #999; break-inside: avoid; }
++  .ill--pending { display: none; }
++}
+diff --git a/apps/web/app/glossary/[slug]/page.tsx b/apps/web/app/glossary/[slug]/page.tsx
+index 3e4df12..298fa8b 100644
+--- a/apps/web/app/glossary/[slug]/page.tsx
++++ b/apps/web/app/glossary/[slug]/page.tsx
+@@ -6,6 +6,7 @@ import { pillarById } from '@/lib/framework';
+ import { SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
++import { Illustration } from '../../components/Illustration';
+ 
+ /**
+  * /glossary/<term> — one addressable page per term.
+@@ -45,6 +46,19 @@ export async function generateMetadata({
+   };
+ }
+ 
++/** Glossary term slug → diagram id, for the terms a picture actually helps.
++ *  A term without an entry here renders no slot at all: an illustration that
++ *  adds nothing is worse than none, because it costs a download and a scroll. */
++const TERM_IMAGE: Record<string, string> = {
++  cupping: 'failure-cupping',
++  crowning: 'failure-crowning',
++  'seasonal-gapping': 'failure-gapping',
++  buckling: 'failure-buckling',
++  'expansion-gap': 'concept-expansion-gap',
++  acclimation: 'concept-acclimation',
++  'moisture-differential': 'concept-mc-differential',
++};
++
+ export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {
+   const { slug } = await params;
+   const t = getTerm(slug);
+@@ -96,6 +110,8 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
+ 
+       <section className="tlx-section" aria-label="Explanation">
+         <div className="shell">
++          {TERM_IMAGE[t.slug] && <Illustration id={TERM_IMAGE[t.slug]} priority />}
++
+           <div className="gl-body">
+             {t.body.map((p, i) => (
+               <p key={i}>{p}</p>
+diff --git a/apps/web/app/guides/[slug]/page.tsx b/apps/web/app/guides/[slug]/page.tsx
+index b7edb35..fdeee08 100644
+--- a/apps/web/app/guides/[slug]/page.tsx
++++ b/apps/web/app/guides/[slug]/page.tsx
+@@ -4,10 +4,22 @@ import { notFound } from 'next/navigation';
+ import { getGuide, getGuides, GUIDES } from '@/lib/guides';
+ import { pillarById } from '@/lib/framework';
+ import { getPaper } from '@/lib/papers';
++import { Illustration } from '../../components/Illustration';
+ import { SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ 
++/** Guide slug → illustration id. Kept here rather than in the guides manifest so
++ *  the content manifest stays free of presentation concerns. */
++const GUIDE_IMAGE: Record<string, string> = {
++  'solid-vs-engineered-hardwood-toronto': 'guide-solid-vs-engineered',
++  'nail-down-glue-down-or-floating': 'guide-method',
++  'how-to-evaluate-a-hardwood-quote': 'guide-evaluate-quote',
++  'reference-condominium-concrete-slab': 'guide-ref-condo',
++  'reference-radiant-heat-main-floor': 'guide-ref-radiant',
++  'reference-refinishing-existing-hardwood': 'guide-ref-refinish',
++};
++
+ export function generateStaticParams() {
+   return GUIDES.map((g) => ({ slug: g.slug }));
+ }
+@@ -86,6 +98,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
+           <h1 className="tlx-title">{guide.title}</h1>
+           <p className="gd-question">{guide.question}</p>
+           <p className="tlx-lede">{guide.summary}</p>
++          <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority />
+           <p className="fw-meta">
+             <span>{guide.readingMinutes} min read</span>
+             <span aria-hidden="true">·</span>
+diff --git a/apps/web/app/papers/[slug]/page.tsx b/apps/web/app/papers/[slug]/page.tsx
+index cae034e..2d0ccd5 100644
+--- a/apps/web/app/papers/[slug]/page.tsx
++++ b/apps/web/app/papers/[slug]/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { Illustration } from '../../components/Illustration';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+ import { getPaper, getPapers, pdfHref, pdfIsPublished, type Paper } from '@/lib/papers';
+@@ -93,6 +94,13 @@ function schemasFor(paper: Paper) {
+   ];
+ }
+ 
++/** Paper slug → hero illustration id. */
++const PAPER_IMAGE: Record<string, string> = {
++  'toronto-hardwood-climate-moisture-protocol': 'paper-climate',
++  'hardwood-selection-and-cost-framework-gta': 'paper-selection',
++  'hardwood-refinishing-machines-and-sequence': 'paper-craft',
++};
++
+ export default async function PaperPage({ params }: { params: Promise<{ slug: string }> }) {
+   const { slug } = await params;
+   const paper = getPaper(slug);
+@@ -117,6 +125,7 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
+           <h1 className="tlx-title">{paper.title}</h1>
+           <p className="wp-hero-sub">{paper.subtitle}</p>
+           <p className="tlx-lede">{paper.summary}</p>
++          <Illustration id={PAPER_IMAGE[paper.slug] ?? ''} priority />
+ 
+           <div className="tlx-meta">
+             <span>
+diff --git a/apps/web/lib/images.ts b/apps/web/lib/images.ts
+new file mode 100644
+index 0000000..d6e7ce3
+--- /dev/null
++++ b/apps/web/lib/images.ts
+@@ -0,0 +1,294 @@
++/**
++ * Illustration manifest — every image slot on the authority surfaces.
++ *
++ * WHY THIS IS A MANIFEST AND NOT JUST FILES IN A FOLDER
++ *
++ * An image on this site is a claim. A cross-section that shows an expansion gap
++ * at 12 mm is asserting 12 mm; a photograph implies a job someone did. Loose
++ * files in public/ carry neither provenance nor alt text, and nothing stops the
++ * wrong one being used in the wrong place.
++ *
++ * So every slot is declared here with its dimensions, its alt text, what it is
++ * allowed to be, and — for anything generated — the exact prompt it came from.
++ * The prompt IS the provenance of a generated image, which is why it lives in
++ * version control next to the code that renders it.
++ *
++ * ── THE LINE THAT MUST NOT MOVE ──────────────────────────────────────────
++ *
++ * `kind: 'photograph'` means a camera pointed at something real. A generated
++ * image may be a `diagram` or an `illustration`; it may NEVER be a photograph,
++ * and scripts/verify-images.mjs fails the build on any entry that tries.
++ *
++ * This is not pedantry. The entire corpus is built on the claim that everything
++ * here traces to something real, and thirteen guards enforce it. A synthetic
++ * image presented as a finished Ecowoods floor is the same defect as a
++ * fabricated moisture reading, with worse consequences — it is more persuasive
++ * and easier to catch. One reverse-image search ends the authority position
++ * this whole architecture exists to build.
++ *
++ * Diagrams explain. Photographs testify. Generate the first; shoot the second.
++ *
++ * ── TEXT IN IMAGES ───────────────────────────────────────────────────────
++ *
++ * None. Every label lives in the HTML beside the image, never inside it:
++ * screen readers can read it, translators can translate it, crawlers can index
++ * it, and image models cannot misspell it. Each prompt says so explicitly.
++ *
++ * ── PENDING IS A REAL STATE ──────────────────────────────────────────────
++ *
++ * `status: 'pending'` means the slot is designed and the file has not arrived.
++ * The component renders a labelled placeholder that reserves the exact final
++ * dimensions, so layout does not shift when the image lands and no page ever
++ * shows a broken image icon. Shipping the slots before the art is deliberate.
++ */
++
++export type ImageKind = 'diagram' | 'illustration' | 'photograph';
++export type ImageStatus = 'pending' | 'published';
++
++export type SiteImage = {
++  /** Stable id, used in code. */
++  id: string;
++  /** Filename under public/illustrations/. Must match the id. */
++  file: string;
++  kind: ImageKind;
++  status: ImageStatus;
++  /** Intrinsic size. Required — this is what prevents layout shift. */
++  width: number;
++  height: number;
++  /** Describes the INFORMATION, not the picture. Never "an image of…". */
++  alt: string;
++  /** Shown under the image. Optional. */
++  caption?: string;
++  /** The generation prompt. Provenance for anything not photographed. */
++  prompt?: string;
++  /** Where a photograph came from. Required when kind is photograph. */
++  provenance?: string;
++};
++
++/* Two sizes, so the whole set is visually consistent and every slot is
++   predictable: 16:9 for inline explanatory art, 1200x630 for social cards. */
++const W = 1600;
++const H = 900;
++const OG_W = 1200;
++const OG_H = 630;
++
++/** Shared style contract. Every prompt ends with this, so 28 images read as one set. */
++export const STYLE_SUFFIX =
++  'Flat vector technical illustration, editorial cross-section style. Strictly limited palette: warm cream background (#faf6ef), deep walnut brown (#3d2b1f), copper accent (#c87e4f), one muted sage (#42704f) only where a second material must be distinguished. Clean 2px linework, generous negative space, no gradients, no photorealism, no drop shadows, no perspective vanishing point — orthographic or flat side elevation. ABSOLUTELY NO TEXT, NO LABELS, NO NUMBERS, NO ARROWS WITH WORDS anywhere in the image. Centred composition with even margins, safe for cropping. 16:9.';
++
++export const OG_STYLE_SUFFIX =
++  'Flat vector editorial illustration. Warm cream background (#faf6ef), deep walnut brown (#3d2b1f), copper accent (#c87e4f). Clean linework, generous negative space, no gradients, no photorealism. ABSOLUTELY NO TEXT, NO LETTERING, NO NUMBERS anywhere. Subject placed left-of-centre with clear empty space on the right for an overlaid headline. 1200x630.';
++
++const d = (
++  id: string,
++  alt: string,
++  caption: string,
++  prompt: string,
++  kind: ImageKind = 'diagram',
++): SiteImage => ({
++  id,
++  file: `${id}.webp`,
++  kind,
++  status: 'pending',
++  width: W,
++  height: H,
++  alt,
++  caption,
++  prompt: `${prompt} ${STYLE_SUFFIX}`,
++});
++
++const og = (id: string, alt: string, prompt: string): SiteImage => ({
++  id,
++  file: `${id}.webp`,
++  kind: 'illustration',
++  status: 'pending',
++  width: OG_W,
++  height: OG_H,
++  alt,
++  prompt: `${prompt} ${OG_STYLE_SUFFIX}`,
++});
++
++export const IMAGES: SiteImage[] = [
++  /* ── Framework pillars ─────────────────────────────────────────────── */
++  d(
++    'pillar-moisture',
++    'Cross-section of a floor assembly with moisture meters reading both the subfloor and the flooring material, and stacked boards acclimating in the room where they will be installed.',
++    'Pillar 1 — moisture is measured in both the subfloor and the material, before anything is fastened.',
++    'A cutaway side elevation of a room floor. Below: a subfloor layer with a small probe inserted into it. Above and to the side: a neat stack of flooring boards resting in the same room, slightly raised on spacers with visible air gaps between the boards. Two simple round dial instruments, one touching the subfloor and one touching the stacked boards. Show the room outline lightly so it reads as an interior.',
++  ),
++  d(
++    'pillar-substrate',
++    'Three floor assemblies side by side — boards nailed into plywood over joists, boards bonded to a concrete slab, and boards floating over a radiant heating layer.',
++    'Pillar 2 — the substrate decides the method, not the budget.',
++    'Three vertical cutaway stacks side by side, evenly spaced, each showing a different floor assembly in orthographic cross-section. Left: floorboards with fasteners angled into a plywood sheet resting on joists. Centre: floorboards sitting on a bonded adhesive layer over a solid concrete slab, adhesive shown as a fine ridged trowel pattern. Right: floorboards resting loose over an underlay sheet above a slab with evenly spaced heating tubes running through it.',
++  ),
++  d(
++    'pillar-specification',
++    'Comparison of a solid hardwood board and an engineered board, the engineered one showing a hardwood wear layer over a cross-laminated core.',
++    'Pillar 3 — construction, not appearance, decides what a house can support.',
++    'Two thick board cross-sections shown side by side at an angle, cut open to reveal their internal structure. Left board: one single continuous grain running through the full thickness. Right board: a thin top layer of the same grain over three or four thinner plies beneath it, each ply drawn with its grain direction rotated ninety degrees from the one above and below it, so the alternating structure is obvious.',
++  ),
++  d(
++    'pillar-movement',
++    'Plan view of a room showing continuous expansion gaps at every wall and around a fixed column and a hearth in the middle of the floor.',
++    'Pillar 4 — gaps at every wall and every fixed object, not only at the perimeter.',
++    'A flat overhead plan view of a rectangular room floor filled with parallel floorboards. A clear even gap runs along all four walls. Inside the room, a circular column and a rectangular hearth interrupt the floor, and the same even gap runs continuously around both of them. The gaps are drawn as clean empty channels in the copper accent colour.',
++  ),
++  d(
++    'pillar-containment',
++    'The four sanding machines in working sequence — belt sander in the open field, edger at the perimeter, planetary sander blending the two, and a buffer for the final pass — with extraction hoses to a sealed collector.',
++    'Pillar 5 — four machines, in order, with containment throughout.',
++    'A flat overhead plan view of a room floor. Four simplified machine silhouettes shown from above, each in the zone it works: a large rectangular belt machine in the open middle of the room, a small round edger tucked tight against the wall, a wider multi-disc round machine straddling the boundary between the middle and the edge, and a round buffer on already-finished floor. A hose runs from each machine to one sealed drum at the room edge.',
++  ),
++  d(
++    'pillar-accountability',
++    'A written estimate document with the moisture readings and a fixed price recorded on it, alongside a signed contract.',
++    'Pillar 6 — the readings and the price exist in writing before a deposit.',
++    'Two overlapping document sheets shown flat at a slight angle. The upper sheet has a simple table structure drawn as ruled blank rows with a small dial-instrument icon beside two of them and a single boxed figure at the bottom right. The lower sheet shows a horizontal signature stroke near its base. Keep all rows empty and abstract with no readable characters.',
++  ),
++
++  /* ── Failure modes and core glossary concepts ──────────────────────── */
++  d(
++    'failure-cupping',
++    'End-grain cross-section of floorboards whose edges have risen higher than their centres, forming shallow troughs across the floor.',
++    'Cupping — edges higher than the centre, caused by moisture from below.',
++    'End-on cross-section view of four floorboards laid side by side, seen from the end grain. Each board curves so its two outer edges sit noticeably higher than its middle, creating a repeating shallow trough shape across the row. Draw a faint moisture indication rising from beneath the boards as small evenly spaced upward marks with no text.',
++  ),
++  d(
++    'failure-crowning',
++    'End-grain cross-section of floorboards whose centres have risen higher than their edges, forming shallow domes.',
++    'Crowning — centre higher than the edges, the inverse of cupping.',
++    'End-on cross-section view of four floorboards laid side by side, seen from the end grain. Each board curves the opposite way from cupping: the middle of each board sits noticeably higher than its two outer edges, creating a repeating shallow dome shape across the row.',
++  ),
++  d(
++    'failure-gapping',
++    'Floorboards in plan view with even seasonal gaps opened between every board.',
++    'Seasonal gapping — the floor contracting in dry indoor air.',
++    'Overhead plan view of parallel floorboards running across the frame. Between every board there is a consistent narrow open gap of equal width, drawn cleanly in the copper accent so the rhythm of the gaps is the subject.',
++  ),
++  d(
++    'failure-buckling',
++    'Cross-section of a floor that has lifted away from the subfloor in a peak because it had nowhere to expand.',
++    'Buckling — a floor with no room to expand lifts off the substrate.',
++    'Side elevation cross-section of a floor running horizontally. At one point the boards lift dramatically away from the subfloor beneath them, forming a raised tent-like peak, while the boards on either side remain flat and in contact. At the far wall the floor is shown pressed hard against the skirting with no gap.',
++  ),
++  d(
++    'concept-expansion-gap',
++    'Detail cross-section at a wall showing the gap left between the last floorboard and the wall, concealed beneath the baseboard.',
++    'The expansion gap — left at the wall, hidden by the baseboard, never filled.',
++    'A close detail cross-section where a floor meets a wall. The last floorboard stops short of the wall leaving a clear open vertical channel. A baseboard sits against the wall and overhangs that channel from above without touching the floor, so the gap is covered but not blocked. Draw the open channel in the copper accent.',
++  ),
++  d(
++    'concept-acclimation',
++    'Flooring boards stacked with spacers between layers in a finished room, air circulating around them.',
++    'Acclimation — the material equalising in the room it will live in.',
++    'A neat cross-stacked pile of flooring boards in the middle of an empty finished interior, with thin spacer sticks separating each layer so air passes through the whole stack. Show the room with a window and a radiator lightly outlined so it reads as a conditioned living space rather than a warehouse.',
++  ),
++  d(
++    'concept-mc-differential',
++    'Two moisture readings compared — one taken in the subfloor and one in the flooring material — shown as two dials side by side.',
++    'Moisture differential — the gap between the material and what it is going onto.',
++    'Two identical round dial instruments shown large and side by side, each with a needle pointing to a different position on an unmarked scale. Beneath the left dial, a small cross-section of a subfloor. Beneath the right dial, a small cross-section of a flooring board. A simple bracket spans between the two needle positions to indicate the difference. No numbers on the dials.',
++  ),
++  d(
++    'concept-edger-halo',
++    'Plan view of a room where the perimeter band sanded by the edger reads differently from the field sanded by the belt machine.',
++    'The edger halo — what an unblended perimeter looks like once the finish goes on.',
++    'Overhead plan view of a rectangular room floor. The large central field is one flat tone. A continuous band around the entire perimeter, roughly the width of a small machine, is a visibly different tone. The boundary between the two zones is a hard, obvious line all the way round.',
++  ),
++
++  /* ── Paper heroes ──────────────────────────────────────────────────── */
++  d(
++    'paper-climate',
++    'A house in cross-section through the seasons, with indoor air drying in winter and humidifying in summer while the floor holds a stable band.',
++    'Climate Mastery — why hardwood succeeds or fails in this city.',
++    'A single house drawn in simple side-elevation cutaway, centred. Above the roofline, two contrasting weather indications on either side: on the left, angular crystalline forms suggesting cold dry air; on the right, soft rounded forms suggesting humid air. Inside the house, one clean horizontal floor line runs unbroken across the full width, drawn heavier than everything else so it reads as the stable element.',
++    'illustration',
++  ),
++  d(
++    'paper-selection',
++    'A branching decision path leading from a substrate to the correct product and installation method.',
++    'The Intelligent Homeowner’s Decision Framework — the substrate decides.',
++    'A clean branching diagram flowing left to right. One starting node on the left splits into two paths, and each of those splits again into two, ending in four terminal nodes on the right. Each node is a simple geometric shape — squares for substrates on the left, board cross-sections for products on the right. Connect them with clean orthogonal lines with rounded corners.',
++    'illustration',
++  ),
++  d(
++    'paper-craft',
++    'The four refinishing machines arranged in the order they run.',
++    'The Craft — four machines, and the order they run in.',
++    'Four simplified machine silhouettes in a single horizontal row, evenly spaced, each drawn from a three-quarter side view in flat vector: a large upright belt sander with a long handle, a compact low round edger, a wide round multi-disc machine, and a round buffer with a handle. Draw them at consistent scale relative to each other. A single continuous horizontal baseline runs beneath all four.',
++    'illustration',
++  ),
++
++  /* ── Guides ────────────────────────────────────────────────────────── */
++  d(
++    'guide-solid-vs-engineered',
++    'A solid board and an engineered board shown end to end for comparison.',
++    'Solid or engineered — the construction difference, at the end grain.',
++    'Two board ends shown large, side by side and slightly separated, cut to reveal internal structure. Left: continuous single-piece grain through the full thickness. Right: a thin decorative top layer over several thinner cross-banded plies with alternating grain direction. Draw both at identical overall thickness so the internal difference is the only variable.',
++  ),
++  d(
++    'guide-method',
++    'Three fixing methods shown as three small cross-sections — fastened, bonded, and floating.',
++    'Nail-down, glue-down or floating — matched to what is underneath.',
++    'Three small square cross-section vignettes in a horizontal row. Left: a board with an angled fastener driven through its tongue into the sheet below. Centre: a board sitting on a ridged adhesive bed bonded to a solid slab. Right: a board resting on a thin continuous underlay sheet with a visible free space concept at the wall edge, not mechanically attached.',
++  ),
++  d(
++    'guide-evaluate-quote',
++    'A checklist of six items beside a written estimate, some checked and some not.',
++    'How to evaluate a quote — six questions, any "no" is a red flag.',
++    'A vertical list of six identical empty checkbox squares running down the left, each followed by a blank ruled line where text would go. Four boxes carry a clean check mark, two carry a cross. To the right, a single document sheet outline. Keep every line blank and abstract with no readable characters.',
++    'illustration',
++  ),
++  d(
++    'guide-ref-condo',
++    'Cross-section of an engineered floor bonded to a concrete condominium slab with an acoustic layer.',
++    'Condominium over slab — engineered, bonded, with the acoustic layer.',
++    'A detailed vertical cutaway stack, drawn tall and centred, with clearly separated layers from bottom to top: a thick solid concrete slab, a thin acoustic mat, a ridged adhesive bed, and engineered floorboards showing their cross-banded core. At the left edge the stack meets a wall with a clear expansion channel and a baseboard overhanging it.',
++  ),
++  d(
++    'guide-ref-radiant',
++    'Cross-section of an engineered floor floating over a radiant heating assembly.',
++    'Radiant main floor — engineered, floated, over the heating layer.',
++    'A detailed vertical cutaway stack, drawn tall and centred: a base slab with evenly spaced circular heating tube sections embedded in it, a thin underlay sheet above, then engineered floorboards showing their cross-banded core resting loose on top. Draw gentle evenly spaced upward indications from the tubes through the stack to suggest heat rising, using short marks and no arrows with words.',
++  ),
++  d(
++    'guide-ref-refinish',
++    'A floor part-way through refinishing, half worn and half freshly cut, with the machine sequence implied.',
++    'Refinishing — the sequence, from worn surface to final coat.',
++    'A single floor surface seen at a low angle running from left to right across the frame, divided into four vertical bands that progress from left to right: heavily worn and scratched, coarsely cut, finely refined, and finally smooth and even. Keep the board lines continuous through all four bands so it reads as one floor at four stages.',
++    'illustration',
++  ),
++
++  /* ── Social cards ──────────────────────────────────────────────────── */
++  og(
++    'og-framework',
++    'The Well-Installed Framework — six pillars supporting a floor line.',
++    'Six simple vertical columns of equal width standing in a row, supporting one continuous horizontal floor line above them. The columns are drawn in walnut brown, the floor line in copper and heavier than everything else.',
++  ),
++  og(
++    'og-market',
++    'Cost inputs — three lines moving independently beneath a floor.',
++    'Three simple line-graph traces of different shapes running horizontally across the lower half of the frame, each at a different level and each moving independently. Above them, one clean horizontal floor-board line drawn heavier in copper. Keep the traces abstract with no axes, no gridlines and no values.',
++  ),
++  og(
++    'og-glossary',
++    'The glossary — a grid of small technical symbols.',
++    'An evenly spaced grid of small simple technical symbols on a plain background: a board cross-section, a moisture dial, a cupped board profile, an expansion gap detail, a stack of acclimating boards, a fastener at an angle. Six to eight symbols total, all at the same scale and weight, arranged with generous even spacing.',
++  ),
++  og(
++    'og-standards',
++    'The standards register — stacked document references beside a floor detail.',
++    'Three simple document sheet outlines stacked with a slight offset so all three edges are visible, positioned left of centre. Beside them at the same scale, one small floor cross-section detail. Keep all document surfaces blank with no ruled lines and no characters.',
++  ),
++  og(
++    'og-data',
++    'Data and figures — a simple bar series beside a range band.',
++    'On the left, four horizontal bars of differing lengths stacked vertically with even spacing. On the right, one wider soft-filled horizontal band with two shorter solid bars positioned above and below it at different horizontal offsets. Entirely abstract, no axes, no gridlines, no values.',
++  ),
++];
++
++export const getImages = (): SiteImage[] => IMAGES;
++export const getImage = (id: string): SiteImage | undefined => IMAGES.find((i) => i.id === id);
++export const imagesByStatus = (s: ImageStatus) => IMAGES.filter((i) => i.status === s);
++export const IMAGE_DIR = '/illustrations';
+diff --git a/apps/web/public/illustrations/README.md b/apps/web/public/illustrations/README.md
+new file mode 100644
+index 0000000..9da436f
+--- /dev/null
++++ b/apps/web/public/illustrations/README.md
+@@ -0,0 +1,21 @@
++# public/illustrations
++
++Drop the generated files here. One file per manifest entry, named exactly
++`<id>.webp` — the id is in `apps/web/lib/images.ts` and `verify-images.mjs`
++fails the build on any file here that no entry points at.
++
++    pnpm images:brief          print every prompt, id, size and alt text
++    pnpm verify:images         check the set
++
++Sizes: **1600×900** for everything except the five `og-*` cards, which are
++**1200×630**.
++
++Until a file arrives its slot renders a dashed placeholder at the exact final
++aspect ratio, so nothing on the page moves when you upload it. Add files in any
++order; there is no need to do them all at once.
++
++**The one rule:** every image here is a diagram or an illustration. Nothing
++generated may be presented as a photograph of Ecowoods work — that is enforced
++by the guard, and it is the same rule as never publishing a moisture reading
++nobody took. Photographs of real jobs are a separate shoot; see
++`audit/PHOTO_SHOT_LIST.md`.
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index c63bf32..ad12f36 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3549,3 +3549,86 @@ network.
+ The distinction worth keeping: **live where the data is external, static where
+ the content is ours.** A glossary definition that changed by itself would be a
+ defect, not a feature.
++
++---
++
++## 42. Illustrations
++
++### F-110 · The authority layer had 109 images and none of them were on it · P1
++
++`public/gallery` holds 36 files and `public/gallery-machines` holds 73. The
++framework, the guides, the glossary, the papers and every social card have
++**zero**. Everything built in the last ten patches is text, and the surfaces
++carrying the most explanatory weight — a cupped board, an expansion gap, three
++substrate assemblies side by side — are the ones a picture helps most.
++
++28 slots are now declared in `lib/images.ts`: six framework pillars, eight
++failure-mode and concept diagrams, three paper heroes, six guide illustrations,
++five social cards.
++
++### F-111 · The line a generated image may not cross · **P0 — enforced**
++
++`kind: 'photograph'` means a camera pointed at something real, and requires a
++`provenance` naming the shoot. A generated image may be a `diagram` or an
++`illustration`. **It may never be a photograph**, and `verify-images.mjs` fails
++the build on any entry that tries:
++
++```
++✗ "our-finished-floor" is declared kind: 'photograph' with no provenance.
++      A photograph is a camera pointed at something real and must name where it came from.
++✗ "our-finished-floor" is declared a photograph but carries a generation prompt.
++      It is one or the other.
++```
++
++This is not pedantry, and it is the reason the whole manifest exists. This
++corpus rests on the claim that everything traces to something real, and thirteen
++other guards enforce that in text. **A synthetic image presented as a finished
++Ecowoods floor is the same defect as a fabricated moisture reading** — more
++persuasive, easier to catch, and one reverse-image search from ending the
++authority position this architecture exists to build.
++
++Diagrams explain. Photographs testify. Generate the first; shoot the second.
++`audit/PHOTO_SHOT_LIST.md` still describes the second, and still has no files.
++
++### F-112 · Pending is a designed state, not a gap · P2
++
++The slots ship before the art. Each renders a dashed placeholder **at the exact
++final aspect ratio**, so the layout live today is the layout live after the
++upload — the only thing that changes is what fills the box. No page can show a
++broken image, and nothing reflows when files land, in any order, at any time.
++
++`width` and `height` come from the manifest on every entry and are always passed
++to `next/image`. A responsive image without intrinsic dimensions is the single
++most common cause of cumulative layout shift on a content site, and it is
++avoidable by construction rather than by discipline.
++
++### F-113 · No text inside any image, by rule · P1
++
++Every prompt ends with an explicit prohibition on text, lettering and numbers,
++and the guard checks for it. Labels live in the HTML beside the image instead.
++
++Four reasons, in order of weight: a screen reader cannot read a label baked into
++a picture; a crawler and an answer engine cannot index it; it cannot be
++translated; and image models misspell text reliably enough that it would need
++re-checking on every regeneration.
++
++The alt text carries the information rather than announcing the medium — the
++guard rejects any alt beginning "an image of", because a screen reader has
++already said "image" and the remaining words are the only ones that do work.
++
++### F-114 · One style contract, so 28 images read as one set · P2
++
++Every prompt ends with a shared `STYLE_SUFFIX` pinning the palette to the site's
++own tokens — cream `#faf6ef`, walnut `#3d2b1f`, copper `#c87e4f`, one sage only
++where a second material must be distinguished — plus flat vector, orthographic,
++2px linework, no gradients, no photorealism.
++
++Consistency here is not decoration. Twenty-eight images generated from
++twenty-eight independent prompts look like twenty-eight stock purchases; the
++same twenty-eight from one contract look like one hand drew them, which is the
++same rule already applied to the loading state, the type scale and the token
++layers.
++
++`pnpm images:brief` prints the whole set — id, size, kind, alt, caption and
++prompt — straight from the manifest, so the brief can never drift from the code
++that renders it.
+diff --git a/package.json b/package.json
+index ce98840..3f7cd53 100644
+--- a/package.json
++++ b/package.json
+@@ -23,7 +23,9 @@
+     "verify:changelog": "node scripts/verify-changelog.mjs",
+     "verify:market": "node scripts/verify-market.mjs",
+     "verify:freshness": "node scripts/verify-freshness.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness",
++    "verify:images": "node scripts/verify-images.mjs",
++    "images:brief": "node scripts/verify-images.mjs --prompts",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 46108db..9a45bda 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -128,6 +128,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-changelog.mjs ] && run "verify:changelog" node scripts/verify-changelog.mjs
+ [ -f scripts/verify-market.mjs ] && run "verify:market" node scripts/verify-market.mjs
+ [ -f scripts/verify-freshness.mjs ] && run "verify:freshness" node scripts/verify-freshness.mjs
++[ -f scripts/verify-images.mjs ] && run "verify:images" node scripts/verify-images.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-images.mjs b/scripts/verify-images.mjs
+new file mode 100644
+index 0000000..bb377f1
+--- /dev/null
++++ b/scripts/verify-images.mjs
+@@ -0,0 +1,189 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-images.mjs — the fourteenth guard.
++ *
++ * THE RULE IT EXISTS FOR
++ *
++ * A generated image may be a diagram or an illustration. It may never be a
++ * photograph. `kind: 'photograph'` requires a `provenance` naming a real shoot,
++ * and this guard fails the build on any entry that claims the camera without
++ * one.
++ *
++ * That line is the whole point. This corpus rests on the claim that everything
++ * traces to something real, and thirteen other guards enforce it in text. A
++ * synthetic image presented as a finished Ecowoods floor is the same defect as
++ * a fabricated moisture reading, and worse in consequence: more persuasive,
++ * easier to catch, and one reverse-image search from ending the authority
++ * position the whole architecture exists to build.
++ *
++ * Diagrams explain. Photographs testify. Generate the first; shoot the second.
++ *
++ * It also enforces the things that make an image usable rather than decorative:
++ * intrinsic dimensions on every entry (a responsive image without them is the
++ * most common cause of layout shift on a content site), alt text that describes
++ * the information rather than announcing itself, filenames that match their ids,
++ * and a no-text instruction in every prompt — a label baked into a picture is
++ * invisible to a screen reader, a translator and a crawler alike.
++ *
++ *   node scripts/verify-images.mjs
++ *   node scripts/verify-images.mjs --list
++ *   node scripts/verify-images.mjs --prompts    print the generation brief
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const MANIFEST = 'apps/web/lib/images.ts';
++const PUBLIC_DIR = path.join(ROOT, 'apps/web/public/illustrations');
++const LIST = process.argv.includes('--list');
++const PROMPTS = process.argv.includes('--prompts');
++
++if (!fs.existsSync(path.join(ROOT, MANIFEST))) {
++  console.error(`verify-images: ${MANIFEST} not found — run from the repo root.`);
++  process.exit(2);
++}
++const src = fs.readFileSync(path.join(ROOT, MANIFEST), 'utf8');
++const problems = [];
++const fail = (m) => problems.push(m);
++
++/* The manifest builds most entries through two helpers, so parse the helper
++   calls rather than object literals. Anything hand-written as a full literal is
++   picked up by the second pass below. */
++const entries = [];
++const helperRe = /\n  (d|og)\(\s*\n\s*'([^']+)',\s*\n\s*'((?:[^'\\]|\\.)*)',\s*\n\s*(?:'((?:[^'\\]|\\.)*)',\s*\n\s*)?'((?:[^'\\]|\\.)*)',\s*\n?(?:\s*'(diagram|illustration|photograph)',\s*\n?)?\s*\)/g;
++for (const m of src.matchAll(helperRe)) {
++  entries.push({
++    helper: m[1],
++    id: m[2],
++    alt: m[3],
++    caption: m[1] === 'd' ? m[4] : undefined,
++    prompt: m[5],
++    kind: m[6] ?? (m[1] === 'og' ? 'illustration' : 'diagram'),
++  });
++}
++// Full object literals, if any are ever added by hand.
++for (const b of src.split(/\n  \{\n/).slice(1)) {
++  const one = (k) => (b.match(new RegExp(`\\b${k}: '([^']*)'`)) || [])[1];
++  const id = one('id');
++  if (id && !entries.some((e) => e.id === id)) {
++    entries.push({
++      helper: 'literal',
++      id,
++      alt: one('alt'),
++      kind: one('kind'),
++      status: one('status'),
++      provenance: one('provenance'),
++      prompt: one('prompt'),
++    });
++  }
++}
++
++if (!entries.length) fail('No image entries parsed out of the manifest — the file shape changed.');
++
++const W = (src.match(/^const W = (\d+);/m) || [])[1];
++const H = (src.match(/^const H = (\d+);/m) || [])[1];
++const OGW = (src.match(/^const OG_W = (\d+);/m) || [])[1];
++const OGH = (src.match(/^const OG_H = (\d+);/m) || [])[1];
++if (!W || !H || !OGW || !OGH) fail('Manifest does not declare intrinsic dimensions (W/H/OG_W/OG_H).');
++
++const seen = new Set();
++for (const e of entries) {
++  if (!/^[a-z0-9-]+$/.test(e.id)) fail(`image id is not url-safe: ${e.id}`);
++  if (seen.has(e.id)) fail(`duplicate image id: ${e.id}`);
++  seen.add(e.id);
++
++  /* THE LINE. */
++  if (e.kind === 'photograph' && !e.provenance) {
++    fail(
++      `"${e.id}" is declared kind: 'photograph' with no provenance.\n` +
++        `      A photograph is a camera pointed at something real and must name where it came from.\n` +
++        `      A generated image is a diagram or an illustration — never a photograph. This is the\n` +
++        `      same rule as never publishing a moisture reading nobody took.`,
++    );
++  }
++  if (e.kind === 'photograph' && e.prompt) {
++    fail(
++      `"${e.id}" is declared a photograph but carries a generation prompt. It is one or the other.`,
++    );
++  }
++  if (!['diagram', 'illustration', 'photograph'].includes(e.kind)) {
++    fail(`"${e.id}": kind "${e.kind}" is not diagram | illustration | photograph`);
++  }
++
++  if (!e.alt || e.alt.length < 20) {
++    fail(`"${e.id}": alt text is missing or too short to describe the information in the image`);
++  }
++  if (e.alt && /^(an? )?(image|picture|photo|illustration|diagram) (of|showing)/i.test(e.alt)) {
++    fail(
++      `"${e.id}": alt text starts by announcing itself ("${e.alt.slice(0, 40)}…").\n` +
++        `      A screen reader already says "image". Describe the information, not the medium.`,
++    );
++  }
++  if (e.kind !== 'photograph') {
++    if (!e.prompt) fail(`"${e.id}": generated image with no prompt. The prompt is its provenance.`);
++    else if (!/NO TEXT|NO LETTERING/i.test(`${e.prompt}${src}`)) {
++      fail(`"${e.id}": prompt does not forbid text in the image`);
++    }
++  }
++}
++
++/* Published entries must actually exist; pending ones must not be referenced as
++   if they were there. Both directions matter — a file on disk that no manifest
++   entry points at is dead weight nobody will ever remove. */
++const statusOf = (id) => {
++  const i = src.indexOf(`'${id}'`);
++  const after = src.slice(i, i + 600);
++  return (after.match(/status: '(pending|published)'/) || [])[1] ?? 'pending';
++};
++const onDisk = fs.existsSync(PUBLIC_DIR)
++  ? fs.readdirSync(PUBLIC_DIR).filter((f) => /\.(webp|png|jpg|jpeg|avif)$/i.test(f))
++  : [];
++const known = new Set(entries.map((e) => `${e.id}.webp`));
++for (const f of onDisk) {
++  if (!known.has(f)) {
++    fail(`public/illustrations/${f} is not referenced by any manifest entry — remove it or add the entry`);
++  }
++}
++const DEFAULT_PENDING = /status: 'pending'/.test(src);
++for (const e of entries) {
++  const st = DEFAULT_PENDING ? 'pending' : statusOf(e.id);
++  if (st === 'published' && !onDisk.includes(`${e.id}.webp`)) {
++    fail(`"${e.id}" is marked published but public/illustrations/${e.id}.webp does not exist`);
++  }
++}
++
++/* ── output ──────────────────────────────────────────────────────────────── */
++if (PROMPTS) {
++  console.log('\n# Ecowoods illustration brief\n');
++  console.log(`# ${entries.length} images. Save each as public/illustrations/<id>.webp\n`);
++  for (const e of entries) {
++    const dims = e.helper === 'og' ? `${OGW}x${OGH}` : `${W}x${H}`;
++    console.log(`\n## ${e.id}.webp  (${dims}, ${e.kind})`);
++    console.log(`ALT: ${e.alt}`);
++    if (e.caption) console.log(`CAPTION: ${e.caption}`);
++    console.log(`PROMPT: ${e.prompt}`);
++  }
++  console.log('');
++}
++
++if (LIST) {
++  console.log('\nImage slots\n');
++  for (const e of entries) {
++    const here = onDisk.includes(`${e.id}.webp`) ? 'on disk' : 'pending';
++    console.log(`  ${e.kind.padEnd(13)} ${e.id.padEnd(30)} ${here}`);
++  }
++  console.log('');
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} image problem(s):\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++const pending = entries.filter((e) => !onDisk.includes(`${e.id}.webp`)).length;
++console.log(
++  `✓ images verified — ${entries.length} slot(s), ${entries.length - pending} on disk, ${pending} pending, ` +
++    `0 generated images claiming to be photographs`,
++);
