@@ -1,0 +1,249 @@
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 6dbc1f7..8f8162c 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3968,3 +3968,62 @@ That is a Vercel project setting (Root Directory), not a code change. Either
+ point it at `apps/web`, or the PDFs go to the repo-root `public/` where
+ `qr-app.jpg` demonstrably works. **Do not publish the PDFs until one of those is
+ true.**
++
++---
++
++## 48. Nothing in this repository has ever looked at the website
++
++### F-134 · One failure shape, three times, and no check could see any of them · **P0 — process**
++
++| | What was wrong | What every guard said |
++|---|---|---|
++| **F-107** | `/standards` read "0 days ago" forever — statically rendered, so `new Date()` froze at deploy | source correct |
++| **F-129** | 28 diagrams shipped as code, the files left behind by `git clean -fd` | all green |
++| **F-131** | `apps/web/public` has never been served on this host; `/icon-192.png` has 404'd there since long before this work | files present, committed, correct |
++
++Three separate defects. One shape: **a fault that lives in the gap between the
++repository and what a browser actually receives.** Fourteen guards read the
++source tree. Not one of them can see that gap, and no amount of adding more
++source-reading guards ever will.
++
++Each time, the audit printed a wall of green while production was broken, and
++each time the failure was found by a person looking at the site — which is not a
++process, it is luck with a human attached.
++
++### F-135 · `verify-live.sh` — the first check that reads production · **P0**
++
++It fetches the deployed site. Fourteen routes, eight machine surfaces, and then
++the one that matters:
++
++**It pulls an `_next/image` URL out of the rendered `/framework` HTML and fetches
++that.** Not "does a file exist in the repo" — *does the thing the page points at
++come back*. That single check would have caught all three failures above.
++
++It also asserts `/icon-192.png` is **still 404**, as a stated fact rather than
++something to rediscover. The day that line starts warning, the Vercel Root
++Directory has been fixed and the paper PDFs can go back to `apps/web/public`.
++
++Cache-busted on every request, because a CDN handing back a copy from before the
++deploy under test is the one way a live check can lie.
++
++`ship.sh` now ends by printing `vercel --prod && bash scripts/verify-live.sh`
++with the reason attached, and `audit-all.sh` gains a section 9 that says plainly
++that everything above it reads the repository and cannot see production.
++
++### Two bugs in the checker itself, both found by testing it rather than trusting it
++
++**`curl … || echo 000` produced `000000`.** `curl` already prints `000` when it
++cannot connect; the fallback concatenated onto it, and every unreachable host
++was reported as a status matching nothing rather than as unreachable.
++
++**The image-URL extractor captured a srcset descriptor.** Next renders both
++`src` and `srcset`, and a srcset entry ends `…&q=75 1x`. A pattern excluding
++only quotes swallowed the ` 1x` and would have fetched a URL that cannot exist —
++a live check that fails on every correct deploy is worse than no live check,
++because the first thing anyone does with a boy-who-cried-wolf gate is stop
++reading it.
++
++Both were caught by running the extractor against real rendered markup. That is
++the same lesson as F-97, where a truncated SVG label was only visible by
++rendering the figure: **a verification tool has to be verified against the real
++thing, or it is just another assertion.**
+diff --git a/package.json b/package.json
+index 3f7cd53..e7eb770 100644
+--- a/package.json
++++ b/package.json
+@@ -24,6 +24,7 @@
+     "verify:market": "node scripts/verify-market.mjs",
+     "verify:freshness": "node scripts/verify-freshness.mjs",
+     "verify:images": "node scripts/verify-images.mjs",
++    "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images",
+     "audit": "bash scripts/audit-all.sh",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 9a45bda..3097d42 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -227,6 +227,13 @@ else
+ fi
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
++# ─────────────────────────────────────────────────────────────────────────────
++section "9 · production"
++printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "not checked here" "bash scripts/verify-live.sh"
++printf '        %s\n' "Everything above reads this repository. Nothing above can see whether the"
++printf '        %s\n' "deployed site actually serves what it describes — three separate defects"
++printf '        %s\n' "(F-107, F-129, F-131) passed every check here while production was broken."
++
+ printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
+ PASSES=0
+ for r in "${RESULTS[@]}"; do [ "${r%%|*}" = PASS ] && PASSES=$((PASSES+1)); done
+diff --git a/scripts/ship.sh b/scripts/ship.sh
+index 9d474ba..4f17430 100755
+--- a/scripts/ship.sh
++++ b/scripts/ship.sh
+@@ -131,7 +131,12 @@ printf '     %-34s %s\n' "tracked .patch files on main" "$REMOTE_PATCHES  (want
+ 
+ printf '\n\033[32m✓ on origin/main.\033[0m\n'
+ printf '  Deploy NOW, and only because this succeeded:\n\n'
+-printf '    vercel --prod\n\n'
++printf '    vercel --prod && bash scripts/verify-live.sh\n\n'
++printf '  The second half is not optional. Fourteen guards read this repository and\n'
++printf '  every one of them can pass while the deployed site is broken — that has now\n'
++printf '  happened three times (F-107, F-129, F-131). verify-live.sh fetches the real\n'
++printf '  site, pulls an image URL out of the rendered HTML, and asks whether the bytes\n'
++printf '  come back. It is the only check here that can see a delivery failure.\n\n'
+ # Why the emphasis: `bash ship.sh ... ` and `vercel --prod` on two lines of a
+ # pasted block are two independent commands. When this script exits non-zero the
+ # shell runs vercel anyway, and a half-applied tree goes to production. That is
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+new file mode 100755
+index 0000000..fe3c1ee
+--- /dev/null
++++ b/scripts/verify-live.sh
+@@ -0,0 +1,128 @@
++#!/usr/bin/env bash
++#
++# scripts/verify-live.sh — the first check in this repository that reads
++# PRODUCTION instead of the repository.
++#
++# WHY THIS EXISTS
++#
++# Fourteen guards read the source tree. Every one of them can pass while the
++# deployed site is broken, and three times now that is exactly what happened:
++#
++#   F-107  the staleness clock read "0 days ago" forever — source correct,
++#          render wrong, because the page was statically built.
++#   F-129  28 diagrams shipped as code with the files left behind — every guard
++#          green, every image a broken icon.
++#   F-131  apps/web/public has never been served on this host. /icon-192.png has
++#          404'd there since long before any of this work. The files were on
++#          disk, committed, correct, and unreachable.
++#
++# One shape, three times: a defect that lives in the gap between the repository
++# and what a browser actually receives. No amount of reading the repository
++# finds it. Something has to fetch the site.
++#
++# WHAT IT CHECKS, AND WHY EACH ONE
++#
++#   1. Key routes return 200. Cheap, and catches a build that deployed a 404.
++#   2. AN ACTUAL RENDERED IMAGE. It fetches /framework, pulls the first
++#      _next/image URL out of the HTML, and fetches THAT. This is the check that
++#      would have caught all three failures above: it does not ask whether a
++#      file exists, it asks whether the thing the page points at comes back.
++#   3. The machine surfaces — sitemap, feed, llms.txt, the JSON APIs — because
++#      those are read by crawlers that will never report a problem to anyone.
++#   4. That apps/web/public is still not served, stated as a known fact rather
++#      than discovered again. When that changes, this line changes with it.
++#
++#   bash scripts/verify-live.sh                      # https://ecowoods.ca
++#   bash scripts/verify-live.sh https://preview-url  # a deploy preview
++#
++# Exit code is the number of failures, so it can gate a release.
++#
++set -uo pipefail
++
++BASE="${1:-https://ecowoods.ca}"
++BASE="${BASE%/}"
++CB="cb=$(date +%s)"
++
++GRN=$'\033[32m'; RED=$'\033[31m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BOLD=$'\033[1m'; OFF=$'\033[0m'
++FAILED=0
++
++printf '\n%sLIVE CHECK%s  %s\n\n' "$BOLD" "$OFF" "$BASE"
++
++# code <url> — HTTP status, following redirects, with a cache-buster so a CDN
++# cannot hand back a copy from before the deploy being tested.
++code() {
++  # curl already prints 000 when it cannot connect. Adding `|| echo 000` on top
++  # concatenates the two and yields "000000", which matches no expected status
++  # and reports every unreachable host as a mystery rather than as unreachable.
++  local out
++  out="$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 20 "$1" 2>/dev/null)"
++  printf '%s' "${out:-000}"
++}
++
++check() {
++  local label="$1" url="$2" want="${3:-200}"
++  local got; got="$(code "$url")"
++  if [ "$got" = "$want" ]; then
++    printf '  %sPASS%s  %-34s %s\n' "$GRN" "$OFF" "$label" "$got"
++  else
++    printf '  %sFAIL%s  %-34s got %s, want %s\n' "$RED" "$OFF" "$label" "$got" "$want"
++    printf '        %s\n' "$url"
++    FAILED=$((FAILED + 1))
++  fi
++}
++
++printf '%s── pages %s\n' "$BOLD" "$OFF"
++for p in / /framework /framework/assess /guides /glossary /papers /resources /library /data /market /whats-new /standards /authority /technical-library; do
++  check "$p" "$BASE$p?$CB"
++done
++
++printf '\n%s── machine surfaces %s\n' "$BOLD" "$OFF"
++for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/health; do
++  check "$p" "$BASE$p?$CB"
++done
++
++printf '\n%s── a real rendered image %s\n' "$BOLD" "$OFF"
++# THE check. Everything above proves pages exist; this proves the bytes a page
++# asks for actually come back. Pull the first optimised image URL straight out
++# of the rendered HTML and fetch it.
++HTML="$(curl -s -L --max-time 20 "$BASE/framework?$CB" 2>/dev/null || true)"
++# Stop at a quote OR a space. Next renders both `src` and `srcset`, and a
++# srcset entry is followed by a descriptor — "…&q=75 1x" — so a pattern that
++# only excludes quotes captures the " 1x" too and fetches a URL that cannot
++# exist. Caught by running the extractor against real rendered markup instead of
++# trusting it.
++IMG="$(printf '%s' "$HTML" | grep -o '/_next/image?url=[^" ]*' | head -1 | sed 's/&amp;/\&/g')"
++
++if [ -z "$IMG" ]; then
++  printf '  %sFAIL%s  %-34s no /_next/image URL in the HTML\n' "$RED" "$OFF" "diagram on /framework"
++  printf '        The page rendered without an optimised image. Either the illustration\n'
++  printf '        is not imported (see scripts/gen-illustration-imports.mjs) or it is being\n'
++  printf '        referenced by a public/ path, which this host does not serve. See F-131.\n'
++  FAILED=$((FAILED + 1))
++else
++  check "diagram bytes" "$BASE$IMG"
++  printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "resolved to" "$(printf '%s' "$IMG" | cut -c1-64)"
++fi
++
++printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"
++# apps/web/public is not served on this host. This asserts the fact rather than
++# leaving it to be rediscovered: /icon-192.png has lived there since long before
++# any of the illustration work and has never been reachable. If this line starts
++# FAILING, the Vercel Root Directory was fixed — delete this block and move the
++# paper PDFs back into apps/web/public.
++GOT="$(code "$BASE/icon-192.png?$CB")"
++if [ "$GOT" = "404" ]; then
++  printf '  %s····%s  %-34s still 404 — apps/web/public unserved, as expected\n' "$DIM" "$OFF" "/icon-192.png"
++else
++  printf '  %sWARN%s  %-34s now %s — apps/web/public IS being served\n' "$YEL" "$OFF" "/icon-192.png" "$GOT"
++  printf '        The root cause behind F-131 is fixed. Remove this block, and the paper\n'
++  printf '        PDFs can go to apps/web/public/papers/ as originally intended.\n'
++fi
++
++printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
++if [ "$FAILED" -eq 0 ]; then
++  printf '  %s✓ live and serving%s\n\n' "$GRN" "$OFF"
++else
++  printf '  %s✗ %d live failure(s)%s — the deploy is not correct, whatever the build said\n\n' "$RED" "$FAILED" "$OFF"
++fi
++exit "$FAILED"
