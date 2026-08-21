@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getStandards, stalenessDays, REVIEW_INTERVAL_DAYS } from '@/lib/standards';
 import { pillarById, allCriteria } from '@/lib/framework';
 import { SITE_URL } from '@/lib/seo-data';
+import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
       'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
     type: 'website',
     url: `${SITE_URL}/standards`,
-    images: [{ url: '/illustrations/og-standards.webp', width: 1200, height: 630 }],
+    images: [{ url: illustrationImage('og-standards')?.src ?? '/illustrations/og-standards.webp', width: 1200, height: 630 }],
   },
 };
 

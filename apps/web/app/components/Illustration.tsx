@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { getImage, IMAGE_DIR } from '@/lib/images';
+import { illustrationImage } from '../data/illustration-images';
 
 /**
  * Illustration — one image slot, rendered from the manifest.
@@ -39,6 +40,16 @@ export function Illustration({
   const img = getImage(id);
   if (!img) return null;
 
+  /* The bytes come from a static import, not from a public/ URL. This
+     deployment does not serve apps/web/public — /icon-192.png has 404'd there
+     since long before this work, while /qr-app.jpg in the REPO-ROOT public/
+     returns 200. Every diagram written to apps/web/public/illustrations was
+     therefore a broken-image icon on the live site while every guard passed,
+     because the file was genuinely on disk and genuinely committed.
+     data/floor-images.ts has carried this same workaround, and said so in its
+     first line, since long before I arrived. See F-131. */
+  const asset = illustrationImage(id);
+
   const ratio = `${img.width} / ${img.height}`;
 
   if (img.status === 'pending') {
@@ -63,21 +74,21 @@ export function Illustration({
   return (
     <figure className={`ill ${className}`.trim()}>
       <div className="ill-frame" style={{ aspectRatio: ratio }}>
-        <Image
-          src={`${IMAGE_DIR}/${img.file}`}
-          alt={img.alt}
-          width={img.width}
-          height={img.height}
-          sizes={sizes}
-          priority={priority}
-          className="ill-img"
-        />
+        {asset ? (
+          <Image
+            src={asset}
+            alt={img.alt}
+            sizes={sizes}
+            priority={priority}
+            className="ill-img"
+          />
+        ) : null}
       </div>
       <figcaption className="ill-caption">
         {img.caption}
         <a
           className="ill-full"
-          href={`${IMAGE_DIR}/${img.file}`}
+          href={asset?.src ?? `${IMAGE_DIR}/${img.file}`}
           target="_blank"
           rel="noopener"
         >

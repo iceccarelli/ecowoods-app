@@ -4,6 +4,7 @@ import { getFigures } from '@/lib/figures';
 import { getPaper } from '@/lib/papers';
 import { FigureChart } from '../components/Figure';
 import { SITE_URL } from '@/lib/seo-data';
+import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
       'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
     type: 'website',
     url: `${SITE_URL}/data`,
-    images: [{ url: '/illustrations/og-data.webp', width: 1200, height: 630 }],
+    images: [{ url: illustrationImage('og-data')?.src ?? '/illustrations/og-data.webp', width: 1200, height: 630 }],
   },
 };
 

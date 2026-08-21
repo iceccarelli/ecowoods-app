@@ -3900,3 +3900,71 @@ the source was correct and only the render was wrong, and F-41 before it.
 
 Source-of-truth checks cannot see delivery. The only defences are keeping the
 artifacts in the source of truth, and fetching the live URL afterwards.
+
+---
+
+## 47. `apps/web/public` has never been served
+
+### F-131 · The images were committed, correct, and still 404 · **P0 — infrastructure**
+
+After patch 48 pushed 28 tracked WebP files, `/illustrations/pillar-moisture.webp`
+still returned **404**. So the next question was whether the path was wrong or
+the serving was.
+
+Three fetches settled it:
+
+| URL | Lives in | Result |
+|---|---|---|
+| `/illustrations/pillar-moisture.webp` | `apps/web/public/` | **404** |
+| `/icon-192.png` | `apps/web/public/` | **404** |
+| `/qr-app.jpg` | **repo-root** `public/` | **200** |
+
+`icon-192.png` has been in `apps/web/public` since long before any of this work.
+It has never been reachable. **This deployment serves `public/` from the
+repository root, not from `apps/web/public/`** — so the entire `apps/web/public`
+tree, every file in it, has been dead the whole time.
+
+**This was already known in the codebase and I did not read it.**
+`app/data/floor-images.ts` opens with:
+
+> `// AUTO-GENERATED — static image imports so Next bundles the 36 photos into`
+> `// _next/static (served everywhere, incl. Vercel). No reliance on public/ serving.`
+
+Whoever wrote that hit this exact wall and worked around it. 108 photographs
+render on the live site for precisely that reason. The 28 diagrams were the only
+images on the site written the other way, and they were the only ones broken.
+
+### F-132 · Why fifteen guards could not see it · P1
+
+`verify-images.mjs` checked that each file existed on disk, that its bytes were a
+readable WebP, that its dimensions matched the manifest, that its link resolved,
+and that nothing generated claimed to be a photograph. Every one of those was
+true. The file was there. It was correct. It was committed.
+
+**The defect was that the file's location is not a URL on this host** — a fact
+that exists in the deployment, not in the repository. Same class as F-107 (the
+frozen clock: source correct, render wrong) and F-129 (code shipped, assets
+didn't). Source-of-truth checks cannot see delivery.
+
+The guard now closes the specific hole: every manifest entry must have a static
+import in `data/illustration-images.ts`, and the import file must not carry
+entries the manifest does not. Removing one import reproduces the failure.
+
+### F-133 · The fix, and the thing it does not fix · **P0**
+
+`scripts/gen-illustration-imports.mjs` generates 28 static imports; the
+components render from `StaticImageData` and the OG tags use the bundled `.src`.
+The bytes go into `_next/static`, which demonstrably works — it is where all 108
+working photographs already live. A static import also carries its own intrinsic
+width and height, so `next/image` reserves the right box without the manifest.
+
+**What this does not fix:** `apps/web/public` is still dead. That matters
+immediately for one thing — **when the corrected paper PDFs are published to
+`apps/web/public/papers/`, all three download buttons will 404 exactly like the
+diagrams did.** `pdfIsPublished()` checks the filesystem, so the button will
+render, and the file will not be reachable.
+
+That is a Vercel project setting (Root Directory), not a code change. Either
+point it at `apps/web`, or the PDFs go to the repo-root `public/` where
+`qr-app.jpg` demonstrably works. **Do not publish the PDFs until one of those is
+true.**

@@ -261,6 +261,37 @@ for (const e of entries) {
   }
 }
 
+/* ── every slot must be statically imported, not served from public/ ────── */
+/**
+ * The images are bundled, not served — this deployment does not serve
+ * apps/web/public (F-131). A manifest entry with no corresponding import in
+ * data/illustration-images.ts renders as a broken-image icon in production
+ * while every other check here passes, because the file genuinely exists on
+ * disk and is genuinely committed. That is exactly what happened.
+ */
+{
+  const IMPORTS = 'apps/web/app/data/illustration-images.ts';
+  if (!fs.existsSync(path.join(ROOT, IMPORTS))) {
+    fail(`${IMPORTS} is missing. Run: node scripts/gen-illustration-imports.mjs`);
+  } else {
+    const imports = fs.readFileSync(path.join(ROOT, IMPORTS), 'utf8');
+    for (const e of entries) {
+      if (!imports.includes(`'${e.id}': `)) {
+        fail(
+          `"${e.id}" has no static import in ${IMPORTS}.\n` +
+            `      public/ is not served on this deployment, so an un-imported image is a broken\n` +
+            `      icon in production. Run: node scripts/gen-illustration-imports.mjs`,
+        );
+      }
+    }
+    for (const m of imports.matchAll(/^  '([a-z0-9-]+)': /gm)) {
+      if (!entries.some((e) => e.id === m[1])) {
+        fail(`${IMPORTS} imports "${m[1]}", which is not in the manifest — regenerate it`);
+      }
+    }
+  }
+}
+
 /* ── output ──────────────────────────────────────────────────────────────── */
 if (PROMPTS) {
   console.log('\n# Ecowoods illustration brief\n');

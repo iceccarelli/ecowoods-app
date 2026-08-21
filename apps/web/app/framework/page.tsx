@@ -12,6 +12,7 @@ import {
 import { getGuides } from '@/lib/guides';
 import { Illustration } from '../components/Illustration';
 import { SITE_URL } from '@/lib/seo-data';
+import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
       'Six pillars and twenty-seven criteria for judging a hardwood installation. Publicly versioned, fully sourced, free to cite.',
     type: 'article',
     url: `${SITE_URL}/framework`,
-    images: [{ url: '/illustrations/og-framework.webp', width: 1200, height: 630 }],
+    images: [{ url: illustrationImage('og-framework')?.src ?? '/illustrations/og-framework.webp', width: 1200, height: 630 }],
   },
 };
 

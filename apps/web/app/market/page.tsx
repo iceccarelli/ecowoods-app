@@ -4,6 +4,7 @@ import { getSeries, fetchSeries, VALET_BASE } from '@/lib/market';
 import { Sparkline } from '../components/Sparkline';
 import { getPaper } from '@/lib/papers';
 import { SITE_URL } from '@/lib/seo-data';
+import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
       'Forestry, energy and FX: the three inputs that move the price of a hardwood floor, live from the Bank of Canada.',
     type: 'website',
     url: `${SITE_URL}/market`,
-    images: [{ url: '/illustrations/og-market.webp', width: 1200, height: 630 }],
+    images: [{ url: illustrationImage('og-market')?.src ?? '/illustrations/og-market.webp', width: 1200, height: 630 }],
   },
 };
 

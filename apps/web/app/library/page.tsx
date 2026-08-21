@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getImages, IMAGE_DIR } from '@/lib/images';
+import { illustrationImage } from '../data/illustration-images';
 import { floors, floorImages } from '../data/floors';
 import { machines, machineImages } from '../data/machines';
 import { RotatingTile } from '../components/RotatingTile';
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
       'Technical cross-sections, the floor collection, and the machines — every image indexed and linked to what explains it.',
     type: 'website',
     url: `${SITE_URL}/library`,
-    images: [{ url: '/illustrations/og-glossary.webp', width: 1200, height: 630 }],
+    images: [{ url: illustrationImage('og-glossary')?.src ?? '/illustrations/og-glossary.webp', width: 1200, height: 630 }],
   },
 };
 
@@ -134,7 +135,7 @@ export default function LibraryPage() {
                     <Link href={d.href ?? '/resources'} className="lib-card">
                       <span className="lib-shot">
                         <Image
-                          src={`${IMAGE_DIR}/${d.file}`}
+                          src={illustrationImage(d.id) ?? `${IMAGE_DIR}/${d.file}`}
                           alt={d.alt}
                           width={d.width}
                           height={d.height}
