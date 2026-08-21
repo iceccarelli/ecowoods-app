@@ -20,6 +20,21 @@ import { SchemaScript } from '@/lib/schema/components';
  * a list, because a list anyone can copy and only a maintained one stays true.
  */
 
+/**
+ * Rendered daily, not once.
+ *
+ * This page computes "N days ago" from new Date(). Without a revalidate it is
+ * statically rendered at build, that call is frozen at deploy time, and the
+ * counter reads "0 days ago" forever — which it did, live, for exactly as long
+ * as it took someone to ask whether the site actually updates itself.
+ *
+ * The staleness column IS the product of this register. A frozen one asserts a
+ * currency it does not have, which is the precise failure the page exists to
+ * prevent, reproduced inside the page. 86400 = one day: fine-grained enough for
+ * a day counter, cheap enough to be free.
+ */
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Standards Register | EcoWoods',
   description:

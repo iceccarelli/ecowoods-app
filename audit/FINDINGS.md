@@ -3459,3 +3459,93 @@ guess and spend a patch building the wrong thing, I asked, with the options and
 what each would produce. The answer — **input commodity costs, live from public
 APIs** — is what is built above. Asking cost one message; guessing would have
 cost a patch and been discovered only after it shipped.
+
+---
+
+## 41. The clock that was frozen
+
+### F-107 · `/standards` reported "0 days ago" on every entry, and would have forever · **P0**
+
+The register exists to publish, for every external document it tracks, **when we
+last checked it**. That column is the entire product — anyone can copy a list of
+standards; only a maintained one stays true.
+
+It shipped statically rendered. `new Date()` was therefore evaluated once, at
+deploy, and the live page read:
+
+```
+Last verified 2026-08-20 · 0 days ago     ASTM F2170-19a
+Last verified 2026-08-20 · 0 days ago     ASTM F1869
+Last verified 2026-08-20 · 0 days ago     ASTM F710-21
+Last verified 2026-08-20 · 0 days ago     NWFA
+```
+
+In six months, without a deploy, it would still have said 0 days. **The register
+built to prevent silent rot was silently rotting**, and the 180-day review
+warning could never fire, because the arithmetic behind it was frozen at zero.
+
+`/whats-new` had the same defect in its "N entries due for re-verification"
+count, and `sitemap.ts` in every `lastModified` it stamps with `new Date()`.
+
+All three now declare `revalidate = 86400`.
+
+**None of the twelve guards could have caught this.** Every one of them reads
+source code, and the source was correct — the defect existed only at runtime, in
+the difference between when a page is built and when it is read. It was found by
+being asked whether the site actually updates itself.
+
+### F-108 · The thirteenth guard reads rendering mode, not code · **P1**
+
+`verify-freshness.mjs` states the rule: **if a file computes a duration from the
+current time and renders it, it must declare `revalidate`.** Next renders
+statically by default, and "static" and "correct" stop being the same thing the
+moment a page's output depends on *when it is read* rather than on *what it
+contains*.
+
+It matches elapsed-time arithmetic specifically — `Date.now() -`,
+`stalenessDays(`, `ageDays` — and deliberately not a bare `new Date()`, which
+appears in every schema block as a timestamp rather than a duration and is
+perfectly fine baked. Only entry points are checked, since a helper in `lib/`
+inherits its caller's rendering mode. Private trees are excluded, not
+special-cased.
+
+Reverting the fix reproduces the finding exactly; restoring it clears.
+
+### F-109 · `/api/health` — because a silent degradation is the real risk · **P1**
+
+Everything on this site that claims to be live depends on one external source.
+If the Bank of Canada renames a series or drops anonymous access, `/market`
+degrades to em dashes — correctly, by design (F-104) — and **nobody finds out**,
+because the failure is silent and the page still renders.
+
+A site that looks self-updating and has quietly stopped is worse than one that
+never claimed to.
+
+`/api/health` probes the real upstream and reports `ok` / `degraded` / `down` as
+a single top-level string, so a monitor is one comparison rather than a JSON
+walk. It returns **HTTP 503** when every series is down, which is what makes it
+usable by an uptime checker that only reads status codes.
+
+It judges the two frequencies separately. A monthly index is *expected* to lag —
+a July figure in late August is normal, not a fault — while more than four days
+without a new FX observation spans a long weekend and means something is wrong.
+One threshold for both would either cry wolf on the monthly series or never fire
+on the daily one.
+
+It also reports which standards-register entries are past their review interval,
+because that is the other thing here that rots on a calendar rather than on a
+network.
+
+### What is live, and what is not — measured
+
+| Surface | Updates | How |
+|---|---|---|
+| `/market`, `/api/market` | hourly | ISR, verified live: `generatedAt` moved and FX advanced 08-19 → 08-20 without a deploy |
+| `/api/health` | 5 min | ISR |
+| `/standards`, `/whats-new`, `/sitemap.xml` | daily | ISR — **as of this patch** |
+| `/data`, `/glossary`, `/framework`, `/guides`, `/papers` | on deploy | correct: their content is editorial and should not change unattended |
+| `/feed.xml`, `/llms.txt`, `/ai.txt`, `/api/knowledge` | on deploy | correct, same reason |
+
+The distinction worth keeping: **live where the data is external, static where
+the content is ours.** A glossary definition that changed by itself would be a
+defect, not a feature.

@@ -15,6 +15,13 @@ import { SchemaScript } from '@/lib/schema/components';
  * its own inputs and loses, because the reader can always go upstream.
  */
 
+/**
+ * Rendered daily. This page counts how many standards are past their review
+ * interval, which is a function of today's date — frozen at build without this.
+ * See the note in app/standards/page.tsx.
+ */
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: "What's New | EcoWoods",
   description:

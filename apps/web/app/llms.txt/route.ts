@@ -76,6 +76,8 @@ export async function GET() {
   lines.push(`- What moves a hardwood quote (live commodity inputs, Bank of Canada): ${SITE_URL}/market`);
   lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
+  lines.push(`- Live commodity inputs (Bank of Canada), JSON: ${SITE_URL}/api/market`);
+  lines.push(`- Service health — are the live sources responding: ${SITE_URL}/api/health`);
   lines.push(`- Citation guide: ${SITE_URL}/authority`);
   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
   lines.push('');

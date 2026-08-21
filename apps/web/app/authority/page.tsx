@@ -87,6 +87,18 @@ const MACHINE_FILES = [
   { href: '/sitemap.xml', name: 'sitemap.xml', blurb: 'Every indexable route with its last-modified date' },
   { href: '/feed.xml', name: 'feed.xml', blurb: 'RSS 2.0 over every dated publication, newest first' },
   {
+    href: '/api/market',
+    name: 'api/market',
+    blurb:
+      'The commodity inputs behind an installed floor — forestry, energy and USD/CAD — live from the Bank of Canada, with the mechanism for each.',
+  },
+  {
+    href: '/api/health',
+    name: 'api/health',
+    blurb:
+      'Whether the live sources are actually responding, and which register entries are due for re-verification. Returns 503 when every upstream series is down.',
+  },
+  {
     href: '/api/knowledge',
     name: 'api/knowledge',
     blurb:

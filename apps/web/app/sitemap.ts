@@ -13,6 +13,13 @@ import { getTerms } from '@/lib/glossary';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
+/**
+ * Regenerated daily. Every lastModified below that is `new Date()` is a claim
+ * about freshness; baked once at build, that claim stops being true the moment
+ * anything else on the site changes without a deploy.
+ */
+export const revalidate = 86400;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all articles and case studies
   const articles = await getArticles();

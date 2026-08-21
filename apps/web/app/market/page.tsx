@@ -72,6 +72,10 @@ export default async function MarketPage() {
             <span>
               <a href="/api/market">JSON</a>
             </span>
+            <span aria-hidden="true">·</span>
+            <span>
+              <a href="/api/health">Status</a>
+            </span>
           </p>
           <p className="fw-privacy">
             Published so a price change can be <em>evaluated</em> rather than suspected. This is not
