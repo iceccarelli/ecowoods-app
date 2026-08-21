@@ -1,0 +1,233 @@
+diff --git a/apps/web/app/data/page.tsx b/apps/web/app/data/page.tsx
+index 4366ee7..008ce57 100644
+--- a/apps/web/app/data/page.tsx
++++ b/apps/web/app/data/page.tsx
+@@ -31,6 +31,7 @@ export const metadata: Metadata = {
+       'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
+     type: 'website',
+     url: `${SITE_URL}/data`,
++    images: [{ url: '/illustrations/og-data.webp', width: 1200, height: 630 }],
+   },
+ };
+ 
+diff --git a/apps/web/app/framework/page.tsx b/apps/web/app/framework/page.tsx
+index c407704..3f01310 100644
+--- a/apps/web/app/framework/page.tsx
++++ b/apps/web/app/framework/page.tsx
+@@ -40,6 +40,7 @@ export const metadata: Metadata = {
+       'Six pillars and twenty-seven criteria for judging a hardwood installation. Publicly versioned, fully sourced, free to cite.',
+     type: 'article',
+     url: `${SITE_URL}/framework`,
++    images: [{ url: '/illustrations/og-framework.webp', width: 1200, height: 630 }],
+   },
+ };
+ 
+diff --git a/apps/web/app/glossary/page.tsx b/apps/web/app/glossary/page.tsx
+index 69d21d4..bb2e614 100644
+--- a/apps/web/app/glossary/page.tsx
++++ b/apps/web/app/glossary/page.tsx
+@@ -24,6 +24,7 @@ export const metadata: Metadata = {
+       'Canonical, sourced definitions for the terms that decide whether a hardwood floor succeeds or fails.',
+     type: 'website',
+     url: `${SITE_URL}/glossary`,
++    images: [{ url: '/illustrations/og-glossary.webp', width: 1200, height: 630 }],
+   },
+ };
+ 
+diff --git a/apps/web/app/market/page.tsx b/apps/web/app/market/page.tsx
+index 5065401..e91b8e1 100644
+--- a/apps/web/app/market/page.tsx
++++ b/apps/web/app/market/page.tsx
+@@ -30,6 +30,7 @@ export const metadata: Metadata = {
+       'Forestry, energy and FX: the three inputs that move the price of a hardwood floor, live from the Bank of Canada.',
+     type: 'website',
+     url: `${SITE_URL}/market`,
++    images: [{ url: '/illustrations/og-market.webp', width: 1200, height: 630 }],
+   },
+ };
+ 
+diff --git a/apps/web/app/standards/page.tsx b/apps/web/app/standards/page.tsx
+index d822b0c..89cf8a1 100644
+--- a/apps/web/app/standards/page.tsx
++++ b/apps/web/app/standards/page.tsx
+@@ -46,6 +46,7 @@ export const metadata: Metadata = {
+       'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
+     type: 'website',
+     url: `${SITE_URL}/standards`,
++    images: [{ url: '/illustrations/og-standards.webp', width: 1200, height: 630 }],
+   },
+ };
+ 
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index 5d3dfe0..407c323 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,14 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'illustrations-v1',
++    date: '2026-08-21',
++    kind: 'data',
++    title: '28 technical diagrams across the framework, guides and glossary',
++    body: 'Cross-sections of the three substrate assemblies, the four failure modes, the expansion gap, acclimation and the machine sequence — flat vector, one palette, no text baked into any image so every label stays readable by a screen reader and indexable by a crawler. Every one is a diagram or an illustration; none is a photograph, and a build guard enforces that distinction.',
++    href: '/framework',
++  },
+   {
+     id: 'market-v1',
+     date: '2026-08-20',
+diff --git a/apps/web/lib/images.ts b/apps/web/lib/images.ts
+index d6e7ce3..a3839c0 100644
+--- a/apps/web/lib/images.ts
++++ b/apps/web/lib/images.ts
+@@ -45,6 +45,20 @@
+ export type ImageKind = 'diagram' | 'illustration' | 'photograph';
+ export type ImageStatus = 'pending' | 'published';
+ 
++/**
++ * The status the two helpers below stamp on every entry they build.
++ *
++ * All 28 slots now have files on disk, so this is 'published' and
++ * verify-images.mjs asserts every one of them exists — a manifest entry
++ * pointing at a missing file fails the build rather than rendering a gap.
++ *
++ * A NEW slot added after this point must be written as a full object literal
++ * with `status: 'pending'` until its file lands. That is deliberately slightly
++ * more work than the helpers: the awkward path is the one that ships a
++ * placeholder to production.
++ */
++const DEFAULT_STATUS: ImageStatus = 'published';
++
+ export type SiteImage = {
+   /** Stable id, used in code. */
+   id: string;
+@@ -89,7 +103,7 @@ const d = (
+   id,
+   file: `${id}.webp`,
+   kind,
+-  status: 'pending',
++  status: DEFAULT_STATUS,
+   width: W,
+   height: H,
+   alt,
+@@ -101,7 +115,7 @@ const og = (id: string, alt: string, prompt: string): SiteImage => ({
+   id,
+   file: `${id}.webp`,
+   kind: 'illustration',
+-  status: 'pending',
++  status: DEFAULT_STATUS,
+   width: OG_W,
+   height: OG_H,
+   alt,
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index ad12f36..a1b4499 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3632,3 +3632,85 @@ layers.
+ `pnpm images:brief` prints the whole set — id, size, kind, alt, caption and
+ prompt — straight from the manifest, so the brief can never drift from the code
+ that renders it.
++
++---
++
++## 43. The images arrived
++
++### F-115 · All 28 slots filled, every dimension correct on the first pass · P2
++
++Two uploads, byte-identical (`cmp` confirms the `(1)` was a duplicate). 28 files,
++every filename matching its manifest id exactly, and every intrinsic size
++matching what the manifest declares — 23 at 1600×900, five `og-*` at 1200×630.
++Nothing had to be renamed, rescaled or re-cropped.
++
++That is what the manifest bought. The brief was generated from the same file the
++component renders from (`pnpm images:brief`), so the names and sizes an agent was
++given could not drift from the ones the code expects.
++
++Spot-checked against their prompts: the three substrate assemblies read
++correctly (fasteners into plywood, ridged adhesive over slab, tubes under a
++floated assembly), cupping curves the right way with moisture indicated from
++below, and **no text appears in any image checked** — the prohibition held.
++
++### F-116 · 12.1 MB → 1.0 MB, with no visible difference · **P1**
++
++The delivered files averaged 435 KB each; one was 782 KB. For flat vector art on
++a plain background that is roughly an order of magnitude more than it needs — the
++encoder had been asked for near-lossless output on images consisting mostly of
++one flat colour.
++
++Re-encoded at `cwebp -q 88 -m 6`: **12.1 MB → 1,051 KB, a 92% reduction.**
++Measured difference against the originals: mean 1.05/255 per channel (0.4%), max
++21 on hard edges. Rendered and compared side by side before committing to it.
++
++`next/image` re-encodes on delivery, so this was never about what a visitor
++downloads. It is about the 12 MB every clone of this repository would have
++carried permanently, in every deploy payload, forever.
++
++### F-117 · The guard's exists-on-disk check had never actually run · **P1, my error**
++
++`verify-images.mjs` shipped with this:
++
++```js
++const DEFAULT_PENDING = /status: 'pending'/.test(src);
++```
++
++Every helper-built entry hardcoded `status: 'pending'`, so that regex always
++matched, so **every entry was treated as pending and the "published file must
++exist" check never executed on anything.** It reported `28 pending` and looked
++correct, because at the time all 28 genuinely were.
++
++The moment they became published it would have silently passed a manifest
++pointing at files that were not there. A guard that is structurally incapable of
++failing is worse than no guard, because it is counted as coverage.
++
++Now `DEFAULT_STATUS` is a single named constant in the manifest, the guard reads
++it, and hand-written literals carry their own status. Deleting one file
++reproduces the failure it is supposed to catch:
++
++```
++✗ "og-data" is marked published but public/illustrations/og-data.webp does not exist
++```
++
++The manifest also now documents that a **new** slot must be written as a full
++object literal with `status: 'pending'` — deliberately more work than calling the
++helper, so the awkward path is the one that ships a placeholder to production.
++
++### F-118 · Five social cards existed and nothing pointed at them · P2
++
++`og-framework`, `og-market`, `og-glossary`, `og-standards` and `og-data` were
++generated, verified and sitting unused. Same defect family as F-73: an asset that
++exists, is correct, and has no path to it.
++
++All five are now the `openGraph.images` entry for their page, with explicit
++`width` and `height` so a card renderer does not have to fetch the file to lay
++it out.
++
++### The zips came out of the repository
++
++Both uploads were tracked at the root: 12.7 MB each, 25.4 MB together, for
++content now stored decoded under `public/illustrations/` at 1 MB. `git rm
++--cached` on both. Git keeps them in history regardless — the objects are
++written and cannot be un-written without a rewrite nobody should do for 25 MB —
++but no future clone checks them out into a working tree.
+diff --git a/scripts/verify-images.mjs b/scripts/verify-images.mjs
+index bb377f1..b18eb74 100644
+--- a/scripts/verify-images.mjs
++++ b/scripts/verify-images.mjs
+@@ -144,9 +144,14 @@ for (const f of onDisk) {
+     fail(`public/illustrations/${f} is not referenced by any manifest entry — remove it or add the entry`);
+   }
+ }
+-const DEFAULT_PENDING = /status: 'pending'/.test(src);
++/* Helper-built entries take their status from DEFAULT_STATUS; a hand-written
++   literal carries its own. The first version of this guard inferred the default
++   by grepping the whole file for "status: 'pending'", which meant a single
++   pending literal silently disabled the exists-on-disk check for all 28. */
++const DEFAULT_STATUS =
++  (src.match(/const DEFAULT_STATUS: ImageStatus = '(pending|published)'/) || [])[1] ?? 'pending';
+ for (const e of entries) {
+-  const st = DEFAULT_PENDING ? 'pending' : statusOf(e.id);
++  const st = e.helper === 'literal' ? (e.status ?? statusOf(e.id)) : DEFAULT_STATUS;
+   if (st === 'published' && !onDisk.includes(`${e.id}.webp`)) {
+     fail(`"${e.id}" is marked published but public/illustrations/${e.id}.webp does not exist`);
+   }
