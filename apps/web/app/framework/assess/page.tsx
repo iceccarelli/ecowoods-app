@@ -7,7 +7,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
 export const metadata: Metadata = {
-  title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION} | EcoWoods`,
+  title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}`,
   description:
     'Score any hardwood flooring quote against 27 published criteria across six pillars. Runs entirely in your browser — nothing is sent anywhere. Works on any contractor, including us.',
   alternates: { canonical: '/framework/assess' },

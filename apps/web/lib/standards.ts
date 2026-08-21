@@ -53,6 +53,13 @@ export type Standard = {
   /** Why it matters to a floor in this city. */
   relevance: string;
   status: StandardStatus;
+  /**
+   * The edition exactly as the document prints it — "Revised © 2025", not
+   * "2025 edition". Present only where the document itself has been read; an
+   * entry whose status is 'unverified-edition' must not carry this field,
+   * which is the whole point of that status existing.
+   */
+  edition?: string;
   /** The issuing body's own page. Never a reseller, never a blog. */
   sourceUrl: string;
   /** ISO date this entry was last checked against sourceUrl. */
@@ -116,16 +123,26 @@ export const STANDARDS: Standard[] = [
   {
     id: 'nwfa-guidelines',
     body: 'National Wood Flooring Association (NWFA)',
-    title: 'NWFA technical guidelines and publications',
+    // Was 'NWFA technical guidelines and publications', status
+    // 'unverified-edition', pointing at nwfa.org — a landing page that does not
+    // enumerate editions, so the entry could not name one. The document itself
+    // has since been read at the URL below: its cover reads WOOD FLOORING
+    // INSTALLATION GUIDELINES, and its copyright line reads 'Revised © 2025'.
+    // Publisher confirmed on the same page as the National Wood Flooring
+    // Association, St. Louis, Missouri. That is a primary source on the issuing
+    // body's own domain, which is the standard this register holds itself to,
+    // so the edition is now asserted rather than deferred.
+    title: 'Wood Flooring Installation Guidelines',
     governs:
-      'Installation, sand-and-finish and wood-species guidance for the North American wood flooring trade.',
+      'Installation of wood flooring over wood, concrete and radiant substrates: acclimation, moisture testing, subfloor flatness and preparation, fastening schedules and method selection.',
     relevance:
       'The trade body whose guidelines most manufacturer warranties reference. Acclimation periods, subfloor requirements and installation method by substrate all trace here.',
-    status: 'unverified-edition',
-    sourceUrl: 'https://nwfa.org/',
-    verifiedAt: '2026-08-20',
+    status: 'current',
+    edition: 'Revised © 2025',
+    sourceUrl: 'https://nwfa.org/wp-content/uploads/2026/02/NWFA-Installation-Guidelines.pdf',
+    verifiedAt: '2026-08-21',
     pillars: ['moisture', 'substrate', 'specification', 'containment'],
-    note: 'The NWFA landing page does not enumerate current editions of individual guideline documents. This entry deliberately does not assert an edition or year — confirm the applicable document and revision with the NWFA directly before citing it in a specification.',
+    note: 'The NWFA also publishes separate Sand & Finish and Wood Species guidelines; this entry covers the installation document only. Membership may be required for some NWFA publications — confirm the applicable document before citing it in a specification.',
   },
 ];
 

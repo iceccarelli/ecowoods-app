@@ -31,7 +31,7 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 export const metadata: Metadata = {
-  title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION} | EcoWoods`,
+  title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}`,
   description:
     'A published, versioned specification for judging a hardwood flooring installation: six pillars, twenty-seven binary criteria, every one sourced to a technical paper. Use it on any contractor, including us.',
   alternates: { canonical: '/framework' },

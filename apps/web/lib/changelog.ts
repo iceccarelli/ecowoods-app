@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'nwfa-installation-2025',
+    date: '2026-08-21',
+    kind: 'data',
+    title: 'The NWFA installation guidelines, edition verified',
+    body: 'The standards register carried this entry for a year without naming an edition, because the association\u2019s landing page does not list one and this register does not assert what it has not read. The document itself has now been read at source: Wood Flooring Installation Guidelines, Revised \u00a9 2025, published by the National Wood Flooring Association. The entry names the edition, links the document rather than the homepage, and the register shows an Edition row wherever an edition has actually been confirmed \u2014 and no row where it has not.',
+    href: '/standards',
+  },
+  {
     id: 'library-v1',
     date: '2026-08-21',
     kind: 'data',

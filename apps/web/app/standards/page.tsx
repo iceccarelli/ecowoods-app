@@ -37,7 +37,7 @@ import { SchemaScript } from '@/lib/schema/components';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Standards Register | EcoWoods',
+  title: 'Standards Register',
   description:
     'The external standards and bodies hardwood flooring work in Toronto answers to — ASTM concrete moisture and floor preparation methods, NWFA guidelines — each mapped to the Well-Installed Framework criteria that depend on it, with the date we last verified it at the source.',
   alternates: { canonical: '/standards' },
@@ -76,6 +76,7 @@ export default function StandardsPage() {
           hasPart: standards.map((s) => ({
             '@type': 'CreativeWork',
             name: s.designation ? `${s.designation} — ${s.title}` : s.title,
+            ...(s.edition ? { version: s.edition } : {}),
             publisher: { '@type': 'Organization', name: s.body },
             url: s.sourceUrl,
             description: s.governs,
@@ -129,6 +130,16 @@ export default function StandardsPage() {
                 {s.note && <p className="std-note">{s.note}</p>}
 
                 <dl className="gd-spec">
+                  {/* Edition is optional by design: it appears only where the
+                      document itself has been read, so a card that shows no
+                      edition row is telling the reader something true about how
+                      far the verification went. */}
+                  {s.edition && (
+                    <div className="gd-spec-row">
+                      <dt>Edition</dt>
+                      <dd>{s.edition}</dd>
+                    </div>
+                  )}
                   <div className="gd-spec-row">
                     <dt>Primary source</dt>
                     <dd>

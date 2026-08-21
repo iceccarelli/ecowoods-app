@@ -34,7 +34,7 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 export const metadata: Metadata = {
-  title: 'Visual Library | EcoWoods',
+  title: 'Visual Library',
   description:
     'Every diagram and photograph on this site in one index: 28 technical cross-sections explaining moisture, substrate, movement and the refinishing sequence, plus the floor collection and the machines that produce it.',
   alternates: { canonical: '/library' },

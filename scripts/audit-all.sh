@@ -129,6 +129,8 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-market.mjs ] && run "verify:market" node scripts/verify-market.mjs
 [ -f scripts/verify-freshness.mjs ] && run "verify:freshness" node scripts/verify-freshness.mjs
 [ -f scripts/verify-images.mjs ] && run "verify:images" node scripts/verify-images.mjs
+[ -f scripts/verify-canonical.mjs ] && run "verify:canonical" node scripts/verify-canonical.mjs
+[ -f scripts/verify-sitemap.mjs ] && run "verify:sitemap" node scripts/verify-sitemap.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"
@@ -227,6 +229,13 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+section "9 · production"
+printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "not checked here" "bash scripts/verify-live.sh"
+printf '        %s\n' "Everything above reads this repository. Nothing above can see whether the"
+printf '        %s\n' "deployed site actually serves what it describes — three separate defects"
+printf '        %s\n' "(F-107, F-129, F-131) passed every check here while production was broken."
+
 printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
 PASSES=0
 for r in "${RESULTS[@]}"; do [ "${r%%|*}" = PASS ] && PASSES=$((PASSES+1)); done

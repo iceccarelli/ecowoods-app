@@ -3968,3 +3968,286 @@ That is a Vercel project setting (Root Directory), not a code change. Either
 point it at `apps/web`, or the PDFs go to the repo-root `public/` where
 `qr-app.jpg` demonstrably works. **Do not publish the PDFs until one of those is
 true.**
+
+---
+
+## 48. Nothing in this repository has ever looked at the website
+
+### F-134 · One failure shape, three times, and no check could see any of them · **P0 — process**
+
+| | What was wrong | What every guard said |
+|---|---|---|
+| **F-107** | `/standards` read "0 days ago" forever — statically rendered, so `new Date()` froze at deploy | source correct |
+| **F-129** | 28 diagrams shipped as code, the files left behind by `git clean -fd` | all green |
+| **F-131** | `apps/web/public` has never been served on this host; `/icon-192.png` has 404'd there since long before this work | files present, committed, correct |
+
+Three separate defects. One shape: **a fault that lives in the gap between the
+repository and what a browser actually receives.** Fourteen guards read the
+source tree. Not one of them can see that gap, and no amount of adding more
+source-reading guards ever will.
+
+Each time, the audit printed a wall of green while production was broken, and
+each time the failure was found by a person looking at the site — which is not a
+process, it is luck with a human attached.
+
+### F-135 · `verify-live.sh` — the first check that reads production · **P0**
+
+It fetches the deployed site. Fourteen routes, eight machine surfaces, and then
+the one that matters:
+
+**It pulls an `_next/image` URL out of the rendered `/framework` HTML and fetches
+that.** Not "does a file exist in the repo" — *does the thing the page points at
+come back*. That single check would have caught all three failures above.
+
+It also asserts `/icon-192.png` is **still 404**, as a stated fact rather than
+something to rediscover. The day that line starts warning, the Vercel Root
+Directory has been fixed and the paper PDFs can go back to `apps/web/public`.
+
+Cache-busted on every request, because a CDN handing back a copy from before the
+deploy under test is the one way a live check can lie.
+
+`ship.sh` now ends by printing `vercel --prod && bash scripts/verify-live.sh`
+with the reason attached, and `audit-all.sh` gains a section 9 that says plainly
+that everything above it reads the repository and cannot see production.
+
+### Two bugs in the checker itself, both found by testing it rather than trusting it
+
+**`curl … || echo 000` produced `000000`.** `curl` already prints `000` when it
+cannot connect; the fallback concatenated onto it, and every unreachable host
+was reported as a status matching nothing rather than as unreachable.
+
+**The image-URL extractor captured a srcset descriptor.** Next renders both
+`src` and `srcset`, and a srcset entry ends `…&q=75 1x`. A pattern excluding
+only quotes swallowed the ` 1x` and would have fetched a URL that cannot exist —
+a live check that fails on every correct deploy is worse than no live check,
+because the first thing anyone does with a boy-who-cried-wolf gate is stop
+reading it.
+
+Both were caught by running the extractor against real rendered markup. That is
+the same lesson as F-97, where a truncated SVG label was only visible by
+rendering the figure: **a verification tool has to be verified against the real
+thing, or it is just another assertion.**
+
+---
+
+## 49. Three dead crawler surfaces, all the same root cause
+
+The images are live — confirmed at the byte level:
+`/_next/static/media/pillar-moisture.c1655983.webp` returns the file, and
+`/framework` points at it through `/_next/image`. F-131 is closed.
+
+Closing it exposed that the illustrations were not the only casualty. Every file
+in `apps/web/public` has been unreachable for the life of this deployment, and
+three of them were load-bearing for exactly the thing this whole effort is
+about: being found and cited.
+
+### F-136 · IndexNow has never worked · **P0**
+
+`https://ecowoods.ca/8b9dff9a810eacdb42f0c91254401d8b.txt` → **404**.
+
+That file is the ownership key. IndexNow works by the search engine fetching
+that exact URL and comparing the body to the key in the submission. A 404 there
+means **every submission Bing and Yandex ever received from this site was
+rejected** — silently, with no error surfaced to anyone.
+
+`lib/indexnow.ts` is correct. `app/api/indexnow/route.ts` is correct. The
+verification step both depend on could never succeed, so the entire feature has
+been dead since the day it was written, and nothing anywhere would have said so.
+
+Now served as a route handler, the mechanism proven to work on this host —
+`/llms.txt`, `/ai.txt`, `/feed.xml` and `/sitemap.xml` all serve this way.
+
+### F-137 · The PWA manifest pointed at two 404s · P1
+
+`manifest.ts` declared `/icon-192.png` and `/icon-512.png` for all four icon
+entries. Both have returned 404 for as long as they have existed. Every Android
+home-screen install and every Google surface that read the manifest fetched two
+dead URLs and rendered no brand mark.
+
+Both now resolve through static imports to hashed `_next/static` paths.
+
+### F-138 · `HowTo` was typed and never emitted · **P1**
+
+`lib/schema/types.ts` has defined `HowTo` and `HowToStep` since the schema layer
+was written. Neither has ever appeared in a single page's output.
+
+Meanwhile the three papers carry **seven ordered procedures across 38 steps** —
+moisture testing, the non-negotiable protocol, what to demand, the decision
+tree, the installer checklist, the action plan, and the full refinishing
+sequence. Every one is exactly the shape `HowTo` describes.
+
+This is the richest structured type an answer engine can consume. Asked *"how do
+you acclimate hardwood in Toronto"*, a model with `HowTo` returns ordered steps
+attributed to a source; without it, it infers them from prose and attributes
+nothing. Seven procedures were sitting in a form purpose-built for citation,
+marked up as paragraphs.
+
+Now emitted, one `HowTo` per ordered section, anchored by `@id` so each
+procedure is addressable independently of its paper. The steps are the published
+`ordered` arrays and nothing else, so the markup cannot assert anything the page
+does not already say.
+
+### F-139 · The live check now covers verification, not just rendering · P1
+
+`verify-live.sh` gains three checks that read production:
+
+- the IndexNow key returns 200 **and its body equals the key** — a 200 serving
+  the wrong bytes fails IndexNow just as completely as a 404;
+- the manifest's first icon is a `_next/` URL and its bytes come back;
+- at least one `HowTo` block appears in a rendered paper.
+
+All three are invisible to every source-reading guard, which is the entire
+lesson of F-134: the repository cannot tell you what a crawler receives.
+
+### F-140 · `ship.sh` shipped a commit with no code in it, and proved it had · P0
+
+Patch 53 was applied in Codespaces, verified, and reported 22 checks passed. It
+is not on `origin/main`. None of it is: no `scripts/verify-live.sh`, no IndexNow
+route, no `HowTo` on the papers. What is on `origin/main` is this:
+
+```
+6e3cc7a feat(crawlers): serve the IndexNow key, fix the PWA icons, emit HowTo
+ 50verifylive.patch              |  249 ----------
+ 51crawlersurfaces.patch         |  259 ----------
+ 52crawlersurfacescombined.patch | 1009 ---------------------------------------
+ 3 files changed, 1517 deletions(-)
+```
+
+A commit whose subject describes three features and whose contents are three
+deletions. The mechanism, step by step:
+
+1. **Step 1 deleted the patch.** `git clean -qfd` removes every untracked file,
+   and a `.patch` uploaded through the GitHub web UI and not yet committed is an
+   untracked file. `53crawlersurfaces.patch` was removed before anything read
+   it. The script's own comment explains that `git clean` is safe because
+   `node_modules` and `.env` are gitignored — which is true, and which is why
+   the one category of file that is *neither* ignored *nor* tracked was never
+   considered.
+
+2. **Step 2 found work to do anyway.** Patches 50, 51 and 52 were tracked on
+   main and already applied, so `patch-apply.sh` correctly detected each with a
+   reverse-check and untracked it. Three deletions. `git status --porcelain` was
+   therefore non-empty, and the "Nothing changed" guard — the one check placed
+   exactly here to catch this — passed.
+
+3. **Steps 3 to 6 verified main against itself.** `pnpm install`, `prisma
+   generate`, `tsc --noEmit`, fourteen guards, `next build`, `parse-scan`: all
+   green. They were reading code that had already passed all of them.
+
+4. **Step 7 committed, pushed, and proved the push landed.** It had. The proof
+   step compares `HEAD` to `origin/main` and counts tracked `.patch` files. Both
+   were correct. A push of pure deletions lands exactly as convincingly as a
+   push of real work.
+
+Every line printed green. The site received nothing.
+
+This is F-129 with the sign flipped. There, code shipped without its assets;
+here, a commit shipped without its code — and in both cases the verification was
+extensive, correct, and aimed at the wrong object. The deep lesson is that
+**"something changed" is not "the thing I sent changed"**, and every check in
+that script was measuring the first.
+
+Three fixes, at the three points where it could have been caught:
+
+- `git clean` now runs with `-e '*.patch'`, and the tree-clean assertion
+  excludes patch files rather than being defeated by them. An uploaded patch
+  survives to step 2. The script also prints what is on disk before applying, so
+  a patch that is missing is *seen* to be missing.
+- Step 2b splits the working tree into **code** and **bookkeeping**. A run where
+  only `.patch` files moved now dies with the list of what was untracked and why
+  that means nothing shipped.
+- The proof step reads the commit that is on `origin/main` and requires at least
+  one changed file that is not a `.patch`. It prints them.
+
+Patch 53 remains valid and unapplied; it is tracked on main and will apply on
+the next run.
+
+### F-141 · 72 of 101 sitemap URLs claimed to change every single day · P0
+
+`sitemap.ts` revalidates every 86400 seconds and nineteen base pages, sixteen
+city pages and forty-five glossary terms each carried `lastModified: new
+Date()`. Not a stale date — a *rolling* one. Every one of those URLs told every
+crawler it had been modified today, and would say the same tomorrow, and the day
+after, whether or not a byte had moved since the site was built.
+
+`lastmod` is the only field in the protocol that answers "which of these hundred
+URLs is worth fetching again". Google's documented response to a `lastmod` it
+finds unreliable is to stop reading `lastmod` for the entire host. So the cost
+is not that 72 pages looked falsely fresh. It is that the dates on the pages
+that *had* genuinely changed — a new guide, a re-verified standard — became
+worth nothing too, on a site where roughly one URL out of 101 is indexed.
+
+The rule now: a date goes in only when something dated backs it — a publish
+date, a changelog entry, or a genuinely live route — and is **omitted**
+otherwise. `lastModified` is optional. "I don't know" is true, free, and costs
+nothing; a date invented at build time costs the credibility of every other date
+in the file. `/market` is the single member of the `LIVE` set, because the Bank
+of Canada figures really are refetched hourly and the page really does change
+without a deploy.
+
+`scripts/verify-sitemap.mjs` permits exactly one bare `new Date()` in the file
+and requires it to sit inside the `LIVE.has(route)` branch.
+
+### F-142 · Every page told Google it was a duplicate of the homepage · P0
+
+This is the largest single finding in this series, and it had been true the
+entire time the authority work was being built.
+
+The root layout declared:
+
+```ts
+alternates: {
+  canonical: '/',
+  types: { 'application/rss+xml': [ ... ] },
+},
+```
+
+Next merges metadata from the root layout down into every page, and a page that
+does not declare its own `alternates.canonical` inherits the parent's object
+whole. Fetched from production, `https://ecowoods.ca/technical-library` served:
+
+```html
+<link rel="canonical" href="https://ecowoods.ca">
+```
+
+and so did `/blog`, `/case-studies` and `/products/floorforge`. That element is
+not a hint or a preference. It is the page instructing a crawler: *I am a
+duplicate of the homepage; index that instead of me.* Four surfaces, including
+the two index pages that link to every article and every case study, were
+asking to be dropped — and were.
+
+Fourteen guards, `tsc`, and a production build passed every day it was true,
+because **nothing in this repository had ever read a rendered `<head>`**. The
+canonical was correct in fifteen files and absent in four, and absence was
+indistinguishable from correctness at the source level. It is only visible in
+the output.
+
+Two guards now close it. `scripts/verify-canonical.mjs` fails if the root layout
+declares a canonical at all, and requires each of the 25 public routes to
+declare its own — the RSS `types` entry stays in the layout, because that one
+genuinely is site-wide. `verify-live.sh` fetches seven routes from production
+and compares the canonical each one serves against its own URL, because a guard
+that reads source cannot see what a deploy actually renders.
+
+### F-143 · Titles carried the brand twice, and one carried 130 characters · P2
+
+The root template is `%s · Ecowoods`. Seventeen pages set titles ending in
+`| EcoWoods`, so `/technical-library` rendered as:
+
+> Technical Library | EcoWoods · Ecowoods
+
+The papers were worse. `title` was built as `${paper.title} — ${paper.subtitle} |
+EcoWoods`, and the template then appended the brand a second time:
+
+> The Intelligent Homeowner's Decision Framework — How to choose hardwood that
+> performs, appreciates, and never becomes a liability | EcoWoods · Ecowoods
+
+A search result shows roughly sixty characters of that. The reader sees the
+first half of a subtitle and never reaches the brand at all, which is the one
+part that got written twice.
+
+Same root cause as F-142, one level less severe: metadata composed in two places
+by people who could never see the composed result. All seventeen now set the
+bare title; `openGraph.title` and `twitter.title` keep the brand, correctly,
+because a share card has no page around it to give it context. The brand check
+lives in `verify-canonical.mjs` — same file, same class of bug, same fix.

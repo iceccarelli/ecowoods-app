@@ -22,7 +22,7 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 export const metadata: Metadata = {
-  title: 'Data & Figures | EcoWoods',
+  title: 'Data & Figures',
   description:
     'Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. Every value is drawn from a published technical paper and free to reuse under CC BY 4.0.',
   alternates: { canonical: '/data' },

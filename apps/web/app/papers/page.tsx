@@ -6,7 +6,7 @@ import { SchemaScript } from '@/lib/schema/components';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
 export const metadata: Metadata = {
-  title: 'Technical Papers | EcoWoods',
+  title: 'Technical Papers',
   description:
     'Downloadable engineering papers on hardwood flooring in Toronto and the GTA: moisture protocol, climate behaviour, species selection, installed cost, and how to evaluate an installer.',
   alternates: { canonical: `${SITE_URL}/papers` },

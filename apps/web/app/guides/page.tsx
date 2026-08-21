@@ -6,7 +6,7 @@ import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
 export const metadata: Metadata = {
-  title: 'Decision Guides & Reference Installations | EcoWoods',
+  title: 'Decision Guides & Reference Installations',
   description:
     'Structured answers to the decisions a Toronto homeowner actually faces — solid versus engineered, nail-down versus glue-down versus floating, how to evaluate a quote — plus complete reference specifications for the common GTA scenarios.',
   alternates: { canonical: '/guides' },

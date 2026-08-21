@@ -3,7 +3,7 @@ import Link from 'next/link';
 import ConfiguratorSection from '../components/ConfiguratorSection';
 
 export const metadata: Metadata = {
-  title: 'Design Your Floor | EcoWoods',
+  title: 'Design Your Floor',
   description:
     'Pick species, finish, pattern, and size — and see a live installed-price range built from the same numbers our estimator carries in the truck. Toronto & GTA.',
   alternates: { canonical: 'https://ecowoods.ca/design' },

@@ -23,7 +23,7 @@ import { SchemaScript } from '@/lib/schema/components';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "What's New | EcoWoods",
+  title: "What's New",
   description:
     'Everything newly published by Ecowoods on hardwood flooring — technical papers, decision guides, figures, the Well-Installed Framework and the public data API — dated, newest first.',
   alternates: { canonical: '/whats-new' },

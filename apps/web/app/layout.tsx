@@ -71,8 +71,19 @@ export const metadata: Metadata = {
   // The RSS autodiscovery link. Feed readers, aggregators and several answer
   // engines look for exactly this element and nothing else; a feed that is not
   // declared here is a feed only someone who already knows the URL can find.
+  // NO `canonical` HERE. Next merges metadata from the root layout down into
+  // every page, and a page that does not declare its own `alternates.canonical`
+  // INHERITS this object wholesale. This block used to carry `canonical: '/'`,
+  // which meant /technical-library, /blog, /case-studies and /products/floorforge
+  // each served <link rel="canonical" href="https://ecowoods.ca"> — telling every
+  // crawler that they are duplicates of the homepage and should not be indexed.
+  // The sitemap offered 101 URLs; roughly one was indexed. See F-142.
+  //
+  // The RSS autodiscovery link stays, because it is genuinely site-wide: it points
+  // at the same feed from every page, which is what a feed reader expects.
+  // Canonicals are not site-wide by nature. Each route declares its own, and
+  // scripts/verify-canonical.mjs fails the build if a sitemapped route does not.
   alternates: {
-    canonical: '/',
     types: { 'application/rss+xml': [{ url: '/feed.xml', title: 'Ecowoods — Technical Publications' }] },
   },
   keywords: [

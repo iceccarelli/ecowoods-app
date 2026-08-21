@@ -15,7 +15,7 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 export const metadata: Metadata = {
-  title: 'Hardwood Flooring Glossary | EcoWoods',
+  title: 'Hardwood Flooring Glossary',
   description:
     'Canonical definitions for hardwood flooring terms — acclimation, cupping, crowning, moisture differential, cross-ply core, intercoat screening and more. Every entry sourced to a published technical paper.',
   alternates: { canonical: '/glossary' },

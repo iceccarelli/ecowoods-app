@@ -4,7 +4,8 @@ import { getArticles } from '@/lib/content/loader';
 import { formatDate } from '@/lib/content/utils';
 
 export const metadata: Metadata = {
-  title: 'Technical Articles | EcoWoods',
+  title: 'Technical Articles',
+  alternates: { canonical: '/blog' },
   description:
     'Technical articles on hardwood flooring: moisture testing, species selection, dust-free sanding, and finish chemistry for Toronto and the GTA.',
 };

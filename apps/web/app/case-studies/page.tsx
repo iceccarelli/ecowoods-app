@@ -4,7 +4,8 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { formatDate } from '@/lib/content/utils';
 
 export const metadata: Metadata = {
-  title: 'Case Studies | EcoWoods',
+  title: 'Case Studies',
+  alternates: { canonical: '/case-studies' },
   description:
     'Hardwood flooring project write-ups from Toronto and the GTA: moisture engineering, species selection, staircases, and radiant-heat installations.',
 };

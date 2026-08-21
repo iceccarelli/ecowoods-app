@@ -8,7 +8,8 @@ import { SchemaScript } from '@/lib/schema/components';
 import { formatDate } from '@/lib/content/utils';
 
 export const metadata: Metadata = {
-  title: 'Technical Library | EcoWoods',
+  title: 'Technical Library',
+  alternates: { canonical: '/technical-library' },
   description:
     'Engineering reference for hardwood flooring installation, finishing, and maintenance in Toronto and the GTA: moisture protocols, species science, and finish chemistry.',
   openGraph: {

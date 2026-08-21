@@ -21,7 +21,7 @@ import { SchemaScript } from '@/lib/schema/components';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'What moves a hardwood quote | EcoWoods',
+  title: 'What moves a hardwood quote',
   description:
     'The traded commodity inputs behind an installed hardwood floor in Ontario — forestry, energy and the US dollar — live from the Bank of Canada, with the mechanism for each and why they are volatile. Published so a price change can be evaluated rather than suspected.',
   alternates: { canonical: '/market' },

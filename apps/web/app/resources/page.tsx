@@ -33,7 +33,7 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 export const metadata: Metadata = {
-  title: 'Resources | EcoWoods',
+  title: 'Resources',
   description:
     'Everything Ecowoods publishes on hardwood flooring, organised by what you are trying to do: decision guides, the Well-Installed Framework and its self-assessment, technical papers, a 32-term glossary, engineering case studies, and a public JSON API.',
   alternates: { canonical: '/resources' },

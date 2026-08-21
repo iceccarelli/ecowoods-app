@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
    ────────────────────────────────────────────────── */
 export const metadata: Metadata = {
   title: 'FloorForge — Autonomous Floor Refinishing Pilot',
+  alternates: { canonical: '/products/floorforge' },
   description:
     'FloorForge is an early-access autonomous floor refinishing robot in the software + hardware alignment stage. Open to contractor pilots in 2026. Join the interest list.',
   openGraph: {

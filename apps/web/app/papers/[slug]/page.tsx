@@ -21,7 +21,12 @@ export async function generateMetadata({
   if (!paper) return {};
   const url = `${SITE_URL}/papers/${paper.slug}`;
   return {
-    title: `${paper.title} — ${paper.subtitle} | EcoWoods`,
+    // Title only. This used to be `${title} — ${subtitle} | EcoWoods`, which the
+    // root template then extended with ' · Ecowoods' — 130+ characters ending in
+    // the brand name twice, of which a search result shows roughly sixty. The
+    // subtitle is not lost: it is the first thing in the description below and it
+    // is the h2 on the page itself. See F-143.
+    title: paper.title,
     description: paper.abstract,
     alternates: { canonical: url },
     openGraph: {
@@ -91,6 +96,44 @@ function schemasFor(paper: Paper) {
         { '@type': 'ListItem', position: 3, name: paper.title, item: url },
       ],
     },
+    /**
+     * One HowTo per ordered section.
+     *
+     * The HowTo type has sat in lib/schema/types.ts since the schema layer was
+     * written and has never been emitted anywhere. Meanwhile the papers carry
+     * seven ordered procedures across 38 steps — moisture testing, the
+     * non-negotiable protocol, the installer checklist, the full refinishing
+     * sequence — every one exactly the shape HowTo describes.
+     *
+     * This is the richest structured type an answer engine can consume. Asked
+     * "how do you acclimate hardwood in Toronto", a model with HowTo returns
+     * ordered steps attributed to a source; without it, it infers them from
+     * prose and attributes nothing.
+     *
+     * The steps are the published `ordered` arrays and nothing else, so the
+     * markup cannot assert anything the page does not already say. Anchored by
+     * @id so each procedure is addressable independently of its paper.
+     */
+    ...paper.sections
+      .filter((sec) => sec.ordered && sec.ordered.length > 1)
+      .map((sec) => ({
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        '@id': `${url}#howto-${sec.id}`,
+        name: sec.heading,
+        description: sec.body?.[0] ?? paper.abstract,
+        inLanguage: 'en-CA',
+        isPartOf: { '@id': `${url}#article` },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': `${url}#${sec.id}` },
+        publisher: { '@id': `${SITE_URL}/#organization` },
+        step: (sec.ordered ?? []).map((text, i) => ({
+          '@type': 'HowToStep',
+          position: i + 1,
+          name: text.replace(/\s*[—–-].*$/, '').slice(0, 90),
+          text,
+          url: `${url}#${sec.id}`,
+        })),
+      })),
   ];
 }
 

@@ -32,9 +32,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const t = getTerm(slug);
-  if (!t) return { title: 'Not found | EcoWoods' };
+  if (!t) return { title: 'Not found' };
   return {
-    title: `${t.term} — hardwood flooring glossary | EcoWoods`,
+    title: `${t.term} — hardwood flooring glossary`,
     description: t.short,
     alternates: { canonical: `/glossary/${t.slug}` },
     openGraph: {

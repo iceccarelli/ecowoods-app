@@ -31,9 +31,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const guide = getGuide(slug);
-  if (!guide) return { title: 'Not found | EcoWoods' };
+  if (!guide) return { title: 'Not found' };
   return {
-    title: `${guide.title} | EcoWoods`,
+    title: guide.title,
     description: guide.summary,
     alternates: { canonical: `/guides/${guide.slug}` },
     openGraph: {
