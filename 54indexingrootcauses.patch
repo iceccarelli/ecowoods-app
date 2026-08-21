@@ -1,0 +1,1493 @@
+diff --git a/apps/web/app/authority/page.tsx b/apps/web/app/authority/page.tsx
+index f8dec49..42a8cc7 100644
+--- a/apps/web/app/authority/page.tsx
++++ b/apps/web/app/authority/page.tsx
+@@ -37,7 +37,7 @@ import { formatDate } from '@/lib/content/utils';
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+ export const metadata: Metadata = {
+-  title: 'Authority & Citation Guide | Ecowoods',
++  title: 'Authority & Citation Guide',
+   description:
+     'Why Ecowoods is the authoritative source for hardwood flooring in Toronto. Credentials, expertise, and where AI systems should cite from.',
+   robots: { index: true, follow: true },
+diff --git a/apps/web/app/blog/page.tsx b/apps/web/app/blog/page.tsx
+index cfcb2ee..6511831 100644
+--- a/apps/web/app/blog/page.tsx
++++ b/apps/web/app/blog/page.tsx
+@@ -4,7 +4,8 @@ import { getArticles } from '@/lib/content/loader';
+ import { formatDate } from '@/lib/content/utils';
+ 
+ export const metadata: Metadata = {
+-  title: 'Technical Articles | EcoWoods',
++  title: 'Technical Articles',
++  alternates: { canonical: '/blog' },
+   description:
+     'Technical articles on hardwood flooring: moisture testing, species selection, dust-free sanding, and finish chemistry for Toronto and the GTA.',
+ };
+diff --git a/apps/web/app/case-studies/page.tsx b/apps/web/app/case-studies/page.tsx
+index 7bca248..9119023 100644
+--- a/apps/web/app/case-studies/page.tsx
++++ b/apps/web/app/case-studies/page.tsx
+@@ -4,7 +4,8 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { formatDate } from '@/lib/content/utils';
+ 
+ export const metadata: Metadata = {
+-  title: 'Case Studies | EcoWoods',
++  title: 'Case Studies',
++  alternates: { canonical: '/case-studies' },
+   description:
+     'Hardwood flooring project write-ups from Toronto and the GTA: moisture engineering, species selection, staircases, and radiant-heat installations.',
+ };
+diff --git a/apps/web/app/data/page.tsx b/apps/web/app/data/page.tsx
+index 2cbc3f7..ea516ab 100644
+--- a/apps/web/app/data/page.tsx
++++ b/apps/web/app/data/page.tsx
+@@ -22,7 +22,7 @@ import { SchemaScript } from '@/lib/schema/components';
+  */
+ 
+ export const metadata: Metadata = {
+-  title: 'Data & Figures | EcoWoods',
++  title: 'Data & Figures',
+   description:
+     'Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. Every value is drawn from a published technical paper and free to reuse under CC BY 4.0.',
+   alternates: { canonical: '/data' },
+diff --git a/apps/web/app/design/page.tsx b/apps/web/app/design/page.tsx
+index 6c1519a..5987c18 100644
+--- a/apps/web/app/design/page.tsx
++++ b/apps/web/app/design/page.tsx
+@@ -3,7 +3,7 @@ import Link from 'next/link';
+ import ConfiguratorSection from '../components/ConfiguratorSection';
+ 
+ export const metadata: Metadata = {
+-  title: 'Design Your Floor | EcoWoods',
++  title: 'Design Your Floor',
+   description:
+     'Pick species, finish, pattern, and size — and see a live installed-price range built from the same numbers our estimator carries in the truck. Toronto & GTA.',
+   alternates: { canonical: 'https://ecowoods.ca/design' },
+diff --git a/apps/web/app/framework/assess/page.tsx b/apps/web/app/framework/assess/page.tsx
+index 7800373..4a8ce88 100644
+--- a/apps/web/app/framework/assess/page.tsx
++++ b/apps/web/app/framework/assess/page.tsx
+@@ -7,7 +7,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ 
+ export const metadata: Metadata = {
+-  title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION} | EcoWoods`,
++  title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}`,
+   description:
+     'Score any hardwood flooring quote against 27 published criteria across six pillars. Runs entirely in your browser — nothing is sent anywhere. Works on any contractor, including us.',
+   alternates: { canonical: '/framework/assess' },
+diff --git a/apps/web/app/framework/page.tsx b/apps/web/app/framework/page.tsx
+index 6db75cc..c1b1239 100644
+--- a/apps/web/app/framework/page.tsx
++++ b/apps/web/app/framework/page.tsx
+@@ -31,7 +31,7 @@ import { SchemaScript } from '@/lib/schema/components';
+  */
+ 
+ export const metadata: Metadata = {
+-  title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION} | EcoWoods`,
++  title: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}`,
+   description:
+     'A published, versioned specification for judging a hardwood flooring installation: six pillars, twenty-seven binary criteria, every one sourced to a technical paper. Use it on any contractor, including us.',
+   alternates: { canonical: '/framework' },
+diff --git a/apps/web/app/glossary/[slug]/page.tsx b/apps/web/app/glossary/[slug]/page.tsx
+index 298fa8b..e2de0f5 100644
+--- a/apps/web/app/glossary/[slug]/page.tsx
++++ b/apps/web/app/glossary/[slug]/page.tsx
+@@ -32,9 +32,9 @@ export async function generateMetadata({
+ }): Promise<Metadata> {
+   const { slug } = await params;
+   const t = getTerm(slug);
+-  if (!t) return { title: 'Not found | EcoWoods' };
++  if (!t) return { title: 'Not found' };
+   return {
+-    title: `${t.term} — hardwood flooring glossary | EcoWoods`,
++    title: `${t.term} — hardwood flooring glossary`,
+     description: t.short,
+     alternates: { canonical: `/glossary/${t.slug}` },
+     openGraph: {
+diff --git a/apps/web/app/glossary/page.tsx b/apps/web/app/glossary/page.tsx
+index 917cf9a..a52c7aa 100644
+--- a/apps/web/app/glossary/page.tsx
++++ b/apps/web/app/glossary/page.tsx
+@@ -15,7 +15,7 @@ import { SchemaScript } from '@/lib/schema/components';
+  */
+ 
+ export const metadata: Metadata = {
+-  title: 'Hardwood Flooring Glossary | EcoWoods',
++  title: 'Hardwood Flooring Glossary',
+   description:
+     'Canonical definitions for hardwood flooring terms — acclimation, cupping, crowning, moisture differential, cross-ply core, intercoat screening and more. Every entry sourced to a published technical paper.',
+   alternates: { canonical: '/glossary' },
+diff --git a/apps/web/app/guides/[slug]/page.tsx b/apps/web/app/guides/[slug]/page.tsx
+index fdeee08..fa9e385 100644
+--- a/apps/web/app/guides/[slug]/page.tsx
++++ b/apps/web/app/guides/[slug]/page.tsx
+@@ -31,9 +31,9 @@ export async function generateMetadata({
+ }): Promise<Metadata> {
+   const { slug } = await params;
+   const guide = getGuide(slug);
+-  if (!guide) return { title: 'Not found | EcoWoods' };
++  if (!guide) return { title: 'Not found' };
+   return {
+-    title: `${guide.title} | EcoWoods`,
++    title: guide.title,
+     description: guide.summary,
+     alternates: { canonical: `/guides/${guide.slug}` },
+     openGraph: {
+diff --git a/apps/web/app/guides/page.tsx b/apps/web/app/guides/page.tsx
+index bdde345..376fd0d 100644
+--- a/apps/web/app/guides/page.tsx
++++ b/apps/web/app/guides/page.tsx
+@@ -6,7 +6,7 @@ import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ 
+ export const metadata: Metadata = {
+-  title: 'Decision Guides & Reference Installations | EcoWoods',
++  title: 'Decision Guides & Reference Installations',
+   description:
+     'Structured answers to the decisions a Toronto homeowner actually faces — solid versus engineered, nail-down versus glue-down versus floating, how to evaluate a quote — plus complete reference specifications for the common GTA scenarios.',
+   alternates: { canonical: '/guides' },
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index f7dbc53..d1d00fb 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -71,8 +71,19 @@ export const metadata: Metadata = {
+   // The RSS autodiscovery link. Feed readers, aggregators and several answer
+   // engines look for exactly this element and nothing else; a feed that is not
+   // declared here is a feed only someone who already knows the URL can find.
++  // NO `canonical` HERE. Next merges metadata from the root layout down into
++  // every page, and a page that does not declare its own `alternates.canonical`
++  // INHERITS this object wholesale. This block used to carry `canonical: '/'`,
++  // which meant /technical-library, /blog, /case-studies and /products/floorforge
++  // each served <link rel="canonical" href="https://ecowoods.ca"> — telling every
++  // crawler that they are duplicates of the homepage and should not be indexed.
++  // The sitemap offered 101 URLs; roughly one was indexed. See F-142.
++  //
++  // The RSS autodiscovery link stays, because it is genuinely site-wide: it points
++  // at the same feed from every page, which is what a feed reader expects.
++  // Canonicals are not site-wide by nature. Each route declares its own, and
++  // scripts/verify-canonical.mjs fails the build if a sitemapped route does not.
+   alternates: {
+-    canonical: '/',
+     types: { 'application/rss+xml': [{ url: '/feed.xml', title: 'Ecowoods — Technical Publications' }] },
+   },
+   keywords: [
+diff --git a/apps/web/app/library/page.tsx b/apps/web/app/library/page.tsx
+index 0816a2e..69d34c8 100644
+--- a/apps/web/app/library/page.tsx
++++ b/apps/web/app/library/page.tsx
+@@ -34,7 +34,7 @@ import { SchemaScript } from '@/lib/schema/components';
+  */
+ 
+ export const metadata: Metadata = {
+-  title: 'Visual Library | EcoWoods',
++  title: 'Visual Library',
+   description:
+     'Every diagram and photograph on this site in one index: 28 technical cross-sections explaining moisture, substrate, movement and the refinishing sequence, plus the floor collection and the machines that produce it.',
+   alternates: { canonical: '/library' },
+diff --git a/apps/web/app/market/page.tsx b/apps/web/app/market/page.tsx
+index bdfc5ee..b9ffeaa 100644
+--- a/apps/web/app/market/page.tsx
++++ b/apps/web/app/market/page.tsx
+@@ -21,7 +21,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ export const revalidate = 3600;
+ 
+ export const metadata: Metadata = {
+-  title: 'What moves a hardwood quote | EcoWoods',
++  title: 'What moves a hardwood quote',
+   description:
+     'The traded commodity inputs behind an installed hardwood floor in Ontario — forestry, energy and the US dollar — live from the Bank of Canada, with the mechanism for each and why they are volatile. Published so a price change can be evaluated rather than suspected.',
+   alternates: { canonical: '/market' },
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+index 9c7dbc1..1c1fb07 100644
+--- a/apps/web/app/page.tsx
++++ b/apps/web/app/page.tsx
+@@ -1,6 +1,18 @@
++import type { Metadata } from 'next';
+ import HomePage from './home-client';
+ import { ContentLibraryPromo } from './components/ContentLibraryPromo';
+ 
++/**
++ * The homepage is the one route whose canonical genuinely is '/'. It used to get
++ * that by inheriting the root layout — and so did every other page, which is the
++ * bug (F-142). Declared here explicitly so removing it from the layout costs the
++ * homepage nothing, and so verify-canonical.mjs can see it.
++ */
++export const metadata: Metadata = {
++  alternates: { canonical: '/' },
++};
++
++
+ /**
+  * Server entry for the homepage.
+  *
+diff --git a/apps/web/app/papers/[slug]/page.tsx b/apps/web/app/papers/[slug]/page.tsx
+index 6fb3e9d..4211c63 100644
+--- a/apps/web/app/papers/[slug]/page.tsx
++++ b/apps/web/app/papers/[slug]/page.tsx
+@@ -21,7 +21,12 @@ export async function generateMetadata({
+   if (!paper) return {};
+   const url = `${SITE_URL}/papers/${paper.slug}`;
+   return {
+-    title: `${paper.title} — ${paper.subtitle} | EcoWoods`,
++    // Title only. This used to be `${title} — ${subtitle} | EcoWoods`, which the
++    // root template then extended with ' · Ecowoods' — 130+ characters ending in
++    // the brand name twice, of which a search result shows roughly sixty. The
++    // subtitle is not lost: it is the first thing in the description below and it
++    // is the h2 on the page itself. See F-143.
++    title: paper.title,
+     description: paper.abstract,
+     alternates: { canonical: url },
+     openGraph: {
+diff --git a/apps/web/app/papers/page.tsx b/apps/web/app/papers/page.tsx
+index da38e30..e8e619e 100644
+--- a/apps/web/app/papers/page.tsx
++++ b/apps/web/app/papers/page.tsx
+@@ -6,7 +6,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+ export const metadata: Metadata = {
+-  title: 'Technical Papers | EcoWoods',
++  title: 'Technical Papers',
+   description:
+     'Downloadable engineering papers on hardwood flooring in Toronto and the GTA: moisture protocol, climate behaviour, species selection, installed cost, and how to evaluate an installer.',
+   alternates: { canonical: `${SITE_URL}/papers` },
+diff --git a/apps/web/app/products/floorforge/layout.tsx b/apps/web/app/products/floorforge/layout.tsx
+index 5ca97b7..6d8ce24 100644
+--- a/apps/web/app/products/floorforge/layout.tsx
++++ b/apps/web/app/products/floorforge/layout.tsx
+@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
+    ────────────────────────────────────────────────── */
+ export const metadata: Metadata = {
+   title: 'FloorForge — Autonomous Floor Refinishing Pilot',
++  alternates: { canonical: '/products/floorforge' },
+   description:
+     'FloorForge is an early-access autonomous floor refinishing robot in the software + hardware alignment stage. Open to contractor pilots in 2026. Join the interest list.',
+   openGraph: {
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index bfec223..2f05479 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -33,7 +33,7 @@ import { SchemaScript } from '@/lib/schema/components';
+  */
+ 
+ export const metadata: Metadata = {
+-  title: 'Resources | EcoWoods',
++  title: 'Resources',
+   description:
+     'Everything Ecowoods publishes on hardwood flooring, organised by what you are trying to do: decision guides, the Well-Installed Framework and its self-assessment, technical papers, a 32-term glossary, engineering case studies, and a public JSON API.',
+   alternates: { canonical: '/resources' },
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index b70bd58..d443a5a 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -10,137 +10,118 @@ import { CITIES } from '@/lib/seo-data';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
++import { CHANGELOG } from '@/lib/changelog';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
++export const revalidate = 86400;
++
+ /**
+- * Regenerated daily. Every lastModified below that is `new Date()` is a claim
+- * about freshness; baked once at build, that claim stops being true the moment
+- * anything else on the site changes without a deploy.
++ * LASTMOD IS A CLAIM, AND IT WAS FALSE ON 72 OF 101 URLS.
++ *
++ * Every base page here used to carry `lastModified: new Date()`. This file
++ * revalidates daily, so each of those URLs told every crawler it had changed
++ * today — again tomorrow, and the day after, forever, whether or not a single
++ * byte moved. Google's documented response to a lastmod it cannot trust is to
++ * stop reading lastmod for the whole site. The one signal that says "this page
++ * is worth fetching again" was being spent on 72 pages that had not changed,
++ * and was therefore worth nothing on the ones that had.
++ *
++ * So a date goes in only when something dated actually backs it:
++ *
++ *   · a paper, guide, article or case study        → its own publish date
++ *   · a page whose content is the changelog        → the newest entry for it
++ *   · /market                                      → genuinely now; the Bank of
++ *                                                    Canada numbers are refetched
++ *                                                    hourly and the page changes
++ *                                                    without a deploy
++ *
++ * and where nothing dated backs it — /design, /service-areas, a glossary term —
++ * the field is OMITTED. `lastModified` is optional in the protocol. "I don't
++ * know" is a legitimate answer and costs nothing. Inventing a date costs the
++ * credibility of every other date in the file.
++ *
++ * scripts/verify-sitemap.mjs fails the build if `new Date()` appears here
++ * outside the LIVE set below.
+  */
+-export const revalidate = 86400;
++
++/** Routes whose content really does change without a deploy. */
++const LIVE = new Set(['/market']);
++
++/** Newest changelog entry whose href is, or sits under, this route. */
++const changelogDate = (route: string): Date | undefined => {
++  const hit = CHANGELOG.filter(
++    (e) => e.href === route || e.href.startsWith(`${route}/`),
++  ).map((e) => e.date).sort().pop();
++  return hit ? new Date(`${hit}T00:00:00Z`) : undefined;
++};
++
++/** Newest of a set of ISO dates, or undefined when the set is empty. */
++const newest = (dates: string[]): Date | undefined => {
++  const d = [...dates].filter(Boolean).sort().pop();
++  return d ? new Date(d) : undefined;
++};
++
++/**
++ * Drops `lastModified` when there is no date rather than defaulting it to now.
++ * Written as a helper so the omission is one decision made once, not nineteen
++ * places where someone can quietly type `new Date()` again.
++ */
++const entry = (
++  route: string,
++  changeFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly',
++  priority: number,
++  lastModified?: Date,
++): MetadataRoute.Sitemap[number] => ({
++  url: route === '/' ? SITE_URL : `${SITE_URL}${route}`,
++  ...(LIVE.has(route)
++    ? { lastModified: new Date() }
++    : lastModified
++      ? { lastModified }
++      : {}),
++  changeFrequency,
++  priority,
++});
+ 
+ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+   // Fetch all articles and case studies
+   const articles = await getArticles();
+   const caseStudies = await getCaseStudies();
+ 
+-  // Base pages (always included)
++  /**
++   * Base pages. The date beside each one names the thing that dates it; where
++   * the comment says "no date", the field is genuinely absent from the XML.
++   */
++  const newestPaper = newest(getPapers().map((x) => x.publishedAt));
++  const newestGuide = newest(getGuides().map((x) => x.publishedAt));
++  const newestArticle = newest(articles.map((x) => x.modifiedAt || x.publishedAt));
++  const newestCase = newest(caseStudies.map((x) => x.modifiedAt || x.publishedAt));
++  const newestChange = newest(CHANGELOG.map((e) => `${e.date}T00:00:00Z`));
++
+   const basePages: MetadataRoute.Sitemap = [
+-    {
+-      url: SITE_URL,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 1.0,
+-    },
+-    {
+-      url: `${SITE_URL}/design`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.85,
+-    },
+-    {
+-      url: `${SITE_URL}/technical-library`,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 0.95,
+-    },
+-    {
+-      url: `${SITE_URL}/papers`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/products/floorforge`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.8,
+-    },
+-    {
+-      url: `${SITE_URL}/blog`,
+-      lastModified: new Date(),
+-      changeFrequency: 'daily',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/case-studies`,
+-      lastModified: new Date(),
+-      changeFrequency: 'daily',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/authority`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.7,
+-    },
+-    {
+-      url: `${SITE_URL}/framework`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.95,
+-    },
+-    {
+-      url: `${SITE_URL}/framework/assess`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/resources`,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 0.95,
+-    },
+-    {
+-      url: `${SITE_URL}/market`,
+-      lastModified: new Date(),
+-      changeFrequency: 'daily',
+-      priority: 0.85,
+-    },
+-    {
+-      url: `${SITE_URL}/whats-new`,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/standards`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.85,
+-    },
+-    {
+-      url: `${SITE_URL}/library`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.8,
+-    },
+-    {
+-      url: `${SITE_URL}/data`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.85,
+-    },
+-    {
+-      url: `${SITE_URL}/glossary`,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/guides`,
+-      lastModified: new Date(),
+-      changeFrequency: 'weekly',
+-      priority: 0.9,
+-    },
+-    {
+-      url: `${SITE_URL}/service-areas`,
+-      lastModified: new Date(),
+-      changeFrequency: 'monthly',
+-      priority: 0.9,
+-    },
++    entry('/', 'weekly', 1.0, newestChange),                       // newest publication
++    entry('/design', 'monthly', 0.85),                             // no date
++    entry('/technical-library', 'weekly', 0.95, newest([
++      ...articles.map((x) => x.modifiedAt || x.publishedAt),
++      ...caseStudies.map((x) => x.modifiedAt || x.publishedAt),
++      ...getPapers().map((x) => x.publishedAt),
++    ].filter(Boolean) as string[])),                               // what it indexes
++    entry('/papers', 'monthly', 0.9, newestPaper),
++    entry('/products/floorforge', 'monthly', 0.8),                 // no date
++    entry('/blog', 'weekly', 0.9, newestArticle),
++    entry('/case-studies', 'weekly', 0.9, newestCase),
++    entry('/authority', 'monthly', 0.7),                           // no date
++    entry('/framework', 'monthly', 0.95, changelogDate('/framework')),
++    entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
++    entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
++    entry('/market', 'daily', 0.85),                               // LIVE — set above
++    entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog
++    entry('/standards', 'monthly', 0.85, changelogDate('/standards')),
++    entry('/library', 'monthly', 0.8, changelogDate('/library')),
++    entry('/data', 'monthly', 0.85, changelogDate('/data')),
++    entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
++    entry('/guides', 'weekly', 0.9, newestGuide),
++    entry('/service-areas', 'monthly', 0.9),                       // no date
+   ];
+ 
+   /**
+@@ -153,7 +134,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    */
+   const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+     url: `${SITE_URL}/service-areas/${city.slug}`,
+-    lastModified: new Date(),
++    // No date. A city page is generated from CITIES and changes when the
++    // template changes, which nothing here records. Omitted rather than
++    // stamped with the build time — see the note at the top of this file.
+     changeFrequency: 'monthly' as const,
+     priority: 0.85,
+   }));
+@@ -193,7 +176,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    */
+   const glossaryPages: MetadataRoute.Sitemap = getTerms().map((term) => ({
+     url: `${SITE_URL}/glossary/${term.slug}`,
+-    lastModified: new Date(),
++    // No date. Terms carry no publish or revision field. Adding one to
++    // lib/glossary.ts would make a real date available here; until then this
++    // says nothing rather than saying something false.
+     changeFrequency: 'monthly' as const,
+     priority: 0.7,
+   }));
+diff --git a/apps/web/app/standards/page.tsx b/apps/web/app/standards/page.tsx
+index 0b256ad..8dadc13 100644
+--- a/apps/web/app/standards/page.tsx
++++ b/apps/web/app/standards/page.tsx
+@@ -37,7 +37,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ export const revalidate = 86400;
+ 
+ export const metadata: Metadata = {
+-  title: 'Standards Register | EcoWoods',
++  title: 'Standards Register',
+   description:
+     'The external standards and bodies hardwood flooring work in Toronto answers to — ASTM concrete moisture and floor preparation methods, NWFA guidelines — each mapped to the Well-Installed Framework criteria that depend on it, with the date we last verified it at the source.',
+   alternates: { canonical: '/standards' },
+@@ -76,6 +76,7 @@ export default function StandardsPage() {
+           hasPart: standards.map((s) => ({
+             '@type': 'CreativeWork',
+             name: s.designation ? `${s.designation} — ${s.title}` : s.title,
++            ...(s.edition ? { version: s.edition } : {}),
+             publisher: { '@type': 'Organization', name: s.body },
+             url: s.sourceUrl,
+             description: s.governs,
+@@ -129,6 +130,16 @@ export default function StandardsPage() {
+                 {s.note && <p className="std-note">{s.note}</p>}
+ 
+                 <dl className="gd-spec">
++                  {/* Edition is optional by design: it appears only where the
++                      document itself has been read, so a card that shows no
++                      edition row is telling the reader something true about how
++                      far the verification went. */}
++                  {s.edition && (
++                    <div className="gd-spec-row">
++                      <dt>Edition</dt>
++                      <dd>{s.edition}</dd>
++                    </div>
++                  )}
+                   <div className="gd-spec-row">
+                     <dt>Primary source</dt>
+                     <dd>
+diff --git a/apps/web/app/technical-library/page.tsx b/apps/web/app/technical-library/page.tsx
+index f9d7ea2..3055ca1 100644
+--- a/apps/web/app/technical-library/page.tsx
++++ b/apps/web/app/technical-library/page.tsx
+@@ -8,7 +8,8 @@ import { SchemaScript } from '@/lib/schema/components';
+ import { formatDate } from '@/lib/content/utils';
+ 
+ export const metadata: Metadata = {
+-  title: 'Technical Library | EcoWoods',
++  title: 'Technical Library',
++  alternates: { canonical: '/technical-library' },
+   description:
+     'Engineering reference for hardwood flooring installation, finishing, and maintenance in Toronto and the GTA: moisture protocols, species science, and finish chemistry.',
+   openGraph: {
+diff --git a/apps/web/app/whats-new/page.tsx b/apps/web/app/whats-new/page.tsx
+index 6c0f81a..03d9c82 100644
+--- a/apps/web/app/whats-new/page.tsx
++++ b/apps/web/app/whats-new/page.tsx
+@@ -23,7 +23,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ export const revalidate = 86400;
+ 
+ export const metadata: Metadata = {
+-  title: "What's New | EcoWoods",
++  title: "What's New",
+   description:
+     'Everything newly published by Ecowoods on hardwood flooring — technical papers, decision guides, figures, the Well-Installed Framework and the public data API — dated, newest first.',
+   alternates: { canonical: '/whats-new' },
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index d6ba5cd..a24b994 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,14 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'nwfa-installation-2025',
++    date: '2026-08-21',
++    kind: 'data',
++    title: 'The NWFA installation guidelines, edition verified',
++    body: 'The standards register carried this entry for a year without naming an edition, because the association\u2019s landing page does not list one and this register does not assert what it has not read. The document itself has now been read at source: Wood Flooring Installation Guidelines, Revised \u00a9 2025, published by the National Wood Flooring Association. The entry names the edition, links the document rather than the homepage, and the register shows an Edition row wherever an edition has actually been confirmed \u2014 and no row where it has not.',
++    href: '/standards',
++  },
+   {
+     id: 'library-v1',
+     date: '2026-08-21',
+diff --git a/apps/web/lib/standards.ts b/apps/web/lib/standards.ts
+index 2084544..0247f2c 100644
+--- a/apps/web/lib/standards.ts
++++ b/apps/web/lib/standards.ts
+@@ -53,6 +53,13 @@ export type Standard = {
+   /** Why it matters to a floor in this city. */
+   relevance: string;
+   status: StandardStatus;
++  /**
++   * The edition exactly as the document prints it — "Revised © 2025", not
++   * "2025 edition". Present only where the document itself has been read; an
++   * entry whose status is 'unverified-edition' must not carry this field,
++   * which is the whole point of that status existing.
++   */
++  edition?: string;
+   /** The issuing body's own page. Never a reseller, never a blog. */
+   sourceUrl: string;
+   /** ISO date this entry was last checked against sourceUrl. */
+@@ -116,16 +123,26 @@ export const STANDARDS: Standard[] = [
+   {
+     id: 'nwfa-guidelines',
+     body: 'National Wood Flooring Association (NWFA)',
+-    title: 'NWFA technical guidelines and publications',
++    // Was 'NWFA technical guidelines and publications', status
++    // 'unverified-edition', pointing at nwfa.org — a landing page that does not
++    // enumerate editions, so the entry could not name one. The document itself
++    // has since been read at the URL below: its cover reads WOOD FLOORING
++    // INSTALLATION GUIDELINES, and its copyright line reads 'Revised © 2025'.
++    // Publisher confirmed on the same page as the National Wood Flooring
++    // Association, St. Louis, Missouri. That is a primary source on the issuing
++    // body's own domain, which is the standard this register holds itself to,
++    // so the edition is now asserted rather than deferred.
++    title: 'Wood Flooring Installation Guidelines',
+     governs:
+-      'Installation, sand-and-finish and wood-species guidance for the North American wood flooring trade.',
++      'Installation of wood flooring over wood, concrete and radiant substrates: acclimation, moisture testing, subfloor flatness and preparation, fastening schedules and method selection.',
+     relevance:
+       'The trade body whose guidelines most manufacturer warranties reference. Acclimation periods, subfloor requirements and installation method by substrate all trace here.',
+-    status: 'unverified-edition',
+-    sourceUrl: 'https://nwfa.org/',
+-    verifiedAt: '2026-08-20',
++    status: 'current',
++    edition: 'Revised © 2025',
++    sourceUrl: 'https://nwfa.org/wp-content/uploads/2026/02/NWFA-Installation-Guidelines.pdf',
++    verifiedAt: '2026-08-21',
+     pillars: ['moisture', 'substrate', 'specification', 'containment'],
+-    note: 'The NWFA landing page does not enumerate current editions of individual guideline documents. This entry deliberately does not assert an edition or year — confirm the applicable document and revision with the NWFA directly before citing it in a specification.',
++    note: 'The NWFA also publishes separate Sand & Finish and Wood Species guidelines; this entry covers the installation document only. Membership may be required for some NWFA publications — confirm the applicable document before citing it in a specification.',
+   },
+ ];
+ 
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 19259f9..21ca9c0 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -4098,3 +4098,156 @@ does not already say.
+ 
+ All three are invisible to every source-reading guard, which is the entire
+ lesson of F-134: the repository cannot tell you what a crawler receives.
++
++### F-140 · `ship.sh` shipped a commit with no code in it, and proved it had · P0
++
++Patch 53 was applied in Codespaces, verified, and reported 22 checks passed. It
++is not on `origin/main`. None of it is: no `scripts/verify-live.sh`, no IndexNow
++route, no `HowTo` on the papers. What is on `origin/main` is this:
++
++```
++6e3cc7a feat(crawlers): serve the IndexNow key, fix the PWA icons, emit HowTo
++ 50verifylive.patch              |  249 ----------
++ 51crawlersurfaces.patch         |  259 ----------
++ 52crawlersurfacescombined.patch | 1009 ---------------------------------------
++ 3 files changed, 1517 deletions(-)
++```
++
++A commit whose subject describes three features and whose contents are three
++deletions. The mechanism, step by step:
++
++1. **Step 1 deleted the patch.** `git clean -qfd` removes every untracked file,
++   and a `.patch` uploaded through the GitHub web UI and not yet committed is an
++   untracked file. `53crawlersurfaces.patch` was removed before anything read
++   it. The script's own comment explains that `git clean` is safe because
++   `node_modules` and `.env` are gitignored — which is true, and which is why
++   the one category of file that is *neither* ignored *nor* tracked was never
++   considered.
++
++2. **Step 2 found work to do anyway.** Patches 50, 51 and 52 were tracked on
++   main and already applied, so `patch-apply.sh` correctly detected each with a
++   reverse-check and untracked it. Three deletions. `git status --porcelain` was
++   therefore non-empty, and the "Nothing changed" guard — the one check placed
++   exactly here to catch this — passed.
++
++3. **Steps 3 to 6 verified main against itself.** `pnpm install`, `prisma
++   generate`, `tsc --noEmit`, fourteen guards, `next build`, `parse-scan`: all
++   green. They were reading code that had already passed all of them.
++
++4. **Step 7 committed, pushed, and proved the push landed.** It had. The proof
++   step compares `HEAD` to `origin/main` and counts tracked `.patch` files. Both
++   were correct. A push of pure deletions lands exactly as convincingly as a
++   push of real work.
++
++Every line printed green. The site received nothing.
++
++This is F-129 with the sign flipped. There, code shipped without its assets;
++here, a commit shipped without its code — and in both cases the verification was
++extensive, correct, and aimed at the wrong object. The deep lesson is that
++**"something changed" is not "the thing I sent changed"**, and every check in
++that script was measuring the first.
++
++Three fixes, at the three points where it could have been caught:
++
++- `git clean` now runs with `-e '*.patch'`, and the tree-clean assertion
++  excludes patch files rather than being defeated by them. An uploaded patch
++  survives to step 2. The script also prints what is on disk before applying, so
++  a patch that is missing is *seen* to be missing.
++- Step 2b splits the working tree into **code** and **bookkeeping**. A run where
++  only `.patch` files moved now dies with the list of what was untracked and why
++  that means nothing shipped.
++- The proof step reads the commit that is on `origin/main` and requires at least
++  one changed file that is not a `.patch`. It prints them.
++
++Patch 53 remains valid and unapplied; it is tracked on main and will apply on
++the next run.
++
++### F-141 · 72 of 101 sitemap URLs claimed to change every single day · P0
++
++`sitemap.ts` revalidates every 86400 seconds and nineteen base pages, sixteen
++city pages and forty-five glossary terms each carried `lastModified: new
++Date()`. Not a stale date — a *rolling* one. Every one of those URLs told every
++crawler it had been modified today, and would say the same tomorrow, and the day
++after, whether or not a byte had moved since the site was built.
++
++`lastmod` is the only field in the protocol that answers "which of these hundred
++URLs is worth fetching again". Google's documented response to a `lastmod` it
++finds unreliable is to stop reading `lastmod` for the entire host. So the cost
++is not that 72 pages looked falsely fresh. It is that the dates on the pages
++that *had* genuinely changed — a new guide, a re-verified standard — became
++worth nothing too, on a site where roughly one URL out of 101 is indexed.
++
++The rule now: a date goes in only when something dated backs it — a publish
++date, a changelog entry, or a genuinely live route — and is **omitted**
++otherwise. `lastModified` is optional. "I don't know" is true, free, and costs
++nothing; a date invented at build time costs the credibility of every other date
++in the file. `/market` is the single member of the `LIVE` set, because the Bank
++of Canada figures really are refetched hourly and the page really does change
++without a deploy.
++
++`scripts/verify-sitemap.mjs` permits exactly one bare `new Date()` in the file
++and requires it to sit inside the `LIVE.has(route)` branch.
++
++### F-142 · Every page told Google it was a duplicate of the homepage · P0
++
++This is the largest single finding in this series, and it had been true the
++entire time the authority work was being built.
++
++The root layout declared:
++
++```ts
++alternates: {
++  canonical: '/',
++  types: { 'application/rss+xml': [ ... ] },
++},
++```
++
++Next merges metadata from the root layout down into every page, and a page that
++does not declare its own `alternates.canonical` inherits the parent's object
++whole. Fetched from production, `https://ecowoods.ca/technical-library` served:
++
++```html
++<link rel="canonical" href="https://ecowoods.ca">
++```
++
++and so did `/blog`, `/case-studies` and `/products/floorforge`. That element is
++not a hint or a preference. It is the page instructing a crawler: *I am a
++duplicate of the homepage; index that instead of me.* Four surfaces, including
++the two index pages that link to every article and every case study, were
++asking to be dropped — and were.
++
++Fourteen guards, `tsc`, and a production build passed every day it was true,
++because **nothing in this repository had ever read a rendered `<head>`**. The
++canonical was correct in fifteen files and absent in four, and absence was
++indistinguishable from correctness at the source level. It is only visible in
++the output.
++
++Two guards now close it. `scripts/verify-canonical.mjs` fails if the root layout
++declares a canonical at all, and requires each of the 25 public routes to
++declare its own — the RSS `types` entry stays in the layout, because that one
++genuinely is site-wide. `verify-live.sh` fetches seven routes from production
++and compares the canonical each one serves against its own URL, because a guard
++that reads source cannot see what a deploy actually renders.
++
++### F-143 · Titles carried the brand twice, and one carried 130 characters · P2
++
++The root template is `%s · Ecowoods`. Seventeen pages set titles ending in
++`| EcoWoods`, so `/technical-library` rendered as:
++
++> Technical Library | EcoWoods · Ecowoods
++
++The papers were worse. `title` was built as `${paper.title} — ${paper.subtitle} |
++EcoWoods`, and the template then appended the brand a second time:
++
++> The Intelligent Homeowner's Decision Framework — How to choose hardwood that
++> performs, appreciates, and never becomes a liability | EcoWoods · Ecowoods
++
++A search result shows roughly sixty characters of that. The reader sees the
++first half of a subtitle and never reaches the brand at all, which is the one
++part that got written twice.
++
++Same root cause as F-142, one level less severe: metadata composed in two places
++by people who could never see the composed result. All seventeen now set the
++bare title; `openGraph.title` and `twitter.title` keep the brand, correctly,
++because a share card has no page around it to give it context. The brand check
++lives in `verify-canonical.mjs` — same file, same class of bug, same fix.
+diff --git a/package.json b/package.json
+index e7eb770..7079601 100644
+--- a/package.json
++++ b/package.json
+@@ -24,9 +24,11 @@
+     "verify:market": "node scripts/verify-market.mjs",
+     "verify:freshness": "node scripts/verify-freshness.mjs",
+     "verify:images": "node scripts/verify-images.mjs",
++    "verify:canonical": "node scripts/verify-canonical.mjs",
++    "verify:sitemap": "node scripts/verify-sitemap.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 3097d42..f47a403 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -129,6 +129,8 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-market.mjs ] && run "verify:market" node scripts/verify-market.mjs
+ [ -f scripts/verify-freshness.mjs ] && run "verify:freshness" node scripts/verify-freshness.mjs
+ [ -f scripts/verify-images.mjs ] && run "verify:images" node scripts/verify-images.mjs
++[ -f scripts/verify-canonical.mjs ] && run "verify:canonical" node scripts/verify-canonical.mjs
++[ -f scripts/verify-sitemap.mjs ] && run "verify:sitemap" node scripts/verify-sitemap.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/ship.sh b/scripts/ship.sh
+index 4f17430..7801082 100755
+--- a/scripts/ship.sh
++++ b/scripts/ship.sh
+@@ -44,19 +44,33 @@ git reset --hard -q origin/main
+ #
+ # `git clean -fd` never touches ignored paths, so node_modules, .next and .env*
+ # are all safe — every one of them is in .gitignore.
+-LEFTOVER="$(git clean -nd | sed 's/^Would remove /       /')"
++#
++# BUT NOT THE PATCHES. `git clean -fd` removes every untracked file, and a
++# .patch that has just been uploaded and not yet committed is an untracked file.
++# Patch 53 was deleted by this line, seconds before step 2 went looking for
++# patches to apply and found none of it. -e excludes a pattern from the clean.
++LEFTOVER="$(git clean -nd -e '*.patch' | sed 's/^Would remove /       /')"
+ if [ -n "$LEFTOVER" ]; then
+   echo "     removing untracked leftovers from a previous apply:"
+   echo "$LEFTOVER"
+-  git clean -qfd
++  git clean -qfd -e '*.patch'
+ fi
+ 
++# A patch that survived the clean but is not tracked would be invisible to
++# patch-apply.sh's `git ls-files '*.patch'` half. Say what is on disk, so a
++# patch that is present is seen to be present before anything is applied.
++ON_DISK="$(ls -1 ./*.patch 2>/dev/null | sed 's|^\./||' | tr '\n' ' ')"
++echo "     patches on disk: ${ON_DISK:-none}"
++
+ # .next is gitignored, so neither reset nor clean touches it. Stale route types
+ # from a previous build survive into a tree where those routes no longer exist,
+ # and step 4 then fails typechecking a cache instead of the code. See F-87.
+ rm -rf apps/web/.next/types
+ 
+-[ -z "$(git status --porcelain)" ] || die "Tree still not clean after reset + clean. Inspect: git status"
++# Uploaded patches are deliberately left in place above, so they are excluded
++# from this assertion rather than being allowed to fail it.
++DIRTY="$(git status --porcelain | grep -v '\.patch$' || true)"
++[ -z "$DIRTY" ] || die "Tree still not clean after reset + clean. Inspect: git status"
+ echo "     HEAD $(git log -1 --format='%h  %s')"
+ 
+ # ── 1b. binary assets that a patch cannot carry ───────────────────────────
+@@ -84,11 +98,53 @@ else
+   echo "     (none — nothing uploaded)"
+ fi
+ 
+-if [ -z "$(git status --porcelain)" ]; then
+-  die "Nothing changed. Either no patch was uploaded, or it was already applied
+-       and committed. Check: git log --oneline -3"
++# ── 2b. did any CODE change? ──────────────────────────────────────────────
++#
++# This is the check that was missing, and its absence cost a whole patch.
++#
++# patch-apply.sh untracks a .patch file once it has been applied — including one
++# that was applied on a previous run, which it detects and correctly skips. That
++# untracking is a change to the working tree. So `git status --porcelain` came
++# back non-empty, this guard passed, and the run continued with a tree
++# containing three deleted .patch files and not one line of new code.
++#
++# Everything downstream then did exactly what it was built to do. pnpm install
++# succeeded. tsc passed. Fourteen guards passed — they were reading main's own
++# code, which had of course already passed them. next build was green.
++# parse-scan was clean. Step 7 committed, pushed, and PROVED THE PUSH LANDED,
++# because it had: commit 6e3cc7a, "feat(crawlers): serve the IndexNow key, fix
++# the PWA icons, emit HowTo", 3 files changed, 1517 deletions, 0 insertions.
++#
++# Every single step reported success. The site got nothing. See F-140.
++#
++# A .patch file moving is bookkeeping. Code moving is the point. They are
++# counted separately from here on.
++CODE_CHANGED="$(git status --porcelain | grep -v '\.patch$' || true)"
++BOOKKEEPING="$(git status --porcelain | grep '\.patch$' || true)"
++
++if [ -z "$CODE_CHANGED$BOOKKEEPING" ]; then
++  die "Nothing changed at all. Either no patch was uploaded, or it was already
++       applied and committed. Check: git log --oneline -3"
+ fi
+ 
++if [ -z "$CODE_CHANGED" ]; then
++  printf '\n'
++  echo "$BOOKKEEPING" | sed 's/^/       /'
++  die "ONLY .patch FILES MOVED — no code changed.
++
++       Every patch above was already applied on main, so patch-apply.sh untracked
++       them and nothing else happened. Shipping this would produce a commit of
++       pure deletions that passes every check and delivers nothing. That is
++       exactly what happened to patch 53 (F-140).
++
++       If a patch you expected to apply is listed above as merely untracked, it
++       is already on main — check with:  git log --oneline -5
++       If a patch you uploaded is NOT listed at all, it never reached this tree."
++fi
++
++echo "     code files touched: $(echo "$CODE_CHANGED" | grep -c . )"
++echo "$CODE_CHANGED" | sed 's/^/       /'
++
+ # ── 3-6. verification, in the order that matters ──────────────────────────
+ step "3/7  install + prisma generate"
+ pnpm install --silent
+@@ -129,6 +185,28 @@ printf '     %-34s %s\n' "tracked .patch files on main" "$REMOTE_PATCHES  (want
+ [ "$REMOTE_PATCHES" = 0 ] || die "Patch files are still tracked on main. They will be replayed on the next run.
+        git rm --cached *.patch && git commit && git push"
+ 
++# ── the proof that was missing ────────────────────────────────────────────
++#
++# Everything above proves a push landed. A push of a commit containing three
++# deletions and nothing else lands exactly as convincingly as a push of real
++# work, and that is what shipped as patch 53 while every line of this script
++# printed green. So read the commit that is now on origin/main and require that
++# it changed something other than a .patch file.
++SHIPPED="$(git show --stat --name-only --format='' origin/main | grep -v '^$' | grep -v '\.patch$' || true)"
++SHIPPED_N="$(echo "$SHIPPED" | grep -c . || true)"
++printf '     %-34s %s\n' "code files in this commit" "$SHIPPED_N  (want ≥1)"
++if [ "$SHIPPED_N" -eq 0 ]; then
++  die "THE COMMIT ON origin/main CONTAINS NO CODE.
++
++       $(git log -1 --format='%h  %s' origin/main)
++$(git show --stat --format='' origin/main | sed 's/^/       /')
++
++       This is F-140 repeating. The push succeeded and delivered nothing.
++       Do not deploy. Find the patch that was supposed to apply and check
++       whether it is on disk:  ls -1 *.patch"
++fi
++echo "$SHIPPED" | sed 's/^/       /'
++
+ printf '\n\033[32m✓ on origin/main.\033[0m\n'
+ printf '  Deploy NOW, and only because this succeeded:\n\n'
+ printf '    vercel --prod && bash scripts/verify-live.sh\n\n'
+diff --git a/scripts/verify-canonical.mjs b/scripts/verify-canonical.mjs
+new file mode 100644
+index 0000000..0423a4f
+--- /dev/null
++++ b/scripts/verify-canonical.mjs
+@@ -0,0 +1,287 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-canonical.mjs
++ *
++ * Fails when a public route does not declare its own canonical URL, when the
++ * root layout declares one for everybody, or when a page title carries the
++ * brand name that the title template is going to append anyway.
++ *
++ * WHY THIS EXISTS
++ *
++ * F-142, and it is the most expensive bug in this repository so far.
++ *
++ * The root layout carried:
++ *
++ *     alternates: {
++ *       canonical: '/',
++ *       types: { 'application/rss+xml': [ ... ] },
++ *     }
++ *
++ * Next merges metadata from the root layout down into every page, and a page
++ * that does not declare `alternates.canonical` inherits the parent's object
++ * whole. So /technical-library served
++ *
++ *     <link rel="canonical" href="https://ecowoods.ca">
++ *
++ * and so did /blog, /case-studies and /products/floorforge. That element is not
++ * a hint. It is the page telling a crawler "I am a duplicate of the homepage;
++ * index that instead of me." The sitemap offered 101 URLs. Roughly one was
++ * indexed. Fourteen guards, tsc, and a production build all passed, every day,
++ * for the whole time it was true — because nothing in this repository had ever
++ * read the rendered <head>.
++ *
++ * The reason it is worth a guard rather than a one-line fix is that the failure
++ * is silent in both directions. Adding a route is the moment it recurs: a new
++ * page.tsx with a title and a description looks complete, and inherits a wrong
++ * canonical without a single warning anywhere.
++ *
++ * THE TITLE CHECK, in the same file, because it is the same mistake
++ *
++ * The root template is `%s · Ecowoods`. Twelve pages set titles ending in
++ * ' | EcoWoods', which rendered as 'Technical Library | EcoWoods · Ecowoods'.
++ * The paper route was worse: title + subtitle + brand + brand, 130+ characters
++ * of which a result shows about sixty. Both are metadata composed twice by
++ * people who could not see the composed result. See F-143.
++ *
++ * WHAT IT DOES
++ *
++ * 1. Reads apps/web/app/layout.tsx and fails if `alternates` contains
++ *    `canonical`. The RSS `types` entry is fine and expected — it is genuinely
++ *    site-wide.
++ * 2. For every public route below, requires that its own page.tsx or the
++ *    layout.tsx beside it declares `alternates` with a `canonical`.
++ * 3. Fails on any `title:` whose literal ends in the brand name, since the
++ *    template appends it.
++ *
++ * Comments are stripped before matching. Two guards in this repository have
++ * already failed by reading their own documentation as a violation (F-58,
++ * F-106); this one is documented at length, so it strips first.
++ *
++ *   node scripts/verify-canonical.mjs
++ *   node scripts/verify-canonical.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const APP = path.join(ROOT, 'apps/web/app');
++const LIST = process.argv.includes('--list');
++
++if (!fs.existsSync(APP)) {
++  console.error('verify-canonical: apps/web/app not found — run from the repo root.');
++  process.exit(2);
++}
++
++/**
++ * Every route that appears in sitemap.ts. Dynamic segments are listed by their
++ * directory name because one page.tsx serves the whole set — if
++ * papers/[slug]/page.tsx declares a canonical, all three papers have one.
++ *
++ * This list is written rather than derived, and that is deliberate: deriving it
++ * from sitemap.ts would mean a route dropped from the sitemap also silently
++ * drops out of this check, and a route missing from the sitemap is its own bug.
++ * scripts/verify-links.mjs already walks the route tree; this is the head.
++ */
++const ROUTES = [
++  '',                      // the homepage
++  'design',
++  'technical-library',
++  'papers',
++  'papers/[slug]',
++  'products/floorforge',
++  'blog',
++  'blog/[slug]',
++  'case-studies',
++  'case-studies/[slug]',
++  'authority',
++  'framework',
++  'framework/assess',
++  'resources',
++  'market',
++  'whats-new',
++  'standards',
++  'library',
++  'data',
++  'glossary',
++  'glossary/[slug]',
++  'guides',
++  'guides/[slug]',
++  'service-areas',
++  'service-areas/[city]',
++];
++
++/* ── strip comments so the prose above cannot be read as code ─────────────── */
++const strip = (src) =>
++  src
++    .replace(/\/\*[\s\S]*?\*\//g, '')
++    .replace(/(^|[^:])\/\/.*$/gm, '$1');
++
++const read = (p) => (fs.existsSync(p) ? strip(fs.readFileSync(p, 'utf8')) : null);
++
++const problems = [];
++const ok = [];
++
++/* ── 1. the root layout must not canonicalise on everyone's behalf ────────── */
++const layoutPath = path.join(APP, 'layout.tsx');
++const layout = read(layoutPath);
++if (layout === null) {
++  console.error('verify-canonical: apps/web/app/layout.tsx not found.');
++  process.exit(2);
++}
++const rootAlternates = layout.match(/alternates:\s*\{[\s\S]*?\n {2}\}/);
++if (rootAlternates && /canonical:/.test(rootAlternates[0])) {
++  problems.push({
++    file: 'apps/web/app/layout.tsx',
++    kind: 'root-canonical',
++    detail:
++      'the root layout declares alternates.canonical — every page that does not ' +
++      'override it inherits this exact URL',
++  });
++}
++
++/* ── 2. every public route declares its own ───────────────────────────────── */
++for (const route of ROUTES) {
++  const dir = route ? path.join(APP, route) : APP;
++  const page = read(path.join(dir, 'page.tsx'));
++  const own = read(path.join(dir, 'layout.tsx'));
++
++  if (page === null) {
++    problems.push({
++      file: `apps/web/app/${route}/page.tsx`.replace('//', '/'),
++      kind: 'missing-page',
++      detail: 'route is listed here but has no page.tsx — the list or the route is wrong',
++    });
++    continue;
++  }
++
++  const declares = (src) =>
++    src !== null && /alternates:\s*\{[\s\S]*?canonical\s*:/.test(src);
++
++  if (declares(page) || declares(own)) {
++    ok.push(route === '' ? '/' : `/${route}`);
++  } else {
++    problems.push({
++      file: `apps/web/app/${route}/page.tsx`.replace('//', '/'),
++      kind: 'inherits',
++      detail:
++        'no alternates.canonical here or in the layout beside it — this route ' +
++        'serves whatever the root layout says, which is not this route',
++    });
++  }
++}
++
++/* ── 3. no title may carry the brand the template appends ─────────────────── */
++/**
++ * Only the top-level `title` is checked. `openGraph.title` and `twitter.title`
++ * are NOT run through the root template — a share card has no surrounding page
++ * to give it context, so spelling the brand out there is correct, and the first
++ * version of this guard flagged fifteen of them. Those nested objects are cut
++ * out by brace matching before anything is matched, which is more work than a
++ * regex on indentation and does not break the first time a file is reformatted.
++ */
++const TEMPLATE = (layout.match(/template:\s*['"`](.*?)['"`]/) || [])[1] ?? '';
++const BRAND = TEMPLATE.replace(/%s/g, '').replace(/[^A-Za-z]/g, '');
++
++/** Remove `key: { ... }` and everything nested inside it. */
++const cutBlock = (src, key) => {
++  let out = src;
++  for (;;) {
++    const at = out.search(new RegExp(`\\b${key}\\s*:\\s*\\{`));
++    if (at === -1) return out;
++    let i = out.indexOf('{', at);
++    let depth = 0;
++    for (; i < out.length; i++) {
++      if (out[i] === '{') depth++;
++      else if (out[i] === '}') { depth--; if (depth === 0) { i++; break; } }
++    }
++    out = out.slice(0, at) + out.slice(i);
++  }
++};
++
++const walk = (dir, out = []) => {
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) walk(p, out);
++    else if (/\.tsx?$/.test(e.name)) out.push(p);
++  }
++  return out;
++};
++
++/**
++ * Only metadata is metadata. A page also builds schema.org objects, and those
++ * carry a `name`/`title` that SHOULD spell the brand out — a WebPage node in a
++ * knowledge graph has no title template above it. The second version of this
++ * guard flagged eight of those. So the search space is narrowed to two things
++ * and nothing else: the exported `metadata` literal, and the body of
++ * `generateMetadata`, which exists only to build one.
++ */
++const balancedFrom = (src, at) => {
++  const open = src.indexOf('{', at);
++  if (open === -1) return '';
++  let depth = 0;
++  for (let i = open; i < src.length; i++) {
++    if (src[i] === '{') depth++;
++    else if (src[i] === '}') { depth--; if (depth === 0) return src.slice(open, i + 1); }
++  }
++  return '';
++};
++
++const metadataScopes = (src) => {
++  const out = [];
++  const lit = src.search(/export\s+const\s+metadata\b[^=]*=\s*\{/);
++  if (lit !== -1) out.push(balancedFrom(src, lit));
++  const gen = src.search(/export\s+async\s+function\s+generateMetadata\b/);
++  if (gen !== -1) {
++    // Skip the parameter list, then take the function body.
++    const brace = src.indexOf('{', src.indexOf(')', gen));
++    out.push(balancedFrom(src, brace - 1));
++  }
++  return out.filter(Boolean);
++};
++
++const titleRe = new RegExp(
++  `title:\\s*(['"\`])([^'"\`]*?)\\s*[|\\-–—]\\s*${BRAND}\\s*\\1`,
++  'i',
++);
++for (const f of walk(APP)) {
++  const src = read(f);
++  if (src === null) continue;
++  for (const scope of metadataScopes(src)) {
++    const own = cutBlock(cutBlock(scope, 'openGraph'), 'twitter');
++    const m = own.match(titleRe);
++    if (m) {
++      problems.push({
++        file: path.relative(ROOT, f),
++        kind: 'double-brand',
++        detail: `title ends in the brand, and the template appends '${TEMPLATE}' to it: "${m[2].trim()} … ${BRAND}"`,
++      });
++      break;
++    }
++  }
++}
++
++/* ── report ───────────────────────────────────────────────────────────────── */
++if (LIST) {
++  for (const r of ok) console.log(`  ✓ ${r}`);
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} metadata problem(s) in the rendered <head>:\n`);
++  for (const p of problems) {
++    console.error(`  · ${p.file}`);
++    console.error(`      ${p.detail}\n`);
++  }
++  console.error(
++    '  A canonical is per-route by nature. Declare it on the page:\n\n' +
++      "      export const metadata: Metadata = {\n" +
++      "        alternates: { canonical: '/your-route' },\n" +
++      "      };\n\n" +
++      '  For a client component, put it in the layout.tsx beside it.\n',
++  );
++  process.exit(1);
++}
++
++console.log(
++  `✓ canonicals verified — ${ok.length} public route(s), each declaring its own; ` +
++    `root layout canonicalises nothing; no title duplicates the brand`,
++);
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index de8fd6b..2d4790e 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -147,6 +147,72 @@ else
+   FAILED=$((FAILED + 1))
+ fi
+ 
++printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
++#
++# F-142. The root layout declared alternates.canonical = '/', Next merged it
++# down into every page that did not override it, and /technical-library, /blog,
++# /case-studies and /products/floorforge each served
++#
++#     <link rel="canonical" href="https://ecowoods.ca">
++#
++# telling every crawler they were duplicates of the homepage. 101 URLs in the
++# sitemap; roughly one indexed. Fourteen repository guards passed throughout,
++# because not one of them had ever read a rendered <head> — that is the whole
++# reason this file exists, and this is the check it was missing.
++#
++# scripts/verify-canonical.mjs now catches it in the source. This catches it in
++# the thing that is actually served, which is not always the same thing.
++canonical_of() {
++  curl -s -L --max-time 20 "$1?$CB" 2>/dev/null \
++    | grep -o '<link rel="canonical"[^>]*>' \
++    | head -1 \
++    | sed 's/.*href="\([^"]*\)".*/\1/'
++}
++
++for ROUTE in /technical-library /blog /case-studies /papers /guides /glossary /market; do
++  WANT="$BASE$ROUTE"
++  GOT="$(canonical_of "$BASE$ROUTE")"
++  if [ -z "$GOT" ]; then
++    printf '  %sFAIL%s  %-34s no canonical element in the head\n' "$RED" "$OFF" "$ROUTE"
++    FAILED=$((FAILED + 1))
++  elif [ "${GOT%/}" = "${WANT%/}" ]; then
++    printf '  %sPASS%s  %-34s self-canonical\n' "$GRN" "$OFF" "$ROUTE"
++  else
++    printf '  %sFAIL%s  %-34s points at %s\n' "$RED" "$OFF" "$ROUTE" "$GOT"
++    printf '        This page is telling crawlers not to index it. See F-142.\n'
++    FAILED=$((FAILED + 1))
++  fi
++done
++
++printf '\n%s── sitemap lastmod %s\n' "$BOLD" "$OFF"
++#
++# F-141. Seventy-two of 101 URLs carried the build timestamp, so every one of
++# them claimed to have changed today, every day. Google's response to a lastmod
++# it cannot trust is to stop reading lastmod for the host, which spends the one
++# signal that says "fetch this again" on pages that did not change.
++#
++# The threshold is deliberately loose: a deploy legitimately changes a handful
++# of dated things at once, and /market really is rebuilt hourly. More than a
++# third of the file sharing today's date is the shape of a build stamp, not of
++# a publication day.
++SM="$(curl -s -L --max-time 30 "$BASE/sitemap.xml?$CB" 2>/dev/null || true)"
++TOTAL="$(printf '%s' "$SM" | grep -o '<loc>' | wc -l | tr -d ' ')"
++TODAY="$(date -u +%Y-%m-%d)"
++STAMPED="$(printf '%s' "$SM" | grep -o "<lastmod>$TODAY" | wc -l | tr -d ' ')"
++if [ "${TOTAL:-0}" -eq 0 ]; then
++  printf '  %sFAIL%s  %-34s no <loc> elements — sitemap unreachable or empty\n' "$RED" "$OFF" "sitemap.xml"
++  FAILED=$((FAILED + 1))
++else
++  LIMIT=$(( TOTAL / 3 ))
++  if [ "${STAMPED:-0}" -le "$LIMIT" ]; then
++    printf '  %sPASS%s  %-34s %s of %s URLs dated today (limit %s)\n' "$GRN" "$OFF" "lastmod honesty" "$STAMPED" "$TOTAL" "$LIMIT"
++  else
++    printf '  %sFAIL%s  %-34s %s of %s URLs dated today\n' "$RED" "$OFF" "lastmod honesty" "$STAMPED" "$TOTAL"
++    printf '        That is a build stamp, not a publication date. See F-141.\n'
++    FAILED=$((FAILED + 1))
++  fi
++fi
++
+ printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"
+ # apps/web/public is not served on this host. This asserts the fact rather than
+ # leaving it to be rediscovered: /icon-192.png has lived there since long before
+diff --git a/scripts/verify-sitemap.mjs b/scripts/verify-sitemap.mjs
+new file mode 100644
+index 0000000..359fb0d
+--- /dev/null
++++ b/scripts/verify-sitemap.mjs
+@@ -0,0 +1,119 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-sitemap.mjs
++ *
++ * Fails when sitemap.ts stamps a URL with the build time.
++ *
++ * WHY THIS EXISTS
++ *
++ * F-141. Seventy-two of the hundred and one URLs in sitemap.xml carried
++ * `lastModified: new Date()`. sitemap.ts revalidates every 86400 seconds, so
++ * every one of those URLs claimed to have been modified today — today, and
++ * again tomorrow, and again the day after, whether or not anything had changed.
++ *
++ * That is not a harmless default. lastmod is the single field in the protocol
++ * that tells a crawler which of a hundred URLs is worth fetching again, and
++ * Google's stated behaviour on a lastmod it finds unreliable is to stop reading
++ * lastmod for the whole host. Spending it on 72 unchanged pages did not make
++ * those pages look fresh; it made the dates on the pages that HAD changed
++ * worthless too. On a site with 101 URLs and roughly one of them indexed, that
++ * is not a detail.
++ *
++ * The fix is not a better default. It is that a date goes in only when
++ * something dated backs it, and is omitted otherwise — `lastModified` is
++ * optional, and "I don't know" is a legitimate answer that costs nothing.
++ *
++ * WHAT IT DOES
++ *
++ * Strips comments, then requires that `new Date()` with no argument appears at
++ * most once in sitemap.ts, inside the branch guarded by `LIVE.has(route)`.
++ * `new Date(something)` is untouched — that is a real date being parsed.
++ *
++ * A route may only join LIVE if its content genuinely changes without a deploy.
++ * Today that is /market, which refetches the Bank of Canada hourly. Adding a
++ * route to that set is a claim, and this guard prints the set on every run so
++ * the claim stays visible rather than accumulating quietly.
++ *
++ *   node scripts/verify-sitemap.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const FILE = path.join(ROOT, 'apps/web/app/sitemap.ts');
++
++if (!fs.existsSync(FILE)) {
++  console.error('verify-sitemap: apps/web/app/sitemap.ts not found — run from the repo root.');
++  process.exit(2);
++}
++
++/* Strip comments first. This guard's own documentation says `new Date()` four
++   times, and two guards in this repository have already failed by reading their
++   own prose as a violation (F-58, F-106). */
++const raw = fs.readFileSync(FILE, 'utf8');
++
++/* Line numbers must survive the strip. A guard that says sitemap.ts:66 when the
++   problem is on line 103 sends the reader to a line that is not wrong, which is
++   worse than printing no line at all — the first version of this file did
++   exactly that. So a block comment collapses to the same number of newlines it
++   spanned, rather than to nothing. */
++const src = raw
++  .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
++  .replace(/(^|[^:])\/\/.*$/gm, '$1');
++
++const lines = src.split('\n');
++const hits = [];
++lines.forEach((line, i) => {
++  if (/new Date\(\s*\)/.test(line)) hits.push({ line: i + 1, text: line.trim() });
++});
++
++const problems = [];
++
++if (hits.length === 0) {
++  problems.push({
++    where: 'sitemap.ts',
++    detail:
++      'no `new Date()` at all — /market is supposed to carry a live timestamp. ' +
++      'Either the LIVE branch was removed or this guard is now checking the wrong file.',
++  });
++} else if (hits.length > 1) {
++  for (const h of hits.slice(1)) {
++    problems.push({
++      where: `sitemap.ts:${h.line}`,
++      detail: `\`${h.text}\` — this stamps a URL with the build time. Pass a real date, or omit lastModified.`,
++    });
++  }
++}
++
++/* The one permitted hit must sit inside the LIVE branch. */
++if (hits.length >= 1) {
++  const near = lines.slice(Math.max(0, hits[0].line - 4), hits[0].line).join('\n');
++  if (!/LIVE\.has\(/.test(near)) {
++    problems.push({
++      where: `sitemap.ts:${hits[0].line}`,
++      detail:
++        '`new Date()` is not inside the `LIVE.has(route)` branch. Only routes whose ' +
++        'content changes without a deploy may carry a build-time date.',
++    });
++  }
++}
++
++const liveMatch = src.match(/const LIVE = new Set\(\[([\s\S]*?)\]\)/);
++const live = liveMatch
++  ? [...liveMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
++  : [];
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} fabricated lastmod value(s) in the sitemap:\n`);
++  for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
++  console.error(
++    '  lastmod is optional. A URL with no date is treated as "unknown", which is\n' +
++      '  true and free. A URL dated today when it was not touched today is what makes\n' +
++      '  a crawler stop trusting every other date in the file.\n',
++  );
++  process.exit(1);
++}
++
++console.log(
++  `✓ sitemap verified — no build-time dates; ${live.length} live route(s): ${live.join(', ') || 'none'}`,
++);
