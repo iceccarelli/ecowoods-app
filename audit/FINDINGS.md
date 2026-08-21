@@ -3549,3 +3549,86 @@ network.
 The distinction worth keeping: **live where the data is external, static where
 the content is ours.** A glossary definition that changed by itself would be a
 defect, not a feature.
+
+---
+
+## 42. Illustrations
+
+### F-110 · The authority layer had 109 images and none of them were on it · P1
+
+`public/gallery` holds 36 files and `public/gallery-machines` holds 73. The
+framework, the guides, the glossary, the papers and every social card have
+**zero**. Everything built in the last ten patches is text, and the surfaces
+carrying the most explanatory weight — a cupped board, an expansion gap, three
+substrate assemblies side by side — are the ones a picture helps most.
+
+28 slots are now declared in `lib/images.ts`: six framework pillars, eight
+failure-mode and concept diagrams, three paper heroes, six guide illustrations,
+five social cards.
+
+### F-111 · The line a generated image may not cross · **P0 — enforced**
+
+`kind: 'photograph'` means a camera pointed at something real, and requires a
+`provenance` naming the shoot. A generated image may be a `diagram` or an
+`illustration`. **It may never be a photograph**, and `verify-images.mjs` fails
+the build on any entry that tries:
+
+```
+✗ "our-finished-floor" is declared kind: 'photograph' with no provenance.
+      A photograph is a camera pointed at something real and must name where it came from.
+✗ "our-finished-floor" is declared a photograph but carries a generation prompt.
+      It is one or the other.
+```
+
+This is not pedantry, and it is the reason the whole manifest exists. This
+corpus rests on the claim that everything traces to something real, and thirteen
+other guards enforce that in text. **A synthetic image presented as a finished
+Ecowoods floor is the same defect as a fabricated moisture reading** — more
+persuasive, easier to catch, and one reverse-image search from ending the
+authority position this architecture exists to build.
+
+Diagrams explain. Photographs testify. Generate the first; shoot the second.
+`audit/PHOTO_SHOT_LIST.md` still describes the second, and still has no files.
+
+### F-112 · Pending is a designed state, not a gap · P2
+
+The slots ship before the art. Each renders a dashed placeholder **at the exact
+final aspect ratio**, so the layout live today is the layout live after the
+upload — the only thing that changes is what fills the box. No page can show a
+broken image, and nothing reflows when files land, in any order, at any time.
+
+`width` and `height` come from the manifest on every entry and are always passed
+to `next/image`. A responsive image without intrinsic dimensions is the single
+most common cause of cumulative layout shift on a content site, and it is
+avoidable by construction rather than by discipline.
+
+### F-113 · No text inside any image, by rule · P1
+
+Every prompt ends with an explicit prohibition on text, lettering and numbers,
+and the guard checks for it. Labels live in the HTML beside the image instead.
+
+Four reasons, in order of weight: a screen reader cannot read a label baked into
+a picture; a crawler and an answer engine cannot index it; it cannot be
+translated; and image models misspell text reliably enough that it would need
+re-checking on every regeneration.
+
+The alt text carries the information rather than announcing the medium — the
+guard rejects any alt beginning "an image of", because a screen reader has
+already said "image" and the remaining words are the only ones that do work.
+
+### F-114 · One style contract, so 28 images read as one set · P2
+
+Every prompt ends with a shared `STYLE_SUFFIX` pinning the palette to the site's
+own tokens — cream `#faf6ef`, walnut `#3d2b1f`, copper `#c87e4f`, one sage only
+where a second material must be distinguished — plus flat vector, orthographic,
+2px linework, no gradients, no photorealism.
+
+Consistency here is not decoration. Twenty-eight images generated from
+twenty-eight independent prompts look like twenty-eight stock purchases; the
+same twenty-eight from one contract look like one hand drew them, which is the
+same rule already applied to the loading state, the type scale and the token
+layers.
+
+`pnpm images:brief` prints the whole set — id, size, kind, alt, caption and
+prompt — straight from the manifest, so the brief can never drift from the code
+that renders it.

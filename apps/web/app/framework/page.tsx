@@ -10,6 +10,7 @@ import {
   sourceHref,
 } from '@/lib/framework';
 import { getGuides } from '@/lib/guides';
+import { Illustration } from '../components/Illustration';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -152,6 +153,8 @@ export default function FrameworkPage() {
             <p className="tlx-kicker">Pillar {pillar.number}</p>
             <h2 className="tlx-h2">{pillar.name}</h2>
             <p className="tlx-note">{pillar.intent}</p>
+
+            <Illustration id={`pillar-${pillar.id}`} />
 
             <ol className="fw-criteria">
               {pillar.criteria.map((c) => {

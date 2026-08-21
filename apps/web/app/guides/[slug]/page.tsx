@@ -4,9 +4,21 @@ import { notFound } from 'next/navigation';
 import { getGuide, getGuides, GUIDES } from '@/lib/guides';
 import { pillarById } from '@/lib/framework';
 import { getPaper } from '@/lib/papers';
+import { Illustration } from '../../components/Illustration';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+
+/** Guide slug → illustration id. Kept here rather than in the guides manifest so
+ *  the content manifest stays free of presentation concerns. */
+const GUIDE_IMAGE: Record<string, string> = {
+  'solid-vs-engineered-hardwood-toronto': 'guide-solid-vs-engineered',
+  'nail-down-glue-down-or-floating': 'guide-method',
+  'how-to-evaluate-a-hardwood-quote': 'guide-evaluate-quote',
+  'reference-condominium-concrete-slab': 'guide-ref-condo',
+  'reference-radiant-heat-main-floor': 'guide-ref-radiant',
+  'reference-refinishing-existing-hardwood': 'guide-ref-refinish',
+};
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -86,6 +98,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <h1 className="tlx-title">{guide.title}</h1>
           <p className="gd-question">{guide.question}</p>
           <p className="tlx-lede">{guide.summary}</p>
+          <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority />
           <p className="fw-meta">
             <span>{guide.readingMinutes} min read</span>
             <span aria-hidden="true">·</span>

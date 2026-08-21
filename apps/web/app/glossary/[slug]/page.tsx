@@ -6,6 +6,7 @@ import { pillarById } from '@/lib/framework';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { Illustration } from '../../components/Illustration';
 
 /**
  * /glossary/<term> — one addressable page per term.
@@ -44,6 +45,19 @@ export async function generateMetadata({
     },
   };
 }
+
+/** Glossary term slug → diagram id, for the terms a picture actually helps.
+ *  A term without an entry here renders no slot at all: an illustration that
+ *  adds nothing is worse than none, because it costs a download and a scroll. */
+const TERM_IMAGE: Record<string, string> = {
+  cupping: 'failure-cupping',
+  crowning: 'failure-crowning',
+  'seasonal-gapping': 'failure-gapping',
+  buckling: 'failure-buckling',
+  'expansion-gap': 'concept-expansion-gap',
+  acclimation: 'concept-acclimation',
+  'moisture-differential': 'concept-mc-differential',
+};
 
 export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -96,6 +110,8 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
 
       <section className="tlx-section" aria-label="Explanation">
         <div className="shell">
+          {TERM_IMAGE[t.slug] && <Illustration id={TERM_IMAGE[t.slug]} priority />}
+
           <div className="gl-body">
             {t.body.map((p, i) => (
               <p key={i}>{p}</p>

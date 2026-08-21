@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Illustration } from '../../components/Illustration';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPaper, getPapers, pdfHref, pdfIsPublished, type Paper } from '@/lib/papers';
@@ -93,6 +94,13 @@ function schemasFor(paper: Paper) {
   ];
 }
 
+/** Paper slug → hero illustration id. */
+const PAPER_IMAGE: Record<string, string> = {
+  'toronto-hardwood-climate-moisture-protocol': 'paper-climate',
+  'hardwood-selection-and-cost-framework-gta': 'paper-selection',
+  'hardwood-refinishing-machines-and-sequence': 'paper-craft',
+};
+
 export default async function PaperPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const paper = getPaper(slug);
@@ -117,6 +125,7 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
           <h1 className="tlx-title">{paper.title}</h1>
           <p className="wp-hero-sub">{paper.subtitle}</p>
           <p className="tlx-lede">{paper.summary}</p>
+          <Illustration id={PAPER_IMAGE[paper.slug] ?? ''} priority />
 
           <div className="tlx-meta">
             <span>

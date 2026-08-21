@@ -8588,3 +8588,37 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
   .spark-line { stroke: #6b3410; }
   .spark-dot { fill: #6b3410; stroke: #fff; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ILLUSTRATIONS  ·  .ill-*
+
+   The frame carries the aspect ratio from the manifest, so a pending slot
+   occupies exactly the space its image will occupy. That is what makes it safe
+   to ship the layout before the art: nothing reflows when the files land.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ill { margin: 1.8rem 0 0; }
+.ill-frame { position: relative; width: 100%; overflow: hidden;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); }
+.ill-img { display: block; width: 100%; height: auto; }
+
+.ill--pending .ill-frame { display: flex; align-items: center; justify-content: center;
+  /* A pending slot must read as intentional, not as a failed image. A flat tint
+     with a quiet label says "this is coming"; a grey box with a broken icon says
+     "this is broken", and the two are one CSS rule apart. */
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface-2) 0 10px,
+    color-mix(in srgb, var(--copper) 5%, var(--surface-2)) 10px 20px
+  );
+  border-style: dashed; }
+.ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); }
+
+.ill-caption { margin: 0.75rem 0 0; font-size: 0.88rem; line-height: 1.6;
+  color: var(--ink-soft); max-width: 72ch; }
+
+@media print {
+  .ill-frame { border-radius: 0; border-color: #999; break-inside: avoid; }
+  .ill--pending { display: none; }
+}
