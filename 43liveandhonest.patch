@@ -1,0 +1,533 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index 6a084b8..ee0ee05 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -166,6 +166,7 @@ export async function GET() {
+     `Change feed (RSS 2.0, every dated publication, newest first): ${SITE_URL}/feed.xml`,
+     `Resource index (everything published, grouped by reader intent): ${SITE_URL}/resources`,
+     `What's new: ${SITE_URL}/whats-new — this business's own dated releases. This site publishes primary material and does NOT aggregate third-party news, so nothing here is a republished headline.`,
++    `Service health: ${SITE_URL}/api/health — reports whether the live upstream sources are responding and how old the newest observation is. If a series is down, ${SITE_URL}/market shows no figure rather than a stale one, so an absent number there means absent, not zero.`,
+     `Cost drivers: ${SITE_URL}/market — the traded commodity inputs behind an installed hardwood floor (forestry, energy, USD/CAD), live from the Bank of Canada, with the mechanism for each. JSON at ${SITE_URL}/api/market. Published to explain quote movement, not as investment information.`,
+     `Standards register: ${SITE_URL}/standards — the external bodies and documents this trade answers to, each mapped to the framework criteria that depend on it, linked to the issuing body and stamped with the date we last verified it there.`,
+     `Figures: ${SITE_URL}/data — charted data, numbered and captioned, each published alongside the table it was built from and the paper section it derives from. CC BY 4.0.`,
+diff --git a/apps/web/app/api/health/route.ts b/apps/web/app/api/health/route.ts
+new file mode 100644
+index 0000000..a6f5932
+--- /dev/null
++++ b/apps/web/app/api/health/route.ts
+@@ -0,0 +1,126 @@
++import { getSeries, fetchSeries, VALET_BASE } from '@/lib/market';
++import { getStandards, stalenessDays, REVIEW_INTERVAL_DAYS } from '@/lib/standards';
++import { SITE_URL, BUSINESS } from '@/lib/seo-data';
++
++/**
++ * /api/health — is this site actually alive, and does it say so honestly?
++ *
++ * WHY THIS EXISTS
++ *
++ * Everything on this site that claims to be live depends on one external
++ * source. If the Bank of Canada changes an endpoint, revokes anonymous access
++ * or renames a series, /market degrades to em dashes — correctly, by design —
++ * and **nobody finds out**, because the failure is silent and the page still
++ * renders. A site that looks self-updating and has quietly stopped updating is
++ * worse than one that never claimed to.
++ *
++ * This is the endpoint a monitor polls. It probes the real upstream, reports
++ * per-source status with the actual observation dates, and adds the things that
++ * rot on a calendar rather than on a network: standards entries past their
++ * review interval, and how long ago the newest observation was published.
++ *
++ * `status` is `ok`, `degraded` or `down`, so a check can be a single string
++ * comparison rather than a JSON walk.
++ *
++ * No secrets, no internals, no database. Everything here is already public.
++ */
++
++export const revalidate = 300;
++
++const CORS = {
++  'access-control-allow-origin': '*',
++  'access-control-allow-methods': 'GET, OPTIONS',
++  'access-control-allow-headers': 'content-type',
++};
++
++export function OPTIONS() {
++  return new Response(null, { status: 204, headers: CORS });
++}
++
++const daysSince = (iso: string, now: number) =>
++  Math.floor((now - Date.parse(iso)) / 86_400_000);
++
++export async function GET() {
++  const now = Date.now();
++  const meta = getSeries();
++  const results = await fetchSeries(meta.map((s) => s.id), 2);
++  const byId = new Map(results.map((r) => [r.id, r]));
++
++  const series = meta.map((s) => {
++    const r = byId.get(s.id);
++    const age = r?.latest ? daysSince(r.latest.date, now) : null;
++    /* A monthly index is expected to lag — a July figure in late August is
++       normal, not a fault. The daily FX series is different: more than four
++       days without a new observation spans a long weekend and means something
++       is wrong upstream. Judging both by one threshold would either cry wolf on
++       the monthly series or never fire on the daily one. */
++    const maxAge = s.frequency === 'daily' ? 4 : 70;
++    const live = Boolean(r?.latest);
++    return {
++      id: s.id,
++      name: s.name,
++      frequency: s.frequency,
++      status: !live ? 'down' : age !== null && age > maxAge ? 'stale' : 'ok',
++      latestObservation: r?.latest?.date ?? null,
++      observationAgeDays: age,
++      expectedMaxAgeDays: maxAge,
++      ...(r?.error ? { error: r.error } : {}),
++    };
++  });
++
++  const standards = getStandards().map((s) => {
++    const days = stalenessDays(s, new Date(now));
++    return {
++      id: s.id,
++      verifiedAt: s.verifiedAt,
++      ageDays: days,
++      reviewIntervalDays: REVIEW_INTERVAL_DAYS,
++      status: days > REVIEW_INTERVAL_DAYS ? 'due-for-review' : 'ok',
++    };
++  });
++
++  const down = series.filter((s) => s.status === 'down').length;
++  const stale = series.filter((s) => s.status === 'stale').length;
++  const dueForReview = standards.filter((s) => s.status === 'due-for-review').length;
++
++  const status = down === series.length ? 'down' : down > 0 || stale > 0 ? 'degraded' : 'ok';
++
++  return new Response(
++    JSON.stringify(
++      {
++        status,
++        checkedAt: new Date(now).toISOString(),
++        site: SITE_URL,
++        name: `${BUSINESS.name} — service health`,
++        upstream: [
++          {
++            name: 'Bank of Canada Valet API',
++            url: VALET_BASE,
++            seriesRequested: meta.length,
++            seriesReturned: series.filter((s) => s.status !== 'down').length,
++          },
++        ],
++        summary: { seriesDown: down, seriesStale: stale, standardsDueForReview: dueForReview },
++        series,
++        standards,
++        endpoints: {
++          market: `${SITE_URL}/api/market`,
++          knowledge: `${SITE_URL}/api/knowledge`,
++          feed: `${SITE_URL}/feed.xml`,
++          sitemap: `${SITE_URL}/sitemap.xml`,
++        },
++      },
++      null,
++      2,
++    ),
++    {
++      // A monitor must never be served a cached "ok" from before an outage.
++      status: status === 'down' ? 503 : 200,
++      headers: {
++        ...CORS,
++        'content-type': 'application/json; charset=utf-8',
++        'cache-control': 'public, max-age=60, s-maxage=300',
++      },
++    },
++  );
++}
+diff --git a/apps/web/app/authority/page.tsx b/apps/web/app/authority/page.tsx
+index 6a554bb..f8dec49 100644
+--- a/apps/web/app/authority/page.tsx
++++ b/apps/web/app/authority/page.tsx
+@@ -86,6 +86,18 @@ const MACHINE_FILES = [
+   { href: '/ai.txt', name: 'ai.txt', blurb: 'Full citation guide for AI systems' },
+   { href: '/sitemap.xml', name: 'sitemap.xml', blurb: 'Every indexable route with its last-modified date' },
+   { href: '/feed.xml', name: 'feed.xml', blurb: 'RSS 2.0 over every dated publication, newest first' },
++  {
++    href: '/api/market',
++    name: 'api/market',
++    blurb:
++      'The commodity inputs behind an installed floor — forestry, energy and USD/CAD — live from the Bank of Canada, with the mechanism for each.',
++  },
++  {
++    href: '/api/health',
++    name: 'api/health',
++    blurb:
++      'Whether the live sources are actually responding, and which register entries are due for re-verification. Returns 503 when every upstream series is down.',
++  },
+   {
+     href: '/api/knowledge',
+     name: 'api/knowledge',
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index d843b2f..970fdfd 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -76,6 +76,8 @@ export async function GET() {
+   lines.push(`- What moves a hardwood quote (live commodity inputs, Bank of Canada): ${SITE_URL}/market`);
+   lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
+   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
++  lines.push(`- Live commodity inputs (Bank of Canada), JSON: ${SITE_URL}/api/market`);
++  lines.push(`- Service health — are the live sources responding: ${SITE_URL}/api/health`);
+   lines.push(`- Citation guide: ${SITE_URL}/authority`);
+   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
+   lines.push('');
+diff --git a/apps/web/app/market/page.tsx b/apps/web/app/market/page.tsx
+index 38ed79a..5065401 100644
+--- a/apps/web/app/market/page.tsx
++++ b/apps/web/app/market/page.tsx
+@@ -72,6 +72,10 @@ export default async function MarketPage() {
+             <span>
+               <a href="/api/market">JSON</a>
+             </span>
++            <span aria-hidden="true">·</span>
++            <span>
++              <a href="/api/health">Status</a>
++            </span>
+           </p>
+           <p className="fw-privacy">
+             Published so a price change can be <em>evaluated</em> rather than suspected. This is not
+diff --git a/apps/web/app/robots.ts b/apps/web/app/robots.ts
+index e47af74..4d63711 100644
+--- a/apps/web/app/robots.ts
++++ b/apps/web/app/robots.ts
+@@ -18,7 +18,7 @@ export default function robots(): MetadataRoute.Robots {
+         // specifically for crawlers and agents to read. Allow is listed first
+         // and is more specific, which is how every major crawler resolves the
+         // conflict. See F-89.
+-        allow: ['/', '/api/knowledge', '/api/market'],
++        allow: ['/', '/api/knowledge', '/api/market', '/api/health'],
+         // /docs/{contract,invoice,quote}/[id] renders a specific customer's
+         // paperwork from a URL. It was never disallowed.
+         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
+@@ -41,7 +41,7 @@ export default function robots(): MetadataRoute.Robots {
+           'PerplexityBot', 'Perplexity-User',
+           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
+         ],
+-        allow: ['/', '/api/knowledge', '/api/market'],
++        allow: ['/', '/api/knowledge', '/api/market', '/api/health'],
+         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
+       },
+     ],
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index dc176ef..6ba55f9 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -13,6 +13,13 @@ import { getTerms } from '@/lib/glossary';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
++/**
++ * Regenerated daily. Every lastModified below that is `new Date()` is a claim
++ * about freshness; baked once at build, that claim stops being true the moment
++ * anything else on the site changes without a deploy.
++ */
++export const revalidate = 86400;
++
+ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+   // Fetch all articles and case studies
+   const articles = await getArticles();
+diff --git a/apps/web/app/standards/page.tsx b/apps/web/app/standards/page.tsx
+index dde86fc..d822b0c 100644
+--- a/apps/web/app/standards/page.tsx
++++ b/apps/web/app/standards/page.tsx
+@@ -20,6 +20,21 @@ import { SchemaScript } from '@/lib/schema/components';
+  * a list, because a list anyone can copy and only a maintained one stays true.
+  */
+ 
++/**
++ * Rendered daily, not once.
++ *
++ * This page computes "N days ago" from new Date(). Without a revalidate it is
++ * statically rendered at build, that call is frozen at deploy time, and the
++ * counter reads "0 days ago" forever — which it did, live, for exactly as long
++ * as it took someone to ask whether the site actually updates itself.
++ *
++ * The staleness column IS the product of this register. A frozen one asserts a
++ * currency it does not have, which is the precise failure the page exists to
++ * prevent, reproduced inside the page. 86400 = one day: fine-grained enough for
++ * a day counter, cheap enough to be free.
++ */
++export const revalidate = 86400;
++
+ export const metadata: Metadata = {
+   title: 'Standards Register | EcoWoods',
+   description:
+diff --git a/apps/web/app/whats-new/page.tsx b/apps/web/app/whats-new/page.tsx
+index 705361e..6c0f81a 100644
+--- a/apps/web/app/whats-new/page.tsx
++++ b/apps/web/app/whats-new/page.tsx
+@@ -15,6 +15,13 @@ import { SchemaScript } from '@/lib/schema/components';
+  * its own inputs and loses, because the reader can always go upstream.
+  */
+ 
++/**
++ * Rendered daily. This page counts how many standards are past their review
++ * interval, which is a function of today's date — frozen at build without this.
++ * See the note in app/standards/page.tsx.
++ */
++export const revalidate = 86400;
++
+ export const metadata: Metadata = {
+   title: "What's New | EcoWoods",
+   description:
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index ca9bc58..c63bf32 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -3459,3 +3459,93 @@ guess and spend a patch building the wrong thing, I asked, with the options and
+ what each would produce. The answer — **input commodity costs, live from public
+ APIs** — is what is built above. Asking cost one message; guessing would have
+ cost a patch and been discovered only after it shipped.
++
++---
++
++## 41. The clock that was frozen
++
++### F-107 · `/standards` reported "0 days ago" on every entry, and would have forever · **P0**
++
++The register exists to publish, for every external document it tracks, **when we
++last checked it**. That column is the entire product — anyone can copy a list of
++standards; only a maintained one stays true.
++
++It shipped statically rendered. `new Date()` was therefore evaluated once, at
++deploy, and the live page read:
++
++```
++Last verified 2026-08-20 · 0 days ago     ASTM F2170-19a
++Last verified 2026-08-20 · 0 days ago     ASTM F1869
++Last verified 2026-08-20 · 0 days ago     ASTM F710-21
++Last verified 2026-08-20 · 0 days ago     NWFA
++```
++
++In six months, without a deploy, it would still have said 0 days. **The register
++built to prevent silent rot was silently rotting**, and the 180-day review
++warning could never fire, because the arithmetic behind it was frozen at zero.
++
++`/whats-new` had the same defect in its "N entries due for re-verification"
++count, and `sitemap.ts` in every `lastModified` it stamps with `new Date()`.
++
++All three now declare `revalidate = 86400`.
++
++**None of the twelve guards could have caught this.** Every one of them reads
++source code, and the source was correct — the defect existed only at runtime, in
++the difference between when a page is built and when it is read. It was found by
++being asked whether the site actually updates itself.
++
++### F-108 · The thirteenth guard reads rendering mode, not code · **P1**
++
++`verify-freshness.mjs` states the rule: **if a file computes a duration from the
++current time and renders it, it must declare `revalidate`.** Next renders
++statically by default, and "static" and "correct" stop being the same thing the
++moment a page's output depends on *when it is read* rather than on *what it
++contains*.
++
++It matches elapsed-time arithmetic specifically — `Date.now() -`,
++`stalenessDays(`, `ageDays` — and deliberately not a bare `new Date()`, which
++appears in every schema block as a timestamp rather than a duration and is
++perfectly fine baked. Only entry points are checked, since a helper in `lib/`
++inherits its caller's rendering mode. Private trees are excluded, not
++special-cased.
++
++Reverting the fix reproduces the finding exactly; restoring it clears.
++
++### F-109 · `/api/health` — because a silent degradation is the real risk · **P1**
++
++Everything on this site that claims to be live depends on one external source.
++If the Bank of Canada renames a series or drops anonymous access, `/market`
++degrades to em dashes — correctly, by design (F-104) — and **nobody finds out**,
++because the failure is silent and the page still renders.
++
++A site that looks self-updating and has quietly stopped is worse than one that
++never claimed to.
++
++`/api/health` probes the real upstream and reports `ok` / `degraded` / `down` as
++a single top-level string, so a monitor is one comparison rather than a JSON
++walk. It returns **HTTP 503** when every series is down, which is what makes it
++usable by an uptime checker that only reads status codes.
++
++It judges the two frequencies separately. A monthly index is *expected* to lag —
++a July figure in late August is normal, not a fault — while more than four days
++without a new FX observation spans a long weekend and means something is wrong.
++One threshold for both would either cry wolf on the monthly series or never fire
++on the daily one.
++
++It also reports which standards-register entries are past their review interval,
++because that is the other thing here that rots on a calendar rather than on a
++network.
++
++### What is live, and what is not — measured
++
++| Surface | Updates | How |
++|---|---|---|
++| `/market`, `/api/market` | hourly | ISR, verified live: `generatedAt` moved and FX advanced 08-19 → 08-20 without a deploy |
++| `/api/health` | 5 min | ISR |
++| `/standards`, `/whats-new`, `/sitemap.xml` | daily | ISR — **as of this patch** |
++| `/data`, `/glossary`, `/framework`, `/guides`, `/papers` | on deploy | correct: their content is editorial and should not change unattended |
++| `/feed.xml`, `/llms.txt`, `/ai.txt`, `/api/knowledge` | on deploy | correct, same reason |
++
++The distinction worth keeping: **live where the data is external, static where
++the content is ours.** A glossary definition that changed by itself would be a
++defect, not a feature.
+diff --git a/package.json b/package.json
+index 8543840..ce98840 100644
+--- a/package.json
++++ b/package.json
+@@ -22,7 +22,8 @@
+     "verify:figures": "node scripts/verify-figures.mjs",
+     "verify:changelog": "node scripts/verify-changelog.mjs",
+     "verify:market": "node scripts/verify-market.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market",
++    "verify:freshness": "node scripts/verify-freshness.mjs",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 63141b6..46108db 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -127,6 +127,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-figures.mjs ] && run "verify:figures" node scripts/verify-figures.mjs
+ [ -f scripts/verify-changelog.mjs ] && run "verify:changelog" node scripts/verify-changelog.mjs
+ [ -f scripts/verify-market.mjs ] && run "verify:market" node scripts/verify-market.mjs
++[ -f scripts/verify-freshness.mjs ] && run "verify:freshness" node scripts/verify-freshness.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-freshness.mjs b/scripts/verify-freshness.mjs
+new file mode 100644
+index 0000000..2f0e94e
+--- /dev/null
++++ b/scripts/verify-freshness.mjs
+@@ -0,0 +1,124 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-freshness.mjs
++ *
++ * A page that shows how old something is must be regenerated, or the answer it
++ * gives is the age at deploy time, forever.
++ *
++ * WHY THIS EXISTS
++ *
++ * `/standards` exists to publish, for every external document it tracks, the
++ * date it was last verified and how long ago that was. That column is the whole
++ * product — anyone can copy a list of standards; only a maintained one stays
++ * true. It shipped statically rendered, so `new Date()` was evaluated once at
++ * deploy, and the live page read **"0 days ago" on all four entries** — and
++ * would have kept reading that in six months.
++ *
++ * The register built to prevent silent rot was silently rotting. It was found
++ * by someone asking whether the site really updates itself, not by any of the
++ * twelve guards, because every one of them reads source code and this defect
++ * only exists at runtime.
++ *
++ * THE RULE: if a file computes a duration from the current time and renders it,
++ * it must declare `export const revalidate`. Next statically renders by default,
++ * and "static" and "correct" stop being the same thing the moment a page's
++ * output depends on when it is read rather than on what it contains.
++ *
++ * Scope is the public site. Admin and portal pages are dynamic by nature — they
++ * read a session — and are excluded rather than special-cased.
++ *
++ *   node scripts/verify-freshness.mjs
++ *   node scripts/verify-freshness.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const APP = path.join(ROOT, 'apps/web/app');
++const LIST = process.argv.includes('--list');
++
++if (!fs.existsSync(APP)) {
++  console.error('verify-freshness: apps/web/app not found — run from the repo root.');
++  process.exit(2);
++}
++
++const files = [];
++(function walk(dir) {
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    if (e.name === 'node_modules' || e.name === '.next') continue;
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) walk(p);
++    else if (/\.(tsx|ts)$/.test(e.name)) files.push(p);
++  }
++})(APP);
++
++const rel = (f) => path.relative(ROOT, f);
++const isPrivate = (f) =>
++  /\/(admin|\(portal\)|\(auth\)|docs)\//.test(f.split(path.sep).join('/'));
++
++// Strip comments before scanning. A guard that reads its own documentation as a
++// violation is worse than no guard — F-58, and again in F-106.
++const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
++
++/* Signals that a file turns "now" into an elapsed value it then shows.
++   Matching `new Date()` alone would flag every `datePublished: new Date()` in a
++   schema block, which is a timestamp, not a duration — those are fine static. */
++const ELAPSED = [
++  /Date\.now\(\)\s*-/,
++  /-\s*Date\.now\(\)/,
++  /\bstalenessDays\s*\(/,
++  /getTime\(\)\s*-\s*new Date\(/,
++  /new Date\(\)\.getTime\(\)\s*-/,
++  /\bdaysSince\s*\(/,
++  /\bageDays\b/,
++];
++
++const rows = [];
++const problems = [];
++
++for (const f of files) {
++  if (isPrivate(f)) continue;
++  const base = path.basename(f);
++  // Only entry points have a rendering mode. A helper in lib/ inherits it.
++  if (!['page.tsx', 'route.ts', 'sitemap.ts'].includes(base)) continue;
++
++  const src = strip(fs.readFileSync(f, 'utf8'));
++  const usesElapsed = ELAPSED.some((re) => re.test(src));
++  if (!usesElapsed) continue;
++
++  const revalidate = (src.match(/export const revalidate\s*=\s*(\d+)/) || [])[1];
++  const dynamic = (src.match(/export const dynamic\s*=\s*'([^']+)'/) || [])[1];
++  const ok = Boolean(revalidate) || dynamic === 'force-dynamic';
++  rows.push({ file: rel(f), revalidate: revalidate ?? (dynamic ?? '—'), ok });
++
++  if (!ok) {
++    problems.push(
++      `${rel(f)} renders an elapsed time but declares no revalidate.\n` +
++        `      Next renders it statically, so the duration is frozen at deploy and the page will\n` +
++        `      report the same age forever. Add \`export const revalidate = 86400\` (or a shorter\n` +
++        `      interval), or \`dynamic = 'force-dynamic'\` if it must be exact.`,
++    );
++  }
++}
++
++/* The lib modules those pages read from are worth naming in --list, because the
++   helper is where the elapsed calculation actually lives and the next person
++   will look there first. */
++if (LIST) {
++  console.log('\nPages that render an elapsed time\n');
++  for (const r of rows) {
++    console.log(`  ${r.ok ? '✓' : '✗'} ${r.file.padEnd(46)} revalidate=${r.revalidate}`);
++  }
++  console.log('');
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} page(s) render a frozen clock:\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ freshness verified — ${rows.length} page(s) render an elapsed time, all declare a revalidate`,
++);
