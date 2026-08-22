@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'service-pages-v1',
+    date: '2026-08-22',
+    kind: 'tool',
+    title: 'One page per service, each with its price band and the paper behind it',
+    body: 'Installation, refinishing, dust-free sanding, restoration, stairs and inlays now have their own URLs. Each carries the published price band as a full band rather than a starting-from number, the framework pillars the work is scored against, the paper sections that establish the technique, and the decision guides that say when the service is the wrong one. No figure on any of them is new \u2014 every one was already published elsewhere on this site. The organisation\u2019s structured data had been identifying these six services by URLs that did not exist; now they resolve.',
+    href: '/services',
+  },
+  {
     id: 'machine-editions-v1',
     date: '2026-08-21',
     kind: 'data',

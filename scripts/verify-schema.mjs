@@ -126,6 +126,13 @@ const FAQPAGE_ALLOWED = new Set([
   'apps/web/app/home-client.tsx',                 // the homepage FAQ it renders
   'apps/web/app/products/floorforge/page.tsx',    // that page's own FAQ
   'apps/web/app/service-areas/[city]/page.tsx',   // renders FAQ_ITEMS visibly
+  // Renders its FAQ visibly, in the "questions this service turns on" section,
+  // and — the reason it qualifies under F-27 rather than merely being added
+  // here — the questions are not written for the schema block. Each one is the
+  // `question` and `recommendation` of a decision guide already published at
+  // /guides, shown on the page with a link back to it. The markup describes
+  // content that is on the page and true elsewhere, which is the whole test.
+  'apps/web/app/services/[slug]/page.tsx',
   'apps/web/lib/structured-data.ts',              // faqPageSchema() builder
   'apps/web/lib/schema/builders.ts',              // buildFAQPage() builder
   'apps/web/lib/schema/types.ts',                 // the type

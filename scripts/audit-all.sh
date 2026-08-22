@@ -133,6 +133,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-sitemap.mjs ] && run "verify:sitemap" node scripts/verify-sitemap.mjs
 [ -f scripts/verify-indexnow.mjs ] && run "verify:indexnow" node scripts/verify-indexnow.mjs
 [ -f scripts/verify-markdown.mjs ] && run "verify:markdown" node scripts/verify-markdown.mjs
+[ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"

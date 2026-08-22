@@ -11,6 +11,7 @@ import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { CHANGELOG } from '@/lib/changelog';
+import { getServicePages } from '@/lib/service-pages';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -121,6 +122,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/data', 'monthly', 0.85, changelogDate('/data')),
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),
+    entry('/services', 'monthly', 0.95),                           // no date
     entry('/service-areas', 'monthly', 0.9),                       // no date
   ];
 
@@ -132,6 +134,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * cannot drift from the routes generateStaticParams actually builds.
    * See audit/FINDINGS.md F-22.
    */
+  /**
+   * One URL per service. Derived from SERVICE_PAGES so the sitemap cannot drift
+   * from what generateStaticParams builds — and, more importantly, from the
+   * `@id` the LocalBusiness graph emits for each Service. Those two were out of
+   * step for the life of the project: six identifiers pointing at 404s. See F-146.
+   *
+   * No date: a service page changes when its price band or its linked papers
+   * change, and nothing records when that last happened. Omitted rather than
+   * stamped, like every other undated route here.
+   */
+  const servicePages: MetadataRoute.Sitemap = getServicePages().map((sp) => ({
+    url: `${SITE_URL}/services/${sp.slug}`,
+    changeFrequency: 'monthly' as const,
+    priority: 0.9,
+  }));
+
   const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
     url: `${SITE_URL}/service-areas/${city.slug}`,
     // No date. A city page is generated from CITIES and changes when the
@@ -192,6 +210,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...basePages,
+    ...servicePages,
     ...guidePages,
     ...glossaryPages,
     ...paperPages,

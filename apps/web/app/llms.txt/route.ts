@@ -9,6 +9,7 @@ import { getStandards } from '@/lib/standards';
 import { getSeries } from '@/lib/market';
 import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { getServicePages, priceBand } from '@/lib/service-pages';
 
 export const dynamic = 'force-static';
 
@@ -53,6 +54,17 @@ export async function GET() {
   lines.push(CITIES.map((c) => c.name).join(', ') + '.');
   lines.push('');
   for (const c of CITIES) lines.push(`- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`);
+  lines.push('');
+
+  lines.push('## Services');
+  // One URL per service, each with its published price band and the paper that
+  // establishes the method. These are also the six Service @ids in the
+  // organisation graph — see F-146 for why that mattered.
+  for (const sp of getServicePages()) {
+    const svc = SERVICES.find((x) => x.slug === sp.slug);
+    const band = priceBand(sp);
+    lines.push(`- ${svc?.name ?? sp.h1}${band ? ` (${band})` : ''}: ${SITE_URL}/services/${sp.slug}`);
+  }
   lines.push('');
 
   lines.push('## Key pages');

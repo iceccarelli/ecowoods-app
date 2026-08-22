@@ -4353,3 +4353,122 @@ handler on disk, every handler to prebuild and to send `text/markdown`, and
 `/llms.txt` to name both editions — an advertised URL that 404s is worse than
 one never offered, because it is the first thing an agent tries.
 `verify-live.sh` fetches all four from production and fails if any returns HTML.
+
+### F-146 · The schema identified six services by URLs that did not exist · P1
+
+`lib/schema/builders.ts` has emitted, inside the LocalBusiness graph, one
+`Service` node per entry in `SERVICES` since the file was written:
+
+```ts
+'@id': `${config.siteUrl}/services/${config.id}#service`,
+```
+
+There has never been a `/services` route. All six identifiers resolved to 404.
+
+An `@id` is not decoration. It is the string a crawler uses to decide that two
+mentions are the same entity. Six of them pointed at nothing, on the site whose
+whole strategy is being an entity that resolves cleanly.
+
+The footer was failing from the opposite direction at the same time: seven links
+in its Services column — Hardwood Installation, Refinishing & Restoration,
+Dust-Free Sanding, Custom Stain Matching, Stair Refinishing, Custom Inlays &
+Borders, Commercial Projects — every one of them `href="/#services"`, an anchor
+on the homepage. Seven of the highest-intent phrases this business could rank
+for, with no URL of their own to rank, in the footer of every page.
+
+One bug: the slug list and the route tree were never checked against each other.
+
+Six pages now exist, and — this is the part that decides whether they are worth
+publishing — **not one new claim is on them.** Every name and description is
+`SERVICES`, already on the homepage. Every price band is `PRICING`, already
+published, rendered as the full band rather than a starting-from number.
+Everything else is a cross-link: the framework pillars the service is scored
+against, the paper sections that establish the method, the decision guides that
+say when this service is the wrong one, and the glossary terms the page uses.
+The FAQ block is the `question` and `recommendation` of the linked guides —
+published Q&A, cited back, rather than questions invented to fill a schema slot.
+
+That constraint is the point. A service page that restates marketing copy
+competes with ten thousand identical ones. A service page that says *here is the
+band, here is the standard we are judged by, here is the paper, and here is the
+guide that tells you not to buy this* is a different document, and this is the
+only site in the niche equipped to write it.
+
+`scripts/verify-services.mjs` checks slug parity in both directions, that both
+routes exist, that the detail route prebuilds, that no footer link still points
+at `/#services`, and that the `@id` template in `builders.ts` still matches the
+route it was checked against.
+
+### F-147 · `availability: 'PT10M'` — a duration in an enum field · P3
+
+Every `Offer` built by `buildService` carried:
+
+```ts
+availability: 'PT10M', // 10 minutes response time estimate
+```
+
+`availability` takes a schema.org `ItemAvailability` enum — `InStock`,
+`OutOfStock`, `PreOrder`. `PT10M` is an ISO 8601 duration: a valid value, for a
+different property entirely. So it parsed as a string and was discarded by every
+consumer, on six nodes, silently.
+
+The intended meaning — a response-time estimate — is not a schema.org
+availability, and this business publishes no service-level commitment that could
+go there. So it is dropped rather than relocated into another property it would
+also be wrong in. `availability` is now `https://schema.org/InStock`.
+
+### F-148 · A fabricated `aggregateRating` was requested, and refused · P0
+
+A proposed patch would have added to the LocalBusiness graph:
+
+```ts
+aggregateRating: { ratingValue: 5.0, ratingCount: 176 }
+```
+
+sourced from the HomeStars profile, with the stated goal of forcing review
+snippets into search results. The same figure was to appear in three meta
+descriptions and two page bodies.
+
+It is not shipped, for two independent reasons, and the second survives even if
+the first is resolved.
+
+**It could not be verified.** The HomeStars profile is JS-rendered and could not
+be read from here. That alone is disqualifying under the rule this project has
+run on since the beginning — but it matters more than usual, because this exact
+class of claim has already been retired once. `verify-business-facts.mjs`
+permanently bans `348 verified reviews` at `4.9/5` "from Google, Houzz and
+HomeStars combined", a figure that was published, was not true, and had no
+traceable source. The cost of that was never the correction; it is that every
+other number on the site became a thing a reader had to wonder about.
+
+**It would not have worked, and would have cost the rest.** Google's
+review-snippet documentation states both halves directly:
+
+> "Don't aggregate reviews or ratings from other websites."
+
+> "If the entity that's being reviewed controls the reviews about itself, their
+> pages that use `LocalBusiness` or any other type of `Organization` structured
+> data are ineligible for star review feature."
+
+A HomeStars aggregate in `LocalBusiness.aggregateRating` on ecowoods.ca is both
+at once. The stars were never available — the page type is ineligible by rule —
+and the markup is the exact pattern that draws a structured-data manual action.
+A manual action would not remove stars we could never have had. It removes
+**every** rich result on the domain: the seven `HowTo` blocks on the papers, the
+`FAQPage` blocks, the `Dataset` markup, the breadcrumbs. All of it, for a snippet
+that did not exist.
+
+What actually produces stars for a business like this is Google's own place
+rating, read from the Business Profile — never marked up on the site by anyone.
+That is `docs/outreach/review-request.md`, and it is why claiming the Business
+Profile is the highest-value unfinished item on this project.
+
+The HomeStars profile still does the work it can legitimately do: it is in
+`PROFILE_LINKS`, so it appears in the organisation's `sameAs`, which is how
+Google resolves that this entity and that profile are the same business. That is
+the honest version of what the rating was reaching for.
+
+Two adjacent items from the same proposal were also held back, and are recorded
+with the rest in `docs/outreach/CLAIMS_REGISTER.md`: a hardcoded "26 years" —
+`yearsInBusiness()` exists precisely because a literal goes stale on 1 January —
+and unverified FSC-certification, adhesive-emissions and equipment-brand claims.

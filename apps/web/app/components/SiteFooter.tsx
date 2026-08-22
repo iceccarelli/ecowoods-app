@@ -20,7 +20,7 @@
  */
 
 import { EW_MARK } from '@/lib/brand';
-import { CITIES } from '@/lib/seo-data';
+import { CITIES, SERVICES } from '@/lib/seo-data';
 import { BUSINESS_NAP, REVIEW_PROFILES } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
@@ -130,16 +130,25 @@ export default function SiteFooter() {
             )}
           </div>
 
-          {/* Services */}
+          {/* Services.
+
+              Every one of these used to be `/#services` — seven links, seven
+              labels, one anchor on the homepage. The highest-intent phrases this
+              business could rank for had no URL of their own to rank, and the
+              LocalBusiness graph was meanwhile emitting a Service node per
+              service with an @id of /services/{slug}#service, which 404'd. Both
+              halves of that are fixed by the same six pages. See F-146.
+
+              Labels are the published SERVICES names so the link text, the page
+              H1 and the schema `name` are one string, not three that drift. */}
           <FooterCol title="Services" mobile={m}>
             <div className="footer-links">
-              <a href="/#services">Hardwood Installation</a>
-              <a href="/#services">Refinishing & Restoration</a>
-              <a href="/#services">Dust-Free Sanding</a>
-              <a href="/#services">Custom Stain Matching</a>
-              <a href="/#services">Stair Refinishing</a>
-              <a href="/#services">Custom Inlays & Borders</a>
-              <a href="/#services">Commercial Projects</a>
+              {SERVICES.map((s) => (
+                <a key={s.slug} href={`/services/${s.slug}`}>
+                  {s.name}
+                </a>
+              ))}
+              <a href="/services">All services</a>
             </div>
           </FooterCol>
 

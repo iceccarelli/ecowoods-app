@@ -147,6 +147,16 @@ else
   FAILED=$((FAILED + 1))
 fi
 
+printf '\n%s── service pages %s\n' "$BOLD" "$OFF"
+# F-146. The LocalBusiness graph emits a Service node per service with an @id of
+# /services/{slug}#service. Those resolved to 404 for the life of the project.
+# An identifier that does not resolve is the one kind of schema error no
+# validator flags, because the JSON is perfectly well-formed.
+for SLUG in hardwood-installation floor-refinishing dust-free-sanding floor-restoration stair-refinishing custom-inlays; do
+  check "/services/$SLUG" "$BASE/services/$SLUG"
+done
+check "/services" "$BASE/services"
+
 printf '\n%s── machine-readable editions %s\n' "$BOLD" "$OFF"
 #
 # The llms.txt proposal asks for clean markdown at each page's URL with `.md`

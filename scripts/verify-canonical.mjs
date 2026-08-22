@@ -89,6 +89,8 @@ const ROUTES = [
   'papers',
   'papers/[slug]',
   'products/floorforge',
+  'services',
+  'services/[slug]',
   'blog',
   'blog/[slug]',
   'case-studies',

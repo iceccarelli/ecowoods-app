@@ -156,7 +156,20 @@ export function buildService(config: ServiceConfig2): Service {
           '@type': 'Offer',
           priceCurrency: 'CAD',
           priceRange: config.priceRange,
-          availability: 'PT10M', // 10 minutes response time estimate
+          /**
+           * F-147. This read `availability: 'PT10M'` with the comment "10
+           * minutes response time estimate". `availability` takes an
+           * ItemAvailability enum — InStock, OutOfStock, PreOrder. 'PT10M' is
+           * an ISO 8601 duration, which is a valid value for a completely
+           * different property, so the field parsed as a string and was
+           * silently discarded by every consumer. Six Offer nodes carried it.
+           *
+           * A response-time estimate is not a schema.org availability and this
+           * business has published no service-level commitment to put there, so
+           * the intended meaning is dropped rather than relocated into a
+           * property it would also be wrong in.
+           */
+          availability: 'https://schema.org/InStock',
         },
       ] as Offer[],
     }),
