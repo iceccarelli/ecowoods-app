@@ -133,6 +133,11 @@ const FAQPAGE_ALLOWED = new Set([
   // /guides, shown on the page with a link back to it. The markup describes
   // content that is on the page and true elsewhere, which is the whole test.
   'apps/web/app/services/[slug]/page.tsx',
+  // The entity answers, rendered visibly and emitted as FAQPage. Qualifies
+  // under F-27 for the same reason the service pages do: the markup describes
+  // the page's own main content, and every answer is interpolated from a
+  // published constant rather than written for the schema block.
+  'apps/web/app/about/page.tsx',
   'apps/web/lib/structured-data.ts',              // faqPageSchema() builder
   'apps/web/lib/schema/builders.ts',              // buildFAQPage() builder
   'apps/web/lib/schema/types.ts',                 // the type

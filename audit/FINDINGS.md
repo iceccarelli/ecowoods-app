@@ -5161,3 +5161,69 @@ a file present in both locations — which is exactly what copying the brand
 assets produced — was reported as a 404 it demonstrably was not. Served location
 wins; the unserved-directory message is now only for files that exist *only*
 there.
+
+### F-169 · The entity was never stated in the shape the question is asked · P1
+
+Every fact needed to answer *"who is Ecowoods"*, *"how long have they operated"*,
+*"do they subcontract"*, *"what does it cost"* was already published somewhere on
+this site. Not one of them was stated as an answer.
+
+The homepage said *"Hardwood, Done Once. Done Right."* and *"Experience the
+Ecowoods difference."* A retrieval system had to infer the entity from marketing
+prose and hope the inference held.
+
+That shape matters more than it used to. An answer engine retrieves **passages**,
+not pages. A sentence beginning *"Ecowoods Hardwood Flooring Inc. is a hardwood
+flooring contractor in Toronto & the GTA, established in…"* survives being lifted
+out of its page and quoted. A sentence beginning *"We believe"* does not survive
+anything.
+
+`/about` now answers eleven questions, one self-contained paragraph each, in the
+words the questions are actually asked. Rendered visibly, emitted as `FAQPage`
+and `AboutPage` pointing at the organisation node, carried in `/llms.txt`, the
+`.md` corpus and `/api/knowledge`.
+
+**The rule that makes it publishable, and the reason it needed its own guard:**
+not one answer contains a fact that was typed. Every value is interpolated —
+`${BUSINESS_NAP.foundedYear}`, never `2000`; `${yearsInBusiness(now)}`, never
+`26`; the price bands from `PRICING`, never a number. There is nowhere in the
+file to invent anything.
+
+That property is not cosmetic here. This is the page an answer engine is most
+likely to quote verbatim and cache. A stale year in a marketing paragraph is
+embarrassing; a stale year in a sentence a model repeats for a year is a
+different problem — and this project has already retired one fabricated
+reputation figure (F-163) and banned one hardcoded year count that goes stale
+every 1 January.
+
+`scripts/verify-entity.mjs` fails the build on a literal year, currency amount,
+year count, phone number or percentage inside any answer string, and on the file
+ceasing to reference the constants it derives from. Interpolations are blanked
+before matching, so the correct form passes and only the typed form fails. All
+five classes were verified by injection.
+
+### F-170 · Six certification claims are live and unsourced · P2 · owner action
+
+Not introduced by this work — they predate all of it, and they are on the
+homepage today:
+
+- "FSC-Certified Eco Materials"
+- "GreenGuard Gold"
+- "water-based ≤50 g/L VOC finishes"
+- "zero-formaldehyde adhesives"
+- "many with us 10+ years"
+- "99.7% dust capture" (already baselined as an unsourced number)
+
+FSC chain-of-custody and UL GREENGUARD Gold are formal certifications held
+against public registers. The wording here claims the **materials** are
+certified rather than the company, which is the defensible form — a contractor
+buying certified product, not holding certification themselves — but it still
+requires the supplier's certificate number and product lines on file to answer a
+challenge in one move.
+
+Recorded in `docs/outreach/CLAIMS_REGISTER.md` rather than removed. The point is
+not that they are false; it is that this site now publishes a great deal that is
+verifiable — the framework, the standards register with verification dates, the
+price bands, three technical papers — and these six are the remaining sentences a
+sceptical reader could challenge and we could not immediately answer. Product
+names and certificate numbers turn six weak claims into six strong ones.

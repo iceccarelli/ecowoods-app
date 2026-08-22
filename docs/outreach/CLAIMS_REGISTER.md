@@ -22,6 +22,29 @@ other number on the site becomes a thing a reader has to wonder about.
 | Festool and Bona Atomic containment | Refinishing service page bullet | Unverified equipment claim | Confirm the machines actually in the vans |
 | "Best hardwood flooring company in the GTA" | Homepage meta description | A superlative about ourselves, in our own voice, with nothing behind it | Not a factual question — a brand decision. It is also the weakest sentence in the description, because every competitor says it |
 
+## Already published, and needing a source on file
+
+These are **live on the homepage right now**. They were not added by this work;
+they predate it. Each is a formal third-party certification or a measurement,
+and each is the kind of claim a competitor, a journalist or a regulator can
+check against a public register.
+
+| Claim | Where | What would settle it |
+|---|---|---|
+| "FSC-Certified Eco Materials" | homepage pillar + hero copy | The FSC chain-of-custody certificate number of the supplier, and the product lines it covers. Note the wording claims the *materials* are certified, not the company — that is the defensible form, and it still needs the supplier's certificate on file |
+| "GreenGuard Gold" | homepage pillar | The UL GREENGUARD Gold certificate for the specific finish or adhesive, by product name |
+| "water-based ≤50 g/L VOC finishes" | homepage pillar | Product name and its technical data sheet |
+| "zero-formaldehyde adhesives" | homepage pillar | Product name and its emissions certification |
+| "many with us 10+ years" | homepage pillar | Nothing external — but it should be true of a named number of people |
+| "99.7% dust capture" | homepage, FAQ, service pages | Already baselined in `scripts/schema-baseline.json` as an unsourced number. The equipment manufacturer's published figure would settle it |
+
+None of these is being removed. The point of listing them is that the site now
+publishes a great deal that *is* verifiable — the framework, the standards
+register with dates, the price bands, the papers — and these six are the
+remaining sentences a sceptical reader could challenge and we could not answer
+in one move. Getting the product names and certificate numbers into a file turns
+six weak claims into six strong ones.
+
 ## The `aggregateRating` question, separately
 
 This one is not a verification problem, and it does not become safe if the

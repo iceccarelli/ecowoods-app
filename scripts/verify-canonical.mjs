@@ -95,6 +95,7 @@ const ROUTES = [
   'blog/[slug]',
   'case-studies',
   'case-studies/[slug]',
+  'about',
   'authority',
   'framework',
   'framework/assess',

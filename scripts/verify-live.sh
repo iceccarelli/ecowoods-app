@@ -110,7 +110,7 @@ check() {
 }
 
 printf '%s── pages %s\n' "$BOLD" "$OFF"
-for p in / /framework /framework/assess /guides /glossary /papers /resources /library /data /market /whats-new /standards /authority /technical-library; do
+for p in / /framework /framework/assess /guides /glossary /papers /resources /library /data /market /whats-new /standards /about /authority /technical-library; do
   check "$p" "$BASE$p?$CB"
 done
 

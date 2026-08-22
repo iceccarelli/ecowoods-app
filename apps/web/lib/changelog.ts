@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'entity-answers-v1',
+    date: '2026-08-22',
+    kind: 'tool',
+    title: 'Every question about this company, answered in one paragraph each',
+    body: 'Who we are, how long we have worked, whether we subcontract, where we go, what it costs, and how the work is judged \u2014 stated in the words those questions are actually asked, one self-contained paragraph each, on a single page. Every figure on it is read from the same source the rest of the site renders from, so there is nowhere on that page to type a number that could drift from the truth. It is also carried in the machine-readable editions, because the first thing anything reading this site has to settle is who it belongs to.',
+    href: '/about',
+  },
+  {
     id: 'images-discoverable-v1',
     date: '2026-08-22',
     kind: 'data',

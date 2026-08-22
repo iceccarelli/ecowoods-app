@@ -145,6 +145,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/products/floorforge', 'monthly', 0.8),                 // no date
     entry('/blog', 'weekly', 0.9, newestArticle),
     entry('/case-studies', 'weekly', 0.9, newestCase),
+    entry('/about', 'monthly', 0.9),                              // no date
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),

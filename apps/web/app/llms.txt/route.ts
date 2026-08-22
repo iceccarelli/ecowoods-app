@@ -10,6 +10,7 @@ import { getSeries } from '@/lib/market';
 import { PILLARS, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { getServicePages, priceBand } from '@/lib/service-pages';
+import { entityAnswers } from '@/lib/entity-answers';
 
 export const dynamic = 'force-static';
 
@@ -65,6 +66,13 @@ export async function GET() {
     const band = priceBand(sp);
     lines.push(`- ${svc?.name ?? sp.h1}${band ? ` (${band})` : ''}: ${SITE_URL}/services/${sp.slug}`);
   }
+  lines.push('');
+
+  // The entity, answered directly. First, because "who is this" is the first
+  // question any retrieval system has to settle before anything else it reads
+  // here means something.
+  lines.push('## Who this is');
+  for (const a of entityAnswers()) lines.push(`- ${a.q} ${a.a}`);
   lines.push('');
 
   lines.push('## Key pages');
