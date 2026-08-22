@@ -1,0 +1,766 @@
+diff --git a/apps/web/app/blog/[slug]/page.tsx b/apps/web/app/blog/[slug]/page.tsx
+index a18de90..dbe6a28 100644
+--- a/apps/web/app/blog/[slug]/page.tsx
++++ b/apps/web/app/blog/[slug]/page.tsx
+@@ -15,6 +15,7 @@ import {
+   findRelatedContent,
+   getFallbackRelated,
+ } from '@/lib/graph/contentLinks';
++import { OG_IMAGE_URL } from '@/lib/brand-assets';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+@@ -93,7 +94,19 @@ export default async function ArticlePage({ params }: Props) {
+     modifiedAt: article.modifiedAt ? new Date(article.modifiedAt) : undefined,
+     wordCount: article.wordCount,
+     readingTimeMinutes: article.readingTimeMinutes,
+-    imageUrl: article.image,
++    /**
++     * F-164. `article.image` is optional and NOT ONE of the published articles
++     * or case studies sets it, so every Article node shipped without an
++     * `image`. Google's article rich results require one; without it these
++     * pages are ineligible, quietly, forever.
++     *
++     * Falling back to the site's Open Graph image is honest — it is this site's
++     * image, 1200×630, and it is what a share of the page already shows — and
++     * it makes every article eligible today rather than after someone
++     * photographs eleven posts. A `hero-image` in the frontmatter still wins
++     * when one is set, which is the upgrade path.
++     */
++    imageUrl: article.image || OG_IMAGE_URL,
+     siteUrl: SITE_URL,
+     topics: article.topics,
+   });
+diff --git a/apps/web/app/case-studies/[slug]/page.tsx b/apps/web/app/case-studies/[slug]/page.tsx
+index fd7ce54..c2db917 100644
+--- a/apps/web/app/case-studies/[slug]/page.tsx
++++ b/apps/web/app/case-studies/[slug]/page.tsx
+@@ -14,6 +14,7 @@ import {
+   findRelatedContent,
+   getFallbackRelated,
+ } from '@/lib/graph/contentLinks';
++import { OG_IMAGE_URL } from '@/lib/brand-assets';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+ 
+@@ -100,7 +101,19 @@ export default async function CaseStudyPage({ params }: Props) {
+     challenges: caseStudy.challenges,
+     results: caseStudy.results,
+     testimonial: caseStudy.testimonial,
+-    imageUrl: caseStudy.images?.[0],
++    /**
++     * F-164. `caseStudy.images` is optional and NOT ONE of the published articles
++     * or case studies sets it, so every Article node shipped without an
++     * `image`. Google's article rich results require one; without it these
++     * pages are ineligible, quietly, forever.
++     *
++     * Falling back to the site's Open Graph image is honest — it is this site's
++     * image, 1200×630, and it is what a share of the page already shows — and
++     * it makes every article eligible today rather than after someone
++     * photographs eleven posts. A `hero-image` in the frontmatter still wins
++     * when one is set, which is the upgrade path.
++     */
++    imageUrl: caseStudy.images?.[0] || OG_IMAGE_URL,
+     siteUrl: SITE_URL,
+     topics: caseStudy.topics,
+   });
+diff --git a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+index 3982b15..43cc52a 100644
+--- a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
++++ b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+@@ -12,7 +12,6 @@ tags:
+   - extraction
+   - health
+ keywords: "HEPA filtration, dust collection, wood sanding, air quality, 99.7% capture"
+-semantic-density: 8.5
+ topics:
+   - Dust Collection
+   - HEPA Technology
+diff --git a/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx b/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
+index eaa0f16..0478aa0 100644
+--- a/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
++++ b/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
+@@ -13,7 +13,6 @@ tags:
+   - tannin-risk
+   - toronto
+ keywords: "hardwood species, Janka hardness, wood cost, tannin staining, installation difficulty, species selection Toronto"
+-semantic-density: 9
+ topics:
+   - Species Selection
+   - Material Properties
+diff --git a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+index c95ef6d..c9b4401 100644
+--- a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
++++ b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+@@ -12,7 +12,6 @@ tags:
+   - toronto
+   - engineering
+ keywords: "moisture testing, calcium chloride, wood moisture meter, hardwood acclimation, subfloor prep"
+-semantic-density: 9
+ topics:
+   - Moisture Management
+   - Moisture Measurement
+diff --git a/apps/web/content/articles/water-based-vs-oil-based-polyurethane-chemistry.mdx b/apps/web/content/articles/water-based-vs-oil-based-polyurethane-chemistry.mdx
+index 32934c0..a3ca45d 100644
+--- a/apps/web/content/articles/water-based-vs-oil-based-polyurethane-chemistry.mdx
++++ b/apps/web/content/articles/water-based-vs-oil-based-polyurethane-chemistry.mdx
+@@ -13,7 +13,6 @@ tags:
+   - water-based
+   - oil-based
+ keywords: "polyurethane chemistry, water-based polyurethane, oil-based polyurethane, VOC emissions, finish durability, hardwood finishing"
+-semantic-density: 9
+ topics:
+   - Finish Chemistry
+   - Performance Comparison
+diff --git a/apps/web/content/articles/white-oak-vs-red-oak-tannin-behavior.mdx b/apps/web/content/articles/white-oak-vs-red-oak-tannin-behavior.mdx
+index 0b8726d..d78764f 100644
+--- a/apps/web/content/articles/white-oak-vs-red-oak-tannin-behavior.mdx
++++ b/apps/web/content/articles/white-oak-vs-red-oak-tannin-behavior.mdx
+@@ -12,7 +12,6 @@ tags:
+   - species
+   - chemistry
+ keywords: "white oak, red oak, tannin staining, wood chemistry, finish compatibility, water-based polyurethane"
+-semantic-density: 8.5
+ topics:
+   - Wood Chemistry
+   - Species Selection
+diff --git a/apps/web/content/articles/wood-acclimation-timeline-toronto-gta.mdx b/apps/web/content/articles/wood-acclimation-timeline-toronto-gta.mdx
+index 00563dc..dd9cb77 100644
+--- a/apps/web/content/articles/wood-acclimation-timeline-toronto-gta.mdx
++++ b/apps/web/content/articles/wood-acclimation-timeline-toronto-gta.mdx
+@@ -13,7 +13,6 @@ tags:
+   - wood-science
+   - seasonal
+ keywords: "wood acclimation, moisture equilibration, Toronto humidity, seasonal acclimation timeline, hardwood installation timing"
+-semantic-density: 9
+ topics:
+   - Moisture Management
+   - Acclimation Protocol
+diff --git a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+index 0b39dbf..b764a9a 100644
+--- a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
++++ b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+@@ -152,7 +152,6 @@ testimonial:
+   attribution: "Sarah & David Chen, Distillery District Condo Owners"
+ 
+ keywords: "white oak, vapor barrier, tannin staining prevention, concrete subfloor, MVTR, dust-free sanding, Toronto loft"
+-semantic-density: 9
+ topics:
+   - Moisture Management
+   - Vapor Barriers
+diff --git a/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx b/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
+index e59f1b4..5ec69f1 100644
+--- a/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
++++ b/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
+@@ -213,7 +213,6 @@ testimonial:
+   attribution: "Elena & David Gutierrez, Forest Hill Homeowners"
+ 
+ keywords: "walnut flooring, wide-plank, UV stabilization, color matching, photochemical aging, premium hardwood, color consistency"
+-semantic-density: 9
+ topics:
+   - Premium Hardwoods
+   - Walnut Installation
+diff --git a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+index 92a571b..94bc06f 100644
+--- a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
++++ b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+@@ -234,7 +234,6 @@ testimonial:
+   attribution: "Jennifer & Robert Toh, Midtown Townhouse Owners"
+ 
+ keywords: "multi-level flooring, substrate transition, custom staircase, species matching, radiant heat, three-level renovation, hardwood installation"
+-semantic-density: 9
+ topics:
+   - Multi-Level Installation
+   - Substrate Transition
+diff --git a/apps/web/content/case-studies/rosedale-estate-stairs-radiant-heat.mdx b/apps/web/content/case-studies/rosedale-estate-stairs-radiant-heat.mdx
+index 2b61589..7753193 100644
+--- a/apps/web/content/case-studies/rosedale-estate-stairs-radiant-heat.mdx
++++ b/apps/web/content/case-studies/rosedale-estate-stairs-radiant-heat.mdx
+@@ -182,7 +182,6 @@ testimonial:
+   attribution: "Dr. James & Caroline Whitmore, Rosedale Estate Owners"
+ 
+ keywords: "radiant floor heating, thermal expansion, hard maple, white oak, staircase installation, polyurethane finish, radiant heat flooring"
+-semantic-density: 9
+ topics:
+   - Radiant Heat Systems
+   - Thermal Expansion
+diff --git a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+index 6228d2b..68dc340 100644
+--- a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
++++ b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+@@ -198,7 +198,6 @@ testimonial:
+   attribution: "Patricia & Michael Khan, Yorkville Loft Owners"
+ 
+ keywords: "basement flooring, high moisture, vapor barrier, sub-slab depressurization, moisture mitigation, MVTR, red oak, hard maple"
+-semantic-density: 9
+ topics:
+   - Moisture Management
+   - Basement Installations
+diff --git a/apps/web/lib/brand-assets.ts b/apps/web/lib/brand-assets.ts
+new file mode 100644
+index 0000000..44c849e
+--- /dev/null
++++ b/apps/web/lib/brand-assets.ts
+@@ -0,0 +1,49 @@
++import logo512 from '../public/icon-512.png';
++import ogImage from '../app/opengraph-image.jpg';
++import { SITE_URL } from '@/lib/seo-data';
++
++/**
++ * The two image URLs the entity graph claims, resolved to bytes that exist.
++ *
++ * WHY THIS FILE EXISTS
++ *
++ * F-162. `root-schema.ts` declared the organisation's logo and image as:
++ *
++ *     logoUrl:    `${SITE_URL}/icon-512.png`
++ *     ogImageUrl: `${SITE_URL}/og-image.jpg`
++ *
++ * Fetched from production, both return **404**.
++ *
++ * `icon-512.png` exists, but only in apps/web/public — the directory this
++ * deployment has never served, established by measurement in F-131 and asserted
++ * on every run of verify-live.sh. `og-image.jpg` does not exist anywhere in the
++ * repository at all.
++ *
++ * Those are not two decorative fields. `logo` and `image` on the Organization
++ * node are what Google reads to attach a brand mark to a Knowledge Panel and to
++ * the brand's appearance in search. A logo that 404s is not a smaller logo; it
++ * is no logo, on the single most important structured-data object the site
++ * emits — and it has been that way for the entire life of the project, while
++ * the schema validated perfectly, because a validator checks that a URL is
++ * well-formed and never asks whether it resolves.
++ *
++ * THE FIX IS THE ONE THAT IS ALREADY PROVEN HERE
++ *
++ * Static imports. Next rewrites these into /_next/static/media/… , which this
++ * host does serve — measured at byte level for all 28 diagrams in F-129/F-131,
++ * and re-measured on every deploy by verify-live.sh. Importing the file is also
++ * what makes the guard possible: a path that does not exist fails the build
++ * instead of failing silently in production.
++ *
++ * The 512×512 source is kept where it is. It does not need to move; it needs to
++ * be imported rather than linked. Google's Organization logo guidance asks for
++ * at least 112×112, so 512 clears it comfortably; the OG image is 1200×630.
++ */
++export const LOGO_URL = `${SITE_URL}${logo512.src}`;
++export const OG_IMAGE_URL = `${SITE_URL}${ogImage.src}`;
++
++/** Intrinsic dimensions, for schema nodes that accept them. */
++export const LOGO_WIDTH = logo512.width;
++export const LOGO_HEIGHT = logo512.height;
++export const OG_IMAGE_WIDTH = ogImage.width;
++export const OG_IMAGE_HEIGHT = ogImage.height;
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index ff7493e..abbd388 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,14 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'brand-assets-v1',
++    date: '2026-08-22',
++    kind: 'data',
++    title: 'The logo in our structured data now exists',
++    body: 'The organisation\u2019s logo and image had pointed at two URLs that returned 404 \u2014 one file sitting in a directory this host does not serve, the other never created at all. Those are the fields a search engine reads to attach a brand mark to a knowledge panel, and every structured-data validator passed the markup, because a validator checks that a URL is well formed and never checks that it resolves. Both are now derived from imported files, so a missing one stops the build. Every article also carries an image, which is what makes it eligible for a rich result at all.',
++    href: '/authority',
++  },
+   {
+     id: 'high-intent-guides-v1',
+     date: '2026-08-22',
+diff --git a/apps/web/lib/content/case-study-loader.ts b/apps/web/lib/content/case-study-loader.ts
+index 1a5cdd1..1d3722b 100644
+--- a/apps/web/lib/content/case-study-loader.ts
++++ b/apps/web/lib/content/case-study-loader.ts
+@@ -73,7 +73,6 @@ function parseCaseStudyFile(
+     authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
+     images: (data.images as string[]) || [],
+     keywords: data.keywords || '',
+-    semanticDensity: getField('semantic-density', 'semanticDensity'),
+     topics: (data.topics as string[]) || [],
+     relatedCaseStudies: getField('related-case-studies', 'relatedCaseStudies') || [],
+     relatedArticles: getField('related-articles', 'relatedArticles') || [],
+diff --git a/apps/web/lib/content/case-study-types.ts b/apps/web/lib/content/case-study-types.ts
+index dbc5b61..0305ac2 100644
+--- a/apps/web/lib/content/case-study-types.ts
++++ b/apps/web/lib/content/case-study-types.ts
+@@ -56,7 +56,7 @@ export interface CaseStudyMetadata {
+   authorTitle?: string;
+   images?: string[]; // Relative paths or URLs
+   keywords?: string;
+-  semanticDensity?: number; // 1-10 self-assessment
++  // semanticDensity removed — see lib/content/types.ts and F-163.
+   topics?: string[];
+   relatedCaseStudies?: string[]; // Slugs
+   relatedArticles?: string[]; // Slugs to blog articles
+diff --git a/apps/web/lib/content/loader.ts b/apps/web/lib/content/loader.ts
+index 68e24f6..78dba87 100644
+--- a/apps/web/lib/content/loader.ts
++++ b/apps/web/lib/content/loader.ts
+@@ -41,7 +41,6 @@ function parseArticleFile(filename: string, content: string): { metadata: Articl
+     image: data.image,
+     wordCount: wordCount as number,
+     readingTimeMinutes: getField('reading-time-minutes', 'readingTimeMinutes') ?? Math.ceil((wordCount as number) / 200),
+-    semanticDensity: getField('semantic-density', 'semanticDensity'),
+     topics: (data.topics as string[]) || [],
+     relatedArticles: getField('related-articles', 'relatedArticles') || [],
+     published: data.published !== false, // default true
+diff --git a/apps/web/lib/content/types.ts b/apps/web/lib/content/types.ts
+index 551e26d..afb2277 100644
+--- a/apps/web/lib/content/types.ts
++++ b/apps/web/lib/content/types.ts
+@@ -44,7 +44,10 @@ export interface ArticleMetadata {
+   readingTimeMinutes?: number;
+ 
+   /** Semantic density self-assessment (for internal QA) */
+-  semanticDensity?: number; // 1-10, target 8+
++  // semanticDensity removed (F-163). It was a self-assigned 1-10 score with no
++  // method behind it, banned by verify-business-facts as a fabricated credential
++  // since long before this, and still sitting in the frontmatter of every article
++  // because the ban was written /Semantic Density/i and the key had a hyphen.
+ 
+   /** Primary and secondary topics for entity linking */
+   topics?: string[];
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 85da1aa..000072b 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -13,6 +13,7 @@
+  */
+ 
+ import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
++import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import {
+   buildOrganization,
+@@ -128,8 +129,12 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+   slogan: "Toronto's master hardwood flooring artisans",
+   description:
+     'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',
+-  logoUrl: `${SITE_URL}/icon-512.png`,
+-  ogImageUrl: `${SITE_URL}/og-image.jpg`,
++  // Both of these used to be hand-written paths into apps/web/public, and both
++  // returned 404 in production for the life of the project. See F-162 and
++  // lib/brand-assets.ts — the URLs are now derived from imported files, so a
++  // missing one fails the build instead of the Knowledge Panel.
++  logoUrl: LOGO_URL,
++  ogImageUrl: OG_IMAGE_URL,
+ };
+ 
+ /* ────────────────────────────────────────────────────────────────────────
+diff --git a/apps/web/lib/structured-data.ts b/apps/web/lib/structured-data.ts
+index 89c88b6..e9ffaa2 100644
+--- a/apps/web/lib/structured-data.ts
++++ b/apps/web/lib/structured-data.ts
+@@ -7,8 +7,9 @@ export const localBusinessSchema = {
+       name: 'Ecowoods Inc.',
+       legalName: 'Ecowoods Hardwood Flooring Inc.',
+       url: 'https://ecowoods.ca',
+-      image: 'https://ecowoods.ca/og-image.jpg',
+-      logo: 'https://ecowoods.ca/icon-512.png',
++      // Hardcoded 404s until F-162. See lib/brand-assets.ts.
++      image: OG_IMAGE_URL,
++      logo: LOGO_URL,
+       // Was +1-416-555-9663 — a placeholder that contradicted the (647) 244-5156  (facts-allow)
+       // shown in Header, ChatWidget, the contact block and the AI's
+       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
+@@ -96,6 +97,7 @@ export const localBusinessSchema = {
+  * ──────────────────────────────────────────────────────────────────────── */
+ import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
+ import { BUSINESS_NAP, PROFILE_LINKS } from '@ecowoods/shared/constants';
++import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+ 
+ /** WebSite entity — helps Google understand the site + name. */
+ export const websiteSchema = {
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 2166bcf..63cef65 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -4920,3 +4920,109 @@ money:
+   cookies, submit the form, read the console: what appears is what enforcing it
+   would have broken. When it is silent, the directives move to the enforced
+   header.
++
++### F-162 · The organisation's logo and image were both 404 · P0
++
++`root-schema.ts` declared, and `structured-data.ts` repeated:
++
++```ts
++logo:  https://ecowoods.ca/icon-512.png
++image: https://ecowoods.ca/og-image.jpg
++```
++
++Fetched from production, **both return 404.**
++
++`icon-512.png` exists — only in `apps/web/public`, the directory this
++deployment has never served. That was established by measurement in F-131 and
++is asserted on every single run of `verify-live.sh`, which prints
++*"/icon-192.png still 404 — apps/web/public unserved, as expected"* at the
++bottom of every deploy. The fact was known, printed, and never connected to the
++two URLs in the schema that depended on it.
++
++`og-image.jpg` is worse: it does not exist anywhere in the repository. Not in
++`public/`, not in `apps/web/public/`, not in `app/`. The site has claimed an
++image that was never created.
++
++These are not decorative fields. `logo` on the Organization node is what Google
++reads to attach a brand mark to a Knowledge Panel and to the brand's appearance
++in search results. A 404 there is not a smaller logo — it is no logo, on the
++single most important structured-data object the site emits, for the entire life
++of the project.
++
++And every validator passed it. That is the part worth internalising: a
++structured-data validator checks that a URL is **well-formed**. It never asks
++whether it **resolves**. Nothing but a fetch can tell you, and until now nothing
++fetched.
++
++Fixed the way F-129 and F-131 were fixed, because that mechanism is already
++proven on this host: static imports. `lib/brand-assets.ts` imports both files
++and derives the URLs from what the bundler emits, so a missing file fails the
++build instead of failing the Knowledge Panel. The 512×512 logo did not need to
++move — it needed to be imported rather than linked. Google's Organization logo
++guidance asks for at least 112×112; it is 512. The OG image is 1200×630.
++
++`scripts/verify-assets.mjs` scans the schema and metadata layer for absolute
++asset URLs and requires each to resolve somewhere actually served — repo-root
++`public/`, a Next metadata convention in `app/`, or a route handler — and fails
++outright on any path into `apps/web/public`. `verify-live.sh` now pulls the
++`logo` value out of the rendered homepage and fetches it.
++
++This is the fourth finding of one shape. F-131: a directory never served.
++F-138: a key file at that path. F-144: a sitemap URL that does not exist. Now
++the brand logo. The code was right every time; the path was wrong every time.
++
++### F-163 · The banned-claims regex was defeated by a hyphen · P2
++
++`verify-business-facts.mjs` has banned `/Semantic Density/i` since it was
++written — *"Not a measurable quantity; presented as a credential."* It was a
++self-assigned 1-to-10 score with no method behind it.
++
++Every published article and case study still carried it:
++
++```yaml
++semantic-density: 9
++```
++
++The key is hyphenated, so the pattern never matched. Eleven content files, both
++content loaders, and both type definitions still carried a claim this repository
++had formally retired — one rename away from being rendered again.
++
++The pattern is now `/semantic[ _-]?density/i`, and the field is gone from the
++frontmatter, the loaders and the types rather than exempted.
++
++Broadening it immediately exposed a second defect in the same guard: it read the
++comment explaining the removal as a violation of the rule it documents. That is
++F-58 and F-106 for the third time, now in the guard those findings were about.
++Comments are stripped in **code** files only — Markdown and text are content,
++where a line starting `//` is something a reader sees and must still be checked.
++
++### F-164 · Eleven articles, no image, no rich-result eligibility · P1
++
++`article.image` is optional in the content model, and **not one** of the six
++articles or five case studies sets it. So every `Article` node shipped without
++an `image` field.
++
++Google's article rich results require an image. Without one the page is
++ineligible — not ranked lower, ineligible — and nothing reports it, because the
++markup is otherwise valid and the field is optional in schema.org.
++
++The Article schema now falls back to the site's Open Graph image, which is
++honest: it is this site's image, 1200×630, and it is already what a share of the
++page displays. That makes all eleven eligible today rather than after someone
++photographs eleven posts. A `hero-image` in the frontmatter still wins where one
++is set, which is the upgrade path.
++
++### F-165 · Three public route families were never checked in production · P2
++
++`verify-live.sh` checked fourteen pages, the machine surfaces, the service pages
++and the markdown editions. It never checked `/blog/*`, `/case-studies/*` or
++`/design`.
++
++Two of those are the content collections — eleven pages carrying the `Article`
++and `CaseStudy` schema, the evidence layer the whole authority argument rests
++on. A broken article would have been invisible to every check in this
++repository, which is precisely the gap this file exists to close.
++
++Now checked: both collection indexes, one article, one case study, the
++configurator, `/services`, `/service-areas`, a municipality page and a
++neighbourhood page.
+diff --git a/package.json b/package.json
+index d9cfbe7..7559ca0 100644
+--- a/package.json
++++ b/package.json
+@@ -31,10 +31,11 @@
+     "verify:services": "node scripts/verify-services.mjs",
+     "verify:cities": "node scripts/verify-cities.mjs",
+     "verify:manifests": "node scripts/verify-manifests.mjs",
++    "verify:assets": "node scripts/verify-assets.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index b14b842..b5bb25b 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -136,6 +136,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
+ [ -f scripts/verify-cities.mjs ] && run "verify:cities" node scripts/verify-cities.mjs
+ [ -f scripts/verify-manifests.mjs ] && run "verify:manifests" node scripts/verify-manifests.mjs
++[ -f scripts/verify-assets.mjs ] && run "verify:assets" node scripts/verify-assets.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-assets.mjs b/scripts/verify-assets.mjs
+new file mode 100644
+index 0000000..a9be02e
+--- /dev/null
++++ b/scripts/verify-assets.mjs
+@@ -0,0 +1,154 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-assets.mjs
++ *
++ * Fails when the site claims an asset URL that cannot be served.
++ *
++ * WHY THIS EXISTS
++ *
++ * F-162. The organisation's structured data declared:
++ *
++ *     logo:  https://ecowoods.ca/icon-512.png
++ *     image: https://ecowoods.ca/og-image.jpg
++ *
++ * Both return 404. `icon-512.png` exists only in apps/web/public, which this
++ * deployment has never served — established by measurement in F-131 and
++ * asserted on every run of verify-live.sh. `og-image.jpg` does not exist
++ * anywhere in the repository.
++ *
++ * Every structured-data validator in the world passes that markup, because a
++ * validator asks whether a URL is well-formed, never whether it resolves. And
++ * `logo` on the Organization node is what Google reads to put a brand mark on a
++ * Knowledge Panel. A 404 there is not a smaller logo; it is no logo, on the
++ * most important object the site emits, silently, for the life of the project.
++ *
++ * This is the fourth finding of one shape — F-131 (a directory never served),
++ * F-138 (a key file at that path), F-144 (a sitemap URL that does not exist),
++ * now this. The code was right every time. The path was wrong every time.
++ *
++ * WHAT IT DOES
++ *
++ * Scans the schema and metadata layer for absolute, site-relative asset URLs —
++ * anything ending in an image, font, or document extension — and requires each
++ * one to resolve somewhere that is actually served:
++ *
++ *   · the REPO-ROOT public/ directory, which is served (proven: /qr-app.jpg);
++ *   · a Next metadata-file convention in apps/web/app (icon.png,
++ *     apple-icon.png, opengraph-image.jpg, and friends);
++ *   · a route handler at that path.
++ *
++ * And it fails outright on any reference into apps/web/public, which is served
++ * by nothing.
++ *
++ * Assets reached by static import are not checked here and do not need to be:
++ * an import of a missing file fails the build, which is the whole reason
++ * lib/brand-assets.ts imports rather than hand-writes these two URLs.
++ *
++ *   node scripts/verify-assets.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = path.join(ROOT, 'apps/web');
++const APP = path.join(WEB, 'app');
++
++/* Where a URL path can legitimately come from. */
++const ROOT_PUBLIC = path.join(ROOT, 'public');
++const WEB_PUBLIC = path.join(WEB, 'public');
++
++const ASSET_EXT = /\.(png|jpe?g|gif|webp|avif|svg|ico|pdf|woff2?|mp4|webm)$/i;
++
++/* Files scanned. The schema and metadata layer — the surfaces that make claims
++   a machine will follow without a human ever looking at the result. */
++const TARGETS = [
++  'apps/web/lib/schema/root-schema.ts',
++  'apps/web/lib/schema/builders.ts',
++  'apps/web/lib/structured-data.ts',
++  'apps/web/lib/seo-data.ts',
++  'apps/web/app/layout.tsx',
++  'apps/web/app/manifest.ts',
++  'apps/web/lib/ai.ts',
++];
++
++const strip = (s) =>
++  s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
++
++const lineOf = (src, i) => src.slice(0, i).split('\n').length;
++
++const problems = [];
++const ok = [];
++
++/** Does this URL path resolve to something this host will serve? */
++function resolves(urlPath) {
++  const rel = urlPath.replace(/^\//, '').split('?')[0];
++
++  // 1. repo-root public/ — served.
++  if (fs.existsSync(path.join(ROOT_PUBLIC, rel))) return 'public/';
++
++  // 2. a Next metadata file convention in app/.
++  if (fs.existsSync(path.join(APP, rel))) return 'app/ (metadata convention)';
++
++  // 3. a route handler serving that exact path.
++  if (fs.existsSync(path.join(APP, rel, 'route.ts'))) return 'route handler';
++
++  // 4. bundled output — never hand-written, always from an import.
++  if (rel.startsWith('_next/')) return '_next (bundled)';
++
++  return null;
++}
++
++for (const rel of TARGETS) {
++  const abs = path.join(ROOT, rel);
++  if (!fs.existsSync(abs)) continue;
++  const src = strip(fs.readFileSync(abs, 'utf8'));
++
++  // `${SITE_URL}/foo.png`, 'https://ecowoods.ca/foo.png', and bare '/foo.png'.
++  const patterns = [
++    /\$\{SITE_URL\}(\/[A-Za-z0-9._\/-]+)/g,
++    /https:\/\/ecowoods\.ca(\/[A-Za-z0-9._\/-]+)/g,
++    /['"`](\/[A-Za-z0-9._\/-]+\.(?:png|jpe?g|gif|webp|avif|svg|ico|pdf|woff2?|mp4|webm))['"`]/gi,
++  ];
++
++  for (const re of patterns) {
++    for (const m of src.matchAll(re)) {
++      const urlPath = m[1];
++      if (!ASSET_EXT.test(urlPath)) continue;
++
++      const where = `${rel}:${lineOf(src, m.index)}`;
++
++      if (fs.existsSync(path.join(WEB_PUBLIC, urlPath.replace(/^\//, '')))) {
++        problems.push({
++          where,
++          detail:
++            `${urlPath} exists only in apps/web/public, which this deployment does not serve ` +
++            `(F-131). It returns 404. Import the file instead — see lib/brand-assets.ts.`,
++        });
++        continue;
++      }
++
++      const how = resolves(urlPath);
++      if (!how) {
++        problems.push({
++          where,
++          detail: `${urlPath} does not exist anywhere that is served. This URL is a 404.`,
++        });
++      } else {
++        ok.push(`${urlPath} → ${how}`);
++      }
++    }
++  }
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} asset URL(s) that cannot be served:\n`);
++  for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
++  console.error(
++    '  A structured-data validator passes all of these: it checks that a URL is\n' +
++      '  well-formed, never that it resolves. Nothing but a fetch can tell you.\n',
++  );
++  process.exit(1);
++}
++
++const unique = [...new Set(ok)];
++console.log(`✓ assets verified — ${unique.length} claimed URL(s), all served: ${unique.join(', ') || 'none'}`);
+diff --git a/scripts/verify-business-facts.mjs b/scripts/verify-business-facts.mjs
+index ebad44f..afc3b39 100755
+--- a/scripts/verify-business-facts.mjs
++++ b/scripts/verify-business-facts.mjs
+@@ -44,7 +44,10 @@ const BANNED = [
+   { pattern: /5,?193/, why: 'Invented project count.' },
+   { pattern: /5,?200\+?\s*Homes|5,000\+\s*(verified\s*)?project/i, why: 'Invented project/home count.' },
+   { pattern: /2\.5M\+?\s*Sq\s*Ft|Sq Ft Sanded & Finished/i, why: 'Square footage back-computed from another invented figure.' },
+-  { pattern: /Semantic Density/i, why: 'Not a measurable quantity; presented as a credential.' },
++  // F-163. Was /Semantic Density/i, which a hyphen defeats. The content
++  // frontmatter carries `semantic-density: 8.5` on every article — the retired
++  // claim, still in the repository, one rename away from being rendered again.
++  { pattern: /semantic[ _-]?density/i, why: 'Not a measurable quantity; presented as a credential.' },
+ 
+   // ── Founding-year drift ────────────────────────────────────────────────
+   { pattern: /Est\.?\s*1998|since 1998|Founded:\*{0,2}\s*1998|foundingDate:\s*'1998'|foundingYear:\s*1998/i,
+@@ -160,8 +163,29 @@ for (const file of files) {
+   if (ALLOWLIST.some((a) => rel === a || rel.startsWith(a))) continue;
+ 
+   const lines = readFileSync(file, 'utf8').split('\n');
++
++  /**
++   * In SOURCE files, a `//` or `*` line is a comment. It ships to nobody, and a
++   * comment that says "this claim was retired and why" is documentation, not a
++   * violation — but this scanner read it as one, so writing down why a figure
++   * was banned failed the build that banned it. That is F-58 and F-106 for the
++   * third time, here in the guard those findings were about.
++   *
++   * Only code files are stripped. Markdown and text are content: a line
++   * beginning `//` there is something a reader sees, and must still be checked.
++   *
++   * The cost is that a retired claim could hide in a comment and be uncommented
++   * later. That is a real gap and a small one — uncommenting is a deliberate
++   * act, and the line it produces fails this guard the moment it exists.
++   */
++  const isCode = /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(file);
++
+   lines.forEach((line, i) => {
+     if (line.includes(OPT_OUT)) return;
++    if (isCode) {
++      const t = line.trim();
++      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
++    }
+     for (const rule of BANNED) {
+       if (rule.pattern.test(line)) {
+         violations.push({ rel, line: i + 1, text: line.trim().slice(0, 110), why: rule.why });
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index 7c07b08..80b4d48 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -114,6 +114,36 @@ for p in / /framework /framework/assess /guides /glossary /papers /resources /li
+   check "$p" "$BASE$p?$CB"
+ done
+ 
++printf '\n%s── content collections %s\n' "$BOLD" "$OFF"
++# F-165. /blog/*, /case-studies/* and /design were never checked in production.
++# Two of those are the content collections — eleven pages carrying the Article
++# and CaseStudy schema — and the third is the configurator. A broken article
++# would have been invisible to everything in this repository, which is the exact
++# gap this file exists to close.
++check "/blog"                    "$BASE/blog?$CB"
++check "/blog/{slug}"             "$BASE/blog/subfloor-moisture-testing-protocol?$CB"
++check "/case-studies"            "$BASE/case-studies?$CB"
++check "/case-studies/{slug}"     "$BASE/case-studies/rosedale-estate-stairs-radiant-heat?$CB"
++check "/design"                  "$BASE/design?$CB"
++check "/services"                "$BASE/services?$CB"
++check "/service-areas"           "$BASE/service-areas?$CB"
++check "/service-areas/{city}"    "$BASE/service-areas/etobicoke?$CB"
++check "/service-areas/{hood}"    "$BASE/service-areas/rosedale?$CB"
++
++printf '\n%s── brand assets the entity graph claims %s\n' "$BOLD" "$OFF"
++# F-162. The Organization node declared logo and image as /icon-512.png and
++# /og-image.jpg. Both returned 404 for the life of the project, and every
++# structured-data validator passed the markup, because a validator asks whether
++# a URL is well-formed and never whether it resolves. This asks.
++LOGO="$(curl -s -L --max-time 20 "$BASE/?$CB" 2>/dev/null | grep -o '"logo":"[^"]*"' | head -1 | sed 's/.*"logo":"\([^"]*\)".*/\1/')"
++if [ -z "$LOGO" ]; then
++  printf '  %sFAIL%s  %-34s no logo in the organisation schema\n' "$RED" "$OFF" "Organization logo"
++  FAILED=$((FAILED + 1))
++else
++  check "Organization logo bytes" "$LOGO"
++  printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "resolved to" "$(printf '%s' "$LOGO" | cut -c1-58)"
++fi
++
+ printf '\n%s── machine surfaces %s\n' "$BOLD" "$OFF"
+ for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/estimate /api/health; do
+   check "$p" "$BASE$p?$CB"
