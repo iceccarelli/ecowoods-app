@@ -1,0 +1,1946 @@
+diff --git a/apps/web/app/api/estimate/route.ts b/apps/web/app/api/estimate/route.ts
+new file mode 100644
+index 0000000..8b8d6c3
+--- /dev/null
++++ b/apps/web/app/api/estimate/route.ts
+@@ -0,0 +1,112 @@
++import { NextResponse } from 'next/server';
++import {
++  estimateInstalledRangeCad,
++  FLOORING_RATES_CAD_PER_SQFT,
++  FINISH_OPTIONS,
++  PATTERN_OPTIONS,
++} from '@ecowoods/shared/ai';
++import { PRICING, PRICE_PROMISE, estimateServiceBandCad } from '@/lib/pricing';
++import { SITE_URL, BUSINESS } from '@/lib/seo-data';
++import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
++
++/**
++ * GET/POST /api/estimate — public rough-range endpoint for humans, tools, and AI agents.
++ *
++ * Same numbers as the floor configurator and RenoGuide's estimate_project tool
++ * (estimateInstalledRangeCad). Rate-limited. Never a fixed quote.
++ *
++ *   GET  /api/estimate?species=white%20oak&sqft=1200&finish=waterborne&pattern=straight
++ *   POST /api/estimate  { "species":"white oak","squareFeet":1200,"finish":"waterborne","pattern":"straight" }
++ *   GET  /api/estimate?service=fullSandAndFinish&sqft=1200
++ */
++
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const CORS = {
++  'access-control-allow-origin': '*',
++  'access-control-allow-methods': 'GET, POST, OPTIONS',
++  'access-control-allow-headers': 'content-type',
++};
++
++export function OPTIONS() {
++  return new Response(null, { status: 204, headers: CORS });
++}
++
++function bandPayload() {
++  return {
++    business: BUSINESS.name,
++    url: SITE_URL,
++    promise: PRICE_PROMISE,
++    serviceBandsCadPerSqft: PRICING,
++    speciesRatesCadPerSqft: FLOORING_RATES_CAD_PER_SQFT,
++    finishes: FINISH_OPTIONS,
++    patterns: PATTERN_OPTIONS,
++    disclaimer:
++      'Rough ranges only. Final price is fixed in writing after a free in-home measure.',
++  };
++}
++
++function parseBody(input: Record<string, unknown>) {
++  const species = typeof input.species === 'string' ? input.species : 'white oak';
++  const sqftRaw = input.squareFeet ?? input.sqft;
++  const squareFeet = typeof sqftRaw === 'number' ? sqftRaw : Number(sqftRaw);
++  const finish = typeof input.finish === 'string' ? input.finish : undefined;
++  const pattern = typeof input.pattern === 'string' ? input.pattern : undefined;
++  const service = typeof input.service === 'string' ? input.service : undefined;
++  return { species, squareFeet, finish, pattern, service };
++}
++
++function handle(input: Record<string, unknown>, request: Request) {
++  const ip = getClientIp(request);
++  const rl = checkRateLimit(ip, { windowMs: 60_000, maxRequests: 30 });
++  if (!rl.allowed) {
++    return NextResponse.json(
++      { ok: false, error: 'rate_limited' },
++      { status: 429, headers: { ...CORS, 'Retry-After': '60' } },
++    );
++  }
++
++  const { species, squareFeet, finish, pattern, service } = parseBody(input);
++
++  // Catalogue mode — no sqft.
++  if (!Number.isFinite(squareFeet) || squareFeet <= 0) {
++    return NextResponse.json({ ok: true, ...bandPayload() }, { headers: CORS });
++  }
++
++  if (service) {
++    const band = estimateServiceBandCad(service, squareFeet);
++    if (!band) {
++      return NextResponse.json(
++        { ok: false, error: 'unknown_service', services: Object.keys(PRICING) },
++        { status: 400, headers: CORS },
++      );
++    }
++    return NextResponse.json({ ok: true, ...band, ...bandPayload() }, { headers: CORS });
++  }
++
++  const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern });
++  return NextResponse.json({ ok: true, estimate: result, ...bandPayload() }, { headers: CORS });
++}
++
++export async function GET(request: Request) {
++  const url = new URL(request.url);
++  const input: Record<string, unknown> = {
++    species: url.searchParams.get('species') ?? undefined,
++    sqft: url.searchParams.get('sqft') ?? url.searchParams.get('squareFeet') ?? undefined,
++    finish: url.searchParams.get('finish') ?? undefined,
++    pattern: url.searchParams.get('pattern') ?? undefined,
++    service: url.searchParams.get('service') ?? undefined,
++  };
++  return handle(input, request);
++}
++
++export async function POST(request: Request) {
++  let body: Record<string, unknown> = {};
++  try {
++    body = (await request.json()) as Record<string, unknown>;
++  } catch {
++    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400, headers: CORS });
++  }
++  return handle(body, request);
++}
+diff --git a/apps/web/app/api/indexnow/route.ts b/apps/web/app/api/indexnow/route.ts
+index d9d6fc8..ab1867e 100644
+--- a/apps/web/app/api/indexnow/route.ts
++++ b/apps/web/app/api/indexnow/route.ts
+@@ -1,8 +1,74 @@
+-import { submitToIndexNow } from "../../../lib/indexnow";
++import fs from 'node:fs';
++import path from 'node:path';
++import { submitToIndexNow } from '../../../lib/indexnow';
++
++/**
++ * POST /api/indexnow — submit URLs to Bing, Yandex, Seznam and Naver on demand.
++ *
++ * WHY IT NEEDS A KEY
++ *
++ * F-158. This endpoint was open. Anyone could POST a list of URLs and this
++ * server would submit them to IndexNow **signed with our ownership key**. The
++ * damage is bounded — the protocol only accepts URLs on our own host — but it
++ * is not nothing: an attacker could spend our submission quota, repeatedly
++ * submit URLs we do not want prioritised, and give the receiving engines a
++ * pattern of behaviour attributable to us that we did not choose.
++ *
++ * WHY THE KEY IS NOT AN ENV VAR
++ *
++ * A first fix compared the caller's key against `process.env.INDEXNOW_KEY`.
++ * That variable is not set in this deployment and deliberately so: F-144
++ * removed the submitter's dependency on it, because the key is public by
++ * construction — the whole ownership check is that anyone can fetch it at
++ * /<key>.txt — and hiding a public value in an unvalidated env var only creates
++ * a way for the path to be broken and look fine.
++ *
++ * With it unset, that comparison rejects every caller including us. Safe, but
++ * only by accident, and it would have looked like a working endpoint.
++ *
++ * So the key is read from the route directory that serves it, exactly as
++ * apps/web/scripts/notify-indexnow.mjs does. One fact, one place.
++ *
++ * A public key is not a secret and is not authentication in any real sense. It
++ * is a shared value that raises the cost of casual abuse from zero to
++ * "read the docs first", on an endpoint whose worst case is a wasted quota.
++ * Anything that genuinely needs protecting does not live behind it.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++function repoKey(): string | null {
++  try {
++    const appDir = path.join(process.cwd(), 'app');
++    const hit = fs
++      .readdirSync(appDir, { withFileTypes: true })
++      .filter((e) => e.isDirectory() && /^[0-9a-f]{8,64}\.txt$/i.test(e.name))
++      .map((e) => e.name.replace(/\.txt$/i, ''));
++    return hit.length === 1 ? hit[0]! : null;
++  } catch {
++    return null;
++  }
++}
++
+ export async function POST(req: Request) {
++  const expected = process.env.INDEXNOW_KEY || repoKey();
++  const provided =
++    req.headers.get('x-indexnow-key') ?? new URL(req.url).searchParams.get('key');
++
++  if (!expected) {
++    return Response.json(
++      { ok: false, error: 'key_unavailable' },
++      { status: 503 },
++    );
++  }
++  if (provided !== expected) {
++    return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
++  }
++
+   const { urls } = (await req.json().catch(() => ({}))) as { urls?: string[] };
+   if (!Array.isArray(urls) || urls.length === 0)
+-    return Response.json({ ok: false, error: "urls[] required" }, { status: 400 });
++    return Response.json({ ok: false, error: 'urls[] required' }, { status: 400 });
++
+   const ok = await submitToIndexNow(urls);
+   return Response.json({ ok, count: urls.length });
+ }
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index 1545df5..e3f4ebd 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -1,5 +1,5 @@
+ import { NextRequest } from 'next/server';
+-import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
+ import { getServicePages, priceBand } from '@/lib/service-pages';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+@@ -210,7 +210,7 @@ function build() {
+         methodEstablishedIn: sp.papers.map((r) => url(`/papers/${r.paper}#${r.section}`)),
+       };
+     }),
+-    serviceAreas: CITIES.map((c) => {
++    serviceAreas: SERVICE_AREAS.map((c) => {
+       const cc = cityContent(c.slug);
+       return {
+         slug: c.slug,
+diff --git a/apps/web/app/api/leads/route.ts b/apps/web/app/api/leads/route.ts
+index a256aea..548a878 100644
+--- a/apps/web/app/api/leads/route.ts
++++ b/apps/web/app/api/leads/route.ts
+@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
+ import { leadSchema } from '@ecowoods/shared/schemas';
+ import { db } from '@/lib/db';
+ import { auth } from '@/lib/auth';
+-import { sendAdminNewQuoteEmail } from '@/lib/email';
++import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
++import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+ 
+ /**
+  * POST /api/leads — THE conversion surface.
+  *
+  * INVARIANT: once a lead validates, it is captured. Period.
+- * - Durable structured log happens FIRST and always (recoverable from Vercel logs).
++ * - Rate-limit + honeypot run BEFORE durable capture (spam never becomes a lead).
++ * - Durable structured log happens FIRST after validation (recoverable from Vercel logs).
+  * - DB persistence is best-effort: a DB outage must NOT surface as a customer error.
+- * - Admin email is best-effort.
++ * - Admin email and customer acknowledgement are best-effort.
+  * We only ever return non-2xx for a genuinely malformed/invalid submission (400),
+- * never because a downstream system (DB/email) hiccupped.
++ * rate-limit (429), never because a downstream system (DB/email) hiccupped.
+  */
+ export const runtime = 'nodejs';
+ export const dynamic = 'force-dynamic';
+@@ -29,6 +31,17 @@ export async function POST(request: Request) {
+     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
+   }
+ 
++  // Honeypot — bots fill "company". Humans never see it. Accept silently, so a
++  // bot cannot learn it was detected. Checked before the rate limiter so bot
++  // traffic never consumes a real visitor's allowance.
++  if (typeof (body as { company?: unknown }).company === 'string' && (body as { company: string }).company.trim()) {
++    console.log(JSON.stringify({ event: 'lead.honeypot', at: new Date().toISOString() }));
++    return NextResponse.json(
++      { success: true, message: 'Quote request received! A specialist will call you within 1 business day.' },
++      { status: 201 },
++    );
++  }
++
+   const parsed = leadSchema.safeParse(body);
+   if (!parsed.success) {
+     const fieldErrors: Record<string, string> = {};
+@@ -48,7 +61,51 @@ export async function POST(request: Request) {
+   // 1. DURABLE CAPTURE — guaranteed, synchronous, dependency-free. The lead now exists.
+   console.log(JSON.stringify({ event: 'lead.captured', leadId, receivedAt: new Date().toISOString(), lead }));
+ 
++  /**
++   * RATE LIMIT — AFTER VALIDATION, AND AFTER THE DURABLE LOG.
++   *
++   * The order here is the whole point, and the first draft of this had it
++   * backwards in two ways that each break the one invariant this file exists to
++   * protect: THE LEAD MUST NEVER BE LOST.
++   *
++   * It ran BEFORE validation. The limiter is five requests per minute per IP,
++   * and a request that fails validation is still a request. A customer
++   * correcting a phone number, a postal code and a typo has spent three. The
++   * fourth correction is the one that would have succeeded, and the fifth is a
++   * hard 429. We would have rate-limited someone for trying to give us money.
++   *
++   * It ran BEFORE the durable log. A 429 returned nothing to any log, so a real
++   * lead caught by a false positive left no trace at all — and false positives
++   * are not exotic here. A single office, a condo building, a school, or any
++   * mobile carrier using CGNAT presents one IP for hundreds of people. Five per
++   * minute across a whole building is a plausible Saturday.
++   *
++   * So: validate first, log first, and only then decide whether to answer. The
++   * lead is already recoverable from the structured log before this line runs,
++   * which means the worst a false positive can now do is inconvenience someone
++   * — not erase them.
++   *
++   * The limit is also raised to twenty per minute. Five was tuned for an
++   * endpoint where every request costs something; this one is protecting
++   * against a flood, and a flood is not twenty.
++   */
++  const rl = checkRateLimit(getClientIp(request), { windowMs: 60_000, maxRequests: 20 });
++  if (!rl.allowed) {
++    console.warn(
++      JSON.stringify({
++        event: 'lead.rate_limited',
++        leadId,
++        note: 'Lead already captured in the log line above. Recoverable.',
++      }),
++    );
++    return NextResponse.json(
++      { success: false, message: 'Please wait a moment before sending another request.' },
++      { status: 429, headers: { 'Retry-After': '60' } },
++    );
++  }
++
+   // 2. BEST-EFFORT DB persistence. Failure is logged, never fatal.
++  //    city ← explicit city if provided; postal is stored on address (not city).
+   let quoteId: string | null = null;
+   try {
+     const session = await auth().catch(() => null);
+@@ -57,7 +114,8 @@ export async function POST(request: Request) {
+         name: String(lead.name ?? ''),
+         email: String(lead.email ?? ''),
+         phone: lead.phone ? String(lead.phone) : null,
+-        city: lead.postal ? String(lead.postal) : null,
++        city: lead.city ? String(lead.city) : null,
++        address: lead.postal ? String(lead.postal) : null,
+         service: lead.service ? String(lead.service) : null,
+         squareFeet: lead.sqft ? Number(lead.sqft) : null,
+         timeline: lead.timeline ? String(lead.timeline) : null,
+@@ -87,11 +145,25 @@ export async function POST(request: Request) {
+     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
+   );
+ 
+-  // 4. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
++  // 4. Customer acknowledgement — best-effort, never fatal.
++  sendQuoteReceivedEmail({
++    name: String(lead.name ?? ''),
++    email: String(lead.email ?? ''),
++    leadId: quoteId ?? leadId,
++  }).catch((err) =>
++    console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
++  );
++
++  // 5. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
+   const webhookUrl = process.env.LEADS_WEBHOOK_URL;
+   if (webhookUrl) {
+-    fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, quoteId, ...lead }) })
+-      .catch((err) => console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })));
++    fetch(webhookUrl, {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify({ leadId, quoteId, ...lead }),
++    }).catch((err) =>
++      console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
++    );
+   }
+ 
+   // The lead is captured. Always acknowledge success to the customer.
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index edad08e..52f93a4 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -348,6 +348,22 @@ const faqItems: FaqItem[] = [
+     q: 'How long will my project take?',
+     a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining, and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
+   },
++  // Verbatim from FAQ_ITEMS in lib/seo-data.ts. The first draft of these three
++  // reworded the same questions, which is precisely the divergence
++  // verify-schema exists to catch: two files answering one question differently
++  // is two answers a crawler has to choose between.
++  {
++    q: 'How much does hardwood flooring cost in Toronto?',
++    a: 'Installed ranges typically run about $11–$18 per sq ft for new hardwood, $4.75–$7.50 for full sand and finish, and $2.50–$4.00 for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.',
++  },
++  {
++    q: 'What is dustless hardwood refinishing, and does it work in an occupied home?',
++    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
++  },
++  {
++    q: 'Solid or engineered hardwood — which should I install?',
++    a: 'The substrate decides, not the budget. Plywood over joists can take solid; concrete slabs, radiant heat, and wide humidity swings favour engineered. A generational wear layer only matters where solid is structurally allowed. Walk the solid-vs-engineered guide before you buy material.',
++  },
+ ];
+ 
+ /* ---------------------- Hooks ---------------------- */
+@@ -798,6 +814,12 @@ const onSubmit = (data: LeadFormData) => {
+                     />
+                     {errors.postal && <p className="error-message" role="alert">{errors.postal.message}</p>}
+                   </div>
++
++                  {/* Honeypot — hidden from humans, bots fill it. */}
++                  <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
++                    <label htmlFor="f-company">Company</label>
++                    <input id="f-company" type="text" tabIndex={-1} autoComplete="off" {...register('company')} />
++                  </div>
+                 </div>
+ 
+                 <div className="field">
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 6cc194f..fa25d0d 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -90,6 +90,7 @@ export async function GET() {
+   lines.push(`- Standards register (external bodies, mapped to our criteria, with last-verified dates): ${SITE_URL}/standards`);
+   lines.push(`- JSON API — the entire corpus, CORS-open, no key, CC BY 4.0: ${SITE_URL}/api/knowledge`);
+   lines.push(`- Live commodity inputs (Bank of Canada), JSON: ${SITE_URL}/api/market`);
++  lines.push(`- Rough installed-cost ranges, JSON, CORS-open, no key: ${SITE_URL}/api/estimate`);
+   lines.push(`- Service health — are the live sources responding: ${SITE_URL}/api/health`);
+   lines.push(`- Citation guide: ${SITE_URL}/authority`);
+   lines.push(`- RSS feed (everything dated, newest first): ${SITE_URL}/feed.xml`);
+diff --git a/apps/web/app/md/service-areas/[slug]/route.ts b/apps/web/app/md/service-areas/[slug]/route.ts
+index 3ccfd73..4f708f3 100644
+--- a/apps/web/app/md/service-areas/[slug]/route.ts
++++ b/apps/web/app/md/service-areas/[slug]/route.ts
+@@ -5,13 +5,13 @@
+  * reads. See lib/markdown-export.ts, and F-153 for why the commercial and local
+  * surfaces were missing from the machine-readable edition until now.
+  */
+-import { CITIES } from '@/lib/seo-data';
++import { SERVICE_AREAS } from '@/lib/seo-data';
+ import { areaMarkdown } from '@/lib/markdown-export';
+ 
+ export const dynamic = 'force-static';
+ 
+ export function generateStaticParams() {
+-  return CITIES.map((x) => ({ slug: x.slug }));
++  return SERVICE_AREAS.map((x) => ({ slug: x.slug }));
+ }
+ 
+ export async function GET(
+diff --git a/apps/web/app/not-found.tsx b/apps/web/app/not-found.tsx
+index 0475e67..ea1917f 100644
+--- a/apps/web/app/not-found.tsx
++++ b/apps/web/app/not-found.tsx
+@@ -1,6 +1,6 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
+-import { SITE_URL, CITIES } from '@/lib/seo-data';
++import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
+ import { getServicePages, serviceFor } from '@/lib/service-pages';
+ 
+ /**
+@@ -122,7 +122,7 @@ export default function NotFound() {
+           <p className="tlx-kicker">Coverage</p>
+           <h2 className="tlx-h2">Where we work</h2>
+           <p className="tlx-note">
+-            {CITIES.map((c, i) => (
++            {SERVICE_AREAS.map((c, i) => (
+               <span key={c.slug}>
+                 {i > 0 && ' · '}
+                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+diff --git a/apps/web/app/robots.ts b/apps/web/app/robots.ts
+index 3a731de..61d9198 100644
+--- a/apps/web/app/robots.ts
++++ b/apps/web/app/robots.ts
+@@ -25,7 +25,7 @@ export default function robots(): MetadataRoute.Robots {
+         // specifically for crawlers and agents to read. Allow is listed first
+         // and is more specific, which is how every major crawler resolves the
+         // conflict. See F-89.
+-        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
++        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
+         // /docs/{contract,invoice,quote}/[id] renders a specific customer's
+         // paperwork from a URL. It was never disallowed.
+         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
+@@ -48,7 +48,7 @@ export default function robots(): MetadataRoute.Robots {
+           'PerplexityBot', 'Perplexity-User',
+           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
+         ],
+-        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
++        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
+         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
+       },
+     ],
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index e3d5fb1..cd68ae4 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -1,12 +1,12 @@
+ import type { Metadata } from 'next';
+ import { notFound } from 'next/navigation';
+ import Link from 'next/link';
+-import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
++import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
+ import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
+ import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+ 
+ export function generateStaticParams() {
+-  return CITIES.map((c) => ({ city: c.slug }));
++  return SERVICE_AREAS.map((c) => ({ city: c.slug }));
+ }
+ export const dynamicParams = false;
+ 
+@@ -38,7 +38,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+     ]),
+     faqPageSchema(),
+   ];
+-  const nearby = CITIES.filter((c) => c.slug !== city.slug).slice(0, 10);
++  const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
+ 
+   return (
+     <div>
+diff --git a/apps/web/app/service-areas/page.tsx b/apps/web/app/service-areas/page.tsx
+index 70c6167..293548a 100644
+--- a/apps/web/app/service-areas/page.tsx
++++ b/apps/web/app/service-areas/page.tsx
+@@ -1,6 +1,6 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
+-import { CITIES, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
++import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
+ import { breadcrumbSchema } from '@/lib/structured-data';
+ 
+ export const metadata: Metadata = {
+@@ -27,7 +27,7 @@ export default function ServiceAreasIndex() {
+             the Greater Toronto Area.
+           </p>
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
+-            {CITIES.map((c) => (
++            {SERVICE_AREAS.map((c) => (
+               <Link key={c.slug} href={`/service-areas/${c.slug}`}
+                 style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
+                 Hardwood Flooring in {c.name} →
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index 47a0416..b71c39a 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -1,7 +1,7 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+-import { SITE_URL, CITIES } from '@/lib/seo-data';
++import { SITE_URL, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
+ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { getPaper } from '@/lib/papers';
+@@ -264,7 +264,7 @@ export default async function ServiceDetailPage({
+               prose gave a reader nowhere to go and a crawler no edge to follow —
+               the mirror image of the same omission on the city pages. See F-154. */}
+           <p className="tlx-note">
+-            {CITIES.map((c, i) => (
++            {SERVICE_AREAS.map((c, i) => (
+               <span key={c.slug}>
+                 {i > 0 && ' · '}
+                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 0a51b63..febae53 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -6,7 +6,7 @@
+ import type { MetadataRoute } from 'next';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+-import { CITIES } from '@/lib/seo-data';
++import { SERVICE_AREAS } from '@/lib/seo-data';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+@@ -150,7 +150,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     priority: 0.9,
+   }));
+ 
+-  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
++  const cityPages: MetadataRoute.Sitemap = SERVICE_AREAS.map((city) => ({
+     url: `${SITE_URL}/service-areas/${city.slug}`,
+     // No date. A city page is generated from CITIES and changes when the
+     // template changes, which nothing here records. Omitted rather than
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index 6240c6c..ff7493e 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,37 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'high-intent-guides-v1',
++    date: '2026-08-22',
++    kind: 'guide',
++    title: 'Five guides for the questions people actually type',
++    body: 'Cost, choosing a contractor, white oak, dustless refinishing, and the pattern floors \u2014 herringbone, chevron and parquet. Each is written the way the question is asked, answers it in the first paragraph, and cites the paper section behind every technical claim. The cost guide publishes the three service bands as a table rather than a starting-from number, and says plainly which variables move a phone range into a fixed written price.',
++    href: '/guides',
++    covers: [
++      'hardwood-flooring-cost-toronto',
++      'how-to-choose-hardwood-contractor-toronto',
++      'white-oak-flooring-toronto',
++      'dustless-hardwood-refinishing-toronto',
++      'herringbone-chevron-parquet-toronto',
++    ],
++  },
++  {
++    id: 'neighbourhood-pages-v1',
++    date: '2026-08-22',
++    kind: 'tool',
++    title: 'Sixteen Toronto neighbourhoods, each with its own page',
++    body: 'Rosedale, Forest Hill, Yorkville, Leaside, The Annex, High Park, Riverdale, Leslieville, The Beaches, Lawrence Park, Cabbagetown, Swansea, Davisville Village, midtown, King West and Liberty Village. Each carries the housing stock and the technical constraint specific to it \u2014 heritage wear layer in Cabbagetown, slab moisture and elevator windows in King West, lakeside humidity in the Beaches. They are neighbourhoods, not municipalities, and the entity graph says so: only real cities appear as City nodes in the organisation\u2019s service area.',
++    href: '/service-areas',
++  },
++  {
++    id: 'lead-path-hardening-v1',
++    date: '2026-08-22',
++    kind: 'tool',
++    title: 'The estimate request is harder to abuse and impossible to lose',
++    body: 'A hidden field catches automated submissions, a rate limit absorbs floods, and an acknowledgement email now goes to the customer within seconds of submitting. The order of those checks is the part that matters: the request is validated and written to a durable log before anything is allowed to reject it, so a rate limit can inconvenience a real customer but can never erase one. A public estimate endpoint at /api/estimate returns the same published bands to any tool or agent that asks.',
++    href: '/api/estimate',
++  },
+   {
+     id: 'agent-corpus-v2',
+     date: '2026-08-22',
+diff --git a/apps/web/lib/email/index.ts b/apps/web/lib/email/index.ts
+index d79f3c4..111faa0 100644
+--- a/apps/web/lib/email/index.ts
++++ b/apps/web/lib/email/index.ts
+@@ -481,6 +481,27 @@ export async function sendAppointmentConfirmationEmail(data: {
+   });
+ }
+ 
++
++export async function sendQuoteReceivedEmail(data: {
++  name: string;
++  email: string;
++  leadId: string;
++}) {
++  await sendEmail({
++    to: data.email,
++    subject: 'We received your EcoWoods estimate request',
++    html: `
++      <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
++        <h2>Request received</h2>
++        <p>Hi ${data.name}, EcoWoods has your estimate request (reference ${data.leadId}). A specialist will call within one business day.</p>
++        <p>If it is urgent, call <a href="tel:${BUSINESS_NAP.phoneE164}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
++        <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
++      </div>
++    `,
++    text: `Hi ${data.name}, EcoWoods received your estimate request (${data.leadId}). We will call within one business day. Urgent? ${BUSINESS_NAP.phoneDisplay}.`,
++  });
++}
++
+ // ─── Admin: new pilot lead notification ────────────────────────────────────
+ export async function sendAdminNewPilotLeadEmail(data: {
+   pilotLeadId: string;
+diff --git a/apps/web/lib/guides.ts b/apps/web/lib/guides.ts
+index 79d052a..fcb6603 100644
+--- a/apps/web/lib/guides.ts
++++ b/apps/web/lib/guides.ts
+@@ -364,6 +364,266 @@ export const GUIDES: Guide[] = [
+     ],
+     pillars: ['containment'],
+   },
++
++  /* ── high-intent Toronto decision guides (cost, contractor, species, pattern) ── */
++  {
++    slug: 'hardwood-flooring-cost-toronto',
++    kind: 'decision',
++    title: 'Hardwood flooring cost in Toronto',
++    question: 'How much does hardwood flooring cost in Toronto and the GTA?',
++    summary:
++      'Published installed ranges for new install, full sand and finish, and screen and recoat — and the variables that move a phone range into a fixed written price after the free measure.',
++    publishedAt: '2026-08-22',
++    readingMinutes: 6,
++    criteria: [
++      {
++        name: 'Service type',
++        why: 'Screen and recoat, full sand and finish, and new install are different labour and material stacks. Mixing them produces a meaningless average.',
++      },
++      {
++        name: 'Species and grade',
++        why: 'White oak, walnut, maple and hickory do not land at the same installed number. Grade and width move material cost before labour is considered.',
++      },
++      {
++        name: 'Pattern and stairs',
++        why: 'Herringbone, chevron and parquet multiply labour and waste. Stairs are a separate line, not a square-footage footnote.',
++      },
++      {
++        name: 'Substrate and moisture',
++        why: 'Flatness correction, slab moisture mitigation and acoustic underlayment are scope items discovered on site, which is why the fixed price follows the measure.',
++      },
++    ],
++    table: {
++      head: ['Service', 'Typical installed range (CAD / sq ft)', 'What it includes'],
++      rows: [
++        ['Screen & recoat', '$2.50 – $4.00', 'Abrasion of the existing finish, new top coats — no full sand to bare wood'],
++        ['Full sand & finish', '$4.75 – $7.50', 'Sand to bare wood, stain if specified, finish system'],
++        ['New hardwood install', '$11 – $18', 'Material and labour for straight-lay install; pattern and stairs extra'],
++      ],
++    },
++    decisionTree: [
++      'If the existing finish still has integrity and colour is acceptable → screen and recoat is the honest first evaluation, not a full sand by default.',
++      'If colour change, deep wear, or prior poor sanding is the problem → full sand and finish, after depth-above-tongue is confirmed.',
++      'If the floor is at the end of its wear layer, wrong species, or wrong construction for the substrate → replacement, priced as new install.',
++      'Stairs, transitions, moisture remediation and pattern work are separate lines on the written estimate.',
++    ],
++    watchpoints: [
++      'A phone number without a moisture test is a marketing range, not a price.',
++      'Lowest bid that skips substrate language is usually incomplete scope, not a bargain.',
++      'Pattern multipliers and stair counts omitted from a quote will reappear as change orders.',
++    ],
++    recommendation: {
++      text: 'Use the published ranges to budget. Book the free in-home measure for the fixed written price. Compare quotes on scope completeness — machines, sequence, moisture protocol, warranties in writing — not on the headline number alone.',
++    },
++    sources: [
++      { paper: P_COST, section: 'installed-cost' },
++      { paper: P_COST, section: 'decision-tree' },
++      { paper: P_CRAFT, section: 'sequence' },
++    ],
++    pillars: ['specification'],
++  },
++  {
++    slug: 'how-to-choose-hardwood-contractor-toronto',
++    kind: 'decision',
++    title: 'How to choose a hardwood contractor in Toronto',
++    question: 'How do I choose a hardwood flooring contractor in Toronto?',
++    summary:
++      'A short diligence list for homeowners: who sands the floor, what is measured before the price is written, and which contract terms separate a fixed-price craftsman shop from a lead-broker.',
++    publishedAt: '2026-08-22',
++    readingMinutes: 5,
++    criteria: [
++      {
++        name: 'Who performs the work',
++        why: 'Salaried crews and revolving subcontractors produce different accountability when something needs to be made right months later.',
++      },
++      {
++        name: 'What is measured before the price',
++        why: 'Moisture, flatness, wear-layer depth and stair counts belong in the estimate visit. A price without them is incomplete.',
++      },
++      {
++        name: 'What is written in the contract',
++        why: 'Manufacturer warranties itemized, fixed price language, and the finish system named are the terms that matter after the cheque clears.',
++      },
++      {
++        name: 'Machine sequence on refinish work',
++        why: 'Belt, edger, planetary blending and intercoat screening are a sequence. Skipping a step shows up for the life of the floor.',
++      },
++    ],
++    decisionTree: [
++      'Ask who will be on site on sanding day — employees or subcontractors.',
++      'Ask whether the estimate includes a moisture reading and, for refinish, a depth check above the tongue.',
++      'Ask for the finish system by product name and the manufacturer warranty period in writing.',
++      'Ask which machines run, in which order, on a full sand.',
++      'Decline quotes that only compete on a low headline number with empty scope.',
++    ],
++    watchpoints: [
++      'Lead-broker sites that auction your phone number are not flooring companies.',
++      'Dustless as a word without HEPA-sealed extraction and containment is marketing.',
++      'Unforeseen conditions clauses that re-price substrate issues found on day one shift risk back to you.',
++    ],
++    recommendation: {
++      text: 'Choose the contractor who writes a fixed price after measuring the floor you actually have, names the crew model, and itemizes warranties. Use the quote-evaluation guide as the scorecard when two bids look similar on price.',
++    },
++    sources: [
++      { paper: P_COST, section: 'decision-tree' },
++      { paper: P_CRAFT, section: 'equipment-is-not-the-moat' },
++      { paper: P_CRAFT, section: 'sequence' },
++    ],
++    pillars: ['specification', 'containment'],
++  },
++  {
++    slug: 'white-oak-flooring-toronto',
++    kind: 'decision',
++    title: 'White oak flooring in Toronto',
++    question: 'Is white oak the right hardwood for a Toronto home?',
++    summary:
++      'Why white oak dominates contemporary Toronto renovations, how it differs from red oak on tannin and stain behaviour, and when another species is the better specification.',
++    publishedAt: '2026-08-22',
++    readingMinutes: 5,
++    criteria: [
++      {
++        name: 'Stain and finish target',
++        why: 'White oak takes grey, smoked and modern transparent finishes more evenly than red oak because of tannin and pore structure.',
++      },
++      {
++        name: 'Substrate',
++        why: 'White oak does not override slab or radiant constraints. Engineered white oak is the usual path over concrete.',
++      },
++      {
++        name: 'Traffic and denting',
++        why: 'Janka ~1360 is mid-hard. Hickory is harder; walnut is softer. Species choice is not only aesthetic.',
++      },
++    ],
++    options: [
++      {
++        name: 'White oak',
++        whenCorrect: 'Modern or transitional interiors, even stain uptake, and most GTA renovations where oak is wanted.',
++        notes: [
++          'Strong default for water-based finish systems.',
++          'Available in solid and engineered constructions.',
++          'Wide plank shows flatness issues — substrate prep matters more, not less.',
++        ],
++      },
++      {
++        name: 'Red oak',
++        whenCorrect: 'Heritage match to existing red oak, or a deliberate open-grain traditional look.',
++        notes: [
++          'More pronounced grain under stain.',
++          'Still a valid specification; not an inferior default.',
++        ],
++      },
++      {
++        name: 'Walnut or maple',
++        whenCorrect: 'When the design target is deep brown (walnut) or bright uniform (maple), not oak grain.',
++        notes: [
++          'Walnut dents more readily; maple shows impact differently.',
++          'Price and lead times differ from commodity oak.',
++        ],
++      },
++    ],
++    recommendation: {
++      text: 'Default to white oak for contemporary Toronto work when oak is the design intent. Confirm construction (solid vs engineered) from the substrate, not from the species brochure. Match existing red oak with red oak rather than forcing a white-oak patch.',
++    },
++    sources: [
++      { paper: P_COST, section: 'species' },
++      { paper: P_CLIMATE, section: 'solid-vs-engineered' },
++    ],
++    pillars: ['specification', 'movement'],
++  },
++  {
++    slug: 'dustless-hardwood-refinishing-toronto',
++    kind: 'reference',
++    title: 'Dustless hardwood refinishing in Toronto',
++    question: 'What does dustless hardwood refinishing actually mean in an occupied Toronto home?',
++    summary:
++      'Dustless is a containment and extraction system, not a brand adjective. This guide states what has to be true on site for a refinish to be livable during the work.',
++    publishedAt: '2026-08-22',
++    readingMinutes: 4,
++    criteria: [
++      {
++        name: 'Extraction at the machine',
++        why: 'HEPA-sealed collection at the sander is the primary capture point. Room air filters alone are not a dustless system.',
++      },
++      {
++        name: 'Containment',
++        why: 'Plastic and zipper barriers keep fine dust from migrating to rooms that are not in scope.',
++      },
++      {
++        name: 'Finish chemistry',
++        why: 'Water-based systems cut odour and return-to-service time compared with solvent-heavy finishes — relevant when the house stays occupied.',
++      },
++    ],
++    sequence: [
++      'Isolate the work zone.',
++      'Run HEPA-sealed sanding equipment through the grit sequence.',
++      'Edge, blend, vacuum between grits.',
++      'Apply finish system with intercoat screening as specified.',
++      'Release the zone when walk-on times are met — full cure is later.',
++    ],
++    watchpoints: [
++      'Dustless never means zero dust. It means controlled, captured, and contained dust.',
++      'Skipping the blending pass leaves a visible perimeter halo after finish.',
++      'Walk-on ready is not full cure; early furniture return marks soft finish.',
++    ],
++    recommendation: {
++      text: 'Require HEPA-sealed extraction and room containment in the written scope. Stay home if you want to — that is a realistic outcome when the system is real. Treat dustless claims without equipment detail as incomplete.',
++    },
++    sources: [
++      { paper: P_CRAFT, section: 'sequence' },
++      { paper: P_CRAFT, section: 'the-four-machines' },
++      { paper: P_CRAFT, section: 'sequence' },
++    ],
++    pillars: ['containment'],
++  },
++  {
++    slug: 'herringbone-chevron-parquet-toronto',
++    kind: 'decision',
++    title: 'Herringbone, chevron and parquet in Toronto',
++    question: 'Should I install herringbone, chevron or parquet in my Toronto home or condo?',
++    summary:
++      'Pattern floors are a design decision layered on top of the same substrate rules as straight-lay. Labour, waste, and layout control the cost delta — not the species alone.',
++    publishedAt: '2026-08-22',
++    readingMinutes: 5,
++    criteria: [
++      {
++        name: 'Substrate first',
++        why: 'Pattern does not authorize solid over a slab. Engineered on a tested slab remains the condo path.',
++      },
++      {
++        name: 'Layout and waste',
++        why: 'Herringbone and chevron generate higher waste factors and longer install times than straight-lay.',
++      },
++      {
++        name: 'Room geometry',
++        why: 'Narrow rooms, many doorways and out-of-square walls punish pattern work; the layout has to be controlled from a centreline.',
++      },
++    ],
++    options: [
++      {
++        name: 'Herringbone',
++        whenCorrect: 'Rectangular rooms where a classic patterned field is the design intent and budget includes the labour multiplier.',
++        notes: ['Rectangular blocks meet at 90°.', 'Shows substrate flatness clearly.'],
++      },
++      {
++        name: 'Chevron',
++        whenCorrect: 'When a continuous V or axis line is wanted; requires precision-cut ends.',
++        notes: ['Ends are cut to form the point; material prep is stricter.', 'Higher fabrication demand than herringbone.'],
++      },
++      {
++        name: 'Parquet / modular patterns',
++        whenCorrect: 'Feature fields, borders, or heritage restorations where the pattern is part of the architecture.',
++        notes: ['Often a feature zone rather than a whole-home field.', 'Matching existing historic parquet is specialist work.'],
++      },
++    ],
++    recommendation: {
++      text: 'Choose the pattern for the room, then confirm the substrate method. Budget a real labour and waste premium. In condos, resolve slab moisture, acoustics and elevator logistics before ordering patterned material.',
++    },
++    sources: [
++      { paper: P_COST, section: 'decision-tree' },
++      { paper: P_CLIMATE, section: 'method-and-substrate' },
++    ],
++    pillars: ['specification'],
++  },
+ ];
+ 
+ export const getGuides = (kind?: GuideKind): Guide[] =>
+diff --git a/apps/web/lib/indexnow.ts b/apps/web/lib/indexnow.ts
+index e708eba..e2066c4 100644
+--- a/apps/web/lib/indexnow.ts
++++ b/apps/web/lib/indexnow.ts
+@@ -1,17 +1,45 @@
+-import { SITE_URL } from "@/lib/seo-data";
++import fs from 'node:fs';
++import path from 'node:path';
++import { SITE_URL } from '@/lib/seo-data';
+ 
+-// Runtime submissions read the key from the env var. It MUST equal the name of
+-// the file committed at apps/web/public/<key>.txt (that file is what search
+-// engines fetch to verify ownership).
+-const KEY = process.env.INDEXNOW_KEY ?? "";
++/**
++ * Runtime IndexNow submission.
++ *
++ * The key is read from the route directory that serves it — app/<key>.txt —
++ * and NOT from `process.env.INDEXNOW_KEY`. That variable is not set in this
++ * deployment, deliberately: the key is public by construction, since the entire
++ * ownership check is that any search engine can fetch it at that URL. See F-144
++ * and F-158.
++ *
++ * The comment this file used to carry said the key must match a file at
++ * apps/web/public/<key>.txt. That directory has never been served on this host
++ * (F-131), which is why the key became a route in the first place. Deriving it
++ * from the route means the key submitted and the key served cannot disagree.
++ *
++ * The env var still wins if it is set, for testing against another host.
++ */
++function resolveKey(): string {
++  if (process.env.INDEXNOW_KEY) return process.env.INDEXNOW_KEY;
++  try {
++    const appDir = path.join(process.cwd(), 'app');
++    const hit = fs
++      .readdirSync(appDir, { withFileTypes: true })
++      .filter((e) => e.isDirectory() && /^[0-9a-f]{8,64}\.txt$/i.test(e.name))
++      .map((e) => e.name.replace(/\.txt$/i, ''));
++    return hit.length === 1 ? hit[0]! : '';
++  } catch {
++    return '';
++  }
++}
+ 
+ export async function submitToIndexNow(urls: string[]): Promise<boolean> {
+-  if (!KEY || urls.length === 0) return false;
++  const key = resolveKey();
++  if (!key || urls.length === 0) return false;
+   const host = new URL(SITE_URL).host;
+-  const res = await fetch("https://api.indexnow.org/indexnow", {
+-    method: "POST",
+-    headers: { "content-type": "application/json; charset=utf-8" },
+-    body: JSON.stringify({ host, key: KEY, keyLocation: `${SITE_URL}/${KEY}.txt`, urlList: urls }),
++  const res = await fetch('https://api.indexnow.org/indexnow', {
++    method: 'POST',
++    headers: { 'content-type': 'application/json; charset=utf-8' },
++    body: JSON.stringify({ host, key, keyLocation: `${SITE_URL}/${key}.txt`, urlList: urls }),
+   });
+   return res.ok;
+ }
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 1654d86..d635165 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -39,7 +39,7 @@
+ import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
+ import { getGuides, getGuide, type Guide } from '@/lib/guides';
+ import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
+-import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent, type CityContent } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, CITIES, SERVICE_AREAS, cityContent, type CityContent } from '@/lib/seo-data';
+ import {
+   getServicePages,
+   getServicePage,
+@@ -325,8 +325,8 @@ export const corpusToMarkdown = (): string => {
+   const guides = getGuides();
+   const terms = getTerms();
+   const services = getServicePages();
+-  const areas = CITIES.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
+-    (x): x is { c: (typeof CITIES)[number]; cc: CityContent } => Boolean(x.cc),
++  const areas = SERVICE_AREAS.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
++    (x): x is { c: (typeof SERVICE_AREAS)[number]; cc: CityContent } => Boolean(x.cc),
+   );
+   const out: string[] = [
+     `# ${BUSINESS.name} — complete technical corpus`,
+@@ -378,7 +378,7 @@ export const serviceMarkdown = (slug: string): string | null => {
+   return p ? serviceToMarkdown(p) : null;
+ };
+ export const areaMarkdown = (slug: string): string | null => {
+-  const c = CITIES.find((x) => x.slug === slug);
++  const c = SERVICE_AREAS.find((x) => x.slug === slug);
+   const cc = c ? cityContent(c.slug) : undefined;
+   return c && cc ? areaToMarkdown(c.slug, c.name, cc) : null;
+ };
+diff --git a/apps/web/lib/pricing.ts b/apps/web/lib/pricing.ts
+index 5b6f4c2..3914593 100644
+--- a/apps/web/lib/pricing.ts
++++ b/apps/web/lib/pricing.ts
+@@ -1,8 +1,44 @@
++/**
++ * Published service price bands — single source for service pages, homepage,
++ * FAQ answers, and /api/estimate service-mode responses.
++ *
++ * Species-level installed ranges live in @ecowoods/shared/ai (FLOORING_RATES +
++ * estimateInstalledRangeCad) so the configurator, RenoGuide and this module
++ * cannot drift.
++ */
++
+ export const PRICING = {
+   screenAndRecoat:   { min: 2.50,  max: 4.00,  label: 'Screen & Recoat' },
+   fullSandAndFinish: { min: 4.75,  max: 7.50,  label: 'Full Sand & Finish' },
+   newInstall:        { min: 11.00, max: 18.00, label: 'New Hardwood Install' },
+ } as const;
++
+ export type PricingService = keyof typeof PRICING;
++
+ export const PRICE_PROMISE =
+   'Fixed price in writing. It never moves after the free in-home estimate.';
++
++/** Rough service-band total for a known sqft. Not a fixed quote. */
++export function estimateServiceBandCad(service: string, squareFeet: number) {
++  const key = service as PricingService;
++  const band = PRICING[key];
++  if (!band) return null;
++  const sqft = Math.max(0, squareFeet);
++  return {
++    service: key,
++    label: band.label,
++    perSqftLowCad: band.min,
++    perSqftHighCad: band.max,
++    estimatedLowCad: Math.round(band.min * sqft),
++    estimatedHighCad: Math.round(band.max * sqft),
++    squareFeet: sqft,
++    disclaimer:
++      'Rough service-band range only. Species, pattern, stairs and substrate move the number. Final price is fixed in writing after a free in-home measure.',
++  };
++}
++
++export function formatCadRange(low: number, high: number): string {
++  const fmt = (n: number) =>
++    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
++  return `${fmt(low)} – ${fmt(high)}`;
++}
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+index 340b352..0c3ee3c 100644
+--- a/apps/web/lib/seo-data.ts
++++ b/apps/web/lib/seo-data.ts
+@@ -31,11 +31,53 @@ const AREAS = [
+   'Aurora', 'Newmarket', 'Pickering', 'Ajax',
+ ];
+ 
++/**
++ * Toronto neighbourhoods. Pages, yes — `schema.org/City`, no.
++ *
++ * F-157. These sixteen arrived in AREAS, which would have been the fastest way
++ * to give each one a page. It would also have put them straight into
++ * `LocalBusiness.areaServed` as `City` nodes, because root-schema derives that
++ * list from CITIES — so the entity graph would have declared Rosedale, King
++ * West, The Annex and Liberty Village to be cities.
++ *
++ * They are not. They are neighbourhoods inside Toronto, a city already in the
++ * list. Declaring them as peers of Mississauga and Oakville is not an
++ * exaggeration a crawler forgives; it is a factual error in the one part of the
++ * site whose entire job is to state facts a machine can rely on. The project's
++ * own rule is that structured data describes reality.
++ *
++ * So they are a separate list. They get pages, they get local content, they get
++ * sitemap entries and `.md` editions — everything a query for "hardwood
++ * flooring Rosedale" needs. What they do not get is a `City` node claiming
++ * Toronto has sixteen more cities inside it.
++ */
++const NEIGHBOURHOODS = [
++  'Rosedale', 'Forest Hill', 'Yorkville', 'Leaside', 'The Annex', 'High Park',
++  'Riverdale', 'Leslieville', 'The Beaches', 'Lawrence Park', 'Cabbagetown',
++  'Swansea', 'Davisville Village', 'Midtown Toronto', 'King West', 'Liberty Village',
++];
++
+ const slugify = (s: string) =>
+   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+ 
++/** Municipalities. These, and only these, become schema.org City nodes. */
+ export const CITIES: City[] = AREAS.map((name) => ({ slug: slugify(name), name }));
+-export const cityBySlug = (slug: string): City | undefined => CITIES.find((c) => c.slug === slug);
++
++/** Toronto neighbourhoods. Pages and local content; never a City node. */
++export const NEIGHBOURHOOD_AREAS: City[] = NEIGHBOURHOODS.map((name) => ({
++  slug: slugify(name),
++  name,
++}));
++
++/**
++ * Everything with a /service-areas page. The routes, the sitemap, the .md
++ * editions and the local-content guard all read this; only CITIES reaches the
++ * entity graph.
++ */
++export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS];
++
++export const cityBySlug = (slug: string): City | undefined =>
++  SERVICE_AREAS.find((c) => c.slug === slug);
+ 
+ export type Service = { slug: string; name: string; blurb: string };
+ 
+@@ -63,6 +105,13 @@ export const FAQ_ITEMS: FaqItem[] = [
+   // survives being quoted out of context.
+   { q: 'What is the best hardwood flooring for concrete slab condos?', a: 'Engineered, not solid — the substrate decides it, not the budget. On a concrete slab the assembly is the specification: adhesive, underlayment and acoustic rating are part of the answer, and the slab is moisture-tested with in-situ probes before a board is opened. The full specification is published as our condominium-over-concrete-slab reference installation.' },
+   { q: 'How do you match new hardwood to old floors seamlessly?', a: 'By matching species, width and grain direction first, then trialling stain on site on the actual old boards — never from a single can chosen off a sample. Where boards have to be replaced, repairs are feathered into the surrounding run rather than butted in a straight line. A full sand alone will not hide a species or width mismatch, which is why matching is decided before any machine is switched on.' },
++  { q: 'How much does hardwood flooring cost in Toronto?', a: 'Installed ranges typically run about $11–$18 per sq ft for new hardwood, $4.75–$7.50 for full sand and finish, and $2.50–$4.00 for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.' },
++  { q: 'What is dustless hardwood refinishing, and does it work in an occupied home?', a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
++  { q: 'Is white oak better than red oak for a Toronto home?', a: 'White oak is more tannin-stable under water-based finishes, takes grey and modern stains more evenly, and is the default for contemporary renovations. Red oak is the heritage Canadian floor with a more open grain. Neither is universally better — substrate, stain target, and traffic decide. See the white-oak guide and the species comparison article for the decision tree.' },
++  { q: 'Can you install herringbone or chevron in a Toronto condo?', a: 'Yes, when the slab moisture, acoustic assembly, and elevator logistics are specified first. Pattern work multiplies labour and waste; the substrate still decides solid vs engineered. Glue-down engineered over a tested slab is the usual condo path. Building management windows often decide the schedule more than the pattern does.' },
++  { q: 'How do I choose a hardwood flooring contractor in Toronto?', a: 'Ask for a written fixed price after a moisture test, not a phone range. Confirm who actually sands the floor (salaried crew vs revolving subcontractors), which machines run in which order, and whether manufacturer warranties are itemized in the contract. Compare the decision guide on evaluating a hardwood quote before you sign anything.' },
++  { q: 'Solid or engineered hardwood — which should I install?', a: 'The substrate decides, not the budget. Plywood over joists can take solid; concrete slabs, radiant heat, and wide humidity swings favour engineered. A generational wear layer only matters where solid is structurally allowed. Walk the solid-vs-engineered guide before you buy material.' },
++
+ ];
+ 
+ // ── City-specific content ──────────────────────────────────────────────────
+@@ -268,6 +317,152 @@ export const CITY_CONTENT: Record<string, CityContent> = {
+     localConsideration:
+       'Access and staging are straightforward. Lakeside exposure widens seasonal movement, so expansion gap and acclimation are specification items rather than formalities.',
+   },
++
++  rosedale: {
++    intro:
++      'Rosedale is heritage housing: large lots, original millwork, grand staircases, and mixed substrates across later additions. Floors here are often original oak that has already been sanded, sitting beside newer rooms on different assemblies.',
++    neighbourhoods: ['South Rosedale', 'North Rosedale', 'Moore Park', 'Summerhill'],
++    housingNote:
++      'Wear-layer depth on original boards is the first measurement on a refinish. Additions often sit over concrete or radiant, which means the house may need two specifications, not one species.',
++    localConsideration:
++      'Matching a staircase to a continuous main floor, and joining heritage rooms to later additions without a visible seam, is the recurring craft problem.',
++  },
++  'forest-hill': {
++    intro:
++      'Forest Hill houses tend to be larger continuous floor plates, custom stairs, and higher-specification finishes. Wide plank, walnut, and oil systems show up more often here than builder-grade oak.',
++    neighbourhoods: ['Forest Hill South', 'Forest Hill North', 'Upper Village', 'Cedarvale edge'],
++    housingNote:
++      'Large open rooms make stain consistency and flatness tolerance more demanding than they are in small rooms. Radiant zones are not unusual in later renovations.',
++    localConsideration:
++      'Holding colour across a long run and a stair is the detail that gives an inconsistent refinish away. Containment in an occupied house matters because the work is measured in days, not hours.',
++  },
++  yorkville: {
++    intro:
++      'Yorkville work is predominantly condominium and converted loft: concrete slabs, acoustic requirements, elevator logistics, and below-grade rooms that fail if moisture is guessed instead of measured.',
++    neighbourhoods: ['Yorkville', 'Annex edge', 'Bay-Bloor corridor', 'Cumberland'],
++    housingNote:
++      'Solid hardwood over a slab is the substitution that fails most often. Engineered, glue-down, documented slab moisture, and the building acoustic assembly are the correct starting point.',
++    localConsideration:
++      'Building management windows, insurance certificates, and service-elevator bookings decide the schedule. Miss the window and the job does not start.',
++  },
++  leaside: {
++    intro:
++      'Leaside is a planned garden-suburb built largely between the 1920s and the 1940s, and it shows: consistent lot widths, brick detached and semi-detached houses, and unusually uniform original floors for a Toronto neighbourhood. Whole streets were built to one specification, which means one street can share one flooring problem.',
++    neighbourhoods: ['Leaside', 'Bennington Heights', 'South Leaside', 'Trace Manes'],
++    housingNote:
++      'The uniformity cuts both ways. Where the original strip oak survives it is usually the same species, width and era across the house, which makes matching a repair genuinely achievable rather than approximate. Where a previous owner refinished aggressively, the same uniformity means the whole floor is close to the same remaining depth at once.',
++    localConsideration:
++      'Many houses here have had a rear addition or a finished basement added on a different assembly than the 1930s main floor. One species across both without checking the substrate under each is the request that produces two floors that age differently.',
++  },
++  'the-annex': {
++    intro:
++      'The Annex mixes Victorian and Edwardian houses with later conversions and a dense rental stock. Original strip oak, uneven joists, and partial prior refinishes are the norm rather than the exception.',
++    neighbourhoods: ['The Annex', 'Seaton Village', 'Dupont corridor', 'Huron-Madison'],
++    housingNote:
++      'Many floors have been patched room-by-room over decades. Species and width mismatches appear only after the first sanding pass removes the old finish.',
++    localConsideration:
++      'Street parking, shared walls, and tight staircases constrain equipment and schedule more than the floor itself does.',
++  },
++  'high-park': {
++    intro:
++      'High Park and the west-end streets around it are largely early-to-mid century detached and semi-detached homes with full basements and original or twice-refinished hardwood.',
++    neighbourhoods: ['High Park North', 'High Park South', 'Roncesvalles edge', 'Swansea edge'],
++    housingNote:
++      'Basement conversions and sunroom additions often sit on different assemblies than the main floor. One species across both without a moisture and substrate check is a common failure request.',
++    localConsideration:
++      'Seasonal humidity near the park and lake effect still matters at openings and in poorly conditioned additions.',
++  },
++  riverdale: {
++    intro:
++      'Riverdale is a dense band of late-Victorian and early-20th-century housing east of the Don. Bay-and-gable houses, narrow lots, and original strip floors dominate the work.',
++    neighbourhoods: ['North Riverdale', 'South Riverdale', 'Withrow Park', 'Broadview'],
++    housingNote:
++      'Original 2-1/4" and 3-1/4" strip oak is common. Many floors are on their second or third refinish; depth above the tongue decides whether another full sand is honest advice.',
++    localConsideration:
++      'Parking and material staging on narrow streets is a planning item, not an afterthought.',
++  },
++  leslieville: {
++    intro:
++      'Leslieville and the east-end streets around Queen East mix renovated Victorians, workers\' cottages, and newer infill. Refinishing and carpet-to-hardwood conversion are the frequent calls.',
++    neighbourhoods: ['Leslieville', 'South Riverdale edge', 'East End', 'Queen East'],
++    housingNote:
++      'Infill and rear additions often introduce slab or engineered assemblies next to original nail-down rooms. The transition detail is where shortcuts show.',
++    localConsideration:
++      'Mixed substrates in one address mean two installation methods may be correct in the same house.',
++  },
++  'the-beaches': {
++    intro:
++      'The Beaches run lakeside housing stock with higher humidity exposure at openings, porches, and lower levels. Original hardwood and cottage-era additions sit side by side.',
++    neighbourhoods: ['The Beach', 'Kew Beach', 'Balmy Beach', 'The Boardwalk edge'],
++    housingNote:
++      'Moisture at grade and in enclosed porches is the variable that decides method. A product rated for the main floor can still fail in a converted lower level if the slab is not tested.',
++    localConsideration:
++      'Acclimation in the actual conditioned room — not a garage or porch — is non-negotiable near the lake.',
++  },
++  'lawrence-park': {
++    intro:
++      'Lawrence Park is larger interwar and postwar homes with continuous main-floor plates, formal stairs, and a high share of full-house refinish or replacement work.',
++    neighbourhoods: ['Lawrence Park', 'Tedlington Park', 'Bedford Park edge', 'Lytton Park edge'],
++    housingNote:
++      'Wide rooms and long sight lines punish inconsistent sanding and stain application. Flatness and colour continuity across the main floor and stair are the quality tells.',
++    localConsideration:
++      'Occupied-home containment matters; these jobs run measured in days across an entire floor plate, not a single room.',
++  },
++  cabbagetown: {
++    intro:
++      'Cabbagetown is one of the densest concentrations of Victorian housing in Toronto. Original strip floors, narrow hallways, and heritage constraints shape every specification.',
++    neighbourhoods: ['Cabbagetown', 'Corktown edge', 'Regent Park edge', 'Carlton-Parliament'],
++    housingNote:
++      'Heritage interiors often limit aggressive board replacement. Colour matching and selective repair are more common than full tear-outs.',
++    localConsideration:
++      'Access through narrow stairs and shared street fronts limits machine size and daily progress.',
++  },
++  swansea: {
++    intro:
++      'Swansea sits between High Park and the Humber with a mix of interwar houses, mid-century stock, and later renovations. Refinishing and main-floor replacement are the usual scopes.',
++    neighbourhoods: ['Swansea', 'Bloor West edge', 'Humber river edge', 'South Kingsway'],
++    housingNote:
++      'River-adjacent humidity and mixed renovation eras mean moisture readings and substrate mapping come before species talk.',
++    localConsideration:
++      'Lower levels and additions near grade need the same moisture discipline as lakeside stock.',
++  },
++  'davisville-village': {
++    intro:
++      'Davisville Village is compact midtown housing — semis, detached, and low-rise — with a steady mix of refinishing builder oak and converting upper floors away from carpet.',
++    neighbourhoods: ['Davisville', 'Mount Pleasant East', 'Broadway corridor', 'Folly Bridge edge'],
++    housingNote:
++      'Postwar strip oak is common and often near the limit of safe sanding depth. Replacement vs refinish is a measurement, not a preference.',
++    localConsideration:
++      'Tight driveways and street parking constrain staging; schedule around that rather than against it.',
++  },
++  'midtown-toronto': {
++    intro:
++      'Midtown Toronto spans Yonge-Eglinton through the apartment and condo corridors and the surrounding house stock. Condominium slabs and older house floors show up in the same week\'s work.',
++    neighbourhoods: ['Yonge-Eglinton', 'Mount Pleasant', 'Oriole Park', 'Chaplin Estates edge'],
++    housingNote:
++      'Condo work is slab moisture, acoustics, and elevator logistics. House work is wear-layer depth and joist-era subfloors. The method does not transfer between them.',
++    localConsideration:
++      'Building management rules on condo jobs set the calendar; house jobs are constrained by occupancy and stair access.',
++  },
++  'king-west': {
++    intro:
++      'King West is predominantly condominium and loft conversions: concrete slabs, open plans, and acoustic requirements written into the building rules.',
++    neighbourhoods: ['King West', 'Fashion District', 'Niagara', 'Wellington corridor'],
++    housingNote:
++      'Loft conversions and new towers behave differently even on the same street. A converted industrial building may have a thick, old, uneven slab that needs levelling before anything is glued to it; a 2015 tower has a flat, young slab that is still releasing moisture. The test is the same in both; the result rarely is.',
++    localConsideration:
++      'Service elevators, certificate of insurance requirements, and quiet-hours windows decide whether the job can run at all.',
++  },
++  'liberty-village': {
++    intro:
++      'Liberty Village is high-density condominium stock with concrete slabs, tight elevators, and open-plan units where every transition is visible.',
++    neighbourhoods: ['Liberty Village', 'King-Liberty', 'Exhibition edge', 'East Liberty'],
++    housingNote:
++      'Unit-to-unit acoustic transfer and slab moisture drive product and method. Pattern floors are possible; they do not relax the substrate rules.',
++    localConsideration:
++      'Booking the service elevator is part of the scope. Without it, materials and machines do not reach the floor.',
++  },
++
+ };
+ 
+ export const cityContent = (slug: string): CityContent | undefined => CITY_CONTENT[slug];
+diff --git a/apps/web/lib/service-pages.ts b/apps/web/lib/service-pages.ts
+index 748142b..c452aa0 100644
+--- a/apps/web/lib/service-pages.ts
++++ b/apps/web/lib/service-pages.ts
+@@ -75,7 +75,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     standfirst:
+       'What the substrate allows, what it costs, and the standard the finished floor is judged against — solid and engineered, including condominium slabs.',
+     pricing: 'newInstall',
+-    guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating'],
++    guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating', 'hardwood-flooring-cost-toronto', 'white-oak-flooring-toronto', 'herringbone-chevron-parquet-toronto'],
+     papers: [
+       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'protocol', label: 'The moisture protocol before any board is opened' },
+       { paper: 'hardwood-selection-and-cost-framework-gta', section: 'decision-tree', label: 'The selection decision tree' },
+@@ -89,7 +89,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     standfirst:
+       'Four machines, one sequence, containment at the source — and the difference between a floor that was sanded and a floor that was refinished.',
+     pricing: 'fullSandAndFinish',
+-    guides: ['reference-refinishing-existing-hardwood'],
++    guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto', 'hardwood-flooring-cost-toronto'],
+     papers: [
+       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'the-four-machines', label: 'The four machines and what each one can and cannot fix' },
+       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'sequence', label: 'The order the machines run in' },
+@@ -102,7 +102,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     h1: 'Dustless hardwood floor sanding in Toronto and the GTA',
+     standfirst:
+       'Containment at the source, measured at the machine — and what it means for whether you can stay in the house.',
+-    guides: ['reference-refinishing-existing-hardwood'],
++    guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto'],
+     papers: [
+       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'belt-sander', label: 'The belt sander, and where the dust is actually made' },
+     ],
+@@ -115,7 +115,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     standfirst:
+       'Heritage and water-damaged floors: what can be saved, what has to be replaced, and how the join is made invisible.',
+     pricing: 'fullSandAndFinish',
+-    guides: ['reference-refinishing-existing-hardwood', 'how-to-evaluate-a-hardwood-quote'],
++    guides: ['reference-refinishing-existing-hardwood', 'how-to-evaluate-a-hardwood-quote', 'how-to-choose-hardwood-contractor-toronto', 'hardwood-flooring-cost-toronto'],
+     papers: [
+       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'failure-modes', label: 'The failure modes, and which are recoverable' },
+     ],
+@@ -128,7 +128,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     standfirst:
+       'Treads, risers and nosings, matched to the floor they meet — the detail that gives a refinish away.',
+     pricing: 'fullSandAndFinish',
+-    guides: ['reference-refinishing-existing-hardwood'],
++    guides: ['reference-refinishing-existing-hardwood', 'hardwood-flooring-cost-toronto'],
+     papers: [
+       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'edger', label: 'The edger — stairs, and everywhere the big machine cannot reach' },
+     ],
+@@ -140,7 +140,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+     h1: 'Custom inlays and borders in Toronto and the GTA',
+     standfirst:
+       'Feature strips, medallions and borders — cut and fitted to a floor that still has to move with the seasons.',
+-    guides: ['solid-vs-engineered-hardwood-toronto'],
++    guides: ['reference-refinishing-existing-hardwood', 'herringbone-chevron-parquet-toronto'],
+     papers: [
+       { paper: 'hardwood-selection-and-cost-framework-gta', section: 'decision-tree', label: 'Species and pattern selection' },
+     ],
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index b995d83..50b3533 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -87,6 +87,71 @@ const nextConfig = {
+             key: 'Permissions-Policy',
+             value: 'camera=(), microphone=(), geolocation=()',
+           },
++          /**
++           * CSP, in two headers, deliberately.
++           *
++           * A first draft shipped one enforcing policy whose script-src was
++           *   'self' 'unsafe-inline' 'unsafe-eval' + two vercel origins
++           * and that policy would have broken the site quietly. CookieConsentBanner
++           * injects https://www.googletagmanager.com/gtag/js and
++           * https://connect.facebook.net/en_US/fbevents.js after a visitor opts
++           * in. Neither origin was listed, so both script loads would have been
++           * blocked — for consented users only, which is the hardest possible
++           * failure to notice and the exact instrumentation we need to measure
++           * whether any of this work produces business.
++           *
++           * It also would not have bought much. A script-src carrying both
++           * 'unsafe-inline' and 'unsafe-eval' stops almost no XSS: those two
++           * directives are what the attack needs. Real breakage risk, near-zero
++           * security gain, is a bad trade at any speed.
++           *
++           * So it ships as two headers, which is how CSP is meant to be rolled
++           * out on a site that takes money:
++           *
++           *   ENFORCED — the directives that cannot break a working page and do
++           *   carry real value. object-src 'none' kills legacy plugin vectors.
++           *   base-uri 'self' stops an injected <base> rewriting every relative
++           *   URL on the page, which is a genuine and under-appreciated attack.
++           *   form-action 'self' stops an injected form posting the lead form's
++           *   contents to someone else. frame-ancestors 'self' is clickjacking
++           *   defence and supersedes X-Frame-Options.
++           *
++           *   REPORT-ONLY — the full policy, including script-src and the
++           *   origins actually in use. Browsers evaluate it and report
++           *   violations to the console without blocking anything. Load the site,
++           *   accept cookies, submit the form, open the console: whatever appears
++           *   is what enforcing this would have broken. When it is silent, move
++           *   these directives into the enforced header.
++           */
++          {
++            key: 'Content-Security-Policy',
++            value: [
++              "object-src 'none'",
++              "base-uri 'self'",
++              "form-action 'self'",
++              "frame-ancestors 'self'",
++            ].join('; '),
++          },
++          {
++            key: 'Content-Security-Policy-Report-Only',
++            value: [
++              "default-src 'self'",
++              // 'unsafe-inline' and 'unsafe-eval' are required by Next's runtime
++              // today. They are the reason this half is not enforced yet: a
++              // policy that permits them is not buying much, and tightening it
++              // means a nonce pass through the app first.
++              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com https://connect.facebook.net",
++              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
++              "img-src 'self' data: blob: https:",
++              "font-src 'self' data: https://fonts.gstatic.com",
++              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://www.bankofcanada.ca https://api.indexnow.org",
++              "frame-src 'self' https://www.googletagmanager.com",
++              "object-src 'none'",
++              "base-uri 'self'",
++              "form-action 'self'",
++              "frame-ancestors 'self'",
++            ].join('; '),
++          },
+         ],
+       },
+       {
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index f462cd1..2166bcf 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -4726,3 +4726,197 @@ it otherwise could be, now that it has plenty.
+ `verify-live.sh` checks both halves against production: that an unknown URL
+ returns 404 rather than a soft 200, and that the page it returns carries at
+ least ten internal links. A status code cannot tell you the second one.
++
++### F-156 · The duplicate-content guard compared strings for equality · P1
++
++`verify-cities.mjs` shipped with a check that no two service areas share an
++intro or a housing note. It compared them with `===`.
++
++That is a test almost nothing fails. Nobody pastes a block and ships it
++byte-identical; they paste it and change the place name. A patch adding sixteen
++Toronto neighbourhood pages did exactly that, three times, and every one passed:
++
++| Pair | Field | Shared vocabulary |
++|---|---|---|
++| `yorkville` / `king-west` | housingNote | 77% |
++| `east-york` / `leaside` | housingNote | 68% |
++| `east-york` / `leaside` | intro | 61% |
++
++The Leaside entry was the East York entry with the place name changed — which
++is understandable, since Leaside is *in* East York, and which is precisely what
++thin content looks like from a crawler's side. The guard written specifically to
++prevent that saw two different strings and passed.
++
++It now measures Jaccard similarity over words longer than three characters:
++word order and connective tissue are ignored, and what is compared is whether
++two entries are made of the same vocabulary. The threshold is 0.5. Two genuine
++descriptions of two Toronto neighbourhoods land far below it; all three pairs
++above are caught.
++
++The three entries were rewritten to be about the places they name. Leaside is now
++about a planned garden suburb built to one specification — which is true of
++Leaside and not of East York, and is the reason a repair there can actually be
++matched.
++
++### F-157 · Sixteen Toronto neighbourhoods were about to be declared cities · P1
++
++A patch added Rosedale, Forest Hill, Yorkville, Leaside, The Annex, High Park,
++Riverdale, Leslieville, The Beaches, Lawrence Park, Cabbagetown, Swansea,
++Davisville Village, midtown, King West and Liberty Village to `AREAS`.
++
++That is the fastest way to give each one a page, and it would have worked. It
++would also have put all sixteen into `LocalBusiness.areaServed` as
++`schema.org/City` nodes, because F-151 made that list derive from `CITIES` —
++so the entity graph would have stated that Toronto contains sixteen more cities,
++and that Rosedale is a peer of Mississauga.
++
++It is not an exaggeration a crawler forgives. It is a factual error in the one
++part of the site whose entire job is to state things a machine can rely on
++without checking, on a project whose own rule is that structured data describes
++reality.
++
++The pages are worth having — "hardwood flooring Rosedale" is a real query with
++real intent, and the content written for them is specific and good. So the list
++was split. `AREAS` stays municipalities and remains the only thing that becomes
++a `City` node. `NEIGHBOURHOODS` is a second list that gets pages, local content,
++sitemap entries and `.md` editions, and never touches the entity graph.
++`SERVICE_AREAS` is the union, and every page-facing consumer reads that.
++
++### F-158 · The IndexNow endpoint was an open relay · P2
++
++`POST /api/indexnow` accepted a list of URLs from anyone and submitted them to
++Bing, Yandex, Seznam and Naver **signed with our ownership key**.
++
++The blast radius is bounded — the protocol only accepts URLs on our own host —
++but it is not zero. An attacker could exhaust our submission quota, repeatedly
++push URLs we do not want prioritised, and give the receiving engines a pattern
++of behaviour attributable to us that we did not choose.
++
++A proposed fix compared the caller against `process.env.INDEXNOW_KEY`. That
++variable is not set in this deployment and deliberately is not: F-144 removed
++the submitter's dependence on it, because the key is public by construction —
++the whole ownership check is that anyone can fetch it at `/<key>.txt` — and
++hiding a public value in an unvalidated env var only creates another way for the
++path to be broken while looking correct.
++
++With it unset, that comparison rejects every caller, including us. Safe, but by
++accident, and it would have looked like a working endpoint.
++
++The route now reads the key from the directory that serves it, exactly as
++`notify-indexnow.mjs` does. So does `lib/indexnow.ts`, which had the same env
++dependency and would have returned `false` for every runtime submission — the
++route would have authenticated correctly and then submitted nothing.
++
++A public key is not authentication in any real sense. It raises the cost of
++casual abuse from zero to "read the docs first", on an endpoint whose worst case
++is a wasted quota. Nothing that genuinely needs protecting sits behind it.
++
++### F-159 · One comma, invisible to every check, breaks the corpus · P0
++
++A patch adding five guides left this in `lib/guides.ts`:
++
++```ts
++    pillars: ['containment'],
++  },
++,                                    ← this
++
++  { slug: 'hardwood-flooring-cost-toronto', ...
++```
++
++A bare comma between two elements of an array literal is not a syntax error. It
++is a **sparse array**: legal JavaScript, legal TypeScript, and invisible to
++every tool in this repository.
++
++- `parse-scan.mjs` parses it and reports **zero diagnostics**. It is valid.
++- `tsc --noEmit` typechecks it. `Guide[]` permits a hole.
++- `next build` compiles it.
++- Every guard reads the right number of guides, because `.filter()` and `.map()`
++  **silently skip holes**.
++
++And then it fails at the one place that does not skip:
++
++```ts
++for (const g of guides) out.push(guideToMarkdown(g));
++// TypeError: Cannot read properties of undefined
++```
++
++That is `corpusToMarkdown()`, so the failure lands while building
++`/llms-full.txt`. `JSON.stringify` on the same array emits `null` into
++`/api/knowledge`, and `guides.length` counts the hole, so `/llms.txt` would
++advertise one more guide than exists.
++
++One character, past four separate checks, taking out the machine-readable corpus
++that F-153 was written to complete.
++
++`scripts/verify-manifests.mjs` reads the thirteen hand-edited manifests, blanks
++comments and string literals while preserving offsets, and fails on `,` followed
++by `,` or `[` followed by `,`. A trailing comma before `]` is fine — that
++creates no hole and is normal style.
++
++Its first version blanked string literals to **spaces**, which turned
++`['a', 'b']` into `[   ,    ]` and made every comma in every manifest look like
++a hole. It reported 532, all false. Strings are now filled with `x` instead, so
++a literal still reads as a value sitting between its commas. A guard is not
++finished when it fires; it is finished when it fires only on the thing it is
++named for — which is the third time that lesson is recorded in this file
++(F-149, F-150, now this).
++
++### F-160 · The rate limit could have destroyed the lead it was protecting · P0
++
++A patch added a rate limiter to `POST /api/leads`. Five requests per minute per
++IP, placed **before validation and before the durable log**. Both placements
++break the one invariant this project has: *the lead must never be lost*.
++
++**Before validation.** A request that fails validation is still a request. A
++customer correcting a phone number, then a postal code, then a typo has spent
++three of five. The fourth correction is the one that would have succeeded. The
++fifth is a hard 429. We would have rate-limited someone for trying to give us
++money.
++
++**Before the durable log.** A 429 wrote nothing anywhere, so a real lead caught
++by a false positive left no trace at all. And false positives are not exotic
++here: one office, one condo building, one school, or any mobile carrier using
++CGNAT presents a single IP for hundreds of people. Five per minute across a
++whole building is a plausible Saturday afternoon.
++
++Reordered. Honeypot first — bot traffic must not consume a real visitor's
++allowance. Then validation. Then the durable `lead.captured` log. **Then** the
++limit, raised to twenty per minute, and a rejection now writes a
++`lead.rate_limited` line recording that the lead is already recoverable from the
++line above it.
++
++The worst a false positive can now do is inconvenience someone. It cannot erase
++them.
++
++### F-161 · A CSP that would have broken the analytics silently · P2
++
++A proposed Content-Security-Policy shipped as one enforcing header with:
++
++```
++script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com
++```
++
++`CookieConsentBanner.tsx` injects `https://www.googletagmanager.com/gtag/js` and
++`https://connect.facebook.net/en_US/fbevents.js` after a visitor opts in.
++Neither origin is listed, so both would have been blocked — **for consented
++users only**, which is the hardest failure mode to notice, on the exact
++instrumentation needed to measure whether any of this work produces business.
++
++It also would not have bought much. A `script-src` carrying both
++`'unsafe-inline'` and `'unsafe-eval'` stops very little XSS, because those two
++directives are what the attack needs. Real breakage risk, near-zero security
++gain.
++
++It now ships as two headers, which is how CSP is introduced to a site that takes
++money:
++
++- **Enforced** — `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
++  `frame-ancestors 'self'`. None can break a working page, and each is real:
++  `base-uri` stops an injected `<base>` rewriting every relative URL, and
++  `form-action` stops an injected form posting the lead form's contents
++  somewhere else.
++- **Report-Only** — the full policy, with the origins actually in use. Browsers
++  evaluate it and report to the console without blocking. Load the site, accept
++  cookies, submit the form, read the console: what appears is what enforcing it
++  would have broken. When it is silent, the directives move to the enforced
++  header.
+diff --git a/package.json b/package.json
+index db8e011..d9cfbe7 100644
+--- a/package.json
++++ b/package.json
+@@ -30,10 +30,11 @@
+     "verify:markdown": "node scripts/verify-markdown.mjs",
+     "verify:services": "node scripts/verify-services.mjs",
+     "verify:cities": "node scripts/verify-cities.mjs",
++    "verify:manifests": "node scripts/verify-manifests.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/packages/shared/schemas/index.ts b/packages/shared/schemas/index.ts
+index d77ed25..fbb16cf 100644
+--- a/packages/shared/schemas/index.ts
++++ b/packages/shared/schemas/index.ts
+@@ -24,6 +24,8 @@ export const leadSchema = z
+     email: z.string().email('Please enter a valid email'),
+     phone: z.string().min(7, 'Please enter a valid phone number'),
+     postal: z.string().min(3, 'Please enter your postal code'),
++    city: z.string().optional(),
++    company: z.string().optional(),
+     service: z.string().optional(),
+     timeline: z.string().optional(),
+     message: z.string().max(2000).optional(),
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index b16a622..b14b842 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -135,6 +135,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-markdown.mjs ] && run "verify:markdown" node scripts/verify-markdown.mjs
+ [ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
+ [ -f scripts/verify-cities.mjs ] && run "verify:cities" node scripts/verify-cities.mjs
++[ -f scripts/verify-manifests.mjs ] && run "verify:manifests" node scripts/verify-manifests.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-cities.mjs b/scripts/verify-cities.mjs
+index 3da2aa8..9b844e5 100644
+--- a/scripts/verify-cities.mjs
++++ b/scripts/verify-cities.mjs
+@@ -64,14 +64,24 @@ const src = strip(fs.readFileSync(SEO, 'utf8'));
+ const problems = [];
+ 
+ /* ── the published areas ──────────────────────────────────────────────────── */
++/**
++ * Both lists. AREAS are municipalities and become schema.org City nodes;
++ * NEIGHBOURHOODS are Toronto sub-areas that get pages and never become City
++ * nodes (F-157). Every entry in either list needs its own local content, so
++ * coverage is checked across both.
++ */
+ const areasBlock = src.match(/const AREAS = \[([\s\S]*?)\];/);
++const hoodsBlock = src.match(/const NEIGHBOURHOODS = \[([\s\S]*?)\];/);
+ if (!areasBlock) {
+   console.error('verify-cities: could not read AREAS from seo-data.ts');
+   process.exit(2);
+ }
+ const slugify = (s) =>
+   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+-const areas = [...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
++const areas = [
++  ...[...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]),
++  ...(hoodsBlock ? [...hoodsBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : []),
++];
+ 
+ /* ── the content map ──────────────────────────────────────────────────────── */
+ const contentStart = src.indexOf('export const CITY_CONTENT');
+@@ -164,18 +174,68 @@ for (const [slug, block] of entries) {
+   }
+ }
+ 
+-/* ── 4. no two cities share copy ──────────────────────────────────────────── */
++/* ── 4. no two cities share copy, and none NEARLY share it ────────────────── */
++/**
++ * F-156. The first version of this compared strings for equality, which is a
++ * test almost nothing fails. A later patch added a Leaside entry that restated
++ * the East York entry in slightly different words — "compact, older, largely
++ * detached and semi-detached housing from the 1920s to the 1950s. Original
++ * hardwood is common and often thinner than owners expect" — and a Yorkville
++ * and a King West entry whose housing notes were the same sentence twice. All
++ * three passed, because not one pair was byte-identical.
++ *
++ * Byte-identical is not the failure mode. Nobody pastes a block and ships it
++ * unchanged; they paste it and change a place name, which is exactly what thin
++ * content looks like from a crawler's side and exactly what the exact-match
++ * test cannot see.
++ *
++ * So: Jaccard similarity over words longer than three characters, which ignores
++ * word order and the connective tissue that differs between any two sentences,
++ * and measures whether two entries are made of the same vocabulary. The
++ * threshold is 0.5 — half the distinct meaningful words shared. Two genuinely
++ * different descriptions of two Toronto neighbourhoods land well below it; the
++ * three pairs above scored 0.61, 0.68 and 0.77.
++ */
++const DUPLICATE_THRESHOLD = 0.5;
++
++const words = (v) =>
++  v.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
++
++const similarity = (a, b) => {
++  const A = new Set(a);
++  const B = new Set(b);
++  if (A.size === 0 || B.size === 0) return 0;
++  const shared = [...A].filter((x) => B.has(x)).length;
++  return shared / (A.size + B.size - shared);
++};
++
+ for (const name of ['intro', 'housingNote']) {
+-  const seen = new Map();
+-  for (const [slug, block] of entries) {
+-    const v = field(block, name);
+-    if (!v) continue;
+-    if (seen.has(v)) {
+-      problems.push({
+-        where: `${seen.get(v)} and ${slug}`,
+-        detail: `share the same ${name} — duplicated copy across city pages is the exact failure this guard exists to prevent`,
+-      });
+-    } else seen.set(v, slug);
++  const vals = [...entries]
++    .map(([slug, block]) => [slug, field(block, name)])
++    .filter(([, v]) => v);
++
++  for (let i = 0; i < vals.length; i++) {
++    for (let j = i + 1; j < vals.length; j++) {
++      const [slugA, a] = vals[i];
++      const [slugB, b] = vals[j];
++      if (a === b) {
++        problems.push({
++          where: `${slugA} and ${slugB}`,
++          detail: `share an identical ${name}`,
++        });
++        continue;
++      }
++      const score = similarity(words(a), words(b));
++      if (score >= DUPLICATE_THRESHOLD) {
++        problems.push({
++          where: `${slugA} and ${slugB}`,
++          detail:
++            `${name} is ${(score * 100).toFixed(0)}% the same vocabulary. One of these is the other ` +
++            `with a place name changed, which is what thin content is — write the second about the ` +
++            `second place, or do not publish a page for it.`,
++        });
++      }
++    }
+   }
+ }
+ 
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index 9a5d9b4..7c07b08 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -115,7 +115,7 @@ for p in / /framework /framework/assess /guides /glossary /papers /resources /li
+ done
+ 
+ printf '\n%s── machine surfaces %s\n' "$BOLD" "$OFF"
+-for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/health; do
++for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/estimate /api/health; do
+   check "$p" "$BASE$p?$CB"
+ done
+ 
+diff --git a/scripts/verify-manifests.mjs b/scripts/verify-manifests.mjs
+new file mode 100644
+index 0000000..c52ea78
+--- /dev/null
++++ b/scripts/verify-manifests.mjs
+@@ -0,0 +1,162 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-manifests.mjs
++ *
++ * Fails when a manifest array contains a hole.
++ *
++ * WHY THIS EXISTS
++ *
++ * F-159. A patch added five decision guides to `lib/guides.ts` and left one
++ * stray character behind:
++ *
++ *     pillars: ['containment'],
++ *   },
++ *   ,                              ← this
++ *
++ *     { slug: 'hardwood-flooring-cost-toronto', ...
++ *
++ * A bare comma between two elements of an array literal is not a syntax error.
++ * It is a **sparse array** — legal JavaScript, legal TypeScript, and completely
++ * invisible to every tool this repository runs:
++ *
++ *   · `node audit/scripts/parse-scan.mjs` parses it. It is valid.
++ *   · `tsc --noEmit` typechecks it. `Guide[]` permits a hole.
++ *   · `next build` compiles it.
++ *   · Fourteen guards read it and see the right number of guides, because
++ *     `.filter()` and `.map()` silently SKIP holes.
++ *
++ * And then it breaks, at the one place that does not skip:
++ *
++ *     for (const g of guides) out.push(guideToMarkdown(g));
++ *     // TypeError: Cannot read properties of undefined
++ *
++ * That is `corpusToMarkdown()`, so the failure lands during the build of
++ * /llms-full.txt. `JSON.stringify` on the same array emits `null` into
++ * /api/knowledge. `guides.length` counts the hole, so /llms.txt would advertise
++ * one more guide than exists.
++ *
++ * One character. Invisible to the parser, the typechecker, the compiler and
++ * every existing guard, and it takes out the machine-readable corpus.
++ *
++ * WHAT IT DOES
++ *
++ * Reads each manifest, strips comments and strings, and looks for the two
++ * shapes that produce a hole: `,` followed by `,`, and `[` followed by `,`.
++ * A trailing comma before `]` is fine — that is normal style and creates no
++ * hole.
++ *
++ *   node scripts/verify-manifests.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++
++/** Every file that carries a hand-edited array the rest of the site is built from. */
++const MANIFESTS = [
++  'apps/web/lib/papers.ts',
++  'apps/web/lib/guides.ts',
++  'apps/web/lib/glossary.ts',
++  'apps/web/lib/framework.ts',
++  'apps/web/lib/figures.ts',
++  'apps/web/lib/standards.ts',
++  'apps/web/lib/changelog.ts',
++  'apps/web/lib/market.ts',
++  'apps/web/lib/images.ts',
++  'apps/web/lib/service-pages.ts',
++  'apps/web/lib/seo-data.ts',
++  'apps/web/lib/schema/root-schema.ts',
++  'packages/shared/constants/index.ts',
++];
++
++/**
++ * Neutralise comments and string literals while preserving offsets, so a comma
++ * inside a sentence — "belt, edger, planetary" — cannot be mistaken for a hole.
++ *
++ * Comments become spaces. Strings become RUNS OF 'x', quotes included, and that
++ * distinction is the whole correctness of this file. The first version blanked
++ * strings to spaces too, which turned `['a', 'b']` into `[   ,    ]` — the
++ * elements vanished and every comma in every manifest suddenly looked like a
++ * hole. It reported 532 of them, all false. A guard is not finished when it
++ * fires; it is finished when it fires only on the thing it is named for.
++ */
++const blank = (src) => {
++  const out = src.split('');
++  let i = 0;
++  while (i < src.length) {
++    const two = src.slice(i, i + 2);
++    if (two === '/*') {
++      const end = src.indexOf('*/', i + 2);
++      const stop = end === -1 ? src.length : end + 2;
++      for (let k = i; k < stop; k++) if (out[k] !== '\n') out[k] = ' ';
++      i = stop;
++      continue;
++    }
++    if (two === '//') {
++      let k = i;
++      while (k < src.length && src[k] !== '\n') out[k++] = ' ';
++      i = k;
++      continue;
++    }
++    const c = src[i];
++    if (c === "'" || c === '"' || c === '`') {
++      let k = i + 1;
++      while (k < src.length) {
++        if (src[k] === '\\') { k += 2; continue; }
++        if (src[k] === c) break;
++        k++;
++      }
++      // 'x', not ' ' — the literal must still read as a value sitting between
++      // its commas, or the commas around it become a false hole.
++      for (let j = i; j <= Math.min(k, src.length - 1); j++) if (out[j] !== '\n') out[j] = 'x';
++      i = k + 1;
++      continue;
++    }
++    i++;
++  }
++  return out.join('');
++};
++
++const lineOf = (src, index) => src.slice(0, index).split('\n').length;
++
++const problems = [];
++let checked = 0;
++
++for (const rel of MANIFESTS) {
++  const abs = path.join(ROOT, rel);
++  if (!fs.existsSync(abs)) continue;
++  checked += 1;
++  const raw = fs.readFileSync(abs, 'utf8');
++  const src = blank(raw);
++
++  //  `,` … `,`  with only whitespace between → a hole between two elements.
++  for (const m of src.matchAll(/,\s*,/g)) {
++    problems.push({
++      where: `${rel}:${lineOf(src, m.index)}`,
++      detail:
++        'two commas with nothing between them. This is a sparse array — legal syntax, ' +
++        'invisible to tsc and to the build, and it puts an undefined into a manifest ' +
++        'every page is generated from.',
++    });
++  }
++
++  //  `[` … `,` → a hole at the front.
++  for (const m of src.matchAll(/\[\s*,/g)) {
++    problems.push({
++      where: `${rel}:${lineOf(src, m.index)}`,
++      detail: 'array opens with a comma — a hole at index 0.',
++    });
++  }
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} hole(s) in a manifest array:\n`);
++  for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
++  console.error(
++    '  .filter() and .map() skip holes silently, so the guards will keep passing.\n' +
++      '  `for...of` does not, and neither does JSON.stringify. See F-159.\n',
++  );
++  process.exit(1);
++}
++
++console.log(`✓ manifests verified — ${checked} file(s), no array holes`);
