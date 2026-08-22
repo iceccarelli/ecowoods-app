@@ -70,7 +70,23 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     telephone: config.phone,
     email: config.email,
     image: config.ogImageUrl,
-    logo: `${baseUrl}/icon-512.png`,
+    /**
+     * F-166. This read `${baseUrl}/icon-512.png` — a hardcoded path that
+     * IGNORED the `logoUrl` the caller passes in, two lines after `image`
+     * correctly used `config.ogImageUrl`.
+     *
+     * So F-162 fixed the config and the config was never read. root-schema.ts
+     * started deriving logoUrl from an imported file, verify-assets.mjs went
+     * green, and the deployed homepage kept serving the same 404 it had served
+     * all along. The only thing that noticed was the live check added in the
+     * same patch, on its first run against production — which is the entire
+     * argument for that file existing.
+     *
+     * Two fields, one of which honoured its config and one of which did not, is
+     * the kind of asymmetry that survives review because both lines look
+     * plausible on their own.
+     */
+    logo: config.logoUrl,
 
     // Brand voice
     slogan: config.slogan,

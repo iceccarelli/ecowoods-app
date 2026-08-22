@@ -98,13 +98,34 @@ if (hits.length >= 1) {
   }
 }
 
+/* ── images must be declared, or Google will not look for them ────────────── */
+/**
+ * F-168. Google's image-sitemap documentation is explicit that the mechanism is
+ * for "images that we might not otherwise find (such as images your site
+ * reaches with JavaScript code)". Every diagram here is rendered through
+ * next/image into a hashed /_next/static/media/ URL. Nothing listed them, so
+ * twenty-eight technical cross-sections drawn for this site were undiscoverable
+ * as images.
+ *
+ * This checks the mechanism is wired, not the count — verify-images.mjs already
+ * polices the count. What must not happen is `images` quietly disappearing from
+ * sitemap.ts and nobody noticing the picture set went dark again.
+ */
+for (const [needle, detail] of [
+  [/images\?:\s*string\[\]/, 'sitemap entries no longer accept an `images` field. Google discovers images it cannot reach through HTML only if a sitemap declares them — see F-168.'],
+  [/illustrationUrls\(\)/, 'the technical diagrams are no longer declared on any route.'],
+  [/brandUrls\(\)/, 'the brand marks are no longer declared. The logo is how a search engine attaches an image to the entity.'],
+]) {
+  if (!needle.test(src)) problems.push({ where: 'sitemap.ts', detail });
+}
+
 const liveMatch = src.match(/const LIVE = new Set\(\[([\s\S]*?)\]\)/);
 const live = liveMatch
   ? [...liveMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
   : [];
 
 if (problems.length) {
-  console.error(`\n✗ ${problems.length} fabricated lastmod value(s) in the sitemap:\n`);
+  console.error(`\n✗ ${problems.length} problem(s) in the sitemap:\n`);
   for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
   console.error(
     '  lastmod is optional. A URL with no date is treated as "unknown", which is\n' +

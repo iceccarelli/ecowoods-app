@@ -1,4 +1,4 @@
-import logo512 from '../public/icon-512.png';
+import { EW_LOGO, EW_LOGO_SIZE } from '@/lib/brand';
 import ogImage from '../app/opengraph-image.jpg';
 import { SITE_URL } from '@/lib/seo-data';
 
@@ -39,11 +39,17 @@ import { SITE_URL } from '@/lib/seo-data';
  * be imported rather than linked. Google's Organization logo guidance asks for
  * at least 112×112, so 512 clears it comfortably; the OG image is 1200×630.
  */
-export const LOGO_URL = `${SITE_URL}${logo512.src}`;
+/**
+ * F-167. This was the app icon — a favicon, correct but generic. The
+ * organisation's logo is the brand mark, published at a stable URL under the
+ * repo-root public/ directory. 1024×1024, square, on white: comfortably past
+ * Google's 112×112 minimum and the file to hand anyone who asks for the logo.
+ */
+export const LOGO_URL = `${SITE_URL}${EW_LOGO}`;
 export const OG_IMAGE_URL = `${SITE_URL}${ogImage.src}`;
 
 /** Intrinsic dimensions, for schema nodes that accept them. */
-export const LOGO_WIDTH = logo512.width;
-export const LOGO_HEIGHT = logo512.height;
+export const LOGO_WIDTH = EW_LOGO_SIZE;
+export const LOGO_HEIGHT = EW_LOGO_SIZE;
 export const OG_IMAGE_WIDTH = ogImage.width;
 export const OG_IMAGE_HEIGHT = ogImage.height;

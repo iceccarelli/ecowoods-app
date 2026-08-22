@@ -37,6 +37,22 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'images-discoverable-v1',
+    date: '2026-08-22',
+    kind: 'data',
+    title: 'The logo is now an image on the internet, and every diagram is findable',
+    body: 'The brand mark was embedded in the page as encoded text rather than published as a file, which meant it had no address \u2014 nothing could crawl it, index it, link to it or share it, and image search had no way to know the logo existed. It is now a file at a permanent URL, with a description attached, and the same mark at full resolution is what search engines read as the company\u2019s logo. The sitemap also declares every technical diagram, because an image reached only by JavaScript is one a search engine is told about or does not find.',
+    href: '/library',
+  },
+  {
+    id: 'brand-assets-v2',
+    date: '2026-08-22',
+    kind: 'data',
+    title: 'The logo fix, actually applied this time',
+    body: 'The previous release corrected where the organisation\u2019s logo URL came from, and the code that builds the schema was ignoring it \u2014 hardcoding the old path one line below the field that read the setting correctly. Every check in the repository passed. The production check, which fetches the logo the live page actually declares rather than reading the source, failed on its first run. That is what it is for.',
+    href: '/authority',
+  },
+  {
     id: 'brand-assets-v1',
     date: '2026-08-22',
     kind: 'data',

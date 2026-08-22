@@ -5026,3 +5026,138 @@ repository, which is precisely the gap this file exists to close.
 Now checked: both collection indexes, one article, one case study, the
 configurator, `/services`, `/service-areas`, a municipality page and a
 neighbourhood page.
+
+### F-166 · The fix for F-162 was never read, and the guard could not see it · P0
+
+F-162 changed `root-schema.ts` so the organisation's `logoUrl` came from an
+imported file instead of a hand-written path. `verify-assets.mjs` went green.
+`tsc`, twenty-two guards, `parse-scan` and the production build all passed. The
+patch shipped.
+
+The deployed homepage kept serving the same 404 it had served all along.
+
+Two lines in `buildOrganization`:
+
+```ts
+image: config.ogImageUrl,          // reads the config
+logo:  `${baseUrl}/icon-512.png`,  // ignores it
+```
+
+`image` honoured what the caller passed in. `logo` hardcoded the path and
+discarded `config.logoUrl` entirely. So F-162 corrected the value at the one end
+that was never read. Both lines look completely plausible in isolation, which is
+exactly why an asymmetry like that survives being looked at.
+
+**And the guard written to catch this could not see it.** `verify-assets.mjs`
+matched `${SITE_URL}/…` by name. The bug was spelled `${baseUrl}/icon-512.png`.
+It reported *"0 claimed URL(s), all served: none"* — technically true, entirely
+useless, and indistinguishable from success. A guard that recognises only one
+spelling of the thing it polices reports clean and means nothing. That is the
+third time this has been written down here: F-117 (a check that could never
+fire), F-149 (a check that misread its own input), now this.
+
+The pattern now matches any interpolation followed by a path, whatever the
+variable is called, and the scan covers every file under `lib/schema` and
+`lib/graph` rather than a hand-listed seven.
+
+**What actually caught it:** the live check added in the same patch as the bug,
+on its first run against production —
+
+```
+── brand assets the entity graph claims
+  FAIL  Organization logo bytes   got 404, want 200
+        https://ecowoods.ca/icon-512.png
+```
+
+It pulls the `logo` value out of the rendered homepage and fetches it. Not the
+source. The output. Twenty-two guards agreed the repository was correct, and
+they were all reading the same wrong thing; one fetch of what a crawler actually
+receives disagreed, and it was right.
+
+That is the whole argument for `verify-live.sh`, demonstrated on the patch that
+extended it, against a bug introduced by the patch that fixed the finding it was
+written for.
+
+### F-167 · The company logo was not an image on the internet · P0
+
+`lib/brand.ts` exported the brand mark as a 14,545-character base64
+`data:image/png` string. `Header.tsx` and `SiteFooter.tsx` rendered it like
+this:
+
+```tsx
+<span className="brand-mark" aria-hidden="true">
+  <img src={EW_MARK} alt="" … />
+</span>
+```
+
+**A data URI has no URL.** It cannot be crawled, indexed, linked, shared, hotlinked, or fetched. Google Images could not find this company's logo because,
+as far as the internet is concerned, the logo did not exist — it was a string
+inside a document. And the two attributes around it, `alt=""` and
+`aria-hidden="true"`, told the one crawler that did parse the tag to ignore it
+deliberately.
+
+That is the complete answer to "why can't Google find our images". Not a
+robots rule, not a crawl budget, not a missing sitemap. The logo was never a
+file at an address.
+
+Three more things were true at the same time:
+
+- **14.5 KB of base64 shipped inside every HTML response.** Uncacheable by
+  construction, re-sent on every navigation, ahead of the content in the byte
+  stream, on every page of the site.
+- **`apps/web/public/brand/` held three real brand files** —
+  `ecowoods_logo_EW_1.jpg`, `ew-mark.png` (1024×1024) and `ew-mark-cream.png` —
+  in the directory this deployment has never served, referenced by **zero lines
+  of code**. The actual logo files were both unreachable and unused.
+- **The Organization schema logo was the favicon.** F-162 pointed it at
+  `icon-512.png`, which is correct, served, and not the brand mark.
+
+Fixed:
+
+- The mark is a file at `/brand/ew-mark-192.png` — the REPO-ROOT `public/`
+  directory, which is served, measured not assumed (`/qr-app.jpg` has always
+  returned 200 from there while `apps/web/public` has always returned 404).
+  Byte-identical to what the data URI decoded to, so nothing on the page moves.
+- A stable, human-readable path rather than a hashed one, deliberately: a logo
+  is the asset other people link to — press, profiles, directories, and Google's
+  own Organization logo field.
+- Real `alt` text, `aria-hidden` removed, intrinsic `width`/`height` so
+  reserving the box costs no layout shift.
+- `LOGO_URL` is now `/brand/ew-mark.png`, the 1024×1024 square master — well
+  past Google's 112×112 minimum, and the file to hand anyone who asks for the
+  logo.
+- `apps/web/public/brand/` is **deleted**. One copy, in the served location. Two
+  copies in two directories, one of which is invisible, is how this started.
+
+### F-168 · Twenty-eight diagrams, undiscoverable as images · P1
+
+Every illustration, floor photograph and machine photograph on this site is
+rendered through `next/image`, which produces a hashed
+`/_next/static/media/…` URL. Nothing anywhere listed those URLs.
+
+Google's image-sitemap documentation states the mechanism exists for exactly
+this: *"telling Google about other images on your site, especially those that we
+might not otherwise find (such as images your site reaches with JavaScript
+code)."*
+
+So twenty-eight technical cross-sections — drawn for this site, trimmed,
+tracked, bundled, published under CC BY, verified live at byte level in F-131 —
+were invisible to image search. The work that proved they were *served* never
+asked whether they were *findable*.
+
+`sitemap.ts` now declares them, derived from the same static imports the pages
+render, so a sitemap entry cannot point at an image a page does not show. Only
+`<image:image>` and `<image:loc>` are emitted: Google has removed support for
+`<image:caption>`, `<image:title>`, `<image:geo_location>` and `<image:license>`,
+and emitting them would be markup pretending to be data.
+
+`verify-sitemap.mjs` fails if the `images` field or either URL source
+disappears. `verify-live.sh` counts `<image:loc>` in the deployed sitemap and
+fetches the brand files.
+
+One correction to `verify-assets.mjs` came out of this. It tested
+`apps/web/public` **before** asking whether a path resolves somewhere served, so
+a file present in both locations — which is exactly what copying the brand
+assets produced — was reported as a 404 it demonstrably was not. Served location
+wins; the unserved-directory message is now only for files that exist *only*
+there.

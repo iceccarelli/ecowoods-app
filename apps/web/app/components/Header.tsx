@@ -5,7 +5,7 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
-import { EW_MARK } from '@/lib/brand';
+import { EW_MARK, EW_MARK_ALT, EW_MARK_SIZE } from '@/lib/brand';
 
 /* ---------------------- Hooks ---------------------- */
 function useScrollState() {
@@ -181,9 +181,25 @@ export default function Header() {
         <div className="topbar-inner">
           {/* Brand Lockup */}
           <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
-            <span className="brand-mark" aria-hidden="true">
+            {/* F-167. This was aria-hidden with alt="", wrapping a 14.5 KB base64
+                data URI. A data URI has no URL: it cannot be crawled, indexed,
+                linked or shared, which is why Google Images could not find this
+                company's logo. And the two accessibility attributes told the one
+                crawler that did parse the tag to ignore it.
+
+                Now a real file at a real address, with alt text that says what
+                the mark is, and explicit dimensions so reserving its box costs
+                no layout shift. Same pixels. */}
+            <span className="brand-mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={EW_MARK} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <img
+                src={EW_MARK}
+                alt={EW_MARK_ALT}
+                width={EW_MARK_SIZE}
+                height={EW_MARK_SIZE}
+                decoding="async"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             </span>
             <span className="brand-copy">
               <strong>Ecowoods</strong>

@@ -12,6 +12,8 @@ import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { CHANGELOG } from '@/lib/changelog';
 import { getServicePages } from '@/lib/service-pages';
+import { ILLUSTRATION_IMAGES } from '@/app/data/illustration-images';
+import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -49,6 +51,36 @@ export const revalidate = 86400;
 /** Routes whose content really does change without a deploy. */
 const LIVE = new Set(['/market']);
 
+/**
+ * IMAGES, DECLARED WHERE THEY APPEAR.
+ *
+ * F-168. Nothing on this site told Google an image existed. Google's own
+ * documentation says an image sitemap is for "telling Google about other images
+ * on your site, especially those that we might not otherwise find (such as
+ * images your site reaches with JavaScript code)" — which describes every
+ * diagram here, all of them rendered through next/image into hashed
+ * /_next/static/media/ URLs that appear in no crawlable list anywhere.
+ *
+ * Twenty-eight technical cross-sections, drawn for this site, published under
+ * CC BY, and not one of them was discoverable as an image.
+ *
+ * Next emits <image:image><image:loc> for the `images` field. Only <image:image>
+ * and <image:loc> are used: Google removed support for <image:caption>,
+ * <image:title>, <image:geo_location> and <image:license>, so anything else
+ * here would be ignored markup pretending to be data.
+ *
+ * The URLs are derived from the same static imports the pages render, so a
+ * sitemap entry cannot point at an image the page does not actually show.
+ */
+const abs = (u: string) => (u.startsWith('http') ? u : `${SITE_URL}${u}`);
+
+/** Every technical diagram, as absolute URLs. */
+const illustrationUrls = (): string[] =>
+  Object.values(ILLUSTRATION_IMAGES).map((i) => abs(i.src));
+
+/** The brand marks — the images a search engine needs to attach to the entity. */
+const brandUrls = (): string[] => [EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT].map(abs);
+
 /** Newest changelog entry whose href is, or sits under, this route. */
 const changelogDate = (route: string): Date | undefined => {
   const hit = CHANGELOG.filter(
@@ -73,8 +105,10 @@ const entry = (
   changeFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly',
   priority: number,
   lastModified?: Date,
+  images?: string[],
 ): MetadataRoute.Sitemap[number] => ({
   url: route === '/' ? SITE_URL : `${SITE_URL}${route}`,
+  ...(images && images.length ? { images } : {}),
   ...(LIVE.has(route)
     ? { lastModified: new Date() }
     : lastModified
@@ -100,7 +134,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const newestChange = newest(CHANGELOG.map((e) => `${e.date}T00:00:00Z`));
 
   const basePages: MetadataRoute.Sitemap = [
-    entry('/', 'weekly', 1.0, newestChange),                       // newest publication
+    entry('/', 'weekly', 1.0, newestChange, brandUrls()),         // newest publication
     entry('/design', 'monthly', 0.85),                             // no date
     entry('/technical-library', 'weekly', 0.95, newest([
       ...articles.map((x) => x.modifiedAt || x.publishedAt),
@@ -112,13 +146,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/blog', 'weekly', 0.9, newestArticle),
     entry('/case-studies', 'weekly', 0.9, newestCase),
     entry('/authority', 'monthly', 0.7),                           // no date
-    entry('/framework', 'monthly', 0.95, changelogDate('/framework')),
+    entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above
     entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog
     entry('/standards', 'monthly', 0.85, changelogDate('/standards')),
-    entry('/library', 'monthly', 0.8, changelogDate('/library')),
+    entry('/library', 'monthly', 0.8, changelogDate('/library'), [
+      ...illustrationUrls(),
+      ...brandUrls(),
+    ]),
     entry('/data', 'monthly', 0.85, changelogDate('/data')),
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),

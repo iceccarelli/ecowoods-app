@@ -141,6 +141,11 @@ if [ -z "$LOGO" ]; then
   FAILED=$((FAILED + 1))
 else
   check "Organization logo bytes" "$LOGO"
+  # F-167. The header mark was a base64 data URI: no URL, so nothing could
+  # crawl, index, link or share the company's own logo. It is a file now, and
+  # this asks production whether that file comes back.
+  check "brand mark bytes"        "$BASE/brand/ew-mark-192.png"
+  check "brand logo bytes"        "$BASE/brand/ew-mark.png"
   printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "resolved to" "$(printf '%s' "$LOGO" | cut -c1-58)"
 fi
 
@@ -375,6 +380,19 @@ SMTMP="$(mktmp)"
 SMSTATUS="$(fetch "$BASE/sitemap.xml?$CB" "$SMTMP")"
 SM="$(cat "$SMTMP")"
 TOTAL="$(printf '%s' "$SM" | grep -o '<loc>' | wc -l | tr -d ' ')"
+
+# F-168. Google discovers a next/image URL only if a sitemap declares it. Every
+# diagram on this site is a hashed /_next/static/media/ path that appears in no
+# crawlable list, so until now none of the 28 technical cross-sections was
+# findable as an image at all.
+IMGCOUNT="$(printf '%s' "$SM" | grep -c '<image:loc>' || true)"
+if [ "${IMGCOUNT:-0}" -gt 0 ]; then
+  printf '  %sPASS%s  %-34s %s image(s) declared\n' "$GRN" "$OFF" "image sitemap" "$IMGCOUNT"
+else
+  printf '  %sFAIL%s  %-34s no <image:loc> in sitemap.xml\n' "$RED" "$OFF" "image sitemap"
+  printf '        Unlisted means undiscoverable for every JS-rendered image. F-168.\n'
+  FAILED=$((FAILED + 1))
+fi
 TODAY="$(date -u +%Y-%m-%d)"
 STAMPED="$(printf '%s' "$SM" | grep -o "<lastmod>$TODAY" | wc -l | tr -d ' ')"
 if [ "${TOTAL:-0}" -eq 0 ]; then

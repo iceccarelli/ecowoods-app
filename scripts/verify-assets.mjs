@@ -61,15 +61,39 @@ const ASSET_EXT = /\.(png|jpe?g|gif|webp|avif|svg|ico|pdf|woff2?|mp4|webm)$/i;
 
 /* Files scanned. The schema and metadata layer — the surfaces that make claims
    a machine will follow without a human ever looking at the result. */
-const TARGETS = [
-  'apps/web/lib/schema/root-schema.ts',
-  'apps/web/lib/schema/builders.ts',
+const TARGETS_DIRS = ['apps/web/lib/schema', 'apps/web/lib/graph'];
+const TARGETS_FILES = [
+  // The brand mark lives here. It was a base64 data URI until F-167 — an image
+  // with no URL, which no crawler can index and this guard could not have
+  // checked. Now it is a path, and a path is checkable.
+  'apps/web/lib/brand.ts',
   'apps/web/lib/structured-data.ts',
   'apps/web/lib/seo-data.ts',
+  'apps/web/lib/brand-assets.ts',
   'apps/web/app/layout.tsx',
   'apps/web/app/manifest.ts',
   'apps/web/lib/ai.ts',
 ];
+
+/** Every .ts/.tsx under the schema directories, plus the named files. */
+const collect = () => {
+  const out = [...TARGETS_FILES];
+  for (const d of TARGETS_DIRS) {
+    const abs = path.join(ROOT, d);
+    if (!fs.existsSync(abs)) continue;
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.tsx?$/.test(e.name)) out.push(path.relative(ROOT, p));
+      }
+    };
+    walk(abs);
+  }
+  return [...new Set(out)];
+};
+
+const TARGETS = collect();
 
 const strip = (s) =>
   s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -104,9 +128,21 @@ for (const rel of TARGETS) {
   const src = strip(fs.readFileSync(abs, 'utf8'));
 
   // `${SITE_URL}/foo.png`, 'https://ecowoods.ca/foo.png', and bare '/foo.png'.
+  /**
+   * F-166. The first version matched `${SITE_URL}/…` by name. The bug it was
+   * written to catch was spelled `${baseUrl}/icon-512.png`, so the guard passed
+   * with "0 claimed URL(s)" while the deployed homepage served that exact 404.
+   *
+   * Any interpolation followed by a path is now matched, whatever the variable
+   * is called. A guard that only recognises one spelling of the thing it
+   * polices is a guard that reports clean and means nothing — the third time
+   * that has been written in this repository (F-117, F-149, now this).
+   */
   const patterns = [
-    /\$\{SITE_URL\}(\/[A-Za-z0-9._\/-]+)/g,
+    // `${anything}/path.ext` — any interpolated base, any variable name.
+    /\$\{[A-Za-z0-9_.]+\}(\/[A-Za-z0-9._\/-]+)/g,
     /https:\/\/ecowoods\.ca(\/[A-Za-z0-9._\/-]+)/g,
+    // A bare absolute path in any quote style.
     /['"`](\/[A-Za-z0-9._\/-]+\.(?:png|jpe?g|gif|webp|avif|svg|ico|pdf|woff2?|mp4|webm))['"`]/gi,
   ];
 
@@ -116,6 +152,16 @@ for (const rel of TARGETS) {
       if (!ASSET_EXT.test(urlPath)) continue;
 
       const where = `${rel}:${lineOf(src, m.index)}`;
+
+      // Served location wins. The first version tested apps/web/public FIRST,
+      // so a file present in BOTH — the served repo-root public/ and the
+      // unserved apps/web/public/ — was reported as a 404 it demonstrably was
+      // not. Ask "can this be served?" before "is it somewhere useless?".
+      const how = resolves(urlPath);
+      if (how) {
+        ok.push(`${urlPath} → ${how}`);
+        continue;
+      }
 
       if (fs.existsSync(path.join(WEB_PUBLIC, urlPath.replace(/^\//, '')))) {
         problems.push({
@@ -127,15 +173,10 @@ for (const rel of TARGETS) {
         continue;
       }
 
-      const how = resolves(urlPath);
-      if (!how) {
-        problems.push({
-          where,
-          detail: `${urlPath} does not exist anywhere that is served. This URL is a 404.`,
-        });
-      } else {
-        ok.push(`${urlPath} → ${how}`);
-      }
+      problems.push({
+        where,
+        detail: `${urlPath} does not exist anywhere that is served. This URL is a 404.`,
+      });
     }
   }
 }
