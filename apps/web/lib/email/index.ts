@@ -481,6 +481,27 @@ export async function sendAppointmentConfirmationEmail(data: {
   });
 }
 
+
+export async function sendQuoteReceivedEmail(data: {
+  name: string;
+  email: string;
+  leadId: string;
+}) {
+  await sendEmail({
+    to: data.email,
+    subject: 'We received your EcoWoods estimate request',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
+        <h2>Request received</h2>
+        <p>Hi ${data.name}, EcoWoods has your estimate request (reference ${data.leadId}). A specialist will call within one business day.</p>
+        <p>If it is urgent, call <a href="tel:${BUSINESS_NAP.phoneE164}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
+        <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
+      </div>
+    `,
+    text: `Hi ${data.name}, EcoWoods received your estimate request (${data.leadId}). We will call within one business day. Urgent? ${BUSINESS_NAP.phoneDisplay}.`,
+  });
+}
+
 // ─── Admin: new pilot lead notification ────────────────────────────────────
 export async function sendAdminNewPilotLeadEmail(data: {
   pilotLeadId: string;

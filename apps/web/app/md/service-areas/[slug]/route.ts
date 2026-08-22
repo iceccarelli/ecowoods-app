@@ -5,13 +5,13 @@
  * reads. See lib/markdown-export.ts, and F-153 for why the commercial and local
  * surfaces were missing from the machine-readable edition until now.
  */
-import { CITIES } from '@/lib/seo-data';
+import { SERVICE_AREAS } from '@/lib/seo-data';
 import { areaMarkdown } from '@/lib/markdown-export';
 
 export const dynamic = 'force-static';
 
 export function generateStaticParams() {
-  return CITIES.map((x) => ({ slug: x.slug }));
+  return SERVICE_AREAS.map((x) => ({ slug: x.slug }));
 }
 
 export async function GET(

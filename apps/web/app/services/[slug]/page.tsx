@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SITE_URL, CITIES } from '@/lib/seo-data';
+import { SITE_URL, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { getPaper } from '@/lib/papers';
@@ -264,7 +264,7 @@ export default async function ServiceDetailPage({
               prose gave a reader nowhere to go and a crawler no edge to follow —
               the mirror image of the same omission on the city pages. See F-154. */}
           <p className="tlx-note">
-            {CITIES.map((c, i) => (
+            {SERVICE_AREAS.map((c, i) => (
               <span key={c.slug}>
                 {i > 0 && ' · '}
                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>

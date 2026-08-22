@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SITE_URL, CITIES } from '@/lib/seo-data';
+import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { getServicePages, serviceFor } from '@/lib/service-pages';
 
 /**
@@ -122,7 +122,7 @@ export default function NotFound() {
           <p className="tlx-kicker">Coverage</p>
           <h2 className="tlx-h2">Where we work</h2>
           <p className="tlx-note">
-            {CITIES.map((c, i) => (
+            {SERVICE_AREAS.map((c, i) => (
               <span key={c.slug}>
                 {i > 0 && ' · '}
                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>

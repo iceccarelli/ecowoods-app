@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
 import { leadSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { sendAdminNewQuoteEmail } from '@/lib/email';
+import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/leads — THE conversion surface.
  *
  * INVARIANT: once a lead validates, it is captured. Period.
- * - Durable structured log happens FIRST and always (recoverable from Vercel logs).
+ * - Rate-limit + honeypot run BEFORE durable capture (spam never becomes a lead).
+ * - Durable structured log happens FIRST after validation (recoverable from Vercel logs).
  * - DB persistence is best-effort: a DB outage must NOT surface as a customer error.
- * - Admin email is best-effort.
+ * - Admin email and customer acknowledgement are best-effort.
  * We only ever return non-2xx for a genuinely malformed/invalid submission (400),
- * never because a downstream system (DB/email) hiccupped.
+ * rate-limit (429), never because a downstream system (DB/email) hiccupped.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,17 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
+  }
+
+  // Honeypot — bots fill "company". Humans never see it. Accept silently, so a
+  // bot cannot learn it was detected. Checked before the rate limiter so bot
+  // traffic never consumes a real visitor's allowance.
+  if (typeof (body as { company?: unknown }).company === 'string' && (body as { company: string }).company.trim()) {
+    console.log(JSON.stringify({ event: 'lead.honeypot', at: new Date().toISOString() }));
+    return NextResponse.json(
+      { success: true, message: 'Quote request received! A specialist will call you within 1 business day.' },
+      { status: 201 },
+    );
   }
 
   const parsed = leadSchema.safeParse(body);
@@ -48,7 +61,51 @@ export async function POST(request: Request) {
   // 1. DURABLE CAPTURE — guaranteed, synchronous, dependency-free. The lead now exists.
   console.log(JSON.stringify({ event: 'lead.captured', leadId, receivedAt: new Date().toISOString(), lead }));
 
+  /**
+   * RATE LIMIT — AFTER VALIDATION, AND AFTER THE DURABLE LOG.
+   *
+   * The order here is the whole point, and the first draft of this had it
+   * backwards in two ways that each break the one invariant this file exists to
+   * protect: THE LEAD MUST NEVER BE LOST.
+   *
+   * It ran BEFORE validation. The limiter is five requests per minute per IP,
+   * and a request that fails validation is still a request. A customer
+   * correcting a phone number, a postal code and a typo has spent three. The
+   * fourth correction is the one that would have succeeded, and the fifth is a
+   * hard 429. We would have rate-limited someone for trying to give us money.
+   *
+   * It ran BEFORE the durable log. A 429 returned nothing to any log, so a real
+   * lead caught by a false positive left no trace at all — and false positives
+   * are not exotic here. A single office, a condo building, a school, or any
+   * mobile carrier using CGNAT presents one IP for hundreds of people. Five per
+   * minute across a whole building is a plausible Saturday.
+   *
+   * So: validate first, log first, and only then decide whether to answer. The
+   * lead is already recoverable from the structured log before this line runs,
+   * which means the worst a false positive can now do is inconvenience someone
+   * — not erase them.
+   *
+   * The limit is also raised to twenty per minute. Five was tuned for an
+   * endpoint where every request costs something; this one is protecting
+   * against a flood, and a flood is not twenty.
+   */
+  const rl = checkRateLimit(getClientIp(request), { windowMs: 60_000, maxRequests: 20 });
+  if (!rl.allowed) {
+    console.warn(
+      JSON.stringify({
+        event: 'lead.rate_limited',
+        leadId,
+        note: 'Lead already captured in the log line above. Recoverable.',
+      }),
+    );
+    return NextResponse.json(
+      { success: false, message: 'Please wait a moment before sending another request.' },
+      { status: 429, headers: { 'Retry-After': '60' } },
+    );
+  }
+
   // 2. BEST-EFFORT DB persistence. Failure is logged, never fatal.
+  //    city ← explicit city if provided; postal is stored on address (not city).
   let quoteId: string | null = null;
   try {
     const session = await auth().catch(() => null);
@@ -57,7 +114,8 @@ export async function POST(request: Request) {
         name: String(lead.name ?? ''),
         email: String(lead.email ?? ''),
         phone: lead.phone ? String(lead.phone) : null,
-        city: lead.postal ? String(lead.postal) : null,
+        city: lead.city ? String(lead.city) : null,
+        address: lead.postal ? String(lead.postal) : null,
         service: lead.service ? String(lead.service) : null,
         squareFeet: lead.sqft ? Number(lead.sqft) : null,
         timeline: lead.timeline ? String(lead.timeline) : null,
@@ -87,11 +145,25 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
   );
 
-  // 4. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
+  // 4. Customer acknowledgement — best-effort, never fatal.
+  sendQuoteReceivedEmail({
+    name: String(lead.name ?? ''),
+    email: String(lead.email ?? ''),
+    leadId: quoteId ?? leadId,
+  }).catch((err) =>
+    console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
+  );
+
+  // 5. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
   const webhookUrl = process.env.LEADS_WEBHOOK_URL;
   if (webhookUrl) {
-    fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, quoteId, ...lead }) })
-      .catch((err) => console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })));
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId, quoteId, ...lead }),
+    }).catch((err) =>
+      console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
+    );
   }
 
   // The lead is captured. Always acknowledge success to the customer.

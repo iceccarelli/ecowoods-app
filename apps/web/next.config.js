@@ -87,6 +87,71 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          /**
+           * CSP, in two headers, deliberately.
+           *
+           * A first draft shipped one enforcing policy whose script-src was
+           *   'self' 'unsafe-inline' 'unsafe-eval' + two vercel origins
+           * and that policy would have broken the site quietly. CookieConsentBanner
+           * injects https://www.googletagmanager.com/gtag/js and
+           * https://connect.facebook.net/en_US/fbevents.js after a visitor opts
+           * in. Neither origin was listed, so both script loads would have been
+           * blocked — for consented users only, which is the hardest possible
+           * failure to notice and the exact instrumentation we need to measure
+           * whether any of this work produces business.
+           *
+           * It also would not have bought much. A script-src carrying both
+           * 'unsafe-inline' and 'unsafe-eval' stops almost no XSS: those two
+           * directives are what the attack needs. Real breakage risk, near-zero
+           * security gain, is a bad trade at any speed.
+           *
+           * So it ships as two headers, which is how CSP is meant to be rolled
+           * out on a site that takes money:
+           *
+           *   ENFORCED — the directives that cannot break a working page and do
+           *   carry real value. object-src 'none' kills legacy plugin vectors.
+           *   base-uri 'self' stops an injected <base> rewriting every relative
+           *   URL on the page, which is a genuine and under-appreciated attack.
+           *   form-action 'self' stops an injected form posting the lead form's
+           *   contents to someone else. frame-ancestors 'self' is clickjacking
+           *   defence and supersedes X-Frame-Options.
+           *
+           *   REPORT-ONLY — the full policy, including script-src and the
+           *   origins actually in use. Browsers evaluate it and report
+           *   violations to the console without blocking anything. Load the site,
+           *   accept cookies, submit the form, open the console: whatever appears
+           *   is what enforcing this would have broken. When it is silent, move
+           *   these directives into the enforced header.
+           */
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+            ].join('; '),
+          },
+          {
+            key: 'Content-Security-Policy-Report-Only',
+            value: [
+              "default-src 'self'",
+              // 'unsafe-inline' and 'unsafe-eval' are required by Next's runtime
+              // today. They are the reason this half is not enforced yet: a
+              // policy that permits them is not buying much, and tightening it
+              // means a nonce pass through the app first.
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com https://connect.facebook.net",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://www.bankofcanada.ca https://api.indexnow.org",
+              "frame-src 'self' https://www.googletagmanager.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+            ].join('; '),
+          },
         ],
       },
       {

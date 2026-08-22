@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
+import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
 import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
 import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 
 export function generateStaticParams() {
-  return CITIES.map((c) => ({ city: c.slug }));
+  return SERVICE_AREAS.map((c) => ({ city: c.slug }));
 }
 export const dynamicParams = false;
 
@@ -38,7 +38,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
     ]),
     faqPageSchema(),
   ];
-  const nearby = CITIES.filter((c) => c.slug !== city.slug).slice(0, 10);
+  const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
 
   return (
     <div>

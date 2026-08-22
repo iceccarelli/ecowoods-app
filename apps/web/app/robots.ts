@@ -25,7 +25,7 @@ export default function robots(): MetadataRoute.Robots {
         // specifically for crawlers and agents to read. Allow is listed first
         // and is more specific, which is how every major crawler resolves the
         // conflict. See F-89.
-        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
         // /docs/{contract,invoice,quote}/[id] renders a specific customer's
         // paperwork from a URL. It was never disallowed.
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
@@ -48,7 +48,7 @@ export default function robots(): MetadataRoute.Robots {
           'PerplexityBot', 'Perplexity-User',
           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
         ],
-        allow: ['/', '/api/knowledge', '/api/market', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/llms.txt', '/llms-full.txt', '/md/'],
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
     ],

@@ -75,7 +75,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'What the substrate allows, what it costs, and the standard the finished floor is judged against — solid and engineered, including condominium slabs.',
     pricing: 'newInstall',
-    guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating'],
+    guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating', 'hardwood-flooring-cost-toronto', 'white-oak-flooring-toronto', 'herringbone-chevron-parquet-toronto'],
     papers: [
       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'protocol', label: 'The moisture protocol before any board is opened' },
       { paper: 'hardwood-selection-and-cost-framework-gta', section: 'decision-tree', label: 'The selection decision tree' },
@@ -89,7 +89,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Four machines, one sequence, containment at the source — and the difference between a floor that was sanded and a floor that was refinished.',
     pricing: 'fullSandAndFinish',
-    guides: ['reference-refinishing-existing-hardwood'],
+    guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto', 'hardwood-flooring-cost-toronto'],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'the-four-machines', label: 'The four machines and what each one can and cannot fix' },
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'sequence', label: 'The order the machines run in' },
@@ -102,7 +102,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     h1: 'Dustless hardwood floor sanding in Toronto and the GTA',
     standfirst:
       'Containment at the source, measured at the machine — and what it means for whether you can stay in the house.',
-    guides: ['reference-refinishing-existing-hardwood'],
+    guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto'],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'belt-sander', label: 'The belt sander, and where the dust is actually made' },
     ],
@@ -115,7 +115,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Heritage and water-damaged floors: what can be saved, what has to be replaced, and how the join is made invisible.',
     pricing: 'fullSandAndFinish',
-    guides: ['reference-refinishing-existing-hardwood', 'how-to-evaluate-a-hardwood-quote'],
+    guides: ['reference-refinishing-existing-hardwood', 'how-to-evaluate-a-hardwood-quote', 'how-to-choose-hardwood-contractor-toronto', 'hardwood-flooring-cost-toronto'],
     papers: [
       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'failure-modes', label: 'The failure modes, and which are recoverable' },
     ],
@@ -128,7 +128,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Treads, risers and nosings, matched to the floor they meet — the detail that gives a refinish away.',
     pricing: 'fullSandAndFinish',
-    guides: ['reference-refinishing-existing-hardwood'],
+    guides: ['reference-refinishing-existing-hardwood', 'hardwood-flooring-cost-toronto'],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'edger', label: 'The edger — stairs, and everywhere the big machine cannot reach' },
     ],
@@ -140,7 +140,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     h1: 'Custom inlays and borders in Toronto and the GTA',
     standfirst:
       'Feature strips, medallions and borders — cut and fitted to a floor that still has to move with the seasons.',
-    guides: ['solid-vs-engineered-hardwood-toronto'],
+    guides: ['reference-refinishing-existing-hardwood', 'herringbone-chevron-parquet-toronto'],
     papers: [
       { paper: 'hardwood-selection-and-cost-framework-gta', section: 'decision-tree', label: 'Species and pattern selection' },
     ],

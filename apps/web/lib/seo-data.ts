@@ -31,11 +31,53 @@ const AREAS = [
   'Aurora', 'Newmarket', 'Pickering', 'Ajax',
 ];
 
+/**
+ * Toronto neighbourhoods. Pages, yes — `schema.org/City`, no.
+ *
+ * F-157. These sixteen arrived in AREAS, which would have been the fastest way
+ * to give each one a page. It would also have put them straight into
+ * `LocalBusiness.areaServed` as `City` nodes, because root-schema derives that
+ * list from CITIES — so the entity graph would have declared Rosedale, King
+ * West, The Annex and Liberty Village to be cities.
+ *
+ * They are not. They are neighbourhoods inside Toronto, a city already in the
+ * list. Declaring them as peers of Mississauga and Oakville is not an
+ * exaggeration a crawler forgives; it is a factual error in the one part of the
+ * site whose entire job is to state facts a machine can rely on. The project's
+ * own rule is that structured data describes reality.
+ *
+ * So they are a separate list. They get pages, they get local content, they get
+ * sitemap entries and `.md` editions — everything a query for "hardwood
+ * flooring Rosedale" needs. What they do not get is a `City` node claiming
+ * Toronto has sixteen more cities inside it.
+ */
+const NEIGHBOURHOODS = [
+  'Rosedale', 'Forest Hill', 'Yorkville', 'Leaside', 'The Annex', 'High Park',
+  'Riverdale', 'Leslieville', 'The Beaches', 'Lawrence Park', 'Cabbagetown',
+  'Swansea', 'Davisville Village', 'Midtown Toronto', 'King West', 'Liberty Village',
+];
+
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+/** Municipalities. These, and only these, become schema.org City nodes. */
 export const CITIES: City[] = AREAS.map((name) => ({ slug: slugify(name), name }));
-export const cityBySlug = (slug: string): City | undefined => CITIES.find((c) => c.slug === slug);
+
+/** Toronto neighbourhoods. Pages and local content; never a City node. */
+export const NEIGHBOURHOOD_AREAS: City[] = NEIGHBOURHOODS.map((name) => ({
+  slug: slugify(name),
+  name,
+}));
+
+/**
+ * Everything with a /service-areas page. The routes, the sitemap, the .md
+ * editions and the local-content guard all read this; only CITIES reaches the
+ * entity graph.
+ */
+export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS];
+
+export const cityBySlug = (slug: string): City | undefined =>
+  SERVICE_AREAS.find((c) => c.slug === slug);
 
 export type Service = { slug: string; name: string; blurb: string };
 
@@ -63,6 +105,13 @@ export const FAQ_ITEMS: FaqItem[] = [
   // survives being quoted out of context.
   { q: 'What is the best hardwood flooring for concrete slab condos?', a: 'Engineered, not solid — the substrate decides it, not the budget. On a concrete slab the assembly is the specification: adhesive, underlayment and acoustic rating are part of the answer, and the slab is moisture-tested with in-situ probes before a board is opened. The full specification is published as our condominium-over-concrete-slab reference installation.' },
   { q: 'How do you match new hardwood to old floors seamlessly?', a: 'By matching species, width and grain direction first, then trialling stain on site on the actual old boards — never from a single can chosen off a sample. Where boards have to be replaced, repairs are feathered into the surrounding run rather than butted in a straight line. A full sand alone will not hide a species or width mismatch, which is why matching is decided before any machine is switched on.' },
+  { q: 'How much does hardwood flooring cost in Toronto?', a: 'Installed ranges typically run about $11–$18 per sq ft for new hardwood, $4.75–$7.50 for full sand and finish, and $2.50–$4.00 for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.' },
+  { q: 'What is dustless hardwood refinishing, and does it work in an occupied home?', a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
+  { q: 'Is white oak better than red oak for a Toronto home?', a: 'White oak is more tannin-stable under water-based finishes, takes grey and modern stains more evenly, and is the default for contemporary renovations. Red oak is the heritage Canadian floor with a more open grain. Neither is universally better — substrate, stain target, and traffic decide. See the white-oak guide and the species comparison article for the decision tree.' },
+  { q: 'Can you install herringbone or chevron in a Toronto condo?', a: 'Yes, when the slab moisture, acoustic assembly, and elevator logistics are specified first. Pattern work multiplies labour and waste; the substrate still decides solid vs engineered. Glue-down engineered over a tested slab is the usual condo path. Building management windows often decide the schedule more than the pattern does.' },
+  { q: 'How do I choose a hardwood flooring contractor in Toronto?', a: 'Ask for a written fixed price after a moisture test, not a phone range. Confirm who actually sands the floor (salaried crew vs revolving subcontractors), which machines run in which order, and whether manufacturer warranties are itemized in the contract. Compare the decision guide on evaluating a hardwood quote before you sign anything.' },
+  { q: 'Solid or engineered hardwood — which should I install?', a: 'The substrate decides, not the budget. Plywood over joists can take solid; concrete slabs, radiant heat, and wide humidity swings favour engineered. A generational wear layer only matters where solid is structurally allowed. Walk the solid-vs-engineered guide before you buy material.' },
+
 ];
 
 // ── City-specific content ──────────────────────────────────────────────────
@@ -268,6 +317,152 @@ export const CITY_CONTENT: Record<string, CityContent> = {
     localConsideration:
       'Access and staging are straightforward. Lakeside exposure widens seasonal movement, so expansion gap and acclimation are specification items rather than formalities.',
   },
+
+  rosedale: {
+    intro:
+      'Rosedale is heritage housing: large lots, original millwork, grand staircases, and mixed substrates across later additions. Floors here are often original oak that has already been sanded, sitting beside newer rooms on different assemblies.',
+    neighbourhoods: ['South Rosedale', 'North Rosedale', 'Moore Park', 'Summerhill'],
+    housingNote:
+      'Wear-layer depth on original boards is the first measurement on a refinish. Additions often sit over concrete or radiant, which means the house may need two specifications, not one species.',
+    localConsideration:
+      'Matching a staircase to a continuous main floor, and joining heritage rooms to later additions without a visible seam, is the recurring craft problem.',
+  },
+  'forest-hill': {
+    intro:
+      'Forest Hill houses tend to be larger continuous floor plates, custom stairs, and higher-specification finishes. Wide plank, walnut, and oil systems show up more often here than builder-grade oak.',
+    neighbourhoods: ['Forest Hill South', 'Forest Hill North', 'Upper Village', 'Cedarvale edge'],
+    housingNote:
+      'Large open rooms make stain consistency and flatness tolerance more demanding than they are in small rooms. Radiant zones are not unusual in later renovations.',
+    localConsideration:
+      'Holding colour across a long run and a stair is the detail that gives an inconsistent refinish away. Containment in an occupied house matters because the work is measured in days, not hours.',
+  },
+  yorkville: {
+    intro:
+      'Yorkville work is predominantly condominium and converted loft: concrete slabs, acoustic requirements, elevator logistics, and below-grade rooms that fail if moisture is guessed instead of measured.',
+    neighbourhoods: ['Yorkville', 'Annex edge', 'Bay-Bloor corridor', 'Cumberland'],
+    housingNote:
+      'Solid hardwood over a slab is the substitution that fails most often. Engineered, glue-down, documented slab moisture, and the building acoustic assembly are the correct starting point.',
+    localConsideration:
+      'Building management windows, insurance certificates, and service-elevator bookings decide the schedule. Miss the window and the job does not start.',
+  },
+  leaside: {
+    intro:
+      'Leaside is a planned garden-suburb built largely between the 1920s and the 1940s, and it shows: consistent lot widths, brick detached and semi-detached houses, and unusually uniform original floors for a Toronto neighbourhood. Whole streets were built to one specification, which means one street can share one flooring problem.',
+    neighbourhoods: ['Leaside', 'Bennington Heights', 'South Leaside', 'Trace Manes'],
+    housingNote:
+      'The uniformity cuts both ways. Where the original strip oak survives it is usually the same species, width and era across the house, which makes matching a repair genuinely achievable rather than approximate. Where a previous owner refinished aggressively, the same uniformity means the whole floor is close to the same remaining depth at once.',
+    localConsideration:
+      'Many houses here have had a rear addition or a finished basement added on a different assembly than the 1930s main floor. One species across both without checking the substrate under each is the request that produces two floors that age differently.',
+  },
+  'the-annex': {
+    intro:
+      'The Annex mixes Victorian and Edwardian houses with later conversions and a dense rental stock. Original strip oak, uneven joists, and partial prior refinishes are the norm rather than the exception.',
+    neighbourhoods: ['The Annex', 'Seaton Village', 'Dupont corridor', 'Huron-Madison'],
+    housingNote:
+      'Many floors have been patched room-by-room over decades. Species and width mismatches appear only after the first sanding pass removes the old finish.',
+    localConsideration:
+      'Street parking, shared walls, and tight staircases constrain equipment and schedule more than the floor itself does.',
+  },
+  'high-park': {
+    intro:
+      'High Park and the west-end streets around it are largely early-to-mid century detached and semi-detached homes with full basements and original or twice-refinished hardwood.',
+    neighbourhoods: ['High Park North', 'High Park South', 'Roncesvalles edge', 'Swansea edge'],
+    housingNote:
+      'Basement conversions and sunroom additions often sit on different assemblies than the main floor. One species across both without a moisture and substrate check is a common failure request.',
+    localConsideration:
+      'Seasonal humidity near the park and lake effect still matters at openings and in poorly conditioned additions.',
+  },
+  riverdale: {
+    intro:
+      'Riverdale is a dense band of late-Victorian and early-20th-century housing east of the Don. Bay-and-gable houses, narrow lots, and original strip floors dominate the work.',
+    neighbourhoods: ['North Riverdale', 'South Riverdale', 'Withrow Park', 'Broadview'],
+    housingNote:
+      'Original 2-1/4" and 3-1/4" strip oak is common. Many floors are on their second or third refinish; depth above the tongue decides whether another full sand is honest advice.',
+    localConsideration:
+      'Parking and material staging on narrow streets is a planning item, not an afterthought.',
+  },
+  leslieville: {
+    intro:
+      'Leslieville and the east-end streets around Queen East mix renovated Victorians, workers\' cottages, and newer infill. Refinishing and carpet-to-hardwood conversion are the frequent calls.',
+    neighbourhoods: ['Leslieville', 'South Riverdale edge', 'East End', 'Queen East'],
+    housingNote:
+      'Infill and rear additions often introduce slab or engineered assemblies next to original nail-down rooms. The transition detail is where shortcuts show.',
+    localConsideration:
+      'Mixed substrates in one address mean two installation methods may be correct in the same house.',
+  },
+  'the-beaches': {
+    intro:
+      'The Beaches run lakeside housing stock with higher humidity exposure at openings, porches, and lower levels. Original hardwood and cottage-era additions sit side by side.',
+    neighbourhoods: ['The Beach', 'Kew Beach', 'Balmy Beach', 'The Boardwalk edge'],
+    housingNote:
+      'Moisture at grade and in enclosed porches is the variable that decides method. A product rated for the main floor can still fail in a converted lower level if the slab is not tested.',
+    localConsideration:
+      'Acclimation in the actual conditioned room — not a garage or porch — is non-negotiable near the lake.',
+  },
+  'lawrence-park': {
+    intro:
+      'Lawrence Park is larger interwar and postwar homes with continuous main-floor plates, formal stairs, and a high share of full-house refinish or replacement work.',
+    neighbourhoods: ['Lawrence Park', 'Tedlington Park', 'Bedford Park edge', 'Lytton Park edge'],
+    housingNote:
+      'Wide rooms and long sight lines punish inconsistent sanding and stain application. Flatness and colour continuity across the main floor and stair are the quality tells.',
+    localConsideration:
+      'Occupied-home containment matters; these jobs run measured in days across an entire floor plate, not a single room.',
+  },
+  cabbagetown: {
+    intro:
+      'Cabbagetown is one of the densest concentrations of Victorian housing in Toronto. Original strip floors, narrow hallways, and heritage constraints shape every specification.',
+    neighbourhoods: ['Cabbagetown', 'Corktown edge', 'Regent Park edge', 'Carlton-Parliament'],
+    housingNote:
+      'Heritage interiors often limit aggressive board replacement. Colour matching and selective repair are more common than full tear-outs.',
+    localConsideration:
+      'Access through narrow stairs and shared street fronts limits machine size and daily progress.',
+  },
+  swansea: {
+    intro:
+      'Swansea sits between High Park and the Humber with a mix of interwar houses, mid-century stock, and later renovations. Refinishing and main-floor replacement are the usual scopes.',
+    neighbourhoods: ['Swansea', 'Bloor West edge', 'Humber river edge', 'South Kingsway'],
+    housingNote:
+      'River-adjacent humidity and mixed renovation eras mean moisture readings and substrate mapping come before species talk.',
+    localConsideration:
+      'Lower levels and additions near grade need the same moisture discipline as lakeside stock.',
+  },
+  'davisville-village': {
+    intro:
+      'Davisville Village is compact midtown housing — semis, detached, and low-rise — with a steady mix of refinishing builder oak and converting upper floors away from carpet.',
+    neighbourhoods: ['Davisville', 'Mount Pleasant East', 'Broadway corridor', 'Folly Bridge edge'],
+    housingNote:
+      'Postwar strip oak is common and often near the limit of safe sanding depth. Replacement vs refinish is a measurement, not a preference.',
+    localConsideration:
+      'Tight driveways and street parking constrain staging; schedule around that rather than against it.',
+  },
+  'midtown-toronto': {
+    intro:
+      'Midtown Toronto spans Yonge-Eglinton through the apartment and condo corridors and the surrounding house stock. Condominium slabs and older house floors show up in the same week\'s work.',
+    neighbourhoods: ['Yonge-Eglinton', 'Mount Pleasant', 'Oriole Park', 'Chaplin Estates edge'],
+    housingNote:
+      'Condo work is slab moisture, acoustics, and elevator logistics. House work is wear-layer depth and joist-era subfloors. The method does not transfer between them.',
+    localConsideration:
+      'Building management rules on condo jobs set the calendar; house jobs are constrained by occupancy and stair access.',
+  },
+  'king-west': {
+    intro:
+      'King West is predominantly condominium and loft conversions: concrete slabs, open plans, and acoustic requirements written into the building rules.',
+    neighbourhoods: ['King West', 'Fashion District', 'Niagara', 'Wellington corridor'],
+    housingNote:
+      'Loft conversions and new towers behave differently even on the same street. A converted industrial building may have a thick, old, uneven slab that needs levelling before anything is glued to it; a 2015 tower has a flat, young slab that is still releasing moisture. The test is the same in both; the result rarely is.',
+    localConsideration:
+      'Service elevators, certificate of insurance requirements, and quiet-hours windows decide whether the job can run at all.',
+  },
+  'liberty-village': {
+    intro:
+      'Liberty Village is high-density condominium stock with concrete slabs, tight elevators, and open-plan units where every transition is visible.',
+    neighbourhoods: ['Liberty Village', 'King-Liberty', 'Exhibition edge', 'East Liberty'],
+    housingNote:
+      'Unit-to-unit acoustic transfer and slab moisture drive product and method. Pattern floors are possible; they do not relax the substrate rules.',
+    localConsideration:
+      'Booking the service elevator is part of the scope. Without it, materials and machines do not reach the floor.',
+  },
+
 };
 
 export const cityContent = (slug: string): CityContent | undefined => CITY_CONTENT[slug];

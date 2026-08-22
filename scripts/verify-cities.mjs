@@ -64,14 +64,24 @@ const src = strip(fs.readFileSync(SEO, 'utf8'));
 const problems = [];
 
 /* ── the published areas ──────────────────────────────────────────────────── */
+/**
+ * Both lists. AREAS are municipalities and become schema.org City nodes;
+ * NEIGHBOURHOODS are Toronto sub-areas that get pages and never become City
+ * nodes (F-157). Every entry in either list needs its own local content, so
+ * coverage is checked across both.
+ */
 const areasBlock = src.match(/const AREAS = \[([\s\S]*?)\];/);
+const hoodsBlock = src.match(/const NEIGHBOURHOODS = \[([\s\S]*?)\];/);
 if (!areasBlock) {
   console.error('verify-cities: could not read AREAS from seo-data.ts');
   process.exit(2);
 }
 const slugify = (s) =>
   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-const areas = [...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+const areas = [
+  ...[...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]),
+  ...(hoodsBlock ? [...hoodsBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : []),
+];
 
 /* ── the content map ──────────────────────────────────────────────────────── */
 const contentStart = src.indexOf('export const CITY_CONTENT');
@@ -164,18 +174,68 @@ for (const [slug, block] of entries) {
   }
 }
 
-/* ── 4. no two cities share copy ──────────────────────────────────────────── */
+/* ── 4. no two cities share copy, and none NEARLY share it ────────────────── */
+/**
+ * F-156. The first version of this compared strings for equality, which is a
+ * test almost nothing fails. A later patch added a Leaside entry that restated
+ * the East York entry in slightly different words — "compact, older, largely
+ * detached and semi-detached housing from the 1920s to the 1950s. Original
+ * hardwood is common and often thinner than owners expect" — and a Yorkville
+ * and a King West entry whose housing notes were the same sentence twice. All
+ * three passed, because not one pair was byte-identical.
+ *
+ * Byte-identical is not the failure mode. Nobody pastes a block and ships it
+ * unchanged; they paste it and change a place name, which is exactly what thin
+ * content looks like from a crawler's side and exactly what the exact-match
+ * test cannot see.
+ *
+ * So: Jaccard similarity over words longer than three characters, which ignores
+ * word order and the connective tissue that differs between any two sentences,
+ * and measures whether two entries are made of the same vocabulary. The
+ * threshold is 0.5 — half the distinct meaningful words shared. Two genuinely
+ * different descriptions of two Toronto neighbourhoods land well below it; the
+ * three pairs above scored 0.61, 0.68 and 0.77.
+ */
+const DUPLICATE_THRESHOLD = 0.5;
+
+const words = (v) =>
+  v.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
+
+const similarity = (a, b) => {
+  const A = new Set(a);
+  const B = new Set(b);
+  if (A.size === 0 || B.size === 0) return 0;
+  const shared = [...A].filter((x) => B.has(x)).length;
+  return shared / (A.size + B.size - shared);
+};
+
 for (const name of ['intro', 'housingNote']) {
-  const seen = new Map();
-  for (const [slug, block] of entries) {
-    const v = field(block, name);
-    if (!v) continue;
-    if (seen.has(v)) {
-      problems.push({
-        where: `${seen.get(v)} and ${slug}`,
-        detail: `share the same ${name} — duplicated copy across city pages is the exact failure this guard exists to prevent`,
-      });
-    } else seen.set(v, slug);
+  const vals = [...entries]
+    .map(([slug, block]) => [slug, field(block, name)])
+    .filter(([, v]) => v);
+
+  for (let i = 0; i < vals.length; i++) {
+    for (let j = i + 1; j < vals.length; j++) {
+      const [slugA, a] = vals[i];
+      const [slugB, b] = vals[j];
+      if (a === b) {
+        problems.push({
+          where: `${slugA} and ${slugB}`,
+          detail: `share an identical ${name}`,
+        });
+        continue;
+      }
+      const score = similarity(words(a), words(b));
+      if (score >= DUPLICATE_THRESHOLD) {
+        problems.push({
+          where: `${slugA} and ${slugB}`,
+          detail:
+            `${name} is ${(score * 100).toFixed(0)}% the same vocabulary. One of these is the other ` +
+            `with a place name changed, which is what thin content is — write the second about the ` +
+            `second place, or do not publish a page for it.`,
+        });
+      }
+    }
   }
 }
 

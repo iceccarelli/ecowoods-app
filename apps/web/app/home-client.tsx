@@ -348,6 +348,22 @@ const faqItems: FaqItem[] = [
     q: 'How long will my project take?',
     a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining, and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.',
   },
+  // Verbatim from FAQ_ITEMS in lib/seo-data.ts. The first draft of these three
+  // reworded the same questions, which is precisely the divergence
+  // verify-schema exists to catch: two files answering one question differently
+  // is two answers a crawler has to choose between.
+  {
+    q: 'How much does hardwood flooring cost in Toronto?',
+    a: 'Installed ranges typically run about $11–$18 per sq ft for new hardwood, $4.75–$7.50 for full sand and finish, and $2.50–$4.00 for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.',
+  },
+  {
+    q: 'What is dustless hardwood refinishing, and does it work in an occupied home?',
+    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+  },
+  {
+    q: 'Solid or engineered hardwood — which should I install?',
+    a: 'The substrate decides, not the budget. Plywood over joists can take solid; concrete slabs, radiant heat, and wide humidity swings favour engineered. A generational wear layer only matters where solid is structurally allowed. Walk the solid-vs-engineered guide before you buy material.',
+  },
 ];
 
 /* ---------------------- Hooks ---------------------- */
@@ -797,6 +813,12 @@ const onSubmit = (data: LeadFormData) => {
                       className={errors.postal ? 'field-error' : ''}
                     />
                     {errors.postal && <p className="error-message" role="alert">{errors.postal.message}</p>}
+                  </div>
+
+                  {/* Honeypot — hidden from humans, bots fill it. */}
+                  <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
+                    <label htmlFor="f-company">Company</label>
+                    <input id="f-company" type="text" tabIndex={-1} autoComplete="off" {...register('company')} />
                   </div>
                 </div>
 

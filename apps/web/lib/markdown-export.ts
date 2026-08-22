@@ -39,7 +39,7 @@
 import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
-import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent, type CityContent } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, CITIES, SERVICE_AREAS, cityContent, type CityContent } from '@/lib/seo-data';
 import {
   getServicePages,
   getServicePage,
@@ -325,8 +325,8 @@ export const corpusToMarkdown = (): string => {
   const guides = getGuides();
   const terms = getTerms();
   const services = getServicePages();
-  const areas = CITIES.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
-    (x): x is { c: (typeof CITIES)[number]; cc: CityContent } => Boolean(x.cc),
+  const areas = SERVICE_AREAS.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
+    (x): x is { c: (typeof SERVICE_AREAS)[number]; cc: CityContent } => Boolean(x.cc),
   );
   const out: string[] = [
     `# ${BUSINESS.name} — complete technical corpus`,
@@ -378,7 +378,7 @@ export const serviceMarkdown = (slug: string): string | null => {
   return p ? serviceToMarkdown(p) : null;
 };
 export const areaMarkdown = (slug: string): string | null => {
-  const c = CITIES.find((x) => x.slug === slug);
+  const c = SERVICE_AREAS.find((x) => x.slug === slug);
   const cc = c ? cityContent(c.slug) : undefined;
   return c && cc ? areaToMarkdown(c.slug, c.name, cc) : null;
 };

@@ -6,7 +6,7 @@
 import type { MetadataRoute } from 'next';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
-import { CITIES } from '@/lib/seo-data';
+import { SERVICE_AREAS } from '@/lib/seo-data';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
@@ -150,7 +150,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
-  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+  const cityPages: MetadataRoute.Sitemap = SERVICE_AREAS.map((city) => ({
     url: `${SITE_URL}/service-areas/${city.slug}`,
     // No date. A city page is generated from CITIES and changes when the
     // template changes, which nothing here records. Omitted rather than

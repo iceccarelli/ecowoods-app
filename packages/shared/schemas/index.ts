@@ -24,6 +24,8 @@ export const leadSchema = z
     email: z.string().email('Please enter a valid email'),
     phone: z.string().min(7, 'Please enter a valid phone number'),
     postal: z.string().min(3, 'Please enter your postal code'),
+    city: z.string().optional(),
+    company: z.string().optional(),
     service: z.string().optional(),
     timeline: z.string().optional(),
     message: z.string().max(2000).optional(),

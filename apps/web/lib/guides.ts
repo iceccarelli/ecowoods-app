@@ -364,6 +364,266 @@ export const GUIDES: Guide[] = [
     ],
     pillars: ['containment'],
   },
+
+  /* ── high-intent Toronto decision guides (cost, contractor, species, pattern) ── */
+  {
+    slug: 'hardwood-flooring-cost-toronto',
+    kind: 'decision',
+    title: 'Hardwood flooring cost in Toronto',
+    question: 'How much does hardwood flooring cost in Toronto and the GTA?',
+    summary:
+      'Published installed ranges for new install, full sand and finish, and screen and recoat — and the variables that move a phone range into a fixed written price after the free measure.',
+    publishedAt: '2026-08-22',
+    readingMinutes: 6,
+    criteria: [
+      {
+        name: 'Service type',
+        why: 'Screen and recoat, full sand and finish, and new install are different labour and material stacks. Mixing them produces a meaningless average.',
+      },
+      {
+        name: 'Species and grade',
+        why: 'White oak, walnut, maple and hickory do not land at the same installed number. Grade and width move material cost before labour is considered.',
+      },
+      {
+        name: 'Pattern and stairs',
+        why: 'Herringbone, chevron and parquet multiply labour and waste. Stairs are a separate line, not a square-footage footnote.',
+      },
+      {
+        name: 'Substrate and moisture',
+        why: 'Flatness correction, slab moisture mitigation and acoustic underlayment are scope items discovered on site, which is why the fixed price follows the measure.',
+      },
+    ],
+    table: {
+      head: ['Service', 'Typical installed range (CAD / sq ft)', 'What it includes'],
+      rows: [
+        ['Screen & recoat', '$2.50 – $4.00', 'Abrasion of the existing finish, new top coats — no full sand to bare wood'],
+        ['Full sand & finish', '$4.75 – $7.50', 'Sand to bare wood, stain if specified, finish system'],
+        ['New hardwood install', '$11 – $18', 'Material and labour for straight-lay install; pattern and stairs extra'],
+      ],
+    },
+    decisionTree: [
+      'If the existing finish still has integrity and colour is acceptable → screen and recoat is the honest first evaluation, not a full sand by default.',
+      'If colour change, deep wear, or prior poor sanding is the problem → full sand and finish, after depth-above-tongue is confirmed.',
+      'If the floor is at the end of its wear layer, wrong species, or wrong construction for the substrate → replacement, priced as new install.',
+      'Stairs, transitions, moisture remediation and pattern work are separate lines on the written estimate.',
+    ],
+    watchpoints: [
+      'A phone number without a moisture test is a marketing range, not a price.',
+      'Lowest bid that skips substrate language is usually incomplete scope, not a bargain.',
+      'Pattern multipliers and stair counts omitted from a quote will reappear as change orders.',
+    ],
+    recommendation: {
+      text: 'Use the published ranges to budget. Book the free in-home measure for the fixed written price. Compare quotes on scope completeness — machines, sequence, moisture protocol, warranties in writing — not on the headline number alone.',
+    },
+    sources: [
+      { paper: P_COST, section: 'installed-cost' },
+      { paper: P_COST, section: 'decision-tree' },
+      { paper: P_CRAFT, section: 'sequence' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'how-to-choose-hardwood-contractor-toronto',
+    kind: 'decision',
+    title: 'How to choose a hardwood contractor in Toronto',
+    question: 'How do I choose a hardwood flooring contractor in Toronto?',
+    summary:
+      'A short diligence list for homeowners: who sands the floor, what is measured before the price is written, and which contract terms separate a fixed-price craftsman shop from a lead-broker.',
+    publishedAt: '2026-08-22',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'Who performs the work',
+        why: 'Salaried crews and revolving subcontractors produce different accountability when something needs to be made right months later.',
+      },
+      {
+        name: 'What is measured before the price',
+        why: 'Moisture, flatness, wear-layer depth and stair counts belong in the estimate visit. A price without them is incomplete.',
+      },
+      {
+        name: 'What is written in the contract',
+        why: 'Manufacturer warranties itemized, fixed price language, and the finish system named are the terms that matter after the cheque clears.',
+      },
+      {
+        name: 'Machine sequence on refinish work',
+        why: 'Belt, edger, planetary blending and intercoat screening are a sequence. Skipping a step shows up for the life of the floor.',
+      },
+    ],
+    decisionTree: [
+      'Ask who will be on site on sanding day — employees or subcontractors.',
+      'Ask whether the estimate includes a moisture reading and, for refinish, a depth check above the tongue.',
+      'Ask for the finish system by product name and the manufacturer warranty period in writing.',
+      'Ask which machines run, in which order, on a full sand.',
+      'Decline quotes that only compete on a low headline number with empty scope.',
+    ],
+    watchpoints: [
+      'Lead-broker sites that auction your phone number are not flooring companies.',
+      'Dustless as a word without HEPA-sealed extraction and containment is marketing.',
+      'Unforeseen conditions clauses that re-price substrate issues found on day one shift risk back to you.',
+    ],
+    recommendation: {
+      text: 'Choose the contractor who writes a fixed price after measuring the floor you actually have, names the crew model, and itemizes warranties. Use the quote-evaluation guide as the scorecard when two bids look similar on price.',
+    },
+    sources: [
+      { paper: P_COST, section: 'decision-tree' },
+      { paper: P_CRAFT, section: 'equipment-is-not-the-moat' },
+      { paper: P_CRAFT, section: 'sequence' },
+    ],
+    pillars: ['specification', 'containment'],
+  },
+  {
+    slug: 'white-oak-flooring-toronto',
+    kind: 'decision',
+    title: 'White oak flooring in Toronto',
+    question: 'Is white oak the right hardwood for a Toronto home?',
+    summary:
+      'Why white oak dominates contemporary Toronto renovations, how it differs from red oak on tannin and stain behaviour, and when another species is the better specification.',
+    publishedAt: '2026-08-22',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'Stain and finish target',
+        why: 'White oak takes grey, smoked and modern transparent finishes more evenly than red oak because of tannin and pore structure.',
+      },
+      {
+        name: 'Substrate',
+        why: 'White oak does not override slab or radiant constraints. Engineered white oak is the usual path over concrete.',
+      },
+      {
+        name: 'Traffic and denting',
+        why: 'Janka ~1360 is mid-hard. Hickory is harder; walnut is softer. Species choice is not only aesthetic.',
+      },
+    ],
+    options: [
+      {
+        name: 'White oak',
+        whenCorrect: 'Modern or transitional interiors, even stain uptake, and most GTA renovations where oak is wanted.',
+        notes: [
+          'Strong default for water-based finish systems.',
+          'Available in solid and engineered constructions.',
+          'Wide plank shows flatness issues — substrate prep matters more, not less.',
+        ],
+      },
+      {
+        name: 'Red oak',
+        whenCorrect: 'Heritage match to existing red oak, or a deliberate open-grain traditional look.',
+        notes: [
+          'More pronounced grain under stain.',
+          'Still a valid specification; not an inferior default.',
+        ],
+      },
+      {
+        name: 'Walnut or maple',
+        whenCorrect: 'When the design target is deep brown (walnut) or bright uniform (maple), not oak grain.',
+        notes: [
+          'Walnut dents more readily; maple shows impact differently.',
+          'Price and lead times differ from commodity oak.',
+        ],
+      },
+    ],
+    recommendation: {
+      text: 'Default to white oak for contemporary Toronto work when oak is the design intent. Confirm construction (solid vs engineered) from the substrate, not from the species brochure. Match existing red oak with red oak rather than forcing a white-oak patch.',
+    },
+    sources: [
+      { paper: P_COST, section: 'species' },
+      { paper: P_CLIMATE, section: 'solid-vs-engineered' },
+    ],
+    pillars: ['specification', 'movement'],
+  },
+  {
+    slug: 'dustless-hardwood-refinishing-toronto',
+    kind: 'reference',
+    title: 'Dustless hardwood refinishing in Toronto',
+    question: 'What does dustless hardwood refinishing actually mean in an occupied Toronto home?',
+    summary:
+      'Dustless is a containment and extraction system, not a brand adjective. This guide states what has to be true on site for a refinish to be livable during the work.',
+    publishedAt: '2026-08-22',
+    readingMinutes: 4,
+    criteria: [
+      {
+        name: 'Extraction at the machine',
+        why: 'HEPA-sealed collection at the sander is the primary capture point. Room air filters alone are not a dustless system.',
+      },
+      {
+        name: 'Containment',
+        why: 'Plastic and zipper barriers keep fine dust from migrating to rooms that are not in scope.',
+      },
+      {
+        name: 'Finish chemistry',
+        why: 'Water-based systems cut odour and return-to-service time compared with solvent-heavy finishes — relevant when the house stays occupied.',
+      },
+    ],
+    sequence: [
+      'Isolate the work zone.',
+      'Run HEPA-sealed sanding equipment through the grit sequence.',
+      'Edge, blend, vacuum between grits.',
+      'Apply finish system with intercoat screening as specified.',
+      'Release the zone when walk-on times are met — full cure is later.',
+    ],
+    watchpoints: [
+      'Dustless never means zero dust. It means controlled, captured, and contained dust.',
+      'Skipping the blending pass leaves a visible perimeter halo after finish.',
+      'Walk-on ready is not full cure; early furniture return marks soft finish.',
+    ],
+    recommendation: {
+      text: 'Require HEPA-sealed extraction and room containment in the written scope. Stay home if you want to — that is a realistic outcome when the system is real. Treat dustless claims without equipment detail as incomplete.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_CRAFT, section: 'the-four-machines' },
+      { paper: P_CRAFT, section: 'sequence' },
+    ],
+    pillars: ['containment'],
+  },
+  {
+    slug: 'herringbone-chevron-parquet-toronto',
+    kind: 'decision',
+    title: 'Herringbone, chevron and parquet in Toronto',
+    question: 'Should I install herringbone, chevron or parquet in my Toronto home or condo?',
+    summary:
+      'Pattern floors are a design decision layered on top of the same substrate rules as straight-lay. Labour, waste, and layout control the cost delta — not the species alone.',
+    publishedAt: '2026-08-22',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'Substrate first',
+        why: 'Pattern does not authorize solid over a slab. Engineered on a tested slab remains the condo path.',
+      },
+      {
+        name: 'Layout and waste',
+        why: 'Herringbone and chevron generate higher waste factors and longer install times than straight-lay.',
+      },
+      {
+        name: 'Room geometry',
+        why: 'Narrow rooms, many doorways and out-of-square walls punish pattern work; the layout has to be controlled from a centreline.',
+      },
+    ],
+    options: [
+      {
+        name: 'Herringbone',
+        whenCorrect: 'Rectangular rooms where a classic patterned field is the design intent and budget includes the labour multiplier.',
+        notes: ['Rectangular blocks meet at 90°.', 'Shows substrate flatness clearly.'],
+      },
+      {
+        name: 'Chevron',
+        whenCorrect: 'When a continuous V or axis line is wanted; requires precision-cut ends.',
+        notes: ['Ends are cut to form the point; material prep is stricter.', 'Higher fabrication demand than herringbone.'],
+      },
+      {
+        name: 'Parquet / modular patterns',
+        whenCorrect: 'Feature fields, borders, or heritage restorations where the pattern is part of the architecture.',
+        notes: ['Often a feature zone rather than a whole-home field.', 'Matching existing historic parquet is specialist work.'],
+      },
+    ],
+    recommendation: {
+      text: 'Choose the pattern for the room, then confirm the substrate method. Budget a real labour and waste premium. In condos, resolve slab moisture, acoustics and elevator logistics before ordering patterned material.',
+    },
+    sources: [
+      { paper: P_COST, section: 'decision-tree' },
+      { paper: P_CLIMATE, section: 'method-and-substrate' },
+    ],
+    pillars: ['specification'],
+  },
 ];
 
 export const getGuides = (kind?: GuideKind): Guide[] =>

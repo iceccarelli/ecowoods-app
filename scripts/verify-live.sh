@@ -115,7 +115,7 @@ for p in / /framework /framework/assess /guides /glossary /papers /resources /li
 done
 
 printf '\n%s── machine surfaces %s\n' "$BOLD" "$OFF"
-for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/health; do
+for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/estimate /api/health; do
   check "$p" "$BASE$p?$CB"
 done
 

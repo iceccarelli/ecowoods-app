@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CITIES, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
+import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { breadcrumbSchema } from '@/lib/structured-data';
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function ServiceAreasIndex() {
             the Greater Toronto Area.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
-            {CITIES.map((c) => (
+            {SERVICE_AREAS.map((c) => (
               <Link key={c.slug} href={`/service-areas/${c.slug}`}
                 style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
                 Hardwood Flooring in {c.name} →

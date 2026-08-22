@@ -4726,3 +4726,197 @@ it otherwise could be, now that it has plenty.
 `verify-live.sh` checks both halves against production: that an unknown URL
 returns 404 rather than a soft 200, and that the page it returns carries at
 least ten internal links. A status code cannot tell you the second one.
+
+### F-156 · The duplicate-content guard compared strings for equality · P1
+
+`verify-cities.mjs` shipped with a check that no two service areas share an
+intro or a housing note. It compared them with `===`.
+
+That is a test almost nothing fails. Nobody pastes a block and ships it
+byte-identical; they paste it and change the place name. A patch adding sixteen
+Toronto neighbourhood pages did exactly that, three times, and every one passed:
+
+| Pair | Field | Shared vocabulary |
+|---|---|---|
+| `yorkville` / `king-west` | housingNote | 77% |
+| `east-york` / `leaside` | housingNote | 68% |
+| `east-york` / `leaside` | intro | 61% |
+
+The Leaside entry was the East York entry with the place name changed — which
+is understandable, since Leaside is *in* East York, and which is precisely what
+thin content looks like from a crawler's side. The guard written specifically to
+prevent that saw two different strings and passed.
+
+It now measures Jaccard similarity over words longer than three characters:
+word order and connective tissue are ignored, and what is compared is whether
+two entries are made of the same vocabulary. The threshold is 0.5. Two genuine
+descriptions of two Toronto neighbourhoods land far below it; all three pairs
+above are caught.
+
+The three entries were rewritten to be about the places they name. Leaside is now
+about a planned garden suburb built to one specification — which is true of
+Leaside and not of East York, and is the reason a repair there can actually be
+matched.
+
+### F-157 · Sixteen Toronto neighbourhoods were about to be declared cities · P1
+
+A patch added Rosedale, Forest Hill, Yorkville, Leaside, The Annex, High Park,
+Riverdale, Leslieville, The Beaches, Lawrence Park, Cabbagetown, Swansea,
+Davisville Village, midtown, King West and Liberty Village to `AREAS`.
+
+That is the fastest way to give each one a page, and it would have worked. It
+would also have put all sixteen into `LocalBusiness.areaServed` as
+`schema.org/City` nodes, because F-151 made that list derive from `CITIES` —
+so the entity graph would have stated that Toronto contains sixteen more cities,
+and that Rosedale is a peer of Mississauga.
+
+It is not an exaggeration a crawler forgives. It is a factual error in the one
+part of the site whose entire job is to state things a machine can rely on
+without checking, on a project whose own rule is that structured data describes
+reality.
+
+The pages are worth having — "hardwood flooring Rosedale" is a real query with
+real intent, and the content written for them is specific and good. So the list
+was split. `AREAS` stays municipalities and remains the only thing that becomes
+a `City` node. `NEIGHBOURHOODS` is a second list that gets pages, local content,
+sitemap entries and `.md` editions, and never touches the entity graph.
+`SERVICE_AREAS` is the union, and every page-facing consumer reads that.
+
+### F-158 · The IndexNow endpoint was an open relay · P2
+
+`POST /api/indexnow` accepted a list of URLs from anyone and submitted them to
+Bing, Yandex, Seznam and Naver **signed with our ownership key**.
+
+The blast radius is bounded — the protocol only accepts URLs on our own host —
+but it is not zero. An attacker could exhaust our submission quota, repeatedly
+push URLs we do not want prioritised, and give the receiving engines a pattern
+of behaviour attributable to us that we did not choose.
+
+A proposed fix compared the caller against `process.env.INDEXNOW_KEY`. That
+variable is not set in this deployment and deliberately is not: F-144 removed
+the submitter's dependence on it, because the key is public by construction —
+the whole ownership check is that anyone can fetch it at `/<key>.txt` — and
+hiding a public value in an unvalidated env var only creates another way for the
+path to be broken while looking correct.
+
+With it unset, that comparison rejects every caller, including us. Safe, but by
+accident, and it would have looked like a working endpoint.
+
+The route now reads the key from the directory that serves it, exactly as
+`notify-indexnow.mjs` does. So does `lib/indexnow.ts`, which had the same env
+dependency and would have returned `false` for every runtime submission — the
+route would have authenticated correctly and then submitted nothing.
+
+A public key is not authentication in any real sense. It raises the cost of
+casual abuse from zero to "read the docs first", on an endpoint whose worst case
+is a wasted quota. Nothing that genuinely needs protecting sits behind it.
+
+### F-159 · One comma, invisible to every check, breaks the corpus · P0
+
+A patch adding five guides left this in `lib/guides.ts`:
+
+```ts
+    pillars: ['containment'],
+  },
+,                                    ← this
+
+  { slug: 'hardwood-flooring-cost-toronto', ...
+```
+
+A bare comma between two elements of an array literal is not a syntax error. It
+is a **sparse array**: legal JavaScript, legal TypeScript, and invisible to
+every tool in this repository.
+
+- `parse-scan.mjs` parses it and reports **zero diagnostics**. It is valid.
+- `tsc --noEmit` typechecks it. `Guide[]` permits a hole.
+- `next build` compiles it.
+- Every guard reads the right number of guides, because `.filter()` and `.map()`
+  **silently skip holes**.
+
+And then it fails at the one place that does not skip:
+
+```ts
+for (const g of guides) out.push(guideToMarkdown(g));
+// TypeError: Cannot read properties of undefined
+```
+
+That is `corpusToMarkdown()`, so the failure lands while building
+`/llms-full.txt`. `JSON.stringify` on the same array emits `null` into
+`/api/knowledge`, and `guides.length` counts the hole, so `/llms.txt` would
+advertise one more guide than exists.
+
+One character, past four separate checks, taking out the machine-readable corpus
+that F-153 was written to complete.
+
+`scripts/verify-manifests.mjs` reads the thirteen hand-edited manifests, blanks
+comments and string literals while preserving offsets, and fails on `,` followed
+by `,` or `[` followed by `,`. A trailing comma before `]` is fine — that
+creates no hole and is normal style.
+
+Its first version blanked string literals to **spaces**, which turned
+`['a', 'b']` into `[   ,    ]` and made every comma in every manifest look like
+a hole. It reported 532, all false. Strings are now filled with `x` instead, so
+a literal still reads as a value sitting between its commas. A guard is not
+finished when it fires; it is finished when it fires only on the thing it is
+named for — which is the third time that lesson is recorded in this file
+(F-149, F-150, now this).
+
+### F-160 · The rate limit could have destroyed the lead it was protecting · P0
+
+A patch added a rate limiter to `POST /api/leads`. Five requests per minute per
+IP, placed **before validation and before the durable log**. Both placements
+break the one invariant this project has: *the lead must never be lost*.
+
+**Before validation.** A request that fails validation is still a request. A
+customer correcting a phone number, then a postal code, then a typo has spent
+three of five. The fourth correction is the one that would have succeeded. The
+fifth is a hard 429. We would have rate-limited someone for trying to give us
+money.
+
+**Before the durable log.** A 429 wrote nothing anywhere, so a real lead caught
+by a false positive left no trace at all. And false positives are not exotic
+here: one office, one condo building, one school, or any mobile carrier using
+CGNAT presents a single IP for hundreds of people. Five per minute across a
+whole building is a plausible Saturday afternoon.
+
+Reordered. Honeypot first — bot traffic must not consume a real visitor's
+allowance. Then validation. Then the durable `lead.captured` log. **Then** the
+limit, raised to twenty per minute, and a rejection now writes a
+`lead.rate_limited` line recording that the lead is already recoverable from the
+line above it.
+
+The worst a false positive can now do is inconvenience someone. It cannot erase
+them.
+
+### F-161 · A CSP that would have broken the analytics silently · P2
+
+A proposed Content-Security-Policy shipped as one enforcing header with:
+
+```
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com
+```
+
+`CookieConsentBanner.tsx` injects `https://www.googletagmanager.com/gtag/js` and
+`https://connect.facebook.net/en_US/fbevents.js` after a visitor opts in.
+Neither origin is listed, so both would have been blocked — **for consented
+users only**, which is the hardest failure mode to notice, on the exact
+instrumentation needed to measure whether any of this work produces business.
+
+It also would not have bought much. A `script-src` carrying both
+`'unsafe-inline'` and `'unsafe-eval'` stops very little XSS, because those two
+directives are what the attack needs. Real breakage risk, near-zero security
+gain.
+
+It now ships as two headers, which is how CSP is introduced to a site that takes
+money:
+
+- **Enforced** — `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
+  `frame-ancestors 'self'`. None can break a working page, and each is real:
+  `base-uri` stops an injected `<base>` rewriting every relative URL, and
+  `form-action` stops an injected form posting the lead form's contents
+  somewhere else.
+- **Report-Only** — the full policy, with the origins actually in use. Browsers
+  evaluate it and report to the console without blocking. Load the site, accept
+  cookies, submit the form, read the console: what appears is what enforcing it
+  would have broken. When it is silent, the directives move to the enforced
+  header.

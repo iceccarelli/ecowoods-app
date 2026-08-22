@@ -37,6 +37,37 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'high-intent-guides-v1',
+    date: '2026-08-22',
+    kind: 'guide',
+    title: 'Five guides for the questions people actually type',
+    body: 'Cost, choosing a contractor, white oak, dustless refinishing, and the pattern floors \u2014 herringbone, chevron and parquet. Each is written the way the question is asked, answers it in the first paragraph, and cites the paper section behind every technical claim. The cost guide publishes the three service bands as a table rather than a starting-from number, and says plainly which variables move a phone range into a fixed written price.',
+    href: '/guides',
+    covers: [
+      'hardwood-flooring-cost-toronto',
+      'how-to-choose-hardwood-contractor-toronto',
+      'white-oak-flooring-toronto',
+      'dustless-hardwood-refinishing-toronto',
+      'herringbone-chevron-parquet-toronto',
+    ],
+  },
+  {
+    id: 'neighbourhood-pages-v1',
+    date: '2026-08-22',
+    kind: 'tool',
+    title: 'Sixteen Toronto neighbourhoods, each with its own page',
+    body: 'Rosedale, Forest Hill, Yorkville, Leaside, The Annex, High Park, Riverdale, Leslieville, The Beaches, Lawrence Park, Cabbagetown, Swansea, Davisville Village, midtown, King West and Liberty Village. Each carries the housing stock and the technical constraint specific to it \u2014 heritage wear layer in Cabbagetown, slab moisture and elevator windows in King West, lakeside humidity in the Beaches. They are neighbourhoods, not municipalities, and the entity graph says so: only real cities appear as City nodes in the organisation\u2019s service area.',
+    href: '/service-areas',
+  },
+  {
+    id: 'lead-path-hardening-v1',
+    date: '2026-08-22',
+    kind: 'tool',
+    title: 'The estimate request is harder to abuse and impossible to lose',
+    body: 'A hidden field catches automated submissions, a rate limit absorbs floods, and an acknowledgement email now goes to the customer within seconds of submitting. The order of those checks is the part that matters: the request is validated and written to a durable log before anything is allowed to reject it, so a rate limit can inconvenience a real customer but can never erase one. A public estimate endpoint at /api/estimate returns the same published bands to any tool or agent that asks.',
+    href: '/api/estimate',
+  },
+  {
     id: 'agent-corpus-v2',
     date: '2026-08-22',
     kind: 'data',

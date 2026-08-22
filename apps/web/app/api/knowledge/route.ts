@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
@@ -210,7 +210,7 @@ function build() {
         methodEstablishedIn: sp.papers.map((r) => url(`/papers/${r.paper}#${r.section}`)),
       };
     }),
-    serviceAreas: CITIES.map((c) => {
+    serviceAreas: SERVICE_AREAS.map((c) => {
       const cc = cityContent(c.slug);
       return {
         slug: c.slug,
