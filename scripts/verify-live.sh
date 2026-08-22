@@ -59,6 +59,44 @@ code() {
   printf '%s' "${out:-000}"
 }
 
+# fetch <url> <outfile> — ONE request. Body lands in <outfile>, status is
+# printed. Both facts then describe the SAME response, which is the whole point.
+#
+# WHY THIS EXISTS (F-149)
+#
+# The previous body-reading check made two requests and reasoned about them as
+# though they described one:
+#
+#     BODY="$(curl ... "$URL?$CB")"      # request A
+#     STATUS="$(code "$URL?$CB")"        # request B
+#
+# then reported "200, but does not contain X" — a sentence assembled from two
+# different HTTP transactions. When request A came back short and request B
+# came back 200, the check announced that production was serving a broken
+# document. Production was serving it perfectly.
+#
+# A false FAIL here is worse than no check at all. This is the only thing in the
+# repository that can see a delivery failure — F-107, F-129, F-131 and F-140 all
+# hid from every source-reading guard — so the moment it cries wolf, the next
+# real failure gets waved through as "probably that flaky one again".
+#
+# Retries are on transport, not on content: curl --retry covers timeouts and
+# transient 5xx, so a single dropped connection no longer reads as a broken
+# deploy. --max-time is generous because /llms-full.txt is ~72 KB and the first
+# request after a deploy is a cold cache miss.
+TMPFILES=()
+cleanup() { [ "${#TMPFILES[@]}" -gt 0 ] && rm -f "${TMPFILES[@]}"; }
+trap cleanup EXIT
+
+fetch() {
+  local out
+  out="$(curl -s -L --max-time 45 --retry 3 --retry-delay 1 --retry-connrefused \
+              -o "$2" -w '%{http_code}' "$1" 2>/dev/null)"
+  printf '%s' "${out:-000}"
+}
+
+mktmp() { local t; t="$(mktemp)"; TMPFILES+=("$t"); printf '%s' "$t"; }
+
 check() {
   local label="$1" url="$2" want="${3:-200}"
   local got; got="$(code "$url")"
@@ -85,7 +123,14 @@ printf '\n%s── a real rendered image %s\n' "$BOLD" "$OFF"
 # THE check. Everything above proves pages exist; this proves the bytes a page
 # asks for actually come back. Pull the first optimised image URL straight out
 # of the rendered HTML and fetch it.
-HTML="$(curl -s -L --max-time 20 "$BASE/framework?$CB" 2>/dev/null || true)"
+FWTMP="$(mktmp)"
+FWSTATUS="$(fetch "$BASE/framework?$CB" "$FWTMP")"
+HTML="$(cat "$FWTMP")"
+if [ "$FWSTATUS" != "200" ]; then
+  printf '  %sFAIL%s  %-34s /framework is HTTP %s — no image URL to test\n' "$RED" "$OFF" "diagram bytes" "$FWSTATUS"
+  FAILED=$((FAILED + 1))
+  HTML=""
+fi
 # Stop at a quote OR a space. Next renders both `src` and `srcset`, and a
 # srcset entry is followed by a descriptor — "…&q=75 1x" — so a pattern that
 # only excludes quotes captures the " 1x" too and fetches a URL that cannot
@@ -110,19 +155,36 @@ printf '\n%s── crawler verification %s\n' "$BOLD" "$OFF"
 # returned 404 for its entire existence, so every submission Bing and Yandex
 # received was rejected, silently, with nothing surfacing an error. See F-136.
 KEYFILE="8b9dff9a810eacdb42f0c91254401d8b"
-check "IndexNow key" "$BASE/$KEYFILE.txt?$CB"
-BODY="$(curl -s -L --max-time 20 "$BASE/$KEYFILE.txt?$CB" 2>/dev/null | tr -d '[:space:]')"
-if [ "$BODY" = "$KEYFILE" ]; then
-  printf '  %sPASS%s  %-34s body matches the key\n' "$GRN" "$OFF" "IndexNow body"
+# One request, not two. This block used to call check() for the status and then
+# curl again for the body — the same split that produced a false FAIL on
+# /llms-full.txt (F-149). The file is 32 bytes so a dropped body was unlikely,
+# but "unlikely" is what the other one was too.
+KEYTMP="$(mktmp)"
+KEYSTATUS="$(fetch "$BASE/$KEYFILE.txt?$CB" "$KEYTMP")"
+BODY="$(tr -d '[:space:]' < "$KEYTMP")"
+if [ "$KEYSTATUS" != "200" ]; then
+  printf '  %sFAIL%s  %-34s HTTP %s\n' "$RED" "$OFF" "IndexNow key" "$KEYSTATUS"
+  printf '        Bing and Yandex fetch this to verify ownership. A 404 here rejects\n'
+  printf '        every submission, silently. See F-136.\n'
+  FAILED=$((FAILED + 1))
+elif [ "$BODY" = "$KEYFILE" ]; then
+  printf '  %sPASS%s  %-34s 200, body matches the key\n' "$GRN" "$OFF" "IndexNow key"
 else
-  printf '  %sFAIL%s  %-34s body is "%s"\n' "$RED" "$OFF" "IndexNow body" "${BODY:0:40}"
+  printf '  %sFAIL%s  %-34s 200, but body is "%s"\n' "$RED" "$OFF" "IndexNow key" "${BODY:0:40}"
   printf '        Must be exactly the key, or every submission is rejected.\n'
   FAILED=$((FAILED + 1))
 fi
 
 # The manifest's icons pointed at two more public/ paths that 404'd, so every
 # Android install and Google surface reading it got no brand mark at all.
-MAN="$(curl -s -L --max-time 20 "$BASE/manifest.webmanifest?$CB" 2>/dev/null || true)"
+MANTMP="$(mktmp)"
+MANSTATUS="$(fetch "$BASE/manifest.webmanifest?$CB" "$MANTMP")"
+MAN="$(cat "$MANTMP")"
+if [ "$MANSTATUS" != "200" ]; then
+  printf '  %sFAIL%s  %-34s manifest itself is HTTP %s\n' "$RED" "$OFF" "PWA icon" "$MANSTATUS"
+  FAILED=$((FAILED + 1))
+  MAN=""
+fi
 ICON="$(printf '%s' "$MAN" | grep -o '"src":"[^"]*"' | head -1 | sed 's/"src":"//;s/"$//')"
 if [ -z "$ICON" ]; then
   printf '  %sFAIL%s  %-34s no icon found in the manifest\n' "$RED" "$OFF" "PWA icon"
@@ -138,7 +200,14 @@ fi
 printf '\n%s── structured data %s\n' "$BOLD" "$OFF"
 # HowTo is the richest type an answer engine can consume and the papers carry
 # seven ordered procedures. If it stops being emitted, nothing else here notices.
-PAPER="$(curl -s -L --max-time 20 "$BASE/papers/hardwood-refinishing-machines-and-sequence?$CB" 2>/dev/null || true)"
+PAPERTMP="$(mktmp)"
+PAPERSTATUS="$(fetch "$BASE/papers/hardwood-refinishing-machines-and-sequence?$CB" "$PAPERTMP")"
+PAPER="$(cat "$PAPERTMP")"
+if [ "$PAPERSTATUS" != "200" ]; then
+  printf '  %sFAIL%s  %-34s the paper itself is HTTP %s — HowTo not assessable\n' "$RED" "$OFF" "HowTo schema" "$PAPERSTATUS"
+  FAILED=$((FAILED + 1))
+  PAPER=""
+fi
 HOWTO="$(printf '%s' "$PAPER" | grep -o '"@type":"HowTo"' | wc -l | tr -d ' ')"
 if [ "${HOWTO:-0}" -gt 0 ]; then
   printf '  %sPASS%s  %-34s %s HowTo block(s) on one paper\n' "$GRN" "$OFF" "HowTo schema" "$HOWTO"
@@ -170,21 +239,48 @@ printf '\n%s── machine-readable editions %s\n' "$BOLD" "$OFF"
 # Each is required to return 200 AND to look like the document, not like an
 # HTML error page dressed as a 200.
 md_check() {
-  LABEL="$1"; URL="$2"; WANT="$3"
-  BODY="$(curl -s -L --max-time 20 "$URL?$CB" 2>/dev/null || true)"
-  STATUS="$(code "$URL?$CB")"
-  if [ "$STATUS" != "200" ]; then
-    printf '  %sFAIL%s  %-34s HTTP %s\n' "$RED" "$OFF" "$LABEL" "$STATUS"
+  local label="$1" url="$2" want="$3"
+  local tmp status size
+  tmp="$(mktmp)"
+  status="$(fetch "$url?$CB" "$tmp")"
+  size="$(wc -c < "$tmp" | tr -d ' ')"
+
+  # An empty body under a 200 is the one genuinely ambiguous outcome: it is
+  # almost always a dropped connection on a cold cache, and occasionally a real
+  # route serving nothing. curl --retry does not cover it, because a 200 with
+  # zero bytes is not an error as far as HTTP is concerned. So it is retried
+  # here, once, deliberately — a health check that goes red on a single dropped
+  # connection is a health check people learn to ignore, and this one has to be
+  # believed the day it is right.
+  if [ "$status" = "200" ] && [ "${size:-0}" -eq 0 ]; then
+    sleep 2
+    status="$(fetch "$url?$CB-retry" "$tmp")"
+    size="$(wc -c < "$tmp" | tr -d ' ')"
+  fi
+
+  # Four distinguishable outcomes, because "200 but wrong body" was being used
+  # to describe all four and was accurate for none of them.
+  if [ "$status" = "000" ]; then
+    printf '  %sFAIL%s  %-34s could not be fetched (transport, after 3 retries)\n' "$RED" "$OFF" "$label"
+    printf '        %s\n' "$url"
     FAILED=$((FAILED + 1))
-  elif printf '%s' "$BODY" | grep -qi '<!DOCTYPE html'; then
-    printf '  %sFAIL%s  %-34s 200, but served HTML — the rewrite did not fire\n' "$RED" "$OFF" "$LABEL"
+  elif [ "$status" != "200" ]; then
+    printf '  %sFAIL%s  %-34s HTTP %s\n' "$RED" "$OFF" "$label" "$status"
     FAILED=$((FAILED + 1))
-  elif ! printf '%s' "$BODY" | grep -q "$WANT"; then
-    printf '  %sFAIL%s  %-34s 200, but does not contain %s\n' "$RED" "$OFF" "$LABEL" "$WANT"
+  elif [ "${size:-0}" -eq 0 ]; then
+    printf '  %sFAIL%s  %-34s HTTP 200 with an empty body\n' "$RED" "$OFF" "$label"
+    printf '        That is a transport failure wearing a 200, not a content failure.\n'
+    FAILED=$((FAILED + 1))
+  elif head -c 512 "$tmp" | grep -qi '<!DOCTYPE html'; then
+    printf '  %sFAIL%s  %-34s %s bytes of HTML — the rewrite did not fire\n' "$RED" "$OFF" "$label" "$size"
+    FAILED=$((FAILED + 1))
+  elif ! grep -q -- "$want" "$tmp"; then
+    printf '  %sFAIL%s  %-34s %s bytes, but does not contain %s\n' "$RED" "$OFF" "$label" "$size" "$want"
+    printf '        first line: %s\n' "$(head -1 "$tmp" | cut -c1-72)"
+    printf '        %s\n' "$url"
     FAILED=$((FAILED + 1))
   else
-    BYTES="$(printf '%s' "$BODY" | wc -c | tr -d ' ')"
-    printf '  %sPASS%s  %-34s %s bytes, markdown\n' "$GRN" "$OFF" "$LABEL" "$BYTES"
+    printf '  %sPASS%s  %-34s %s bytes, markdown\n' "$GRN" "$OFF" "$label" "$size"
   fi
 }
 
@@ -208,17 +304,19 @@ printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
 #
 # scripts/verify-canonical.mjs now catches it in the source. This catches it in
 # the thing that is actually served, which is not always the same thing.
-canonical_of() {
-  curl -s -L --max-time 20 "$1?$CB" 2>/dev/null \
-    | grep -o '<link rel="canonical"[^>]*>' \
-    | head -1 \
-    | sed 's/.*href="\([^"]*\)".*/\1/'
-}
-
+# Same single-request discipline as md_check, for the same reason: "no canonical
+# element in the head" and "we could not fetch the page" are different findings,
+# and the first version of this could not tell them apart.
 for ROUTE in /technical-library /blog /case-studies /papers /guides /glossary /market; do
   WANT="$BASE$ROUTE"
-  GOT="$(canonical_of "$BASE$ROUTE")"
-  if [ -z "$GOT" ]; then
+  TMP="$(mktmp)"
+  STATUS="$(fetch "$BASE$ROUTE?$CB" "$TMP")"
+  GOT="$(grep -o '<link rel="canonical"[^>]*>' "$TMP" | head -1 | sed 's/.*href="\([^"]*\)".*/\1/')"
+
+  if [ "$STATUS" != "200" ]; then
+    printf '  %sFAIL%s  %-34s HTTP %s — page not fetched, canonical unknown\n' "$RED" "$OFF" "$ROUTE" "$STATUS"
+    FAILED=$((FAILED + 1))
+  elif [ -z "$GOT" ]; then
     printf '  %sFAIL%s  %-34s no canonical element in the head\n' "$RED" "$OFF" "$ROUTE"
     FAILED=$((FAILED + 1))
   elif [ "${GOT%/}" = "${WANT%/}" ]; then
@@ -241,12 +339,18 @@ printf '\n%s── sitemap lastmod %s\n' "$BOLD" "$OFF"
 # of dated things at once, and /market really is rebuilt hourly. More than a
 # third of the file sharing today's date is the shape of a build stamp, not of
 # a publication day.
-SM="$(curl -s -L --max-time 30 "$BASE/sitemap.xml?$CB" 2>/dev/null || true)"
+SMTMP="$(mktmp)"
+SMSTATUS="$(fetch "$BASE/sitemap.xml?$CB" "$SMTMP")"
+SM="$(cat "$SMTMP")"
 TOTAL="$(printf '%s' "$SM" | grep -o '<loc>' | wc -l | tr -d ' ')"
 TODAY="$(date -u +%Y-%m-%d)"
 STAMPED="$(printf '%s' "$SM" | grep -o "<lastmod>$TODAY" | wc -l | tr -d ' ')"
 if [ "${TOTAL:-0}" -eq 0 ]; then
-  printf '  %sFAIL%s  %-34s no <loc> elements — sitemap unreachable or empty\n' "$RED" "$OFF" "sitemap.xml"
+  if [ "$SMSTATUS" != "200" ]; then
+    printf '  %sFAIL%s  %-34s HTTP %s — not fetched\n' "$RED" "$OFF" "sitemap.xml" "$SMSTATUS"
+  else
+    printf '  %sFAIL%s  %-34s 200 but no <loc> elements\n' "$RED" "$OFF" "sitemap.xml"
+  fi
   FAILED=$((FAILED + 1))
 else
   LIMIT=$(( TOTAL / 3 ))

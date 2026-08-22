@@ -4472,3 +4472,73 @@ Two adjacent items from the same proposal were also held back, and are recorded
 with the rest in `docs/outreach/CLAIMS_REGISTER.md`: a hardcoded "26 years" —
 `yearsInBusiness()` exists precisely because a literal goes stale on 1 January —
 and unverified FSC-certification, adhesive-emissions and equipment-brand claims.
+
+### F-149 · The live check made two requests and reported one conclusion · P1
+
+`verify-live.sh` reported, against a deploy that was completely correct:
+
+```
+FAIL  /llms-full.txt    200, but does not contain complete technical corpus
+```
+
+The file was fine. Fetched independently, line 1 of `https://ecowoods.ca/llms-full.txt`
+is exactly `# Ecowoods Inc. — complete technical corpus`. The corpus was
+regenerated locally, byte for byte, and every grep in that check matches it.
+
+**The check was wrong, not the deploy.** `md_check` did this:
+
+```bash
+BODY="$(curl -s -L --max-time 20 "$URL?$CB")"   # request A
+STATUS="$(code "$URL?$CB")"                     # request B
+```
+
+Two HTTP transactions, one sentence assembled from both. When request A came
+back short — a dropped connection on a 72 KB asset, first fetch after a deploy,
+cold cache — and request B came back 200, the check announced that production
+was serving a broken document.
+
+Reproduced exactly. A local server that drops the body of its first response and
+serves it correctly thereafter, run against the original function, prints:
+
+```
+FAIL  /llms-full.txt    200, but does not contain complete technical corpus
+```
+
+Character for character. Against the rewritten function, same server, same
+dropped first response: `PASS  71975 bytes, markdown`.
+
+**Why this is a P1 and not a cosmetic annoyance.** This file is the only thing in
+the repository that can see a delivery failure. F-107, F-129, F-131 and F-140 all
+passed every source-reading guard while production was broken; this script exists
+because of them. A check that cries wolf in exactly that position is worse than
+no check, because the next real failure gets waved through as "probably that
+flaky one again". The value of this script is entirely its credibility.
+
+**The fix, applied to every body-reading check in the file:**
+
+- **One request.** `fetch <url> <outfile>` writes the body to a file and prints
+  that same response's status. The two facts now describe one transaction.
+  `md_check`, the canonical loop, the IndexNow key, the manifest, the paper and
+  the sitemap were all converted; five of them had the same split, and the
+  IndexNow key check had it on a 32-byte file, where "unlikely to drop" was the
+  only thing protecting it — which is what the 72 KB one had too.
+- **Failure modes are distinguished rather than collapsed.** "Could not be
+  fetched", "HTTP 404", "200 with an empty body", "200 but HTML — the rewrite did
+  not fire", and "200 but missing the marker" were all being reported as the
+  last one. They are now five different messages, and the content mismatch prints
+  the byte count and the first line as evidence.
+- **Transport is retried; content is not.** `curl --retry 3` covers timeouts and
+  transient 5xx. An empty body under a 200 is retried once, explicitly, because
+  HTTP does not consider it an error and curl will not retry it — and because a
+  health check that goes red on a single dropped connection is one people learn
+  to ignore.
+- **A failed fetch can no longer masquerade as missing content.** The manifest,
+  paper and sitemap checks previously reported "no icon found", "none emitted"
+  and "no `<loc>` elements" when what had actually happened was that the page did
+  not come back at all.
+
+Verified by running the whole script against two local fixture sites — one that
+404s everything, one that serves plausible bodies — so every branch, including
+all five new status paths, was executed in both directions before shipping.
+
+There is nothing to fix on production. `d002e22` deployed correctly.
