@@ -15,6 +15,7 @@ import {
   findRelatedContent,
   getFallbackRelated,
 } from '@/lib/graph/contentLinks';
+import { OG_IMAGE_URL } from '@/lib/brand-assets';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -93,7 +94,19 @@ export default async function ArticlePage({ params }: Props) {
     modifiedAt: article.modifiedAt ? new Date(article.modifiedAt) : undefined,
     wordCount: article.wordCount,
     readingTimeMinutes: article.readingTimeMinutes,
-    imageUrl: article.image,
+    /**
+     * F-164. `article.image` is optional and NOT ONE of the published articles
+     * or case studies sets it, so every Article node shipped without an
+     * `image`. Google's article rich results require one; without it these
+     * pages are ineligible, quietly, forever.
+     *
+     * Falling back to the site's Open Graph image is honest — it is this site's
+     * image, 1200×630, and it is what a share of the page already shows — and
+     * it makes every article eligible today rather than after someone
+     * photographs eleven posts. A `hero-image` in the frontmatter still wins
+     * when one is set, which is the upgrade path.
+     */
+    imageUrl: article.image || OG_IMAGE_URL,
     siteUrl: SITE_URL,
     topics: article.topics,
   });

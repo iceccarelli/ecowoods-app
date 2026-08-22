@@ -56,7 +56,7 @@ export interface CaseStudyMetadata {
   authorTitle?: string;
   images?: string[]; // Relative paths or URLs
   keywords?: string;
-  semanticDensity?: number; // 1-10 self-assessment
+  // semanticDensity removed — see lib/content/types.ts and F-163.
   topics?: string[];
   relatedCaseStudies?: string[]; // Slugs
   relatedArticles?: string[]; // Slugs to blog articles

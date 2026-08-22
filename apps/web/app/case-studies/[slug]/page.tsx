@@ -14,6 +14,7 @@ import {
   findRelatedContent,
   getFallbackRelated,
 } from '@/lib/graph/contentLinks';
+import { OG_IMAGE_URL } from '@/lib/brand-assets';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -100,7 +101,19 @@ export default async function CaseStudyPage({ params }: Props) {
     challenges: caseStudy.challenges,
     results: caseStudy.results,
     testimonial: caseStudy.testimonial,
-    imageUrl: caseStudy.images?.[0],
+    /**
+     * F-164. `caseStudy.images` is optional and NOT ONE of the published articles
+     * or case studies sets it, so every Article node shipped without an
+     * `image`. Google's article rich results require one; without it these
+     * pages are ineligible, quietly, forever.
+     *
+     * Falling back to the site's Open Graph image is honest — it is this site's
+     * image, 1200×630, and it is what a share of the page already shows — and
+     * it makes every article eligible today rather than after someone
+     * photographs eleven posts. A `hero-image` in the frontmatter still wins
+     * when one is set, which is the upgrade path.
+     */
+    imageUrl: caseStudy.images?.[0] || OG_IMAGE_URL,
     siteUrl: SITE_URL,
     topics: caseStudy.topics,
   });

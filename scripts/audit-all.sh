@@ -136,6 +136,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
 [ -f scripts/verify-cities.mjs ] && run "verify:cities" node scripts/verify-cities.mjs
 [ -f scripts/verify-manifests.mjs ] && run "verify:manifests" node scripts/verify-manifests.mjs
+[ -f scripts/verify-assets.mjs ] && run "verify:assets" node scripts/verify-assets.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"

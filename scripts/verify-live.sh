@@ -114,6 +114,36 @@ for p in / /framework /framework/assess /guides /glossary /papers /resources /li
   check "$p" "$BASE$p?$CB"
 done
 
+printf '\n%s── content collections %s\n' "$BOLD" "$OFF"
+# F-165. /blog/*, /case-studies/* and /design were never checked in production.
+# Two of those are the content collections — eleven pages carrying the Article
+# and CaseStudy schema — and the third is the configurator. A broken article
+# would have been invisible to everything in this repository, which is the exact
+# gap this file exists to close.
+check "/blog"                    "$BASE/blog?$CB"
+check "/blog/{slug}"             "$BASE/blog/subfloor-moisture-testing-protocol?$CB"
+check "/case-studies"            "$BASE/case-studies?$CB"
+check "/case-studies/{slug}"     "$BASE/case-studies/rosedale-estate-stairs-radiant-heat?$CB"
+check "/design"                  "$BASE/design?$CB"
+check "/services"                "$BASE/services?$CB"
+check "/service-areas"           "$BASE/service-areas?$CB"
+check "/service-areas/{city}"    "$BASE/service-areas/etobicoke?$CB"
+check "/service-areas/{hood}"    "$BASE/service-areas/rosedale?$CB"
+
+printf '\n%s── brand assets the entity graph claims %s\n' "$BOLD" "$OFF"
+# F-162. The Organization node declared logo and image as /icon-512.png and
+# /og-image.jpg. Both returned 404 for the life of the project, and every
+# structured-data validator passed the markup, because a validator asks whether
+# a URL is well-formed and never whether it resolves. This asks.
+LOGO="$(curl -s -L --max-time 20 "$BASE/?$CB" 2>/dev/null | grep -o '"logo":"[^"]*"' | head -1 | sed 's/.*"logo":"\([^"]*\)".*/\1/')"
+if [ -z "$LOGO" ]; then
+  printf '  %sFAIL%s  %-34s no logo in the organisation schema\n' "$RED" "$OFF" "Organization logo"
+  FAILED=$((FAILED + 1))
+else
+  check "Organization logo bytes" "$LOGO"
+  printf '  %s····%s  %-34s %s\n' "$DIM" "$OFF" "resolved to" "$(printf '%s' "$LOGO" | cut -c1-58)"
+fi
+
 printf '\n%s── machine surfaces %s\n' "$BOLD" "$OFF"
 for p in /sitemap.xml /robots.txt /llms.txt /ai.txt /feed.xml /api/knowledge /api/market /api/estimate /api/health; do
   check "$p" "$BASE$p?$CB"

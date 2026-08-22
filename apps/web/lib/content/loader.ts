@@ -41,7 +41,6 @@ function parseArticleFile(filename: string, content: string): { metadata: Articl
     image: data.image,
     wordCount: wordCount as number,
     readingTimeMinutes: getField('reading-time-minutes', 'readingTimeMinutes') ?? Math.ceil((wordCount as number) / 200),
-    semanticDensity: getField('semantic-density', 'semanticDensity'),
     topics: (data.topics as string[]) || [],
     relatedArticles: getField('related-articles', 'relatedArticles') || [],
     published: data.published !== false, // default true

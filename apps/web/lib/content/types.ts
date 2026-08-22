@@ -44,7 +44,10 @@ export interface ArticleMetadata {
   readingTimeMinutes?: number;
 
   /** Semantic density self-assessment (for internal QA) */
-  semanticDensity?: number; // 1-10, target 8+
+  // semanticDensity removed (F-163). It was a self-assigned 1-10 score with no
+  // method behind it, banned by verify-business-facts as a fabricated credential
+  // since long before this, and still sitting in the frontmatter of every article
+  // because the ban was written /Semantic Density/i and the key had a hyphen.
 
   /** Primary and secondary topics for entity linking */
   topics?: string[];

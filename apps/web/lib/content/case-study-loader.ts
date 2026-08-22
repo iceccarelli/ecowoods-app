@@ -73,7 +73,6 @@ function parseCaseStudyFile(
     authorTitle: getField('author-title', 'authorTitle') || 'Lead Architect',
     images: (data.images as string[]) || [],
     keywords: data.keywords || '',
-    semanticDensity: getField('semantic-density', 'semanticDensity'),
     topics: (data.topics as string[]) || [],
     relatedCaseStudies: getField('related-case-studies', 'relatedCaseStudies') || [],
     relatedArticles: getField('related-articles', 'relatedArticles') || [],

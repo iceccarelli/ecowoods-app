@@ -4920,3 +4920,109 @@ money:
   cookies, submit the form, read the console: what appears is what enforcing it
   would have broken. When it is silent, the directives move to the enforced
   header.
+
+### F-162 · The organisation's logo and image were both 404 · P0
+
+`root-schema.ts` declared, and `structured-data.ts` repeated:
+
+```ts
+logo:  https://ecowoods.ca/icon-512.png
+image: https://ecowoods.ca/og-image.jpg
+```
+
+Fetched from production, **both return 404.**
+
+`icon-512.png` exists — only in `apps/web/public`, the directory this
+deployment has never served. That was established by measurement in F-131 and
+is asserted on every single run of `verify-live.sh`, which prints
+*"/icon-192.png still 404 — apps/web/public unserved, as expected"* at the
+bottom of every deploy. The fact was known, printed, and never connected to the
+two URLs in the schema that depended on it.
+
+`og-image.jpg` is worse: it does not exist anywhere in the repository. Not in
+`public/`, not in `apps/web/public/`, not in `app/`. The site has claimed an
+image that was never created.
+
+These are not decorative fields. `logo` on the Organization node is what Google
+reads to attach a brand mark to a Knowledge Panel and to the brand's appearance
+in search results. A 404 there is not a smaller logo — it is no logo, on the
+single most important structured-data object the site emits, for the entire life
+of the project.
+
+And every validator passed it. That is the part worth internalising: a
+structured-data validator checks that a URL is **well-formed**. It never asks
+whether it **resolves**. Nothing but a fetch can tell you, and until now nothing
+fetched.
+
+Fixed the way F-129 and F-131 were fixed, because that mechanism is already
+proven on this host: static imports. `lib/brand-assets.ts` imports both files
+and derives the URLs from what the bundler emits, so a missing file fails the
+build instead of failing the Knowledge Panel. The 512×512 logo did not need to
+move — it needed to be imported rather than linked. Google's Organization logo
+guidance asks for at least 112×112; it is 512. The OG image is 1200×630.
+
+`scripts/verify-assets.mjs` scans the schema and metadata layer for absolute
+asset URLs and requires each to resolve somewhere actually served — repo-root
+`public/`, a Next metadata convention in `app/`, or a route handler — and fails
+outright on any path into `apps/web/public`. `verify-live.sh` now pulls the
+`logo` value out of the rendered homepage and fetches it.
+
+This is the fourth finding of one shape. F-131: a directory never served.
+F-138: a key file at that path. F-144: a sitemap URL that does not exist. Now
+the brand logo. The code was right every time; the path was wrong every time.
+
+### F-163 · The banned-claims regex was defeated by a hyphen · P2
+
+`verify-business-facts.mjs` has banned `/Semantic Density/i` since it was
+written — *"Not a measurable quantity; presented as a credential."* It was a
+self-assigned 1-to-10 score with no method behind it.
+
+Every published article and case study still carried it:
+
+```yaml
+semantic-density: 9
+```
+
+The key is hyphenated, so the pattern never matched. Eleven content files, both
+content loaders, and both type definitions still carried a claim this repository
+had formally retired — one rename away from being rendered again.
+
+The pattern is now `/semantic[ _-]?density/i`, and the field is gone from the
+frontmatter, the loaders and the types rather than exempted.
+
+Broadening it immediately exposed a second defect in the same guard: it read the
+comment explaining the removal as a violation of the rule it documents. That is
+F-58 and F-106 for the third time, now in the guard those findings were about.
+Comments are stripped in **code** files only — Markdown and text are content,
+where a line starting `//` is something a reader sees and must still be checked.
+
+### F-164 · Eleven articles, no image, no rich-result eligibility · P1
+
+`article.image` is optional in the content model, and **not one** of the six
+articles or five case studies sets it. So every `Article` node shipped without
+an `image` field.
+
+Google's article rich results require an image. Without one the page is
+ineligible — not ranked lower, ineligible — and nothing reports it, because the
+markup is otherwise valid and the field is optional in schema.org.
+
+The Article schema now falls back to the site's Open Graph image, which is
+honest: it is this site's image, 1200×630, and it is already what a share of the
+page displays. That makes all eleven eligible today rather than after someone
+photographs eleven posts. A `hero-image` in the frontmatter still wins where one
+is set, which is the upgrade path.
+
+### F-165 · Three public route families were never checked in production · P2
+
+`verify-live.sh` checked fourteen pages, the machine surfaces, the service pages
+and the markdown editions. It never checked `/blog/*`, `/case-studies/*` or
+`/design`.
+
+Two of those are the content collections — eleven pages carrying the `Article`
+and `CaseStudy` schema, the evidence layer the whole authority argument rests
+on. A broken article would have been invisible to every check in this
+repository, which is precisely the gap this file exists to close.
+
+Now checked: both collection indexes, one article, one case study, the
+configurator, `/services`, `/service-areas`, a municipality page and a
+neighbourhood page.

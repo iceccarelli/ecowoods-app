@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'brand-assets-v1',
+    date: '2026-08-22',
+    kind: 'data',
+    title: 'The logo in our structured data now exists',
+    body: 'The organisation\u2019s logo and image had pointed at two URLs that returned 404 \u2014 one file sitting in a directory this host does not serve, the other never created at all. Those are the fields a search engine reads to attach a brand mark to a knowledge panel, and every structured-data validator passed the markup, because a validator checks that a URL is well formed and never checks that it resolves. Both are now derived from imported files, so a missing one stops the build. Every article also carries an image, which is what makes it eligible for a rich result at all.',
+    href: '/authority',
+  },
+  {
     id: 'high-intent-guides-v1',
     date: '2026-08-22',
     kind: 'guide',

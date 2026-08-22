@@ -13,6 +13,7 @@
  */
 
 import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
+import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
   buildOrganization,
@@ -128,8 +129,12 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   slogan: "Toronto's master hardwood flooring artisans",
   description:
     'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',
-  logoUrl: `${SITE_URL}/icon-512.png`,
-  ogImageUrl: `${SITE_URL}/og-image.jpg`,
+  // Both of these used to be hand-written paths into apps/web/public, and both
+  // returned 404 in production for the life of the project. See F-162 and
+  // lib/brand-assets.ts — the URLs are now derived from imported files, so a
+  // missing one fails the build instead of the Knowledge Panel.
+  logoUrl: LOGO_URL,
+  ogImageUrl: OG_IMAGE_URL,
 };
 
 /* ────────────────────────────────────────────────────────────────────────

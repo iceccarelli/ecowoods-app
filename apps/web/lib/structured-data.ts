@@ -7,8 +7,9 @@ export const localBusinessSchema = {
       name: 'Ecowoods Inc.',
       legalName: 'Ecowoods Hardwood Flooring Inc.',
       url: 'https://ecowoods.ca',
-      image: 'https://ecowoods.ca/og-image.jpg',
-      logo: 'https://ecowoods.ca/icon-512.png',
+      // Hardcoded 404s until F-162. See lib/brand-assets.ts.
+      image: OG_IMAGE_URL,
+      logo: LOGO_URL,
       // Was +1-416-555-9663 — a placeholder that contradicted the (647) 244-5156  (facts-allow)
       // shown in Header, ChatWidget, the contact block and the AI's
       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
@@ -96,6 +97,7 @@ export const localBusinessSchema = {
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
 import { BUSINESS_NAP, PROFILE_LINKS } from '@ecowoods/shared/constants';
+import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 
 /** WebSite entity — helps Google understand the site + name. */
 export const websiteSchema = {

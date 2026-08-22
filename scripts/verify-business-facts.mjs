@@ -44,7 +44,10 @@ const BANNED = [
   { pattern: /5,?193/, why: 'Invented project count.' },
   { pattern: /5,?200\+?\s*Homes|5,000\+\s*(verified\s*)?project/i, why: 'Invented project/home count.' },
   { pattern: /2\.5M\+?\s*Sq\s*Ft|Sq Ft Sanded & Finished/i, why: 'Square footage back-computed from another invented figure.' },
-  { pattern: /Semantic Density/i, why: 'Not a measurable quantity; presented as a credential.' },
+  // F-163. Was /Semantic Density/i, which a hyphen defeats. The content
+  // frontmatter carries `semantic-density: 8.5` on every article — the retired
+  // claim, still in the repository, one rename away from being rendered again.
+  { pattern: /semantic[ _-]?density/i, why: 'Not a measurable quantity; presented as a credential.' },
 
   // ── Founding-year drift ────────────────────────────────────────────────
   { pattern: /Est\.?\s*1998|since 1998|Founded:\*{0,2}\s*1998|foundingDate:\s*'1998'|foundingYear:\s*1998/i,
@@ -160,8 +163,29 @@ for (const file of files) {
   if (ALLOWLIST.some((a) => rel === a || rel.startsWith(a))) continue;
 
   const lines = readFileSync(file, 'utf8').split('\n');
+
+  /**
+   * In SOURCE files, a `//` or `*` line is a comment. It ships to nobody, and a
+   * comment that says "this claim was retired and why" is documentation, not a
+   * violation — but this scanner read it as one, so writing down why a figure
+   * was banned failed the build that banned it. That is F-58 and F-106 for the
+   * third time, here in the guard those findings were about.
+   *
+   * Only code files are stripped. Markdown and text are content: a line
+   * beginning `//` there is something a reader sees, and must still be checked.
+   *
+   * The cost is that a retired claim could hide in a comment and be uncommented
+   * later. That is a real gap and a small one — uncommenting is a deliberate
+   * act, and the line it produces fails this guard the moment it exists.
+   */
+  const isCode = /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(file);
+
   lines.forEach((line, i) => {
     if (line.includes(OPT_OUT)) return;
+    if (isCode) {
+      const t = line.trim();
+      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
+    }
     for (const rule of BANNED) {
       if (rule.pattern.test(line)) {
         violations.push({ rel, line: i + 1, text: line.trim().slice(0, 110), why: rule.why });
