@@ -1,0 +1,747 @@
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index beb72bc..1545df5 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -1,5 +1,6 @@
+ import { NextRequest } from 'next/server';
+-import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent } from '@/lib/seo-data';
++import { getServicePages, priceBand } from '@/lib/service-pages';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+@@ -190,8 +191,42 @@ function build() {
+     phone: BUSINESS.phoneDisplay,
+     email: BUSINESS.email,
+     url: SITE_URL,
+-    services: SERVICES.map((s) => ({ name: s.name, description: s.blurb })),
+-    serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
++    /**
++     * Services carried a name and a description and no URL, so an agent that
++     * read this could describe the service and had nowhere to send anyone. The
++     * areas carried a URL and no content, which is the same omission from the
++     * other side. Both now carry what a citation needs. See F-153.
++     */
++    services: getServicePages().map((sp) => {
++      const s = SERVICES.find((x) => x.slug === sp.slug);
++      return {
++        slug: sp.slug,
++        name: s?.name ?? sp.h1,
++        description: s?.blurb ?? sp.standfirst,
++        url: url(`/services/${sp.slug}`),
++        markdown: url(`/services/${sp.slug}.md`),
++        priceBand: priceBand(sp) ?? null,
++        judgedAgainst: sp.pillars.map((id) => url(`/framework#${id}`)),
++        methodEstablishedIn: sp.papers.map((r) => url(`/papers/${r.paper}#${r.section}`)),
++      };
++    }),
++    serviceAreas: CITIES.map((c) => {
++      const cc = cityContent(c.slug);
++      return {
++        slug: c.slug,
++        name: c.name,
++        url: url(`/service-areas/${c.slug}`),
++        markdown: url(`/service-areas/${c.slug}.md`),
++        ...(cc
++          ? {
++              intro: cc.intro,
++              neighbourhoods: cc.neighbourhoods,
++              housingNote: cc.housingNote,
++              localConsideration: cc.localConsideration ?? null,
++            }
++          : {}),
++      };
++    }),
+   };
+ 
+   return { papers, framework, guides, glossary, figures, changelog, standards, business };
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index f3f4113..6cc194f 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -102,7 +102,7 @@ export async function GET() {
+   // top of the section an agent reads first.
+   lines.push('## Machine-readable editions');
+   lines.push(
+-    `Every document below is served as clean Markdown at its own URL with \`.md\` appended — ${SITE_URL}/papers/{slug}.md, ${SITE_URL}/guides/{slug}.md, ${SITE_URL}/glossary/{slug}.md. Headings, tables and ordered protocols survive intact, and each file carries its canonical URL and citation line. Prefer these to parsing the HTML.`,
++    `Every document below is served as clean Markdown at its own URL with \`.md\` appended — ${SITE_URL}/papers/{slug}.md, ${SITE_URL}/guides/{slug}.md, ${SITE_URL}/glossary/{slug}.md, ${SITE_URL}/services/{slug}.md, ${SITE_URL}/service-areas/{slug}.md. Headings, tables and ordered protocols survive intact, and each file carries its canonical URL and citation line. Prefer these to parsing the HTML.`,
+   );
+   lines.push('');
+   lines.push(`- ENTIRE CORPUS, one fetch, full text: ${SITE_URL}/llms-full.txt`);
+diff --git a/apps/web/app/md/service-areas/[slug]/route.ts b/apps/web/app/md/service-areas/[slug]/route.ts
+new file mode 100644
+index 0000000..3ccfd73
+--- /dev/null
++++ b/apps/web/app/md/service-areas/[slug]/route.ts
+@@ -0,0 +1,30 @@
++/**
++ * GET /service-areas/{slug}.md  (rewritten from this path by next.config.js)
++ *
++ * The clean-markdown companion, rendered from the same manifest the HTML page
++ * reads. See lib/markdown-export.ts, and F-153 for why the commercial and local
++ * surfaces were missing from the machine-readable edition until now.
++ */
++import { CITIES } from '@/lib/seo-data';
++import { areaMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export function generateStaticParams() {
++  return CITIES.map((x) => ({ slug: x.slug }));
++}
++
++export async function GET(
++  _req: Request,
++  { params }: { params: Promise<{ slug: string }> },
++) {
++  const { slug } = await params;
++  const md = areaMarkdown(slug);
++  if (!md) return new Response('Not found\n', { status: 404 });
++  return new Response(md, {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/md/services/[slug]/route.ts b/apps/web/app/md/services/[slug]/route.ts
+new file mode 100644
+index 0000000..6214715
+--- /dev/null
++++ b/apps/web/app/md/services/[slug]/route.ts
+@@ -0,0 +1,30 @@
++/**
++ * GET /services/{slug}.md  (rewritten from this path by next.config.js)
++ *
++ * The clean-markdown companion, rendered from the same manifest the HTML page
++ * reads. See lib/markdown-export.ts, and F-153 for why the commercial and local
++ * surfaces were missing from the machine-readable edition until now.
++ */
++import { getServicePages } from '@/lib/service-pages';
++import { serviceMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export function generateStaticParams() {
++  return getServicePages().map((x) => ({ slug: x.slug }));
++}
++
++export async function GET(
++  _req: Request,
++  { params }: { params: Promise<{ slug: string }> },
++) {
++  const { slug } = await params;
++  const md = serviceMarkdown(slug);
++  if (!md) return new Response('Not found\n', { status: 404 });
++  return new Response(md, {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/not-found.tsx b/apps/web/app/not-found.tsx
+new file mode 100644
+index 0000000..0475e67
+--- /dev/null
++++ b/apps/web/app/not-found.tsx
+@@ -0,0 +1,144 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { SITE_URL, CITIES } from '@/lib/seo-data';
++import { getServicePages, serviceFor } from '@/lib/service-pages';
++
++/**
++ * The 404 page.
++ *
++ * WHY THIS EXISTS
++ *
++ * F-155. There was no `not-found.tsx`, so every mistyped URL, every stale link
++ * from an old post, every crawler following something that used to exist got
++ * Next's built-in page: the words "404" and "This page could not be found", on
++ * a blank screen, with no header, no footer, and not one link off it.
++ *
++ * Two costs, and the second is the one that matters here.
++ *
++ * A person who lands there leaves. That is the obvious one.
++ *
++ * A crawler that lands there has spent a request and received a page with zero
++ * outbound edges. Crawl budget on a 94-URL site is not scarce in absolute
++ * terms, but a dead end teaches nothing about the site, and the pages most
++ * likely to produce a 404 — an old URL from a link someone else published — are
++ * exactly the requests arriving with the most external authority behind them.
++ * A 404 that routes into the hubs converts that arrival into a path.
++ *
++ * `robots: { index: false }` is deliberate and is NOT what makes this a 404 —
++ * Next serves the correct 404 status for this file automatically. The directive
++ * only stops the page itself being indexed on the strength of its own content,
++ * which it otherwise could be, since it now has plenty.
++ */
++export const metadata: Metadata = {
++  title: 'Page not found',
++  description:
++    'That page does not exist. Everything published on this site is one link away below.',
++  alternates: { canonical: '/404' },
++  robots: { index: false, follow: true },
++};
++
++export default function NotFound() {
++  const services = getServicePages();
++
++  return (
++    <div className="tlx-page">
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Not found</span>
++          </nav>
++          <h1 className="tlx-title">That page does not exist</h1>
++          <p className="tlx-lede">
++            The link may be old, or it may be a typo. Nothing published here has been
++            removed — every document this site has ever put out is still at its original
++            URL, because those URLs get cited.
++          </p>
++          <p className="tlx-note">
++            If you arrived from a link on another site and think it should work, the whole
++            corpus is at <Link href="/resources">resources</Link>, and machine-readable
++            editions of everything are listed in{' '}
++            <a href={`${SITE_URL}/llms.txt`}>llms.txt</a>.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Services">
++        <div className="shell">
++          <p className="tlx-kicker">Services</p>
++          <h2 className="tlx-h2">What you might have been looking for</h2>
++          <div className="tlx-grid">
++            {services.map((sp) => (
++              <Link key={sp.slug} className="tlx-card" href={`/services/${sp.slug}`}>
++                <span className="tlx-card-tag">Service</span>
++                <h3>{serviceFor(sp)?.name ?? sp.h1}</h3>
++                <p>{serviceFor(sp)?.blurb}</p>
++              </Link>
++            ))}
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Reference">
++        <div className="shell">
++          <p className="tlx-kicker">Reference</p>
++          <h2 className="tlx-h2">The published material</h2>
++          <div className="tlx-grid">
++            <Link className="tlx-card" href="/framework">
++              <span className="tlx-card-tag">Standard</span>
++              <h3>The Well-Installed Framework</h3>
++              <p>Six pillars, twenty-seven criteria, every one sourced to a paper. Free to cite.</p>
++            </Link>
++            <Link className="tlx-card" href="/papers">
++              <span className="tlx-card-tag">Papers</span>
++              <h3>Technical papers</h3>
++              <p>Climate and moisture, selection and cost, the machines and the sequence.</p>
++            </Link>
++            <Link className="tlx-card" href="/guides">
++              <span className="tlx-card-tag">Guides</span>
++              <h3>Decision guides</h3>
++              <p>The question, the criteria that settle it, and the answer.</p>
++            </Link>
++            <Link className="tlx-card" href="/glossary">
++              <span className="tlx-card-tag">Glossary</span>
++              <h3>Glossary</h3>
++              <p>One page per term, each defined once and cited from everywhere else.</p>
++            </Link>
++            <Link className="tlx-card" href="/market">
++              <span className="tlx-card-tag">Data</span>
++              <h3>What moves a hardwood quote</h3>
++              <p>Three commodity inputs, live from the Bank of Canada, with the mechanism behind each.</p>
++            </Link>
++            <Link className="tlx-card" href="/standards">
++              <span className="tlx-card-tag">Standards</span>
++              <h3>Standards register</h3>
++              <p>The external standards this work is held to, each with the date it was last verified.</p>
++            </Link>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Service areas">
++        <div className="shell">
++          <p className="tlx-kicker">Coverage</p>
++          <h2 className="tlx-h2">Where we work</h2>
++          <p className="tlx-note">
++            {CITIES.map((c, i) => (
++              <span key={c.slug}>
++                {i > 0 && ' · '}
++                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
++              </span>
++            ))}
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta" href="/">
++              Back to the homepage
++            </Link>
++            <Link className="fw-cta fw-cta--ghost" href="/resources">
++              Everything published here
++            </Link>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index 2841a7c..e3d5fb1 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
+ import { notFound } from 'next/navigation';
+ import Link from 'next/link';
+ import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
++import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
+ import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+ 
+ export function generateStaticParams() {
+@@ -97,12 +98,33 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           <span className="eyebrow">What we do in {city.name}</span>
+           <h2>Every service, one crew.</h2>
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
+-            {SERVICES.map((s) => (
+-              <div key={s.slug} style={{ padding: '1.25rem', border: '1px solid rgba(128,128,128,0.18)', borderRadius: '14px' }}>
+-                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{s.name}</h3>
+-                <p style={{ fontSize: '0.92rem', opacity: 0.82, marginTop: '0.5rem' }}>{s.blurb}</p>
+-              </div>
+-            ))}
++            {/* Links, not divs.
++
++                These six cards rendered as unlinked <div>s on all sixteen city
++                pages. Ninety-six of the most natural internal links on the site
++                — local intent meeting a specific service — existed as text and
++                went nowhere. Meanwhile the service pages listed the sixteen
++                areas as plain prose, so the other ninety-six were missing too.
++                A crawler cannot infer a relationship it is not given an edge
++                for, and a reader who wants the price for refinishing in
++                Etobicoke had no way through. See F-154. */}
++            {SERVICE_PAGES.map((sp) => {
++              const s = SERVICES.find((x) => x.slug === sp.slug);
++              const band = priceBand(sp);
++              return (
++                <Link
++                  key={sp.slug}
++                  href={`/services/${sp.slug}`}
++                  style={{ padding: '1.25rem', border: '1px solid rgba(128,128,128,0.18)', borderRadius: '14px', display: 'block' }}
++                >
++                  <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{s?.name ?? sp.h1}</h3>
++                  <p style={{ fontSize: '0.92rem', opacity: 0.82, marginTop: '0.5rem' }}>{s?.blurb}</p>
++                  {band && (
++                    <p style={{ fontSize: '0.86rem', opacity: 0.7, marginTop: '0.5rem' }}>{band}</p>
++                  )}
++                </Link>
++              );
++            })}
+           </div>
+         </div>
+       </section>
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index a3390ff..47a0416 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -260,9 +260,21 @@ export default async function ServiceDetailPage({
+         <div className="shell">
+           <p className="tlx-kicker">Coverage</p>
+           <h2 className="tlx-h2">Where this service is delivered</h2>
++          {/* Links, not a comma-separated string. Sixteen area names rendered as
++              prose gave a reader nowhere to go and a crawler no edge to follow —
++              the mirror image of the same omission on the city pages. See F-154. */}
+           <p className="tlx-note">
+-            {CITIES.map((c) => c.name).join(', ')} — see{' '}
+-            <Link href="/service-areas">service areas</Link> for the page on each.
++            {CITIES.map((c, i) => (
++              <span key={c.slug}>
++                {i > 0 && ' · '}
++                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
++              </span>
++            ))}
++          </p>
++          <p className="tlx-note">
++            Every area above has its own page: the housing stock, the neighbourhoods
++            and the constraint that is specific to it. See{' '}
++            <Link href="/service-areas">all service areas</Link>.
+           </p>
+           <div className="fw-actions">
+             <Link className="fw-cta" href="/#quote">
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index b3f7f12..6240c6c 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,14 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'agent-corpus-v2',
++    date: '2026-08-22',
++    kind: 'data',
++    title: 'The machine-readable corpus now answers local and commercial questions',
++    body: 'Until now /llms-full.txt carried the technical material only \u2014 papers, guides, glossary. An agent asked who refinishes hardwood in Etobicoke found no service, no price and no area in the one file built for agents to read. Services and all sixteen service areas are now in the corpus and each has its own .md edition, so a single fetch answers what the work is, what it costs and where it is done. The knowledge API carries the same, with URLs. The corpus went from 70 KB to 115 KB, none of it new claims.',
++    href: '/llms-full.txt',
++  },
+   {
+     id: 'gta-coverage-v1',
+     date: '2026-08-22',
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 8d42aa0..1654d86 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -39,7 +39,16 @@
+ import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
+ import { getGuides, getGuide, type Guide } from '@/lib/guides';
+ import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
+-import { SITE_URL, BUSINESS } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent, type CityContent } from '@/lib/seo-data';
++import {
++  getServicePages,
++  getServicePage,
++  serviceFor,
++  priceBand,
++  faqsFor,
++  type ServicePage,
++} from '@/lib/service-pages';
++import { PILLARS } from '@/lib/framework';
+ 
+ /* ── primitives ───────────────────────────────────────────────────────────── */
+ 
+@@ -199,6 +208,104 @@ export const termToMarkdown = (term: GlossaryTerm): string => {
+   return out.join('\n');
+ };
+ 
++/* ── services ─────────────────────────────────────────────────────────────── */
++
++/**
++ * WHY THESE ARE HERE AND WERE NOT BEFORE
++ *
++ * F-153. The corpus carried papers, guides and glossary — the technical
++ * material — and nothing else. An agent asked "who refinishes hardwood floors
++ * in Etobicoke" fetched /llms-full.txt and found no service, no price, no area:
++ * every commercial and local surface on the site was invisible to the one file
++ * built for agents to read.
++ *
++ * That is the query class this business exists to win, and it was the one class
++ * the machine-readable edition could not answer. The technical corpus makes the
++ * site citable; this makes it actionable.
++ */
++export const serviceToMarkdown = (page: ServicePage): string => {
++  const svc = serviceFor(page);
++  const canonical = `${SITE_URL}/services/${page.slug}`;
++  const band = priceBand(page);
++  const out: string[] = [
++    `# ${svc?.name ?? page.h1}`,
++    '',
++    `**${page.h1}**`,
++    '',
++    page.standfirst,
++    '',
++    svc?.blurb ?? '',
++    '',
++  ];
++
++  const rows: string[][] = [['Service', svc?.name ?? page.h1]];
++  if (band) rows.push(['Published price band', band]);
++  rows.push(['Areas served', CITIES.map((c) => c.name).join(', ')]);
++  out.push(...table(['Field', 'Value'], rows));
++
++  const pillars = PILLARS.filter((p) => page.pillars.includes(p.id));
++  if (pillars.length) {
++    out.push('## The standard this work is judged against', '');
++    for (const p of pillars) {
++      out.push(`### ${p.name}`, '', p.intent, '', `- ${p.criteria.length} criteria — ${SITE_URL}/framework#${p.id}`, '');
++    }
++  }
++
++  if (page.papers.length) {
++    out.push('## Where the method is established', '');
++    for (const r of page.papers) {
++      out.push(`- ${r.label} — ${SITE_URL}/papers/${r.paper}#${r.section}`);
++    }
++    out.push('');
++  }
++
++  const faqs = faqsFor(page);
++  if (faqs.length) {
++    out.push('## Questions this service turns on', '');
++    for (const f of faqs) {
++      out.push(`**${f.q}**`, '', f.a, '', `Source: ${SITE_URL}${f.href}`, '');
++    }
++  }
++
++  out.push(...provenance(canonical, band ? [`- Price band: ${band}`] : []));
++  return out.join('\n');
++};
++
++/* ── service areas ────────────────────────────────────────────────────────── */
++
++export const areaToMarkdown = (slug: string, name: string, cc: CityContent): string => {
++  const canonical = `${SITE_URL}/service-areas/${slug}`;
++  const out: string[] = [
++    `# Hardwood floor installation & refinishing in ${name}`,
++    '',
++    cc.intro,
++    '',
++    '## Areas covered',
++    '',
++    cc.neighbourhoods.join(', ') + '.',
++    '',
++    '## Housing stock and what it means for the floor',
++    '',
++    cc.housingNote,
++    '',
++  ];
++  if (cc.localConsideration) {
++    out.push('## The practical constraint here', '', cc.localConsideration, '');
++  }
++  if (cc.signatureProject) {
++    out.push('## A project in this area', '', cc.signatureProject, '');
++  }
++  out.push('## Services delivered here', '');
++  for (const sp of getServicePages()) {
++    const svc = serviceFor(sp);
++    const band = priceBand(sp);
++    out.push(`- **${svc?.name ?? sp.h1}**${band ? ` (${band})` : ''} — ${SITE_URL}/services/${sp.slug}`);
++  }
++  out.push('');
++  out.push(...provenance(canonical));
++  return out.join('\n');
++};
++
+ /* ── the whole corpus, one fetch ──────────────────────────────────────────── */
+ 
+ /**
+@@ -217,6 +324,10 @@ export const corpusToMarkdown = (): string => {
+   const papers = getPapers();
+   const guides = getGuides();
+   const terms = getTerms();
++  const services = getServicePages();
++  const areas = CITIES.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
++    (x): x is { c: (typeof CITIES)[number]; cc: CityContent } => Boolean(x.cc),
++  );
+   const out: string[] = [
+     `# ${BUSINESS.name} — complete technical corpus`,
+     '',
+@@ -233,6 +344,8 @@ export const corpusToMarkdown = (): string => {
+     `- ${papers.length} technical paper(s)`,
+     `- ${guides.length} decision guide(s) and reference installation(s)`,
+     `- ${terms.length} glossary term(s)`,
++    `- ${services.length} service(s), each with its published price band`,
++    `- ${areas.length} service area(s) across Toronto and the GTA`,
+     '',
+     '---',
+     '',
+@@ -240,6 +353,8 @@ export const corpusToMarkdown = (): string => {
+   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
+   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
+   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
++  for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');
++  for (const { c, cc } of areas) out.push(areaToMarkdown(c.slug, c.name, cc), '', '---', '');
+   return out.join('\n');
+ };
+ 
+@@ -257,3 +372,13 @@ export const termMarkdown = (slug: string): string | null => {
+   const t = getTerm(slug);
+   return t ? termToMarkdown(t) : null;
+ };
++
++export const serviceMarkdown = (slug: string): string | null => {
++  const p = getServicePage(slug);
++  return p ? serviceToMarkdown(p) : null;
++};
++export const areaMarkdown = (slug: string): string | null => {
++  const c = CITIES.find((x) => x.slug === slug);
++  const cc = c ? cityContent(c.slug) : undefined;
++  return c && cc ? areaToMarkdown(c.slug, c.name, cc) : null;
++};
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 3ae286d..b995d83 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -70,6 +70,8 @@ const nextConfig = {
+       { source: '/papers/:slug.md', destination: '/md/papers/:slug' },
+       { source: '/guides/:slug.md', destination: '/md/guides/:slug' },
+       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
++      { source: '/services/:slug.md', destination: '/md/services/:slug' },
++      { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
+     ];
+   },
+ 
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 022bde5..f462cd1 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -4648,3 +4648,81 @@ It is set as the root layout's `title.default` and deliberately **not** on
+ `app/page.tsx`: `default` is used verbatim, while a title set on the page is run
+ through the `%s · Ecowoods` template. Setting both appends the brand twice and
+ pushes the string past seventy characters, which is F-143 again.
++
++### F-153 · The agent corpus could not answer a local or commercial question · P1
++
++`/llms-full.txt` carried papers, guides and glossary — the technical material —
++and nothing else. `/api/knowledge` listed services with a name and a description
++and **no URL**, and areas with a URL and **no content**.
++
++So an agent asked *"who refinishes hardwood floors in Etobicoke"* fetched the one
++file built for agents to read and found: no service, no price band, no area, no
++local context. Every commercial and local surface on the site was invisible to
++the machine-readable edition — and that is precisely the query class this
++business exists to win.
++
++The technical corpus is what makes the site citable. It is not what makes it
++actionable. An answer engine that can quote the moisture protocol and cannot say
++who does the work, what it costs, or whether they cover your city has been given
++the half of the site that wins arguments and none of the half that wins jobs.
++
++Now in the corpus, and each with its own `.md` companion at the URL the llms.txt
++proposal specifies:
++
++- `/services/{slug}.md` — the service, its published price band, the framework
++  pillars it is judged against, the paper sections that establish the method,
++  and the questions it turns on with the guide each answer comes from.
++- `/service-areas/{slug}.md` — the local content, the neighbourhoods, the
++  housing-stock constraint, and every service delivered there with its band.
++
++`/api/knowledge` gains URLs and `.md` links on services, and the full local
++content on areas. The corpus went from 70 KB to 115 KB, and not one sentence of
++it is new: every line is rendered from a manifest that was already published.
++
++### F-154 · 192 internal links existed as text and went nowhere · P1
++
++The sixteen city pages rendered the six services as unlinked `<div>`s. The six
++service pages rendered the sixteen areas as a comma-separated string.
++
++That is 96 edges missing in each direction — the most natural internal links on
++this site, local intent meeting a named service, written out in full and given
++nothing to follow.
++
++Internal links are not decoration. They are the only mechanism that tells a
++crawler two pages are about related things, and the only route a reader has from
++*I am in Etobicoke* to *here is what refinishing costs*. A page that names six
++services without linking them is asking to be understood on faith. It also means
++the six service pages — the highest commercial-intent URLs on the site, built in
++patch 56 — had almost no internal links pointing at them, which is the single
++worst thing that can be true of a page you want to rank.
++
++Both directions are now rendered as links, and the city cards carry the price
++band. `verify-cities.mjs` fails the build if either page goes back to prose.
++
++### F-155 · Every 404 was a dead end · P2
++
++There was no `not-found.tsx`. Every mistyped URL, every stale link from an old
++post, every crawler following something that used to exist got Next's built-in
++page: the words "404" and "This page could not be found", on a blank screen,
++with no header, no footer, and not one link off it.
++
++A person who lands there leaves. That is the obvious cost.
++
++The one that matters more here: a crawler that lands there has spent a request
++and received a page with zero outbound edges. And the requests most likely to
++produce a 404 are old URLs from links other people published — arrivals carrying
++the most external authority of anything that hits this site. Every one was being
++converted into nothing.
++
++The 404 now routes into the six services, the six reference hubs and all sixteen
++areas, and says plainly that nothing published here has been removed — which is
++true, and is the thing a person following a citation needs to know.
++
++`robots: { index: false, follow: true }` is set deliberately, and is *not* what
++makes it a 404 — Next serves the correct status for this file automatically. The
++directive stops the page being indexed on the strength of its own content, which
++it otherwise could be, now that it has plenty.
++
++`verify-live.sh` checks both halves against production: that an unknown URL
++returns 404 rather than a soft 200, and that the page it returns carries at
++least ten internal links. A status code cannot tell you the second one.
+diff --git a/scripts/verify-cities.mjs b/scripts/verify-cities.mjs
+index a19bb6c..3da2aa8 100644
+--- a/scripts/verify-cities.mjs
++++ b/scripts/verify-cities.mjs
+@@ -192,6 +192,42 @@ if (!/CITIES/.test(schema)) {
+   problems.push({ where: 'lib/schema/root-schema.ts', detail: 'does not reference CITIES — coverage is not derived from the published areas' });
+ }
+ 
++/* ── 6. the link matrix runs in both directions ───────────────────────────── */
++/**
++ * F-154. Sixteen city pages rendered the six services as unlinked <div>s, and
++ * the six service pages rendered the sixteen areas as a comma-separated string.
++ * One hundred and ninety-two of the most natural internal links on this site —
++ * local intent meeting a named service, in both directions — existed as text
++ * and went nowhere.
++ *
++ * Internal links are not decoration. They are the only thing that tells a
++ * crawler these two pages are about related things, and the only route a reader
++ * has from "I am in Etobicoke" to "here is what refinishing costs". A page that
++ * mentions six services without linking them is a page asking to be understood
++ * on faith.
++ *
++ * Checked structurally rather than by counting links, because the count is a
++ * product of two manifests and would have to be updated every time either grew.
++ */
++const cityPage = path.join(ROOT, 'apps/web/app/service-areas/[city]/page.tsx');
++const svcPage = path.join(ROOT, 'apps/web/app/services/[slug]/page.tsx');
++
++for (const [file, needle, what] of [
++  [cityPage, /href=\{`\/services\/\$\{[^}]+\}`\}/, 'a link to /services/{slug} for each service'],
++  [svcPage, /href=\{`\/service-areas\/\$\{[^}]+\}`\}/, 'a link to /service-areas/{slug} for each area'],
++]) {
++  if (!fs.existsSync(file)) {
++    problems.push({ where: path.relative(ROOT, file), detail: 'missing' });
++    continue;
++  }
++  if (!needle.test(strip(fs.readFileSync(file, 'utf8')))) {
++    problems.push({
++      where: path.relative(ROOT, file),
++      detail: `does not render ${what} — the relationship is stated in prose and given no edge to follow`,
++    });
++  }
++}
++
+ /* ── report ───────────────────────────────────────────────────────────────── */
+ if (LIST) for (const k of entries.keys()) console.log(`  ✓ /service-areas/${k}`);
+ 
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index dfa9587..9a5d9b4 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -287,6 +287,8 @@ md_check() {
+ md_check "/papers/{slug}.md"   "$BASE/papers/hardwood-refinishing-machines-and-sequence.md" "## Provenance"
+ md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toronto.md"       "## Provenance"
+ md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
++md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
++md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
+ md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete technical corpus"
+ 
+ printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
+@@ -363,6 +365,26 @@ else
+   fi
+ fi
+ 
++printf '\n%s── the 404 page %s\n' "$BOLD" "$OFF"
++# F-155. There was no not-found.tsx, so every mistyped or stale URL got Next's
++# built-in page: two lines of text, no header, no footer, not one outbound link.
++# Two things are checked, and the second is the one a status code cannot show:
++# that the page a visitor actually lands on offers a way back.
++NF="$(mktmp)"
++NFSTATUS="$(fetch "$BASE/this-page-does-not-exist-$(date +%s)" "$NF")"
++NFLINKS="$(grep -o 'href="/[^"]*"' "$NF" | sort -u | wc -l | tr -d ' ')"
++if [ "$NFSTATUS" != "404" ]; then
++  printf '  %sFAIL%s  %-34s HTTP %s — a missing page must return 404, not %s\n' "$RED" "$OFF" "unknown URL" "$NFSTATUS" "$NFSTATUS"
++  printf '        A 200 on a missing page is a soft 404: the crawler indexes an error.\n'
++  FAILED=$((FAILED + 1))
++elif [ "${NFLINKS:-0}" -lt 10 ]; then
++  printf '  %sFAIL%s  %-34s 404, but only %s internal link(s)\n' "$RED" "$OFF" "unknown URL" "$NFLINKS"
++  printf '        A dead-end 404 spends a request and teaches nothing. See F-155.\n'
++  FAILED=$((FAILED + 1))
++else
++  printf '  %sPASS%s  %-34s 404, %s internal links out\n' "$GRN" "$OFF" "unknown URL" "$NFLINKS"
++fi
++
+ printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"
+ # apps/web/public is not served on this host. This asserts the fact rather than
+ # leaving it to be rediscovered: /icon-192.png has lived there since long before
