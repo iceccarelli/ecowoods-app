@@ -50,15 +50,15 @@ const fail = (m) => problems.push(m);
    calls rather than object literals. Anything hand-written as a full literal is
    picked up by the second pass below. */
 const entries = [];
-const helperRe = /\n  (d|og)\(\s*\n\s*'([^']+)',\s*\n\s*'((?:[^'\\]|\\.)*)',\s*\n\s*(?:'((?:[^'\\]|\\.)*)',\s*\n\s*)?'((?:[^'\\]|\\.)*)',\s*\n?(?:\s*'(diagram|illustration|photograph)',\s*\n?)?\s*\)/g;
+const helperRe = /\n  (d|p|og)\(\s*\n\s*'([^']+)',\s*\n\s*'((?:[^'\\]|\\.)*)',\s*\n\s*(?:'((?:[^'\\]|\\.)*)',\s*\n\s*)?'((?:[^'\\]|\\.)*)',\s*\n?(?:\s*'(diagram|illustration|photograph)',\s*\n?)?\s*\)/g;
 for (const m of src.matchAll(helperRe)) {
   entries.push({
     helper: m[1],
     id: m[2],
     alt: m[3],
-    caption: m[1] === 'd' ? m[4] : undefined,
+    caption: m[1] === 'og' ? undefined : m[4],
     prompt: m[5],
-    kind: m[6] ?? (m[1] === 'og' ? 'illustration' : 'diagram'),
+    kind: m[6] ?? (m[1] === 'd' ? 'diagram' : 'illustration'),
   });
 }
 // Full object literals, if any are ever added by hand.
@@ -121,9 +121,21 @@ for (const e of entries) {
   }
   if (e.kind !== 'photograph') {
     if (!e.prompt) fail(`"${e.id}": generated image with no prompt. The prompt is its provenance.`);
-    else if (!/NO TEXT|NO LETTERING/i.test(`${e.prompt}${src}`)) {
+    else if (e.helper === 'd' && !/NO TEXT|NO LETTERING/i.test(`${e.prompt}${src}`)) {
       fail(`"${e.id}": prompt does not forbid text in the image`);
     }
+  }
+
+  /* The labelled register carries text inside the picture, so its caption is
+     load-bearing rather than decorative: the caption is the machine-readable
+     copy of what the image says. A `p` entry without one puts a fact somewhere
+     only a sighted human can reach it. */
+  if (e.helper === 'p' && (!e.caption || e.caption.length < 40)) {
+    fail(
+      `"${e.id}" is in the labelled register but its caption is missing or too short.\n` +
+        `      Labels baked into a picture are invisible to screen readers, translators and\n` +
+        `      crawlers. The caption beside it is where those words have to also exist.`,
+    );
   }
 }
 

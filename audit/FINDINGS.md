@@ -5227,3 +5227,84 @@ verifiable — the framework, the standards register with verification dates, th
 price bands, three technical papers — and these six are the remaining sentences a
 sceptical reader could challenge and we could not immediately answer. Product
 names and certificate numbers turn six weak claims into six strong ones.
+
+### F-171 · The visual upgrade package is integrated · P1 · fixed
+
+All 18 images from `ecowoods-visual-upgrade-resources-framework.zip` are live.
+Fifteen replace existing diagram slots; three are new slots.
+
+**Placement**, from the package's own `00-MANIFEST.md`:
+
+| package file | slot | renders on |
+| --- | --- | --- |
+| `00-hero-framework` | `framework-hero` *(new)* | `/framework`, under the masthead |
+| `pillar-1-moisture-acclimation` | `pillar-moisture` | `/framework#moisture` |
+| `pillar-2-substrate-method` | `pillar-substrate` | `/framework#substrate` |
+| `pillar-3-product-specification` | `pillar-specification` | `/framework#specification` |
+| `pillar-4-expansion-movement` | `pillar-movement` | `/framework#movement` |
+| `pillar-5-dust-containment-sequence` | `pillar-containment` | `/framework#containment` |
+| `pillar-6-commercial-accountability` | `pillar-accountability` | `/framework#accountability` |
+| `failure-cupping` | `failure-cupping` | `/glossary/cupping` |
+| `failure-crowning` | `failure-crowning` | `/glossary/crowning` |
+| `failure-buckling-tenting` | `failure-buckling` | `/glossary/buckling` |
+| `failure-seasonal-gapping` | `failure-gapping` | `/glossary/seasonal-gapping` |
+| `failure-edge-peaking` | `failure-edge-peaking` *(new)* | `/glossary/edge-peaking` |
+| `failure-swirl-marks-halos` | `concept-edger-halo` | the refinishing paper |
+| `detail-moisture-differential` | `concept-mc-differential` | `/glossary/moisture-differential` |
+| `00-hero-resources` | `resources-hero` *(new)* | `/resources`, under the masthead |
+| `decision-solid-vs-engineered` | `guide-solid-vs-engineered` | the solid-vs-engineered guide |
+| `paper-craft-four-machines` | `paper-craft` | the machines-and-sequence paper |
+| `paper-climate-humidity-bands` | `paper-climate` | the climate paper |
+
+**Resolution.** The package shipped at 1168x784 and its own manifest asked for
+an upscale to ≥1600px before commit. Done: every file is now 1600x1074, Lanczos,
+WebP q82. 2.75 MB across 18 files, and `DIMS` in `apps/web/lib/images.ts`
+declares 1600x1074 for all of them so `next/image` reserves the right box and
+nothing reflows on load.
+
+**A second visual register, declared rather than smuggled.** The manifest now
+carries two languages instead of one:
+
+- `d(...)` — the original flat vector diagrams. `STYLE_SUFFIX` still forbids
+  photorealism and text, and `verify-images.mjs` still enforces that on this
+  register only.
+- `p(...)` — the detailed labelled renders. `DETAIL_STYLE_SUFFIX` describes what
+  they actually are: photorealistic, high micro-detail, labels set inside the
+  frame. Every `p` entry is `kind: 'illustration'` — generated, declared as
+  generated, never `photograph`, which would require a provenance naming a real
+  shoot and would forbid a prompt.
+
+Two guards were added rather than removed, because the labelled register creates
+a risk the flat one did not:
+
+1. **Every `p` entry must carry a caption of at least 40 characters.** A label
+   baked into a picture is invisible to a screen reader, a translator and every
+   crawler. The rule is now that no fact may live *only* inside an image — the
+   caption beside it is the machine-readable copy, and the build fails without
+   one. All 18 captions restate what their image says.
+2. The `NO TEXT` prompt check is scoped to `d` entries, so it still means
+   something where it applies instead of being globally waived.
+
+**Two wordings were made precise rather than dropped.** `pillar-moisture` and
+`concept-mc-differential` show meter readings of 8.2% and 7.4%. Their captions
+now say the values are a worked example and that the acceptable difference
+between them is the manufacturer's and ours — which is what
+`apps/web/lib/papers.ts:104` already says in prose. `pillar-accountability`
+shows an estimate document; its caption says the document is illustrative. The
+images are unchanged; the captions simply stop them reading as a record of a
+specific job.
+
+**Still open:** `00-hero-framework` names its six pillars MOISTURE CONTROL,
+PLANNING & DOCUMENTATION, EXPANSION & ACCOMMODATION, PROPER MACHINES & TOOLS,
+MATERIAL & SUBFLOOR PREP and QUALITY ASSURANCE, and stamps "VERSION 1.0 • MAY
+2024". `apps/web/lib/framework.ts` names them Moisture and acclimation,
+Substrate and method, Product specification, Expansion and movement, Dust
+containment and sequence and Commercial accountability, published `2026-08-19`.
+The six `<h2>` headings immediately below the hero are rendered from those
+constants, so the page shows both wordings. The hero's caption points the reader
+at the panels below as the authoritative names. Regenerating that one image with
+the framework's own wording and no date stamp closes it.
+
+`docs/visual/DIAGRAM_BRIEF.md` records the specification either register has to
+meet, so the next batch — the package lists twelve slots it did not cover — lands
+without a second integration pass.

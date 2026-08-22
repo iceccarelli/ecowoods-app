@@ -118,6 +118,12 @@ export default function FrameworkPage() {
         </div>
       </header>
 
+      <section className="tlx-section tlx-section--flush" aria-label="The six pillars at a glance">
+        <div className="shell">
+          <Illustration id="framework-hero" priority />
+        </div>
+      </section>
+
       <section className="tlx-section" aria-label="How to use this framework">
         <div className="shell">
           <p className="tlx-kicker">How to use it</p>

@@ -57,6 +57,7 @@ const TERM_IMAGE: Record<string, string> = {
   'expansion-gap': 'concept-expansion-gap',
   acclimation: 'concept-acclimation',
   'moisture-differential': 'concept-mc-differential',
+  'edge-peaking': 'failure-edge-peaking',
 };
 
 export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -9,6 +9,7 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { CITIES, SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { Illustration } from '../components/Illustration';
 
 /**
  * /resources — one door into everything published.
@@ -110,6 +111,12 @@ export default async function ResourcesPage() {
           </p>
         </div>
       </header>
+
+      <section className="tlx-section tlx-section--flush" aria-label="The science behind these resources">
+        <div className="shell">
+          <Illustration id="resources-hero" priority />
+        </div>
+      </section>
 
       {/* 1 — DECIDE */}
       <section className="tlx-section" aria-label="Decide">

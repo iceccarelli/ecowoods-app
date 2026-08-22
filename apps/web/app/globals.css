@@ -7283,6 +7283,14 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
    went pale, so fixing the text made these blocks WORSE.
    See audit/FINDINGS.md F-36. */
 .tlx-section + .tlx-section { border-top: 1px solid var(--line); }
+
+/* A hero illustration sitting directly under the page header is already the
+   visual break a border would draw, and the header's own bottom padding is
+   enough separation. `--flush` removes both so the image reads as part of the
+   masthead rather than as the first content section. */
+.tlx-section--flush { padding-top: 0; }
+.tlx-section--flush + .tlx-section { border-top: 1px solid var(--line); }
+.tlx-section.tlx-section--flush { border-top: 0; }
 .tlx-section .shell { max-width: 1080px; }
 .tlx-kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em;
   /* --copper as TEXT measures 3.09:1 on --bg and 2.97:1 on --surface-1 — below

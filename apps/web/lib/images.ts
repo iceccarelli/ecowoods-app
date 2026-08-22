@@ -140,32 +140,38 @@ const HREFS: Record<string, string> = {
   'og-glossary': '/glossary',
   'og-standards': '/standards',
   'og-data': '/data',
+  'framework-hero': '/framework',
+  'resources-hero': '/resources',
+  'failure-edge-peaking': '/glossary/edge-peaking',
 };
 
 const DIMS: Record<string, [number, number]> = {
+  'resources-hero': [1600, 1074],
+  'framework-hero': [1600, 1074],
+  'failure-edge-peaking': [1600, 1074],
   'concept-acclimation': [1728, 867],
-  'concept-edger-halo': [1564, 883],
+  'concept-edger-halo': [1600, 1074],
   'concept-expansion-gap': [1538, 681],
-  'concept-mc-differential': [1463, 817],
-  'failure-buckling': [1599, 644],
-  'failure-crowning': [1636, 314],
-  'failure-cupping': [1576, 247],
-  'failure-gapping': [1676, 997],
+  'concept-mc-differential': [1600, 1074],
+  'failure-buckling': [1600, 1074],
+  'failure-crowning': [1600, 1074],
+  'failure-cupping': [1600, 1074],
+  'failure-gapping': [1600, 1074],
   'guide-evaluate-quote': [1378, 719],
   'guide-method': [1586, 328],
   'guide-ref-condo': [1058, 1044],
   'guide-ref-radiant': [1320, 493],
   'guide-ref-refinish': [1622, 421],
-  'guide-solid-vs-engineered': [1371, 683],
-  'paper-climate': [1375, 852],
-  'paper-craft': [1609, 534],
+  'guide-solid-vs-engineered': [1600, 1074],
+  'paper-climate': [1600, 1074],
+  'paper-craft': [1600, 1074],
   'paper-selection': [1442, 705],
-  'pillar-accountability': [895, 859],
-  'pillar-containment': [1481, 894],
-  'pillar-moisture': [1492, 856],
-  'pillar-movement': [1514, 856],
-  'pillar-specification': [1568, 632],
-  'pillar-substrate': [1647, 359],
+  'pillar-accountability': [1600, 1074],
+  'pillar-containment': [1600, 1074],
+  'pillar-moisture': [1600, 1074],
+  'pillar-movement': [1600, 1074],
+  'pillar-specification': [1600, 1074],
+  'pillar-substrate': [1600, 1074],
 };
 
 const W = 1600;
@@ -179,6 +185,44 @@ export const STYLE_SUFFIX =
 
 export const OG_STYLE_SUFFIX =
   'Flat vector editorial illustration. Warm cream background (#faf6ef), deep walnut brown (#3d2b1f), copper accent (#c87e4f). Clean linework, generous negative space, no gradients, no photorealism. ABSOLUTELY NO TEXT, NO LETTERING, NO NUMBERS anywhere. Subject placed left-of-centre with clear empty space on the right for an overlaid headline. 1200x630.';
+
+/**
+ * The second visual language.
+ *
+ * STYLE_SUFFIX above describes the flat vector diagrams: no photorealism, no
+ * text, four colours. This one describes the detailed educational renders that
+ * carry their own labels — a deliberate, separate register for the concepts a
+ * homeowner has to *see* to believe (a cupped board under raking light, four
+ * machines in a real room, meters on a real subfloor).
+ *
+ * Two rules make the two languages coexist rather than collide:
+ *
+ *   1. `kind: 'illustration'`, never 'photograph'. These are generated. The
+ *      manifest says so, the guard enforces it, and no caption on this site
+ *      claims any of them is a photograph of an Ecowoods job.
+ *   2. Every label baked into the picture is ALSO rendered in the HTML caption
+ *      and alt text beside it, so nothing in an image is the only place a fact
+ *      lives. Screen readers, translators and crawlers lose nothing.
+ */
+export const DETAIL_STYLE_SUFFIX =
+  'Photorealistic technical illustration with neutral professional lighting and high micro-detail. Real material fidelity — visible wood grain and pores, accurate ply structure, true surface deformation under raking light. Educational callout labels rendered sharply in the image using the exact terminology of the accompanying caption, set in clean sans-serif on high-contrast plates. Centred composition with even margins. 1600x1074.';
+
+/**
+ * `p` is `d` for the detailed register: same manifest shape, always an
+ * illustration, and it appends DETAIL_STYLE_SUFFIX instead of STYLE_SUFFIX.
+ */
+const p = (id: string, alt: string, caption: string, prompt: string): SiteImage => ({
+  id,
+  file: `${id}.webp`,
+  kind: 'illustration',
+  status: DEFAULT_STATUS,
+  width: DIMS[id]?.[0] ?? W,
+  height: DIMS[id]?.[1] ?? H,
+  alt,
+  caption,
+  href: HREFS[id],
+  prompt: `${prompt} ${DETAIL_STYLE_SUFFIX}`,
+});
 
 const d = (
   id: string,
@@ -213,67 +257,67 @@ const og = (id: string, alt: string, prompt: string): SiteImage => ({
 
 export const IMAGES: SiteImage[] = [
   /* ── Framework pillars ─────────────────────────────────────────────── */
-  d(
+  p(
     'pillar-moisture',
-    'Cross-section of a floor assembly with moisture meters reading both the subfloor and the flooring material, and stacked boards acclimating in the room where they will be installed.',
-    'Pillar 1 — moisture is measured in both the subfloor and the material, before anything is fastened.',
-    'A cutaway side elevation of a room floor. Below: a subfloor layer with a small probe inserted into it. Above and to the side: a neat stack of flooring boards resting in the same room, slightly raised on spacers with visible air gaps between the boards. Two simple round dial instruments, one touching the subfloor and one touching the stacked boards. Show the room outline lightly so it reads as an interior.',
+    'Two digital moisture meters on a floor assembly — one reading 8.2 percent in the subfloor, one reading 7.4 percent in the flooring material — with boards acclimating on the finished floor of the conditioned room behind them.',
+    'Pillar 1 — Moisture and acclimation: both sides of the system are measured, and the material spends a minimum of 72 hours in the actual conditioned space. The meter values shown are a worked example; the acceptable difference between them is the manufacturer\'s and ours, and it is written into the estimate.',
+    'Two digital pin-type moisture meters photographed on a partly installed floor in a finished living room. The left meter sits on an exposed plywood subfloor panel with its LCD reading 8.2% MC; the right meter sits on an oak board with its LCD reading 7.4% MC. Behind them, a cross-stacked bundle of oak flooring boards acclimates on the finished floor with a sofa and a window beyond. Callout plates label the subfloor reading, the material reading, the 72-hour acclimation in conditioned space, and the bracket between the two readings.',
   ),
-  d(
+  p(
     'pillar-substrate',
-    'Three floor assemblies side by side — boards nailed into plywood over joists, boards bonded to a concrete slab, and boards floating over a radiant heating layer.',
-    'Pillar 2 — the substrate decides the method, not the budget.',
-    'Three vertical cutaway stacks side by side, evenly spaced, each showing a different floor assembly in orthographic cross-section. Left: floorboards with fasteners angled into a plywood sheet resting on joists. Centre: floorboards sitting on a bonded adhesive layer over a solid concrete slab, adhesive shown as a fine ridged trowel pattern. Right: floorboards resting loose over an underlay sheet above a slab with evenly spaced heating tubes running through it.',
+    'Three floor assemblies cut open side by side — solid boards nailed into plywood over joists, engineered boards glued to a concrete slab, and engineered boards floating over radiant heating tubes.',
+    'Pillar 2 — Substrate and method: the thing underneath decides how the floor is fastened. Plywood over joists takes nail-down solid; a slab takes glue-down engineered; radiant heat takes a floating engineered assembly.',
+    'Three photorealistic cutaway floor assemblies side by side, each sliced open to show every layer. Left: solid oak strips with cleats angled through the tongue into plywood sheathing over floor joists. Centre: engineered boards bedded in a ridged trowelled adhesive layer on a concrete slab. Right: engineered boards floating on a foam underlay above a slab with radiant tubing embedded in it. Callout plates name each assembly and its fastening method.',
   ),
-  d(
+  p(
     'pillar-specification',
-    'Comparison of a solid hardwood board and an engineered board, the engineered one showing a hardwood wear layer over a cross-laminated core.',
-    'Pillar 3 — construction, not appearance, decides what a house can support.',
-    'Two thick board cross-sections shown side by side at an angle, cut open to reveal their internal structure. Left board: one single continuous grain running through the full thickness. Right board: a thin top layer of the same grain over three or four thinner plies beneath it, each ply drawn with its grain direction rotated ninety degrees from the one above and below it, so the alternating structure is obvious.',
+    'Extreme close-up of a solid three-quarter-inch oak board beside an engineered board cut open to show a hardwood wear layer over a cross-laminated core.',
+    'Pillar 3 — Product specification: construction decides performance, not appearance. A solid board is one piece of wood through its whole thickness; an engineered board is a real hardwood wear layer over plies laid at ninety degrees to each other.',
+    'Macro photograph of two board end-sections standing side by side on a neutral surface. Left: a solid 3/4 inch white oak board, one continuous grain from face to underside, open pores visible. Right: an engineered board of the same thickness with a distinct hardwood wear layer on top over four to five thinner plies, each ply\'s grain running perpendicular to the one above it. Callout plates identify the wear layer, the cross-ply core, and the two thicknesses.',
   ),
-  d(
+  p(
     'pillar-movement',
-    'Plan view of a room showing continuous expansion gaps at every wall and around a fixed column and a hearth in the middle of the floor.',
-    'Pillar 4 — gaps at every wall and every fixed object, not only at the perimeter.',
-    'A flat overhead plan view of a rectangular room floor filled with parallel floorboards. A clear even gap runs along all four walls. Inside the room, a circular column and a rectangular hearth interrupt the floor, and the same even gap runs continuously around both of them. The gaps are drawn as clean empty channels in the copper accent colour.',
+    'Plan view of a Toronto living room floor with a continuous half-inch expansion gap at every wall and running unbroken around a structural column and a fireplace hearth.',
+    'Pillar 4 — Expansion and movement: the gap goes at every wall and every fixed object in the room, not only around the perimeter. Half an inch, roughly 12 mm, hidden under the baseboard and never filled.',
+    'Overhead plan view of a furnished living room floor laid in oak, rendered photorealistically. A clean continuous expansion gap runs along all four walls, and the same gap runs unbroken around a round structural column and a rectangular fireplace hearth in the middle of the floor. Dimension callouts mark the gap width at a wall, at the column and at the hearth.',
   ),
-  d(
+  p(
     'pillar-containment',
-    'The four sanding machines in working sequence — belt sander in the open field, edger at the perimeter, planetary sander blending the two, and a buffer for the final pass — with extraction hoses to a sealed collector.',
-    'Pillar 5 — four machines, in order, with containment throughout.',
-    'A flat overhead plan view of a room floor. Four simplified machine silhouettes shown from above, each in the zone it works: a large rectangular belt machine in the open middle of the room, a small round edger tucked tight against the wall, a wider multi-disc round machine straddling the boundary between the middle and the edge, and a round buffer on already-finished floor. A hose runs from each machine to one sealed drum at the room edge.',
+    'Four sanding machines shown in working sequence in one room — belt sander in the open field, edger tight to the baseboard, planetary sander blending the two, buffer on the final pass — each with a hose running to a sealed HEPA collector.',
+    'Pillar 5 — Dust containment and sequence: four machines, in that order, every one of them hosed to a sealed collector. Skipping the planetary sander is what leaves the halo where the edger stopped.',
+    'A wide interior view of a room mid-refinish with four professional sanding machines positioned where each one works: a large belt sander in the open field, a compact edger tight against the baseboard, a multi-disc planetary sander straddling the boundary between them, and a buffer on already-finished floor. Flexible extraction hoses run from all four to one sealed HEPA dust collector at the room edge. Numbered callout plates give the machine name and its place in the sequence.',
   ),
-  d(
+  p(
     'pillar-accountability',
-    'A written estimate document with the moisture readings and a fixed price recorded on it, alongside a signed contract.',
-    'Pillar 6 — the readings and the price exist in writing before a deposit.',
-    'Two overlapping document sheets shown flat at a slight angle. The upper sheet has a simple table structure drawn as ruled blank rows with a small dial-instrument icon beside two of them and a single boxed figure at the bottom right. The lower sheet shows a horizontal signature stroke near its base. Keep all rows empty and abstract with no readable characters.',
+    'A printed fixed-price estimate on a desk showing the recorded subfloor and material moisture readings, the scope and the total, beside a signed contract.',
+    'Pillar 6 — Commercial accountability: the readings and the price exist in writing, signed, before any deposit changes hands. The document shown is an illustrative example, not a client\'s estimate.',
+    'A photorealistic desk scene: a printed multi-page fixed-price estimate lying flat, with a legible section headed moisture readings showing a subfloor value and a material value, a scope list beneath it, and a boxed total at the foot. A signed contract page overlaps it at an angle with a pen resting on the signature line. Callout plates mark the recorded readings, the fixed price, and the signature.',
   ),
 
   /* ── Failure modes and core glossary concepts ──────────────────────── */
-  d(
+  p(
     'failure-cupping',
-    'End-grain cross-section of floorboards whose edges have risen higher than their centres, forming shallow troughs across the floor.',
-    'Cupping — edges higher than the centre, caused by moisture from below.',
-    'End-on cross-section view of four floorboards laid side by side, seen from the end grain. Each board curves so its two outer edges sit noticeably higher than its middle, creating a repeating shallow trough shape across the row. Draw a faint moisture indication rising from beneath the boards as small evenly spaced upward marks with no text.',
+    'Oak floorboards under raking light whose edges have risen higher than their centres, forming shallow troughs across the floor.',
+    'Cupping — edges higher than the centre. It means moisture reached the floor from below, and it is the failure a subfloor reading is taken to prevent.',
+    'Close raking-light photograph of finished oak floorboards deformed so that each board\'s two long edges sit higher than its centre, creating a repeating trough across the row. Low side lighting exaggerates the profile. A callout plate names the defect and a small end-section inset shows the curve direction.',
   ),
-  d(
+  p(
     'failure-crowning',
-    'End-grain cross-section of floorboards whose centres have risen higher than their edges, forming shallow domes.',
-    'Crowning — centre higher than the edges, the inverse of cupping.',
-    'End-on cross-section view of four floorboards laid side by side, seen from the end grain. Each board curves the opposite way from cupping: the middle of each board sits noticeably higher than its two outer edges, creating a repeating shallow dome shape across the row.',
+    'Oak floorboards under raking light whose centres have risen higher than their edges, forming shallow domes across the floor.',
+    'Crowning — centre higher than the edges. The inverse of cupping, and usually what happens when a cupped floor is sanded flat before it has finished drying.',
+    'Close raking-light photograph of finished oak floorboards deformed so that each board\'s centre sits higher than its two long edges, creating a repeating dome across the row. A callout plate names the defect and a small end-section inset shows the curve direction, opposite to cupping.',
   ),
-  d(
+  p(
     'failure-gapping',
-    'Floorboards in plan view with even seasonal gaps opened between every board.',
-    'Seasonal gapping — the floor contracting in dry indoor air.',
-    'Overhead plan view of parallel floorboards running across the frame. Between every board there is a consistent narrow open gap of equal width, drawn cleanly in the copper accent so the rhythm of the gaps is the subject.',
+    'Finished oak floorboards with even dark gaps opened between every board after a dry Toronto winter.',
+    'Seasonal gapping — the floor contracting in dry indoor air. Even gaps that close again in summer are movement; uneven gaps that never close are a specification or moisture problem.',
+    'Overhead photograph of a finished oak floor in winter light with a consistent narrow dark gap opened between every board. The gaps are even and repeating rather than random. A callout plate names the defect and notes that the gaps close again as indoor humidity rises.',
   ),
-  d(
+  p(
     'failure-buckling',
-    'Cross-section of a floor that has lifted away from the subfloor in a peak because it had nowhere to expand.',
-    'Buckling — a floor with no room to expand lifts off the substrate.',
-    'Side elevation cross-section of a floor running horizontally. At one point the boards lift dramatically away from the subfloor beneath them, forming a raised tent-like peak, while the boards on either side remain flat and in contact. At the far wall the floor is shown pressed hard against the skirting with no gap.',
+    'A hardwood floor lifted clear of its subfloor in a raised peak, boards tented against each other because there was nowhere left to expand.',
+    'Buckling and tenting — a floor with no room to expand lifts off the substrate. It is the end state of a missing or filled expansion gap.',
+    'Photograph of a finished oak floor in a room where a run of boards has lifted dramatically off the subfloor into a raised tent, boards pressed hard against each other at the peak while the floor on either side remains flat. At the far wall the boards are shown jammed tight against the baseboard with no gap. A callout plate names the defect and marks the absent expansion gap.',
   ),
   d(
     'concept-expansion-gap',
@@ -287,26 +331,25 @@ export const IMAGES: SiteImage[] = [
     'Acclimation — the material equalising in the room it will live in.',
     'A neat cross-stacked pile of flooring boards in the middle of an empty finished interior, with thin spacer sticks separating each layer so air passes through the whole stack. Show the room with a window and a radiator lightly outlined so it reads as a conditioned living space rather than a warehouse.',
   ),
-  d(
+  p(
     'concept-mc-differential',
-    'Two moisture readings compared — one taken in the subfloor and one in the flooring material — shown as two dials side by side.',
-    'Moisture differential — the gap between the material and what it is going onto.',
-    'Two identical round dial instruments shown large and side by side, each with a needle pointing to a different position on an unmarked scale. Beneath the left dial, a small cross-section of a subfloor. Beneath the right dial, a small cross-section of a flooring board. A simple bracket spans between the two needle positions to indicate the difference. No numbers on the dials.',
+    'Two digital moisture meters side by side, one reading 8.2 percent on a subfloor and one reading 7.4 percent on a flooring board, with the difference between them marked.',
+    'Moisture differential — the distance between what the material reads and what it is going onto. Both readings go in writing; the acceptable difference is the manufacturer\'s and ours. The values shown are a worked example.',
+    'Two digital pin-type moisture meters photographed side by side on a work surface, the left one resting on a plywood subfloor offcut with its LCD reading 8.2% MC, the right one on an oak flooring board with its LCD reading 7.4% MC. A bracket callout spans the two displays and labels the difference between them.',
   ),
-  d(
+  p(
     'concept-edger-halo',
-    'Plan view of a room where the perimeter band sanded by the edger reads differently from the field sanded by the belt machine.',
-    'The edger halo — what an unblended perimeter looks like once the finish goes on.',
-    'Overhead plan view of a rectangular room floor. The large central field is one flat tone. A continuous band around the entire perimeter, roughly the width of a small machine, is a visibly different tone. The boundary between the two zones is a hard, obvious line all the way round.',
+    'Circular swirl marks and a tonal halo in the finished floor along the baseboard, where the edger\'s work was never blended into the field.',
+    'Swirl marks and the edger halo — what a skipped planetary pass looks like once the finish goes on. It is invisible on bare wood and permanent under coating.',
+    'Close photograph of a finished oak floor at the junction with a white baseboard. A band roughly the width of a small machine runs along the wall, carrying visible circular swirl scratches and reading a different tone from the field beyond it, with a hard boundary between the two zones. A callout plate names the defect and marks the unblended boundary.',
   ),
 
   /* ── Paper heroes ──────────────────────────────────────────────────── */
-  d(
+  p(
     'paper-climate',
-    'A house in cross-section through the seasons, with indoor air drying in winter and humidifying in summer while the floor holds a stable band.',
-    'Climate Mastery — why hardwood succeeds or fails in this city.',
-    'A single house drawn in simple side-elevation cutaway, centred. Above the roofline, two contrasting weather indications on either side: on the left, angular crystalline forms suggesting cold dry air; on the right, soft rounded forms suggesting humid air. Inside the house, one clean horizontal floor line runs unbroken across the full width, drawn heavier than everything else so it reads as the stable element.',
-    'illustration',
+    'Chart of Toronto indoor relative humidity across the year — winter falling to 18 to 25 percent, summer rising above 60 percent, with the 35 to 55 percent band that hardwood is stable in marked across the middle.',
+    'Climate mastery — Toronto\'s indoor air spends much of the year outside the band hardwood is stable in. Every moisture decision on this site exists because of this chart.',
+    'A photorealistic data panel showing indoor relative humidity across a Toronto year as a curve running from a deep winter trough to a summer peak. A horizontal shaded band across the middle marks the range in which hardwood is dimensionally stable. Callout plates label the winter trough, the summer peak, and the stable band, and a small board cross-section beside the curve shows the floor\'s response at each extreme.',
   ),
   d(
     'paper-selection',
@@ -315,20 +358,19 @@ export const IMAGES: SiteImage[] = [
     'A clean branching diagram flowing left to right. One starting node on the left splits into two paths, and each of those splits again into two, ending in four terminal nodes on the right. Each node is a simple geometric shape — squares for substrates on the left, board cross-sections for products on the right. Connect them with clean orthogonal lines with rounded corners.',
     'illustration',
   ),
-  d(
+  p(
     'paper-craft',
-    'The four refinishing machines arranged in the order they run.',
-    'The Craft — four machines, and the order they run in.',
-    'Four simplified machine silhouettes in a single horizontal row, evenly spaced, each drawn from a three-quarter side view in flat vector: a large upright belt sander with a long handle, a compact low round edger, a wide round multi-disc machine, and a round buffer with a handle. Draw them at consistent scale relative to each other. A single continuous horizontal baseline runs beneath all four.',
-    'illustration',
+    'Four sanding machines arranged left to right in working order with their grit progression marked — belt sander at 36 grit, edger, planetary sander, and buffer at 80 to 100 grit.',
+    'The craft — four machines in sequence, each with its grit. The order is not a preference; each machine removes what the one before it could not reach.',
+    'Four professional floor sanding machines photographed in a row left to right against a neutral studio background in their working order: belt sander, edger, planetary sander, buffer. Beneath each machine a callout plate names it and gives its grit stage, running 36 through 60 to 80 and 100 across the row.',
   ),
 
   /* ── Guides ────────────────────────────────────────────────────────── */
-  d(
+  p(
     'guide-solid-vs-engineered',
-    'A solid board and an engineered board shown end to end for comparison.',
-    'Solid or engineered — the construction difference, at the end grain.',
-    'Two board ends shown large, side by side and slightly separated, cut to reveal internal structure. Left: continuous single-piece grain through the full thickness. Right: a thin decorative top layer over several thinner cross-banded plies with alternating grain direction. Draw both at identical overall thickness so the internal difference is the only variable.',
+    'Decision tree branching from the substrate — plywood over joists allows solid, concrete slab or radiant heat requires engineered, and wide seasonal humidity swings favour engineered.',
+    'Solid or engineered? The substrate and the climate decide, not the price list. Plywood over joists opens both doors; a slab, a condo or radiant heat closes one of them.',
+    'A photorealistic decision tree laid over three small room vignettes. The root node asks what the subfloor is. One branch leads to plywood over joists and a house interior, ending at solid hardwood. A second branch leads to a concrete slab and a condo interior, ending at engineered. A third branch leads to radiant heating and ends at engineered. A fourth consideration node covers wide seasonal humidity swings and also ends at engineered. Each node carries a short label.',
   ),
   d(
     'guide-method',
@@ -388,6 +430,26 @@ export const IMAGES: SiteImage[] = [
     'og-data',
     'Data and figures — a simple bar series beside a range band.',
     'On the left, four horizontal bars of differing lengths stacked vertically with even spacing. On the right, one wider soft-filled horizontal band with two shorter solid bars positioned above and below it at different horizontal offsets. Entirely abstract, no axes, no gridlines, no values.',
+  ),
+
+  /* ── Detailed register: heroes and one added failure mode ────────── */
+  p(
+    'framework-hero',
+    'Overview of the six pillars of the EcoWoods Well-Installed Framework, arranged around a cutaway floor assembly with the Toronto skyline behind it.',
+    'The six pillars of the Well-Installed Framework. Each one is a question a correctly installed floor can answer, and the pillar names in the panels below are the authoritative wording.',
+    'A wide hero composition with a cutaway hardwood floor assembly centred in the foreground showing boards, subfloor and joists, and the Toronto skyline across the water behind it. Six labelled medallion icons arranged three to a side, each naming one pillar of the framework and carrying a one-line summary beneath it.',
+  ),
+  p(
+    'resources-hero',
+    'Finished hardwood floor in a Toronto living room with the three technical overlays that govern it — moisture, expansion and machine sequence — drawn across the scene.',
+    'The resources hub — the science that decides whether a floor lasts, gathered in one place.',
+    'A wide hero composition of a bright Toronto living room with a finished oak floor, overlaid with three restrained technical graphics: a moisture reading on the subfloor, an expansion gap dimension at the wall, and a sanding machine sequence across the field. Each overlay carries a short label.',
+  ),
+  p(
+    'failure-edge-peaking',
+    'Floorboard edges raised above the board faces with the finish cracked and lifting along every seam.',
+    'Edge peaking — the board edges rise and the finish splits along the seams. It follows moisture cycling, and unlike cupping it takes the coating with it.',
+    'Close raking-light photograph of a finished oak floor where the long edges of each board have risen proud of the board face and the finish has cracked and lifted along the seams, with flakes visible at the edges. A callout plate names the defect and a small inset section shows the raised edge profile.',
   ),
 ];
 
