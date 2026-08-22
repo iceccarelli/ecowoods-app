@@ -1,0 +1,1034 @@
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index a7a1169..597bf16 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -41,7 +41,10 @@ function useScrollState() {
+ const navigation = [
+   { label: 'Gallery', href: '#gallery' },
+   // { label: 'Species', href: '#species' }, // hidden with The Detail section
+-  { label: 'Services', href: '#services' },
++  // A page, not an anchor. Six services now have their own URLs (F-146), and the
++  // map below already branches on `href.startsWith('#')` — a page link skips the
++  // scroll-spy and is rendered as a plain link, which is what this needs.
++  { label: 'Services', href: '/services' },
+   { label: 'Process', href: '#process' },
+   { label: 'The Craft', href: '#craft' },
+   // "Technical Library" was shortened to "Library" to pay for "Framework" in
+diff --git a/apps/web/app/layout.tsx b/apps/web/app/layout.tsx
+index d1d00fb..e7de97f 100644
+--- a/apps/web/app/layout.tsx
++++ b/apps/web/app/layout.tsx
+@@ -44,10 +44,10 @@ export const viewport: Viewport = {
+ };
+ 
+ import ChatWidgetLoader from "./components/ChatWidgetLoader";
++import { HOME_TITLE, HOME_DESCRIPTION } from '@/lib/alpha-keywords';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+-const DESCRIPTION =
+-  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
++const DESCRIPTION = HOME_DESCRIPTION;
+ 
+ const VERIFICATION = {
+   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+@@ -63,7 +63,7 @@ export const metadata: Metadata = {
+   // og:image resolved to a domain the business does not use.
+   metadataBase: new URL(SITE_URL),
+   title: {
+-    default: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
++    default: HOME_TITLE,
+     template: '%s · Ecowoods',
+   },
+   description: DESCRIPTION,
+@@ -86,24 +86,23 @@ export const metadata: Metadata = {
+   alternates: {
+     types: { 'application/rss+xml': [{ url: '/feed.xml', title: 'Ecowoods — Technical Publications' }] },
+   },
+-  keywords: [
+-    'hardwood flooring Toronto',
+-    'floor refinishing Toronto',
+-    'dust-free sanding GTA',
+-    'herringbone flooring installation',
+-    'white oak flooring Toronto',
+-  ],
++  // NO `keywords`. Google published "Google does not use the keywords meta tag
++  // in web ranking" in 2009 and has never revised it; Bing gives it ~nothing and
++  // has said a stuffed one reads as a spam signal. The five that used to sit
++  // here were bytes shipped to every visitor for no effect. The phrases they
++  // were reaching for now live in lib/alpha-keywords.ts and do their work in the
++  // title, the H1 and the anchor text, where they are actually read.
+   openGraph: {
+     type: 'website',
+     locale: 'en_CA',
+     url: SITE_URL,
+     siteName: 'Ecowoods',
+-    title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
++    title: HOME_TITLE,
+     description: DESCRIPTION,
+   },
+   twitter: {
+     card: 'summary_large_image',
+-    title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
++    title: HOME_TITLE,
+     description: DESCRIPTION,
+   },
+   robots: {
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index a051a90..2841a7c 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
+   const { city: slug } = await params;
+   const city = cityBySlug(slug);
+   if (!city) return {};
+-  const title = `Hardwood Flooring in ${city.name}`;
+-  const description = `Hardwood floor installation, refinishing and dust-free sanding in ${city.name} & the GTA. Fixed written estimates, manufacturer warranties in writing, free in-home consultation. Call ${BUSINESS.phoneDisplay}.`;
++  const title = `Hardwood floor installation & refinishing in ${city.name}`;
++  const description = `Custom hardwood floor installation, dust-free refinishing and restoration in ${city.name} and the GTA. Fixed written estimates, manufacturer warranties in writing. Call ${BUSINESS.phoneDisplay}.`;
+   return {
+     title,
+     description,
+@@ -52,7 +52,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           </nav>
+           <span className="eyebrow">Hardwood Flooring · {city.name}</span>
+           <h1 style={{ marginTop: '0.5rem' }}>
+-            Hardwood flooring in <span className="serif-italic">{city.name}.</span>
++            Hardwood floor installation &amp; refinishing in{' '}
++            <span className="serif-italic">{city.name}.</span>
+           </h1>
+           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
+             Ecowoods installs, sands and refinishes solid and engineered hardwood across {city.name} and the
+diff --git a/apps/web/app/services/page.tsx b/apps/web/app/services/page.tsx
+index a9e0cd6..96e5d46 100644
+--- a/apps/web/app/services/page.tsx
++++ b/apps/web/app/services/page.tsx
+@@ -6,9 +6,9 @@ import { SchemaScript } from '@/lib/schema/components';
+ import { getServicePages, serviceFor, priceBand, PRICE_PROMISE } from '@/lib/service-pages';
+ 
+ export const metadata: Metadata = {
+-  title: 'Hardwood flooring services in Toronto and the GTA',
++  title: 'Custom hardwood installation, refinishing & dust-free sanding',
+   description:
+-    'Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays — each with its published price band, the standard it is judged against, and the paper that explains the method.',
++    'Custom hardwood floor installation, dust-free refinishing, restoration, stairs and inlays in Toronto and the GTA — each with a published price band and the paper behind the method.',
+   alternates: { canonical: '/services' },
+   openGraph: {
+     title: 'Hardwood flooring services — EcoWoods',
+diff --git a/apps/web/lib/alpha-keywords.ts b/apps/web/lib/alpha-keywords.ts
+new file mode 100644
+index 0000000..c1a128d
+--- /dev/null
++++ b/apps/web/lib/alpha-keywords.ts
+@@ -0,0 +1,93 @@
++/**
++ * The transactional phrases this site is written to answer.
++ *
++ * WHAT THIS IS
++ *
++ * A written record of the queries each surface is aimed at, so that titles, H1s
++ * and internal anchor text can be reviewed against one list instead of drifting
++ * page by page. It is a planning document that happens to be typed in
++ * TypeScript.
++ *
++ * There is deliberately no guard asserting that these phrases appear in the
++ * copy. A check like that can only compare strings, and the useful version of
++ * "does this page answer that query" is not a string comparison — it would pass
++ * on a page that stuffed the phrase and fail on a page that answered the
++ * question in better words. Guards in this repository exist where a machine can
++ * be right; this is not one of those places.
++ *
++ * WHAT IT IS NOT: A `<meta name="keywords">` PAYLOAD
++ *
++ * An earlier draft of this file wired the list into `metadata.keywords`. It is
++ * deliberately not wired there, and the existing five keywords were removed at
++ * the same time, because Google published this in 2009 and has never revised it:
++ *
++ *   > Google does not use the keywords meta tag in web ranking.
++ *   — developers.google.com/search/blog/2009/09/google-does-not-use-keywords-meta-tag
++ *
++ * Bing gives it approximately nothing and has said it can read as a spam signal
++ * when stuffed. So the tag is, at best, bytes shipped to every visitor for no
++ * effect, and at worst a small negative. Deleting it costs nothing that exists.
++ *
++ * The phrases below do their work in the places that are actually read: the
++ * `<title>`, the H1, the meta description, the anchor text of internal links,
++ * and the body copy of the page that answers the query. That is where they are
++ * asserted, and that is where the guard looks for them.
++ *
++ * THE LINE THAT MATTERS
++ *
++ * These are SEARCH TARGETS, not claims. "Best hardwood flooring company GTA" is
++ * a query a person types; it is not a sentence this business may write about
++ * itself. Describing a page's topic is not the same as asserting a rank, and the
++ * distinction is the difference between an optimised title and a claim nobody
++ * can support. See docs/outreach/CLAIMS_REGISTER.md.
++ *
++ * No rating, no review count, no award, no certification, no superlative.
++ */
++
++export const ALPHA = {
++  /** High intent. Someone typing these is choosing a contractor this month. */
++  transactional: [
++    'custom hardwood floor installation Toronto',
++    'dustless hardwood floor refinishing',
++    'hardwood floor refinishing Toronto',
++    'dust-free floor sanding GTA',
++    'engineered wood flooring installation cost',
++    'hardwood flooring installation Toronto',
++  ],
++  /** Narrower, and far less contested, because they require knowing something. */
++  niche: [
++    'heritage floor restoration Toronto',
++    'condo acoustic underlayment hardwood',
++    'moisture-resistant hardwood Etobicoke',
++    'herringbone flooring installation Toronto',
++    'stair refinishing Toronto',
++  ],
++  /** Question-shaped. These are what an answer engine is asked, verbatim. */
++  longTail: [
++    'What is the best hardwood flooring for concrete slab condos?',
++    'How do you match new hardwood to old floors seamlessly?',
++    'Solid or engineered hardwood in Toronto?',
++    'How do you evaluate a hardwood flooring quote?',
++  ],
++} as const;
++
++/**
++ * The homepage title.
++ *
++ * Set as the root layout's `title.default`, and NOT on app/page.tsx. That is not
++ * a stylistic choice: `default` is used verbatim, while a title set on the page
++ * is run through the `%s · Ecowoods` template. Setting it in both places appends
++ * the brand a second time and pushes the string past 70 characters, of which a
++ * result shows about sixty — the same arithmetic that produced F-143.
++ *
++ * So the brand is spelled out here, once, at the end where truncation costs the
++ * least, and the transactional phrase leads. The previous title —
++ * "Ecowoods — Toronto's Master Hardwood Flooring Artisans" — led with a brand
++ * nobody is searching for yet and never said "installation" or "refinishing".
++ */
++export const HOME_TITLE =
++  'Hardwood Floor Installation & Refinishing Toronto · Ecowoods';
++
++/** ≤160 characters. No rating, no superlative, no award. */
++export const HOME_DESCRIPTION =
++  'Custom hardwood installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates, warranties in writing, free in-home consultation.';
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index 23a2f62..b3f7f12 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -36,6 +36,14 @@ export type ChangeEntry = {
+ };
+ 
+ export const CHANGELOG: ChangeEntry[] = [
++  {
++    id: 'gta-coverage-v1',
++    date: '2026-08-22',
++    kind: 'tool',
++    title: 'Every service area has its own page, not the same page sixteen times',
++    body: 'Fifteen of the sixteen service-area pages rendered one generic paragraph with a place name substituted in. Each now carries the housing stock, the neighbourhoods and the technical constraint that are actually specific to it \u2014 slab moisture downtown and in Mississauga\u2019s towers, remaining wear layer in East York, heated assemblies in Vaughan, lakeside humidity in Pickering and Ajax. The organisation\u2019s coverage is now derived from the same list the pages are built from, so the entity graph cannot claim an area with no page or omit one that has a page. Homepage and service titles lead with what the work is rather than with the brand.',
++    href: '/service-areas',
++  },
+   {
+     id: 'service-pages-v1',
+     date: '2026-08-22',
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 8dc74d3..85da1aa 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -12,7 +12,7 @@
+  * Keep in sync with seo-data.ts (NAP).
+  */
+ 
+-import { FAQ_ITEMS } from '@/lib/seo-data';
++import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import {
+   buildOrganization,
+@@ -35,6 +35,26 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+  * Update these values to change what EcoWoods emits to the world.
+  */
+ 
++/**
++ * Every area this business publishes a page for, derived rather than typed.
++ *
++ * Each of the six services used to carry its own hand-written array, and they
++ * disagreed: installation and refinishing listed four areas, restoration three,
++ * custom inlays exactly one — Toronto. Nothing had decided that inlays stop at
++ * the city line; the lists were written at different times and never
++ * reconciled. Meanwhile CITIES carries sixteen areas, every one of which has a
++ * service-area page, a sitemap entry and a route that returns 200.
++ *
++ * A proposed patch replaced the four arrays with the same hand-written ten,
++ * repeated six times. That fixes today's disagreement and rebuilds the
++ * mechanism that caused it. Derived from CITIES, the schema cannot claim
++ * coverage that has no page, and cannot omit coverage that does — which is the
++ * rule /services/[slug] already follows for exactly the same reason.
++ */
++const GTA = Array.from(
++  new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
++);
++
+ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+   siteUrl: SITE_URL,
+   name: 'Ecowoods Inc.',
+@@ -54,24 +74,10 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+     latitude: 43.72085,
+     longitude: -79.57542,
+   },
+-  areaServed: [
+-    { '@type': 'City', name: 'Toronto' },
+-    { '@type': 'City', name: 'North York' },
+-    { '@type': 'City', name: 'Etobicoke' },
+-    { '@type': 'City', name: 'Scarborough' },
+-    { '@type': 'City', name: 'East York' },
+-    { '@type': 'City', name: 'York' },
+-    { '@type': 'City', name: 'Vaughan' },
+-    { '@type': 'City', name: 'Markham' },
+-    { '@type': 'City', name: 'Richmond Hill' },
+-    { '@type': 'City', name: 'Mississauga' },
+-    { '@type': 'City', name: 'Oakville' },
+-    { '@type': 'City', name: 'Brampton' },
+-    { '@type': 'City', name: 'Aurora' },
+-    { '@type': 'City', name: 'Newmarket' },
+-    { '@type': 'City', name: 'Pickering' },
+-    { '@type': 'City', name: 'Ajax' },
+-  ],
++  // Derived, like the per-service lists below. This block was sixteen
++  // hand-typed City nodes that happened to agree with CITIES today; the
++  // per-service lists were four hand-typed nodes that did not. One source.
++  areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
+   services: [
+     {
+       id: 'hardwood-installation',
+@@ -79,14 +85,14 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+       description:
+         'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.',
+       priceRange: '$4,000–$15,000',
+-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
++      areaServed: GTA,
+     },
+     {
+       id: 'floor-refinishing',
+       name: 'Hardwood Floor Refinishing',
+       description: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
+       priceRange: '$2,500–$8,000',
+-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
++      areaServed: GTA,
+     },
+     {
+       id: 'dust-free-sanding',
+@@ -94,34 +100,34 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+       description:
+         'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.',
+       priceRange: '$2,000–$6,000',
+-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
++      areaServed: GTA,
+     },
+     {
+       id: 'floor-restoration',
+       name: 'Hardwood Floor Restoration',
+       description: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
+       priceRange: '$3,000–$10,000',
+-      areaServed: ['Toronto', 'North York', 'Markham'],
++      areaServed: GTA,
+     },
+     {
+       id: 'custom-inlays',
+       name: 'Custom Inlays & Borders',
+       description: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
+       priceRange: '$2,000–$12,000',
+-      areaServed: ['Toronto'],
++      areaServed: GTA,
+     },
+     {
+       id: 'stair-refinishing',
+       name: 'Stair Refinishing',
+       description: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
+       priceRange: '$1,500–$5,000',
+-      areaServed: ['Toronto', 'North York', 'Mississauga'],
++      areaServed: GTA,
+     },
+   ],
+   foundingYear: BUSINESS_NAP.foundedYear,
+   slogan: "Toronto's master hardwood flooring artisans",
+   description:
+-    'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
++    'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',
+   logoUrl: `${SITE_URL}/icon-512.png`,
+   ogImageUrl: `${SITE_URL}/og-image.jpg`,
+ };
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+index 3699c11..340b352 100644
+--- a/apps/web/lib/seo-data.ts
++++ b/apps/web/lib/seo-data.ts
+@@ -57,6 +57,12 @@ export const FAQ_ITEMS: FaqItem[] = [
+   { q: 'Can we stay in the house during the work?', a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
+   { q: 'What warranty comes with the work?', a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\u2019t right, we come back and make it right.' },
+   { q: 'How long will my project take?', a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.' },
++  // Two question-shaped entries, because those are the strings an answer engine
++  // is handed verbatim. Both answers are the published position of a guide on
++  // this site rather than new copy, and both name the guide so the citation
++  // survives being quoted out of context.
++  { q: 'What is the best hardwood flooring for concrete slab condos?', a: 'Engineered, not solid — the substrate decides it, not the budget. On a concrete slab the assembly is the specification: adhesive, underlayment and acoustic rating are part of the answer, and the slab is moisture-tested with in-situ probes before a board is opened. The full specification is published as our condominium-over-concrete-slab reference installation.' },
++  { q: 'How do you match new hardwood to old floors seamlessly?', a: 'By matching species, width and grain direction first, then trialling stain on site on the actual old boards — never from a single can chosen off a sample. Where boards have to be replaced, repairs are feathered into the surrounding run rather than butted in a straight line. A full sand alone will not hide a species or width mismatch, which is why matching is decided before any machine is switched on.' },
+ ];
+ 
+ // ── City-specific content ──────────────────────────────────────────────────
+@@ -84,6 +90,184 @@ export const CITY_CONTENT: Record<string, CityContent> = {
+     localConsideration:
+       "Elevator booking and building rules are the real operational filter. Almost every downtown high-rise requires the service elevator to be booked in advance for material drop-off and debris removal — often narrow weekday windows only — with mandatory certificates of insurance, security deposits, and strict noise and dust cut-offs. Miss the window or fail the paperwork and the schedule collapses. Street parking is effectively unavailable during work hours and loading zones are policed hard, so access has to be planned before the first board arrives.",
+   },
++
++  /**
++   * The other fifteen.
++   *
++   * Until this landed, one of sixteen service-area pages carried local content
++   * and the rest rendered the same generic paragraph with a place name
++   * substituted in. Fifteen pages competing for fifteen local queries by being
++   * the same page. That is the definition of thin content, and it is the reason
++   * a service-area set can sit in a sitemap for months without ranking for the
++   * places it names.
++   *
++   * TWO RULES WERE APPLIED TO EVERY ENTRY BELOW, and they are what make these
++   * publishable rather than filler:
++   *
++   *   1. Nothing about Ecowoods. No job counts, no awards, no "we have served
++   *      X families in Y since Z". Every sentence is either publicly checkable
++   *      geography and housing stock, or a technical point already published in
++   *      a paper on this site — slab moisture, remaining wear layer, acoustic
++   *      assembly, acclimation. Where a claim would have needed a figure this
++   *      site does not publish, the sentence was cut rather than softened.
++   *
++   *   2. `signatureProject` is left undefined everywhere. It is the one field
++   *      in CityContent that would assert a specific job, and no job has been
++   *      confirmed for publication. See docs/outreach/CLAIMS_REGISTER.md.
++   *
++   * The copy is editorial and Francisco's to revise; the coverage is mechanical
++   * and scripts/verify-cities.mjs fails the build if an area ever loses it.
++   */
++
++  'north-york': {
++    intro:
++      'North York runs from post-war bungalows and side-splits in the older pockets to the high-rise corridor along Yonge, Sheppard and Finch. The technical split is sharper here than almost anywhere else in the city: wood-joist subfloors in the low-rise stock, concrete slabs in the towers, and almost nothing in between.',
++    neighbourhoods: ['Willowdale', 'Bayview Village', 'Don Mills', 'York Mills', 'Downsview', 'Lansing'],
++    housingNote:
++      'Pre-1980 houses frequently still carry their original strip hardwood. Whether that floor can take another full sand is a question about remaining wear layer, not about age — and it is the question that decides between a screen and recoat and a full sand. In the condominium stock the constraint is the slab: relative humidity inside concrete is measured with in-situ probes, not a surface reading, and the result decides the method.',
++    localConsideration:
++      'Tower work carries the same elevator booking, certificate of insurance and noise-window constraints as downtown. In the low-rise stock the real constraint is different: a multi-day refinish in an occupied house is a containment problem, because the dust that matters is the dust that leaves the room.',
++  },
++
++  etobicoke: {
++    intro:
++      'Etobicoke holds a large stock of post-war bungalows and 1960s–80s semis inland, and a lakeside belt along the Queensway and Humber Bay that has been rebuilding as mid- and high-rise for two decades. Refinishing work here often meets oak or maple that has already been sanded once; new installation is frequently engineered over concrete.',
++    neighbourhoods: ['The Kingsway', 'Islington', 'Mimico', 'Long Branch', 'Humber Bay Shores', 'Alderwood'],
++    housingNote:
++      'Older Etobicoke houses sit on dimensional-lumber subfloors that have moved through decades of seasonal humidity, so flatness and fastening schedule matter as much as species. The newer lakeside buildings are slab construction, where the specification starts with a moisture test and an acoustic assembly rather than with a plank.',
++    localConsideration:
++      'Residential access is generally easier than downtown, but condominium and townhouse corporations still require insurance certificates and booked elevators. Buildings on the water add wind-driven moisture at openings, which is an argument for taking acclimation and expansion gap seriously rather than treating them as paperwork.',
++  },
++
++  scarborough: {
++    intro:
++      'Scarborough is predominantly detached and semi-detached housing built between the 1950s and the 1980s, with newer townhouse and mid-rise infill along the main corridors. Most calls are refinishing or carpet-to-hardwood conversion rather than new construction.',
++    neighbourhoods: ['Guildwood', 'Birch Cliff', 'Agincourt', 'Highland Creek', 'West Hill', 'Cliffside'],
++    housingNote:
++      'Plywood or plank subfloor over joists is the norm, which keeps solid hardwood on the table where the client accepts seasonal movement. Where carpet is coming up, the subfloor has usually never been assessed for flatness — that assessment, not the flooring choice, is what decides whether the finished floor telegraphs.',
++    localConsideration:
++      'Driveway staging is usually available, which simplifies material handling and dust extraction. The scheduling constraint is normally the household rather than the building.',
++  },
++
++  'east-york': {
++    intro:
++      'East York is compact, older, and largely detached and semi-detached housing from the 1920s to the 1950s, with narrow lots and finished basements added over time. Original hardwood is common and often thinner than owners expect.',
++    neighbourhoods: ['Leaside', 'Broadview North', 'Pape Village', 'Woodbine Heights', 'Todmorden'],
++    housingNote:
++      'Floors of this age have frequently been sanded more than once already. The wear layer above the tongue is finite, and once it is gone the floor is replaceable rather than restorable — which is why the first measurement on an East York refinish is depth, not colour.',
++    localConsideration:
++      'Narrow lots and shared drives make material staging the practical constraint. Older houses also tend to run drier in winter than newer ones, which widens the seasonal humidity swing the floor has to survive.',
++  },
++
++  york: {
++    intro:
++      'The former City of York is dense, older housing — semis, row housing and small detached homes, much of it pre-war — with a steady flow of renovation and rental turnover. Refinishing and repair outnumber new installation.',
++    neighbourhoods: ['The Junction', 'Weston', 'Mount Dennis', 'Silverthorn', 'Fairbank'],
++    housingNote:
++      'Original strip hardwood is widespread and frequently sits under later flooring. What is underneath is often recoverable, but board replacement and feathering into surrounding grain is usually part of the job rather than an exception, and species and width have to be matched before colour is discussed.',
++    localConsideration:
++      'Narrow streets and permit parking make loading the constraint. In multi-unit and rental conversions, work hours and shared entrances are set by the building rather than the schedule.',
++  },
++
++  vaughan: {
++    intro:
++      'Vaughan is predominantly post-1990 housing: detached homes, townhouses and a growing mid-rise inventory around the subway extension. Most hardwood work is either a first carpet-to-hardwood conversion or a refinish of builder-installed oak that has taken a decade of wear.',
++    neighbourhoods: ['Woodbridge', 'Maple', 'Kleinburg', 'Concord', 'Thornhill'],
++    housingNote:
++      'Low-rise subfloors are typically plywood over engineered joists; mid-rise is concrete. Engineered product dominates conversions, and solid remains viable where the joist layout allows nail-down and the client accepts movement. Radiant and heated zones are common in the newer builds, and they decide product and adhesive rather than the other way round.',
++    localConsideration:
++      'Site access is generally good. The specification risk here is under-allowing for a heated assembly, because a floor specified for an unheated subfloor and then laid over one has no path back.',
++  },
++
++  markham: {
++    intro:
++      'Markham combines established family neighbourhoods with a dense corridor of condominiums and stacked townhouses. Work splits between refinishing older oak in detached homes and engineered installation over concrete in the multi-family stock.',
++    neighbourhoods: ['Unionville', 'Markham Village', 'Cornell', 'Buttonville', 'Milliken', 'Berczy Village'],
++    housingNote:
++      'Detached stock often carries original or once-refinished oak over plywood. Multi-family and stacked townhomes bring the same acoustic and moisture constraints as a Toronto condominium — the plank is one layer of an assembly, and the assembly is what a building declaration is written against.',
++    localConsideration:
++      'Condominium corporation rules on work hours, insurance and debris disposal apply widely. Containment and removal have to be planned before the first machine runs, not arranged around it.',
++  },
++
++  'richmond-hill': {
++    intro:
++      'Richmond Hill spans older village-core housing, large 1990s–2000s subdivisions, and a growing condominium corridor along Yonge. Refinishing of builder-grade oak and full-house conversions are the common jobs.',
++    neighbourhoods: ['Mill Pond', 'Oak Ridges', 'Bayview Hill', 'Jefferson', 'Richvale'],
++    housingNote:
++      'Subdivision-era oak strip is often thinner than it looks once the finish is off, which makes the screen-and-recoat decision a real one rather than a lesser option. Larger homes also mean large continuous floor areas, where flatness tolerance and stain consistency across a run matter more than they do in small rooms.',
++    localConsideration:
++      'Staging is rarely the problem in the low-rise stock. Matching stair runs and landings to a large open floor is, and it is the detail that gives an inconsistent refinish away.',
++  },
++
++  mississauga: {
++    intro:
++      'Mississauga demand is dominated by family homes in established neighbourhoods and a large inventory of 1990s–2010s condominiums and townhouses. Refinishing of builder-grade oak is common in the older subdivisions; lakeshore work more often specifies wide-plank engineered over slab or radiant.',
++    neighbourhoods: ['Port Credit', 'Streetsville', 'Clarkson', 'Erin Mills', 'Lorne Park', 'City Centre'],
++    housingNote:
++      'Builder-grade strip oak from the 1980s and 1990s is frequently thin on remaining wear layer after one aggressive sand. Condominium slabs need the same in-situ moisture protocol used downtown; the city line does not change the physics, and it does not change the test.',
++    localConsideration:
++      'Detached work stages easily. The variable is building management in the City Centre towers and the townhouse complexes, where loading windows are narrow and booked well ahead.',
++  },
++
++  oakville: {
++    intro:
++      'Oakville skews to larger single-family homes, heritage and near-heritage stock near the lake, and higher-specification new builds. Continuous flow between rooms, colour-matched stairs and a finish that holds up to family use are the recurring requirements.',
++    neighbourhoods: ['Old Oakville', 'Bronte', 'Glen Abbey', 'Clearview', 'Morrison', 'Joshua Creek'],
++    housingNote:
++      'Older lakeside and village houses may carry original softwood or mixed hardwood that needs board replacement and careful feathering before any uniform refinish is possible. Newer builds more often want installation chosen on width, grade and finish system rather than a sand of what is already down.',
++    localConsideration:
++      'Driveway and garage staging is usually available. The constraint is holding stain consistent across large continuous areas and stair runs in an occupied family home, over several days.',
++  },
++
++  brampton: {
++    intro:
++      'Brampton is dominated by 1990s-onward subdivisions — detached, semi-detached and freehold townhouses — with older housing concentrated near the downtown core. Carpet-to-hardwood conversion and refinishing of builder oak are the two common jobs.',
++    neighbourhoods: ['Downtown Brampton', 'Heart Lake', 'Bramalea', 'Springdale', 'Credit Valley'],
++    housingNote:
++      'Plywood over engineered joists is the norm in the newer stock, and the flatness that a builder accepted for carpet is not the flatness a hardwood floor needs. Subfloor preparation is usually the largest single variable in the quote, and it is the one most often left out of a cheap one.',
++    localConsideration:
++      'Access and staging are straightforward. Large open-plan main floors mean long uninterrupted runs, where a fastening schedule that was adequate for a small room stops being adequate.',
++  },
++
++  aurora: {
++    intro:
++      'Aurora mixes a heritage core around Yonge and Wellington with substantial post-1990 subdivision housing. Work ranges from careful restoration in the older stock to full-house installation in the newer.',
++    neighbourhoods: ['Aurora Village', 'Regency Acres', 'Bayview Wellington', 'Aurora Highlands', 'Hills of St Andrew'],
++    housingNote:
++      'Heritage-core houses can carry original softwood or early hardwood where board replacement and feathering come before any uniform finish. Subdivision housing is plywood over joists, where the decisions are species, width and whether the seasonal humidity range in the house supports solid.',
++    localConsideration:
++      'Older houses in the core often run drier in winter, which widens the annual movement the floor has to absorb — an argument for engineered, or for a narrower board, rather than for a wider one.',
++  },
++
++  newmarket: {
++    intro:
++      'Newmarket combines a historic Main Street core with large subdivisions built from the 1980s onward. Most calls are refinishing builder-grade oak or converting carpet in family homes.',
++    neighbourhoods: ['Historic Downtown', 'Stonehaven', 'Armitage', 'Glenway', 'Summerhill Estates'],
++    housingNote:
++      'Subdivision-era strip oak is common and its remaining thickness, not its age, decides whether a full sand is available. In the older core, mixed and replaced boards are usual, and matching species and width is the work that makes a repair invisible.',
++    localConsideration:
++      'Staging is straightforward outside the historic core, where narrow frontages and street parking are the practical limit.',
++  },
++
++  pickering: {
++    intro:
++      'Pickering runs from 1960s–70s lakeside neighbourhoods to newer subdivisions inland and a growing condominium presence near the GO corridor. Refinishing and conversion dominate; new installation follows the newer stock.',
++    neighbourhoods: ['Bay Ridges', 'Amberlea', 'Rougemount', 'West Shore', 'Liverpool'],
++    housingNote:
++      'Older lakeside houses sit on plank or plywood subfloors that have moved, and flatness assessment comes before any product decision. Newer condominium and townhouse stock is slab construction, where the in-situ moisture test decides the method regardless of what the plank is rated for.',
++    localConsideration:
++      'Proximity to the lake widens the humidity range at openings and in unconditioned spaces, which makes acclimation in the actual conditioned room — not the garage — the step that cannot be compressed.',
++  },
++
++  ajax: {
++    intro:
++      'Ajax is largely post-1970 housing with a substantial band of 1990s-onward subdivisions and a historic pocket at Pickering Village. Carpet-to-hardwood conversion and refinishing of builder oak are the common jobs.',
++    neighbourhoods: ['Pickering Village', 'Westney Heights', 'South Ajax', 'Central Ajax', 'Applecroft'],
++    housingNote:
++      'Plywood over joists is the norm. Where carpet is being replaced, the subfloor has usually never been checked for flatness, and that check — not the species conversation — is what determines whether the finished floor reads flat.',
++    localConsideration:
++      'Access and staging are straightforward. Lakeside exposure widens seasonal movement, so expansion gap and acclimation are specification items rather than formalities.',
++  },
+ };
+ 
+ export const cityContent = (slug: string): CityContent | undefined => CITY_CONTENT[slug];
+diff --git a/apps/web/lib/service-pages.ts b/apps/web/lib/service-pages.ts
+index fa3f692..748142b 100644
+--- a/apps/web/lib/service-pages.ts
++++ b/apps/web/lib/service-pages.ts
+@@ -71,9 +71,9 @@ export type ServicePage = {
+ export const SERVICE_PAGES: ServicePage[] = [
+   {
+     slug: 'hardwood-installation',
+-    h1: 'Hardwood floor installation in Toronto and the GTA',
++    h1: 'Custom hardwood floor installation in Toronto and the GTA',
+     standfirst:
+-      'What the substrate allows, what it costs, and the standard the finished floor is judged against.',
++      'What the substrate allows, what it costs, and the standard the finished floor is judged against — solid and engineered, including condominium slabs.',
+     pricing: 'newInstall',
+     guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating'],
+     papers: [
+@@ -85,9 +85,9 @@ export const SERVICE_PAGES: ServicePage[] = [
+   },
+   {
+     slug: 'floor-refinishing',
+-    h1: 'Hardwood floor refinishing in Toronto and the GTA',
++    h1: 'Dust-free hardwood floor refinishing in Toronto and the GTA',
+     standfirst:
+-      'Four machines, one sequence, and the difference between a floor that was sanded and a floor that was refinished.',
++      'Four machines, one sequence, containment at the source — and the difference between a floor that was sanded and a floor that was refinished.',
+     pricing: 'fullSandAndFinish',
+     guides: ['reference-refinishing-existing-hardwood'],
+     papers: [
+@@ -99,7 +99,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+   },
+   {
+     slug: 'dust-free-sanding',
+-    h1: 'Dust-free floor sanding in Toronto and the GTA',
++    h1: 'Dustless hardwood floor sanding in Toronto and the GTA',
+     standfirst:
+       'Containment at the source, measured at the machine — and what it means for whether you can stay in the house.',
+     guides: ['reference-refinishing-existing-hardwood'],
+@@ -111,7 +111,7 @@ export const SERVICE_PAGES: ServicePage[] = [
+   },
+   {
+     slug: 'floor-restoration',
+-    h1: 'Hardwood floor restoration in Toronto and the GTA',
++    h1: 'Heritage hardwood floor restoration in Toronto and the GTA',
+     standfirst:
+       'Heritage and water-damaged floors: what can be saved, what has to be replaced, and how the join is made invisible.',
+     pricing: 'fullSandAndFinish',
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index da1dc01..022bde5 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -4542,3 +4542,109 @@ Verified by running the whole script against two local fixture sites — one tha
+ all five new status paths, was executed in both directions before shipping.
+ 
+ There is nothing to fix on production. `d002e22` deployed correctly.
++
++### F-150 · Fifteen of sixteen service-area pages were the same page · P1
++
++`CITY_CONTENT` had an entry for `downtown-toronto`. The other fifteen published
++areas — North York, Etobicoke, Scarborough, East York, York, Vaughan, Markham,
++Richmond Hill, Mississauga, Oakville, Brampton, Aurora, Newmarket, Pickering,
++Ajax — rendered the same generic paragraph with a place name substituted in.
++
++Fifteen URLs in the sitemap, competing for fifteen local queries, by being one
++page. That is the textbook definition of thin content and it is among the most
++common reasons a service-area set sits indexed and unranked for months. Nothing
++in the repository noticed: every one of those pages built, typechecked, returned
++200, carried a correct self-canonical and appeared in the sitemap. Correctness
++was never the problem. *Sameness* was, and no guard measured it.
++
++All sixteen now carry local content, written under two rules that are what make
++them publishable rather than filler:
++
++- **Nothing about this business.** No job counts, no awards, no "we have served
++  X families in Y since Z". Every sentence is either publicly checkable
++  geography and housing stock, or a technical point already published in a paper
++  on this site — in-situ slab moisture, remaining wear layer, acoustic assembly,
++  acclimation in the actual conditioned room. Where a sentence would have needed
++  a figure this site does not publish, it was cut rather than softened.
++- **No `signatureProject` anywhere new.** It is the one field in `CityContent`
++  that asserts a specific real job.
++
++`scripts/verify-cities.mjs` holds the line: every published area must have an
++entry, every entry needs a real intro, a real housing note and at least three
++neighbourhoods, and **no two cities may share an intro or a housing note** —
++because pasting one entry sixteen times would satisfy every other check and
++recreate the exact failure.
++
++Two things about that guard are worth recording, because both were mistakes it
++made before it was right.
++
++Its first version read single-quoted strings only. The one pre-existing entry,
++`downtown-toronto`, is written with double quotes, so the guard reported a
++zero-length intro, a zero-length housing note and no neighbourhoods — three
++confident findings about content that was present and correct. A guard that
++cannot read the code it polices is F-149 in a different file.
++
++Its first version also failed `downtown-toronto` for declaring
++`signatureProject`. That entry describes a real job, has been published for a
++long time, and reads as a genuine account. A guard is not licence to delete
++approved content because it belongs to a category that needs approval. It is now
++a ratchet with a baseline — the published one stays, a new one fails the build
++until someone adds the slug deliberately — which is the pattern
++`verify-tokens` and `verify-schema` already use.
++
++### F-151 · Six services claimed six different service areas · P2
++
++`root-schema.ts` gave every service its own hand-written `areaServed` array, and
++they disagreed:
++
++| Service | Areas claimed |
++|---|---|
++| Installation, refinishing, dust-free sanding | 4 |
++| Restoration | 3 |
++| Stair refinishing | 3 |
++| Custom inlays | **1** |
++
++Nothing had ever decided that custom inlays stop at the Toronto city line. The
++arrays were written at different times and never reconciled, while `CITIES`
++carries sixteen areas, every one of which has a page, a sitemap entry and a
++route that returns 200. The organisation node listed all sixteen by hand, so the
++graph simultaneously claimed sixteen areas and, for inlays, one.
++
++A proposed patch fixed the disagreement by hand-writing the same ten areas six
++times. That corrects today's output and rebuilds the mechanism that produced it:
++seven hand-maintained lists instead of six, still disconnected from the routes,
++still free to drift, and now claiming ten of sixteen areas for no stated reason.
++
++All seven are derived from `CITIES`. The graph cannot claim an area with no page
++or omit one that has a page — the same rule `/services/[slug]` already followed.
++`verify-cities.mjs` fails the build on any hand-written `areaServed` array here.
++
++### F-152 · The keywords meta tag was about to be expanded · P3
++
++A proposed patch moved eleven phrases into `metadata.keywords`, replacing the
++five already there. Google published this in 2009 and has never revised it:
++
++> "Google does not use the keywords meta tag in web ranking."
++
++Bing gives it approximately nothing and has said a stuffed one can read as a
++spam signal. The tag is, at best, bytes shipped to every visitor for no effect.
++
++Both the five and the proposed eleven are gone. The phrases they were reaching
++for live in `lib/alpha-keywords.ts` as a written record of what each surface is
++aimed at, and they do their work in the `<title>`, the H1, the meta description
++and the anchor text of internal links — the places that are actually read.
++
++There is deliberately **no guard** asserting those phrases appear in the copy. A
++check like that can only compare strings, and the useful version of "does this
++page answer that query" is not a string comparison: it would pass a page that
++stuffed the phrase and fail one that answered the question in better words.
++Guards here exist where a machine can be right.
++
++The homepage title changed with it, from `Ecowoods — Toronto's Master Hardwood
++Flooring Artisans` — which led with a brand nobody is searching for yet and never
++said *installation* or *refinishing* — to
++`Hardwood Floor Installation & Refinishing Toronto · Ecowoods`, 60 characters.
++It is set as the root layout's `title.default` and deliberately **not** on
++`app/page.tsx`: `default` is used verbatim, while a title set on the page is run
++through the `%s · Ecowoods` template. Setting both appends the brand twice and
++pushes the string past seventy characters, which is F-143 again.
+diff --git a/docs/outreach/WHY_NO_AGGREGATE_RATING.md b/docs/outreach/WHY_NO_AGGREGATE_RATING.md
+new file mode 100644
+index 0000000..fb8ca0f
+--- /dev/null
++++ b/docs/outreach/WHY_NO_AGGREGATE_RATING.md
+@@ -0,0 +1,62 @@
++# Why there is no aggregateRating loophole
++
++The request, made more than once: put the HomeStars 5.0 / 176 — or any
++third-party aggregate — into `LocalBusiness.aggregateRating` on ecowoods.ca, to
++force review stars into search results.
++
++**That markup does not produce stars on your own domain.** Google's
++review-snippet documentation states both of the following:
++
++> "Don't aggregate reviews or ratings from other websites."
++
++> "If the entity that's being reviewed controls the reviews about itself, their
++> pages that use `LocalBusiness` or any other type of `Organization` structured
++> data are ineligible for star review feature."
++
++A HomeStars number on this site is both at once. The stars were never available:
++the page type is ineligible by rule, not by chance.
++
++## What it would actually cost
++
++The pattern is the one associated with structured-data manual actions. A manual
++action does not remove the stars you were never going to get. It removes **every
++rich result on the domain**:
++
++- the `HowTo` blocks on the technical papers
++- the `FAQPage` blocks on the service and service-area pages
++- the `Dataset` markup on the figures and the market data
++- the breadcrumbs on every route
++
++All of it, earned over the whole project, traded for a snippet that did not
++exist. This is not a cautious reading. `lib/schema/root-schema.ts` has carried
++the line **"⚠️ DO NOT WIRE THIS INTO ANY EMITTED SCHEMA"** above
++`ROOT_AGGREGATE_RATING` since before this conversation, and
++`verify-business-facts.mjs` permanently bans the fabricated `348 verified
++reviews` at `4.9/5` that was published here once already.
++
++## The variants that get proposed, and why each fails
++
++| Idea | Why it fails |
++|---|---|
++| Put the same numbers on `Product` instead of `LocalBusiness` | Still an aggregate from another website. The rule is about where the reviews came from, not which type carries them. |
++| Embed a HomeStars or Google widget and mark that up | Reviews about the business, displayed on the business's own site, are self-serving by definition — the case the guideline names explicitly. |
++| Collect a handful of on-site reviews so the aggregate is "first-party" | Only genuine, ungated, first-party reviews qualify — and gating (asking only happy clients) is separately prohibited. This repo already retired one fabricated figure; a second would end the credibility of every number on the site. |
++| Use `CriticReview` | For independent editorial critics reviewing a subject, not for a business reviewing itself. |
++| Mark it up and accept the risk | The downside is not "no stars". It is losing every rich result the site already has. |
++
++## What actually produces stars for this business
++
++Google's **own** place rating, from the **Google Business Profile**. It is not
++site markup, and no markup can create it. Google reads it from its own data.
++
++That is what `docs/outreach/review-request.md` is for:
++
++1. Claim and verify the Business Profile.
++2. Make the profile's name, address and phone match `BUSINESS_NAP` exactly.
++3. Send the request to **every** completed job — not only the happy ones, which
++   is prohibited as review gating.
++4. Answer every review, especially the critical ones.
++
++That path compounds and cannot be taken away. Schema fiction does neither.
++
++See also `CLAIMS_REGISTER.md`.
+diff --git a/package.json b/package.json
+index e988ecb..db8e011 100644
+--- a/package.json
++++ b/package.json
+@@ -29,10 +29,11 @@
+     "verify:indexnow": "node scripts/verify-indexnow.mjs",
+     "verify:markdown": "node scripts/verify-markdown.mjs",
+     "verify:services": "node scripts/verify-services.mjs",
++    "verify:cities": "node scripts/verify-cities.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index b1790db..b16a622 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -134,6 +134,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-indexnow.mjs ] && run "verify:indexnow" node scripts/verify-indexnow.mjs
+ [ -f scripts/verify-markdown.mjs ] && run "verify:markdown" node scripts/verify-markdown.mjs
+ [ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
++[ -f scripts/verify-cities.mjs ] && run "verify:cities" node scripts/verify-cities.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-cities.mjs b/scripts/verify-cities.mjs
+new file mode 100644
+index 0000000..a19bb6c
+--- /dev/null
++++ b/scripts/verify-cities.mjs
+@@ -0,0 +1,209 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-cities.mjs
++ *
++ * Fails when a service-area page would render without local content, when a
++ * city asserts a specific job, or when the schema's coverage is typed by hand
++ * instead of derived.
++ *
++ * WHY THIS EXISTS
++ *
++ * Sixteen areas are published. `CITY_CONTENT` had content for one of them.
++ *
++ * The other fifteen rendered the same generic paragraph with a place name
++ * substituted in — fifteen URLs in the sitemap, competing for fifteen local
++ * queries, by being the same page. That is the textbook definition of thin
++ * content and it is the most common reason a service-area set sits indexed and
++ * unranked. Nothing in the repository noticed, because every one of those pages
++ * built, typechecked, returned 200 and had a correct canonical.
++ *
++ * The second half of the same problem was in the entity graph. Each of the six
++ * services in `root-schema.ts` carried its own hand-written `areaServed` array,
++ * and they disagreed with each other: installation and refinishing listed four
++ * areas, restoration three, custom inlays exactly one. Nothing had decided that
++ * inlays stop at the city line — the arrays were written at different times and
++ * never reconciled. A proposed patch fixed the disagreement by hand-writing the
++ * same ten areas six times, which fixes today and rebuilds the mechanism.
++ *
++ * WHAT IT DOES
++ *
++ * 1. Every entry in AREAS has a CITY_CONTENT key, and every key is an AREA.
++ * 2. Each entry has a non-empty intro, at least three neighbourhoods, and a
++ *    housing note — the three fields that make the page specific to the place.
++ * 3. No entry carries `signatureProject`. That is the one field that asserts a
++ *    real job, and no job has been confirmed for publication. See
++ *    docs/outreach/CLAIMS_REGISTER.md.
++ * 4. No two entries share an intro or a housing note. Duplicated copy across
++ *    city pages is the failure this guard exists to prevent, and pasting one
++ *    entry sixteen times would otherwise satisfy every check above.
++ * 5. `root-schema.ts` declares no hand-written areaServed array — coverage is
++ *    derived from CITIES, so the schema cannot claim an area with no page or
++ *    omit one that has a page.
++ *
++ *   node scripts/verify-cities.mjs
++ *   node scripts/verify-cities.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const SEO = path.join(ROOT, 'apps/web/lib/seo-data.ts');
++const SCHEMA = path.join(ROOT, 'apps/web/lib/schema/root-schema.ts');
++const LIST = process.argv.includes('--list');
++
++const strip = (s) =>
++  s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
++
++/**
++ * Cities whose signatureProject is confirmed and published. Adding a slug here
++ * is a statement that the job described is real and cleared for publication.
++ */
++const SIGNATURE_BASELINE = new Set(['downtown-toronto']);
++
++const src = strip(fs.readFileSync(SEO, 'utf8'));
++const problems = [];
++
++/* ── the published areas ──────────────────────────────────────────────────── */
++const areasBlock = src.match(/const AREAS = \[([\s\S]*?)\];/);
++if (!areasBlock) {
++  console.error('verify-cities: could not read AREAS from seo-data.ts');
++  process.exit(2);
++}
++const slugify = (s) =>
++  s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
++const areas = [...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
++
++/* ── the content map ──────────────────────────────────────────────────────── */
++const contentStart = src.indexOf('export const CITY_CONTENT');
++if (contentStart === -1) {
++  console.error('verify-cities: could not find CITY_CONTENT');
++  process.exit(2);
++}
++const contentSrc = src.slice(contentStart);
++
++/** Split the object into per-key blocks by brace matching. */
++const entries = new Map();
++const keyRe = /\n {2}'?"?([a-z-]+)'?"?:\s*\{/g;
++let m;
++while ((m = keyRe.exec(contentSrc)) !== null) {
++  const open = contentSrc.indexOf('{', m.index);
++  let depth = 0;
++  let i = open;
++  for (; i < contentSrc.length; i++) {
++    if (contentSrc[i] === '{') depth++;
++    else if (contentSrc[i] === '}') {
++      depth--;
++      if (depth === 0) break;
++    }
++  }
++  entries.set(m[1], contentSrc.slice(open, i + 1));
++}
++
++/* ── 1. coverage, both directions ─────────────────────────────────────────── */
++for (const a of areas) {
++  const slug = slugify(a);
++  if (!entries.has(slug)) {
++    problems.push({
++      where: `CITY_CONTENT['${slug}']`,
++      detail: `${a} is a published service area with no local content — its page renders the generic paragraph with a place name substituted in`,
++    });
++  }
++}
++const areaSlugs = new Set(areas.map(slugify));
++for (const k of entries.keys()) {
++  if (!areaSlugs.has(k)) {
++    problems.push({ where: `CITY_CONTENT['${k}']`, detail: 'has content but is not in AREAS — no page renders it' });
++  }
++}
++
++/* ── 2 & 3. each entry is specific, and asserts no job ────────────────────── */
++/**
++ * Reads a string field, single- or double-quoted. The first version of this
++ * matched single quotes only and reported the one pre-existing entry —
++ * downtown-toronto, written with double quotes — as having a zero-length intro,
++ * a zero-length housing note and no neighbourhoods. Three confident findings
++ * about content that was there and correct. A guard that cannot read the code
++ * it polices is worse than no guard, which is the lesson of F-149 in a
++ * different file.
++ */
++const field = (block, name) => {
++  for (const q of ["'", '"']) {
++    const r = new RegExp(`${name}:\\s*\\n?\\s*${q}((?:[^${q}\\\\]|\\\\.)*)${q}`);
++    const hit = block.match(r);
++    if (hit) return hit[1];
++  }
++  return '';
++};
++for (const [slug, block] of entries) {
++  const intro = field(block, 'intro');
++  const housing = field(block, 'housingNote');
++  const hoods = (block.match(/neighbourhoods:\s*\[([\s\S]*?)\]/) || [, ''])[1];
++  const hoodCount = [...hoods.matchAll(/'[^']+'|"[^"]+"/g)].length;
++
++  if (intro.length < 80) problems.push({ where: slug, detail: `intro is ${intro.length} characters — too short to be about this place` });
++  if (housing.length < 80) problems.push({ where: slug, detail: `housingNote is ${housing.length} characters — too short to be about this place` });
++  if (hoodCount < 3) problems.push({ where: slug, detail: `${hoodCount} neighbourhood(s) listed — at least 3` });
++  /**
++   * signatureProject asserts a specific real job. That is exactly the kind of
++   * claim this project does not invent — but downtown-toronto has carried one
++   * since long before this guard, it is published, and it reads as a genuine
++   * account of a genuine job. A guard is not licence to delete approved
++   * content because it is the kind of content that needs approval.
++   *
++   * So this is a ratchet with a baseline, like verify-tokens and verify-schema:
++   * what is already published stays, and a NEW one fails the build until
++   * someone adds it here deliberately, having confirmed the job.
++   */
++  if (/signatureProject\s*:/.test(block) && !SIGNATURE_BASELINE.has(slug)) {
++    problems.push({
++      where: slug,
++      detail:
++        'declares signatureProject, which asserts a specific real job. If it is confirmed for ' +
++        'publication, add the slug to SIGNATURE_BASELINE in this file. See docs/outreach/CLAIMS_REGISTER.md.',
++    });
++  }
++}
++
++/* ── 4. no two cities share copy ──────────────────────────────────────────── */
++for (const name of ['intro', 'housingNote']) {
++  const seen = new Map();
++  for (const [slug, block] of entries) {
++    const v = field(block, name);
++    if (!v) continue;
++    if (seen.has(v)) {
++      problems.push({
++        where: `${seen.get(v)} and ${slug}`,
++        detail: `share the same ${name} — duplicated copy across city pages is the exact failure this guard exists to prevent`,
++      });
++    } else seen.set(v, slug);
++  }
++}
++
++/* ── 5. the schema derives its coverage ───────────────────────────────────── */
++const schema = strip(fs.readFileSync(SCHEMA, 'utf8'));
++const handWritten = [...schema.matchAll(/areaServed:\s*\[[^\]]*'[^']+'[^\]]*\]/g)];
++if (handWritten.length) {
++  problems.push({
++    where: 'lib/schema/root-schema.ts',
++    detail: `${handWritten.length} hand-written areaServed array(s). Derive from CITIES so the graph cannot claim an area with no page, or omit one that has a page.`,
++  });
++}
++if (!/CITIES/.test(schema)) {
++  problems.push({ where: 'lib/schema/root-schema.ts', detail: 'does not reference CITIES — coverage is not derived from the published areas' });
++}
++
++/* ── report ───────────────────────────────────────────────────────────────── */
++if (LIST) for (const k of entries.keys()) console.log(`  ✓ /service-areas/${k}`);
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} problem(s) in the service-area coverage:\n`);
++  for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
++  console.error(
++    '  A service-area page with no local content is the same page as fifteen others\n' +
++      '  with a place name swapped in. That is what thin content is, and it is why a\n' +
++      '  local page set can sit indexed and unranked for months.\n',
++  );
++  process.exit(1);
++}
++
++console.log(`✓ cities verified — ${areas.length} area(s), each with distinct local content; schema coverage derived from CITIES`);
