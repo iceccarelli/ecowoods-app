@@ -4542,3 +4542,109 @@ Verified by running the whole script against two local fixture sites — one tha
 all five new status paths, was executed in both directions before shipping.
 
 There is nothing to fix on production. `d002e22` deployed correctly.
+
+### F-150 · Fifteen of sixteen service-area pages were the same page · P1
+
+`CITY_CONTENT` had an entry for `downtown-toronto`. The other fifteen published
+areas — North York, Etobicoke, Scarborough, East York, York, Vaughan, Markham,
+Richmond Hill, Mississauga, Oakville, Brampton, Aurora, Newmarket, Pickering,
+Ajax — rendered the same generic paragraph with a place name substituted in.
+
+Fifteen URLs in the sitemap, competing for fifteen local queries, by being one
+page. That is the textbook definition of thin content and it is among the most
+common reasons a service-area set sits indexed and unranked for months. Nothing
+in the repository noticed: every one of those pages built, typechecked, returned
+200, carried a correct self-canonical and appeared in the sitemap. Correctness
+was never the problem. *Sameness* was, and no guard measured it.
+
+All sixteen now carry local content, written under two rules that are what make
+them publishable rather than filler:
+
+- **Nothing about this business.** No job counts, no awards, no "we have served
+  X families in Y since Z". Every sentence is either publicly checkable
+  geography and housing stock, or a technical point already published in a paper
+  on this site — in-situ slab moisture, remaining wear layer, acoustic assembly,
+  acclimation in the actual conditioned room. Where a sentence would have needed
+  a figure this site does not publish, it was cut rather than softened.
+- **No `signatureProject` anywhere new.** It is the one field in `CityContent`
+  that asserts a specific real job.
+
+`scripts/verify-cities.mjs` holds the line: every published area must have an
+entry, every entry needs a real intro, a real housing note and at least three
+neighbourhoods, and **no two cities may share an intro or a housing note** —
+because pasting one entry sixteen times would satisfy every other check and
+recreate the exact failure.
+
+Two things about that guard are worth recording, because both were mistakes it
+made before it was right.
+
+Its first version read single-quoted strings only. The one pre-existing entry,
+`downtown-toronto`, is written with double quotes, so the guard reported a
+zero-length intro, a zero-length housing note and no neighbourhoods — three
+confident findings about content that was present and correct. A guard that
+cannot read the code it polices is F-149 in a different file.
+
+Its first version also failed `downtown-toronto` for declaring
+`signatureProject`. That entry describes a real job, has been published for a
+long time, and reads as a genuine account. A guard is not licence to delete
+approved content because it belongs to a category that needs approval. It is now
+a ratchet with a baseline — the published one stays, a new one fails the build
+until someone adds the slug deliberately — which is the pattern
+`verify-tokens` and `verify-schema` already use.
+
+### F-151 · Six services claimed six different service areas · P2
+
+`root-schema.ts` gave every service its own hand-written `areaServed` array, and
+they disagreed:
+
+| Service | Areas claimed |
+|---|---|
+| Installation, refinishing, dust-free sanding | 4 |
+| Restoration | 3 |
+| Stair refinishing | 3 |
+| Custom inlays | **1** |
+
+Nothing had ever decided that custom inlays stop at the Toronto city line. The
+arrays were written at different times and never reconciled, while `CITIES`
+carries sixteen areas, every one of which has a page, a sitemap entry and a
+route that returns 200. The organisation node listed all sixteen by hand, so the
+graph simultaneously claimed sixteen areas and, for inlays, one.
+
+A proposed patch fixed the disagreement by hand-writing the same ten areas six
+times. That corrects today's output and rebuilds the mechanism that produced it:
+seven hand-maintained lists instead of six, still disconnected from the routes,
+still free to drift, and now claiming ten of sixteen areas for no stated reason.
+
+All seven are derived from `CITIES`. The graph cannot claim an area with no page
+or omit one that has a page — the same rule `/services/[slug]` already followed.
+`verify-cities.mjs` fails the build on any hand-written `areaServed` array here.
+
+### F-152 · The keywords meta tag was about to be expanded · P3
+
+A proposed patch moved eleven phrases into `metadata.keywords`, replacing the
+five already there. Google published this in 2009 and has never revised it:
+
+> "Google does not use the keywords meta tag in web ranking."
+
+Bing gives it approximately nothing and has said a stuffed one can read as a
+spam signal. The tag is, at best, bytes shipped to every visitor for no effect.
+
+Both the five and the proposed eleven are gone. The phrases they were reaching
+for live in `lib/alpha-keywords.ts` as a written record of what each surface is
+aimed at, and they do their work in the `<title>`, the H1, the meta description
+and the anchor text of internal links — the places that are actually read.
+
+There is deliberately **no guard** asserting those phrases appear in the copy. A
+check like that can only compare strings, and the useful version of "does this
+page answer that query" is not a string comparison: it would pass a page that
+stuffed the phrase and fail one that answered the question in better words.
+Guards here exist where a machine can be right.
+
+The homepage title changed with it, from `Ecowoods — Toronto's Master Hardwood
+Flooring Artisans` — which led with a brand nobody is searching for yet and never
+said *installation* or *refinishing* — to
+`Hardwood Floor Installation & Refinishing Toronto · Ecowoods`, 60 characters.
+It is set as the root layout's `title.default` and deliberately **not** on
+`app/page.tsx`: `default` is used verbatim, while a title set on the page is run
+through the `%s · Ecowoods` template. Setting both appends the brand twice and
+pushes the string past seventy characters, which is F-143 again.

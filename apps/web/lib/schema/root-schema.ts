@@ -12,7 +12,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
-import { FAQ_ITEMS } from '@/lib/seo-data';
+import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
   buildOrganization,
@@ -35,6 +35,26 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
  * Update these values to change what EcoWoods emits to the world.
  */
 
+/**
+ * Every area this business publishes a page for, derived rather than typed.
+ *
+ * Each of the six services used to carry its own hand-written array, and they
+ * disagreed: installation and refinishing listed four areas, restoration three,
+ * custom inlays exactly one — Toronto. Nothing had decided that inlays stop at
+ * the city line; the lists were written at different times and never
+ * reconciled. Meanwhile CITIES carries sixteen areas, every one of which has a
+ * service-area page, a sitemap entry and a route that returns 200.
+ *
+ * A proposed patch replaced the four arrays with the same hand-written ten,
+ * repeated six times. That fixes today's disagreement and rebuilds the
+ * mechanism that caused it. Derived from CITIES, the schema cannot claim
+ * coverage that has no page, and cannot omit coverage that does — which is the
+ * rule /services/[slug] already follows for exactly the same reason.
+ */
+const GTA = Array.from(
+  new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
+);
+
 export const ROOT_ORG_CONFIG: OrganizationConfig = {
   siteUrl: SITE_URL,
   name: 'Ecowoods Inc.',
@@ -54,24 +74,10 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     latitude: 43.72085,
     longitude: -79.57542,
   },
-  areaServed: [
-    { '@type': 'City', name: 'Toronto' },
-    { '@type': 'City', name: 'North York' },
-    { '@type': 'City', name: 'Etobicoke' },
-    { '@type': 'City', name: 'Scarborough' },
-    { '@type': 'City', name: 'East York' },
-    { '@type': 'City', name: 'York' },
-    { '@type': 'City', name: 'Vaughan' },
-    { '@type': 'City', name: 'Markham' },
-    { '@type': 'City', name: 'Richmond Hill' },
-    { '@type': 'City', name: 'Mississauga' },
-    { '@type': 'City', name: 'Oakville' },
-    { '@type': 'City', name: 'Brampton' },
-    { '@type': 'City', name: 'Aurora' },
-    { '@type': 'City', name: 'Newmarket' },
-    { '@type': 'City', name: 'Pickering' },
-    { '@type': 'City', name: 'Ajax' },
-  ],
+  // Derived, like the per-service lists below. This block was sixteen
+  // hand-typed City nodes that happened to agree with CITIES today; the
+  // per-service lists were four hand-typed nodes that did not. One source.
+  areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
   services: [
     {
       id: 'hardwood-installation',
@@ -79,14 +85,14 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
       description:
         'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.',
       priceRange: '$4,000–$15,000',
-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
+      areaServed: GTA,
     },
     {
       id: 'floor-refinishing',
       name: 'Hardwood Floor Refinishing',
       description: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
       priceRange: '$2,500–$8,000',
-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
+      areaServed: GTA,
     },
     {
       id: 'dust-free-sanding',
@@ -94,34 +100,34 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
       description:
         'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.',
       priceRange: '$2,000–$6,000',
-      areaServed: ['Toronto', 'North York', 'Markham', 'Mississauga'],
+      areaServed: GTA,
     },
     {
       id: 'floor-restoration',
       name: 'Hardwood Floor Restoration',
       description: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
       priceRange: '$3,000–$10,000',
-      areaServed: ['Toronto', 'North York', 'Markham'],
+      areaServed: GTA,
     },
     {
       id: 'custom-inlays',
       name: 'Custom Inlays & Borders',
       description: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
       priceRange: '$2,000–$12,000',
-      areaServed: ['Toronto'],
+      areaServed: GTA,
     },
     {
       id: 'stair-refinishing',
       name: 'Stair Refinishing',
       description: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
       priceRange: '$1,500–$5,000',
-      areaServed: ['Toronto', 'North York', 'Mississauga'],
+      areaServed: GTA,
     },
   ],
   foundingYear: BUSINESS_NAP.foundedYear,
   slogan: "Toronto's master hardwood flooring artisans",
   description:
-    'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
+    'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',
   logoUrl: `${SITE_URL}/icon-512.png`,
   ogImageUrl: `${SITE_URL}/og-image.jpg`,
 };

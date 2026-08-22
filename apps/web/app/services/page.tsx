@@ -6,9 +6,9 @@ import { SchemaScript } from '@/lib/schema/components';
 import { getServicePages, serviceFor, priceBand, PRICE_PROMISE } from '@/lib/service-pages';
 
 export const metadata: Metadata = {
-  title: 'Hardwood flooring services in Toronto and the GTA',
+  title: 'Custom hardwood installation, refinishing & dust-free sanding',
   description:
-    'Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays — each with its published price band, the standard it is judged against, and the paper that explains the method.',
+    'Custom hardwood floor installation, dust-free refinishing, restoration, stairs and inlays in Toronto and the GTA — each with a published price band and the paper behind the method.',
   alternates: { canonical: '/services' },
   openGraph: {
     title: 'Hardwood flooring services — EcoWoods',

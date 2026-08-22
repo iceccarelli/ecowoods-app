@@ -44,10 +44,10 @@ export const viewport: Viewport = {
 };
 
 import ChatWidgetLoader from "./components/ChatWidgetLoader";
+import { HOME_TITLE, HOME_DESCRIPTION } from '@/lib/alpha-keywords';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
-const DESCRIPTION =
-  'Installation, refinishing & restoration of solid and engineered hardwood in Toronto. Dust-free sanding, eco-friendly finishes, manufacturer-backed warranties passed through in writing. Free in-home estimates.';
+const DESCRIPTION = HOME_DESCRIPTION;
 
 const VERIFICATION = {
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
   // og:image resolved to a domain the business does not use.
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
+    default: HOME_TITLE,
     template: '%s · Ecowoods',
   },
   description: DESCRIPTION,
@@ -86,24 +86,23 @@ export const metadata: Metadata = {
   alternates: {
     types: { 'application/rss+xml': [{ url: '/feed.xml', title: 'Ecowoods — Technical Publications' }] },
   },
-  keywords: [
-    'hardwood flooring Toronto',
-    'floor refinishing Toronto',
-    'dust-free sanding GTA',
-    'herringbone flooring installation',
-    'white oak flooring Toronto',
-  ],
+  // NO `keywords`. Google published "Google does not use the keywords meta tag
+  // in web ranking" in 2009 and has never revised it; Bing gives it ~nothing and
+  // has said a stuffed one reads as a spam signal. The five that used to sit
+  // here were bytes shipped to every visitor for no effect. The phrases they
+  // were reaching for now live in lib/alpha-keywords.ts and do their work in the
+  // title, the H1 and the anchor text, where they are actually read.
   openGraph: {
     type: 'website',
     locale: 'en_CA',
     url: SITE_URL,
     siteName: 'Ecowoods',
-    title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
+    title: HOME_TITLE,
     description: DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Ecowoods — Toronto's Master Hardwood Flooring Artisans",
+    title: HOME_TITLE,
     description: DESCRIPTION,
   },
   robots: {

@@ -41,7 +41,10 @@ function useScrollState() {
 const navigation = [
   { label: 'Gallery', href: '#gallery' },
   // { label: 'Species', href: '#species' }, // hidden with The Detail section
-  { label: 'Services', href: '#services' },
+  // A page, not an anchor. Six services now have their own URLs (F-146), and the
+  // map below already branches on `href.startsWith('#')` — a page link skips the
+  // scroll-spy and is rendered as a plain link, which is what this needs.
+  { label: 'Services', href: '/services' },
   { label: 'Process', href: '#process' },
   { label: 'The Craft', href: '#craft' },
   // "Technical Library" was shortened to "Library" to pay for "Framework" in

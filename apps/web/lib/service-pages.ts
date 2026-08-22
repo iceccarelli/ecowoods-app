@@ -71,9 +71,9 @@ export type ServicePage = {
 export const SERVICE_PAGES: ServicePage[] = [
   {
     slug: 'hardwood-installation',
-    h1: 'Hardwood floor installation in Toronto and the GTA',
+    h1: 'Custom hardwood floor installation in Toronto and the GTA',
     standfirst:
-      'What the substrate allows, what it costs, and the standard the finished floor is judged against.',
+      'What the substrate allows, what it costs, and the standard the finished floor is judged against — solid and engineered, including condominium slabs.',
     pricing: 'newInstall',
     guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating'],
     papers: [
@@ -85,9 +85,9 @@ export const SERVICE_PAGES: ServicePage[] = [
   },
   {
     slug: 'floor-refinishing',
-    h1: 'Hardwood floor refinishing in Toronto and the GTA',
+    h1: 'Dust-free hardwood floor refinishing in Toronto and the GTA',
     standfirst:
-      'Four machines, one sequence, and the difference between a floor that was sanded and a floor that was refinished.',
+      'Four machines, one sequence, containment at the source — and the difference between a floor that was sanded and a floor that was refinished.',
     pricing: 'fullSandAndFinish',
     guides: ['reference-refinishing-existing-hardwood'],
     papers: [
@@ -99,7 +99,7 @@ export const SERVICE_PAGES: ServicePage[] = [
   },
   {
     slug: 'dust-free-sanding',
-    h1: 'Dust-free floor sanding in Toronto and the GTA',
+    h1: 'Dustless hardwood floor sanding in Toronto and the GTA',
     standfirst:
       'Containment at the source, measured at the machine — and what it means for whether you can stay in the house.',
     guides: ['reference-refinishing-existing-hardwood'],
@@ -111,7 +111,7 @@ export const SERVICE_PAGES: ServicePage[] = [
   },
   {
     slug: 'floor-restoration',
-    h1: 'Hardwood floor restoration in Toronto and the GTA',
+    h1: 'Heritage hardwood floor restoration in Toronto and the GTA',
     standfirst:
       'Heritage and water-damaged floors: what can be saved, what has to be replaced, and how the join is made invisible.',
     pricing: 'fullSandAndFinish',

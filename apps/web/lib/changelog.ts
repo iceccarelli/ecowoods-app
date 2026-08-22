@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'gta-coverage-v1',
+    date: '2026-08-22',
+    kind: 'tool',
+    title: 'Every service area has its own page, not the same page sixteen times',
+    body: 'Fifteen of the sixteen service-area pages rendered one generic paragraph with a place name substituted in. Each now carries the housing stock, the neighbourhoods and the technical constraint that are actually specific to it \u2014 slab moisture downtown and in Mississauga\u2019s towers, remaining wear layer in East York, heated assemblies in Vaughan, lakeside humidity in Pickering and Ajax. The organisation\u2019s coverage is now derived from the same list the pages are built from, so the entity graph cannot claim an area with no page or omit one that has a page. Homepage and service titles lead with what the work is rather than with the brand.',
+    href: '/service-areas',
+  },
+  {
     id: 'service-pages-v1',
     date: '2026-08-22',
     kind: 'tool',

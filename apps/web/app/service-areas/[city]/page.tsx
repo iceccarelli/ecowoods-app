@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city: slug } = await params;
   const city = cityBySlug(slug);
   if (!city) return {};
-  const title = `Hardwood Flooring in ${city.name}`;
-  const description = `Hardwood floor installation, refinishing and dust-free sanding in ${city.name} & the GTA. Fixed written estimates, manufacturer warranties in writing, free in-home consultation. Call ${BUSINESS.phoneDisplay}.`;
+  const title = `Hardwood floor installation & refinishing in ${city.name}`;
+  const description = `Custom hardwood floor installation, dust-free refinishing and restoration in ${city.name} and the GTA. Fixed written estimates, manufacturer warranties in writing. Call ${BUSINESS.phoneDisplay}.`;
   return {
     title,
     description,
@@ -52,7 +52,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </nav>
           <span className="eyebrow">Hardwood Flooring · {city.name}</span>
           <h1 style={{ marginTop: '0.5rem' }}>
-            Hardwood flooring in <span className="serif-italic">{city.name}.</span>
+            Hardwood floor installation &amp; refinishing in{' '}
+            <span className="serif-italic">{city.name}.</span>
           </h1>
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
             Ecowoods installs, sands and refinishes solid and engineered hardwood across {city.name} and the
