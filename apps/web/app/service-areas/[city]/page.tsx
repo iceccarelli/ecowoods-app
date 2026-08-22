@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CITIES, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
+import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
 import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 
 export function generateStaticParams() {
@@ -97,12 +98,33 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           <span className="eyebrow">What we do in {city.name}</span>
           <h2>Every service, one crew.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
-            {SERVICES.map((s) => (
-              <div key={s.slug} style={{ padding: '1.25rem', border: '1px solid rgba(128,128,128,0.18)', borderRadius: '14px' }}>
-                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{s.name}</h3>
-                <p style={{ fontSize: '0.92rem', opacity: 0.82, marginTop: '0.5rem' }}>{s.blurb}</p>
-              </div>
-            ))}
+            {/* Links, not divs.
+
+                These six cards rendered as unlinked <div>s on all sixteen city
+                pages. Ninety-six of the most natural internal links on the site
+                — local intent meeting a specific service — existed as text and
+                went nowhere. Meanwhile the service pages listed the sixteen
+                areas as plain prose, so the other ninety-six were missing too.
+                A crawler cannot infer a relationship it is not given an edge
+                for, and a reader who wants the price for refinishing in
+                Etobicoke had no way through. See F-154. */}
+            {SERVICE_PAGES.map((sp) => {
+              const s = SERVICES.find((x) => x.slug === sp.slug);
+              const band = priceBand(sp);
+              return (
+                <Link
+                  key={sp.slug}
+                  href={`/services/${sp.slug}`}
+                  style={{ padding: '1.25rem', border: '1px solid rgba(128,128,128,0.18)', borderRadius: '14px', display: 'block' }}
+                >
+                  <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{s?.name ?? sp.h1}</h3>
+                  <p style={{ fontSize: '0.92rem', opacity: 0.82, marginTop: '0.5rem' }}>{s?.blurb}</p>
+                  {band && (
+                    <p style={{ fontSize: '0.86rem', opacity: 0.7, marginTop: '0.5rem' }}>{band}</p>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -102,7 +102,7 @@ export async function GET() {
   // top of the section an agent reads first.
   lines.push('## Machine-readable editions');
   lines.push(
-    `Every document below is served as clean Markdown at its own URL with \`.md\` appended — ${SITE_URL}/papers/{slug}.md, ${SITE_URL}/guides/{slug}.md, ${SITE_URL}/glossary/{slug}.md. Headings, tables and ordered protocols survive intact, and each file carries its canonical URL and citation line. Prefer these to parsing the HTML.`,
+    `Every document below is served as clean Markdown at its own URL with \`.md\` appended — ${SITE_URL}/papers/{slug}.md, ${SITE_URL}/guides/{slug}.md, ${SITE_URL}/glossary/{slug}.md, ${SITE_URL}/services/{slug}.md, ${SITE_URL}/service-areas/{slug}.md. Headings, tables and ordered protocols survive intact, and each file carries its canonical URL and citation line. Prefer these to parsing the HTML.`,
   );
   lines.push('');
   lines.push(`- ENTIRE CORPUS, one fetch, full text: ${SITE_URL}/llms-full.txt`);

@@ -287,6 +287,8 @@ md_check() {
 md_check "/papers/{slug}.md"   "$BASE/papers/hardwood-refinishing-machines-and-sequence.md" "## Provenance"
 md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toronto.md"       "## Provenance"
 md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
+md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
+md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
 md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete technical corpus"
 
 printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
@@ -361,6 +363,26 @@ else
     printf '        That is a build stamp, not a publication date. See F-141.\n'
     FAILED=$((FAILED + 1))
   fi
+fi
+
+printf '\n%s── the 404 page %s\n' "$BOLD" "$OFF"
+# F-155. There was no not-found.tsx, so every mistyped or stale URL got Next's
+# built-in page: two lines of text, no header, no footer, not one outbound link.
+# Two things are checked, and the second is the one a status code cannot show:
+# that the page a visitor actually lands on offers a way back.
+NF="$(mktmp)"
+NFSTATUS="$(fetch "$BASE/this-page-does-not-exist-$(date +%s)" "$NF")"
+NFLINKS="$(grep -o 'href="/[^"]*"' "$NF" | sort -u | wc -l | tr -d ' ')"
+if [ "$NFSTATUS" != "404" ]; then
+  printf '  %sFAIL%s  %-34s HTTP %s — a missing page must return 404, not %s\n' "$RED" "$OFF" "unknown URL" "$NFSTATUS" "$NFSTATUS"
+  printf '        A 200 on a missing page is a soft 404: the crawler indexes an error.\n'
+  FAILED=$((FAILED + 1))
+elif [ "${NFLINKS:-0}" -lt 10 ]; then
+  printf '  %sFAIL%s  %-34s 404, but only %s internal link(s)\n' "$RED" "$OFF" "unknown URL" "$NFLINKS"
+  printf '        A dead-end 404 spends a request and teaches nothing. See F-155.\n'
+  FAILED=$((FAILED + 1))
+else
+  printf '  %sPASS%s  %-34s 404, %s internal links out\n' "$GRN" "$OFF" "unknown URL" "$NFLINKS"
 fi
 
 printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"

@@ -192,6 +192,42 @@ if (!/CITIES/.test(schema)) {
   problems.push({ where: 'lib/schema/root-schema.ts', detail: 'does not reference CITIES — coverage is not derived from the published areas' });
 }
 
+/* ── 6. the link matrix runs in both directions ───────────────────────────── */
+/**
+ * F-154. Sixteen city pages rendered the six services as unlinked <div>s, and
+ * the six service pages rendered the sixteen areas as a comma-separated string.
+ * One hundred and ninety-two of the most natural internal links on this site —
+ * local intent meeting a named service, in both directions — existed as text
+ * and went nowhere.
+ *
+ * Internal links are not decoration. They are the only thing that tells a
+ * crawler these two pages are about related things, and the only route a reader
+ * has from "I am in Etobicoke" to "here is what refinishing costs". A page that
+ * mentions six services without linking them is a page asking to be understood
+ * on faith.
+ *
+ * Checked structurally rather than by counting links, because the count is a
+ * product of two manifests and would have to be updated every time either grew.
+ */
+const cityPage = path.join(ROOT, 'apps/web/app/service-areas/[city]/page.tsx');
+const svcPage = path.join(ROOT, 'apps/web/app/services/[slug]/page.tsx');
+
+for (const [file, needle, what] of [
+  [cityPage, /href=\{`\/services\/\$\{[^}]+\}`\}/, 'a link to /services/{slug} for each service'],
+  [svcPage, /href=\{`\/service-areas\/\$\{[^}]+\}`\}/, 'a link to /service-areas/{slug} for each area'],
+]) {
+  if (!fs.existsSync(file)) {
+    problems.push({ where: path.relative(ROOT, file), detail: 'missing' });
+    continue;
+  }
+  if (!needle.test(strip(fs.readFileSync(file, 'utf8')))) {
+    problems.push({
+      where: path.relative(ROOT, file),
+      detail: `does not render ${what} — the relationship is stated in prose and given no edge to follow`,
+    });
+  }
+}
+
 /* ── report ───────────────────────────────────────────────────────────────── */
 if (LIST) for (const k of entries.keys()) console.log(`  ✓ /service-areas/${k}`);
 

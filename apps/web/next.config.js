@@ -70,6 +70,8 @@ const nextConfig = {
       { source: '/papers/:slug.md', destination: '/md/papers/:slug' },
       { source: '/guides/:slug.md', destination: '/md/guides/:slug' },
       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
+      { source: '/services/:slug.md', destination: '/md/services/:slug' },
+      { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
     ];
   },
 

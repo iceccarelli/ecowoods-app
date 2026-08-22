@@ -260,9 +260,21 @@ export default async function ServiceDetailPage({
         <div className="shell">
           <p className="tlx-kicker">Coverage</p>
           <h2 className="tlx-h2">Where this service is delivered</h2>
+          {/* Links, not a comma-separated string. Sixteen area names rendered as
+              prose gave a reader nowhere to go and a crawler no edge to follow —
+              the mirror image of the same omission on the city pages. See F-154. */}
           <p className="tlx-note">
-            {CITIES.map((c) => c.name).join(', ')} — see{' '}
-            <Link href="/service-areas">service areas</Link> for the page on each.
+            {CITIES.map((c, i) => (
+              <span key={c.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            Every area above has its own page: the housing stock, the neighbourhoods
+            and the constraint that is specific to it. See{' '}
+            <Link href="/service-areas">all service areas</Link>.
           </p>
           <div className="fw-actions">
             <Link className="fw-cta" href="/#quote">

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent } from '@/lib/seo-data';
+import { getServicePages, priceBand } from '@/lib/service-pages';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
@@ -190,8 +191,42 @@ function build() {
     phone: BUSINESS.phoneDisplay,
     email: BUSINESS.email,
     url: SITE_URL,
-    services: SERVICES.map((s) => ({ name: s.name, description: s.blurb })),
-    serviceAreas: CITIES.map((c) => ({ name: c.name, url: url(`/service-areas/${c.slug}`) })),
+    /**
+     * Services carried a name and a description and no URL, so an agent that
+     * read this could describe the service and had nowhere to send anyone. The
+     * areas carried a URL and no content, which is the same omission from the
+     * other side. Both now carry what a citation needs. See F-153.
+     */
+    services: getServicePages().map((sp) => {
+      const s = SERVICES.find((x) => x.slug === sp.slug);
+      return {
+        slug: sp.slug,
+        name: s?.name ?? sp.h1,
+        description: s?.blurb ?? sp.standfirst,
+        url: url(`/services/${sp.slug}`),
+        markdown: url(`/services/${sp.slug}.md`),
+        priceBand: priceBand(sp) ?? null,
+        judgedAgainst: sp.pillars.map((id) => url(`/framework#${id}`)),
+        methodEstablishedIn: sp.papers.map((r) => url(`/papers/${r.paper}#${r.section}`)),
+      };
+    }),
+    serviceAreas: CITIES.map((c) => {
+      const cc = cityContent(c.slug);
+      return {
+        slug: c.slug,
+        name: c.name,
+        url: url(`/service-areas/${c.slug}`),
+        markdown: url(`/service-areas/${c.slug}.md`),
+        ...(cc
+          ? {
+              intro: cc.intro,
+              neighbourhoods: cc.neighbourhoods,
+              housingNote: cc.housingNote,
+              localConsideration: cc.localConsideration ?? null,
+            }
+          : {}),
+      };
+    }),
   };
 
   return { papers, framework, guides, glossary, figures, changelog, standards, business };

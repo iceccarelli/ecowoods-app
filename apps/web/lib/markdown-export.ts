@@ -39,7 +39,16 @@
 import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
-import { SITE_URL, BUSINESS } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, CITIES, cityContent, type CityContent } from '@/lib/seo-data';
+import {
+  getServicePages,
+  getServicePage,
+  serviceFor,
+  priceBand,
+  faqsFor,
+  type ServicePage,
+} from '@/lib/service-pages';
+import { PILLARS } from '@/lib/framework';
 
 /* ── primitives ───────────────────────────────────────────────────────────── */
 
@@ -199,6 +208,104 @@ export const termToMarkdown = (term: GlossaryTerm): string => {
   return out.join('\n');
 };
 
+/* ── services ─────────────────────────────────────────────────────────────── */
+
+/**
+ * WHY THESE ARE HERE AND WERE NOT BEFORE
+ *
+ * F-153. The corpus carried papers, guides and glossary — the technical
+ * material — and nothing else. An agent asked "who refinishes hardwood floors
+ * in Etobicoke" fetched /llms-full.txt and found no service, no price, no area:
+ * every commercial and local surface on the site was invisible to the one file
+ * built for agents to read.
+ *
+ * That is the query class this business exists to win, and it was the one class
+ * the machine-readable edition could not answer. The technical corpus makes the
+ * site citable; this makes it actionable.
+ */
+export const serviceToMarkdown = (page: ServicePage): string => {
+  const svc = serviceFor(page);
+  const canonical = `${SITE_URL}/services/${page.slug}`;
+  const band = priceBand(page);
+  const out: string[] = [
+    `# ${svc?.name ?? page.h1}`,
+    '',
+    `**${page.h1}**`,
+    '',
+    page.standfirst,
+    '',
+    svc?.blurb ?? '',
+    '',
+  ];
+
+  const rows: string[][] = [['Service', svc?.name ?? page.h1]];
+  if (band) rows.push(['Published price band', band]);
+  rows.push(['Areas served', CITIES.map((c) => c.name).join(', ')]);
+  out.push(...table(['Field', 'Value'], rows));
+
+  const pillars = PILLARS.filter((p) => page.pillars.includes(p.id));
+  if (pillars.length) {
+    out.push('## The standard this work is judged against', '');
+    for (const p of pillars) {
+      out.push(`### ${p.name}`, '', p.intent, '', `- ${p.criteria.length} criteria — ${SITE_URL}/framework#${p.id}`, '');
+    }
+  }
+
+  if (page.papers.length) {
+    out.push('## Where the method is established', '');
+    for (const r of page.papers) {
+      out.push(`- ${r.label} — ${SITE_URL}/papers/${r.paper}#${r.section}`);
+    }
+    out.push('');
+  }
+
+  const faqs = faqsFor(page);
+  if (faqs.length) {
+    out.push('## Questions this service turns on', '');
+    for (const f of faqs) {
+      out.push(`**${f.q}**`, '', f.a, '', `Source: ${SITE_URL}${f.href}`, '');
+    }
+  }
+
+  out.push(...provenance(canonical, band ? [`- Price band: ${band}`] : []));
+  return out.join('\n');
+};
+
+/* ── service areas ────────────────────────────────────────────────────────── */
+
+export const areaToMarkdown = (slug: string, name: string, cc: CityContent): string => {
+  const canonical = `${SITE_URL}/service-areas/${slug}`;
+  const out: string[] = [
+    `# Hardwood floor installation & refinishing in ${name}`,
+    '',
+    cc.intro,
+    '',
+    '## Areas covered',
+    '',
+    cc.neighbourhoods.join(', ') + '.',
+    '',
+    '## Housing stock and what it means for the floor',
+    '',
+    cc.housingNote,
+    '',
+  ];
+  if (cc.localConsideration) {
+    out.push('## The practical constraint here', '', cc.localConsideration, '');
+  }
+  if (cc.signatureProject) {
+    out.push('## A project in this area', '', cc.signatureProject, '');
+  }
+  out.push('## Services delivered here', '');
+  for (const sp of getServicePages()) {
+    const svc = serviceFor(sp);
+    const band = priceBand(sp);
+    out.push(`- **${svc?.name ?? sp.h1}**${band ? ` (${band})` : ''} — ${SITE_URL}/services/${sp.slug}`);
+  }
+  out.push('');
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
 /* ── the whole corpus, one fetch ──────────────────────────────────────────── */
 
 /**
@@ -217,6 +324,10 @@ export const corpusToMarkdown = (): string => {
   const papers = getPapers();
   const guides = getGuides();
   const terms = getTerms();
+  const services = getServicePages();
+  const areas = CITIES.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
+    (x): x is { c: (typeof CITIES)[number]; cc: CityContent } => Boolean(x.cc),
+  );
   const out: string[] = [
     `# ${BUSINESS.name} — complete technical corpus`,
     '',
@@ -233,6 +344,8 @@ export const corpusToMarkdown = (): string => {
     `- ${papers.length} technical paper(s)`,
     `- ${guides.length} decision guide(s) and reference installation(s)`,
     `- ${terms.length} glossary term(s)`,
+    `- ${services.length} service(s), each with its published price band`,
+    `- ${areas.length} service area(s) across Toronto and the GTA`,
     '',
     '---',
     '',
@@ -240,6 +353,8 @@ export const corpusToMarkdown = (): string => {
   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
+  for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');
+  for (const { c, cc } of areas) out.push(areaToMarkdown(c.slug, c.name, cc), '', '---', '');
   return out.join('\n');
 };
 
@@ -256,4 +371,14 @@ export const guideMarkdown = (slug: string): string | null => {
 export const termMarkdown = (slug: string): string | null => {
   const t = getTerm(slug);
   return t ? termToMarkdown(t) : null;
+};
+
+export const serviceMarkdown = (slug: string): string | null => {
+  const p = getServicePage(slug);
+  return p ? serviceToMarkdown(p) : null;
+};
+export const areaMarkdown = (slug: string): string | null => {
+  const c = CITIES.find((x) => x.slug === slug);
+  const cc = c ? cityContent(c.slug) : undefined;
+  return c && cc ? areaToMarkdown(c.slug, c.name, cc) : null;
 };

@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'agent-corpus-v2',
+    date: '2026-08-22',
+    kind: 'data',
+    title: 'The machine-readable corpus now answers local and commercial questions',
+    body: 'Until now /llms-full.txt carried the technical material only \u2014 papers, guides, glossary. An agent asked who refinishes hardwood in Etobicoke found no service, no price and no area in the one file built for agents to read. Services and all sixteen service areas are now in the corpus and each has its own .md edition, so a single fetch answers what the work is, what it costs and where it is done. The knowledge API carries the same, with URLs. The corpus went from 70 KB to 115 KB, none of it new claims.',
+    href: '/llms-full.txt',
+  },
+  {
     id: 'gta-coverage-v1',
     date: '2026-08-22',
     kind: 'tool',

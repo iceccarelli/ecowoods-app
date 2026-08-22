@@ -4648,3 +4648,81 @@ It is set as the root layout's `title.default` and deliberately **not** on
 `app/page.tsx`: `default` is used verbatim, while a title set on the page is run
 through the `%s · Ecowoods` template. Setting both appends the brand twice and
 pushes the string past seventy characters, which is F-143 again.
+
+### F-153 · The agent corpus could not answer a local or commercial question · P1
+
+`/llms-full.txt` carried papers, guides and glossary — the technical material —
+and nothing else. `/api/knowledge` listed services with a name and a description
+and **no URL**, and areas with a URL and **no content**.
+
+So an agent asked *"who refinishes hardwood floors in Etobicoke"* fetched the one
+file built for agents to read and found: no service, no price band, no area, no
+local context. Every commercial and local surface on the site was invisible to
+the machine-readable edition — and that is precisely the query class this
+business exists to win.
+
+The technical corpus is what makes the site citable. It is not what makes it
+actionable. An answer engine that can quote the moisture protocol and cannot say
+who does the work, what it costs, or whether they cover your city has been given
+the half of the site that wins arguments and none of the half that wins jobs.
+
+Now in the corpus, and each with its own `.md` companion at the URL the llms.txt
+proposal specifies:
+
+- `/services/{slug}.md` — the service, its published price band, the framework
+  pillars it is judged against, the paper sections that establish the method,
+  and the questions it turns on with the guide each answer comes from.
+- `/service-areas/{slug}.md` — the local content, the neighbourhoods, the
+  housing-stock constraint, and every service delivered there with its band.
+
+`/api/knowledge` gains URLs and `.md` links on services, and the full local
+content on areas. The corpus went from 70 KB to 115 KB, and not one sentence of
+it is new: every line is rendered from a manifest that was already published.
+
+### F-154 · 192 internal links existed as text and went nowhere · P1
+
+The sixteen city pages rendered the six services as unlinked `<div>`s. The six
+service pages rendered the sixteen areas as a comma-separated string.
+
+That is 96 edges missing in each direction — the most natural internal links on
+this site, local intent meeting a named service, written out in full and given
+nothing to follow.
+
+Internal links are not decoration. They are the only mechanism that tells a
+crawler two pages are about related things, and the only route a reader has from
+*I am in Etobicoke* to *here is what refinishing costs*. A page that names six
+services without linking them is asking to be understood on faith. It also means
+the six service pages — the highest commercial-intent URLs on the site, built in
+patch 56 — had almost no internal links pointing at them, which is the single
+worst thing that can be true of a page you want to rank.
+
+Both directions are now rendered as links, and the city cards carry the price
+band. `verify-cities.mjs` fails the build if either page goes back to prose.
+
+### F-155 · Every 404 was a dead end · P2
+
+There was no `not-found.tsx`. Every mistyped URL, every stale link from an old
+post, every crawler following something that used to exist got Next's built-in
+page: the words "404" and "This page could not be found", on a blank screen,
+with no header, no footer, and not one link off it.
+
+A person who lands there leaves. That is the obvious cost.
+
+The one that matters more here: a crawler that lands there has spent a request
+and received a page with zero outbound edges. And the requests most likely to
+produce a 404 are old URLs from links other people published — arrivals carrying
+the most external authority of anything that hits this site. Every one was being
+converted into nothing.
+
+The 404 now routes into the six services, the six reference hubs and all sixteen
+areas, and says plainly that nothing published here has been removed — which is
+true, and is the thing a person following a citation needs to know.
+
+`robots: { index: false, follow: true }` is set deliberately, and is *not* what
+makes it a 404 — Next serves the correct status for this file automatically. The
+directive stops the page being indexed on the strength of its own content, which
+it otherwise could be, now that it has plenty.
+
+`verify-live.sh` checks both halves against production: that an unknown URL
+returns 404 rather than a soft 200, and that the page it returns carries at
+least ten internal links. A status code cannot tell you the second one.
