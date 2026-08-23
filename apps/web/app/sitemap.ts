@@ -151,6 +151,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        last read off the platform — the only date on this page that means
        anything, and a real one. */
     entry('/reviews', 'monthly', 0.9, new Date(`${PRIMARY_REVIEW_EVIDENCE.asOf}T00:00:00Z`)),
+    /* /press is a discovery surface — a journalist or a retrieval system looking
+       for boilerplate, logos and licensing terms. /r is NOT here on purpose: it is
+       the tool printed on the card handed to a finished customer, it is noindex,
+       and it must never compete with /reviews for the query that matters. */
+    entry('/press', 'monthly', 0.8),
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),

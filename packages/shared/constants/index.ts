@@ -121,6 +121,75 @@ export const PROFILE_LINKS: ProfileLink[] = [
   { label: 'X' },
 ];
 
+/* ---------------------- Where a finished job sends a customer ---------
+ *
+ * REVIEW_EVIDENCE below records what reviews already exist. This records where
+ * to send the next one, and it is the only lever that changes the numbers there.
+ *
+ * THE RULE THAT MATTERS MORE THAN THE CODE
+ *
+ * Every completed job gets the same card with the same links, and every visitor
+ * to /r sees every destination. No "how did we do?" screen that routes happy
+ * customers to Google and unhappy ones to a private form. That is review
+ * gating, Google's Maps user-contributed-content policy prohibits it outright —
+ *
+ *   "Discourage or prohibit negative reviews, or selectively solicit positive
+ *    reviews from customers"
+ *
+ * — and it is also the thing that makes a 5.0 look bought. A profile with a few
+ * four-star reviews answered well reads as a real business. An unbroken wall of
+ * fives reads as a wall. scripts/verify-outreach.mjs fails the build if /r ever
+ * grows a branch that shows different destinations to different people.
+ *
+ * WHY GOOGLE IS FIRST WHEN IT HAS A URL
+ *
+ * Not because HomeStars is worth less — because they do different jobs and one
+ * is already done. HomeStars is a destination someone already shopping goes to.
+ * Google Business Profile ratings are the surface: they produce the stars in
+ * local results and the map pack, they cannot be marked up on any website by
+ * anyone, and they are what answer engines read back when asked for a
+ * recommendation. An AI assistant left this company off a Toronto ranking in
+ * August 2026 after reading exactly that listing.
+ *
+ * `href` follows the same rule as PROFILE_LINKS: no URL until someone has opened
+ * it and seen an Ecowoods page. Google's write-review link needs the Business
+ * Profile's Place ID and takes the form
+ * https://search.google.com/local/writereview?placeid=<PLACE_ID> — see
+ * docs/outreach/GOOGLE_BUSINESS_PROFILE.md for how to get it.
+ */
+export type ReviewDestination = {
+  platform: string;
+  /** Deep link straight to the write-a-review form. Omit until verified. */
+  href?: string;
+  /** One line telling the customer what this platform is, in their terms. */
+  note: string;
+  /** Lower sorts first. Google is 1 because it is the surface everything reads. */
+  rank: number;
+};
+
+export const REVIEW_DESTINATIONS: ReviewDestination[] = [
+  {
+    platform: 'Google',
+    note: 'The one most people see first, in Maps and in search results.',
+    rank: 1,
+    // href pending the Business Profile Place ID — see the note above.
+  },
+  {
+    platform: 'HomeStars',
+    href: 'https://www.homestars.com/companies/2776939-ecowoods/reviews/new',
+    note: 'Where most of our reviews already live. Verified contractors only.',
+    rank: 2,
+  },
+];
+
+/** Destinations with a confirmed URL — the only ones /r renders. */
+export const LIVE_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => d.href).sort(
+  (a, b) => a.rank - b.rank,
+);
+
+/** Named but not yet linked, so the page can say so instead of pretending. */
+export const PENDING_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => !d.href);
+
 /* ---------------------- Third-party review evidence -------------------
  *
  * THE PROBLEM THIS SOLVES

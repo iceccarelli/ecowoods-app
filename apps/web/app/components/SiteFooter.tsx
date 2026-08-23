@@ -159,6 +159,7 @@ export default function SiteFooter() {
             <div className="footer-links">
               <a href="/about">About Ecowoods</a>
               <a href="/reviews">Reviews</a>
+              <a href="/press">Press &amp; Media Kit</a>
               <a href="/resources">All resources</a>
               <a href="/whats-new">What&rsquo;s New</a>
               <a href="/market">What Moves a Quote</a>

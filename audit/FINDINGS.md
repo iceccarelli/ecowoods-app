@@ -5444,3 +5444,85 @@ the content type, and the sitemap builds a real `Date` the same way
 Verified afterwards with the pinned compiler: 111 errors in the workspace, every
 one traceable to the Prisma client being ungeneratable in this sandbox
 (`binaries.prisma.sh` is blocked), and **zero in any file this patch touches**.
+
+### F-178 · Nothing on the site asked for a review · P0 · fixed
+
+`/reviews` (F-175) tells a machine that 177 reviews exist. It does nothing to
+produce the 178th, and the review count on the Google Business Profile — the
+listing an AI assistant actually read before leaving this company off a Toronto
+ranking — can only be moved by completed jobs. Google Business Profile ratings
+come from Google's own data. They cannot be marked up on a website by anyone.
+
+There was no mechanism. `docs/outreach/review-request.md` had the email copy and
+the policy reasoning and had been sitting unused; there was no page to send
+anyone to and nothing to hand a customer at the door.
+
+**Shipped:**
+
+- **`/r`** — a short route, reachable from a printed card, listing every verified
+  review destination. `noindex`, and canonical points at `/reviews` so anything
+  that crawls it lands on the page written to be found.
+- **`REVIEW_DESTINATIONS`** — where to send the next review, ranked. Google is
+  rank 1 because it is the surface everything else reads. Its `href` is unset:
+  the same rule as `PROFILE_LINKS`, no URL until someone has opened it. `/r`
+  renders it automatically the moment the Place ID lands.
+- **`public/review-card.svg`** — a 6×4in leave-behind. Repo-root `public/`,
+  because `apps/web/public` is not served here (F-131).
+- **`docs/outreach/GOOGLE_BUSINESS_PROFILE.md`** — claiming the listing, getting
+  the Place ID, the exact constant to edit, and what must not happen.
+
+**The QR was verified, not assumed.** A QR code is opaque — nothing in this
+repository can read one back, so "it looks like a QR code" is the entire
+available evidence unless the check is deliberate. The first attempt was
+generated with `border=0` and **did not decode at all**: the spec requires a
+four-module quiet zone. The shipped code was decoded back out of the finished
+artwork, at the card's actual cream-and-walnut colours rather than black on
+white, at 1200, 800 and 600px wide. It stops decoding around 480px — a 2in-wide
+render of a 6in card, far below any real scan — and the `<desc>` says exactly
+that rather than claiming more.
+
+### F-179 · The gate that must never be built · P0 · guarded
+
+`/r` is one product decision away from destroying everything else on this site.
+The decision is **review gating**: a "how did we do?" step that sends happy
+customers to Google and routes unhappy ones to a private form. It is easy to
+build, it reliably raises an average, and it is prohibited — Google's Maps
+user-contributed-content policy lists "Discourage or prohibit negative reviews,
+or selectively solicit positive reviews from customers" among prohibited
+practices.
+
+It is also self-defeating in exactly the way this project keeps rediscovering. A
+profile with a few four-star reviews answered well reads as a real business. An
+unbroken wall of fives reads as a wall — the pattern an assistant flags as
+unreliable. It is the fabricated `aggregateRating` again, arriving by a politer
+route, and a policy note in a comment is not protection.
+
+`scripts/verify-outreach.mjs` (the twenty-fifth guard) fails the build if `/r`:
+contains sentiment-gating language; becomes interactive at all (`useState`,
+`'use client'`, `onClick` — state is the mechanism a gate needs, so a static
+render is the invariant); hand-lists destinations instead of mapping the
+constant; or filters/slices that list. It also checks `robots: index:false`, that
+the card exists in a **served** location, and that its `<desc>` records what the
+QR encodes.
+
+Verified by injection: replacing the `/r` headline with "How did we do?" produces
+the failure, and reverting clears it.
+
+### F-180 · No press page · P1 · fixed
+
+Every trade publication and every serious company has one; this site did not, and
+its absence is a quiet reason for a journalist to write about somebody else. The
+same page serves a retrieval system asking the same questions.
+
+`/press` publishes approved boilerplate at three lengths, the facts with a link
+to where each is set out, logo files with usage rules, CC BY 4.0 licensing with a
+pointer to the `.md` editions for programmatic quoting, and a section on what the
+company does **not** claim — no star rating in its own markup, no project counts,
+no award history. Every count is derived from the content loaders, so a new paper
+cannot make the page wrong.
+
+**Deliberately absent: a named spokesperson.** Nothing on this site is bylined to
+an individual, and inventing one here would be the fabrication the whole corpus
+exists to avoid. The page says so and asks a journalist to make contact for an
+attributed quote. It remains the single most likely reason to lose a story, which
+is why it is stated as an open item rather than quietly filled in.

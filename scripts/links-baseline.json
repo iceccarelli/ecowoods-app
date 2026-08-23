@@ -1,3 +1,4 @@
 {
-  "/verify-email": "Landing page for the address-confirmation email. Reached from a signed token in the message body; a link to it from the site chrome would be meaningless without that token."
+  "/verify-email": "Landing page for the address-confirmation email. Reached from a signed token in the message body; a link to it from the site chrome would be meaningless without that token.",
+  "/r": "Reached from a QR code on the printed card handed to a customer at the end of every job, not from the site chrome. Deliberately noindex and deliberately absent from the sitemap: it is a tool, and it must never compete with /reviews for the query that matters. A link to it from the footer would put 'leave us a review' in front of people who have not hired us yet, which is the opposite of what it is for."
 }
