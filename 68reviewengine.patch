@@ -1,0 +1,1054 @@
+From 9b7f36ba6c2c9fa63ee0070708ea912c7236c4f7 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 09:59:44 +0000
+Subject: [PATCH] feat(outreach): the mechanism that produces the 178th review,
+ and the gate that must never be built
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+/reviews tells a machine that 177 reviews exist. It does nothing to produce the
+next one, and the Google listing an AI assistant actually read can only be moved
+by completed jobs — those ratings come from Google's own data and cannot be
+marked up on any website by anyone.
+
+/r is the short route on a printed card handed over at the end of every job. It
+lists every verified destination, noindex, canonical pointing at /reviews.
+REVIEW_DESTINATIONS ranks Google first because it is the surface everything else
+reads; its href is unset until someone opens it, the same rule as PROFILE_LINKS,
+and /r renders it automatically once the Place ID lands.
+docs/outreach/GOOGLE_BUSINESS_PROFILE.md is the playbook for getting there.
+
+public/review-card.svg is the 6x4in leave-behind. The QR was verified, not
+assumed: a QR is opaque and nothing in this repo can read one back. The first
+attempt used border=0 and did not decode at all — the spec requires a four-module
+quiet zone. The shipped code was decoded back out of the finished artwork at the
+card's real cream-and-walnut colours at 1200, 800 and 600px. It fails around
+480px and the <desc> says so rather than claiming more.
+
+verify-outreach.mjs is the twenty-fifth guard, and it exists for one thing.
+Review gating — a "how did we do?" step routing the happy to Google and the
+unhappy to a private form — is easy to build, reliably raises an average, and is
+prohibited by Google's UGC policy. It is also the fabricated aggregateRating
+again by a politer route. The guard fails the build on gating language, on the
+page becoming interactive at all (state is the mechanism a gate needs), on
+hand-listed destinations, and on filtering the list. Proven by injection.
+
+/press is the page a journalist looks for: boilerplate at three lengths, facts
+with sources, logos with usage rules, CC BY 4.0, and what this company does not
+claim. No named spokesperson — nothing here is bylined to an individual and
+inventing one would be the fabrication the corpus exists to avoid. Stated as an
+open item instead.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ apps/web/app/components/SiteFooter.tsx   |   1 +
+ apps/web/app/press/page.tsx              | 319 +++++++++++++++++++++++
+ apps/web/app/r/page.tsx                  | 111 ++++++++
+ apps/web/app/sitemap.ts                  |   5 +
+ audit/FINDINGS.md                        |  82 ++++++
+ docs/outreach/GOOGLE_BUSINESS_PROFILE.md | 109 ++++++++
+ package.json                             |   3 +-
+ packages/shared/constants/index.ts       |  69 +++++
+ public/review-card.svg                   |  27 ++
+ scripts/audit-all.sh                     |   1 +
+ scripts/links-baseline.json              |   3 +-
+ scripts/verify-outreach.mjs              | 155 +++++++++++
+ 12 files changed, 883 insertions(+), 2 deletions(-)
+ create mode 100644 apps/web/app/press/page.tsx
+ create mode 100644 apps/web/app/r/page.tsx
+ create mode 100644 docs/outreach/GOOGLE_BUSINESS_PROFILE.md
+ create mode 100644 public/review-card.svg
+ create mode 100644 scripts/verify-outreach.mjs
+
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index c6fa405..fceb2a9 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -159,6 +159,7 @@ export default function SiteFooter() {
+             <div className="footer-links">
+               <a href="/about">About Ecowoods</a>
+               <a href="/reviews">Reviews</a>
++              <a href="/press">Press &amp; Media Kit</a>
+               <a href="/resources">All resources</a>
+               <a href="/whats-new">What&rsquo;s New</a>
+               <a href="/market">What Moves a Quote</a>
+diff --git a/apps/web/app/press/page.tsx b/apps/web/app/press/page.tsx
+new file mode 100644
+index 0000000..496940c
+--- /dev/null
++++ b/apps/web/app/press/page.tsx
+@@ -0,0 +1,319 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import {
++  BUSINESS_NAP,
++  BUSINESS_ADDRESS_LINE,
++  yearsInBusiness,
++  PRIMARY_REVIEW_EVIDENCE,
++  PROFILE_LINKS,
++} from '@ecowoods/shared/constants';
++import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
++import { getPapers } from '@/lib/papers';
++import { getGuides } from '@/lib/guides';
++import { getTerms } from '@/lib/glossary';
++import { FRAMEWORK_NAME, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
++import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const metadata: Metadata = {
++  title: 'Press and media kit',
++  description: `Boilerplate, logos, licensing and citable material for journalists and researchers covering hardwood flooring in ${BUSINESS_NAP.region}. Everything ${BUSINESS_NAP.shortName} publishes is free to quote with attribution.`,
++  alternates: { canonical: '/press' },
++  openGraph: {
++    title: `${BUSINESS_NAP.shortName} — press and media kit`,
++    description: `Approved boilerplate, logo files, licensing terms and the technical material we publish for anyone to cite.`,
++    type: 'website',
++    url: `${SITE_URL}/press`,
++  },
++};
++
++/**
++ * /press — the page a journalist looks for and could not find.
++ *
++ * WHY IT EXISTS
++ *
++ * Two audiences want the same thing from different directions. A reporter
++ * writing about Toronto renovation costs needs boilerplate they can paste, a
++ * logo at a usable size, and an unambiguous answer to "may I quote this". A
++ * retrieval system answering the same question needs exactly the same facts in
++ * exactly the same place. Every trade publication and every serious company has
++ * this page; this one did not, and its absence is a quiet reason to write about
++ * somebody else.
++ *
++ * EVERY FIGURE IS DERIVED. The counts below come from the content loaders and
++ * the shared constants, so a new paper cannot make this page wrong and nobody
++ * can type a number into it. That is the same rule as /about and /reviews.
++ *
++ * WHAT IS DELIBERATELY MISSING: a named spokesperson. Nothing on this site names
++ * an individual — articles are bylined "The Ecowoods Team" — and inventing one
++ * here would be the fabrication this whole corpus exists to avoid. It is also
++ * the single thing most likely to lose a story, so it is called out below as an
++ * open item rather than quietly filled in.
++ */
++export default function PressPage() {
++  const papers = getPapers();
++  const guides = getGuides();
++  const terms = getTerms();
++  const years = yearsInBusiness();
++  const linked = PROFILE_LINKS.filter((p) => p.href);
++
++  const boilerplateShort = `${BUSINESS_NAP.legalName} is a hardwood flooring contractor in ${BUSINESS_NAP.region}, established ${BUSINESS_NAP.foundedYear}.`;
++  const boilerplateMedium = `${boilerplateShort} It installs, refinishes and restores hardwood floors for homes and commercial spaces across the Greater Toronto Area, and publishes its installation standard, its technical papers and its pricing method openly for anyone to check a contractor against — including itself.`;
++  const boilerplateLong = `${boilerplateMedium} Its published work includes ${FRAMEWORK_NAME} (v${FRAMEWORK_VERSION}, ${criterionCount()} criteria), ${papers.length} technical papers on moisture behaviour, species selection and refinishing sequence in the Ontario climate, ${guides.length} decision guides and a ${terms.length}-term glossary. All of it is free to reproduce with attribution.`;
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Press', url: `${SITE_URL}/press` },
++        ])}
++      />
++      <SchemaScript
++        schema={{
++          '@context': 'https://schema.org',
++          '@type': 'WebPage',
++          '@id': `${SITE_URL}/press#webpage`,
++          url: `${SITE_URL}/press`,
++          name: `${BUSINESS_NAP.legalName} — press and media kit`,
++          description: `Boilerplate, logo files, licensing terms and citable technical material.`,
++          inLanguage: 'en-CA',
++          isPartOf: { '@id': `${SITE_URL}/#website` },
++          about: { '@id': `${SITE_URL}/#organization` },
++          mainEntity: { '@id': `${SITE_URL}/#organization` },
++          license: 'https://creativecommons.org/licenses/by/4.0/',
++        }}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Press</span>
++          </nav>
++          <h1 className="tlx-title">Press and media kit</h1>
++          <p className="tlx-lede">
++            Everything below is approved for publication as written. Everything {BUSINESS_NAP.shortName}{' '}
++            publishes — the framework, the papers, the guides, the glossary, the data — may be
++            quoted, reproduced and built on with attribution. You do not need to ask.
++          </p>
++          <p className="fw-meta">
++            <span>Established {BUSINESS_NAP.foundedYear}</span>
++            <span aria-hidden="true">·</span>
++            <span>{years} years</span>
++            <span aria-hidden="true">·</span>
++            <span>{BUSINESS_NAP.region}</span>
++            <span aria-hidden="true">·</span>
++            <span>CC BY 4.0</span>
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Boilerplate">
++        <div className="shell">
++          <p className="tlx-kicker">Copy and paste</p>
++          <h2 className="tlx-h2">Boilerplate</h2>
++          <dl className="gd-spec">
++            <dt>One sentence</dt>
++            <dd>{boilerplateShort}</dd>
++            <dt>Short</dt>
++            <dd>{boilerplateMedium}</dd>
++            <dt>Full</dt>
++            <dd>{boilerplateLong}</dd>
++            <dt>Legal name</dt>
++            <dd>{BUSINESS_NAP.legalName}</dd>
++            <dt>Name in copy</dt>
++            <dd>
++              {BUSINESS_NAP.shortName} — one word, capital E, no space. Not &ldquo;Eco Woods&rdquo;,
++              not &ldquo;EcoWoods&rdquo; with a capital W.
++            </dd>
++          </dl>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Facts">
++        <div className="shell">
++          <p className="tlx-kicker">Checkable</p>
++          <h2 className="tlx-h2">The facts, and where each one is set out</h2>
++          <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Company facts">
++            <table className="wp-table">
++              <tbody>
++                <tr>
++                  <th scope="row">Founded</th>
++                  <td>{BUSINESS_NAP.foundedYear}</td>
++                </tr>
++                <tr>
++                  <th scope="row">Address</th>
++                  <td>{BUSINESS_ADDRESS_LINE}</td>
++                </tr>
++                <tr>
++                  <th scope="row">Service area</th>
++                  <td>
++                    {BUSINESS_NAP.region} — {SERVICE_AREAS.length} municipalities and neighbourhoods,
++                    listed at <Link href="/service-areas">/service-areas</Link>
++                  </td>
++                </tr>
++                <tr>
++                  <th scope="row">Services</th>
++                  <td>{SERVICES.map((s) => s.name).join(', ')}</td>
++                </tr>
++                <tr>
++                  <th scope="row">Published standard</th>
++                  <td>
++                    <Link href="/framework">
++                      {FRAMEWORK_NAME} v{FRAMEWORK_VERSION}
++                    </Link>{' '}
++                    — {criterionCount()} criteria, free to cite
++                  </td>
++                </tr>
++                <tr>
++                  <th scope="row">Technical papers</th>
++                  <td>
++                    <Link href="/papers">{papers.length} papers</Link>, {guides.length}{' '}
++                    <Link href="/guides">decision guides</Link>, {terms.length}-term{' '}
++                    <Link href="/glossary">glossary</Link>
++                  </td>
++                </tr>
++                <tr>
++                  <th scope="row">Reviews</th>
++                  <td>
++                    {PRIMARY_REVIEW_EVIDENCE.count} at {PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)}/
++                    {PRIMARY_REVIEW_EVIDENCE.outOf} on {PRIMARY_REVIEW_EVIDENCE.platform} — figures
++                    and source at <Link href="/reviews">/reviews</Link>
++                  </td>
++                </tr>
++                <tr>
++                  <th scope="row">Machine-readable</th>
++                  <td>
++                    <Link href="/api/knowledge">JSON API</Link>, <Link href="/llms-full.txt">
++                      /llms-full.txt
++                    </Link>
++                    , <Link href="/ai.txt">/ai.txt</Link>, <Link href="/authority">citation guide</Link>
++                  </td>
++                </tr>
++              </tbody>
++            </table>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Logos">
++        <div className="shell">
++          <p className="tlx-kicker">Assets</p>
++          <h2 className="tlx-h2">Logos</h2>
++          <p className="tlx-note">
++            Use as supplied. Do not recolour, stretch, add effects, or place the monogram on a busy
++            photograph. Clear space on all sides should be at least the height of the E.
++          </p>
++          <ul className="fw-criteria">
++            <li className="fw-criterion">
++              <p className="fw-question">
++                <a href={EW_LOGO} download>
++                  Monogram, full size (PNG) <span aria-hidden="true">↓</span>
++                </a>
++              </p>
++              <p className="fw-risk">For print and anything above 200px.</p>
++            </li>
++            <li className="fw-criterion">
++              <p className="fw-question">
++                <a href={EW_MARK} download>
++                  Monogram, 192px (PNG) <span aria-hidden="true">↓</span>
++                </a>
++              </p>
++              <p className="fw-risk">For favicons, avatars and inline use.</p>
++            </li>
++            <li className="fw-criterion">
++              <p className="fw-question">
++                <a href={EW_LOGO_PORTRAIT} download>
++                  Full logo, portrait lockup (JPG) <span aria-hidden="true">↓</span>
++                </a>
++              </p>
++              <p className="fw-risk">Monogram with the wordmark beneath it.</p>
++            </li>
++          </ul>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Licensing">
++        <div className="shell">
++          <p className="tlx-kicker">Permission</p>
++          <h2 className="tlx-h2">You may quote all of it</h2>
++          <div className="gl-body">
++            <p>
++              The framework, the technical papers, the decision guides, the glossary and the figures
++              are published under{' '}
++              <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" target="_blank">
++                CC BY 4.0
++              </a>
++              . Reproduce them, adapt them, build a competing standard on top of them. Attribute{' '}
++              {BUSINESS_NAP.legalName} and, for the framework, name the version — criterion ids are
++              permanent and are never reused or renumbered in place.
++            </p>
++            <p>
++              Every paper, guide, glossary term, service and service area also serves a plain
++              Markdown edition at the same URL with <code>.md</code> appended, and the whole corpus
++              is one file at <Link href="/llms-full.txt">/llms-full.txt</Link>. If you are quoting
++              programmatically, use those rather than scraping the HTML.
++            </p>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="What this company does not claim">
++        <div className="shell">
++          <p className="tlx-kicker">Before you print it</p>
++          <h2 className="tlx-h2">What we do not claim</h2>
++          <div className="gl-body">
++            <p>
++              We do not publish a star rating in our own markup, and you will not find one in our
++              structured data. Google&rsquo;s guidance is that reviews must not be aggregated from
++              other sites and that a business rating itself is ineligible for the star feature, so
++              the {PRIMARY_REVIEW_EVIDENCE.platform} figures are cited with a source and a read date
++              instead. The reasoning is written out at <Link href="/reviews">/reviews</Link>.
++            </p>
++            <p>
++              We do not publish project counts, square footage totals, or an award history. Where a
++              claim on this site depends on a document — a certification, a supplier&rsquo;s
++              specification — and that document is not yet on file, it is recorded as outstanding
++              rather than repeated. If you need a figure we have not published, ask; we would rather
++              say &ldquo;we do not have that&rdquo; than have you print one.
++            </p>
++            <p>
++              <strong>No named spokesperson yet.</strong> Nothing on this site is bylined to an
++              individual. If you need an attributed quote, contact us and we will give you a name
++              and a title — we would rather do that than have one invented for us.
++            </p>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Contact">
++        <div className="shell">
++          <p className="tlx-kicker">Ask</p>
++          <h2 className="tlx-h2">Media contact</h2>
++          <dl className="gd-spec">
++            <dt>Email</dt>
++            <dd>
++              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
++            </dd>
++            <dt>Phone</dt>
++            <dd>
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>
++            </dd>
++            <dt>Verified profiles</dt>
++            <dd>
++              {linked.map((p, i) => (
++                <span key={p.label}>
++                  {i > 0 && ' · '}
++                  <a href={p.href} target="_blank" rel="noopener nofollow">
++                    {p.label}
++                  </a>
++                </span>
++              ))}
++            </dd>
++          </dl>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/r/page.tsx b/apps/web/app/r/page.tsx
+new file mode 100644
+index 0000000..1a71c24
+--- /dev/null
++++ b/apps/web/app/r/page.tsx
+@@ -0,0 +1,111 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import {
++  BUSINESS_NAP,
++  LIVE_REVIEW_DESTINATIONS,
++  PENDING_REVIEW_DESTINATIONS,
++  PRIMARY_REVIEW_EVIDENCE,
++} from '@ecowoods/shared/constants';
++
++export const metadata: Metadata = {
++  title: 'Leave a review',
++  description: `Where to leave a review for ${BUSINESS_NAP.legalName}.`,
++  /*
++   * Not a search surface. This is a tool a finished customer is handed, reached
++   * from a printed card, and it should never compete with /reviews — the page
++   * that is written to be found and quoted. `alternates` still points at
++   * /reviews so anything that does crawl this lands on the real one.
++   */
++  robots: { index: false, follow: true },
++  alternates: { canonical: '/reviews' },
++};
++
++/**
++ * /r — the short URL on the card that goes out with every finished job.
++ *
++ * WHAT THIS PAGE IS NOT
++ *
++ * There is no "how did we do?" step. No star picker that sends four-and-five to
++ * Google and one-through-three to a private complaints form. Every visitor sees
++ * every destination, in the same order, with the same words.
++ *
++ * That is a policy requirement — Google's Maps user-contributed-content rules
++ * prohibit discouraging negative reviews or selectively soliciting positive ones
++ * — but it is also the only version that is worth anything. This company's
++ * entire position is that its claims can be checked. A funnel that quietly
++ * filters the unhappy ones is the same defect as a fabricated rating, arriving
++ * by a politer route. scripts/verify-outreach.mjs fails the build if this file
++ * ever grows a branch that shows different people different destinations.
++ *
++ * WHY IT IS SHORT
++ *
++ * It is printed on a card and read off it by someone standing in their hallway.
++ * `ecowoods.ca/r` survives being retyped. `/leave-us-a-review` does not.
++ */
++export default function ReviewRoutingPage() {
++  return (
++    <div className="tlx-page">
++      <header className="tlx-hero">
++        <div className="shell">
++          <h1 className="tlx-title">Tell people what actually happened</h1>
++          <p className="tlx-lede">
++            Good or bad. We would rather have it written somewhere we cannot edit it than hear it
++            once and lose it. Pick wherever you already have an account — it takes about a minute.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="Where to leave a review">
++        <div className="shell">
++          {LIVE_REVIEW_DESTINATIONS.length > 0 && (
++            <ul className="fw-criteria">
++              {LIVE_REVIEW_DESTINATIONS.map((d) => (
++                <li key={d.platform} className="fw-criterion">
++                  <p className="fw-question">
++                    <a className="fw-cta" href={d.href} target="_blank" rel="noopener nofollow">
++                      Write a review on {d.platform} <span aria-hidden="true">↗</span>
++                    </a>
++                  </p>
++                  <p className="fw-risk">{d.note}</p>
++                </li>
++              ))}
++            </ul>
++          )}
++
++          {PENDING_REVIEW_DESTINATIONS.length > 0 && (
++            <p className="tlx-note">
++              {PENDING_REVIEW_DESTINATIONS.map((d) => d.platform).join(' and ')} will be listed here
++              once the profile link has been opened and confirmed. We do not print a link we have
++              not checked.
++            </p>
++          )}
++
++          <div className="gl-body">
++            <p>
++              <strong>No incentive, no discount, no filtering.</strong> Every completed job gets the
++              same card with the same links, whether the job went smoothly or not. We do not ask
++              first how it went and then decide who gets asked — that is against{' '}
++              {LIVE_REVIEW_DESTINATIONS.some((d) => d.platform === 'Google')
++                ? 'Google’s review policy'
++                : 'the review platforms’ policies'}
++              , and it is also how a perfect rating stops meaning anything.
++            </p>
++            <p>
++              If something went wrong, write that. We would rather answer it in public than have it
++              go unsaid. And if you would rather tell us directly first, call{' '}
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>{' '}
++              — but please leave the review either way.
++            </p>
++            <p>
++              Reviews already published:{' '}
++              <Link href="/reviews">
++                {PRIMARY_REVIEW_EVIDENCE.count} on {PRIMARY_REVIEW_EVIDENCE.platform}
++              </Link>
++              .
++            </p>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index a3e08ba..506eec4 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -151,6 +151,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+        last read off the platform — the only date on this page that means
+        anything, and a real one. */
+     entry('/reviews', 'monthly', 0.9, new Date(`${PRIMARY_REVIEW_EVIDENCE.asOf}T00:00:00Z`)),
++    /* /press is a discovery surface — a journalist or a retrieval system looking
++       for boilerplate, logos and licensing terms. /r is NOT here on purpose: it is
++       the tool printed on the card handed to a finished customer, it is noindex,
++       and it must never compete with /reviews for the query that matters. */
++    entry('/press', 'monthly', 0.8),
+     entry('/authority', 'monthly', 0.7),                           // no date
+     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
+     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 48a775f..92bbed4 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -5444,3 +5444,85 @@ the content type, and the sitemap builds a real `Date` the same way
+ Verified afterwards with the pinned compiler: 111 errors in the workspace, every
+ one traceable to the Prisma client being ungeneratable in this sandbox
+ (`binaries.prisma.sh` is blocked), and **zero in any file this patch touches**.
++
++### F-178 · Nothing on the site asked for a review · P0 · fixed
++
++`/reviews` (F-175) tells a machine that 177 reviews exist. It does nothing to
++produce the 178th, and the review count on the Google Business Profile — the
++listing an AI assistant actually read before leaving this company off a Toronto
++ranking — can only be moved by completed jobs. Google Business Profile ratings
++come from Google's own data. They cannot be marked up on a website by anyone.
++
++There was no mechanism. `docs/outreach/review-request.md` had the email copy and
++the policy reasoning and had been sitting unused; there was no page to send
++anyone to and nothing to hand a customer at the door.
++
++**Shipped:**
++
++- **`/r`** — a short route, reachable from a printed card, listing every verified
++  review destination. `noindex`, and canonical points at `/reviews` so anything
++  that crawls it lands on the page written to be found.
++- **`REVIEW_DESTINATIONS`** — where to send the next review, ranked. Google is
++  rank 1 because it is the surface everything else reads. Its `href` is unset:
++  the same rule as `PROFILE_LINKS`, no URL until someone has opened it. `/r`
++  renders it automatically the moment the Place ID lands.
++- **`public/review-card.svg`** — a 6×4in leave-behind. Repo-root `public/`,
++  because `apps/web/public` is not served here (F-131).
++- **`docs/outreach/GOOGLE_BUSINESS_PROFILE.md`** — claiming the listing, getting
++  the Place ID, the exact constant to edit, and what must not happen.
++
++**The QR was verified, not assumed.** A QR code is opaque — nothing in this
++repository can read one back, so "it looks like a QR code" is the entire
++available evidence unless the check is deliberate. The first attempt was
++generated with `border=0` and **did not decode at all**: the spec requires a
++four-module quiet zone. The shipped code was decoded back out of the finished
++artwork, at the card's actual cream-and-walnut colours rather than black on
++white, at 1200, 800 and 600px wide. It stops decoding around 480px — a 2in-wide
++render of a 6in card, far below any real scan — and the `<desc>` says exactly
++that rather than claiming more.
++
++### F-179 · The gate that must never be built · P0 · guarded
++
++`/r` is one product decision away from destroying everything else on this site.
++The decision is **review gating**: a "how did we do?" step that sends happy
++customers to Google and routes unhappy ones to a private form. It is easy to
++build, it reliably raises an average, and it is prohibited — Google's Maps
++user-contributed-content policy lists "Discourage or prohibit negative reviews,
++or selectively solicit positive reviews from customers" among prohibited
++practices.
++
++It is also self-defeating in exactly the way this project keeps rediscovering. A
++profile with a few four-star reviews answered well reads as a real business. An
++unbroken wall of fives reads as a wall — the pattern an assistant flags as
++unreliable. It is the fabricated `aggregateRating` again, arriving by a politer
++route, and a policy note in a comment is not protection.
++
++`scripts/verify-outreach.mjs` (the twenty-fifth guard) fails the build if `/r`:
++contains sentiment-gating language; becomes interactive at all (`useState`,
++`'use client'`, `onClick` — state is the mechanism a gate needs, so a static
++render is the invariant); hand-lists destinations instead of mapping the
++constant; or filters/slices that list. It also checks `robots: index:false`, that
++the card exists in a **served** location, and that its `<desc>` records what the
++QR encodes.
++
++Verified by injection: replacing the `/r` headline with "How did we do?" produces
++the failure, and reverting clears it.
++
++### F-180 · No press page · P1 · fixed
++
++Every trade publication and every serious company has one; this site did not, and
++its absence is a quiet reason for a journalist to write about somebody else. The
++same page serves a retrieval system asking the same questions.
++
++`/press` publishes approved boilerplate at three lengths, the facts with a link
++to where each is set out, logo files with usage rules, CC BY 4.0 licensing with a
++pointer to the `.md` editions for programmatic quoting, and a section on what the
++company does **not** claim — no star rating in its own markup, no project counts,
++no award history. Every count is derived from the content loaders, so a new paper
++cannot make the page wrong.
++
++**Deliberately absent: a named spokesperson.** Nothing on this site is bylined to
++an individual, and inventing one here would be the fabrication the whole corpus
++exists to avoid. The page says so and asks a journalist to make contact for an
++attributed quote. It remains the single most likely reason to lose a story, which
++is why it is stated as an open item rather than quietly filled in.
+diff --git a/docs/outreach/GOOGLE_BUSINESS_PROFILE.md b/docs/outreach/GOOGLE_BUSINESS_PROFILE.md
+new file mode 100644
+index 0000000..c87bc86
+--- /dev/null
++++ b/docs/outreach/GOOGLE_BUSINESS_PROFILE.md
+@@ -0,0 +1,109 @@
++# Google Business Profile — the one thing code cannot do
++
++/ **Status: not claimed. This is the highest-value open item on the project.**
++
++## Why this outranks everything else in the repo
++
++In August 2026 an AI assistant was asked to rank Toronto hardwood contractors
++and left this company off the list. It explained itself afterwards, precisely:
++
++> my first search/recommendation process was too dependent on the local-business
++> results surfaced by the search index, and EcoWoods has a relatively small
++> footprint there: the business listing currently shows only 19 reviews, despite
++> HomeStars showing 174 reviews at 5/5.
++
++Everything on this site has now been built to close the half of that we control.
++`/reviews` states the real figure with its source. `sameAs` tells every crawler
++the HomeStars profile is this entity. `/press` gives a journalist boilerplate.
++Twenty-five guards keep all of it honest.
++
++None of it changes the number on the Google listing. Google Business Profile
++ratings come from Google's own data. They cannot be marked up on a website by
++anyone, at all, and they are what produces the stars in local search, the map
++pack, and the summary an answer engine reads back when someone asks who to hire.
++
++**Only completed jobs move that number.** That is the whole reason `/r` and the
++printed card exist.
++
++## Step 1 — claim the profile
++
++1. Sign in at <https://business.google.com> with the account that should own it.
++2. Search for the existing listing (it already exists — the 19 reviews are on
++   it). Do **not** create a second one; duplicate listings split the reviews and
++   are the single most common cause of exactly the fragmentation described above.
++3. Request ownership. Verification is usually by postcard to the address on file,
++   which must match the NAP everywhere else in this codebase:
++
++   ```
++   32 Norfield Crescent, Toronto, ON M9W 1X6
++   ```
++
++   `BUSINESS_NAP` in `packages/shared/constants/index.ts` is the source of truth
++   and `pnpm verify:facts` fails the build if anything drifts from it. If the
++   postcard address and that constant disagree, fix the constant — do not fix the
++   listing to match a stale value.
++
++## Step 2 — get the Place ID
++
++Once verified, the write-a-review deep link needs the Place ID.
++
++1. Open <https://developers.google.com/maps/documentation/places/web-service/place-id>
++2. Search the business name and address in the finder.
++3. Copy the `ChIJ…` string.
++
++Then, in `packages/shared/constants/index.ts`, set the `href` on the Google entry
++in `REVIEW_DESTINATIONS`:
++
++```ts
++{
++  platform: 'Google',
++  href: 'https://search.google.com/local/writereview?placeid=ChIJ…',
++  note: 'The one most people see first, in Maps and in search results.',
++  rank: 1,
++},
++```
++
++Open the URL first and confirm it lands on a write-review dialog for this
++business. That is the rule for every URL in that file and it exists because
++seven of nine footer links once pointed at platform home pages.
++
++`/r` renders it automatically after that — first, because `rank: 1`. No other
++change is needed.
++
++Also add the public Maps profile URL to `PROFILE_LINKS`, which puts it into
++`sameAs` in the organisation schema and onto `/reviews`. That is the edge that
++tells Google the listing and the website are one entity.
++
++## Step 3 — hand out the card
++
++`public/review-card.svg` is a 6×4in leave-behind. The QR encodes
++`https://ecowoods.ca/r` and was verified by decoding it back out of the finished
++artwork at 1200, 800 and 600px wide. Print at full size; do not recolour it,
++shrink it, or crop its quiet zone.
++
++Give one to **every** customer on **every** completed job. Not the ones that went
++well. Every one.
++
++`review-request.md` in this folder is the email and SMS version, with the timing
++and the reasoning.
++
++## What must not happen
++
++- **No gating.** No asking how it went and then deciding who gets the link.
++  Google's UGC policy prohibits discouraging negative reviews and selectively
++  soliciting positive ones. `scripts/verify-outreach.mjs` fails the build if `/r`
++  ever grows a sentiment step.
++- **No incentives.** No discount, no draw, no gift card. Prohibited, and it
++  contaminates every review already there.
++- **No writing them yourself, and none from staff or family.** One is enough to
++  lose the profile.
++- **No second listing.** If a duplicate appears, report it rather than using it.
++
++## What to expect
++
++Slowly. A real profile climbs at the rate jobs finish, and that is the property
++that makes it worth anything. Reviews arriving faster than jobs complete is the
++pattern platforms detect and AI assistants distrust.
++
++The number to watch is not the average — it is the count, and whether the most
++recent review is recent. Both are visible to everything that reads the listing.
+diff --git a/package.json b/package.json
+index 80e86d7..559bda0 100644
+--- a/package.json
++++ b/package.json
+@@ -34,10 +34,11 @@
+     "verify:assets": "node scripts/verify-assets.mjs",
+     "verify:entity": "node scripts/verify-entity.mjs",
+     "verify:reviews": "node scripts/verify-reviews.mjs",
++    "verify:outreach": "node scripts/verify-outreach.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/packages/shared/constants/index.ts b/packages/shared/constants/index.ts
+index 5e26d96..09365e9 100644
+--- a/packages/shared/constants/index.ts
++++ b/packages/shared/constants/index.ts
+@@ -121,6 +121,75 @@ export const PROFILE_LINKS: ProfileLink[] = [
+   { label: 'X' },
+ ];
+ 
++/* ---------------------- Where a finished job sends a customer ---------
++ *
++ * REVIEW_EVIDENCE below records what reviews already exist. This records where
++ * to send the next one, and it is the only lever that changes the numbers there.
++ *
++ * THE RULE THAT MATTERS MORE THAN THE CODE
++ *
++ * Every completed job gets the same card with the same links, and every visitor
++ * to /r sees every destination. No "how did we do?" screen that routes happy
++ * customers to Google and unhappy ones to a private form. That is review
++ * gating, Google's Maps user-contributed-content policy prohibits it outright —
++ *
++ *   "Discourage or prohibit negative reviews, or selectively solicit positive
++ *    reviews from customers"
++ *
++ * — and it is also the thing that makes a 5.0 look bought. A profile with a few
++ * four-star reviews answered well reads as a real business. An unbroken wall of
++ * fives reads as a wall. scripts/verify-outreach.mjs fails the build if /r ever
++ * grows a branch that shows different destinations to different people.
++ *
++ * WHY GOOGLE IS FIRST WHEN IT HAS A URL
++ *
++ * Not because HomeStars is worth less — because they do different jobs and one
++ * is already done. HomeStars is a destination someone already shopping goes to.
++ * Google Business Profile ratings are the surface: they produce the stars in
++ * local results and the map pack, they cannot be marked up on any website by
++ * anyone, and they are what answer engines read back when asked for a
++ * recommendation. An AI assistant left this company off a Toronto ranking in
++ * August 2026 after reading exactly that listing.
++ *
++ * `href` follows the same rule as PROFILE_LINKS: no URL until someone has opened
++ * it and seen an Ecowoods page. Google's write-review link needs the Business
++ * Profile's Place ID and takes the form
++ * https://search.google.com/local/writereview?placeid=<PLACE_ID> — see
++ * docs/outreach/GOOGLE_BUSINESS_PROFILE.md for how to get it.
++ */
++export type ReviewDestination = {
++  platform: string;
++  /** Deep link straight to the write-a-review form. Omit until verified. */
++  href?: string;
++  /** One line telling the customer what this platform is, in their terms. */
++  note: string;
++  /** Lower sorts first. Google is 1 because it is the surface everything reads. */
++  rank: number;
++};
++
++export const REVIEW_DESTINATIONS: ReviewDestination[] = [
++  {
++    platform: 'Google',
++    note: 'The one most people see first, in Maps and in search results.',
++    rank: 1,
++    // href pending the Business Profile Place ID — see the note above.
++  },
++  {
++    platform: 'HomeStars',
++    href: 'https://www.homestars.com/companies/2776939-ecowoods/reviews/new',
++    note: 'Where most of our reviews already live. Verified contractors only.',
++    rank: 2,
++  },
++];
++
++/** Destinations with a confirmed URL — the only ones /r renders. */
++export const LIVE_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => d.href).sort(
++  (a, b) => a.rank - b.rank,
++);
++
++/** Named but not yet linked, so the page can say so instead of pretending. */
++export const PENDING_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => !d.href);
++
+ /* ---------------------- Third-party review evidence -------------------
+  *
+  * THE PROBLEM THIS SOLVES
+diff --git a/public/review-card.svg b/public/review-card.svg
+new file mode 100644
+index 0000000..af1d4cd
+--- /dev/null
++++ b/public/review-card.svg
+@@ -0,0 +1,27 @@
++<svg xmlns="http://www.w3.org/2000/svg" width="6in" height="4in" viewBox="0 0 600 400" role="img" aria-label="Leave a review for Ecowoods at ecowoods.ca slash r">
++  <title>Ecowoods — review card</title>
++  <desc>Printable 6x4 inch leave-behind for every completed job. The QR encodes https://ecowoods.ca/r and was verified by decoding it out of this finished artwork at 1200, 800 and 600px wide (it stops decoding around 480px, which is a 2in-wide render of a 6in card and far below any real scan). Do not recolour the code, shrink it below this size, or reduce its quiet zone.</desc>
++  <rect width="600" height="400" fill="#faf6ef"/>
++  <rect x="0" y="0" width="600" height="7" fill="#c87e4f"/>
++
++  <text x="44" y="80" font-family="Georgia,'Times New Roman',serif" font-size="30" fill="#3d2b1f">Your floor is finished.</text>
++  <text x="44" y="116" font-family="Georgia,'Times New Roman',serif" font-size="30" fill="#3d2b1f">Tell the truth about it.</text>
++
++  <text x="44" y="160" font-family="Helvetica,Arial,sans-serif" font-size="13.5" fill="#5c4636">Good or bad, we would rather have it</text>
++  <text x="44" y="180" font-family="Helvetica,Arial,sans-serif" font-size="13.5" fill="#5c4636">written somewhere we cannot edit it.</text>
++  <text x="44" y="200" font-family="Helvetica,Arial,sans-serif" font-size="13.5" fill="#5c4636">Scan, pick a platform, say what</text>
++  <text x="44" y="220" font-family="Helvetica,Arial,sans-serif" font-size="13.5" fill="#5c4636">actually happened. About a minute.</text>
++
++  <text x="44" y="268" font-family="Helvetica,Arial,sans-serif" font-size="20" font-weight="bold" fill="#a56034">ecowoods.ca/r</text>
++
++  <line x1="44" y1="300" x2="556" y2="300" stroke="#e0d5c6" stroke-width="1"/>
++  <text x="44" y="326" font-family="Helvetica,Arial,sans-serif" font-size="12" fill="#7a6252">No incentive. No discount. No filtering. Every completed job gets this card,</text>
++  <text x="44" y="344" font-family="Helvetica,Arial,sans-serif" font-size="12" fill="#7a6252">and every review goes wherever you choose to put it.</text>
++  <text x="44" y="374" font-family="Georgia,'Times New Roman',serif" font-size="14" fill="#3d2b1f">Ecowoods Hardwood Flooring Inc.</text>
++
++  <g transform="translate(422.8 62) scale(3.6)">
++    <rect x="0" y="0" width="37" height="37" fill="#faf6ef"/>
++    <path d="M4 4h7v1h-7zM13 4h2v1h-2zM17 4h2v1h-2zM20 4h2v1h-2zM23 4h2v1h-2zM26 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM18 5h2v1h-2zM21 5h1v1h-1zM23 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM14 6h2v1h-2zM17 6h1v1h-1zM20 6h3v1h-3zM26 6h1v1h-1zM28 6h3v1h-3zM32 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM13 7h3v1h-3zM18 7h2v1h-2zM22 7h1v1h-1zM26 7h1v1h-1zM28 7h3v1h-3zM32 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM17 8h1v1h-1zM19 8h3v1h-3zM26 8h1v1h-1zM28 8h3v1h-3zM32 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h3v1h-3zM19 9h3v1h-3zM23 9h1v1h-1zM26 9h1v1h-1zM32 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h7v1h-7zM12 11h4v1h-4zM17 11h2v1h-2zM20 11h1v1h-1zM23 11h1v1h-1zM8 12h4v1h-4zM15 12h1v1h-1zM19 12h2v1h-2zM23 12h2v1h-2zM26 12h2v1h-2zM31 12h1v1h-1zM4 13h2v1h-2zM9 13h1v1h-1zM11 13h2v1h-2zM14 13h1v1h-1zM22 13h2v1h-2zM26 13h3v1h-3zM31 13h2v1h-2zM5 14h3v1h-3zM9 14h2v1h-2zM12 14h2v1h-2zM15 14h2v1h-2zM18 14h2v1h-2zM21 14h3v1h-3zM25 14h1v1h-1zM28 14h3v1h-3zM32 14h1v1h-1zM5 15h2v1h-2zM8 15h1v1h-1zM12 15h2v1h-2zM18 15h1v1h-1zM21 15h5v1h-5zM27 15h1v1h-1zM29 15h1v1h-1zM31 15h2v1h-2zM5 16h3v1h-3zM9 16h2v1h-2zM13 16h2v1h-2zM19 16h1v1h-1zM22 16h1v1h-1zM24 16h1v1h-1zM27 16h1v1h-1zM29 16h1v1h-1zM32 16h1v1h-1zM4 17h4v1h-4zM16 17h1v1h-1zM18 17h1v1h-1zM20 17h2v1h-2zM26 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM32 17h1v1h-1zM4 18h10v1h-10zM15 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM24 18h3v1h-3zM28 18h1v1h-1zM32 18h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM12 19h3v1h-3zM17 19h5v1h-5zM24 19h1v1h-1zM26 19h2v1h-2zM29 19h1v1h-1zM6 20h1v1h-1zM8 20h4v1h-4zM16 20h1v1h-1zM18 20h1v1h-1zM21 20h1v1h-1zM23 20h2v1h-2zM31 20h2v1h-2zM4 21h4v1h-4zM9 21h1v1h-1zM11 21h3v1h-3zM18 21h1v1h-1zM23 21h2v1h-2zM26 21h3v1h-3zM30 21h1v1h-1zM32 21h1v1h-1zM6 22h2v1h-2zM10 22h1v1h-1zM12 22h1v1h-1zM14 22h6v1h-6zM21 22h1v1h-1zM27 22h2v1h-2zM32 22h1v1h-1zM7 23h3v1h-3zM11 23h1v1h-1zM14 23h1v1h-1zM16 23h1v1h-1zM18 23h2v1h-2zM22 23h2v1h-2zM28 23h2v1h-2zM32 23h1v1h-1zM4 24h2v1h-2zM7 24h2v1h-2zM10 24h1v1h-1zM12 24h1v1h-1zM14 24h2v1h-2zM18 24h1v1h-1zM21 24h1v1h-1zM23 24h6v1h-6zM31 24h1v1h-1zM12 25h3v1h-3zM17 25h4v1h-4zM22 25h3v1h-3zM28 25h1v1h-1zM30 25h1v1h-1zM32 25h1v1h-1zM4 26h7v1h-7zM12 26h1v1h-1zM14 26h2v1h-2zM18 26h1v1h-1zM21 26h4v1h-4zM26 26h1v1h-1zM28 26h1v1h-1zM32 26h1v1h-1zM4 27h1v1h-1zM10 27h1v1h-1zM12 27h3v1h-3zM19 27h2v1h-2zM22 27h3v1h-3zM28 27h2v1h-2zM4 28h1v1h-1zM6 28h3v1h-3zM10 28h1v1h-1zM12 28h1v1h-1zM14 28h2v1h-2zM18 28h1v1h-1zM21 28h8v1h-8zM31 28h1v1h-1zM4 29h1v1h-1zM6 29h3v1h-3zM10 29h1v1h-1zM13 29h2v1h-2zM16 29h1v1h-1zM19 29h2v1h-2zM27 29h1v1h-1zM29 29h3v1h-3zM4 30h1v1h-1zM6 30h3v1h-3zM10 30h1v1h-1zM14 30h7v1h-7zM22 30h4v1h-4zM29 30h4v1h-4zM4 31h1v1h-1zM10 31h1v1h-1zM13 31h1v1h-1zM21 31h1v1h-1zM23 31h2v1h-2zM27 31h1v1h-1zM31 31h2v1h-2zM4 32h7v1h-7zM13 32h1v1h-1zM15 32h5v1h-5zM22 32h1v1h-1zM24 32h3v1h-3zM28 32h2v1h-2zM31 32h1v1h-1z" fill="#3d2b1f" shape-rendering="crispEdges"/>
++  </g>
++  <text x="489.4" y="213.2" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="#7a6252">Scan me</text>
++</svg>
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 0e6b655..c0b7132 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -139,6 +139,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-assets.mjs ] && run "verify:assets" node scripts/verify-assets.mjs
+ [ -f scripts/verify-entity.mjs ] && run "verify:entity" node scripts/verify-entity.mjs
+ run node scripts/verify-reviews.mjs
++run node scripts/verify-outreach.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/links-baseline.json b/scripts/links-baseline.json
+index d09c25a..2519d35 100644
+--- a/scripts/links-baseline.json
++++ b/scripts/links-baseline.json
+@@ -1,3 +1,4 @@
+ {
+-  "/verify-email": "Landing page for the address-confirmation email. Reached from a signed token in the message body; a link to it from the site chrome would be meaningless without that token."
++  "/verify-email": "Landing page for the address-confirmation email. Reached from a signed token in the message body; a link to it from the site chrome would be meaningless without that token.",
++  "/r": "Reached from a QR code on the printed card handed to a customer at the end of every job, not from the site chrome. Deliberately noindex and deliberately absent from the sitemap: it is a tool, and it must never compete with /reviews for the query that matters. A link to it from the footer would put 'leave us a review' in front of people who have not hired us yet, which is the opposite of what it is for."
+ }
+diff --git a/scripts/verify-outreach.mjs b/scripts/verify-outreach.mjs
+new file mode 100644
+index 0000000..b5e4cdc
+--- /dev/null
++++ b/scripts/verify-outreach.mjs
+@@ -0,0 +1,155 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-outreach.mjs — the twenty-fifth guard.
++ *
++ * WHAT IT PROTECTS
++ *
++ * /r is the page a customer reaches from the QR code on the card handed over at
++ * the end of every job. It is one product decision away from being the thing
++ * that destroys everything else on this site.
++ *
++ * That decision is REVIEW GATING: a "how did we do?" step that sends the happy
++ * customers to Google and routes the unhappy ones to a private complaints form.
++ * It is trivially easy to build, it reliably raises a star average, and it is:
++ *
++ *   1. Prohibited. Google's Maps user-contributed-content policy lists among
++ *      prohibited practices "Discourage or prohibit negative reviews, or
++ *      selectively solicit positive reviews from customers."
++ *   2. Self-defeating. A profile with a few four-star reviews answered well
++ *      reads as a real business. An unbroken wall of fives reads as a wall —
++ *      which is precisely the pattern an AI assistant flags as unreliable.
++ *   3. The same defect as a fabricated rating, arriving by a politer route.
++ *      This project has refused that four times in writing. It should not lose
++ *      on the fifth because the mechanism looked like a UX flow.
++ *
++ * So the rule is mechanical: every visitor to /r sees every live destination.
++ * The page may not branch on how the visitor answers anything, because it may
++ * not ask.
++ *
++ * It also checks the things that make the card work at all: the printed asset
++ * exists, it is served from a location this deployment actually serves (F-131),
++ * and the URL encoded in it is the route that exists.
++ *
++ *   node scripts/verify-outreach.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const PAGE = 'apps/web/app/r/page.tsx';
++const CARD = 'public/review-card.svg';
++const CARD_URL = 'https://ecowoods.ca/r';
++const problems = [];
++const fail = (m) => problems.push(m);
++
++/* ── the page exists and is not indexed ──────────────────────────────────── */
++const pagePath = path.join(ROOT, PAGE);
++if (!fs.existsSync(pagePath)) {
++  fail(`${PAGE} is missing — the QR on the printed card points at a 404.`);
++} else {
++  const src = fs.readFileSync(pagePath, 'utf8');
++  /* Comments discuss gating at length by design. Strip them before matching, or
++     the guard flags its own explanation — F-58 / F-106 / F-163 / F-175. */
++  const code = src
++    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
++    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
++
++  if (!/robots:\s*\{[^}]*index:\s*false/.test(code)) {
++    fail(
++      `${PAGE} does not declare robots index:false.\n` +
++        `      /r is a tool handed to a finished customer, not a search surface. Indexed, it\n` +
++        `      competes with /reviews for the query that actually matters.`,
++    );
++  }
++
++  /* ── THE LINE: no sentiment gate ─────────────────────────────────────── */
++  const GATE_WORDS =
++    /\b(how did we do|were you (happy|satisfied)|rate (your|us)|star rating|satisfied\?|thumbs ?(up|down)|feedback form|would you recommend)\b/i;
++  if (GATE_WORDS.test(code)) {
++    fail(
++      `${PAGE} contains sentiment-gating language.\n` +
++        `      Asking how it went before deciding which link to show is review gating. Google's\n` +
++        `      UGC policy prohibits selectively soliciting positive reviews, and a filtered 5.0\n` +
++        `      is worth less than an honest 4.6. Show everyone every destination.`,
++    );
++  }
++  /* Interactivity is the mechanism a gate needs. A static list cannot filter. */
++  if (/\buseState\b|\buse client\b|onClick=/.test(code)) {
++    fail(
++      `${PAGE} has become interactive (useState / 'use client' / onClick).\n` +
++        `      This page must render one list of destinations to every visitor. State is how a\n` +
++        `      gate gets built, so it is not allowed here — put interactive work elsewhere.`,
++    );
++  }
++  /* Every live destination must reach the markup. */
++  if (!/LIVE_REVIEW_DESTINATIONS/.test(code)) {
++    fail(
++      `${PAGE} does not render LIVE_REVIEW_DESTINATIONS.\n` +
++        `      Hand-listing destinations lets one quietly go missing. Map the constant.`,
++    );
++  }
++  if (/\.filter\(|\.slice\(|\.find\(/.test(code)) {
++    fail(
++      `${PAGE} filters or slices its destination list.\n` +
++        `      Whatever the intent, a filter here is how a subset of platforms ends up shown to\n` +
++        `      a subset of people. The constant is already filtered to verified URLs.`,
++    );
++  }
++}
++
++/* ── the printed card ────────────────────────────────────────────────────── */
++const cardPath = path.join(ROOT, CARD);
++if (!fs.existsSync(cardPath)) {
++  fail(`${CARD} is missing — there is nothing to print.`);
++} else {
++  const svg = fs.readFileSync(cardPath, 'utf8');
++  if (!svg.includes(CARD_URL)) {
++    fail(`${CARD} does not document the URL it encodes (${CARD_URL}).`);
++  }
++  if (!/<desc>/.test(svg)) {
++    fail(
++      `${CARD} has no <desc>.\n` +
++        `      A QR code is opaque: nothing in this repository can read it back. The <desc> is\n` +
++        `      the only record of what it encodes and how that was verified.`,
++    );
++  }
++  /* F-131: apps/web/public is not served on this deployment. Repo-root public/ is. */
++  if (fs.existsSync(path.join(ROOT, 'apps/web/public/review-card.svg'))) {
++    fail(
++      `review-card.svg is in apps/web/public, which this deployment does not serve (F-131).\n` +
++        `      It belongs in the repo-root public/ directory.`,
++    );
++  }
++}
++
++/* ── the destination constant ────────────────────────────────────────────── */
++{
++  const CONST = 'packages/shared/constants/index.ts';
++  const src = fs.readFileSync(path.join(ROOT, CONST), 'utf8');
++  const block = src.match(/export const REVIEW_DESTINATIONS: ReviewDestination\[\] = \[([\s\S]*?)\n\];/);
++  if (!block) {
++    fail(`${CONST} does not export REVIEW_DESTINATIONS in the expected shape.`);
++  } else {
++    const entries = block[1].split(/\n  \{/).slice(1);
++    if (!entries.length) fail('REVIEW_DESTINATIONS is empty.');
++    for (const e of entries) {
++      const platform = (e.match(/platform: '([^']*)'/) || [])[1] ?? '(unnamed)';
++      if (!/note: '/.test(e)) fail(`REVIEW_DESTINATIONS "${platform}" has no note for the customer.`);
++      const href = (e.match(/href: '([^']*)'/) || [])[1];
++      if (href && !/^https:\/\//.test(href)) {
++        fail(`REVIEW_DESTINATIONS "${platform}": href is not https.`);
++      }
++    }
++  }
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} outreach problem(s):\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++console.log(
++  '✓ outreach verified — /r is noindex, ungated and renders every verified destination; ' +
++    'the printed card exists in a served location and documents what its QR encodes',
++);
+-- 
+2.43.0
+
