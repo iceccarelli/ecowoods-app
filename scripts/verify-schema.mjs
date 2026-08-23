@@ -138,6 +138,14 @@ const FAQPAGE_ALLOWED = new Set([
   // the page's own main content, and every answer is interpolated from a
   // published constant rather than written for the schema block.
   'apps/web/app/about/page.tsx',
+  // The two commercial head-term pages. Both qualify under F-27 the same way:
+  // every FAQ is rendered visibly in a <dl> on the page, and every answer is
+  // interpolated from PRICING, the framework, SERVICE_AREAS or REVIEW_EVIDENCE
+  // rather than written for the schema block. A rich result from either of
+  // these shows a question the page actually answers, in the words the page
+  // actually uses.
+  'apps/web/app/hardwood-flooring-toronto/page.tsx',
+  'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
   'apps/web/lib/structured-data.ts',              // faqPageSchema() builder
   'apps/web/lib/schema/builders.ts',              // buildFAQPage() builder
   'apps/web/lib/schema/types.ts',                 // the type

@@ -171,6 +171,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),
     entry('/services', 'monthly', 0.95),                           // no date
+    /* The two commercial head terms. Priority 0.95 because these are the
+       highest-intent queries in this market and the site had no page for
+       either until F-193 — six service pages and thirty-two area pages, and
+       nothing answering "hardwood flooring Toronto". */
+    entry('/hardwood-flooring-toronto', 'monthly', 0.95),
+    entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
     entry('/service-areas', 'monthly', 0.9),                       // no date
   ];
 

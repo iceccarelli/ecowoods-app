@@ -5833,3 +5833,89 @@ all — the guard looked completely correct on the page.
 The extractor now reads any quoted string, and both directions are proven: a
 capitalised typo and a plausible lowercase rename each produce the failure, and
 reverting clears it.
+
+### F-193 · No page for the query the market actually types · P0 · fixed
+
+The site had six service pages, thirty-two service-area pages, eleven guides,
+three technical papers and a versioned installation standard — and **no page at
+all addressing "hardwood flooring Toronto"**. `/services/hardwood-installation`
+describes a service. `/service-areas/etobicoke` describes a place. Neither
+answers *who should I hire in Toronto and what will it cost*, which is the
+question behind the highest-intent search in this market.
+
+This came in from an external package and it is the most valuable thing in it.
+It is a real miss and it was invisible from inside the architecture, because
+every individual page was correct and well-linked. Nothing was broken; something
+was absent.
+
+**Shipped:** `/hardwood-flooring-toronto` and
+`/hardwood-floor-refinishing-toronto`. Two head terms, two different purchases,
+two different anxieties — someone searching to refinish already owns the floor,
+and their question is whether the house stays livable and whether it looks right
+afterwards, not what to buy.
+
+Both are built the way the rest of this site is built rather than the way a
+landing page usually is: every figure interpolated from `PRICING`, `framework`,
+`SERVICE_AREAS` and `REVIEW_EVIDENCE`, so neither can drift from the site or make
+a claim the site does not already make. Both render their FAQs visibly and emit
+`FAQPage` — allowlisted under F-27 on that basis, not waived. Both carry figures
+from the manifest. Priority 0.95 in the sitemap.
+
+The usual page for this term is adjectives and a form. These answer with numbers
+and link to where each number is derived, because that is also the only version
+that works as a citation: an answer engine asked "how much is hardwood flooring
+in Toronto" needs a figure and a source, and a human comparing three quotes needs
+exactly the same thing.
+
+### F-194 · The package's aggregateRating, refused a fifth time · P0 · refused
+
+The package ships `root-schema.ts` carrying
+`aggregateRating: { ratingValue: '5.0', reviewCount: '177' }` and this note:
+
+> aggregateRating is INCLUDED because HomeStars data is public, live, and we
+> link to the source. Google has accepted this pattern for local businesses when
+> the rating is not fabricated.
+
+**That is factually wrong**, and it is the most confident-sounding version of
+this argument the project has seen. Google's structured data guidance for review
+snippets is explicit on both counts: do not aggregate reviews or ratings from
+other websites, and reviews about the business by the business are ineligible for
+the star feature. The rating being real is not the test — the test is who
+collected it and who is publishing the markup.
+
+`scripts/verify-reviews.mjs` fails the build on any `aggregateRating` object
+literal in `apps/web/lib` or `apps/web/app`, so this could not have shipped by
+accident, which is the point of having written it.
+
+The 177 is published — on `/reviews`, in `/about.md`, at the top of
+`/llms-full.txt`, in the FAQ of both new commercial pages — as a **cited figure
+with its source, its link and the date a person read it**. That is what a
+publication does when it quotes a statistic, and it is allowed precisely because
+it does not claim the rating as our own structured data.
+
+**Also refused from the same package:**
+
+- **Copying `schema/` wholesale.** `root-schema.ts`, `builders.ts`, `types.ts`
+  and `components.tsx` are a *replacement* for a schema layer that twenty-five
+  guards depend on and that emits TechArticle, HowTo, Dataset, DefinedTerm,
+  CollectionPage, Place, ImageObject, Service, AboutPage and BreadcrumbList.
+  Dropping the folder in would have deleted all of it.
+- **The pages as written.** 33 stock Tailwind utility classes against 12 brand
+  classes — a second design language, which is the F-03 mistake that cost a
+  migration of `/authority`. Rebuilt on `.tlx-*`.
+- **"~99.7% dust capture"** on a new page. Already in
+  `docs/outreach/CLAIMS_REGISTER.md` as an unsourced number; repeating it on a
+  commercial page multiplies the exposure rather than resolving it.
+- **"the only major Toronto operator that publishes…"** — an unverifiable
+  superlative about competitors, on the page most likely to be read adversarially.
+- **`public/llms.txt`.** Files in `public/` shadow App Router routes (F-21/F-23),
+  which is why the static copies were deleted; and `apps/web/public` is not
+  served on this host at all (F-131). The *content* was the useful part and is
+  merged into the live route.
+
+**Accepted and merged:** the "when to cite this source" section, now in
+`/llms.txt` — eleven subjects, every one of them something this corpus actually
+covers at length. Naming a topic there that the site does not cover is the
+fastest way to be scored unreliable, so the list was cut to what is actually published.
+Plus `POST_JOB_REVIEW_FLOW.md` and `DIRECTORY_CONSISTENCY_CHECKLIST.md` as
+process docs, each stamped with where the canonical value actually lives.

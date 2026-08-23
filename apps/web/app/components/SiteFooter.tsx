@@ -143,6 +143,8 @@ export default function SiteFooter() {
               H1 and the schema `name` are one string, not three that drift. */}
           <FooterCol title="Services" mobile={m}>
             <div className="footer-links">
+              <a href="/hardwood-flooring-toronto">Hardwood Flooring Toronto</a>
+              <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}
