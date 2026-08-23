@@ -1,0 +1,516 @@
+From ecedb74cf6571feb937ccf447dbd94152b308b1b Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 18:05:21 +0000
+Subject: [PATCH] fix(vercel): the merged config that actually shipped, and
+ CORS on every machine surface
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Patch 78 did not land. The delete of the superseded 77 ran, then ship.sh step 1
+did git reset --hard origin/main and restored it, because 77 was tracked on main
+from the upload. ship.sh applied the only patch it could see, so commit 50fc9fc
+carries 77's contents under 78's message: every guard green, deploy verdict ✓,
+and the merged vercel.json, the twenty-seventh guard and the deletion of
+old-domain/vercel.json all silently absent. This is the delta.
+
+One vercel.json for both domains. Three host-scoped edge redirects — both forms
+of the old domain plus www.ecowoods.ca → apex, which was never handled anywhere
+and is a second unconsolidated host on the canonical domain itself. Evaluated at
+the edge before the request reaches Next: one hop, no function invocation. The
+next.config.js rules stay as a fallback and cannot chain.
+
+old-domain/vercel.json deleted. Its rule has no host condition — correct in a
+project serving only the old domain, catastrophic pasted here, where it matches
+every request on ecowoods.ca and redirects the site to itself. A 301 loop is
+cached by browsers and CDNs, so it outlives the rollback.
+
+The biggest single fix is CORS. /llms.txt, /llms-full.txt, /ai.txt,
+/api/knowledge and every .md now send Access-Control-Allow-Origin: *. Those
+surfaces exist to be fetched by agents and without the header a browser-context
+fetch is blocked — seven machine editions were being published to clients that
+could not read them, in a config file nobody thought to audit.
+
+Also X-Frame-Options DENY → SAMEORIGIN, which was blocking the site from framing
+its own pages and contradicting frame-ancestors 'self' in the CSP;
+X-XSS-Protection 1; mode=block → 0, deprecated and itself an XSS vector;
+immutable caching on /_next/static and /brand; text/markdown on .md; and
+X-Robots-Tag max-snippet:-1, max-image-preview:large.
+
+verify-vercel-config.mjs is the twenty-seventh guard and it fails on all six
+failure modes, proven by injection including the exact paste.
+
+Old domain host identified: Apache/2.4.68 (Debian). old-domain/.htaccess is the
+file; EXECUTE.md and the README now say so at the top instead of asking.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ audit/FINDINGS.md                     |  86 +++++++++++++++++
+ docs/outreach/DOMAIN_CONSOLIDATION.md |   2 +
+ old-domain/EXECUTE.md                 |  13 ++-
+ old-domain/README.md                  |  51 ++++++++++
+ old-domain/vercel.json                |  18 ----
+ package.json                          |   3 +-
+ scripts/audit-all.sh                  |   1 +
+ scripts/verify-vercel-config.mjs      | 132 ++++++++++++++++++++++++++
+ vercel.json                           |  52 +++++++++-
+ 9 files changed, 334 insertions(+), 24 deletions(-)
+ create mode 100644 old-domain/README.md
+ delete mode 100644 old-domain/vercel.json
+ create mode 100644 scripts/verify-vercel-config.mjs
+
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index cdbebc4..1ed7da0 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -6146,3 +6146,89 @@ It now prints a loud **WARN** with the failing paths and the fix, and leaves the
+ verdict alone. `pnpm verify:domain` remains a hard gate that exits non-zero, so
+ the problem is still enforced — just not by the check whose meaning depends on
+ staying narrow.
++
++
++### F-202 · Two vercel.json files, one of which takes the site down · P0 · merged and guarded
++
++Two `vercel.json` files were in circulation: the real one for this project, and a
++standalone one written for a hypothetical separate project hosting only the old
++domain. The second contains:
++
++```json
++{ "source": "/:path*", "destination": "https://ecowoods.ca/:path*", "permanent": true }
++```
++
++Correct in a project serving only `ecowoodshardwood.com`. **Catastrophic here.**
++With no host condition it matches every request on ecowoods.ca and redirects the
++site to itself — a permanent loop, 301-cached in every browser and CDN that saw
++it. That is not a bad deploy you roll back cleanly: a cached 301 outlives the fix.
++
++The question that produced this — "give me one that works for both" — was the
++right one. One file can serve both, but only with host conditions, which the
++standalone version omits precisely because its project has a single host.
++
++**Merged.** The repo-root `vercel.json` now carries three host-scoped edge
++redirects: both forms of the old domain, plus **`www.ecowoods.ca` → apex**, which
++was never handled anywhere and is a second unconsolidated host on the canonical
++domain itself. Vercel evaluates these at the edge before the request reaches
++Next: one hop, no function invocation. The `next.config.js` rules remain as a
++fallback and cannot chain, because the edge resolves first.
++
++`old-domain/vercel.json` **deleted**. Leaving a loaded copy in the repository for
++someone to paste is the risk.
++
++**Three fixes taken while the file was open:**
++
++- `X-Frame-Options: DENY` → `SAMEORIGIN`. DENY blocks the site framing its own
++  pages and contradicted `frame-ancestors 'self'` already set in the CSP.
++- `X-XSS-Protection: 1; mode=block` → `0`. Deprecated, and its filter has itself
++  been an XSS vector. The CSP is the real protection.
++- **CORS on the machine surfaces.** `/llms.txt`, `/llms-full.txt`, `/ai.txt`,
++  `/api/knowledge` and every `.md` now send `Access-Control-Allow-Origin: *`.
++  This one matters more than it looks: those surfaces exist to be fetched by
++  agents, and without the header a fetch from a browser context is blocked by
++  CORS. **Seven machine editions were being published to clients that could not
++  read them** — the single largest unforced loss in the whole machine-readability
++  effort, and it was in a config file nobody thought to audit.
++
++Plus immutable caching for `/_next/static` and `/brand`, `text/markdown` on every
++`.md`, and `X-Robots-Tag: index, follow, max-image-preview:large, max-snippet:-1`
++so a search result can show a full answer and a large image rather than a
++truncation.
++
++**Guarded** by `scripts/verify-vercel-config.mjs`, the twenty-seventh guard: a
++redirect with no host condition, one naming the canonical host, a 302 where a 301
++belongs, a rule that drops the path, a missing CORS header on any machine
++surface, `X-XSS-Protection` switched back on, or drift in `outputDirectory` or
++`framework` all fail the build. All proven by injection, including the exact
++paste that would have caused the loop.
++
++### F-203 · A patch that shipped its predecessor's contents under its own message · P1 · process
++
++Patch 78 superseded 77 and contained it in full, so the instruction was to delete
++77 and ship 78. The delete ran — and then `ship.sh` step 1 did
++`git reset --hard origin/main`, which **restored 77**, because it was tracked on
++main from the upload. `ship.sh` then applied the only patch it could see.
++
++The result: commit `50fc9fc` carries **77's contents under 78's commit message**.
++Every guard passed, the build was green, the deploy verdict was ✓, and the
++merged `vercel.json`, the twenty-seventh guard and the deletion of
++`old-domain/vercel.json` were all silently absent. The message described work
++that was not in the commit.
++
++This is the third variant of the same collision (the 08b/02 pair, then the
++67 v1/v2 pair). The pattern is constant: **a superseded patch tracked on `main`
++cannot be removed by deleting it locally**, because step 1 restores it before
++step 2 reads the directory.
++
++The reliable order is: remove it from the remote first, then ship.
++
++```
++git rm <old>.patch && git commit -m "chore: drop superseded patch" && git push
++bash scripts/ship.sh "<subject>"
++```
++
++Worth doing properly in `ship.sh`: refuse to run when two patches on disk share a
++numeric prefix, and print the subject of each patch it is about to apply so a
++mismatch between message and contents is visible before the push rather than
++after.
+diff --git a/docs/outreach/DOMAIN_CONSOLIDATION.md b/docs/outreach/DOMAIN_CONSOLIDATION.md
+index 0522cc6..0537506 100644
+--- a/docs/outreach/DOMAIN_CONSOLIDATION.md
++++ b/docs/outreach/DOMAIN_CONSOLIDATION.md
+@@ -7,6 +7,8 @@ business — and every deep path answers **404**. So the Next redirects below ar
+ not merely inert; they can never fire, because the domain does not resolve to
+ this app at all.
+ 
++**Host identified 2026-08-23: `Apache/2.4.68 (Debian)`. The file is `old-domain/.htaccess`.**
++
+ **The executable fix is `old-domain/` in the repository root:** a config file for
+ every host type, and `old-domain/EXECUTE.md`, which starts by identifying what is
+ actually serving that 200 and then gives the exact steps for it. Attaching the
+diff --git a/old-domain/EXECUTE.md b/old-domain/EXECUTE.md
+index 6db56e3..be49f3f 100644
+--- a/old-domain/EXECUTE.md
++++ b/old-domain/EXECUTE.md
+@@ -27,7 +27,18 @@ whatever is serving that 200.
+ 
+ ---
+ 
+-## Step 1 — find out what is actually serving it. Thirty seconds.
++## Step 1 — ANSWERED: it is Apache
++
++```
++server: Apache/2.4.68 (Debian)
++```
++
++Measured 2026-08-23. **Use `.htaccess`. Skip to Step 2a.**
++
++The identification procedure is kept below because it is the right first move on
++any migration, and because a host can change under you.
++
++### The original Step 1 — find out what is serving it. Thirty seconds.
+ 
+ Run this from your machine:
+ 
+diff --git a/old-domain/README.md b/old-domain/README.md
+new file mode 100644
+index 0000000..2e5ae2e
+--- /dev/null
++++ b/old-domain/README.md
+@@ -0,0 +1,51 @@
++# old-domain/ — the redirect, for whatever is hosting the old site
++
++**Identified 2026-08-23:** `server: Apache/2.4.68 (Debian)`.
++**The file you need is `.htaccess`.** Everything else here is for other stacks.
++
++Measured state at the same moment: `www.ecowoodshardwood.com/` answers **200** —
++a second live homepage for this business — and every deep path answers **404**.
++
++| file | for |
++| --- | --- |
++| **`.htaccess`** | **Apache, cPanel, most WordPress hosting — this one** |
++| `nginx.conf` | nginx with shell access |
++| `_redirects` | Netlify |
++| `index.php` | last resort, where a host ignores config files |
++| — | Cloudflare: a Redirect Rule, no file and no hosting needed — `EXECUTE.md` §2d |
++| — | Wix / Squarespace / Shopify: **no uploaded file works.** DNS must move — §2c |
++
++`EXECUTE.md` has the full runbook: upload, empty the document root, keep the TLS
++certificate renewing, then the Search Console and Bing change-of-address filings
++without which a whole domain going 301 reads as an outage.
++
++## There is no vercel.json here, on purpose
++
++If the old domain ever goes onto Vercel, **do not create a second project.** Add
++it to the existing `ecowoods-app` project — Settings → Domains — and it is
++already handled twice: the repo-root `vercel.json` carries host-scoped edge
++redirects, and `apps/web/next.config.js` carries the same rules as a fallback.
++
++A standalone `vercel.json` used to sit in this folder and it was deleted, because
++it is a loaded gun. Its rule is:
++
++```json
++{ "source": "/:path*", "destination": "https://ecowoods.ca/:path*", "permanent": true }
++```
++
++Correct in a project serving only the old domain. **Catastrophic pasted into the
++main project's `vercel.json`** — with no host condition it matches every request
++on ecowoods.ca and redirects the site to itself. A 301 loop is cached by browsers
++and CDNs, so it outlives the rollback that fixes it.
++
++`scripts/verify-vercel-config.mjs` fails the build on exactly that paste.
++
++## Prove it, always
++
++```bash
++pnpm verify:domain
++```
++
++301, path preserved, one hop — all three, on every path. Until it reports zero
++failures, do not file a change of address: telling Google a move happened while
++the old site still answers 200 is worse than saying nothing.
+diff --git a/old-domain/vercel.json b/old-domain/vercel.json
+deleted file mode 100644
+index ea6b2f7..0000000
+--- a/old-domain/vercel.json
++++ /dev/null
+@@ -1,18 +0,0 @@
+-{
+-  "$schema": "https://openapi.vercel.sh/vercel.json",
+-  "_comment": [
+-    "ECOWOODS — use this ONLY if the old domain is moved onto its own Vercel project.",
+-    "If instead you attach ecowoodshardwood.com to the EXISTING ecowoods-app project,",
+-    "you need none of this: the redirects already in apps/web/next.config.js fire on",
+-    "the first request. Attaching to the existing project is the simpler path and the",
+-    "one docs/outreach/DOMAIN_CONSOLIDATION.md describes.",
+-    "One hop, path and query preserved, permanent."
+-  ],
+-  "redirects": [
+-    {
+-      "source": "/:path*",
+-      "destination": "https://ecowoods.ca/:path*",
+-      "permanent": true
+-    }
+-  ]
+-}
+diff --git a/package.json b/package.json
+index 8ab8b49..778e3af 100644
+--- a/package.json
++++ b/package.json
+@@ -38,10 +38,11 @@
+     "verify:live-images": "node scripts/verify-live-images.mjs",
+     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+     "verify:domain": "node scripts/verify-domain-redirect.mjs",
++    "verify:vercel": "node scripts/verify-vercel-config.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index 30d1fbc..8b69371 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -141,6 +141,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ run node scripts/verify-reviews.mjs
+ run node scripts/verify-outreach.mjs
+ run node scripts/verify-schema-figures.mjs
++run node scripts/verify-vercel-config.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-vercel-config.mjs b/scripts/verify-vercel-config.mjs
+new file mode 100644
+index 0000000..e0c86e6
+--- /dev/null
++++ b/scripts/verify-vercel-config.mjs
+@@ -0,0 +1,132 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-vercel-config.mjs — the twenty-seventh guard.
++ *
++ * THE ACCIDENT THIS PREVENTS
++ *
++ * Two vercel.json files are in circulation for this business: the real one for
++ * the ecowoods.ca project, and a standalone one written for a separate project
++ * that would host only the old domain. The second contains:
++ *
++ *     { "source": "/:path*", "destination": "https://ecowoods.ca/:path*" }
++ *
++ * Correct in a project that serves ONLY ecowoodshardwood.com. Catastrophic here.
++ * Pasted into this file it matches every request on ecowoods.ca and redirects
++ * the site to itself — a permanent loop, 301-cached in every visitor's browser
++ * and every CDN that saw it. That is not a bad deploy you roll back cleanly; a
++ * cached 301 outlives the fix.
++ *
++ * So: every redirect here MUST carry a host condition, and no host condition may
++ * name the canonical host. A rule without `has` IS the loop.
++ *
++ * It also holds two things that are easy to lose in a merge:
++ *   · the machine surfaces stay CORS-open, because an agent fetching /llms.txt
++ *     or /api/knowledge from a browser context needs the header;
++ *   · X-XSS-Protection stays off. "1; mode=block" is deprecated and its filter
++ *     has itself been an XSS vector; modern guidance is 0, and the real
++ *     protection is the CSP in next.config.js.
++ *
++ *   node scripts/verify-vercel-config.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const FILE = 'vercel.json';
++const CANONICAL = 'ecowoods.ca';
++const problems = [];
++
++let cfg;
++try {
++  cfg = JSON.parse(fs.readFileSync(path.join(ROOT, FILE), 'utf8'));
++} catch (e) {
++  console.error(`✗ ${FILE} is not valid JSON: ${e.message}`);
++  process.exit(1);
++}
++
++/* ── the loop guard ──────────────────────────────────────────────────────── */
++for (const [i, r] of (cfg.redirects ?? []).entries()) {
++  const where = `${FILE} redirects[${i}] (${r.source} → ${r.destination})`;
++  if (!Array.isArray(r.has) || r.has.length === 0) {
++    problems.push(
++      `${where}\n      has NO host condition. On this project that matches every request to\n` +
++        `      ${CANONICAL} and redirects the site to itself. A 301 loop is cached by browsers\n` +
++        `      and CDNs, so it outlives the rollback that fixes it.`,
++    );
++    continue;
++  }
++  const hosts = r.has.filter((h) => h.type === 'host').map((h) => h.value);
++  if (!hosts.length) {
++    problems.push(`${where}\n      has conditions but none of type "host". Add one.`);
++    continue;
++  }
++  for (const h of hosts) {
++    if (h === CANONICAL) {
++      problems.push(
++        `${where}\n      redirects the canonical host ${CANONICAL} — the loop, written explicitly.`,
++      );
++    }
++  }
++  if (!r.permanent && r.statusCode !== 301) {
++    problems.push(
++      `${where}\n      is not permanent. A 302 tells crawlers to keep the OLD url indexed,\n` +
++        `      which is the opposite of consolidating a domain.`,
++    );
++  }
++  if (/:path\*/.test(r.source) && !/:path\*/.test(r.destination)) {
++    problems.push(
++      `${where}\n      drops the path. A link earned by /services/floor-refinishing must land on\n` +
++        `      that page, not on the homepage.`,
++    );
++  }
++}
++
++/* ── the machine surfaces stay open ──────────────────────────────────────── */
++const groups = cfg.headers ?? [];
++const corsFor = (src) =>
++  groups
++    .find((h) => h.source === src)
++    ?.headers?.some((x) => x.key.toLowerCase() === 'access-control-allow-origin');
++for (const s of ['/llms.txt', '/llms-full.txt', '/ai.txt', '/api/knowledge']) {
++  if (!groups.some((h) => h.source === s)) {
++    problems.push(
++      `${FILE} has no header block for ${s}.\n` +
++        `      The machine editions exist to be fetched by agents; without\n` +
++        `      Access-Control-Allow-Origin a browser-context fetch is blocked.`,
++    );
++  } else if (!corsFor(s)) {
++    problems.push(`${FILE}: ${s} has a header block but no Access-Control-Allow-Origin.`);
++  }
++}
++
++/* ── the deprecated header stays off ─────────────────────────────────────── */
++for (const g of groups) {
++  for (const h of g.headers ?? []) {
++    if (h.key.toLowerCase() === 'x-xss-protection' && String(h.value).trim() !== '0') {
++      problems.push(
++        `${FILE}: X-XSS-Protection is "${h.value}".\n` +
++          `      "1; mode=block" is deprecated and its filter has itself been an XSS vector.\n` +
++          `      Modern guidance is 0; the real protection is the CSP in next.config.js.`,
++      );
++    }
++  }
++}
++
++/* ── build wiring must not drift ─────────────────────────────────────────── */
++if (cfg.outputDirectory !== 'apps/web/.next') {
++  problems.push(`${FILE}: outputDirectory is "${cfg.outputDirectory}", expected apps/web/.next.`);
++}
++if (cfg.framework !== 'nextjs') {
++  problems.push(`${FILE}: framework is "${cfg.framework}", expected nextjs.`);
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} problem(s) in ${FILE}:\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++console.log(
++  `✓ vercel config verified — ${(cfg.redirects ?? []).length} host-scoped redirect(s), none can loop; ` +
++    `machine surfaces CORS-open; build wiring intact`,
++);
+diff --git a/vercel.json b/vercel.json
+index e5dd828..999983b 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -4,6 +4,28 @@
+   "installCommand": "pnpm install --no-frozen-lockfile",
+   "buildCommand": "TURBO_FORCE=true pnpm build",
+   "outputDirectory": "apps/web/.next",
++
++  "redirects": [
++    {
++      "source": "/:path*",
++      "has": [{ "type": "host", "value": "ecowoodshardwood.com" }],
++      "destination": "https://ecowoods.ca/:path*",
++      "permanent": true
++    },
++    {
++      "source": "/:path*",
++      "has": [{ "type": "host", "value": "www.ecowoodshardwood.com" }],
++      "destination": "https://ecowoods.ca/:path*",
++      "permanent": true
++    },
++    {
++      "source": "/:path*",
++      "has": [{ "type": "host", "value": "www.ecowoods.ca" }],
++      "destination": "https://ecowoods.ca/:path*",
++      "permanent": true
++    }
++  ],
++
+   "headers": [
+     {
+       "source": "/(.*)",
+@@ -11,13 +33,35 @@
+         { "key": "X-DNS-Prefetch-Control", "value": "on" },
+         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+         { "key": "X-Content-Type-Options", "value": "nosniff" },
+-        { "key": "X-Frame-Options", "value": "DENY" },
+-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
++        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
++        { "key": "X-XSS-Protection", "value": "0" },
+         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
++        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
++        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
++        { "key": "X-Robots-Tag", "value": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" }
+       ]
+-    }
++    },
++    {
++      "source": "/_next/static/(.*)",
++      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
++    },
++    {
++      "source": "/brand/(.*)",
++      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
++    },
++    {
++      "source": "/(.*).md",
++      "headers": [
++        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
++        { "key": "Access-Control-Allow-Origin", "value": "*" }
++      ]
++    },
++    { "source": "/llms.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },
++    { "source": "/llms-full.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },
++    { "source": "/ai.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },
++    { "source": "/api/knowledge", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] }
+   ],
++
+   "cleanUrls": true,
+   "trailingSlash": false
+ }
+-- 
+2.43.0
+
