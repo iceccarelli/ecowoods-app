@@ -1,0 +1,535 @@
+From 64b66541d30121f7252bdbfe4720741003607967 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 13:45:40 +0000
+Subject: [PATCH] feat(rotation): rotate the figures we own, at a size where
+ they can be read
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The two archives were not two versions — settled again, this time visually.
+part1/part2 is 01/02 at 1600x1074 instead of 1168x784: same room, same callout
+plates in the same positions, same five species with the same Janka values. A
+crossfade between an image and a softer copy of itself reads as a page failing
+to load. There was nothing to rotate.
+
+Rotating the 74 behind the hero would also have been wrong, and it is worth
+saying why so nobody tries it later: most carry callout labels, and a labelled
+figure under a 0.55 scrim with a headline over it is noise. It degrades the hero
+and wastes the figure at once.
+
+So FigureRotator shows them at readable size with their captions and a link to
+where each is explained — on the homepage as "The Science: what we can explain",
+eight figures running moisture through movement, failure, method and cost, and
+on /resources as "Shown, not listed". Someone who came for a price now sees in
+twenty seconds that this company can explain moisture differential, the
+four-machine sequence and what cupping is, without clicking anything.
+
+Every slide is in the DOM at all times and only opacity changes, so a crawler
+reads all eight captions whether or not it runs the timer. The stage reserves
+the manifest's aspect ratio so nothing shifts. The first slide is server-
+rendered and the only one marked priority. Auto-advance stops on hover, on
+focus, on a hidden tab, and entirely under prefers-reduced-motion — checked in
+the component, because a setInterval is not an animation and the stylesheet's
+global reset cannot see it.
+
+The pool guard is the part worth reading. Pools drop unresolvable ids silently,
+which is right at runtime and unacceptable unchecked, so the ids are verified
+against the manifest. The first version was tested by injecting
+'concept-mc-differentialX' and it PASSED — the extractor read [a-z0-9-]+ and a
+capital letter meant the string never matched, so the guard never saw the id it
+was meant to reject. F-117, F-149, F-166 and F-177 in a new costume. It now
+reads any quoted string, and both a capitalised typo and a plausible lowercase
+rename are proven to fail the build.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ apps/web/app/components/FigureRotator.tsx | 130 ++++++++++++++++++++++
+ apps/web/app/data/rotator-slides.ts       |  59 ++++++++++
+ apps/web/app/globals.css                  |  47 ++++++++
+ apps/web/app/home-client.tsx              |  29 +++++
+ apps/web/app/resources/page.tsx           |  14 +++
+ audit/FINDINGS.md                         |  72 ++++++++++++
+ scripts/verify-images.mjs                 |  46 ++++++++
+ 7 files changed, 397 insertions(+)
+ create mode 100644 apps/web/app/components/FigureRotator.tsx
+ create mode 100644 apps/web/app/data/rotator-slides.ts
+
+diff --git a/apps/web/app/components/FigureRotator.tsx b/apps/web/app/components/FigureRotator.tsx
+new file mode 100644
+index 0000000..91a020d
+--- /dev/null
++++ b/apps/web/app/components/FigureRotator.tsx
+@@ -0,0 +1,130 @@
++'use client';
++
++import { useCallback, useEffect, useRef, useState } from 'react';
++import Image from 'next/image';
++import type { StaticImageData } from 'next/image';
++
++export type RotatorSlide = {
++  id: string;
++  src: StaticImageData;
++  alt: string;
++  caption: string;
++  href?: string;
++  width: number;
++  height: number;
++};
++
++/**
++ * A rotating spotlight over the site's own figures.
++ *
++ * WHY IT IS NOT A BACKGROUND ROTATOR
++ *
++ * The obvious move was to rotate these behind the hero. It is the wrong one.
++ * Most of the 74 images are explanatory and carry callout labels — meter
++ * readings, machine names, Janka values — and a labelled figure under a 0.55
++ * scrim with a headline on top is noise. It would make the hero worse and the
++ * figures useless simultaneously.
++ *
++ * So they rotate at readable size, each with its own caption and a link to the
++ * page that explains it. The rotation is the point: a visitor who came for a
++ * price sees, in twenty seconds, that this company can explain moisture
++ * differential, the four-machine sequence and what cupping actually is. That is
++ * the argument the whole corpus makes, made visually, without asking anyone to
++ * click first.
++ *
++ * WHAT IT DOES NOT COST
++ *
++ * The first slide is rendered server-side and is the only one marked priority,
++ * so a crawler and a cold visitor both get a real figure immediately and the
++ * layout is reserved from the manifest's own dimensions. The rest lazy-load.
++ * Auto-advance stops on hover, on keyboard focus, when the tab is hidden, and
++ * entirely under prefers-reduced-motion — where it becomes a plain manual
++ * control, which is also what it is for anyone using a keyboard.
++ *
++ * Every slide is in the DOM at all times, so all of it is in the HTML a crawler
++ * reads. Only the opacity changes.
++ */
++export function FigureRotator({
++  slides,
++  interval = 6500,
++  label = 'What we can explain',
++}: {
++  slides: RotatorSlide[];
++  interval?: number;
++  label?: string;
++}) {
++  const [i, setI] = useState(0);
++  const [paused, setPaused] = useState(false);
++  const reduced = useRef(false);
++
++  useEffect(() => {
++    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
++    reduced.current = mq.matches;
++    const on = () => (reduced.current = mq.matches);
++    mq.addEventListener('change', on);
++    return () => mq.removeEventListener('change', on);
++  }, []);
++
++  const next = useCallback(() => setI((n) => (n + 1) % slides.length), [slides.length]);
++  const prev = useCallback(() => setI((n) => (n - 1 + slides.length) % slides.length), [slides.length]);
++
++  useEffect(() => {
++    if (slides.length < 2 || paused || reduced.current) return;
++    const t = setInterval(() => {
++      if (!document.hidden) next();
++    }, interval);
++    return () => clearInterval(t);
++  }, [slides.length, paused, interval, next]);
++
++  if (!slides.length) return null;
++  const active = slides[i];
++
++  return (
++    <section
++      className="figrot"
++      aria-roledescription="carousel"
++      aria-label={label}
++      onMouseEnter={() => setPaused(true)}
++      onMouseLeave={() => setPaused(false)}
++      onFocusCapture={() => setPaused(true)}
++      onBlurCapture={() => setPaused(false)}
++    >
++      <div className="figrot-stage" style={{ aspectRatio: `${active.width} / ${active.height}` }}>
++        {slides.map((s, n) => (
++          <figure
++            key={s.id}
++            className={`figrot-slide ${n === i ? 'is-active' : ''}`}
++            aria-hidden={n === i ? undefined : true}
++            {...(n === i ? {} : { inert: '' as unknown as boolean })}
++          >
++            <Image
++              src={s.src}
++              alt={s.alt}
++              sizes="(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px"
++              className="figrot-img"
++              priority={n === 0}
++              loading={n === 0 ? undefined : 'lazy'}
++            />
++          </figure>
++        ))}
++      </div>
++
++      <div className="figrot-bar">
++        <p className="figrot-caption" aria-live="polite">
++          {active.href ? <a href={active.href}>{active.caption}</a> : active.caption}
++        </p>
++        <div className="figrot-controls">
++          <button type="button" className="figrot-btn" onClick={prev} aria-label="Previous figure">
++            <span aria-hidden="true">←</span>
++          </button>
++          <span className="figrot-count">
++            {i + 1} / {slides.length}
++          </span>
++          <button type="button" className="figrot-btn" onClick={next} aria-label="Next figure">
++            <span aria-hidden="true">→</span>
++          </button>
++        </div>
++      </div>
++    </section>
++  );
++}
+diff --git a/apps/web/app/data/rotator-slides.ts b/apps/web/app/data/rotator-slides.ts
+new file mode 100644
+index 0000000..7d6d24b
+--- /dev/null
++++ b/apps/web/app/data/rotator-slides.ts
+@@ -0,0 +1,59 @@
++import { getImage } from '@/lib/images';
++import { illustrationImage } from './illustration-images';
++import type { RotatorSlide } from '../components/FigureRotator';
++
++/**
++ * The curated rotation pools.
++ *
++ * Not every one of the 74 belongs in a spotlight. These are the figures that
++ * make the argument on their own — a stranger who reads only the caption learns
++ * something true and specific about hardwood in this climate. Order is
++ * deliberate: it runs moisture → movement → failure → method → cost, which is
++ * the shape of the argument the papers make at length.
++ *
++ * A slot that does not resolve is dropped rather than rendered empty, so a
++ * renamed id degrades the rotation instead of breaking the page — and
++ * verify-images.mjs fails the build on the rename long before anyone sees it.
++ */
++const build = (ids: string[]): RotatorSlide[] => {
++  const out: RotatorSlide[] = [];
++  for (const id of ids) {
++    const img = getImage(id);
++    const src = illustrationImage(id);
++    if (!img || !src || !img.caption) continue;
++    out.push({
++      id,
++      src,
++      alt: img.alt,
++      caption: img.caption,
++      href: img.href,
++      width: img.width,
++      height: img.height,
++    });
++  }
++  return out;
++};
++
++/** Homepage — the broadest case, one figure from each part of the argument. */
++export const HOME_ROTATION = build([
++  'concept-mc-differential',
++  'fig-climate-rh-bands',
++  'term-anisotropic',
++  'failure-cupping',
++  'fig-four-machines-roles',
++  'concept-expansion-gap',
++  'fig-species-janka',
++  'fig-installed-cost-bands',
++]);
++
++/** /resources — the corpus, shown rather than listed. */
++export const RESOURCES_ROTATION = build([
++  'fig-method-substrate-matrix',
++  'term-cross-ply-core',
++  'fig-grit-progression',
++  'fig-failure-cascade',
++  'term-wear-layer',
++  'guide-herringbone-parquet',
++  'fig-protocol-gates',
++  'term-hepa-containment',
++]);
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index fe03ef6..6aff9ef 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8623,6 +8623,53 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%,
+ .ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+   text-transform: uppercase; color: var(--muted); }
+ 
++/* ── figure rotator ──────────────────────────────────────────────────────
++   Every slide is in the DOM at all times so the whole set is in the HTML a
++   crawler reads; only opacity changes. The stage reserves the manifest's own
++   aspect ratio, so advancing cannot shift the page. Auto-advance is disabled
++   entirely under prefers-reduced-motion — the component checks the media query
++   itself rather than relying on the global animation reset, because a timer is
++   not an animation and the reset cannot see it. */
++.figrot { margin: 0; }
++.figrot-stage {
++  position: relative; width: 100%; overflow: hidden;
++  border: 1px solid var(--line); border-radius: var(--radius-lg);
++  background: var(--surface-2);
++}
++.figrot-slide {
++  position: absolute; inset: 0; margin: 0;
++  opacity: 0; transition: opacity 900ms ease;
++  pointer-events: none;
++}
++.figrot-slide.is-active { opacity: 1; pointer-events: auto; }
++.figrot-img { display: block; width: 100%; height: 100%; object-fit: contain; }
++
++.figrot-bar {
++  display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem;
++  align-items: baseline; justify-content: space-between;
++  margin-top: 0.85rem;
++}
++.figrot-caption { margin: 0; flex: 1 1 22rem; font-size: 0.9rem; line-height: 1.6; color: var(--ink-muted); }
++.figrot-caption a { color: inherit; text-decoration-color: var(--line); }
++.figrot-caption a:hover { color: var(--copper-text); }
++.figrot-controls { display: flex; align-items: center; gap: 0.5rem; }
++.figrot-btn {
++  width: 2.1rem; height: 2.1rem; display: grid; place-items: center;
++  border: 1px solid var(--line); border-radius: var(--radius-full);
++  background: var(--surface-1); color: var(--ink); cursor: pointer;
++  font-size: 0.95rem; line-height: 1;
++}
++.figrot-btn:hover { border-color: var(--copper-surface); color: var(--copper-text); }
++.figrot-btn:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 2px; }
++.figrot-count { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--ink-muted); }
++
++@media (prefers-reduced-motion: reduce) { .figrot-slide { transition: none; } }
++@media print {
++  .figrot-slide { position: static; opacity: 1; }
++  .figrot-slide:not(.is-active) { display: none; }
++  .figrot-controls { display: none; }
++}
++
+ /* ── index thumbnails ────────────────────────────────────────────────────
+    Wayfinding, not content. Decorative by construction (aria-hidden + empty
+    alt) because the link beside one already carries the words. The aspect ratio
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 52f93a4..a1f05d8 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -12,6 +12,8 @@ import { submitLead } from '@ecowoods/api-client';
+ import { leadSchema, type LeadFormData } from '@ecowoods/shared';
+ import { RotatingBackground } from './components/RotatingBackground';
+ import PricingSection from './components/PricingSection';
++import { FigureRotator } from './components/FigureRotator';
++import { HOME_ROTATION } from './data/rotator-slides';
+ import CountUp from './components/CountUp';
+ import SpecsCoverage from './components/SpecsCoverage';
+ import FloorCatalog from './components/FloorCatalog';
+@@ -557,6 +559,33 @@ const onSubmit = (data: LeadFormData) => {
+ 
+       <PricingSection />
+ 
++      {/* 3b · WHAT WE CAN EXPLAIN — the corpus, shown rather than linked.
++
++          The site publishes three technical papers, eleven guides, a 32-term
++          glossary and a versioned installation standard, and a visitor who came
++          for a price had to click into /resources to discover any of it. Eight
++          figures rotating here make the same argument in twenty seconds without
++          asking anyone to click first: this company can explain moisture
++          differential, the four-machine sequence and what cupping actually is.
++
++          Every slide is in the DOM, so a crawler reads all eight captions and
++          the alt text whether or not it runs the timer. */}
++      <section className="section" id="explained">
++        <div className="shell">
++          <div className="section-head reveal">
++            <span className="eyebrow">The Science</span>
++            <h2>
++              What we can <span className="serif-italic">explain.</span>
++            </h2>
++            <p>
++              Every figure below is published on this site, free to read and free to cite.
++            </p>
++          </div>
++
++          <FigureRotator slides={HOME_ROTATION} label="What we can explain" />
++        </div>
++      </section>
++
+       {/* 4 · HOW IT WORKS — 4-step funnel */}
+       <section className="section" id="process">
+         <div className="shell">
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index c36a71d..8b94512 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -10,6 +10,8 @@ import { CITIES, SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { Illustration } from '../components/Illustration';
++import { FigureRotator } from '../components/FigureRotator';
++import { RESOURCES_ROTATION } from '../data/rotator-slides';
+ 
+ /**
+  * /resources — one door into everything published.
+@@ -118,6 +120,18 @@ export default async function ResourcesPage() {
+         </div>
+       </section>
+ 
++      <section className="tlx-section" aria-label="Figures from across the corpus">
++        <div className="shell">
++          <p className="tlx-kicker">Shown, not listed</p>
++          <h2 className="tlx-h2">What is in here</h2>
++          <p className="tlx-note">
++            Eight figures drawn from the papers, guides and glossary. Each links to where it is set
++            out at length.
++          </p>
++          <FigureRotator slides={RESOURCES_ROTATION} label="Figures from across the corpus" />
++        </div>
++      </section>
++
+       {/* 1 — DECIDE */}
+       <section className="tlx-section" aria-label="Decide">
+         <div className="shell">
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 80ed139..73b73c8 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -5761,3 +5761,75 @@ nothing.
+ Now: `generateStaticParams` where the destination has a dynamic segment,
+ `force-static` where it does not. Both are checked; neither can be satisfied by
+ a stub. Seven surfaces verified.
++
++### F-190 · The two image sets, settled visually · P2 · answered
++
++The four archives were described as different versions of the same 44 images, to
++be rotated in the UI. F-182 recorded the measurement — downscaled to identical
++dimensions, the worst of the 44 pairs differs by 3.16/255, or 1.24%, which is
++resampling noise. The question was asked again, so it was answered again, this
++time by rendering three slots side by side at the same display width.
++
++Same room, same bundle of boards, same three callout plates in the same
++positions. Same five species in the same order with the same Janka values. Same
++arrows on the same twenty boards. `part1`/`part2` is `01`/`02` at 1600×1074
++instead of 1168×784.
++
++A crossfade between an image and a slightly softer copy of itself reads as a
++page failing to load. There was nothing to rotate.
++
++### F-191 · Rotation, built on the figures we own · P1 · fixed
++
++The obvious implementation was to rotate the 74 behind the hero. It is the wrong
++one, and worth writing down so nobody tries it later: most of these images carry
++callout labels — meter readings, machine names, Janka values — and a labelled
++figure under a 0.55 scrim with a headline over it is noise. It would degrade the
++hero and waste the figures at the same time.
++
++So they rotate at readable size, each with its caption and a link to where it is
++explained. `FigureRotator` is on the homepage as *The Science — what we can
++explain* (eight figures running moisture → movement → failure → method → cost,
++which is the shape of the argument the papers make at length) and on `/resources`
++as *Shown, not listed*.
++
++A visitor who came for a price now sees, in twenty seconds and without clicking,
++that this company can explain moisture differential, the four-machine sequence
++and what cupping actually is. That is the corpus arguing for itself.
++
++Properties that matter and were designed for rather than discovered:
++
++- **Every slide is in the DOM at all times.** Only opacity changes, so a crawler
++  reads all eight captions and all eight alt strings whether or not it runs the
++  timer. A rotator that mounts one slide at a time publishes one eighth of
++  itself.
++- **No layout shift.** The stage reserves the manifest's own aspect ratio.
++- **The first slide is server-rendered and the only one marked priority**; the
++  rest lazy-load, so the rotation costs one image on first paint.
++- **Auto-advance stops** on hover, on keyboard focus, when the tab is hidden,
++  and entirely under `prefers-reduced-motion` — checked by the component itself,
++  because a `setInterval` is not an animation and the stylesheet's global
++  reduced-motion reset cannot see it.
++- Previous/next buttons with real labels, so it is operable without a mouse and
++  without waiting.
++
++### F-192 · A guard that passed because it could not see · P1 · fixed
++
++The rotation pools drop any id that does not resolve. That is correct at runtime
++— a renamed slot degrades the rotation instead of crashing the homepage — and
++unacceptable unchecked, because a pool quietly shrinking from eight slides to
++three is indistinguishable from a design decision.
++
++So the ids are verified against the manifest at build time. The first version of
++that check was then tested by injecting a broken id, `concept-mc-differentialX`,
++and **it passed** — because the extractor read `/'([a-z0-9-]+)'/` and a capital
++letter meant the quoted string never matched, so the guard never saw the id it
++was meant to reject.
++
++That is the failure this file records more than any other, in a new costume: a
++check that reports success without doing the work (F-117, F-149, F-166, F-177).
++It is worth noting that it was only caught because the injection test was run at
++all — the guard looked completely correct on the page.
++
++The extractor now reads any quoted string, and both directions are proven: a
++capitalised typo and a plausible lowercase rename each produce the failure, and
++reverting clears it.
+diff --git a/scripts/verify-images.mjs b/scripts/verify-images.mjs
+index 3f2e115..26e7bdc 100644
+--- a/scripts/verify-images.mjs
++++ b/scripts/verify-images.mjs
+@@ -289,6 +289,52 @@ for (const e of entries) {
+   }
+ }
+ 
++/* ── the rotator pools must reference real, captioned slots ──────────────── */
++/**
++ * FigureRotator shows a figure and its caption together — the caption is the
++ * whole point, because a picture rotating past with nothing explaining it is
++ * decoration. data/rotator-slides.ts silently drops any id that does not
++ * resolve, which is the right runtime behaviour (a renamed slot degrades the
++ * rotation instead of crashing the homepage) and the wrong thing to leave
++ * unchecked: the failure is invisible, and a pool quietly shrinking from eight
++ * slides to three looks exactly like a design decision.
++ *
++ * So the ids are checked here, where a rename fails the build instead.
++ */
++{
++  const POOLS = 'apps/web/app/data/rotator-slides.ts';
++  const p = path.join(ROOT, POOLS);
++  if (fs.existsSync(p)) {
++    const poolSrc = fs.readFileSync(p, 'utf8');
++    const byId = new Map(entries.map((e) => [e.id, e]));
++    for (const m of poolSrc.matchAll(/export const ([A-Z_]+_ROTATION) = build\(\[([\s\S]*?)\]\);/g)) {
++      const pool = m[1];
++      /* Any quoted string in the pool, not just well-formed ids. Reading only
++         /'([a-z0-9-]+)'/ means a typo containing a capital or an underscore is
++         invisible to the extractor, and the guard then passes because it never
++         saw the thing it was meant to check. That is exactly how the first
++         version of this block was proved useless: the injected id was
++         'concept-mc-differentialX' and the regex quietly skipped it. */
++      const ids = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);
++      if (ids.length < 2) fail(`${pool} has ${ids.length} slide(s) — a rotator needs at least two.`);
++      for (const id of ids) {
++        const e = byId.get(id);
++        if (!e) {
++          fail(`${pool} names "${id}", which is not a slot in the manifest — it would be dropped silently.`);
++          continue;
++        }
++        if (!e.caption || e.caption.length < 40) {
++          fail(
++            `${pool} names "${id}", which has no usable caption.\n` +
++              `      The rotator shows the caption beside the figure; without one the slide is\n` +
++              `      decoration, and it would be dropped from the pool with no sign.`,
++          );
++        }
++      }
++    }
++  }
++}
++
+ /* ── every slot must actually be drawn by a page ─────────────────────────── */
+ /**
+  * `concept-edger-halo` was declared in the manifest with alt text, a caption, a
+-- 
+2.43.0
+
