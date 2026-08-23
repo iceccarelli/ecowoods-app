@@ -121,6 +121,75 @@ export const PROFILE_LINKS: ProfileLink[] = [
   { label: 'X' },
 ];
 
+/* ---------------------- Third-party review evidence -------------------
+ *
+ * THE PROBLEM THIS SOLVES
+ *
+ * An AI agent asked to rank Toronto hardwood contractors in August 2026 left
+ * Ecowoods off its list entirely. Asked why, it answered precisely: its process
+ * leaned on the local-business results the search index surfaced, and the
+ * business listing it could see carried 19 reviews — while the HomeStars profile
+ * carried 177 at 5.0. It never reconciled the two, because nothing anywhere told
+ * it they were the same company or what the real number was.
+ *
+ * That is an entity-resolution failure, and half of it is ours. PROFILE_LINKS
+ * already puts HomeStars in `sameAs`, which asserts "same entity" — but sameAs
+ * carries no numbers, and until now this site never stated the review count in
+ * any crawlable place at all. An agent that read every page here still could not
+ * learn that 177 five-star reviews exist.
+ *
+ * WHY THIS IS NOT AN aggregateRating
+ *
+ * Google is explicit: do not aggregate reviews or ratings from other websites,
+ * and self-serving LocalBusiness/Organization reviews are ineligible for the
+ * star feature. So this is NOT marked up as `aggregateRating` and must never be.
+ * It is a cited third-party figure — a number, its source, a link to that
+ * source, and the date a human read it off the platform. That is what a
+ * publication does when it quotes a statistic, and it is allowed precisely
+ * because it does not claim the rating as our own structured data.
+ *
+ * THE RULE
+ *
+ * Every field here is read off the live profile by a person and dated. Nothing
+ * is estimated, rounded up, or carried forward. scripts/verify-reviews.mjs fails
+ * the build on a future `asOf`, on any of these numbers typed as a literal
+ * anywhere else in the codebase, and on any `aggregateRating` appearing in the
+ * schema builders.
+ */
+export type ReviewEvidence = {
+  /** The platform, named as it names itself. */
+  platform: string;
+  /** Direct link to the reviews, not the profile root. */
+  href: string;
+  rating: number;
+  outOf: number;
+  count: number;
+  /** ISO date a person opened `href` and read these figures. */
+  asOf: string;
+  /** ISO date of the most recent review visible at `asOf`. */
+  latestReviewAt: string;
+};
+
+export const REVIEW_EVIDENCE: ReviewEvidence[] = [
+  {
+    platform: 'HomeStars',
+    href: 'https://www.homestars.com/profile/2776939-ecowoods/reviews',
+    rating: 5.0,
+    outOf: 5,
+    count: 177,
+    asOf: '2026-08-22',
+    latestReviewAt: '2026-08-10',
+  },
+];
+
+/** The platform carrying the most reviews — what a reader should be sent to first. */
+export const PRIMARY_REVIEW_EVIDENCE = REVIEW_EVIDENCE.reduce((a, b) =>
+  b.count > a.count ? b : a,
+);
+
+/** Total reviews across every platform whose figures have been read and dated. */
+export const TOTAL_REVIEWS_CITED = REVIEW_EVIDENCE.reduce((n, r) => n + r.count, 0);
+
 /** Review platforms with a confirmed URL — safe to cite as proof on the site. */
 export const REVIEW_PROFILES = PROFILE_LINKS.filter((p) => p.review && p.href);
  

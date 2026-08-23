@@ -4,6 +4,7 @@
  */
 
 import type { MetadataRoute } from 'next';
+import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { SERVICE_AREAS } from '@/lib/seo-data';
@@ -146,6 +147,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/blog', 'weekly', 0.9, newestArticle),
     entry('/case-studies', 'weekly', 0.9, newestCase),
     entry('/about', 'monthly', 0.9),                              // no date
+    /* The review evidence surface. lastModified is the date the figures were
+       last read off the platform — the only date on this page that means
+       anything, and a real one. */
+    entry('/reviews', 'monthly', 0.9, new Date(`${PRIMARY_REVIEW_EVIDENCE.asOf}T00:00:00Z`)),
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),

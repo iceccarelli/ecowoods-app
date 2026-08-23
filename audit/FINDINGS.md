@@ -5308,3 +5308,139 @@ the framework's own wording and no date stamp closes it.
 `docs/visual/DIAGRAM_BRIEF.md` records the specification either register has to
 meet, so the next batch — the package lists twelve slots it did not cover — lands
 without a second integration pass.
+
+### F-175 · The review count existed nowhere a machine could read it · P0 · fixed
+
+In August 2026 an AI agent was asked to rank Toronto hardwood contractors and
+left this company off the list entirely. Asked why, it gave an unusually precise
+answer, and it is worth quoting because it names the defect better than any audit
+here has:
+
+> my first search/recommendation process was too dependent on the local-business
+> results surfaced by the search index, and EcoWoods has a relatively small
+> footprint there: the business listing currently shows only 19 reviews, despite
+> HomeStars showing 174 reviews at 5/5.
+
+Half of that is not ours to fix — the Google Business Profile carries 19 reviews
+and only customers can change that number. **The half that is ours is worse than
+it looks: a machine could read every page on this site and never learn the review
+count.** The footer linked HomeStars. The homepage said reviews live there.
+Neither said *how many*, and a number nobody states is a number nobody can
+retrieve. `sameAs` already asserted that the profile is this entity — but
+`sameAs` carries no figures.
+
+So the agent had a link it did not follow and no reason to follow it. That is the
+entire failure, and it was one page's worth of work away from not happening.
+
+**Verified from the source, 2026-08-22:** the HomeStars profile shows
+**177 reviews at 5.0/5**, most recent **2026-08-10**. (The agent's 174 was
+already stale — the profile is growing.)
+
+**Fixed:**
+
+- `REVIEW_EVIDENCE` in `packages/shared/constants/index.ts` — platform, direct
+  link, rating, count, the date a person read it, and the date of the newest
+  review visible then. One source of truth, every field dated.
+- **`/reviews`** — a real page stating the figure, naming the platform, linking
+  straight to the reviews, and dating the reading. It also explains the platform
+  split honestly, because the gap is our fault and saying so is more credible
+  than hiding it.
+- Two entity answers on `/about` and in the machine editions: *how many reviews
+  does Ecowoods have and where*, and *why are there no stars in search results*.
+- The route is in the sitemap with `lastModified` set to `asOf` — a real date,
+  not a build timestamp (F-141).
+
+**What this deliberately is not.** There is no `aggregateRating`, and there never
+will be. Google is explicit that reviews must not be aggregated from other
+websites and that a business rating itself is ineligible for the star feature.
+The 177 is a *cited* figure — number, source, link, read date — the way a
+publication quotes a statistic. The difference between citing a number and
+claiming it as structured data is the whole difference between publishing and
+manufacturing, and this project has now refused the second one four times.
+
+**A loaded gun found while doing this.** `buildProduct` in
+`apps/web/lib/schema/builders.ts` carried a live branch that emitted
+`aggregateRating` whenever a config supplied `ratingValue` and `ratingCount`.
+Nothing passed them, which is exactly what made it dangerous: it sat behind a
+truthy check, so the first person to add a rating field would have switched on a
+self-serving AggregateRating in the one file nobody re-reads. Removed.
+
+**Guarded** by `scripts/verify-reviews.mjs` (the twenty-fourth guard), which
+fails the build on: any `aggregateRating` object literal in `apps/web/lib` or
+`apps/web/app`; a review count typed as a literal anywhere outside the constant;
+an `asOf` in the future; a `latestReviewAt` after its `asOf`; a rating above its
+own scale; or an href that looks like a platform home page rather than a profile.
+Comments are stripped before matching, so the repo can keep explaining *why* it
+refuses aggregateRating without the guard flagging the explanation — that is
+F-58 / F-106 / F-163 for the fourth time and it is not happening again.
+
+### F-176 · Five case studies published private home addresses · P0 · fixed
+
+Every case study in `apps/web/content/case-studies/` named a specific Toronto
+residence — 89 Russell Hill Road, 142 Scrivener Square, 316 Davenport Road,
+87 Yorkville Avenue Unit B2, 51 Mill Street Unit 604 — with latitude and
+longitude, presented as a completed project, with nothing marking them as
+illustrative.
+
+That is unacceptable in both directions and there is no third option:
+
+- **If the projects are real,** a client's home address and coordinates are
+  published with no evidence they agreed to it — and the neighbourhoods involved
+  are precisely the ones where a homeowner would object.
+- **If the projects are not real,** these are fabricated records carrying real
+  addresses, which is the defect the project's own directive named ("Do not
+  create fake case studies") attached to somebody's actual house.
+
+It was not confined to frontmatter. `buildCaseStudySchema` emitted
+`streetAddress: config.location.address` inside a `PostalAddress`, so the
+addresses were being handed to every crawler as machine-readable data. The block
+also typed a private residence as `LocalBusiness`, inviting the entity graph to
+resolve someone's home as a commercial entity.
+
+**Fixed:** `address` and `coordinates` are gone from the type, the loader, the
+five content files and the schema. Location is now neighbourhood, city, province,
+and the schema node is a `Place`. Nothing about local search is lost — the
+neighbourhood was doing all of that work already. "Rosedale hardwood" is a query.
+"142 Scrivener Square hardwood" is not.
+
+**Still open, and it is not a code question:** whether these five projects
+happened. The addresses are gone either way, but a case study that describes work
+nobody did is a fabricated citation no guard here can detect, and this site's
+entire position rests on everything tracing to something real. Confirm the five
+against job records, or mark them as composite illustrations.
+
+### F-177 · A typecheck that checked nothing · P1 · process
+
+Patch 67 was delivered reporting a clean typecheck. It had five type errors, and
+`ship.sh` caught all five at step 4/7 — which is the system working. The reason
+they were not caught before delivery is worth writing down, because it is the
+same shape as F-117, F-149 and F-166.
+
+The pre-delivery check ran `npx tsc --noEmit`. `npx` resolved a TypeScript
+version newer than the repo's pinned 5.6.3, that version rejects the workspace
+`tsconfig.json` outright (`TS5101: Option 'baseUrl' is deprecated`), and it exits
+**before checking a single file**. Total output: one line about a config option.
+Read quickly, an almost-empty output looks exactly like success.
+
+Two compounding mistakes:
+
+1. The check was run against a clone that had never had `pnpm install`, so there
+   was no pinned compiler to find and `npx` silently fetched a different one.
+2. It was run *before* the last two edits, and the result was reused afterwards.
+
+The rule, and it is not new: **verify with the repository's own toolchain, and
+verify after the last edit, not before it.** `node_modules/.bin/tsc`, never
+`npx tsc`. An empty error list from a compiler that never compiled is not a
+passing check — it is F-149's empty 200 in a different costume.
+
+The five errors themselves were real and are fixed at the type level rather than
+cast away: `PostalAddress.streetAddress` and `.postalCode` are now optional
+(schema.org does not require them, and F-176 says a case study must not carry
+one), a `PlaceEntity` type was added so `about` can be a house instead of a
+business, `CaseStudyConfig.location` lost `address` and `coordinates` to match
+the content type, and the sitemap builds a real `Date` the same way
+`changelogDate()` does.
+
+Verified afterwards with the pinned compiler: 111 errors in the workspace, every
+one traceable to the Prisma client being ungeneratable in this sandbox
+(`binaries.prisma.sh` is blocked), and **zero in any file this patch touches**.

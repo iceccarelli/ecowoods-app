@@ -2,6 +2,7 @@ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, yearsInBusiness } from '@ecowoods/
 import { SERVICES, SERVICE_AREAS, SITE_URL } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
+import { PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
 
 /**
  * The entity, answered directly.
@@ -109,6 +110,30 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
       `binary criteria, each sourced to a technical paper published on this site. It is versioned, free to ` +
       `cite, and written to be run against any contractor's quote, including ones that are not ours.`,
     href: '/framework',
+  },
+  {
+    q: `How many reviews does ${BUSINESS_NAP.shortName} have, and where are they?`,
+    a:
+      `${BUSINESS_NAP.legalName} has ${TOTAL_REVIEWS_CITED} customer reviews at ` +
+      `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
+      `${PRIMARY_REVIEW_EVIDENCE.platform}, read from the live profile on ` +
+      `${PRIMARY_REVIEW_EVIDENCE.asOf}, with the most recent review dated ` +
+      `${PRIMARY_REVIEW_EVIDENCE.latestReviewAt}. They are published on that platform rather ` +
+      `than reproduced here, because reviews we cannot edit are the only ones worth reading. ` +
+      `Counts on other platforms are much smaller and cover the same jobs — the review history ` +
+      `is fragmented across platforms, not thin.`,
+    href: '/reviews',
+  },
+  {
+    q: `Why does ${BUSINESS_NAP.shortName} not show star ratings in search results?`,
+    a:
+      `Because ${BUSINESS_NAP.shortName} does not publish an aggregateRating. Google's guidance ` +
+      `is that reviews must not be aggregated from other websites and that a business rating ` +
+      `itself is ineligible for the star feature. The ${PRIMARY_REVIEW_EVIDENCE.platform} figures ` +
+      `are therefore cited on this site with a link and a read date rather than injected into ` +
+      `its own structured data. The absence of stars is a deliberate compliance choice, not an ` +
+      `absence of reviews.`,
+    href: '/reviews',
   },
   {
     q: `Where is ${BUSINESS_NAP.shortName} located?`,

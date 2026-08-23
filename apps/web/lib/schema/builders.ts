@@ -277,14 +277,11 @@ export interface CaseStudyConfig {
   headline: string;
   description: string;
   content?: string | React.ReactNode;
+  /** Neighbourhood resolution and no finer — see F-176 and case-study-types.ts. */
   location: {
-    address?: string;
+    neighbourhood?: string;
     city: string;
     province: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
   };
   projectType?: string;
   projectDate?: Date;
@@ -337,18 +334,29 @@ export function buildCaseStudy(config: CaseStudyConfig): CaseStudy {
       name: config.author?.name || 'Ecowoods',
       ...(config.author?.title && { title: config.author.title }),
     } as Person,
+    /*
+     * The project's location, at neighbourhood resolution.
+     *
+     * This block used to emit `streetAddress: config.location.address` — which
+     * meant the street address of a private Toronto residence was being handed
+     * to every crawler as machine-readable PostalAddress data, not merely left
+     * in a frontmatter field nobody rendered. Removed 2026-08-22 (F-176).
+     *
+     * It is also `Place`, not `LocalBusiness`. The subject of a residential case
+     * study is a house, and typing a client's home as a business was wrong on
+     * its own terms — it invited the graph to resolve a private address as a
+     * commercial entity.
+     */
     about: {
-      '@type': 'LocalBusiness',
-      name: `${config.projectType || 'Residential'} Project — ${config.location.city}, ${config.location.province}`,
+      '@type': 'Place',
+      name: `${config.projectType || 'Residential'} project — ${config.location.neighbourhood || config.location.city}, ${config.location.city}`,
       address: {
         '@type': 'PostalAddress',
-        addressLocality: config.location.city,
+        addressLocality: config.location.neighbourhood || config.location.city,
         addressRegion: config.location.province,
         addressCountry: 'CA',
-        streetAddress: config.location.address || '',
-        postalCode: '',
       },
-    } as LocalBusinessEntity,
+    },
     result: {
       '@type': 'Thing',
       name: 'Project Completion',
@@ -491,16 +499,22 @@ export function buildProduct(config: ProductConfig): Product {
             ? 'PT30D'
             : 'P1Y',
     })) as Offer[],
-    ...(config.ratingValue &&
-      config.ratingCount && {
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: config.ratingValue,
-          ratingCount: config.ratingCount,
-          bestRating: 5,
-          worstRating: 1,
-        } as AggregateRating,
-      }),
+    /*
+     * There is no aggregateRating here, and the branch that used to build one
+     * was removed on 2026-08-22 (F-175).
+     *
+     * It was dormant — nothing in the app passed `ratingValue` — which is
+     * exactly what made it dangerous. It sat behind a truthy check, so the day
+     * anyone added a rating to a product config, this file would have started
+     * emitting a self-serving AggregateRating on a service business: the
+     * ineligible construct Google names explicitly, in the one part of the
+     * codebase nobody would think to re-read.
+     *
+     * Third-party review figures are cited on /reviews with their source and a
+     * read date. If first-party reviews are ever collected here — written by
+     * real customers, on this site, unfiltered — that is a different feature and
+     * deserves to be built deliberately rather than switched on by a field name.
+     */
   };
 }
 

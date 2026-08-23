@@ -19,10 +19,15 @@ export interface SchemaBase {
 
 export interface PostalAddress {
   '@type': 'PostalAddress';
-  streetAddress: string;
+  /**
+   * Optional, and deliberately so. schema.org does not require a street
+   * address, and a case study must not carry one — see F-176. The business's
+   * own NAP still sets every field; a project location sets only the locality.
+   */
+  streetAddress?: string;
   addressLocality: string;
   addressRegion: string;
-  postalCode: string;
+  postalCode?: string;
   addressCountry: string;
 }
 
@@ -230,7 +235,7 @@ export interface CaseStudy extends SchemaBase {
   image?: string | string[];
   datePublished: string; // ISO 8601
   author: Person | Organization;
-  about: LocalBusinessEntity;
+  about: LocalBusinessEntity | PlaceEntity;
   result: Thing;
   mentions: Thing[];
   technicalDetails?: Record<string, unknown>;
@@ -238,6 +243,21 @@ export interface CaseStudy extends SchemaBase {
 
 export interface LocalBusinessEntity {
   '@type': 'LocalBusiness';
+  name: string;
+  address: PostalAddress;
+}
+
+/**
+ * A place that is not a business.
+ *
+ * A residential case study is about a house. Typing it `LocalBusiness` invited
+ * the entity graph to resolve a private home as a commercial entity, which is
+ * how a client's street address ended up in machine-readable PostalAddress data
+ * (F-176). `Place` is what schema.org has for this, and it is not the same
+ * thing.
+ */
+export interface PlaceEntity {
+  '@type': 'Place';
   name: string;
   address: PostalAddress;
 }

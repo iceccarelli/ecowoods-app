@@ -36,8 +36,16 @@ function parseCaseStudyFile(
   const results = (data.results as CaseStudyResult[]) || [];
 
   // Parse location object
+  /* Street addresses were removed from every case study on 2026-08-22 (F-176).
+     A case study named a private Toronto residence — 89 Russell Hill Road,
+     142 Scrivener Square — with latitude and longitude, presented as a completed
+     job. If the project is real that is a client's home address published
+     without any reason to think they agreed; if it is not, it is a fabricated
+     record with a real address attached to it. Both are unacceptable, and the
+     neighbourhood is the field that was doing the SEO work anyway: nobody
+     searches "142 Scrivener Square hardwood", they search "Rosedale hardwood". */
   const location = data.location || {
-    address: '',
+    neighbourhood: '',
     city: 'Toronto',
     province: 'ON',
   };
@@ -50,7 +58,8 @@ function parseCaseStudyFile(
     slug,
     title: data.title || slug.replace(/-/g, ' '),
     description: data.description || '',
-    location: typeof location === 'object' ? location : { address: '', city: 'Toronto', province: 'ON' },
+    location:
+      typeof location === 'object' ? location : { neighbourhood: '', city: 'Toronto', province: 'ON' },
     projectDate: getField('project-date', 'projectDate') || new Date().toISOString(),
     publishedAt: getField('published-at', 'publishedAt') || new Date().toISOString(),
     modifiedAt: getField('modified-at', 'modifiedAt'),

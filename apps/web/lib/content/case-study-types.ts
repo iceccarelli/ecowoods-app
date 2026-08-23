@@ -19,14 +19,23 @@ export interface CaseStudyMetadata {
   slug: string;
   title: string;
   description: string; // Short summary (160 char max for SEO)
+  /**
+   * Where the work was, at neighbourhood resolution and no finer.
+   *
+   * `address` and `coordinates` were removed on 2026-08-22 (F-176). The five
+   * published case studies each named a private Toronto residence by street
+   * address with latitude and longitude. There is no version of that which is
+   * safe: if the project is real, a client's home address is published without
+   * any evidence they agreed to it; if it is not, it is a fabricated record
+   * carrying a real address. The type no longer has a place to put one.
+   *
+   * The neighbourhood was doing all of the local-search work regardless —
+   * "Rosedale hardwood" is a query, "142 Scrivener Square hardwood" is not.
+   */
   location: {
-    address: string;
+    neighbourhood: string;
     city: string;
     province: string;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
   };
   projectDate: string; // ISO date string
   publishedAt: string; // When case study was published
