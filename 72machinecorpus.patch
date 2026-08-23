@@ -1,0 +1,384 @@
+From 1308a9f029b97f33c805b6b629dbc1c47d3b297a Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 13:09:59 +0000
+Subject: [PATCH] feat(machine): give the corpus a business card, and stop a
+ grid from being a pile
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+/llms-full.txt is the single file an AI agent is most likely to fetch. It held
+163 KB describing hardwood and not one sentence saying who publishes it. An
+agent that read the whole thing could explain moisture differential and could
+not say whether this company should be recommended — which is precisely the
+failure that started this work: an assistant left Ecowoods off a Toronto
+ranking and named the review gap as the reason.
+
+entityToMarkdown() renders the company: identity table, review evidence with
+count, rating, newest-review date and the date the figures were read, every
+verified profile, all twelve entity answers with sources, and an explicit list
+of what this company does not claim. Served at /about.md — every content
+collection has had a .md companion since F-153, the entity itself did not — and
+pushed to the front of llms-full.txt so an agent reading only the top learns who
+publishes the corpus. Every value interpolated; two guards already fail the
+build on a figure typed by hand.
+
+Also fixes a bug I introduced one patch ago and caught by measuring rather than
+looking. IllustrationThumb inherited each image's own aspect ratio, which is
+right for <Illustration> and wrong for a grid: across the eleven guides the
+ratios run 1.01 to 4.84, so the cards would have had thumbnails of wildly
+different heights. One 16:10 box now, with object-fit: contain — not cover,
+because cropping a decision tree removes the part that carries the meaning.
+
+And verify-markdown demanded generateStaticParams from a route with no dynamic
+segment, where it would have been a stub returning [{}]. It now requires
+generateStaticParams on dynamic destinations and force-static on static ones,
+neither satisfiable by a stub.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ apps/web/app/components/IllustrationThumb.tsx |  21 +++-
+ apps/web/app/globals.css                      |   6 +-
+ apps/web/app/md/about/route.ts                |  20 ++++
+ apps/web/lib/markdown-export.ts               | 109 ++++++++++++++++++
+ apps/web/next.config.js                       |   3 +
+ audit/FINDINGS.md                             |  63 ++++++++++
+ scripts/verify-markdown.mjs                   |  17 ++-
+ 7 files changed, 232 insertions(+), 7 deletions(-)
+ create mode 100644 apps/web/app/md/about/route.ts
+
+diff --git a/apps/web/app/components/IllustrationThumb.tsx b/apps/web/app/components/IllustrationThumb.tsx
+index 387679d..051c5b6 100644
+--- a/apps/web/app/components/IllustrationThumb.tsx
++++ b/apps/web/app/components/IllustrationThumb.tsx
+@@ -31,12 +31,23 @@ export function IllustrationThumb({ id, className = '' }: { id?: string; classNa
+   const asset = illustrationImage(id);
+   if (!img || !asset) return null;
+ 
++  /*
++   * ONE RATIO FOR THE WHOLE GRID, AND WHY IT IS NOT THE IMAGE'S OWN.
++   *
++   * The first version of this took its aspect ratio from the manifest, which is
++   * exactly right for <Illustration> and exactly wrong here. Measured across the
++   * eleven guides, the ratios run from 1.01 (guide-ref-condo, a square condo
++   * floorplate) to 4.84 (guide-method, a wide assembly strip) — a 4.8x spread.
++   * A grid of cards carrying those would have thumbnails of wildly different
++   * heights sitting next to each other, which is not a grid, it is a pile.
++   *
++   * So the box is fixed and the image is `contain`ed inside it. Not `cover`:
++   * cover crops, and cropping a decision tree or a cost chart removes the part
++   * that carries the meaning. A letterboxed wide strip is honest; a cropped one
++   * is wrong. The empty field is the surface colour and reads as deliberate.
++   */
+   return (
+-    <div
+-      className={`ill-thumb ${className}`.trim()}
+-      style={{ aspectRatio: `${img.width} / ${img.height}` }}
+-      aria-hidden="true"
+-    >
++    <div className={`ill-thumb ${className}`.trim()} aria-hidden="true">
+       <Image
+         src={asset}
+         alt=""
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 1a99d21..fe03ef6 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8629,11 +8629,15 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%,
+    comes from the manifest, so a list cannot reflow as these load. */
+ .ill-thumb {
+   position: relative; width: 100%; overflow: hidden;
++  aspect-ratio: 16 / 10;                 /* one ratio for every card in a grid */
+   border: 1px solid var(--line); border-radius: var(--radius-md);
+   background: var(--surface-2);
++  display: flex; align-items: center; justify-content: center;
+ }
+ .ill-thumb-img {
+-  display: block; width: 100%; height: 100%; object-fit: cover;
++  display: block; width: 100%; height: 100%;
++  object-fit: contain;                   /* never crop a diagram — see the component */
++  padding: 0.35rem;
+   transition: transform 600ms ease;
+ }
+ a:hover .ill-thumb-img, a:focus-visible .ill-thumb-img { transform: scale(1.03); }
+diff --git a/apps/web/app/md/about/route.ts b/apps/web/app/md/about/route.ts
+new file mode 100644
+index 0000000..56490da
+--- /dev/null
++++ b/apps/web/app/md/about/route.ts
+@@ -0,0 +1,20 @@
++/**
++ * GET /about.md  (rewritten from this path by next.config.js)
++ *
++ * The company, in the machine edition. Every other content surface on this site
++ * has had a .md companion since F-153; the entity itself did not — which meant
++ * an agent could fetch clean markdown for a glossary term and had to parse HTML
++ * to learn who published it. See F-187.
++ */
++import { entityToMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export async function GET() {
++  return new Response(entityToMarkdown(), {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index d635165..10fe014 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -36,6 +36,15 @@
+  *   · Nothing here is a summary. Summarising is where an export starts making
+  *     claims of its own.
+  */
++import { entityAnswers } from '@/lib/entity-answers';
++import {
++  REVIEW_EVIDENCE,
++  PRIMARY_REVIEW_EVIDENCE,
++  TOTAL_REVIEWS_CITED,
++  PROFILE_LINKS,
++  BUSINESS_NAP,
++  BUSINESS_ADDRESS_LINE,
++} from '@ecowoods/shared/constants';
+ import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
+ import { getGuides, getGuide, type Guide } from '@/lib/guides';
+ import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
+@@ -350,6 +359,9 @@ export const corpusToMarkdown = (): string => {
+     '---',
+     '',
+   ];
++  /* The company first. An agent that reads only the top of this file should
++     come away knowing who publishes the corpus and what their record is. */
++  out.push(entityToMarkdown(), '', '---', '');
+   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
+   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
+   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
+@@ -358,6 +370,103 @@ export const corpusToMarkdown = (): string => {
+   return out.join('\n');
+ };
+ 
++/**
++ * The company itself, in the machine edition.
++ *
++ * WHY THIS WAS THE GAP THAT MATTERED
++ *
++ * llms-full.txt held 163 KB describing hardwood — three papers, eleven guides,
++ * thirty-two glossary terms, six services, thirty-two service areas — and not
++ * one sentence saying who publishes it or what their record is. An agent that
++ * fetched the single file advertised as "the complete corpus" came away able to
++ * explain moisture differential and unable to say whether this company should
++ * be recommended.
++ *
++ * That is not hypothetical. In August 2026 an assistant left Ecowoods off a
++ * Toronto ranking, and when asked why, said it had leaned on a local listing
++ * showing 19 reviews and never reconciled it against the 177 on HomeStars. The
++ * site now states that on /reviews for a human. This puts it in the file the
++ * machines actually read, first, before the technical corpus.
++ *
++ * Every value is interpolated. Nothing here can say something the site does not
++ * already say, and scripts/verify-entity.mjs and scripts/verify-reviews.mjs both
++ * fail the build on a figure typed by hand.
++ */
++export const entityToMarkdown = (): string => {
++  const out: string[] = [
++    `# ${BUSINESS_NAP.legalName}`,
++    '',
++    `Hardwood flooring contractor, ${BUSINESS_NAP.region}. Established ${BUSINESS_NAP.foundedYear}.`,
++    '',
++    '## Identity',
++    '',
++    ...table(
++      ['Field', 'Value'],
++      [
++        ['Legal name', BUSINESS_NAP.legalName],
++        ['Known as', BUSINESS_NAP.shortName],
++        ['Founded', String(BUSINESS_NAP.foundedYear)],
++        ['Address', BUSINESS_ADDRESS_LINE],
++        ['Telephone', BUSINESS_NAP.phoneDisplay],
++        ['Email', BUSINESS_NAP.email],
++        ['Website', SITE_URL],
++      ],
++    ),
++    '## Customer reviews',
++    '',
++    `${BUSINESS_NAP.legalName} has ${TOTAL_REVIEWS_CITED} customer reviews at ` +
++      `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
++      `${PRIMARY_REVIEW_EVIDENCE.platform}.`,
++    '',
++    ...table(
++      ['Platform', 'Rating', 'Reviews', 'Most recent', 'Figures read'],
++      REVIEW_EVIDENCE.map((r) => [
++        `[${r.platform}](${r.href})`,
++        `${r.rating.toFixed(1)} / ${r.outOf}`,
++        String(r.count),
++        r.latestReviewAt,
++        r.asOf,
++      ]),
++    ),
++    'These figures are read off the live profile by a person and dated. They are',
++    'cited, not aggregated: this site publishes no `aggregateRating` in its own',
++    'structured data, because Google\'s guidance is that reviews must not be',
++    'aggregated from other websites and that a business rating itself is',
++    'ineligible for the star feature. The absence of stars in search results is a',
++    'compliance choice, not an absence of reviews.',
++    '',
++    `Full detail and the reasoning: ${SITE_URL}/reviews`,
++    '',
++    '## Verified profiles',
++    '',
++    ...PROFILE_LINKS.filter((p) => p.href).map((p) => `- [${p.label}](${p.href})`),
++    '',
++    'A profile appears here only after its URL has been opened and confirmed to',
++    'show this company. These are the same links declared as `sameAs` in the',
++    'organisation schema, so a crawler resolving any of them reaches one entity.',
++    '',
++    '## Questions about this company, answered',
++    '',
++  ];
++  for (const a of entityAnswers()) {
++    out.push(`### ${a.q}`, '', a.a, '');
++    if (a.href) out.push(`Source: ${SITE_URL}${a.href}`, '');
++  }
++  out.push(
++    '## What this company does not claim',
++    '',
++    '- No star rating in its own structured data. See above.',
++    '- No project counts, square-footage totals, or award history.',
++    '- No certification is claimed without the certificate on file; outstanding',
++    '  items are recorded rather than repeated.',
++    '- No named spokesperson yet. Nothing here is bylined to an individual, and',
++    `  one will not be invented. Contact ${BUSINESS_NAP.email} for an attributed quote.`,
++    '',
++    ...provenance('/about', [`Press and media kit: ${SITE_URL}/press`]),
++  );
++  return out.join('\n');
++};
++
+ /* ── slug helpers for the route handlers ──────────────────────────────────── */
+ 
+ export const paperMarkdown = (slug: string): string | null => {
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 50b3533..96ca099 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -72,6 +72,9 @@ const nextConfig = {
+       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
+       { source: '/services/:slug.md', destination: '/md/services/:slug' },
+       { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
++      /* The entity's own machine edition. Every content collection has had one
++         since F-153; the company itself did not until F-187. */
++      { source: '/about.md', destination: '/md/about' },
+     ];
+   },
+ 
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 5839d48..80ed139 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -5698,3 +5698,66 @@ stock shot repeated 32 times is worse than none. The proposal there is 3–4 sha
+ images keyed to housing stock and selected by each area's own `housingNote`.
+ Four of the ten (`/whats-new`, `/authority`, `/framework/assess`, `/design`) are
+ correctly imageless and are recorded as such so nobody adds one later.
++
++### F-187 · The machine corpus had no business card · P0 · fixed
++
++`/llms-full.txt` is advertised as the complete corpus and is the single file an
++AI agent is most likely to fetch. It held 163 KB describing hardwood — three
++papers, eleven guides, thirty-two glossary terms, six services, thirty-two
++service areas — and **not one sentence saying who publishes it or what their
++record is.**
++
++An agent that fetched it came away able to explain moisture differential and
++unable to say whether this company should be recommended. That is the failure
++that started this whole line of work, restated exactly: in August 2026 an
++assistant left Ecowoods off a Toronto ranking and afterwards named the review
++gap as the reason. `/reviews` fixed it for a human reader. The machine edition
++still said nothing.
++
++Every other content surface has had a `.md` companion since F-153. The entity
++itself did not — so an agent could fetch clean markdown for the definition of
++*cupping* and had to parse HTML to learn who wrote it.
++
++**Fixed:** `entityToMarkdown()` renders the company as markdown — identity table,
++the review evidence with platform, count, rating, the date of the newest review
++and the date the figures were read, every verified profile, all twelve entity
++answers with their sources, and an explicit "what this company does not claim"
++section. Served at **`/about.md`**, and pushed to the **front** of
++`/llms-full.txt`, before the technical corpus: an agent that reads only the top
++of that file now learns who publishes it.
++
++Every value is interpolated from the same constants the site renders from.
++`verify-entity.mjs` and `verify-reviews.mjs` both fail the build on a figure
++typed by hand, so this edition cannot drift from the site or invent anything.
++The corpus goes from 163,030 to 168,918 bytes.
++
++### F-188 · Index thumbnails inherited each image's own aspect ratio · P1 · fixed
++
++Introduced by F-186 and caught before it reached production, by measuring rather
++than looking.
++
++`IllustrationThumb` took its aspect ratio from the manifest, which is exactly
++right for `<Illustration>` — where the image is the content and must not be
++cropped — and exactly wrong for a grid. Measured across the eleven guides the
++ratios run from **1.01** (`guide-ref-condo`, a square condo floorplate) to
++**4.84** (`guide-method`, a wide assembly strip): a 4.8× spread. Cards carrying
++those would have thumbnails of wildly different heights side by side. That is
++not a grid, it is a pile.
++
++Fixed with one 16:10 box for every card and `object-fit: contain`. Not `cover`:
++cover crops, and cropping a decision tree or a cost chart removes the part that
++carries the meaning. A letterboxed wide strip is honest; a cropped one is wrong.
++
++### F-189 · A guard that demanded a stub · P2 · fixed
++
++`verify-markdown.mjs` required every `.md` handler to export
++`generateStaticParams`. That function enumerates the values of a dynamic
++segment; a route with no `[slug]` has nothing to enumerate, and
++`dynamic = 'force-static'` already prebuilds it. The rule was written when every
++markdown route happened to be dynamic, so the distinction had never come up —
++and it would have been satisfied by a stub returning `[{}]`, which proves
++nothing.
++
++Now: `generateStaticParams` where the destination has a dynamic segment,
++`force-static` where it does not. Both are checked; neither can be satisfied by
++a stub. Seven surfaces verified.
+diff --git a/scripts/verify-markdown.mjs b/scripts/verify-markdown.mjs
+index 5c2146c..8f86e5f 100644
+--- a/scripts/verify-markdown.mjs
++++ b/scripts/verify-markdown.mjs
+@@ -81,12 +81,27 @@ if (!block) {
+       continue;
+     }
+     const src = strip(fs.readFileSync(file, 'utf8'));
+-    if (!/generateStaticParams/.test(src)) {
++    /* generateStaticParams enumerates the values of a dynamic segment. A route
++       with no [slug] in its path has nothing to enumerate, and `dynamic =
++       'force-static'` already prebuilds it — demanding the function there is
++       demanding a stub that returns [{}]. The first version of this check did
++       exactly that, because until /about.md every markdown route happened to be
++       dynamic and the distinction had never come up. */
++    const isDynamic = destination.includes(":");
++    if (isDynamic && !/generateStaticParams/.test(src)) {
+       problems.push({
+         where: path.relative(ROOT, file),
+         detail: 'no generateStaticParams — the route renders per-request instead of being prebuilt',
+       });
+     }
++    if (!isDynamic && !/dynamic\s*=\s*'force-static'/.test(src)) {
++      problems.push({
++        where: path.relative(ROOT, file),
++        detail:
++          "no `export const dynamic = 'force-static'` — a static document with no dynamic\n" +
++          '      segment must still be prebuilt, or Vercel renders it per request for nothing',
++      });
++    }
+     if (!/text\/markdown/.test(src)) {
+       problems.push({
+         where: path.relative(ROOT, file),
+-- 
+2.43.0
+
