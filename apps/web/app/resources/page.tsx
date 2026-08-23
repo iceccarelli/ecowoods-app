@@ -10,6 +10,8 @@ import { CITIES, SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
+import { FigureRotator } from '../components/FigureRotator';
+import { RESOURCES_ROTATION } from '../data/rotator-slides';
 
 /**
  * /resources — one door into everything published.
@@ -115,6 +117,18 @@ export default async function ResourcesPage() {
       <section className="tlx-section tlx-section--flush" aria-label="The science behind these resources">
         <div className="shell">
           <Illustration id="resources-hero" priority motion="kenburns" />
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Figures from across the corpus">
+        <div className="shell">
+          <p className="tlx-kicker">Shown, not listed</p>
+          <h2 className="tlx-h2">What is in here</h2>
+          <p className="tlx-note">
+            Eight figures drawn from the papers, guides and glossary. Each links to where it is set
+            out at length.
+          </p>
+          <FigureRotator slides={RESOURCES_ROTATION} label="Figures from across the corpus" />
         </div>
       </section>
 

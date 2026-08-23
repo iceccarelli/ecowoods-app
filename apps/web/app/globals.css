@@ -8623,6 +8623,53 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
 .ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--muted); }
 
+/* ── figure rotator ──────────────────────────────────────────────────────
+   Every slide is in the DOM at all times so the whole set is in the HTML a
+   crawler reads; only opacity changes. The stage reserves the manifest's own
+   aspect ratio, so advancing cannot shift the page. Auto-advance is disabled
+   entirely under prefers-reduced-motion — the component checks the media query
+   itself rather than relying on the global animation reset, because a timer is
+   not an animation and the reset cannot see it. */
+.figrot { margin: 0; }
+.figrot-stage {
+  position: relative; width: 100%; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.figrot-slide {
+  position: absolute; inset: 0; margin: 0;
+  opacity: 0; transition: opacity 900ms ease;
+  pointer-events: none;
+}
+.figrot-slide.is-active { opacity: 1; pointer-events: auto; }
+.figrot-img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.figrot-bar {
+  display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem;
+  align-items: baseline; justify-content: space-between;
+  margin-top: 0.85rem;
+}
+.figrot-caption { margin: 0; flex: 1 1 22rem; font-size: 0.9rem; line-height: 1.6; color: var(--ink-muted); }
+.figrot-caption a { color: inherit; text-decoration-color: var(--line); }
+.figrot-caption a:hover { color: var(--copper-text); }
+.figrot-controls { display: flex; align-items: center; gap: 0.5rem; }
+.figrot-btn {
+  width: 2.1rem; height: 2.1rem; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: var(--radius-full);
+  background: var(--surface-1); color: var(--ink); cursor: pointer;
+  font-size: 0.95rem; line-height: 1;
+}
+.figrot-btn:hover { border-color: var(--copper-surface); color: var(--copper-text); }
+.figrot-btn:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 2px; }
+.figrot-count { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--ink-muted); }
+
+@media (prefers-reduced-motion: reduce) { .figrot-slide { transition: none; } }
+@media print {
+  .figrot-slide { position: static; opacity: 1; }
+  .figrot-slide:not(.is-active) { display: none; }
+  .figrot-controls { display: none; }
+}
+
 /* ── index thumbnails ────────────────────────────────────────────────────
    Wayfinding, not content. Decorative by construction (aria-hidden + empty
    alt) because the link beside one already carries the words. The aspect ratio

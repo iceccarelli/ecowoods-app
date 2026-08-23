@@ -12,6 +12,8 @@ import { submitLead } from '@ecowoods/api-client';
 import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
+import { FigureRotator } from './components/FigureRotator';
+import { HOME_ROTATION } from './data/rotator-slides';
 import CountUp from './components/CountUp';
 import SpecsCoverage from './components/SpecsCoverage';
 import FloorCatalog from './components/FloorCatalog';
@@ -556,6 +558,33 @@ const onSubmit = (data: LeadFormData) => {
              the proof band that earns it. See audit/FINDINGS.md F-55. */}
 
       <PricingSection />
+
+      {/* 3b · WHAT WE CAN EXPLAIN — the corpus, shown rather than linked.
+
+          The site publishes three technical papers, eleven guides, a 32-term
+          glossary and a versioned installation standard, and a visitor who came
+          for a price had to click into /resources to discover any of it. Eight
+          figures rotating here make the same argument in twenty seconds without
+          asking anyone to click first: this company can explain moisture
+          differential, the four-machine sequence and what cupping actually is.
+
+          Every slide is in the DOM, so a crawler reads all eight captions and
+          the alt text whether or not it runs the timer. */}
+      <section className="section" id="explained">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">The Science</span>
+            <h2>
+              What we can <span className="serif-italic">explain.</span>
+            </h2>
+            <p>
+              Every figure below is published on this site, free to read and free to cite.
+            </p>
+          </div>
+
+          <FigureRotator slides={HOME_ROTATION} label="What we can explain" />
+        </div>
+      </section>
 
       {/* 4 · HOW IT WORKS — 4-step funnel */}
       <section className="section" id="process">

@@ -5761,3 +5761,75 @@ nothing.
 Now: `generateStaticParams` where the destination has a dynamic segment,
 `force-static` where it does not. Both are checked; neither can be satisfied by
 a stub. Seven surfaces verified.
+
+### F-190 · The two image sets, settled visually · P2 · answered
+
+The four archives were described as different versions of the same 44 images, to
+be rotated in the UI. F-182 recorded the measurement — downscaled to identical
+dimensions, the worst of the 44 pairs differs by 3.16/255, or 1.24%, which is
+resampling noise. The question was asked again, so it was answered again, this
+time by rendering three slots side by side at the same display width.
+
+Same room, same bundle of boards, same three callout plates in the same
+positions. Same five species in the same order with the same Janka values. Same
+arrows on the same twenty boards. `part1`/`part2` is `01`/`02` at 1600×1074
+instead of 1168×784.
+
+A crossfade between an image and a slightly softer copy of itself reads as a
+page failing to load. There was nothing to rotate.
+
+### F-191 · Rotation, built on the figures we own · P1 · fixed
+
+The obvious implementation was to rotate the 74 behind the hero. It is the wrong
+one, and worth writing down so nobody tries it later: most of these images carry
+callout labels — meter readings, machine names, Janka values — and a labelled
+figure under a 0.55 scrim with a headline over it is noise. It would degrade the
+hero and waste the figures at the same time.
+
+So they rotate at readable size, each with its caption and a link to where it is
+explained. `FigureRotator` is on the homepage as *The Science — what we can
+explain* (eight figures running moisture → movement → failure → method → cost,
+which is the shape of the argument the papers make at length) and on `/resources`
+as *Shown, not listed*.
+
+A visitor who came for a price now sees, in twenty seconds and without clicking,
+that this company can explain moisture differential, the four-machine sequence
+and what cupping actually is. That is the corpus arguing for itself.
+
+Properties that matter and were designed for rather than discovered:
+
+- **Every slide is in the DOM at all times.** Only opacity changes, so a crawler
+  reads all eight captions and all eight alt strings whether or not it runs the
+  timer. A rotator that mounts one slide at a time publishes one eighth of
+  itself.
+- **No layout shift.** The stage reserves the manifest's own aspect ratio.
+- **The first slide is server-rendered and the only one marked priority**; the
+  rest lazy-load, so the rotation costs one image on first paint.
+- **Auto-advance stops** on hover, on keyboard focus, when the tab is hidden,
+  and entirely under `prefers-reduced-motion` — checked by the component itself,
+  because a `setInterval` is not an animation and the stylesheet's global
+  reduced-motion reset cannot see it.
+- Previous/next buttons with real labels, so it is operable without a mouse and
+  without waiting.
+
+### F-192 · A guard that passed because it could not see · P1 · fixed
+
+The rotation pools drop any id that does not resolve. That is correct at runtime
+— a renamed slot degrades the rotation instead of crashing the homepage — and
+unacceptable unchecked, because a pool quietly shrinking from eight slides to
+three is indistinguishable from a design decision.
+
+So the ids are verified against the manifest at build time. The first version of
+that check was then tested by injecting a broken id, `concept-mc-differentialX`,
+and **it passed** — because the extractor read `/'([a-z0-9-]+)'/` and a capital
+letter meant the quoted string never matched, so the guard never saw the id it
+was meant to reject.
+
+That is the failure this file records more than any other, in a new costume: a
+check that reports success without doing the work (F-117, F-149, F-166, F-177).
+It is worth noting that it was only caught because the injection test was run at
+all — the guard looked completely correct on the page.
+
+The extractor now reads any quoted string, and both directions are proven: a
+capitalised typo and a plausible lowercase rename each produce the failure, and
+reverting clears it.

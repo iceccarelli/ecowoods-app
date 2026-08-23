@@ -289,6 +289,52 @@ for (const e of entries) {
   }
 }
 
+/* ── the rotator pools must reference real, captioned slots ──────────────── */
+/**
+ * FigureRotator shows a figure and its caption together — the caption is the
+ * whole point, because a picture rotating past with nothing explaining it is
+ * decoration. data/rotator-slides.ts silently drops any id that does not
+ * resolve, which is the right runtime behaviour (a renamed slot degrades the
+ * rotation instead of crashing the homepage) and the wrong thing to leave
+ * unchecked: the failure is invisible, and a pool quietly shrinking from eight
+ * slides to three looks exactly like a design decision.
+ *
+ * So the ids are checked here, where a rename fails the build instead.
+ */
+{
+  const POOLS = 'apps/web/app/data/rotator-slides.ts';
+  const p = path.join(ROOT, POOLS);
+  if (fs.existsSync(p)) {
+    const poolSrc = fs.readFileSync(p, 'utf8');
+    const byId = new Map(entries.map((e) => [e.id, e]));
+    for (const m of poolSrc.matchAll(/export const ([A-Z_]+_ROTATION) = build\(\[([\s\S]*?)\]\);/g)) {
+      const pool = m[1];
+      /* Any quoted string in the pool, not just well-formed ids. Reading only
+         /'([a-z0-9-]+)'/ means a typo containing a capital or an underscore is
+         invisible to the extractor, and the guard then passes because it never
+         saw the thing it was meant to check. That is exactly how the first
+         version of this block was proved useless: the injected id was
+         'concept-mc-differentialX' and the regex quietly skipped it. */
+      const ids = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+      if (ids.length < 2) fail(`${pool} has ${ids.length} slide(s) — a rotator needs at least two.`);
+      for (const id of ids) {
+        const e = byId.get(id);
+        if (!e) {
+          fail(`${pool} names "${id}", which is not a slot in the manifest — it would be dropped silently.`);
+          continue;
+        }
+        if (!e.caption || e.caption.length < 40) {
+          fail(
+            `${pool} names "${id}", which has no usable caption.\n` +
+              `      The rotator shows the caption beside the figure; without one the slide is\n` +
+              `      decoration, and it would be dropped from the pool with no sign.`,
+          );
+        }
+      }
+    }
+  }
+}
+
 /* ── every slot must actually be drawn by a page ─────────────────────────── */
 /**
  * `concept-edger-halo` was declared in the manifest with alt text, a caption, a
