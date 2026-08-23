@@ -144,6 +144,45 @@ const PAPER_IMAGE: Record<string, string> = {
   'hardwood-refinishing-machines-and-sequence': 'paper-craft',
 };
 
+/**
+ * Figures that belong to one section rather than to the paper as a whole,
+ * keyed `slug#sectionId`.
+ *
+ * WHY THIS EXISTS AT ALL
+ *
+ * `concept-edger-halo` was declared in the manifest, bundled into the JavaScript
+ * every visitor downloads, and published in the image sitemap handed to Google —
+ * and rendered on no page. Its `href` pointed at this paper's #edger section,
+ * which satisfied every check that reads the manifest, because `href` says where
+ * an image points and nothing said where it is drawn. verify-images.mjs now
+ * asks the pages.
+ *
+ * WHY IT IS THE RIGHT SHAPE ANYWAY
+ *
+ * These three papers had 21 sections and three figures between them, one hero
+ * each, while twelve of those sections carry a table or a numbered sequence —
+ * structured data with no picture. A technical figure belongs beside the
+ * paragraph it explains, not stacked at the top of the document.
+ */
+const SECTION_IMAGE: Record<string, string> = {
+  'hardwood-refinishing-machines-and-sequence#edger': 'concept-edger-halo',
+
+  'toronto-hardwood-climate-moisture-protocol#climate-reality': 'fig-climate-rh-bands',
+  'toronto-hardwood-climate-moisture-protocol#moisture-testing': 'fig-moisture-testing-sequence',
+  'toronto-hardwood-climate-moisture-protocol#method-and-substrate': 'fig-method-substrate-matrix',
+  'toronto-hardwood-climate-moisture-protocol#protocol': 'fig-protocol-gates',
+  'toronto-hardwood-climate-moisture-protocol#failure-modes': 'fig-failure-cascade',
+
+  'hardwood-refinishing-machines-and-sequence#the-four-machines': 'fig-four-machines-roles',
+  'hardwood-refinishing-machines-and-sequence#belt-sander': 'fig-grit-progression',
+  'hardwood-refinishing-machines-and-sequence#planetary': 'fig-planetary-blend',
+  'hardwood-refinishing-machines-and-sequence#buffer': 'fig-screening-between-coats',
+  'hardwood-refinishing-machines-and-sequence#sequence': 'fig-full-sequence-timeline',
+
+  'hardwood-selection-and-cost-framework-gta#installed-cost': 'fig-installed-cost-bands',
+  'hardwood-selection-and-cost-framework-gta#species': 'fig-species-janka',
+};
+
 export default async function PaperPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const paper = getPaper(slug);
@@ -219,6 +258,10 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
               {section.body.map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
+
+              {SECTION_IMAGE[`${paper.slug}#${section.id}`] && (
+                <Illustration id={SECTION_IMAGE[`${paper.slug}#${section.id}`]} />
+              )}
 
               {section.bullets && (
                 <ul className="wp-bullets">

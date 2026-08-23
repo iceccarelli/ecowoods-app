@@ -5,6 +5,7 @@ import { SITE_URL } from '@/lib/seo-data';
 import { entityAnswers } from '@/lib/entity-answers';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { illustrationImage } from '../data/illustration-images';
 
 export const metadata: Metadata = {
   title: `About ${BUSINESS_NAP.shortName} — who we are, what we do, where we work`,
@@ -15,6 +16,13 @@ export const metadata: Metadata = {
     description: `Who we are, what we do, where we work, and what it costs — answered directly.`,
     type: 'website',
     url: `${SITE_URL}/about`,
+    images: [
+      {
+        url: illustrationImage('og-about')?.src ?? '/illustrations/og-about.webp',
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 

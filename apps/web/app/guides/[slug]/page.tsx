@@ -18,6 +18,11 @@ const GUIDE_IMAGE: Record<string, string> = {
   'reference-condominium-concrete-slab': 'guide-ref-condo',
   'reference-radiant-heat-main-floor': 'guide-ref-radiant',
   'reference-refinishing-existing-hardwood': 'guide-ref-refinish',
+  'hardwood-flooring-cost-toronto': 'guide-cost-toronto',
+  'how-to-choose-hardwood-contractor-toronto': 'guide-choose-contractor',
+  'white-oak-flooring-toronto': 'guide-white-oak',
+  'dustless-hardwood-refinishing-toronto': 'guide-dustless',
+  'herringbone-chevron-parquet-toronto': 'guide-herringbone-parquet',
 };
 
 export function generateStaticParams() {

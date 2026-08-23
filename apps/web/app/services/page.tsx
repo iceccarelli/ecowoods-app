@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { illustrationImage } from '../data/illustration-images';
 import { getServicePages, serviceFor, priceBand, PRICE_PROMISE } from '@/lib/service-pages';
 
 export const metadata: Metadata = {
@@ -16,6 +17,13 @@ export const metadata: Metadata = {
       'Six services, each with a published price band and the technical paper behind it.',
     type: 'website',
     url: `${SITE_URL}/services`,
+    images: [
+      {
+        url: illustrationImage('og-services')?.src ?? '/illustrations/og-services.webp',
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 

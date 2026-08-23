@@ -10,6 +10,7 @@ import {
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { illustrationImage } from '../data/illustration-images';
 
 const P = PRIMARY_REVIEW_EVIDENCE;
 const fmt = (iso: string) =>
@@ -29,6 +30,13 @@ export const metadata: Metadata = {
     description: `${P.count} reviews at ${P.rating.toFixed(1)}/${P.outOf} on ${P.platform}, read ${P.asOf}. Linked, dated, and not aggregated into our own markup.`,
     type: 'website',
     url: `${SITE_URL}/reviews`,
+    images: [
+      {
+        url: illustrationImage('og-reviews')?.src ?? '/illustrations/og-reviews.webp',
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 

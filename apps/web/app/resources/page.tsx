@@ -114,7 +114,7 @@ export default async function ResourcesPage() {
 
       <section className="tlx-section tlx-section--flush" aria-label="The science behind these resources">
         <div className="shell">
-          <Illustration id="resources-hero" priority />
+          <Illustration id="resources-hero" priority motion="kenburns" />
         </div>
       </section>
 

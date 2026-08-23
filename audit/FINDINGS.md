@@ -5526,3 +5526,106 @@ an individual, and inventing one here would be the fabrication the whole corpus
 exists to avoid. The page says so and asks a journalist to make contact for an
 attributed quote. It remains the single most likely reason to lose a story, which
 is why it is stated as an open item rather than quietly filled in.
+
+### F-181 · The 43-slot visual build-out · P1 · fixed
+
+`docs/visual/IMAGE_BRIEF.md` audited every content surface against the image
+manifest and found 43 explanations with no picture. All 43 arrived, plus a
+corrected `framework-hero`. The site goes from 31 image slots to **74**.
+
+| tier | slots | where |
+| --- | --- | --- |
+| Service pages | 6 | `/services/*` — previously **zero images**, on the six pages a buyer lands on from a commercial search |
+| Paper figures | 12 | section-level, beside the table or sequence each one explains |
+| Guides | 5 | the five uncovered decision guides |
+| Glossary | 16 | the terms where a picture does work prose cannot |
+| Social cards | 4 | `/about`, `/reviews`, `/press`, `/services` |
+
+Two structural changes were needed to place them. `SERVICE_IMAGE` in
+`apps/web/app/services/[slug]/page.tsx` gives each service page its image.
+`SECTION_IMAGE` in `apps/web/app/papers/[slug]/page.tsx` keys figures to
+`slug#sectionId`, so a figure sits beside the paragraph it explains rather than
+stacked at the top — the three papers had 21 sections and three figures between
+them, one hero each, while twelve of those sections carried a table or a
+numbered sequence with no picture at all.
+
+**The artwork was checked before it was wired.** `framework-hero` now carries the
+six pillar names exactly as `framework.ts` spells them and no date stamp, which
+was the one correction the brief asked for. `fig-species-janka` prints ≈1360,
+1450, ≈1290, 1820 and 1010 — the published values, in the published order.
+Twelve slots specified as flat vector came back as flat vector with no text and
+on-palette. Nothing invented a figure the site does not publish; the moisture
+delta, which the brief named as the trap, appears nowhere.
+
+Every file is 1600px on the long edge and every one is under the 90 KB/megapixel
+weight budget — measured 7.0 to 85.3, median 19.9, **2.50 MB for all 44**.
+
+### F-182 · The two image sets are not two versions · P1 · decided
+
+Four archives arrived covering the same 44 ids, described as different versions
+of the same image to be rotated in the UI for visual interest.
+
+They are not different versions. Downscaling `part1`/`part2` to the exact pixel
+dimensions of `01`/`02` and comparing directly:
+
+| | worst pair | median |
+| --- | --- | --- |
+| mean absolute difference (0–255) | **3.16** (`term-progressive-grits`) | under 1 |
+| as a percentage | 1.24% | ~0.4% |
+
+A genuinely different rendition of the same subject lands above 20. This is
+resampling noise. `part1`/`part2` is `01`/`02` upscaled — 1600×1074 against
+1168×784, and 1600×840 against 1200×630 for the social cards.
+
+So the rotation was not built. Crossfading an image with a slightly softer copy
+of itself is not an effect; it reads as a rendering fault, and it doubles the
+bytes on every page to do it. The 1600px set was taken and the smaller one
+discarded, which is what `DIAGRAM_BRIEF.md` specifies anyway.
+
+If alternate renditions are wanted later — a different composition, a different
+season, for the same slot — the manifest can carry variants and it is worth
+building then. Building it now would mean shipping a mechanism with nothing real
+to put through it.
+
+### F-183 · Motion, and where it is not allowed · P2 · fixed
+
+Two effects, both pure CSS, neither needing a client component.
+
+**`reveal`** — a short fade and rise as a figure scrolls into view, the default
+on every `<Illustration>`. Scroll-driven via `animation-timeline: view()` behind
+`@supports`, so a browser without it renders the figure normally. That fallback
+is the whole reason it is not JavaScript: a JS reveal that fails to fire leaves
+the content invisible, and on a corpus whose entire point is being readable that
+trade is never worth making.
+
+**`kenburns`** — a slow scale and drift, applied to exactly eight images: the two
+page heroes and the six service photographs.
+
+It is not applied to any explanatory figure, and that is a correctness rule
+rather than a taste one. Ken Burns scales inside a fixed frame, which means it
+crops. On `fig-species-janka` it would slowly walk a species out of frame; on
+`fig-installed-cost-bands` it would crop an axis. A diagram that moves is a
+diagram you cannot read. `Illustration.tsx` and `globals.css` both state the rule
+at the point where someone would otherwise reach for it.
+
+Neither can shift layout — `.ill-frame` already reserves the exact aspect ratio
+from the manifest. Both are zeroed by the stylesheet's global
+`prefers-reduced-motion` reset, and both are explicitly disabled again in print.
+
+### F-184 · Two guards that were passing on incomplete knowledge · P2 · fixed
+
+**Route resolution.** `verify-images.mjs` resolves dynamic `href`s against the
+manifests that generate them, but had never been told where service slugs come
+from. The six new service images pointed at `/services/hardwood-installation`
+and five siblings — all live, all returning 200 in `verify-live.sh` — and the
+guard reported every one as a route that does not exist. The first fix used the
+multi-line `slug:` pattern the other three manifests use; `SERVICES` in
+`seo-data.ts` is written one entry per line, so that pattern matched nothing and
+the guard reported the same six failures while appearing to have been fixed.
+Both are corrected, with the shape difference written down.
+
+**Orphan detection.** Folded in from the unlanded patch 66 (F-173): every slot
+that is not an og:image card must be named by a page that imports
+`<Illustration>`. `href` says where an image points; nothing said anything drew
+it, which is how `concept-edger-halo` came to be bundled and sitemapped while
+appearing on no page.

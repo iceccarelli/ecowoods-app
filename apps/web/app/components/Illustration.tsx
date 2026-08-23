@@ -26,16 +26,40 @@ import { illustrationImage } from '../data/illustration-images';
  * invisible to everything except human eyes.
  */
 
+/**
+ * Motion, and the one rule that governs it.
+ *
+ * `reveal` — a short fade and rise as the figure scrolls into view. Nothing
+ * moves inside the frame, so nothing is hidden. This is the default.
+ *
+ * `kenburns` — a very slow scale and drift. It necessarily crops, because that
+ * is what a scale inside a fixed frame does. So it is allowed ONLY on scene
+ * imagery whose subject is the whole scene: the two page heroes and the six
+ * service photographs. Putting it on an explanatory figure would slowly hide
+ * the thing the figure exists to show, and a diagram that moves is a diagram
+ * you cannot read. That is not a taste call — a cropped axis label or a
+ * cropped fifth species is simply wrong.
+ *
+ * Both are pure CSS. `reveal` uses a scroll-driven animation-timeline behind
+ * @supports, so browsers without it render the figure normally rather than
+ * blank — the failure mode of a JavaScript reveal that never fires. Neither
+ * needs a client component, and globals.css already zeroes every animation
+ * under prefers-reduced-motion.
+ */
+export type IllustrationMotion = 'reveal' | 'kenburns' | 'none';
+
 export function Illustration({
   id,
   sizes = '(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px',
   priority = false,
   className = '',
+  motion = 'reveal',
 }: {
   id: string;
   sizes?: string;
   priority?: boolean;
   className?: string;
+  motion?: IllustrationMotion;
 }) {
   const img = getImage(id);
   if (!img) return null;
@@ -71,8 +95,10 @@ export function Illustration({
      design system rule exists to prevent. An anchor also works with no
      JavaScript, works from a keyboard for free, survives the print stylesheet,
      and is what technical documentation actually does. */
+  const motionClass = motion === 'none' ? '' : `ill--${motion}`;
+
   return (
-    <figure className={`ill ${className}`.trim()}>
+    <figure className={`ill ${motionClass} ${className}`.trim().replace(/\s+/g, ' ')}>
       <div className="ill-frame" style={{ aspectRatio: ratio }}>
         {asset ? (
           <Image

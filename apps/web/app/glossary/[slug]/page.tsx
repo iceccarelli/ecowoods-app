@@ -58,6 +58,22 @@ const TERM_IMAGE: Record<string, string> = {
   acclimation: 'concept-acclimation',
   'moisture-differential': 'concept-mc-differential',
   'edge-peaking': 'failure-edge-peaking',
+  anisotropic: 'term-anisotropic',
+  'solid-hardwood': 'term-solid-hardwood',
+  'engineered-hardwood': 'term-engineered',
+  'cross-ply-core': 'term-cross-ply-core',
+  'wear-layer': 'term-wear-layer',
+  'nail-down': 'term-nail-down',
+  'glue-down': 'term-glue-down',
+  floating: 'term-floating',
+  subfloor: 'term-subfloor',
+  'radiant-heat': 'term-radiant-heat',
+  'janka-hardness': 'term-janka',
+  'white-oak': 'term-white-oak',
+  'progressive-grits': 'term-progressive-grits',
+  'intercoat-screening': 'term-intercoat-screening',
+  'planetary-sander': 'term-planetary-sander',
+  'hepa-dust-containment': 'term-hepa-containment',
 };
 
 export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {

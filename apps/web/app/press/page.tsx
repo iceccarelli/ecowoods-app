@@ -15,6 +15,7 @@ import { FRAMEWORK_NAME, FRAMEWORK_VERSION, criterionCount } from '@/lib/framewo
 import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { illustrationImage } from '../data/illustration-images';
 
 export const metadata: Metadata = {
   title: 'Press and media kit',
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
     description: `Approved boilerplate, logo files, licensing terms and the technical material we publish for anyone to cite.`,
     type: 'website',
     url: `${SITE_URL}/press`,
+    images: [
+      {
+        url: illustrationImage('og-press')?.src ?? '/illustrations/og-press.webp',
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 

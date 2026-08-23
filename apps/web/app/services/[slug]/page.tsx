@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { SITE_URL, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { Illustration } from '../../components/Illustration';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
 import {
@@ -45,6 +46,23 @@ export async function generateMetadata({
     },
   };
 }
+
+/**
+ * One image per service, keyed by slug.
+ *
+ * These six pages are where a buyer lands from a commercial search, and until
+ * now they were the least illustrated pages on the site — no image at all,
+ * while every glossary term had one. An audit of the manifests found it
+ * (docs/visual/IMAGE_BRIEF.md); it was not visible from inside any single file.
+ */
+const SERVICE_IMAGE: Record<string, string> = {
+  'hardwood-installation': 'service-installation',
+  'floor-refinishing': 'service-refinishing',
+  'dust-free-sanding': 'service-dust-free',
+  'floor-restoration': 'service-restoration',
+  'custom-inlays': 'service-inlays',
+  'stair-refinishing': 'service-stairs',
+};
 
 export default async function ServiceDetailPage({
   params,
@@ -132,6 +150,14 @@ export default async function ServiceDetailPage({
           <p className="tlx-note">{svc?.blurb}</p>
         </div>
       </header>
+
+      {SERVICE_IMAGE[slug] && (
+        <section className="tlx-section tlx-section--flush" aria-label={`${page.h1} illustrated`}>
+          <div className="shell">
+            <Illustration id={SERVICE_IMAGE[slug]} priority motion="kenburns" />
+          </div>
+        </section>
+      )}
 
       {band && (
         <section className="tlx-section" aria-label="Price">

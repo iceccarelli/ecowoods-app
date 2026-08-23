@@ -8623,6 +8623,60 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
 .ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--muted); }
 
+/* ── figure motion ───────────────────────────────────────────────────────
+   Two effects, both pure CSS, both no-ops under prefers-reduced-motion (the
+   global reset near the top of this file zeroes every animation-duration with
+   !important, so nothing here needs its own guard).
+
+   `reveal` is scroll-driven via animation-timeline: view(). It sits behind
+   @supports on purpose: a browser without it simply renders the figure at its
+   normal opacity, which is the correct fallback. A JavaScript reveal that fails
+   to fire leaves the content invisible — that trade is never worth it on a
+   corpus whose whole point is being readable.
+
+   `kenburns` scales inside the frame, which means it crops. It is applied only
+   to scene photography (the two page heroes, the six service images). It must
+   never be put on a diagram: an axis, a label or a fifth species drifting out
+   of frame defeats the figure. Illustration.tsx documents the same rule and the
+   default is `reveal`, so reaching for kenburns is a deliberate act.
+
+   Both leave layout untouched — .ill-frame already reserves the exact aspect
+   ratio from the manifest, so nothing here can cause a shift. */
+
+@keyframes ill-reveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ill-kenburns {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to   { transform: scale(1.045) translate3d(-0.8%, -0.6%, 0); }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ill--reveal {
+      animation: ill-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 26%;
+    }
+  }
+}
+
+.ill--kenburns .ill-frame { overflow: hidden; }
+.ill--kenburns .ill-img {
+  animation: ill-kenburns 26s ease-in-out infinite alternate;
+  transform-origin: 52% 48%;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ill--kenburns .ill-img { animation: none; transform: none; }
+  .ill--reveal { opacity: 1; transform: none; animation: none; }
+}
+@media print {
+  .ill--kenburns .ill-img { animation: none; transform: none; }
+  .ill--reveal { opacity: 1; transform: none; animation: none; }
+}
+
 .ill-caption { margin: 0.75rem 0 0; font-size: 0.88rem; line-height: 1.6;
   color: var(--ink-soft); max-width: 72ch; }
 

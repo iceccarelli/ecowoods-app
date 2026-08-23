@@ -197,10 +197,26 @@ for (const e of entries) {
     fs.existsSync(path.join(ROOT, file))
       ? [...fs.readFileSync(path.join(ROOT, file), 'utf8').matchAll(re)].map((m) => m[1])
       : [];
+  /* Dynamic segments are resolved against the manifests that generate them, so a
+     glossary term renamed in glossary.ts breaks this build rather than a
+     visitor's click. SERVICES lives in seo-data.ts and was missing here until
+     the service-page images landed — six real, live routes reported as 404s
+     because the resolver had never been told where their slugs come from. */
   const dynamic = new Set([
     ...slugsFrom('apps/web/lib/glossary.ts', /\n    slug: '([^']+)',/g).map((s) => `/glossary/${s}`),
     ...slugsFrom('apps/web/lib/guides.ts', /\n    slug: '([^']+)',/g).map((s) => `/guides/${s}`),
     ...slugsFrom('apps/web/lib/papers.ts', /\n    slug: '([^']+)',/g).map((s) => `/papers/${s}`),
+    /* SERVICES is written one-per-line as `{ slug: 'x', name: … }`, not the
+       multi-line shape the other three manifests use — so it needs its own
+       pattern. Reading it with the wrong one silently yields zero slugs and
+       reports six live routes as 404s, which is exactly what happened. */
+    ...(() => {
+      const p = path.join(ROOT, 'apps/web/lib/seo-data.ts');
+      if (!fs.existsSync(p)) return [];
+      const block = (fs.readFileSync(p, 'utf8').match(/export const SERVICES: Service\[\] = \[([\s\S]*?)\n\];/) || [])[1];
+      if (!block) return [];
+      return [...block.matchAll(/slug: '([^']+)'/g)].map((m) => `/services/${m[1]}`);
+    })(),
   ]);
 
   for (const e of entries) {
@@ -269,6 +285,61 @@ for (const e of entries) {
       `"${e.id}": file is ${actual[0]}x${actual[1]} but the manifest declares ${declared[0]}x${declared[1]}.\n` +
         `      next/image reserves space from the manifest, so a mismatch reflows the page on load.\n` +
         `      Re-run scripts/prepare-illustrations.sh, or update the DIMS entry to match.`,
+    );
+  }
+}
+
+/* ── every slot must actually be drawn by a page ─────────────────────────── */
+/**
+ * `concept-edger-halo` was declared in the manifest with alt text, a caption, a
+ * prompt, correct dimensions and an `href` pointing at a real route. It was
+ * committed, statically imported, bundled into the JavaScript every visitor
+ * downloads, and published in the image sitemap handed to Google and Bing. It
+ * appeared on no page on this site.
+ *
+ * Every other check here passed, because every other check reads the manifest
+ * and the manifest was perfectly consistent with itself. `href` says where an
+ * image POINTS; nothing said where it is DRAWN. Those are different facts and
+ * only one of them was being verified. This is F-131 inverted: there a file
+ * existed and was not served; here it was served and nothing drew it.
+ *
+ * So: every slot that is not an og:image card — those are metadata, never
+ * markup — must be named by some page under apps/web/app that imports
+ * <Illustration>. Ids count as a literal ('paper-craft', id="framework-hero")
+ * or through a template prefix covering a family (`pillar-${pillar.id}`).
+ */
+{
+  const APP = path.join(ROOT, 'apps/web/app');
+  const literals = new Set();
+  const prefixes = [];
+
+  (function walk(dir) {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        if (ent.name !== 'node_modules') walk(full);
+        continue;
+      }
+      if (!/\.tsx$/.test(ent.name)) continue;
+      const body = fs.readFileSync(full, 'utf8');
+      if (!/from '.*components\/Illustration'/.test(body)) continue;
+      /* JSX writes id="framework-hero" with double quotes; a map writes
+         'framework-hero' with single. Read both, or every image placed directly
+         in markup reports as a false orphan — which the first version did. */
+      for (const m of body.matchAll(/['"]([a-z0-9]+(?:-[a-z0-9]+)+)['"]/g)) literals.add(m[1]);
+      for (const m of body.matchAll(/`([a-z0-9-]{4,})\$\{/g)) prefixes.push(m[1]);
+    }
+  })(APP);
+
+  const drawn = (id) => literals.has(id) || prefixes.some((p) => id.startsWith(p));
+  const orphans = entries.filter((e) => e.helper !== 'og' && !drawn(e.id)).map((e) => e.id);
+
+  if (orphans.length) {
+    fail(
+      `${orphans.length} slot(s) are declared, bundled and sitemapped but drawn by no page:\n` +
+        orphans.map((o) => `        ${o}`).join('\n') +
+        `\n      Render each with <Illustration id="…" /> from a page, or remove the slot.\n` +
+        `      An href says where an image points. It does not say that anything draws it.`,
     );
   }
 }
