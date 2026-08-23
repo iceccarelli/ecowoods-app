@@ -1,0 +1,550 @@
+From 3643c2da7a4fc091b4def469b1eb5044f5350311 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 16:13:39 +0000
+Subject: [PATCH] fix(schema): five invented prices out of the JSON-LD, and the
+ old domain consolidated
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+root-schema.ts was handing Google five project price ranges — $4,000-$15,000 and
+four more — that appear nowhere else on this site, derive from nothing, and that
+nobody could check including us. It also repeated the ~99.7% dust figure already
+recorded as unsourced in CLAIMS_REGISTER.
+
+Twenty-five guards were watching the pages and none was watching the schema.
+That is the wrong way round: an unsourced number on a page is read by a human
+who can weigh it in context, the same number in JSON-LD is quoted by a machine
+as fact to someone who never visits. The most consequential place to be wrong
+was the least guarded place.
+
+servicePriceRange() now reads the same published band the service page renders
+and returns undefined where none is published. A project total needs an area
+assumption this site does not publish, so it is not published here either. The
+dust sentence describes the mechanism instead of a number.
+
+verify-schema-figures.mjs is the twenty-sixth guard: no currency amount and no
+percentage as a literal anywhere under lib/schema or lib/graph. Interpolations
+pass. Comments stripped first, because flagging this repo's own explanation of
+why it does not publish a number is F-58/F-106/F-163/F-175 for a fifth time.
+Proven by injecting both figure types.
+
+Also: four permanent path-preserving redirects from ecowoodshardwood.com to
+ecowoods.ca. 301 not 302, because a temporary redirect tells a crawler to keep
+the old URL indexed. Path-preserving not all-to-homepage, because a link to
+/services/floor-refinishing should land on floor refinishing. The precondition —
+adding the domain to this Vercel project — cannot be done from the repository,
+so until then the rules match nothing and are inert.
+
+F-197 records a conditional I cannot resolve and will not guess at: .hero-bg
+declares no url(), RotatingBackground returns null on an empty pool, and
+/api/backgrounds returns an empty pool without UNSPLASH_ACCESS_KEY. If that
+variable is unset in Vercel the homepage hero has no photograph. Five-second
+check, owner's to make.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ apps/web/lib/schema/root-schema.ts    |  53 ++++++++++---
+ apps/web/next.config.js               |  43 +++++++++++
+ audit/FINDINGS.md                     | 103 ++++++++++++++++++++++++++
+ docs/outreach/DOMAIN_CONSOLIDATION.md |  83 +++++++++++++++++++++
+ package.json                          |   3 +-
+ scripts/audit-all.sh                  |   1 +
+ scripts/verify-schema-figures.mjs     |  97 ++++++++++++++++++++++++
+ 7 files changed, 371 insertions(+), 12 deletions(-)
+ create mode 100644 docs/outreach/DOMAIN_CONSOLIDATION.md
+ create mode 100644 scripts/verify-schema-figures.mjs
+
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 000072b..e56ff9c 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -13,6 +13,7 @@
+  */
+ 
+ import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
++import { getServicePages, priceBand } from '@/lib/service-pages';
+ import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import {
+@@ -56,6 +57,32 @@ const GTA = Array.from(
+   new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
+ );
+ 
++
++/**
++ * PRICE RANGES ARE DERIVED, AND FIVE INVENTED ONES WERE REMOVED.
++ *
++ * This block used to carry `priceRange: '$4,000–$15,000'` and four more like
++ * it — project totals that appear nowhere else on this site, are derived from
++ * nothing, and were being handed to Google as structured price data for the
++ * business. Nobody could check them, including us. That is the exact class of
++ * unsourced figure the whole project exists to eliminate, and it is worse in
++ * schema than on a page: a visitor can weigh a number in context, a machine
++ * quotes it.
++ *
++ * The published bands are per square foot and live in lib/pricing.ts. A project
++ * total would need an area assumption this site does not publish, so it is not
++ * published here either. `servicePriceRange()` reads the same band the service
++ * page renders, and returns undefined where no band is published rather than
++ * inventing one.
++ *
++ * scripts/verify-schema-figures.mjs fails the build on a currency amount or a
++ * percentage typed as a literal anywhere in the schema layer.
++ */
++const servicePriceRange = (slug: string): string | undefined => {
++  const page = getServicePages().find((p) => p.slug === slug);
++  return page ? priceBand(page) : undefined;
++};
++
+ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+   siteUrl: SITE_URL,
+   name: 'Ecowoods Inc.',
+@@ -85,43 +112,47 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+       name: 'Hardwood Flooring Installation',
+       description:
+         'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.',
+-      priceRange: '$4,000–$15,000',
++      priceRange: servicePriceRange('hardwood-installation'),
+       areaServed: GTA,
+     },
+     {
+       id: 'floor-refinishing',
+       name: 'Hardwood Floor Refinishing',
+-      description: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
+-      priceRange: '$2,500–$8,000',
++      description:
++ 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
++      priceRange: servicePriceRange('floor-refinishing'),
+       areaServed: GTA,
+     },
+     {
+       id: 'dust-free-sanding',
+       name: 'Dust-Free Floor Sanding',
+       description:
+-        'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.',
+-      priceRange: '$2,000–$6,000',
++        'HEPA-sealed containment captures dust at the source rather than after it settles, so most clients stay in the house during the work.',
++      priceRange: servicePriceRange('dust-free-sanding'),
+       areaServed: GTA,
+     },
+     {
+       id: 'floor-restoration',
+       name: 'Hardwood Floor Restoration',
+-      description: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
+-      priceRange: '$3,000–$10,000',
++      description:
++ 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
++      priceRange: servicePriceRange('floor-restoration'),
+       areaServed: GTA,
+     },
+     {
+       id: 'custom-inlays',
+       name: 'Custom Inlays & Borders',
+-      description: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
+-      priceRange: '$2,000–$12,000',
++      description:
++ 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
++      priceRange: servicePriceRange('custom-inlays'),
+       areaServed: GTA,
+     },
+     {
+       id: 'stair-refinishing',
+       name: 'Stair Refinishing',
+-      description: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
+-      priceRange: '$1,500–$5,000',
++      description:
++ 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
++      priceRange: servicePriceRange('stair-refinishing'),
+       areaServed: GTA,
+     },
+   ],
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 96ca099..5ffcb1b 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -65,6 +65,49 @@ const nextConfig = {
+    * guard in the repository passed — which is the shape of the last four
+    * findings, so it was tested instead.
+    */
++  /**
++   * THE OLD DOMAIN, CONSOLIDATED.
++   *
++   * ecowoodshardwood.com is the company's earlier domain. Two domains serving
++   * the same business split every signal that matters: links point at one,
++   * citations at the other, and a search engine resolving the entity has to
++   * guess which is canonical. It is the single largest off-page dilution left,
++   * and it costs nothing to fix except the decision.
++   *
++   * Every path maps to the same path on ecowoods.ca with a 301 — permanent,
++   * because a 302 tells a crawler to keep the old URL indexed, which is the
++   * opposite of consolidation. Path-preserving rather than all-to-homepage: a
++   * link to /services/floor-refinishing on the old domain should land on the
++   * page about floor refinishing, not on a homepage the visitor then has to
++   * navigate. Redirecting everything to / is the most common way this is done
++   * and it throws away most of the value.
++   *
++   * PRECONDITION, and it cannot be satisfied from inside this repository:
++   * ecowoodshardwood.com must be added as a domain on this Vercel project so
++   * its requests reach this app. Until then these rules match nothing and are
++   * inert — they cannot break the live site. Once the domain is attached, the
++   * host conditions below fire on the first request.
++   *
++   * See docs/outreach/DOMAIN_CONSOLIDATION.md.
++   */
++  async redirects() {
++    const OLD = ['ecowoodshardwood.com', 'www.ecowoodshardwood.com'];
++    return OLD.flatMap((host) => [
++      {
++        source: '/',
++        has: [{ type: 'host', value: host }],
++        destination: 'https://ecowoods.ca/',
++        permanent: true,
++      },
++      {
++        source: '/:path*',
++        has: [{ type: 'host', value: host }],
++        destination: 'https://ecowoods.ca/:path*',
++        permanent: true,
++      },
++    ]);
++  },
++
+   async rewrites() {
+     return [
+       { source: '/papers/:slug.md', destination: '/md/papers/:slug' },
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index 06502e3..42a4095 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -5919,3 +5919,106 @@ covers at length. Naming a topic there that the site does not cover is the
+ fastest way to be scored unreliable, so the list was cut to what is actually published.
+ Plus `POST_JOB_REVIEW_FLOW.md` and `DIRECTORY_CONSISTENCY_CHECKLIST.md` as
+ process docs, each stamped with where the canonical value actually lives.
++
++### F-195 · Five invented prices and an unsourced percentage, in the schema · P0 · fixed
++
++`apps/web/lib/schema/root-schema.ts` carried project price ranges on every
++service node:
++
++| service | claimed |
++| --- | --- |
++| Hardwood installation | $4,000–$15,000 |
++| Floor refinishing | $2,500–$8,000 |
++| Dust-free sanding | $2,000–$6,000 |
++| Floor restoration | $3,000–$10,000 |
++| Custom inlays | (a fifth range) |
++
++**Not one of those figures appears anywhere else on this site.** They are not
++derived from `PRICING`, which publishes per-square-foot bands. They are not in
++any paper, guide or service page. Nobody could check them, including us — and
++they were being handed to Google as structured price data for the business.
++
++The same block repeated **"~99.7% of airborne dust"**, a figure already recorded
++in `docs/outreach/CLAIMS_REGISTER.md` as unsourced.
++
++Twenty-five guards were watching the pages. **None was watching the schema.**
++That is exactly the wrong way round. An unsourced number on a page is read by a
++human who can weigh it in context; the same number in JSON-LD is read by a
++machine that quotes it as fact, to someone who never visits the site. The schema
++layer is the most consequential place on this property to be wrong, and it was
++the least guarded place on it.
++
++**Fixed.** `servicePriceRange()` reads the same published band the service page
++renders, and returns `undefined` where no band is published rather than
++inventing one. A project total would require an area assumption this site does
++not publish, so it is not published here either. The dust-capture sentence now
++describes the mechanism — containment at the source rather than cleanup after
++settling — which is true, checkable and needs no figure.
++
++**Guarded** by `scripts/verify-schema-figures.mjs`, the twenty-sixth guard: no
++currency amount and no percentage may appear as a literal anywhere under
++`apps/web/lib/schema` or `apps/web/lib/graph`. Interpolations pass, because that
++is the correct form. Comments are stripped first — this repository explains at
++length why it does *not* publish certain numbers, and flagging its own
++explanation is the mistake recorded four times already as F-58, F-106, F-163 and
++F-175. Proven by injection in both directions: a restored `$4,000–$15,000` and a
++restored `~99.7%` each fail the build.
++
++### F-196 · The old domain, consolidated · P1 · code shipped, one action outstanding
++
++`ecowoodshardwood.com` is the company's earlier domain and it has been running
++alongside `ecowoods.ca` for the whole of this work. Two domains serving one
++business split every signal that matters: links point at one, citations at the
++other, directory listings at whichever was current when they were created, and a
++search engine resolving *which entity is Ecowoods* has to guess.
++
++That guess is the failure that started this entire line of work.
++
++`apps/web/next.config.js` now declares four permanent redirects — bare and
++`www`, root and every path — straight to the matching URL on `ecowoods.ca`.
++
++Two deliberate choices, both of which are usually got wrong:
++
++- **301, not 302.** A temporary redirect tells a crawler to keep the old URL
++  indexed, which is the opposite of consolidation.
++- **Path-preserving, not all-to-homepage.** A link to
++  `/services/floor-refinishing` on the old domain lands on the page about floor
++  refinishing. Redirecting everything to `/` is the common implementation and it
++  discards most of the value.
++
++**The precondition cannot be satisfied from this repository:**
++`ecowoodshardwood.com` must be added as a domain on this Vercel project before
++its requests reach this app. Until then the rules match nothing and are inert —
++they cannot break the live site. `docs/outreach/DOMAIN_CONSOLIDATION.md` has the
++dashboard steps, the DNS caution about existing mail on the same zone, the
++`curl -sI` check that proves the path survives the hop, and the Search Console
++and Bing change-of-address follow-ups without which the move reads as an outage.
++
++### F-197 · The homepage hero may currently have no photograph · P0 · owner check
++
++Not fixed, because it cannot be established from here and the last time an
++assumption was made about this hero it was wrong and damaging (12 Aug, recorded).
++
++The facts that *can* be established, all read directly from the code:
++
++1. `.hero-bg` in `globals.css` declares gradients only. There is no `url()`.
++2. `RotatingBackground` returns `null` when its image pool is empty.
++3. `/api/backgrounds` returns `{ images: [] }` when `UNSPLASH_ACCESS_KEY` is
++   unset or still holds a placeholder value.
++
++Those three together mean: **if that environment variable is not set in Vercel,
++the homepage hero renders with no photograph at all.** A hardwood flooring
++company whose homepage shows no floor is the exact state that was called out in
++August — *"people can not SEE and understand the website."*
++
++This is a five-second check and it is the owner's to make: open ecowoods.ca and
++look, or open Vercel → Settings → Environment Variables and look for
++`UNSPLASH_ACCESS_KEY`.
++
++If it is missing, the fix is not to re-add a third-party dependency. The hero
++should not need an API call or an env var to show a photograph, and the current
++design fails closed to nothing. The correct repair is a bundled fallback pool
++that renders when the remote pool is empty — removing nothing, changing nothing
++when the key is present, and eliminating the failure mode permanently. That
++needs one decision from the owner about which imagery, which is why it is
++recorded here rather than guessed at.
+diff --git a/docs/outreach/DOMAIN_CONSOLIDATION.md b/docs/outreach/DOMAIN_CONSOLIDATION.md
+new file mode 100644
+index 0000000..8d1ef90
+--- /dev/null
++++ b/docs/outreach/DOMAIN_CONSOLIDATION.md
+@@ -0,0 +1,83 @@
++# ecowoodshardwood.com → ecowoods.ca
++
++**Status: the code is in place and inert. One action in the Vercel dashboard turns it on.**
++
++## Why this matters more than it looks
++
++Two domains serving the same business split every signal that matters. Links
++point at one, citations at the other, directory listings at whichever was
++current when they were created — and a search engine resolving *which entity is
++Ecowoods* has to guess. That guess is exactly the failure that started this
++work: an AI assistant read a local listing, saw a small review count, and never
++reconciled it with the 177 on HomeStars.
++
++Every link ever earned by the old domain is currently a link to a different
++website as far as a crawler is concerned. Consolidating hands all of it to one
++address.
++
++## What is already done
++
++`apps/web/next.config.js` declares four permanent redirects — bare and `www`,
++root and every path:
++
++```
++ecowoodshardwood.com/:path*      → https://ecowoods.ca/:path*   301
++www.ecowoodshardwood.com/:path*  → https://ecowoods.ca/:path*   301
++```
++
++Two deliberate choices:
++
++- **301, not 302.** A temporary redirect tells a crawler to keep the old URL
++  indexed, which is the opposite of consolidation.
++- **Path-preserving, not all-to-homepage.** A link to
++  `/services/floor-refinishing` on the old domain lands on the page about floor
++  refinishing. Redirecting everything to `/` is the common way this is done and
++  it discards most of the value — the visitor arrives somewhere generic and the
++  crawler learns nothing about which page replaced which.
++
++## The one thing that cannot be done from the repository
++
++**`ecowoodshardwood.com` must be added as a domain on this Vercel project.**
++Until it is, its requests never reach this app and the rules above match
++nothing — they are inert and cannot break anything.
++
++1. Vercel → the `ecowoods-app` project → Settings → Domains.
++2. Add `ecowoodshardwood.com` and `www.ecowoodshardwood.com`.
++3. Vercel shows the DNS records required. Set them at whoever holds the old
++   domain's DNS. If the old domain currently points at a different host, this
++   step takes it off that host — confirm nothing else is served from it first
++   (an old email setup on the same DNS is the usual surprise; MX records are
++   separate and are not affected by an A or CNAME change, but check).
++4. Wait for propagation, then verify:
++
++```
++curl -sI https://ecowoodshardwood.com/services/floor-refinishing | head -5
++# expect: HTTP/2 301
++#         location: https://ecowoods.ca/services/floor-refinishing
++```
++
++The path must survive. If it lands on `https://ecowoods.ca/` instead, the
++path-preserving rule is not firing and the redirect is doing a fraction of its job.
++
++## After it is live
++
++- **Search Console:** add `ecowoodshardwood.com` as a property and use the
++  Change of Address tool. This is not optional — it is how Google is told the
++  move is deliberate rather than an outage.
++- **Bing Webmaster Tools:** same, via Site Move.
++- **Directories:** every listing still pointing at the old domain should be
++  updated to `ecowoods.ca`. The 301 covers visitors; the listing itself is a
++  citation and should name the canonical address.
++  See `DIRECTORY_CONSISTENCY_CHECKLIST.md`.
++- **Do not remove the redirects, ever.** They are permanent by design. A 301
++  that disappears turns every inbound link into a 404 years after anyone
++  remembers why.
++
++## What must not happen
++
++- **No canonical tag from the old domain to the new one instead of a redirect.**
++  A canonical is a hint; a 301 is an instruction. Use the instruction.
++- **No redirect chains.** `www` → bare → `https` → destination costs signal at
++  each hop. The rules above go straight to the final URL in one step.
++- **No redirecting the old domain to a marketing landing page.** It goes to the
++  matching page or the homepage, nothing else.
+diff --git a/package.json b/package.json
+index 0191d5e..6463043 100644
+--- a/package.json
++++ b/package.json
+@@ -36,10 +36,11 @@
+     "verify:reviews": "node scripts/verify-reviews.mjs",
+     "verify:outreach": "node scripts/verify-outreach.mjs",
+     "verify:live-images": "node scripts/verify-live-images.mjs",
++    "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/audit-all.sh b/scripts/audit-all.sh
+index c0b7132..30d1fbc 100755
+--- a/scripts/audit-all.sh
++++ b/scripts/audit-all.sh
+@@ -140,6 +140,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
+ [ -f scripts/verify-entity.mjs ] && run "verify:entity" node scripts/verify-entity.mjs
+ run node scripts/verify-reviews.mjs
+ run node scripts/verify-outreach.mjs
++run node scripts/verify-schema-figures.mjs
+ 
+ # ─────────────────────────────────────────────────────────────────────────────
+ section "5 · source integrity"
+diff --git a/scripts/verify-schema-figures.mjs b/scripts/verify-schema-figures.mjs
+new file mode 100644
+index 0000000..09378d5
+--- /dev/null
++++ b/scripts/verify-schema-figures.mjs
+@@ -0,0 +1,97 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-schema-figures.mjs — the twenty-sixth guard.
++ *
++ * WHAT IT CAUGHT, AND WHY IT EXISTS
++ *
++ * The Organization schema carried five project price ranges — $4,000–$15,000,
++ * $2,500–$8,000, $2,000–$6,000, $3,000–$10,000 and one more — that appear
++ * nowhere else on this site, derive from nothing, and were being handed to
++ * Google as structured price data for the business. It also repeated
++ * "~99.7% of airborne dust", a figure already recorded in
++ * docs/outreach/CLAIMS_REGISTER.md as unsourced.
++ *
++ * Twenty-five guards were watching the pages. None was watching the schema.
++ * That is the wrong way round: an unsourced number on a page is read by a human
++ * who can weigh it in context, and the same number in JSON-LD is read by a
++ * machine that quotes it as fact. The schema layer is the most consequential
++ * place on the site to be wrong and it was the least guarded.
++ *
++ * THE RULE
++ *
++ * No currency amount and no percentage may appear as a literal anywhere under
++ * apps/web/lib/schema. Every figure must be interpolated from a published
++ * constant — PRICING, BUSINESS_NAP, REVIEW_EVIDENCE, the framework — so the
++ * schema cannot state something the site does not.
++ *
++ * Comments are stripped first. This repository explains at length why it does
++ * NOT publish certain numbers, and flagging its own explanation is the mistake
++ * recorded as F-58, F-106, F-163, F-175 — four times. Not a fifth.
++ *
++ *   node scripts/verify-schema-figures.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const DIRS = ['apps/web/lib/schema', 'apps/web/lib/graph'];
++const problems = [];
++
++/* Years, versions, dimensions and coordinates are not money or claims. */
++const ALLOW = [
++  /^\d{4}$/,                 // a year
++  /^\d{1,2}$/,               // small counts
++];
++
++const stripComments = (src) =>
++  src
++    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
++    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
++
++const walk = (dir) => {
++  const full = path.join(ROOT, dir);
++  if (!fs.existsSync(full)) return;
++  for (const ent of fs.readdirSync(full, { withFileTypes: true })) {
++    const rel = path.join(dir, ent.name);
++    if (ent.isDirectory()) {
++      walk(rel);
++      continue;
++    }
++    if (!/\.(ts|tsx)$/.test(ent.name)) continue;
++    const code = stripComments(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
++    code.split('\n').forEach((line, i) => {
++      /* A currency amount: $ followed by digits, inside a string literal. */
++      for (const m of line.matchAll(/['"`][^'"`]*\$\s?[\d,]+(?:\.\d+)?[^'"`]*['"`]/g)) {
++        if (m[0].includes('${')) continue; // interpolated — that is the correct form
++        problems.push({
++          where: `${rel}:${i + 1}`,
++          detail: `currency literal in schema: ${m[0].trim().slice(0, 60)}`,
++        });
++      }
++      /* A percentage claim inside a string literal. */
++      for (const m of line.matchAll(/['"`][^'"`]*?\d+(?:\.\d+)?\s?%[^'"`]*['"`]/g)) {
++        if (m[0].includes('${')) continue;
++        problems.push({
++          where: `${rel}:${i + 1}`,
++          detail: `percentage literal in schema: ${m[0].trim().slice(0, 60)}`,
++        });
++      }
++    });
++  }
++};
++DIRS.forEach(walk);
++
++const filtered = problems.filter((p) => !ALLOW.some((re) => re.test(p.detail)));
++
++if (filtered.length) {
++  console.error(`\n✗ ${filtered.length} unsourced figure(s) in the schema layer:\n`);
++  for (const p of filtered) console.error(`  · ${p.where}\n      ${p.detail}`);
++  console.error(
++    `\n  A number in JSON-LD is quoted by a machine as fact. Interpolate it from a published\n` +
++      `  constant — PRICING, BUSINESS_NAP, REVIEW_EVIDENCE — or do not publish it. See F-195.\n`,
++  );
++  process.exit(1);
++}
++console.log(
++  `✓ schema figures verified — no currency or percentage literals under ${DIRS.join(', ')}`,
++);
+-- 
+2.43.0
+
