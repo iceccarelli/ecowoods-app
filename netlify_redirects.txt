@@ -1,0 +1,10 @@
+# ECOWOODS — ecowoodshardwood.com → ecowoods.ca
+# Netlify. Place at the site root (or in the publish directory).
+#
+# 301! — the bang forces the rule even when a matching file exists in the
+# deploy, which is what makes this a complete redirect rather than one that
+# leaks any page still sitting in the build output.
+#
+# The splat preserves the path; Netlify preserves the query string by default.
+
+/*    https://ecowoods.ca/:splat    301!

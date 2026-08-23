@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "_comment": [
+    "ECOWOODS — use this ONLY if the old domain is moved onto its own Vercel project.",
+    "If instead you attach ecowoodshardwood.com to the EXISTING ecowoods-app project,",
+    "you need none of this: the redirects already in apps/web/next.config.js fire on",
+    "the first request. Attaching to the existing project is the simpler path and the",
+    "one docs/outreach/DOMAIN_CONSOLIDATION.md describes.",
+    "One hop, path and query preserved, permanent."
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "destination": "https://ecowoods.ca/:path*",
+      "permanent": true
+    }
+  ]
+}
