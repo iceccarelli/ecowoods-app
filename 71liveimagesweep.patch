@@ -1,0 +1,585 @@
+From 78b65b14317ba680b3c0db6472d44e9a5dcbe289 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sun, 23 Aug 2026 12:54:33 +0000
+Subject: [PATCH] test(live): prove all 74 images render and serve, not one of
+ them
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+verify-live.sh is the only check here that can see a delivery failure, and it
+fetched exactly one rendered image before printing "live and serving". The
+manifest declares 74 slots and the sitemap publishes 154 image URLs to Google.
+Proving one is the comfort that let F-131 ship — 28 diagrams committed,
+imported, and 404ing in production while every source-reading guard passed — and
+F-173, one image bundled into every visitor's JavaScript, sitemapped, and
+rendered by no page.
+
+verify-live-images.mjs sweeps all 74. It builds the slot-to-page map from the
+manifest's own HREFS, fetches each of the 54 pages once, and asserts two
+separate facts per slot: the bundled filename appears in the HTML that came
+back, and that URL returns real bytes. Presence without delivery is a broken
+image; delivery without presence is an image nobody sees. Both have shipped
+here, and neither was visible from source.
+
+The matcher self-tests before it is trusted — six assertions, no network,
+including that an id which merely prefixes another does not match. A guard that
+cannot fail is not a guard.
+
+Separately: fourteen public pages rendered no image at all. Four are indexes
+listing items that already owned artwork the index never displayed — /papers and
+/guides show thirteen items between them, every one with a published image,
+visible only after the click. IllustrationThumb fixes that with zero new art. It
+is not <Illustration> on purpose: on an index the picture is wayfinding beside a
+link that already carries the words, so it is decorative by construction rather
+than a figure whose alt a screen reader would read immediately before the title
+saying the same thing.
+
+The remaining ten are recorded as tier 6, with /service-areas/[city] — 32 live
+local-search pages — named as the largest gap, and four pages recorded as
+correctly imageless so nobody adds one later.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ apps/web/app/components/IllustrationThumb.tsx |  49 +++++
+ apps/web/app/globals.css                      |  21 ++
+ apps/web/app/guides/page.tsx                  |  18 ++
+ apps/web/app/papers/page.tsx                  |  11 +
+ audit/FINDINGS.md                             |  69 +++++++
+ docs/visual/IMAGE_BRIEF.md                    |  26 +++
+ package.json                                  |   1 +
+ scripts/verify-live-images.mjs                | 190 ++++++++++++++++++
+ scripts/verify-live.sh                        |  25 +++
+ 9 files changed, 410 insertions(+)
+ create mode 100644 apps/web/app/components/IllustrationThumb.tsx
+ create mode 100644 scripts/verify-live-images.mjs
+
+diff --git a/apps/web/app/components/IllustrationThumb.tsx b/apps/web/app/components/IllustrationThumb.tsx
+new file mode 100644
+index 0000000..387679d
+--- /dev/null
++++ b/apps/web/app/components/IllustrationThumb.tsx
+@@ -0,0 +1,49 @@
++import Image from 'next/image';
++import { getImage } from '@/lib/images';
++import { illustrationImage } from '../data/illustration-images';
++
++/**
++ * The index-page thumbnail.
++ *
++ * WHY THIS EXISTS
++ *
++ * Fourteen public pages rendered no image at all, and four of them —
++ * /papers, /guides, /blog, /case-studies — are indexes that list items which
++ * each already HAVE an image. The artwork was paid for and shipped; the index
++ * simply never showed it. A list of thirteen titles is harder to scan than a
++ * list of thirteen titles with the picture beside each one, and it costs
++ * nothing new to fix.
++ *
++ * It is deliberately not <Illustration>. That component is a <figure> with a
++ * caption and a full-size link — the right thing when the image IS the content.
++ * Here the image is a wayfinding aid next to a link that already carries the
++ * words, so it is decorative by construction: alt is empty and the whole card
++ * is the accessible target. Giving it the figure alt would make a screen reader
++ * read the diagram description immediately before the title that describes the
++ * same thing, twice per row.
++ *
++ * Layout is reserved from the manifest's own dimensions, so no thumbnail can
++ * shift a list as it loads.
++ */
++export function IllustrationThumb({ id, className = '' }: { id?: string; className?: string }) {
++  if (!id) return null;
++  const img = getImage(id);
++  const asset = illustrationImage(id);
++  if (!img || !asset) return null;
++
++  return (
++    <div
++      className={`ill-thumb ${className}`.trim()}
++      style={{ aspectRatio: `${img.width} / ${img.height}` }}
++      aria-hidden="true"
++    >
++      <Image
++        src={asset}
++        alt=""
++        sizes="(max-width: 767px) 100vw, 320px"
++        className="ill-thumb-img"
++        loading="lazy"
++      />
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index f0f74b4..1a99d21 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -8623,6 +8623,27 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%,
+ .ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+   text-transform: uppercase; color: var(--muted); }
+ 
++/* ── index thumbnails ────────────────────────────────────────────────────
++   Wayfinding, not content. Decorative by construction (aria-hidden + empty
++   alt) because the link beside one already carries the words. The aspect ratio
++   comes from the manifest, so a list cannot reflow as these load. */
++.ill-thumb {
++  position: relative; width: 100%; overflow: hidden;
++  border: 1px solid var(--line); border-radius: var(--radius-md);
++  background: var(--surface-2);
++}
++.ill-thumb-img {
++  display: block; width: 100%; height: 100%; object-fit: cover;
++  transition: transform 600ms ease;
++}
++a:hover .ill-thumb-img, a:focus-visible .ill-thumb-img { transform: scale(1.03); }
++@media (prefers-reduced-motion: reduce) { .ill-thumb-img { transition: none; transform: none; } }
++
++.wp-item { align-items: flex-start; }
++.tlx-card-thumb { margin: 0 0 0.9rem; }
++.wp-item-thumb { flex: 0 0 clamp(150px, 22vw, 230px); }
++@media (max-width: 767px) { .wp-item-thumb { flex-basis: 100%; } }
++
+ /* ── figure motion ───────────────────────────────────────────────────────
+    Two effects, both pure CSS, both no-ops under prefers-reduced-motion (the
+    global reset near the top of this file zeroes every animation-duration with
+diff --git a/apps/web/app/guides/page.tsx b/apps/web/app/guides/page.tsx
+index 376fd0d..97d18fc 100644
+--- a/apps/web/app/guides/page.tsx
++++ b/apps/web/app/guides/page.tsx
+@@ -1,5 +1,6 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
++import { IllustrationThumb } from '../components/IllustrationThumb';
+ import { getGuides } from '@/lib/guides';
+ import { SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
+@@ -19,6 +20,21 @@ export const metadata: Metadata = {
+   },
+ };
+ 
++/** Every guide already owns an image; the index simply never showed it. */
++const GUIDE_THUMB: Record<string, string> = {
++  'solid-vs-engineered-hardwood-toronto': 'guide-solid-vs-engineered',
++  'nail-down-glue-down-or-floating': 'guide-method',
++  'how-to-evaluate-a-hardwood-quote': 'guide-evaluate-quote',
++  'reference-condominium-concrete-slab': 'guide-ref-condo',
++  'reference-radiant-heat-main-floor': 'guide-ref-radiant',
++  'reference-refinishing-existing-hardwood': 'guide-ref-refinish',
++  'hardwood-flooring-cost-toronto': 'guide-cost-toronto',
++  'how-to-choose-hardwood-contractor-toronto': 'guide-choose-contractor',
++  'white-oak-flooring-toronto': 'guide-white-oak',
++  'dustless-hardwood-refinishing-toronto': 'guide-dustless',
++  'herringbone-chevron-parquet-toronto': 'guide-herringbone-parquet',
++};
++
+ export default function GuidesPage() {
+   const decisions = getGuides('decision');
+   const references = getGuides('reference');
+@@ -74,6 +90,7 @@ export default function GuidesPage() {
+           <div className="tlx-grid">
+             {decisions.map((g) => (
+               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
+                 <span className="tlx-card-tag">Decision guide</span>
+                 <h3>{g.title}</h3>
+                 <p>{g.question}</p>
+@@ -98,6 +115,7 @@ export default function GuidesPage() {
+           <div className="tlx-grid">
+             {references.map((g) => (
+               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
++                <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
+                 <span className="tlx-card-tag">Reference installation</span>
+                 <h3>{g.title}</h3>
+                 <p>{g.question}</p>
+diff --git a/apps/web/app/papers/page.tsx b/apps/web/app/papers/page.tsx
+index e8e619e..734be76 100644
+--- a/apps/web/app/papers/page.tsx
++++ b/apps/web/app/papers/page.tsx
+@@ -1,5 +1,6 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
++import { IllustrationThumb } from '../components/IllustrationThumb';
+ import { getPapers, pdfHref, pdfIsPublished } from '@/lib/papers';
+ import { SchemaScript } from '@/lib/schema/components';
+ 
+@@ -26,6 +27,13 @@ const fmt = (iso: string) =>
+     timeZone: 'UTC',
+   });
+ 
++/** The image each paper already owns, shown on the index rather than only inside. */
++const PAPER_THUMB: Record<string, string> = {
++  'toronto-hardwood-climate-moisture-protocol': 'paper-climate',
++  'hardwood-selection-and-cost-framework-gta': 'paper-selection',
++  'hardwood-refinishing-machines-and-sequence': 'paper-craft',
++};
++
+ export default function PapersIndexPage() {
+   const papers = getPapers();
+ 
+@@ -80,6 +88,9 @@ export default function PapersIndexPage() {
+           <ul className="wp-list">
+             {papers.map((paper) => (
+               <li key={paper.slug} className="wp-item">
++                <Link className="wp-item-thumb" href={`/papers/${paper.slug}`} tabIndex={-1} aria-hidden="true">
++                  <IllustrationThumb id={PAPER_THUMB[paper.slug]} />
++                </Link>
+                 <div className="wp-item-main">
+                   <p className="tlx-card-tag">
+                     Technical paper · v{paper.version} · {fmt(paper.publishedAt)}
+diff --git a/audit/FINDINGS.md b/audit/FINDINGS.md
+index a43b76e..5839d48 100644
+--- a/audit/FINDINGS.md
++++ b/audit/FINDINGS.md
+@@ -5629,3 +5629,72 @@ that is not an og:image card must be named by a page that imports
+ `<Illustration>`. `href` says where an image points; nothing said anything drew
+ it, which is how `concept-edger-halo` came to be bundled and sitemapped while
+ appearing on no page.
++
++### F-185 · verify-live proved one image out of seventy-four · P0 · fixed
++
++`verify-live.sh` is the only check in this repository that can see a delivery
++failure, and every guard in the build can pass while the deployed site is broken
++— that has now happened three times (F-107, F-129, F-131). Its image section
++fetched **one** rendered image, confirmed the bytes, and the run printed
++"✓ live and serving".
++
++The manifest now declares **74 slots** and the sitemap publishes **154 image
++URLs** to Google and Bing. Proving one of them and reporting the site healthy is
++exactly the shape of comfort that let F-131 ship — 28 diagrams committed,
++statically imported, and 404ing in production while every source-reading guard
++passed — and F-173, where one image was bundled into every visitor's JavaScript,
++published in the sitemap, and rendered on no page at all.
++
++`scripts/verify-live-images.mjs` sweeps all 74. It builds the slot-to-page map
++from the manifest's own `HREFS`, groups by page so each of the 54 pages is
++fetched once, and asserts two separate facts per slot:
++
++1. **Presence** — the slot's bundled filename appears in the HTML that actually
++   came back. Next emits `/_next/static/media/<id>.<hash>.webp`, so the id is
++   recoverable from the page source. Absence means the page did not render it,
++   whatever the manifest says.
++2. **Delivery** — that URL returns 200 with a plausible byte count.
++
++Presence without delivery is a broken-image icon. Delivery without presence is
++an image nobody sees. Both were real, both shipped, and neither was detectable
++from source.
++
++og:image slots are checked as metadata rather than markup — they live in a
++`<meta property="og:image">` tag and are never drawn on a page.
++
++**The matcher is self-tested before it is trusted.** `--selftest` runs six
++assertions with no network: the percent-encoded form Next actually emits, the
++raw form, an absent id correctly reported absent, a longer id that merely starts
++with the one being looked for correctly NOT matching, and both og cases. A guard
++that cannot fail is not a guard — F-117, F-149 and F-166 are all that mistake,
++and this one proves both directions before it runs.
++
++Wired into `verify-live.sh` before the verdict, so a missing image now fails the
++deploy check rather than being invisible until someone scrolls past it.
++
++### F-186 · Fourteen public pages rendered no image at all · P1 · partly fixed
++
++Computed against the page files, not eyeballed. Four of the fourteen are index
++pages listing items that **already owned artwork the index never showed** —
++`/papers` and `/guides` list thirteen items between them, every one with a
++published image, displayed only after the reader had already clicked.
++
++Fixed with `IllustrationThumb`, which is deliberately not `<Illustration>`. That
++component is a `<figure>` with a caption and a full-size link, correct when the
++image *is* the content. On an index the image is a wayfinding aid beside a link
++that already carries the words, so it is decorative by construction — `aria-hidden`
++with an empty alt. Giving it the figure's alt text would make a screen reader
++read the diagram description immediately before the title describing the same
++thing, twice per row. Dimensions come from the manifest, so no thumbnail can
++reflow a list as it loads.
++
++Zero new artwork, zero new bytes on any page that did not already have them:
++this is value out of assets already paid for and shipped.
++
++The remaining ten are recorded as tier 6 in `docs/visual/IMAGE_BRIEF.md`. The
++significant one is `/service-areas/[city]` — **32 live local-search landing
++pages** with nothing to look at. One image per area would be wrong; a generic
++stock shot repeated 32 times is worse than none. The proposal there is 3–4 shared
++images keyed to housing stock and selected by each area's own `housingNote`.
++Four of the ten (`/whats-new`, `/authority`, `/framework/assess`, `/design`) are
++correctly imageless and are recorded as such so nobody adds one later.
+diff --git a/docs/visual/IMAGE_BRIEF.md b/docs/visual/IMAGE_BRIEF.md
+index 4034a71..072fb8d 100644
+--- a/docs/visual/IMAGE_BRIEF.md
++++ b/docs/visual/IMAGE_BRIEF.md
+@@ -238,3 +238,29 @@ reveal on every figure, and a slow Ken Burns on scene imagery only — the two
+ heroes and the six service photographs. Ken Burns scales inside a fixed frame,
+ which means it crops, so it is never applied to an explanatory figure. A drifting
+ axis label or a fifth species leaving frame defeats the picture.
++
++---
++
++## 10 — TIER 6 · Pages that still render nothing · computed 2026-08-23
++
++Fourteen public page files render no image at all. Four of them are index pages
++listing items that already own artwork — those were fixed by showing it
++(`/papers` and `/guides` now carry thumbnails; `/blog` and `/case-studies` are
++the same one-line change once their items have images). The rest need art.
++
++| route | live pages | why it matters |
++| --- | --- | --- |
++| `/service-areas/[city]` | **32** | The largest gap on the site by page count, and every one is a local-search landing page. One image per area is wrong — a generic stock shot on 32 pages is worse than none. What works: 3–4 shared images keyed to housing stock (pre-war semi, post-war bungalow, condo slab, radiant new-build) selected by the area's `housingNote`. |
++| `/service-areas` | 1 | A GTA coverage map, drawn — not a screenshot of anyone's map tiles. |
++| `/blog` and `/blog/[slug]` | index + posts | Each article needs one figure. The articles are already written; nothing illustrates them. |
++| `/case-studies` and `/case-studies/[slug]` | index + 5 | Blocked on the verification question, not on artwork. |
++| `/technical-library` | 1 | The corpus as a structure — papers, guides, glossary, data, and what links to what. |
++| `/whats-new` | 1 | A changelog needs no picture. Leave it. |
++| `/authority` | 1 | A citation guide for machines. Leave it. |
++| `/framework/assess` | 1 | A tool. The scoring interface is the visual. Leave it. |
++| `/design` | 1 | The configurator is the visual. Leave it. |
++| `/papers` `/guides` | 2 | **Fixed** — thumbnails from the images each item already owned. |
++
++So the honest next order is **4 area-type images** covering 32 pages, **1 GTA
++coverage map**, **1 corpus map**, and **one figure per article**. Everything else
++on that list is correctly imageless.
+diff --git a/package.json b/package.json
+index 559bda0..0191d5e 100644
+--- a/package.json
++++ b/package.json
+@@ -35,6 +35,7 @@
+     "verify:entity": "node scripts/verify-entity.mjs",
+     "verify:reviews": "node scripts/verify-reviews.mjs",
+     "verify:outreach": "node scripts/verify-outreach.mjs",
++    "verify:live-images": "node scripts/verify-live-images.mjs",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+diff --git a/scripts/verify-live-images.mjs b/scripts/verify-live-images.mjs
+new file mode 100644
+index 0000000..29b2f90
+--- /dev/null
++++ b/scripts/verify-live-images.mjs
+@@ -0,0 +1,190 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-live-images.mjs — does every declared image actually appear?
++ *
++ * WHAT THIS ANSWERS THAT NOTHING ELSE DOES
++ *
++ * verify-images.mjs asks the repository: is the slot declared, is the file on
++ * disk, is it statically imported, does some page name it. Every one of those
++ * can be true while the visitor sees nothing. That is not hypothetical — it is
++ * F-131 (28 diagrams committed, imported and 404ing in production) and F-173
++ * (one image bundled and sitemapped, rendered by no page).
++ *
++ * verify-live.sh closes part of it by fetching ONE rendered image. One. The
++ * site now declares 74 slots and publishes 154 image URLs to Google. Proving one
++ * of them and reporting "live and serving" is the same shape of comfort that let
++ * both of those findings ship.
++ *
++ * So this fetches every page that should render an image, reads the HTML that
++ * actually came back, and asserts two separate things per slot:
++ *
++ *   1. PRESENCE — the slot's own bundled filename appears in the markup. Next
++ *      emits /_next/static/media/<id>.<hash>.webp, so the id is recoverable
++ *      from the page source. Absence means the page did not render it,
++ *      whatever the manifest says.
++ *   2. DELIVERY — that media URL returns 200 with a plausible number of bytes.
++ *      Presence without delivery is a broken-image icon.
++ *
++ * og:image slots are checked as metadata rather than markup: they live in a
++ * <meta property="og:image"> tag and are never drawn on the page.
++ *
++ *   node scripts/verify-live-images.mjs [--base https://ecowoods.ca]
++ *   node scripts/verify-live-images.mjs --selftest
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const args = process.argv.slice(2);
++const BASE = (args[args.indexOf('--base') + 1] || '').startsWith('http')
++  ? args[args.indexOf('--base') + 1]
++  : 'https://ecowoods.ca';
++
++/* ── the matcher, kept pure so it can be tested without a network ─────────── */
++
++/**
++ * Find the bundled media URL for `id` in a page's HTML.
++ * Next rewrites the src through /_next/image?url=… with the inner URL encoded,
++ * so both the raw and the percent-encoded form have to be recognised.
++ */
++export function findMediaUrl(html, id) {
++  const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++  const raw = new RegExp(`/_next/static/media/${esc}\\.[a-f0-9]+\\.(webp|png|jpg|jpeg|avif)`, 'i');
++  const enc = new RegExp(`%2F_next%2Fstatic%2Fmedia%2F${esc}\\.[a-f0-9]+\\.(webp|png|jpg|jpeg|avif)`, 'i');
++  const m = html.match(raw);
++  if (m) return m[0];
++  const e = html.match(enc);
++  if (e) return decodeURIComponent(e[0]);
++  return null;
++}
++
++/** Find an og:image URL in a page's <head>. */
++export function findOgImage(html, id) {
++  const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++  return new RegExp(`${esc}\\.[a-f0-9]+\\.(webp|png|jpg|jpeg)`, 'i').test(html);
++}
++
++/* ── selftest: prove the matcher works in BOTH directions before trusting it ─ */
++if (args.includes('--selftest')) {
++  const present = `<img srcSet="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fservice-dust-free.680accfe.webp&w=1920&q=75" alt="x">`;
++  const rawForm = `<img src="/_next/static/media/term-anisotropic.1a2b3c4d.webp">`;
++  const absent = `<img src="/_next/static/media/something-else.deadbeef.webp">`;
++  const checks = [
++    ['encoded form found', findMediaUrl(present, 'service-dust-free') === '/_next/static/media/service-dust-free.680accfe.webp'],
++    ['raw form found', findMediaUrl(rawForm, 'term-anisotropic') === '/_next/static/media/term-anisotropic.1a2b3c4d.webp'],
++    ['absent reported absent', findMediaUrl(absent, 'service-dust-free') === null],
++    ['prefix is not a match', findMediaUrl(`<img src="/_next/static/media/term-anisotropic-extra.aaaa1111.webp">`, 'term-anisotropic') === null],
++    ['og found', findOgImage(`<meta property="og:image" content="https://x/_next/static/media/og-about.aaaa1111.webp">`, 'og-about') === true],
++    ['og absent', findOgImage(`<meta property="og:image" content="https://x/og-other.aaaa1111.webp">`, 'og-about') === false],
++  ];
++  let bad = 0;
++  for (const [name, ok] of checks) {
++    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}`);
++    if (!ok) bad++;
++  }
++  console.log(bad ? `\n✗ selftest failed (${bad})` : '\n✓ matcher selftest passed — both directions');
++  process.exit(bad ? 1 : 0);
++}
++
++/* ── build slot → page from the manifest and the render-site maps ─────────── */
++const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
++const imagesSrc = read('apps/web/lib/images.ts');
++
++const HREFS = Object.fromEntries(
++  [...(imagesSrc.match(/const HREFS: Record<string, string> = \{([\s\S]*?)\n\};/) || ['', ''])[1].matchAll(
++    /'([a-z0-9-]+)':\s*'([^']+)'/g,
++  )].map((m) => [m[1], m[2]]),
++);
++const ids = [...imagesSrc.matchAll(/\n  (d|p|og)\(\s*\n\s*'([a-z0-9-]+)',/g)].map((m) => ({
++  helper: m[1],
++  id: m[2],
++}));
++if (!ids.length) {
++  console.error('verify-live-images: parsed no slots out of the manifest — the file shape changed.');
++  process.exit(2);
++}
++
++/* Group by the page each slot should appear on, so each page is fetched once. */
++const byPage = new Map();
++for (const s of ids) {
++  const href = HREFS[s.id];
++  if (!href) continue;
++  const url = BASE + href.split('#')[0];
++  if (!byPage.has(url)) byPage.set(url, []);
++  byPage.get(url).push(s);
++}
++
++const get = async (url, asText) => {
++  for (let i = 0; i < 3; i++) {
++    try {
++      const r = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'ecowoods-live-image-check' } });
++      if (r.ok) return asText ? await r.text() : (await r.arrayBuffer()).byteLength;
++      if (i === 2) return { status: r.status };
++    } catch {
++      if (i === 2) return { status: 0 };
++    }
++    await new Promise((r) => setTimeout(r, 400 * (i + 1)));
++  }
++};
++
++const problems = [];
++let okPresence = 0;
++let okBytes = 0;
++const cb = () => `cb=${Math.floor(Date.now() / 1000)}`;
++
++console.log(`LIVE IMAGE SWEEP  ${BASE}`);
++console.log(`${ids.length} slot(s) across ${byPage.size} page(s)\n`);
++
++for (const [url, slots] of [...byPage].sort()) {
++  const html = await get(`${url}${url.includes('?') ? '&' : '?'}${cb()}`, true);
++  if (typeof html !== 'string') {
++    problems.push(`${url} did not return HTML (status ${html?.status ?? 'transport'}) — ${slots.length} slot(s) unchecked`);
++    console.log(`  FAIL  ${url}  (page unreachable)`);
++    continue;
++  }
++  for (const s of slots) {
++    if (s.helper === 'og') {
++      if (findOgImage(html, s.id)) {
++        okPresence++;
++        okBytes++;
++        console.log(`  PASS  ${s.id.padEnd(30)} og:image declared on ${url.replace(BASE, '') || '/'}`);
++      } else {
++        problems.push(`"${s.id}" is not referenced as og:image on ${url}`);
++        console.log(`  FAIL  ${s.id.padEnd(30)} no og:image on ${url.replace(BASE, '') || '/'}`);
++      }
++      continue;
++    }
++    const media = findMediaUrl(html, s.id);
++    if (!media) {
++      problems.push(
++        `"${s.id}" does not appear in the HTML of ${url}.\n` +
++          `      The manifest declares it and a page names it, but the rendered page does not\n` +
++          `      contain it. That is the defect F-173 recorded: declared, bundled, sitemapped,\n` +
++          `      drawn by nobody.`,
++      );
++      console.log(`  FAIL  ${s.id.padEnd(30)} not in ${url.replace(BASE, '') || '/'}`);
++      continue;
++    }
++    okPresence++;
++    const bytes = await get(`${BASE}${media}`, false);
++    if (typeof bytes !== 'number' || bytes < 500) {
++      problems.push(
++        `"${s.id}" is in the markup but its bytes do not come back: ${BASE}${media}\n` +
++          `      Presence without delivery is a broken-image icon. See F-131.`,
++      );
++      console.log(`  FAIL  ${s.id.padEnd(30)} 0 bytes`);
++    } else {
++      okBytes++;
++      console.log(`  PASS  ${s.id.padEnd(30)} ${String(Math.round(bytes / 1024)).padStart(4)} KB`);
++    }
++  }
++}
++
++console.log('');
++if (problems.length) {
++  console.error(`✗ ${problems.length} live image problem(s):\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++console.log(`✓ every declared image is on its page and serving — ${okPresence} present, ${okBytes} delivering`);
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index 0fe1d09..3fec6a8 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -448,6 +448,31 @@ else
+   printf '        PDFs can go to apps/web/public/papers/ as originally intended.\n'
+ fi
+ 
++printf '\n%s── every declared image, on its page, serving bytes %s\n' "$BOLD" "$OFF"
++# WHY THE WHOLE SWEEP RUNS HERE
++#
++# Everything above proves ONE rendered image. The manifest declares 74 slots and
++# the sitemap publishes 154 image URLs to Google. Proving one of them and then
++# printing "live and serving" is precisely the comfort that let F-131 (28
++# diagrams committed, imported, and 404ing in production) and F-173 (one image
++# bundled and sitemapped, drawn by no page) both ship past every guard.
++#
++# verify-live-images.mjs fetches every page that should render an image, reads
++# the HTML that actually came back, and asserts two separate things per slot:
++# the bundled filename appears in the markup, and that URL returns real bytes.
++# Presence without delivery is a broken-image icon; delivery without presence is
++# an image nobody sees.
++IMGLOG="$(mktemp)"
++if node "$(dirname "$0")/verify-live-images.mjs" --base "$BASE" > "$IMGLOG" 2>&1; then
++  printf '  %sPASS%s  %-34s %s\n' "$GRN" "$OFF" "every declared image" "$(tail -1 "$IMGLOG" | sed 's/^[^ ]* //')"
++else
++  NF="$(grep -c '  FAIL' "$IMGLOG" 2>/dev/null || printf '0')"
++  printf '  %sFAIL%s  %-34s %s slot(s) missing or not serving\n' "$RED" "$OFF" "every declared image" "$NF"
++  grep '  FAIL' "$IMGLOG" | head -12 | sed 's/^/      /'
++  FAILED=$((FAILED+1))
++fi
++rm -f "$IMGLOG"
++
+ printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
+ if [ "$FAILED" -eq 0 ]; then
+   printf '  %s✓ live and serving%s\n\n' "$GRN" "$OFF"
+-- 
+2.43.0
+
