@@ -6084,3 +6084,65 @@ wrongly, which is the state that silently destroys a migration while looking fin
 
 Wired into `verify-live.sh`, so from a machine with egress the redirect is
 proven on every deploy rather than assumed.
+
+### F-200 · The old domain is live, and that is worse than it not existing · P0 · executable fix shipped
+
+`verify-domain-redirect.mjs` ran from a machine with real egress and returned
+the actual state, which nobody had measured before:
+
+| URL | responds |
+| --- | --- |
+| `https://www.ecowoodshardwood.com/` | **200 — a live page** |
+| every deep path tested (7 of them) | **404** |
+
+Worse than either failure alone:
+
+- A **second live homepage** for the same business competes with ecowoods.ca for
+  the entity. Every engine and every assistant resolving "who is Ecowoods" sees
+  two websites and picks one. That is the split this whole line of work exists
+  to end, and it has been running the entire time.
+- Every other path **404s**. Every link, directory listing, business card or
+  citation pointing at a deep URL on the old domain sends a person to a dead
+  page and a crawler to nothing.
+
+The redirects added in F-196 cannot fix it. They fire only if the domain resolves
+to this Vercel app, and it resolves to whatever is serving that 200.
+
+**`old-domain/` is the executable fix**, and it deliberately does not assume the
+host: `.htaccess` (Apache), `nginx.conf`, `_redirects` (Netlify), `vercel.json`,
+and `index.php` as a last resort where a host ignores config. `EXECUTE.md` opens
+with two `curl` commands that identify the stack, a table mapping the answer to
+the right file, and separate paths for Cloudflare (a redirect rule, no hosting
+needed) and for hosted builders like Wix and Squarespace where **no uploaded file
+works at all** and the DNS has to move.
+
+**The supplied `.htaccess` had a real bug and it is the classic one.** Forcing
+HTTPS first and redirecting the host second produces
+`http://www.old/x → https://www.old/x → https://ecowoods.ca/x` — two hops where
+one was needed, costing signal at each. The version here has no HTTPS-forcing
+rule on purpose: every combination of scheme and host goes straight to the final
+URL in a single 301. The same trap is called out in `nginx.conf`, along with
+`$request_uri` versus `$uri` (the latter silently drops every query string) and
+the expired-certificate failure that kills a "completed" migration a year later,
+because TLS fails before any redirect can be sent.
+
+The verifier now also reports **what is serving** the old domain — `Server`,
+`X-Powered-By`, Cloudflare and Vercel markers — because once it answers 200 the
+next question is always which config file applies.
+
+### F-201 · A deploy check that failed for something the deploy did not do · P1 · fixed
+
+Wiring the old-domain check into `verify-live.sh` as a hard failure made every
+deploy print **"✗ the deploy is not correct"** for a misconfiguration on a
+different domain, on different infrastructure, that the deploy had nothing to do
+with.
+
+That is how a red light stops meaning anything. `verify-live.sh` answers exactly
+one question — is *this* deploy serving correctly — and it is the only check in
+the repository that can see a delivery failure (F-107, F-129, F-131). Diluting
+its verdict with an unrelated state is a real cost.
+
+It now prints a loud **WARN** with the failing paths and the fix, and leaves the
+verdict alone. `pnpm verify:domain` remains a hard gate that exits non-zero, so
+the problem is still enforced — just not by the check whose meaning depends on
+staying narrow.

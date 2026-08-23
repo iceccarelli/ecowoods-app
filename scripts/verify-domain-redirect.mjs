@@ -48,11 +48,25 @@ const STRICT = process.argv.includes('--strict');
 const head = async (url) => {
   try {
     const r = await fetch(url, { method: 'HEAD', redirect: 'manual' });
-    return { status: r.status, location: r.headers.get('location') };
+    return {
+      status: r.status,
+      location: r.headers.get('location'),
+      /* Which stack is answering. When the old domain responds 200 the very
+         next question is always "what is serving it", because that decides
+         which config file is the right one. Answering it here saves a round
+         trip through a runbook. */
+      server: r.headers.get('server'),
+      powered: r.headers.get('x-powered-by'),
+      cf: r.headers.get('cf-ray') ? 'cloudflare' : null,
+      vercel: r.headers.get('x-vercel-id') ? 'vercel' : null,
+    };
   } catch (e) {
     return { status: 0, error: String(e).slice(0, 80) };
   }
 };
+
+const stackOf = (r) =>
+  [r.vercel, r.cf, r.server, r.powered].filter(Boolean).join(' / ') || 'unidentified';
 
 let unreachable = 0;
 let failures = 0;
@@ -108,9 +122,20 @@ for (const origin of OLD) {
     if (r.status !== 301) {
       failures++;
       console.log(`  FAIL  ${from}`);
-      console.log(
-        `        HTTP ${r.status}${r.status === 302 ? ' — a 302 tells crawlers to keep the OLD url indexed' : ''}`,
-      );
+      let why = '';
+      if (r.status === 200) {
+        why =
+          ' — a SECOND LIVE PAGE for this business. It competes with ecowoods.ca\n' +
+          '          for the entity, which is the split this migration exists to end.';
+      } else if (r.status === 404) {
+        why =
+          ' — every link, listing or citation pointing here reaches a dead page,\n' +
+          '          and a crawler following one learns nothing.';
+      } else if (r.status === 302) {
+        why = ' — a 302 tells crawlers to keep the OLD url indexed. Must be 301.';
+      }
+      console.log(`        HTTP ${r.status}${why}`);
+      if (r.status === 200) console.log(`        served by: ${stackOf(r)}  → old-domain/EXECUTE.md picks the config`);
       continue;
     }
     let dest;
@@ -159,10 +184,14 @@ if (unreachable === OLD.length * PATHS.length) {
   process.exit(STRICT ? 1 : 0);
 }
 if (failures) {
+  const probe = await head(`${OLD[1]}/`);
   console.error(
     `✗ ${failures} redirect failure(s), ${ok} correct.\n\n` +
-      `  A wrong redirect is worse than none: it moves visitors while telling search engines\n` +
-      `  something different from what you meant. Fix before the change-of-address filing.\n`,
+      `  The old domain is answering, so this is not a DNS problem — it is a configuration\n` +
+      `  one, and it is live right now. Served by: ${stackOf(probe)}\n\n` +
+      `  Pick the matching file in old-domain/ and follow old-domain/EXECUTE.md.\n` +
+      `  Do not file a change of address until this reports zero failures: telling Google a\n` +
+      `  move happened while the old site still answers 200 is worse than saying nothing.\n`,
   );
   process.exit(1);
 }

@@ -1,6 +1,20 @@
 # ecowoodshardwood.com → ecowoods.ca
 
-**Status: the code is in place and inert. One action in the Vercel dashboard turns it on.**
+**Status, measured 2026-08-23: the old domain is LIVE and not redirecting.**
+
+`www.ecowoodshardwood.com/` answers **200** — a second live homepage for this
+business — and every deep path answers **404**. So the Next redirects below are
+not merely inert; they can never fire, because the domain does not resolve to
+this app at all.
+
+**The executable fix is `old-domain/` in the repository root:** a config file for
+every host type, and `old-domain/EXECUTE.md`, which starts by identifying what is
+actually serving that 200 and then gives the exact steps for it. Attaching the
+domain to this Vercel project (below) is one of the options it covers, and the
+simplest one if the DNS can be moved.
+
+Gate: `pnpm verify:domain` — it exits non-zero until every path is a clean,
+path-preserving, single-hop 301.
 
 ## Why this matters more than it looks
 

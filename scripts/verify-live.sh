@@ -483,9 +483,19 @@ DOMLOG="$(mktemp)"
 if node "$(dirname "$0")/verify-domain-redirect.mjs" > "$DOMLOG" 2>&1; then
   printf '  %sPASS%s  %-34s %s\n' "$GRN" "$OFF" "ecowoodshardwood.com" "$(tail -2 "$DOMLOG" | head -1 | sed 's/^[^ ]* //' | cut -c1-70)"
 else
-  printf '  %sFAIL%s  %-34s redirects are wrong — see below\n' "$RED" "$OFF" "ecowoodshardwood.com"
-  grep '  FAIL' "$DOMLOG" | head -6 | sed 's/^/      /'
-  FAILED=$((FAILED+1))
+  # WARN, not FAIL, and the distinction is deliberate.
+  #
+  # This script answers one question: is THIS deploy serving correctly. The old
+  # domain is a different domain on different infrastructure, and folding it
+  # into the verdict means every deploy reports "✗ the deploy is not correct"
+  # for something the deploy had nothing to do with. That is how a red light
+  # stops meaning anything.
+  #
+  # It is still a real and costly problem, so it prints loudly here and
+  # `pnpm verify:domain` remains a hard gate that exits non-zero.
+  printf '  %sWARN%s  %-34s not consolidated — see below (does not affect this deploy)\n' "$YEL" "$OFF" "ecowoodshardwood.com"
+  grep '  FAIL' "$DOMLOG" | head -8 | sed 's/^/      /'
+  printf '        %sFix: old-domain/EXECUTE.md · gate: pnpm verify:domain%s\n' "$DIM" "$OFF"
 fi
 rm -f "$DOMLOG"
 
