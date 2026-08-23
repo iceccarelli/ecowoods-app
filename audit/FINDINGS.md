@@ -6146,3 +6146,89 @@ It now prints a loud **WARN** with the failing paths and the fix, and leaves the
 verdict alone. `pnpm verify:domain` remains a hard gate that exits non-zero, so
 the problem is still enforced — just not by the check whose meaning depends on
 staying narrow.
+
+
+### F-202 · Two vercel.json files, one of which takes the site down · P0 · merged and guarded
+
+Two `vercel.json` files were in circulation: the real one for this project, and a
+standalone one written for a hypothetical separate project hosting only the old
+domain. The second contains:
+
+```json
+{ "source": "/:path*", "destination": "https://ecowoods.ca/:path*", "permanent": true }
+```
+
+Correct in a project serving only `ecowoodshardwood.com`. **Catastrophic here.**
+With no host condition it matches every request on ecowoods.ca and redirects the
+site to itself — a permanent loop, 301-cached in every browser and CDN that saw
+it. That is not a bad deploy you roll back cleanly: a cached 301 outlives the fix.
+
+The question that produced this — "give me one that works for both" — was the
+right one. One file can serve both, but only with host conditions, which the
+standalone version omits precisely because its project has a single host.
+
+**Merged.** The repo-root `vercel.json` now carries three host-scoped edge
+redirects: both forms of the old domain, plus **`www.ecowoods.ca` → apex**, which
+was never handled anywhere and is a second unconsolidated host on the canonical
+domain itself. Vercel evaluates these at the edge before the request reaches
+Next: one hop, no function invocation. The `next.config.js` rules remain as a
+fallback and cannot chain, because the edge resolves first.
+
+`old-domain/vercel.json` **deleted**. Leaving a loaded copy in the repository for
+someone to paste is the risk.
+
+**Three fixes taken while the file was open:**
+
+- `X-Frame-Options: DENY` → `SAMEORIGIN`. DENY blocks the site framing its own
+  pages and contradicted `frame-ancestors 'self'` already set in the CSP.
+- `X-XSS-Protection: 1; mode=block` → `0`. Deprecated, and its filter has itself
+  been an XSS vector. The CSP is the real protection.
+- **CORS on the machine surfaces.** `/llms.txt`, `/llms-full.txt`, `/ai.txt`,
+  `/api/knowledge` and every `.md` now send `Access-Control-Allow-Origin: *`.
+  This one matters more than it looks: those surfaces exist to be fetched by
+  agents, and without the header a fetch from a browser context is blocked by
+  CORS. **Seven machine editions were being published to clients that could not
+  read them** — the single largest unforced loss in the whole machine-readability
+  effort, and it was in a config file nobody thought to audit.
+
+Plus immutable caching for `/_next/static` and `/brand`, `text/markdown` on every
+`.md`, and `X-Robots-Tag: index, follow, max-image-preview:large, max-snippet:-1`
+so a search result can show a full answer and a large image rather than a
+truncation.
+
+**Guarded** by `scripts/verify-vercel-config.mjs`, the twenty-seventh guard: a
+redirect with no host condition, one naming the canonical host, a 302 where a 301
+belongs, a rule that drops the path, a missing CORS header on any machine
+surface, `X-XSS-Protection` switched back on, or drift in `outputDirectory` or
+`framework` all fail the build. All proven by injection, including the exact
+paste that would have caused the loop.
+
+### F-203 · A patch that shipped its predecessor's contents under its own message · P1 · process
+
+Patch 78 superseded 77 and contained it in full, so the instruction was to delete
+77 and ship 78. The delete ran — and then `ship.sh` step 1 did
+`git reset --hard origin/main`, which **restored 77**, because it was tracked on
+main from the upload. `ship.sh` then applied the only patch it could see.
+
+The result: commit `50fc9fc` carries **77's contents under 78's commit message**.
+Every guard passed, the build was green, the deploy verdict was ✓, and the
+merged `vercel.json`, the twenty-seventh guard and the deletion of
+`old-domain/vercel.json` were all silently absent. The message described work
+that was not in the commit.
+
+This is the third variant of the same collision (the 08b/02 pair, then the
+67 v1/v2 pair). The pattern is constant: **a superseded patch tracked on `main`
+cannot be removed by deleting it locally**, because step 1 restores it before
+step 2 reads the directory.
+
+The reliable order is: remove it from the remote first, then ship.
+
+```
+git rm <old>.patch && git commit -m "chore: drop superseded patch" && git push
+bash scripts/ship.sh "<subject>"
+```
+
+Worth doing properly in `ship.sh`: refuse to run when two patches on disk share a
+numeric prefix, and print the subject of each patch it is about to apply so a
+mismatch between message and contents is visible before the push rather than
+after.

@@ -7,6 +7,8 @@ business — and every deep path answers **404**. So the Next redirects below ar
 not merely inert; they can never fire, because the domain does not resolve to
 this app at all.
 
+**Host identified 2026-08-23: `Apache/2.4.68 (Debian)`. The file is `old-domain/.htaccess`.**
+
 **The executable fix is `old-domain/` in the repository root:** a config file for
 every host type, and `old-domain/EXECUTE.md`, which starts by identifying what is
 actually serving that 200 and then gives the exact steps for it. Attaching the

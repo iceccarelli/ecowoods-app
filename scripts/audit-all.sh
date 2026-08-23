@@ -141,6 +141,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 run node scripts/verify-reviews.mjs
 run node scripts/verify-outreach.mjs
 run node scripts/verify-schema-figures.mjs
+run node scripts/verify-vercel-config.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 section "5 · source integrity"

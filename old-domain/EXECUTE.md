@@ -27,7 +27,18 @@ whatever is serving that 200.
 
 ---
 
-## Step 1 — find out what is actually serving it. Thirty seconds.
+## Step 1 — ANSWERED: it is Apache
+
+```
+server: Apache/2.4.68 (Debian)
+```
+
+Measured 2026-08-23. **Use `.htaccess`. Skip to Step 2a.**
+
+The identification procedure is kept below because it is the right first move on
+any migration, and because a host can change under you.
+
+### The original Step 1 — find out what is serving it. Thirty seconds.
 
 Run this from your machine:
 
