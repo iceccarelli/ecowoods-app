@@ -6232,3 +6232,44 @@ Worth doing properly in `ship.sh`: refuse to run when two patches on disk share 
 numeric prefix, and print the subject of each patch it is about to apply so a
 mismatch between message and contents is visible before the push rather than
 after.
+
+### F-204 · Nothing could answer "did what I think shipped actually ship" · P1 · fixed
+
+Commit `50fc9fc` passed twenty-six guards, built clean, deployed, and printed
+"✓ live and serving" — while carrying the contents of a different patch than its
+message described. The merged `vercel.json`, the twenty-seventh guard and a file
+deletion were all silently absent (F-203).
+
+Every check in the pipeline was working correctly. Each answered a narrower
+question than the one that mattered:
+
+- `pnpm verify` asks *is the repository internally consistent* — and it was,
+  because 77's contents are consistent.
+- `next build` asks *does this compile* — it did.
+- `verify-live.sh` asks *is this deploy serving correctly* — it was.
+- `ship.sh`'s proof step asks *did a commit with code reach origin/main* — one did.
+
+None of them asks **is the thing I believe shipped actually there.** That
+question spans the repository and the deployed site at once, which is exactly
+why it fell between two checks that each own one side.
+
+`scripts/state-of-truth.sh` (`pnpm truth`) asks it. For every deliverable it
+reports two independent facts:
+
+- **IN REPO** — read from `origin/main` **over the network** with
+  `git cat-file -e origin/main:<path>`, not from the working tree, which can be
+  dirty, stale, or mid-apply. Reading the tree is how a check convinces itself
+  that an unpushed file shipped.
+- **LIVE** — fetched from the deployed site with a cache-buster.
+
+The two can disagree in both directions and both have happened here: present and
+not live (deployed before the change, or a build that dropped it — F-131), and
+live but not present (production edited directly, or the tree behind origin).
+
+It also reports the guard count as **defined vs in the aggregate**. Three guards
+are deliberately outside `pnpm verify` because they need the network, and a
+guard that fails when a machine is offline is a guard people learn to ignore.
+Stating both numbers stops the gap looking like a discrepancy — the first
+version counted 30 by grepping the aggregate line as well as the definitions,
+which double-counted every guard and reported a number that was always wrong in
+the flattering direction.
