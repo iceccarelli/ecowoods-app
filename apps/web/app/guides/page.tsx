@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { IllustrationThumb } from '../components/IllustrationThumb';
 import { getGuides } from '@/lib/guides';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
@@ -17,6 +18,21 @@ export const metadata: Metadata = {
     type: 'website',
     url: `${SITE_URL}/guides`,
   },
+};
+
+/** Every guide already owns an image; the index simply never showed it. */
+const GUIDE_THUMB: Record<string, string> = {
+  'solid-vs-engineered-hardwood-toronto': 'guide-solid-vs-engineered',
+  'nail-down-glue-down-or-floating': 'guide-method',
+  'how-to-evaluate-a-hardwood-quote': 'guide-evaluate-quote',
+  'reference-condominium-concrete-slab': 'guide-ref-condo',
+  'reference-radiant-heat-main-floor': 'guide-ref-radiant',
+  'reference-refinishing-existing-hardwood': 'guide-ref-refinish',
+  'hardwood-flooring-cost-toronto': 'guide-cost-toronto',
+  'how-to-choose-hardwood-contractor-toronto': 'guide-choose-contractor',
+  'white-oak-flooring-toronto': 'guide-white-oak',
+  'dustless-hardwood-refinishing-toronto': 'guide-dustless',
+  'herringbone-chevron-parquet-toronto': 'guide-herringbone-parquet',
 };
 
 export default function GuidesPage() {
@@ -74,6 +90,7 @@ export default function GuidesPage() {
           <div className="tlx-grid">
             {decisions.map((g) => (
               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
+                <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
                 <span className="tlx-card-tag">Decision guide</span>
                 <h3>{g.title}</h3>
                 <p>{g.question}</p>
@@ -98,6 +115,7 @@ export default function GuidesPage() {
           <div className="tlx-grid">
             {references.map((g) => (
               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
+                <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
                 <span className="tlx-card-tag">Reference installation</span>
                 <h3>{g.title}</h3>
                 <p>{g.question}</p>

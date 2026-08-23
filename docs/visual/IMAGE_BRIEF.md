@@ -238,3 +238,29 @@ reveal on every figure, and a slow Ken Burns on scene imagery only — the two
 heroes and the six service photographs. Ken Burns scales inside a fixed frame,
 which means it crops, so it is never applied to an explanatory figure. A drifting
 axis label or a fifth species leaving frame defeats the picture.
+
+---
+
+## 10 — TIER 6 · Pages that still render nothing · computed 2026-08-23
+
+Fourteen public page files render no image at all. Four of them are index pages
+listing items that already own artwork — those were fixed by showing it
+(`/papers` and `/guides` now carry thumbnails; `/blog` and `/case-studies` are
+the same one-line change once their items have images). The rest need art.
+
+| route | live pages | why it matters |
+| --- | --- | --- |
+| `/service-areas/[city]` | **32** | The largest gap on the site by page count, and every one is a local-search landing page. One image per area is wrong — a generic stock shot on 32 pages is worse than none. What works: 3–4 shared images keyed to housing stock (pre-war semi, post-war bungalow, condo slab, radiant new-build) selected by the area's `housingNote`. |
+| `/service-areas` | 1 | A GTA coverage map, drawn — not a screenshot of anyone's map tiles. |
+| `/blog` and `/blog/[slug]` | index + posts | Each article needs one figure. The articles are already written; nothing illustrates them. |
+| `/case-studies` and `/case-studies/[slug]` | index + 5 | Blocked on the verification question, not on artwork. |
+| `/technical-library` | 1 | The corpus as a structure — papers, guides, glossary, data, and what links to what. |
+| `/whats-new` | 1 | A changelog needs no picture. Leave it. |
+| `/authority` | 1 | A citation guide for machines. Leave it. |
+| `/framework/assess` | 1 | A tool. The scoring interface is the visual. Leave it. |
+| `/design` | 1 | The configurator is the visual. Leave it. |
+| `/papers` `/guides` | 2 | **Fixed** — thumbnails from the images each item already owned. |
+
+So the honest next order is **4 area-type images** covering 32 pages, **1 GTA
+coverage map**, **1 corpus map**, and **one figure per article**. Everything else
+on that list is correctly imageless.

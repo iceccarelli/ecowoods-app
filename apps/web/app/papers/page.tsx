@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { IllustrationThumb } from '../components/IllustrationThumb';
 import { getPapers, pdfHref, pdfIsPublished } from '@/lib/papers';
 import { SchemaScript } from '@/lib/schema/components';
 
@@ -25,6 +26,13 @@ const fmt = (iso: string) =>
     month: 'long',
     timeZone: 'UTC',
   });
+
+/** The image each paper already owns, shown on the index rather than only inside. */
+const PAPER_THUMB: Record<string, string> = {
+  'toronto-hardwood-climate-moisture-protocol': 'paper-climate',
+  'hardwood-selection-and-cost-framework-gta': 'paper-selection',
+  'hardwood-refinishing-machines-and-sequence': 'paper-craft',
+};
 
 export default function PapersIndexPage() {
   const papers = getPapers();
@@ -80,6 +88,9 @@ export default function PapersIndexPage() {
           <ul className="wp-list">
             {papers.map((paper) => (
               <li key={paper.slug} className="wp-item">
+                <Link className="wp-item-thumb" href={`/papers/${paper.slug}`} tabIndex={-1} aria-hidden="true">
+                  <IllustrationThumb id={PAPER_THUMB[paper.slug]} />
+                </Link>
                 <div className="wp-item-main">
                   <p className="tlx-card-tag">
                     Technical paper · v{paper.version} · {fmt(paper.publishedAt)}

@@ -5629,3 +5629,72 @@ that is not an og:image card must be named by a page that imports
 `<Illustration>`. `href` says where an image points; nothing said anything drew
 it, which is how `concept-edger-halo` came to be bundled and sitemapped while
 appearing on no page.
+
+### F-185 · verify-live proved one image out of seventy-four · P0 · fixed
+
+`verify-live.sh` is the only check in this repository that can see a delivery
+failure, and every guard in the build can pass while the deployed site is broken
+— that has now happened three times (F-107, F-129, F-131). Its image section
+fetched **one** rendered image, confirmed the bytes, and the run printed
+"✓ live and serving".
+
+The manifest now declares **74 slots** and the sitemap publishes **154 image
+URLs** to Google and Bing. Proving one of them and reporting the site healthy is
+exactly the shape of comfort that let F-131 ship — 28 diagrams committed,
+statically imported, and 404ing in production while every source-reading guard
+passed — and F-173, where one image was bundled into every visitor's JavaScript,
+published in the sitemap, and rendered on no page at all.
+
+`scripts/verify-live-images.mjs` sweeps all 74. It builds the slot-to-page map
+from the manifest's own `HREFS`, groups by page so each of the 54 pages is
+fetched once, and asserts two separate facts per slot:
+
+1. **Presence** — the slot's bundled filename appears in the HTML that actually
+   came back. Next emits `/_next/static/media/<id>.<hash>.webp`, so the id is
+   recoverable from the page source. Absence means the page did not render it,
+   whatever the manifest says.
+2. **Delivery** — that URL returns 200 with a plausible byte count.
+
+Presence without delivery is a broken-image icon. Delivery without presence is
+an image nobody sees. Both were real, both shipped, and neither was detectable
+from source.
+
+og:image slots are checked as metadata rather than markup — they live in a
+`<meta property="og:image">` tag and are never drawn on a page.
+
+**The matcher is self-tested before it is trusted.** `--selftest` runs six
+assertions with no network: the percent-encoded form Next actually emits, the
+raw form, an absent id correctly reported absent, a longer id that merely starts
+with the one being looked for correctly NOT matching, and both og cases. A guard
+that cannot fail is not a guard — F-117, F-149 and F-166 are all that mistake,
+and this one proves both directions before it runs.
+
+Wired into `verify-live.sh` before the verdict, so a missing image now fails the
+deploy check rather than being invisible until someone scrolls past it.
+
+### F-186 · Fourteen public pages rendered no image at all · P1 · partly fixed
+
+Computed against the page files, not eyeballed. Four of the fourteen are index
+pages listing items that **already owned artwork the index never showed** —
+`/papers` and `/guides` list thirteen items between them, every one with a
+published image, displayed only after the reader had already clicked.
+
+Fixed with `IllustrationThumb`, which is deliberately not `<Illustration>`. That
+component is a `<figure>` with a caption and a full-size link, correct when the
+image *is* the content. On an index the image is a wayfinding aid beside a link
+that already carries the words, so it is decorative by construction — `aria-hidden`
+with an empty alt. Giving it the figure's alt text would make a screen reader
+read the diagram description immediately before the title describing the same
+thing, twice per row. Dimensions come from the manifest, so no thumbnail can
+reflow a list as it loads.
+
+Zero new artwork, zero new bytes on any page that did not already have them:
+this is value out of assets already paid for and shipped.
+
+The remaining ten are recorded as tier 6 in `docs/visual/IMAGE_BRIEF.md`. The
+significant one is `/service-areas/[city]` — **32 live local-search landing
+pages** with nothing to look at. One image per area would be wrong; a generic
+stock shot repeated 32 times is worse than none. The proposal there is 3–4 shared
+images keyed to housing stock and selected by each area's own `housingNote`.
+Four of the ten (`/whats-new`, `/authority`, `/framework/assess`, `/design`) are
+correctly imageless and are recorded as such so nobody adds one later.

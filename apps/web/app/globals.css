@@ -8623,6 +8623,27 @@ html[data-theme='dark'] .fig-band { fill: color-mix(in srgb, var(--copper) 26%, 
 .ill-pending-mark { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--muted); }
 
+/* ── index thumbnails ────────────────────────────────────────────────────
+   Wayfinding, not content. Decorative by construction (aria-hidden + empty
+   alt) because the link beside one already carries the words. The aspect ratio
+   comes from the manifest, so a list cannot reflow as these load. */
+.ill-thumb {
+  position: relative; width: 100%; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.ill-thumb-img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 600ms ease;
+}
+a:hover .ill-thumb-img, a:focus-visible .ill-thumb-img { transform: scale(1.03); }
+@media (prefers-reduced-motion: reduce) { .ill-thumb-img { transition: none; transform: none; } }
+
+.wp-item { align-items: flex-start; }
+.tlx-card-thumb { margin: 0 0 0.9rem; }
+.wp-item-thumb { flex: 0 0 clamp(150px, 22vw, 230px); }
+@media (max-width: 767px) { .wp-item-thumb { flex-basis: 100%; } }
+
 /* ── figure motion ───────────────────────────────────────────────────────
    Two effects, both pure CSS, both no-ops under prefers-reduced-motion (the
    global reset near the top of this file zeroes every animation-duration with

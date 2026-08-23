@@ -448,6 +448,31 @@ else
   printf '        PDFs can go to apps/web/public/papers/ as originally intended.\n'
 fi
 
+printf '\n%s── every declared image, on its page, serving bytes %s\n' "$BOLD" "$OFF"
+# WHY THE WHOLE SWEEP RUNS HERE
+#
+# Everything above proves ONE rendered image. The manifest declares 74 slots and
+# the sitemap publishes 154 image URLs to Google. Proving one of them and then
+# printing "live and serving" is precisely the comfort that let F-131 (28
+# diagrams committed, imported, and 404ing in production) and F-173 (one image
+# bundled and sitemapped, drawn by no page) both ship past every guard.
+#
+# verify-live-images.mjs fetches every page that should render an image, reads
+# the HTML that actually came back, and asserts two separate things per slot:
+# the bundled filename appears in the markup, and that URL returns real bytes.
+# Presence without delivery is a broken-image icon; delivery without presence is
+# an image nobody sees.
+IMGLOG="$(mktemp)"
+if node "$(dirname "$0")/verify-live-images.mjs" --base "$BASE" > "$IMGLOG" 2>&1; then
+  printf '  %sPASS%s  %-34s %s\n' "$GRN" "$OFF" "every declared image" "$(tail -1 "$IMGLOG" | sed 's/^[^ ]* //')"
+else
+  NF="$(grep -c '  FAIL' "$IMGLOG" 2>/dev/null || printf '0')"
+  printf '  %sFAIL%s  %-34s %s slot(s) missing or not serving\n' "$RED" "$OFF" "every declared image" "$NF"
+  grep '  FAIL' "$IMGLOG" | head -12 | sed 's/^/      /'
+  FAILED=$((FAILED+1))
+fi
+rm -f "$IMGLOG"
+
 printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
 if [ "$FAILED" -eq 0 ]; then
   printf '  %s✓ live and serving%s\n\n' "$GRN" "$OFF"
