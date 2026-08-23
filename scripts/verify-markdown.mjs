@@ -81,10 +81,25 @@ if (!block) {
       continue;
     }
     const src = strip(fs.readFileSync(file, 'utf8'));
-    if (!/generateStaticParams/.test(src)) {
+    /* generateStaticParams enumerates the values of a dynamic segment. A route
+       with no [slug] in its path has nothing to enumerate, and `dynamic =
+       'force-static'` already prebuilds it — demanding the function there is
+       demanding a stub that returns [{}]. The first version of this check did
+       exactly that, because until /about.md every markdown route happened to be
+       dynamic and the distinction had never come up. */
+    const isDynamic = destination.includes(":");
+    if (isDynamic && !/generateStaticParams/.test(src)) {
       problems.push({
         where: path.relative(ROOT, file),
         detail: 'no generateStaticParams — the route renders per-request instead of being prebuilt',
+      });
+    }
+    if (!isDynamic && !/dynamic\s*=\s*'force-static'/.test(src)) {
+      problems.push({
+        where: path.relative(ROOT, file),
+        detail:
+          "no `export const dynamic = 'force-static'` — a static document with no dynamic\n" +
+          '      segment must still be prebuilt, or Vercel renders it per request for nothing',
       });
     }
     if (!/text\/markdown/.test(src)) {

@@ -31,12 +31,23 @@ export function IllustrationThumb({ id, className = '' }: { id?: string; classNa
   const asset = illustrationImage(id);
   if (!img || !asset) return null;
 
+  /*
+   * ONE RATIO FOR THE WHOLE GRID, AND WHY IT IS NOT THE IMAGE'S OWN.
+   *
+   * The first version of this took its aspect ratio from the manifest, which is
+   * exactly right for <Illustration> and exactly wrong here. Measured across the
+   * eleven guides, the ratios run from 1.01 (guide-ref-condo, a square condo
+   * floorplate) to 4.84 (guide-method, a wide assembly strip) — a 4.8x spread.
+   * A grid of cards carrying those would have thumbnails of wildly different
+   * heights sitting next to each other, which is not a grid, it is a pile.
+   *
+   * So the box is fixed and the image is `contain`ed inside it. Not `cover`:
+   * cover crops, and cropping a decision tree or a cost chart removes the part
+   * that carries the meaning. A letterboxed wide strip is honest; a cropped one
+   * is wrong. The empty field is the surface colour and reads as deliberate.
+   */
   return (
-    <div
-      className={`ill-thumb ${className}`.trim()}
-      style={{ aspectRatio: `${img.width} / ${img.height}` }}
-      aria-hidden="true"
-    >
+    <div className={`ill-thumb ${className}`.trim()} aria-hidden="true">
       <Image
         src={asset}
         alt=""

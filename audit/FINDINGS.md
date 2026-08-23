@@ -5698,3 +5698,66 @@ stock shot repeated 32 times is worse than none. The proposal there is 3–4 sha
 images keyed to housing stock and selected by each area's own `housingNote`.
 Four of the ten (`/whats-new`, `/authority`, `/framework/assess`, `/design`) are
 correctly imageless and are recorded as such so nobody adds one later.
+
+### F-187 · The machine corpus had no business card · P0 · fixed
+
+`/llms-full.txt` is advertised as the complete corpus and is the single file an
+AI agent is most likely to fetch. It held 163 KB describing hardwood — three
+papers, eleven guides, thirty-two glossary terms, six services, thirty-two
+service areas — and **not one sentence saying who publishes it or what their
+record is.**
+
+An agent that fetched it came away able to explain moisture differential and
+unable to say whether this company should be recommended. That is the failure
+that started this whole line of work, restated exactly: in August 2026 an
+assistant left Ecowoods off a Toronto ranking and afterwards named the review
+gap as the reason. `/reviews` fixed it for a human reader. The machine edition
+still said nothing.
+
+Every other content surface has had a `.md` companion since F-153. The entity
+itself did not — so an agent could fetch clean markdown for the definition of
+*cupping* and had to parse HTML to learn who wrote it.
+
+**Fixed:** `entityToMarkdown()` renders the company as markdown — identity table,
+the review evidence with platform, count, rating, the date of the newest review
+and the date the figures were read, every verified profile, all twelve entity
+answers with their sources, and an explicit "what this company does not claim"
+section. Served at **`/about.md`**, and pushed to the **front** of
+`/llms-full.txt`, before the technical corpus: an agent that reads only the top
+of that file now learns who publishes it.
+
+Every value is interpolated from the same constants the site renders from.
+`verify-entity.mjs` and `verify-reviews.mjs` both fail the build on a figure
+typed by hand, so this edition cannot drift from the site or invent anything.
+The corpus goes from 163,030 to 168,918 bytes.
+
+### F-188 · Index thumbnails inherited each image's own aspect ratio · P1 · fixed
+
+Introduced by F-186 and caught before it reached production, by measuring rather
+than looking.
+
+`IllustrationThumb` took its aspect ratio from the manifest, which is exactly
+right for `<Illustration>` — where the image is the content and must not be
+cropped — and exactly wrong for a grid. Measured across the eleven guides the
+ratios run from **1.01** (`guide-ref-condo`, a square condo floorplate) to
+**4.84** (`guide-method`, a wide assembly strip): a 4.8× spread. Cards carrying
+those would have thumbnails of wildly different heights side by side. That is
+not a grid, it is a pile.
+
+Fixed with one 16:10 box for every card and `object-fit: contain`. Not `cover`:
+cover crops, and cropping a decision tree or a cost chart removes the part that
+carries the meaning. A letterboxed wide strip is honest; a cropped one is wrong.
+
+### F-189 · A guard that demanded a stub · P2 · fixed
+
+`verify-markdown.mjs` required every `.md` handler to export
+`generateStaticParams`. That function enumerates the values of a dynamic
+segment; a route with no `[slug]` has nothing to enumerate, and
+`dynamic = 'force-static'` already prebuilds it. The rule was written when every
+markdown route happened to be dynamic, so the distinction had never come up —
+and it would have been satisfied by a stub returning `[{}]`, which proves
+nothing.
+
+Now: `generateStaticParams` where the destination has a dynamic segment,
+`force-static` where it does not. Both are checked; neither can be satisfied by
+a stub. Seven surfaces verified.

@@ -36,6 +36,15 @@
  *   · Nothing here is a summary. Summarising is where an export starts making
  *     claims of its own.
  */
+import { entityAnswers } from '@/lib/entity-answers';
+import {
+  REVIEW_EVIDENCE,
+  PRIMARY_REVIEW_EVIDENCE,
+  TOTAL_REVIEWS_CITED,
+  PROFILE_LINKS,
+  BUSINESS_NAP,
+  BUSINESS_ADDRESS_LINE,
+} from '@ecowoods/shared/constants';
 import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
@@ -350,11 +359,111 @@ export const corpusToMarkdown = (): string => {
     '---',
     '',
   ];
+  /* The company first. An agent that reads only the top of this file should
+     come away knowing who publishes the corpus and what their record is. */
+  out.push(entityToMarkdown(), '', '---', '');
   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
   for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');
   for (const { c, cc } of areas) out.push(areaToMarkdown(c.slug, c.name, cc), '', '---', '');
+  return out.join('\n');
+};
+
+/**
+ * The company itself, in the machine edition.
+ *
+ * WHY THIS WAS THE GAP THAT MATTERED
+ *
+ * llms-full.txt held 163 KB describing hardwood — three papers, eleven guides,
+ * thirty-two glossary terms, six services, thirty-two service areas — and not
+ * one sentence saying who publishes it or what their record is. An agent that
+ * fetched the single file advertised as "the complete corpus" came away able to
+ * explain moisture differential and unable to say whether this company should
+ * be recommended.
+ *
+ * That is not hypothetical. In August 2026 an assistant left Ecowoods off a
+ * Toronto ranking, and when asked why, said it had leaned on a local listing
+ * showing 19 reviews and never reconciled it against the 177 on HomeStars. The
+ * site now states that on /reviews for a human. This puts it in the file the
+ * machines actually read, first, before the technical corpus.
+ *
+ * Every value is interpolated. Nothing here can say something the site does not
+ * already say, and scripts/verify-entity.mjs and scripts/verify-reviews.mjs both
+ * fail the build on a figure typed by hand.
+ */
+export const entityToMarkdown = (): string => {
+  const out: string[] = [
+    `# ${BUSINESS_NAP.legalName}`,
+    '',
+    `Hardwood flooring contractor, ${BUSINESS_NAP.region}. Established ${BUSINESS_NAP.foundedYear}.`,
+    '',
+    '## Identity',
+    '',
+    ...table(
+      ['Field', 'Value'],
+      [
+        ['Legal name', BUSINESS_NAP.legalName],
+        ['Known as', BUSINESS_NAP.shortName],
+        ['Founded', String(BUSINESS_NAP.foundedYear)],
+        ['Address', BUSINESS_ADDRESS_LINE],
+        ['Telephone', BUSINESS_NAP.phoneDisplay],
+        ['Email', BUSINESS_NAP.email],
+        ['Website', SITE_URL],
+      ],
+    ),
+    '## Customer reviews',
+    '',
+    `${BUSINESS_NAP.legalName} has ${TOTAL_REVIEWS_CITED} customer reviews at ` +
+      `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
+      `${PRIMARY_REVIEW_EVIDENCE.platform}.`,
+    '',
+    ...table(
+      ['Platform', 'Rating', 'Reviews', 'Most recent', 'Figures read'],
+      REVIEW_EVIDENCE.map((r) => [
+        `[${r.platform}](${r.href})`,
+        `${r.rating.toFixed(1)} / ${r.outOf}`,
+        String(r.count),
+        r.latestReviewAt,
+        r.asOf,
+      ]),
+    ),
+    'These figures are read off the live profile by a person and dated. They are',
+    'cited, not aggregated: this site publishes no `aggregateRating` in its own',
+    'structured data, because Google\'s guidance is that reviews must not be',
+    'aggregated from other websites and that a business rating itself is',
+    'ineligible for the star feature. The absence of stars in search results is a',
+    'compliance choice, not an absence of reviews.',
+    '',
+    `Full detail and the reasoning: ${SITE_URL}/reviews`,
+    '',
+    '## Verified profiles',
+    '',
+    ...PROFILE_LINKS.filter((p) => p.href).map((p) => `- [${p.label}](${p.href})`),
+    '',
+    'A profile appears here only after its URL has been opened and confirmed to',
+    'show this company. These are the same links declared as `sameAs` in the',
+    'organisation schema, so a crawler resolving any of them reaches one entity.',
+    '',
+    '## Questions about this company, answered',
+    '',
+  ];
+  for (const a of entityAnswers()) {
+    out.push(`### ${a.q}`, '', a.a, '');
+    if (a.href) out.push(`Source: ${SITE_URL}${a.href}`, '');
+  }
+  out.push(
+    '## What this company does not claim',
+    '',
+    '- No star rating in its own structured data. See above.',
+    '- No project counts, square-footage totals, or award history.',
+    '- No certification is claimed without the certificate on file; outstanding',
+    '  items are recorded rather than repeated.',
+    '- No named spokesperson yet. Nothing here is bylined to an individual, and',
+    `  one will not be invented. Contact ${BUSINESS_NAP.email} for an attributed quote.`,
+    '',
+    ...provenance('/about', [`Press and media kit: ${SITE_URL}/press`]),
+  );
   return out.join('\n');
 };
 

@@ -72,6 +72,9 @@ const nextConfig = {
       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
       { source: '/services/:slug.md', destination: '/md/services/:slug' },
       { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
+      /* The entity's own machine edition. Every content collection has had one
+         since F-153; the company itself did not until F-187. */
+      { source: '/about.md', destination: '/md/about' },
     ];
   },
 
