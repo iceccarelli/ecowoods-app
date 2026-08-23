@@ -5919,3 +5919,106 @@ covers at length. Naming a topic there that the site does not cover is the
 fastest way to be scored unreliable, so the list was cut to what is actually published.
 Plus `POST_JOB_REVIEW_FLOW.md` and `DIRECTORY_CONSISTENCY_CHECKLIST.md` as
 process docs, each stamped with where the canonical value actually lives.
+
+### F-195 · Five invented prices and an unsourced percentage, in the schema · P0 · fixed
+
+`apps/web/lib/schema/root-schema.ts` carried project price ranges on every
+service node:
+
+| service | claimed |
+| --- | --- |
+| Hardwood installation | $4,000–$15,000 |
+| Floor refinishing | $2,500–$8,000 |
+| Dust-free sanding | $2,000–$6,000 |
+| Floor restoration | $3,000–$10,000 |
+| Custom inlays | (a fifth range) |
+
+**Not one of those figures appears anywhere else on this site.** They are not
+derived from `PRICING`, which publishes per-square-foot bands. They are not in
+any paper, guide or service page. Nobody could check them, including us — and
+they were being handed to Google as structured price data for the business.
+
+The same block repeated **"~99.7% of airborne dust"**, a figure already recorded
+in `docs/outreach/CLAIMS_REGISTER.md` as unsourced.
+
+Twenty-five guards were watching the pages. **None was watching the schema.**
+That is exactly the wrong way round. An unsourced number on a page is read by a
+human who can weigh it in context; the same number in JSON-LD is read by a
+machine that quotes it as fact, to someone who never visits the site. The schema
+layer is the most consequential place on this property to be wrong, and it was
+the least guarded place on it.
+
+**Fixed.** `servicePriceRange()` reads the same published band the service page
+renders, and returns `undefined` where no band is published rather than
+inventing one. A project total would require an area assumption this site does
+not publish, so it is not published here either. The dust-capture sentence now
+describes the mechanism — containment at the source rather than cleanup after
+settling — which is true, checkable and needs no figure.
+
+**Guarded** by `scripts/verify-schema-figures.mjs`, the twenty-sixth guard: no
+currency amount and no percentage may appear as a literal anywhere under
+`apps/web/lib/schema` or `apps/web/lib/graph`. Interpolations pass, because that
+is the correct form. Comments are stripped first — this repository explains at
+length why it does *not* publish certain numbers, and flagging its own
+explanation is the mistake recorded four times already as F-58, F-106, F-163 and
+F-175. Proven by injection in both directions: a restored `$4,000–$15,000` and a
+restored `~99.7%` each fail the build.
+
+### F-196 · The old domain, consolidated · P1 · code shipped, one action outstanding
+
+`ecowoodshardwood.com` is the company's earlier domain and it has been running
+alongside `ecowoods.ca` for the whole of this work. Two domains serving one
+business split every signal that matters: links point at one, citations at the
+other, directory listings at whichever was current when they were created, and a
+search engine resolving *which entity is Ecowoods* has to guess.
+
+That guess is the failure that started this entire line of work.
+
+`apps/web/next.config.js` now declares four permanent redirects — bare and
+`www`, root and every path — straight to the matching URL on `ecowoods.ca`.
+
+Two deliberate choices, both of which are usually got wrong:
+
+- **301, not 302.** A temporary redirect tells a crawler to keep the old URL
+  indexed, which is the opposite of consolidation.
+- **Path-preserving, not all-to-homepage.** A link to
+  `/services/floor-refinishing` on the old domain lands on the page about floor
+  refinishing. Redirecting everything to `/` is the common implementation and it
+  discards most of the value.
+
+**The precondition cannot be satisfied from this repository:**
+`ecowoodshardwood.com` must be added as a domain on this Vercel project before
+its requests reach this app. Until then the rules match nothing and are inert —
+they cannot break the live site. `docs/outreach/DOMAIN_CONSOLIDATION.md` has the
+dashboard steps, the DNS caution about existing mail on the same zone, the
+`curl -sI` check that proves the path survives the hop, and the Search Console
+and Bing change-of-address follow-ups without which the move reads as an outage.
+
+### F-197 · The homepage hero may currently have no photograph · P0 · owner check
+
+Not fixed, because it cannot be established from here and the last time an
+assumption was made about this hero it was wrong and damaging (12 Aug, recorded).
+
+The facts that *can* be established, all read directly from the code:
+
+1. `.hero-bg` in `globals.css` declares gradients only. There is no `url()`.
+2. `RotatingBackground` returns `null` when its image pool is empty.
+3. `/api/backgrounds` returns `{ images: [] }` when `UNSPLASH_ACCESS_KEY` is
+   unset or still holds a placeholder value.
+
+Those three together mean: **if that environment variable is not set in Vercel,
+the homepage hero renders with no photograph at all.** A hardwood flooring
+company whose homepage shows no floor is the exact state that was called out in
+August — *"people can not SEE and understand the website."*
+
+This is a five-second check and it is the owner's to make: open ecowoods.ca and
+look, or open Vercel → Settings → Environment Variables and look for
+`UNSPLASH_ACCESS_KEY`.
+
+If it is missing, the fix is not to re-add a third-party dependency. The hero
+should not need an API call or an env var to show a photograph, and the current
+design fails closed to nothing. The correct repair is a bundled fallback pool
+that renders when the remote pool is empty — removing nothing, changing nothing
+when the key is present, and eliminating the failure mode permanently. That
+needs one decision from the owner about which imagery, which is why it is
+recorded here rather than guessed at.

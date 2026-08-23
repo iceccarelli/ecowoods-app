@@ -13,6 +13,7 @@
  */
 
 import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
+import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
@@ -56,6 +57,32 @@ const GTA = Array.from(
   new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
 );
 
+
+/**
+ * PRICE RANGES ARE DERIVED, AND FIVE INVENTED ONES WERE REMOVED.
+ *
+ * This block used to carry `priceRange: '$4,000–$15,000'` and four more like
+ * it — project totals that appear nowhere else on this site, are derived from
+ * nothing, and were being handed to Google as structured price data for the
+ * business. Nobody could check them, including us. That is the exact class of
+ * unsourced figure the whole project exists to eliminate, and it is worse in
+ * schema than on a page: a visitor can weigh a number in context, a machine
+ * quotes it.
+ *
+ * The published bands are per square foot and live in lib/pricing.ts. A project
+ * total would need an area assumption this site does not publish, so it is not
+ * published here either. `servicePriceRange()` reads the same band the service
+ * page renders, and returns undefined where no band is published rather than
+ * inventing one.
+ *
+ * scripts/verify-schema-figures.mjs fails the build on a currency amount or a
+ * percentage typed as a literal anywhere in the schema layer.
+ */
+const servicePriceRange = (slug: string): string | undefined => {
+  const page = getServicePages().find((p) => p.slug === slug);
+  return page ? priceBand(page) : undefined;
+};
+
 export const ROOT_ORG_CONFIG: OrganizationConfig = {
   siteUrl: SITE_URL,
   name: 'Ecowoods Inc.',
@@ -85,43 +112,47 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
       name: 'Hardwood Flooring Installation',
       description:
         'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.',
-      priceRange: '$4,000–$15,000',
+      priceRange: servicePriceRange('hardwood-installation'),
       areaServed: GTA,
     },
     {
       id: 'floor-refinishing',
       name: 'Hardwood Floor Refinishing',
-      description: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
-      priceRange: '$2,500–$8,000',
+      description:
+ 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
+      priceRange: servicePriceRange('floor-refinishing'),
       areaServed: GTA,
     },
     {
       id: 'dust-free-sanding',
       name: 'Dust-Free Floor Sanding',
       description:
-        'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.',
-      priceRange: '$2,000–$6,000',
+        'HEPA-sealed containment captures dust at the source rather than after it settles, so most clients stay in the house during the work.',
+      priceRange: servicePriceRange('dust-free-sanding'),
       areaServed: GTA,
     },
     {
       id: 'floor-restoration',
       name: 'Hardwood Floor Restoration',
-      description: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
-      priceRange: '$3,000–$10,000',
+      description:
+ 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
+      priceRange: servicePriceRange('floor-restoration'),
       areaServed: GTA,
     },
     {
       id: 'custom-inlays',
       name: 'Custom Inlays & Borders',
-      description: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
-      priceRange: '$2,000–$12,000',
+      description:
+ 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
+      priceRange: servicePriceRange('custom-inlays'),
       areaServed: GTA,
     },
     {
       id: 'stair-refinishing',
       name: 'Stair Refinishing',
-      description: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
-      priceRange: '$1,500–$5,000',
+      description:
+ 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
+      priceRange: servicePriceRange('stair-refinishing'),
       areaServed: GTA,
     },
   ],

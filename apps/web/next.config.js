@@ -65,6 +65,49 @@ const nextConfig = {
    * guard in the repository passed — which is the shape of the last four
    * findings, so it was tested instead.
    */
+  /**
+   * THE OLD DOMAIN, CONSOLIDATED.
+   *
+   * ecowoodshardwood.com is the company's earlier domain. Two domains serving
+   * the same business split every signal that matters: links point at one,
+   * citations at the other, and a search engine resolving the entity has to
+   * guess which is canonical. It is the single largest off-page dilution left,
+   * and it costs nothing to fix except the decision.
+   *
+   * Every path maps to the same path on ecowoods.ca with a 301 — permanent,
+   * because a 302 tells a crawler to keep the old URL indexed, which is the
+   * opposite of consolidation. Path-preserving rather than all-to-homepage: a
+   * link to /services/floor-refinishing on the old domain should land on the
+   * page about floor refinishing, not on a homepage the visitor then has to
+   * navigate. Redirecting everything to / is the most common way this is done
+   * and it throws away most of the value.
+   *
+   * PRECONDITION, and it cannot be satisfied from inside this repository:
+   * ecowoodshardwood.com must be added as a domain on this Vercel project so
+   * its requests reach this app. Until then these rules match nothing and are
+   * inert — they cannot break the live site. Once the domain is attached, the
+   * host conditions below fire on the first request.
+   *
+   * See docs/outreach/DOMAIN_CONSOLIDATION.md.
+   */
+  async redirects() {
+    const OLD = ['ecowoodshardwood.com', 'www.ecowoodshardwood.com'];
+    return OLD.flatMap((host) => [
+      {
+        source: '/',
+        has: [{ type: 'host', value: host }],
+        destination: 'https://ecowoods.ca/',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: host }],
+        destination: 'https://ecowoods.ca/:path*',
+        permanent: true,
+      },
+    ]);
+  },
+
   async rewrites() {
     return [
       { source: '/papers/:slug.md', destination: '/md/papers/:slug' },
