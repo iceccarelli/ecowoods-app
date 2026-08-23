@@ -6022,3 +6022,65 @@ that renders when the remote pool is empty — removing nothing, changing nothin
 when the key is present, and eliminating the failure mode permanently. That
 needs one decision from the owner about which imagery, which is why it is
 recorded here rather than guessed at.
+
+### F-198 · The commercial pages described themselves but not the transaction · P0 · fixed
+
+Both head-term pages already emitted `FAQPage`, `BreadcrumbList` and `WebPage`.
+Those describe *the page*. None of them describes *the transaction*, and a
+commercial query is about the transaction. A retrieval system asked "who
+installs hardwood in Toronto and what does it cost" is looking for a `Service`
+with an `areaServed` and an `Offer` — not an article about flooring.
+
+`lib/schema/commercial.ts` emits, per page, an `@graph` of `Service` nodes: each
+`provider`-linked to the organisation node the rest of the site hangs from, each
+`areaServed` every one of the 32 municipalities and neighbourhoods actually
+covered, each carrying an `Offer` with a `UnitPriceSpecification` in CAD per
+square foot — plus a `ProfessionalService` node with an `OfferCatalog` binding
+them together.
+
+**Every price is derived from `lib/pricing.ts`**, the same band the service page
+renders and the FAQ quotes. A service with no published band gets **no Offer**
+rather than an invented one — the absence is the honest signal, and F-195 is why
+that matters. `verify-schema-figures.mjs` covers this file, so a currency literal
+here fails the build like anywhere else in the schema layer.
+
+Also: titles sharpened to the high-intent form while staying true —
+*Hardwood Flooring Toronto — Installation & Refinishing, Fixed Written Price* and
+*Hardwood Floor Refinishing Toronto — Dust-Free Sanding, Fixed Written Price*.
+Both facts are published: the fixed written price is `PRICE_PROMISE`, dust-free
+sanding is a service with its own page.
+
+And `/llms.txt` now opens with **Preferred citation targets** — the head-term
+queries mapped to the exact URL that answers each. That section sits before
+everything else because it is what an agent reads to decide which URL to quote,
+and sending it to a technical paper when it asked about price is a worse answer
+for everyone.
+
+### F-199 · The redirect check that failed because of where it ran · P1 · fixed before shipping
+
+`verify-domain-redirect.mjs` proves the old domain actually 301s — status, path
+preservation, and single-hop, because a 302 tells crawlers to keep the old URL
+indexed, an all-to-homepage redirect discards most of the value, and a chain
+costs signal at every stage. A document saying redirects exist is not evidence
+that one request has ever been redirected.
+
+Its first run reported **16 redirect failures, HTTP 403 on every path.** The old
+domain was fine. The 403s came from the sandbox's egress proxy, which answers
+every non-allowlisted host that way — so the check confidently reported a broken
+migration caused entirely by where it was running.
+
+That is the sixth time this pattern has been recorded (F-117, F-149, F-166,
+F-177, F-192): a check reporting a result it did not measure. On a migration a
+false FAIL is worse than no check at all, because the natural response is to go
+and "fix" a redirect that was never broken.
+
+Fixed with a control probe. The script reaches the known-good host first; if the
+control cannot be reached or answers with the same status, the network is the
+variable and the script says it cannot tell rather than guessing. A 403 with no
+`Location` is counted as undetermined rather than as a failure. And a domain that
+does not resolve at all exits **0**, because that is the expected state before
+the Vercel dashboard step — it fails only when the domain answers and answers
+wrongly, which is the state that silently destroys a migration while looking fine.
+
+Wired into `verify-live.sh`, so from a machine with egress the redirect is
+proven on every deploy rather than assumed.

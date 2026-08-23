@@ -11,6 +11,7 @@ import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
 import { getPapers } from '@/lib/papers';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
+import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 
@@ -18,7 +19,7 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
 
 export const metadata: Metadata = {
-  title: 'Hardwood Flooring Toronto — published prices, published standard',
+  title: 'Hardwood Flooring Toronto — Installation & Refinishing, Fixed Written Price',
   description: `Hardwood flooring installation and refinishing across Toronto and the GTA. Price bands published up front (${band('newInstall')} per sq ft installed), the full installation standard published for anyone to hold us to, and salaried crews rather than subcontractors.`,
   alternates: { canonical: '/hardwood-flooring-toronto' },
   openGraph: {
@@ -126,6 +127,17 @@ export default function HardwoodFlooringTorontoPage() {
           { name: 'Home', url: SITE_URL },
           { name: 'Hardwood Flooring Toronto', url: `${SITE_URL}/hardwood-flooring-toronto` },
         ])}
+      />
+      {/* Service + Offer + areaServed. The other three blocks describe the
+          page; this one describes the transaction, which is what a commercial
+          query is actually about. Prices derived from lib/pricing.ts — a
+          service with no published band gets no Offer. */}
+      <SchemaScript
+        schema={buildCommercialLandingSchema({
+          url: `${SITE_URL}/hardwood-flooring-toronto`,
+          serviceSlugs: ['hardwood-installation', 'floor-refinishing', 'dust-free-sanding', 'floor-restoration', 'custom-inlays', 'stair-refinishing'],
+          description: 'Hardwood flooring installation and refinishing across Toronto and the GTA',
+        })}
       />
       <SchemaScript
         schema={{

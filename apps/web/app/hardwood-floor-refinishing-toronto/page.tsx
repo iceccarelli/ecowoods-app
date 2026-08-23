@@ -5,6 +5,7 @@ import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { getPaper } from '@/lib/papers';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
+import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 
@@ -13,7 +14,7 @@ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PR
 const CRAFT = 'hardwood-refinishing-machines-and-sequence';
 
 export const metadata: Metadata = {
-  title: 'Hardwood Floor Refinishing Toronto — dust-free sanding, published sequence',
+  title: 'Hardwood Floor Refinishing Toronto — Dust-Free Sanding, Fixed Written Price',
   description: `Hardwood floor refinishing and dust-free sanding across Toronto and the GTA. ${band('fullSandAndFinish')} per square foot for a full sand and finish, ${band('screenAndRecoat')} for a screen and recoat. The four-machine sequence is published in full.`,
   alternates: { canonical: '/hardwood-floor-refinishing-toronto' },
   openGraph: {
@@ -103,6 +104,17 @@ export default function RefinishingTorontoPage() {
             url: `${SITE_URL}/hardwood-floor-refinishing-toronto`,
           },
         ])}
+      />
+      {/* Service + Offer + areaServed. The other three blocks describe the
+          page; this one describes the transaction, which is what a commercial
+          query is actually about. Prices derived from lib/pricing.ts — a
+          service with no published band gets no Offer. */}
+      <SchemaScript
+        schema={buildCommercialLandingSchema({
+          url: `${SITE_URL}/hardwood-floor-refinishing-toronto`,
+          serviceSlugs: ['floor-refinishing', 'dust-free-sanding', 'floor-restoration', 'stair-refinishing'],
+          description: 'Hardwood floor refinishing and dust-free sanding across Toronto and the GTA',
+        })}
       />
       <SchemaScript
         schema={{

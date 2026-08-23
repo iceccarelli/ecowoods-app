@@ -473,6 +473,22 @@ else
 fi
 rm -f "$IMGLOG"
 
+printf '\n%s── old domain consolidation %s\n' "$BOLD" "$OFF"
+# Runs against the network, from a machine that has one. Before the domain is
+# attached in Vercel this reports "not resolving yet" and exits 0 — that is the
+# expected state, not a failure. It only fails when the old domain answers and
+# answers WRONGLY, which is the state that silently destroys a migration while
+# looking fine to everyone.
+DOMLOG="$(mktemp)"
+if node "$(dirname "$0")/verify-domain-redirect.mjs" > "$DOMLOG" 2>&1; then
+  printf '  %sPASS%s  %-34s %s\n' "$GRN" "$OFF" "ecowoodshardwood.com" "$(tail -2 "$DOMLOG" | head -1 | sed 's/^[^ ]* //' | cut -c1-70)"
+else
+  printf '  %sFAIL%s  %-34s redirects are wrong — see below\n' "$RED" "$OFF" "ecowoodshardwood.com"
+  grep '  FAIL' "$DOMLOG" | head -6 | sed 's/^/      /'
+  FAILED=$((FAILED+1))
+fi
+rm -f "$DOMLOG"
+
 printf '\n%s── verdict %s\n' "$BOLD" "$OFF"
 if [ "$FAILED" -eq 0 ]; then
   printf '  %s✓ live and serving%s\n\n' "$GRN" "$OFF"

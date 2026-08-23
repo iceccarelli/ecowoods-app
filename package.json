@@ -37,6 +37,7 @@
     "verify:outreach": "node scripts/verify-outreach.mjs",
     "verify:live-images": "node scripts/verify-live-images.mjs",
     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+    "verify:domain": "node scripts/verify-domain-redirect.mjs",
     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
     "verify:live": "bash scripts/verify-live.sh",
     "images:brief": "node scripts/verify-images.mjs --prompts",
