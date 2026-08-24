@@ -1,0 +1,61 @@
+{
+  "$comment": [
+    "Variant slug -> canonical route. Every entry is served as a permanent redirect.",
+    "",
+    "JSON rather than TypeScript for one reason: next.config.js is a CommonJS .js file",
+    "and cannot import a .ts module, so a TypeScript source would have had to be",
+    "duplicated by hand into the config — which is the exact failure this repository",
+    "spends most of its guards preventing. Both sides read this file instead:",
+    "next.config.js require()s it to build the redirect table, and",
+    "content/search/topic-map.ts imports it as ROUTE_ALIASES.",
+    "",
+    "WHY THESE ARE REDIRECTS AND NOT PAGES: see the header of topic-map.ts. The short",
+    "version is that thirty-odd near-identical pages are a doorway set under Google's",
+    "published spam policy, they split the link equity and crawl budget one page would",
+    "concentrate, and an answer engine deduplicates them into a single weak citation",
+    "target before it ranks anything.",
+    "",
+    "Adding an entry: the destination must be a route that exists. verify-topic-map.mjs",
+    "fails the build if it does not, and fails if a key collides with a real route."
+  ],
+  "aliases": {
+    "/stairs": "/hardwood-stairs-toronto",
+    "/stairs-hardwood": "/hardwood-stairs-toronto",
+    "/stairs-hard-wood": "/hardwood-stairs-toronto",
+    "/stairs-flooring": "/hardwood-stairs-toronto",
+    "/stairs-toronto": "/hardwood-stairs-toronto",
+    "/stairs-gta": "/hardwood-stairs-toronto",
+    "/stairs-sanding": "/hardwood-stairs-toronto",
+    "/stairs-finishing": "/hardwood-stairs-toronto",
+    "/stairs-refinishing": "/hardwood-stairs-toronto",
+    "/stairs-install": "/hardwood-stairs-toronto",
+    "/toronto-stairs": "/hardwood-stairs-toronto",
+    "/toronto-hardwood-stairs": "/hardwood-stairs-toronto",
+    "/hardwood-stairs-refinishing-toronto": "/hardwood-stairs-toronto",
+
+    "/hardwood-floor": "/hardwood-flooring-toronto",
+    "/hardwood-flooring": "/hardwood-flooring-toronto",
+    "/flooring-toronto": "/hardwood-flooring-toronto",
+    "/toronto-flooring": "/hardwood-flooring-toronto",
+    "/toronto-hardwood": "/hardwood-flooring-toronto",
+    "/toronto-hard-wood": "/hardwood-flooring-toronto",
+    "/toronto-hardwood-flooring": "/hardwood-flooring-toronto",
+    "/toronto-floor": "/hardwood-flooring-toronto",
+
+    "/hardwood-installation-toronto": "/services/hardwood-installation",
+    "/toronto-hardwood-install": "/services/hardwood-installation",
+    "/toronto-installation": "/services/hardwood-installation",
+    "/toronto-solid-wood": "/services/hardwood-installation",
+
+    "/toronto-refinishing": "/hardwood-floor-refinishing-toronto",
+    "/toronto-sanding": "/hardwood-floor-refinishing-toronto",
+    "/toronto-finishing": "/hardwood-floor-refinishing-toronto",
+
+    "/dust-free-sanding-toronto": "/services/dust-free-sanding",
+    "/dustless-sanding-toronto": "/services/dust-free-sanding",
+
+    "/hardwood-flooring-cost-toronto": "/guides/hardwood-flooring-cost-toronto",
+    "/solid-vs-engineered-hardwood-toronto": "/guides/solid-vs-engineered-hardwood-toronto",
+    "/white-oak-flooring-toronto": "/guides/white-oak-flooring-toronto"
+  }
+}

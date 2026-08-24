@@ -38,6 +38,17 @@ const PATHS = [
   '/services/floor-refinishing',
   '/services/hardwood-installation',
   '/hardwood-flooring-toronto',
+  '/hardwood-stairs-toronto',
+  /* One alias, deliberately, and it is worth being precise about what this
+     measures. The old-domain rule and the alias rule are separate tables that
+     compose: ecowoodshardwood.com/stairs → ecowoods.ca/stairs (this check) →
+     ecowoods.ca/hardwood-stairs-toronto (crawl-site.mjs). This script only
+     examines the FIRST response, so it asserts that the old domain hands the
+     path over unchanged rather than swallowing it — which is the failure mode
+     that matters here, because an old-domain rule that resolved the alias
+     itself would be a second copy of the alias table. The second hop is a
+     different check and lives in scripts/crawl-site.mjs. */
+  '/stairs',
   '/framework',
   '/papers',
   '/reviews',

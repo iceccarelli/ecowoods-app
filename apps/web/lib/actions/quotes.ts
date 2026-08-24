@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 // ─── Zod schema for the full quote form ─────────────────────────────────────
 const quoteFormSchema = z.object({
@@ -170,7 +171,7 @@ export async function sendEstimateEmail(quoteId: string) {
           </div>
           <p style="color:#6b5d52;font-size:13px;">
             To accept this estimate and proceed, simply reply to this email or call us at
-            <strong>${settings?.companyPhone ?? '(647) 244-5156'}</strong>.
+            <strong>${settings?.companyPhone ?? BUSINESS_NAP.phoneDisplay}</strong>.
             We will then prepare a formal contract for your review.
           </p>
         </div>
@@ -187,7 +188,7 @@ Total: ${totalFormatted} CAD
 View online: ${viewUrl}
 Download PDF: ${pdfUrl}
 
-To proceed, reply to this email or call ${settings?.companyPhone ?? '(647) 244-5156'}.`,
+To proceed, reply to this email or call ${settings?.companyPhone ?? BUSINESS_NAP.phoneDisplay}.`,
   });
 
   await db.quoteRequest.update({

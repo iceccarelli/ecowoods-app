@@ -4,12 +4,12 @@ import { SERVICE_AREAS } from '@/lib/seo-data';
 import { criterionCount } from '@/lib/framework';
 
 /**
- * CommercialHeadTermRail — the two money pages, forced into every crawl path.
+ * CommercialHeadTermRail — the money pages, forced into every crawl path.
  *
  * WHY THIS EXISTS
  *
- * /hardwood-flooring-toronto and /hardwood-floor-refinishing-toronto are the
- * two highest-intent URLs on this site. Before this component they were
+ * /hardwood-flooring-toronto, /hardwood-floor-refinishing-toronto and
+ * /hardwood-stairs-toronto are the highest-intent URLs on this site. Before this component they were
  * reachable from the footer and from each other, and nowhere else. A footer
  * link is the weakest internal signal a page can receive: it appears on every
  * URL, so it distinguishes nothing, and every serious crawler discounts it for
@@ -18,7 +18,7 @@ import { criterionCount } from '@/lib/framework';
  * This rail puts them in the body of the homepage, the services index, every
  * one of the {SERVICE_AREAS.length} service-area pages and every guide — in
  * content, with descriptive anchor text, above the fold of the sections that
- * follow. That is roughly fifty in-content links into two URLs, which is the
+ * follow. That is roughly fifty in-content links into three URLs, which is the
  * mechanism by which a site tells a crawler which of its pages it considers
  * most important.
  *
@@ -66,6 +66,24 @@ export function CommercialHeadTermRail({ city }: { city?: string }) {
               {band('screenAndRecoat')} where the existing finish is sound.
             </p>
             <p className="chr-meta">HEPA containment · Most clients stay home · Fixed price</p>
+          </Link>
+
+          {/* Stairs, third. Not padding: it is the one commercial cluster on
+              this site that had no page at all until /hardwood-stairs-toronto,
+              and it is the part of a flooring job most often left out of the
+              written price — which makes it the part a homeowner searches for
+              separately, usually after signing something that did not include
+              it. No price band here because none is published: stairs are
+              quoted per tread, and inventing a figure for a card is exactly the
+              kind of number an answer engine would quote back. */}
+          <Link className="chr-card" href="/hardwood-stairs-toronto">
+            <h3>Hardwood stairs in {where}</h3>
+            <p>
+              Refinishing, carpet removal and new treads, matched to the floor they meet.
+              Quoted per tread rather than per square foot, and itemised in the written
+              price rather than added to it later.
+            </p>
+            <p className="chr-meta">Per-tread pricing · Colour matched on site · Fixed price</p>
           </Link>
         </div>
 

@@ -90,9 +90,33 @@ const nextConfig = {
    *
    * See docs/outreach/DOMAIN_CONSOLIDATION.md.
    */
+  /**
+   * COMMERCIAL SLUG ALIASES.
+   *
+   * content/search/route-aliases.json maps every keyword-variant slug this
+   * business is asked about — /stairs, /stairs-hardwood, /toronto-flooring,
+   * /hardwood-flooring-cost-toronto and thirty-odd others — onto the one page
+   * that actually answers that intent.
+   *
+   * They are redirects rather than pages, and the reasoning is written out at
+   * length in content/search/topic-map.ts. The short version: publishing a page
+   * per slug is a doorway set under Google's published spam policy, it splits
+   * the links and crawl budget one page would concentrate, and a retrieval
+   * system deduplicates near-identical documents before it ranks them — so
+   * thirty thin variants are one weak citation target, not thirty strong ones.
+   * A permanent redirect resolves for anyone who types or links the variant and
+   * concentrates every signal on one document.
+   *
+   * `permanent: true` emits 308. Google treats it identically to 301 for
+   * canonicalisation and it preserves the request method, which 301 does not
+   * guarantee. scripts/verify-topic-map.mjs fails the build if any destination
+   * here is not a real route, or if a key collides with one.
+   */
   async redirects() {
     const OLD = ['ecowoodshardwood.com', 'www.ecowoodshardwood.com'];
-    return OLD.flatMap((host) => [
+    const { aliases } = require('./content/search/route-aliases.json');
+
+    const oldDomain = OLD.flatMap((host) => [
       {
         source: '/',
         has: [{ type: 'host', value: host }],
@@ -106,6 +130,18 @@ const nextConfig = {
         permanent: true,
       },
     ]);
+
+    const commercialAliases = Object.entries(aliases).map(([source, destination]) => ({
+      source,
+      destination,
+      permanent: true,
+    }));
+
+    /* Old-domain rules first. They are host-conditioned, so they only ever
+       match requests that arrive on the retired domain — but a request for
+       ecowoodshardwood.com/stairs must be consolidated onto ecowoods.ca before
+       anything else looks at the path, or it takes two hops to arrive. */
+    return [...oldDomain, ...commercialAliases];
   },
 
   async rewrites() {

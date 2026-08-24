@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'Ecowoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'services@ecowoods.ca', note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
+          return { company: 'Ecowoods', phone: BUSINESS_NAP.phoneDisplay, email: s?.companyEmail ?? BUSINESS_NAP.email, note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
         },
       }),
 
@@ -138,9 +138,9 @@ export async function POST(req: Request) {
             }
             return slots.length
               ? { timezone: BUSINESS_TIMEZONE, slots, note: 'Offer 2-3 of these exact times. Pass the startsAt value verbatim to book_measure.' }
-              : { timezone: BUSINESS_TIMEZONE, slots: [], note: 'No openings in range — ask them to call (647) 244-5156 to book.' };
+              : { timezone: BUSINESS_TIMEZONE, slots: [], note: `No openings in range — ask them to call ${BUSINESS_NAP.phoneDisplay} to book.` };
           } catch {
-            return { slots: [], note: 'Calendar unavailable — ask them to call (647) 244-5156 to book.' };
+            return { slots: [], note: `Calendar unavailable — ask them to call ${BUSINESS_NAP.phoneDisplay} to book.` };
           }
         },
       }),
@@ -181,7 +181,7 @@ export async function POST(req: Request) {
             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
-            return { ok: false, message: 'Could not confirm that — ask them to call (647) 244-5156 and we will book it.' };
+            return { ok: false, message: `Could not confirm that — ask them to call ${BUSINESS_NAP.phoneDisplay} and we will book it.` };
           }
         },
       }),
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
       try {
         for await (const chunk of result.textStream) controller.enqueue(encoder.encode(chunk));
       } catch {
-        controller.enqueue(encoder.encode('\n\n(Sorry — something interrupted that. Please try again or call (647) 244-5156.)'));
+        controller.enqueue(encoder.encode(`\n\n(Sorry — something interrupted that. Please try again or call ${BUSINESS_NAP.phoneDisplay}.)`));
       }
       controller.close();
     },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { availabilityQuerySchema } from '@ecowoods/shared';
 import { db } from '@/lib/db';
 import { computeAvailability, localDateKey, addDaysToKey } from '@/lib/booking/availability';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[availability] failed:', err);
     return NextResponse.json(
-      { error: 'Could not load availability. Please call (647) 244-5156.' },
+      { error: `Could not load availability. Please call ${BUSINESS_NAP.phoneDisplay}.` },
       { status: 500 },
     );
   }

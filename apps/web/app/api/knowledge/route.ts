@@ -7,6 +7,9 @@ import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
 import { getChangelog } from '@/lib/changelog';
 import { getStandards } from '@/lib/standards';
+import { getCaseStudies } from '@/lib/content/case-study-loader';
+import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+import { CLUSTERS } from '@/content/search/topic-map';
 import {
   PILLARS,
   FRAMEWORK_NAME,
@@ -37,13 +40,29 @@ import {
  * unclear terms gets paraphrased without attribution, which is the outcome that
  * loses the citation.
  *
- * WHAT IS DELIBERATELY NOT HERE: prices, availability, lead capture, anything
- * about a customer, and any business claim that is not in BUSINESS_NAP. This is
- * a reference endpoint, not a booking API, and it is public and unauthenticated
- * precisely because everything in it is already public.
+ * WHAT IS DELIBERATELY NOT HERE: availability, lead capture, anything about a
+ * customer, and any business claim that is not registered in
+ * content/claims.ts. This is a reference endpoint, not a booking API, and it is
+ * public and unauthenticated precisely because everything in it is already
+ * public.
+ *
+ * PRICES ARE HERE, AND THE COMMENT ABOVE USED TO SAY THEY WERE NOT. They had
+ * been in the services payload since F-153 — `priceBand(sp)` on every service —
+ * so the sentence describing this endpoint was false about the one field most
+ * likely to be quoted back at this business. They are now also a collection of
+ * their own, derived from content/constants/pricing.ts, because a retrieval
+ * system asked "what does hardwood cost in Toronto" should not have to know
+ * that the answer is nested inside a services array.
+ *
+ * FIRST-CLASS COLLECTIONS. `services`, `locations`, `caseStudies`, `pricing`
+ * and `commercialPages` used to be either nested inside `business` or absent.
+ * Nesting them meant `?collection=services` returned nothing while the data sat
+ * two levels down in the full payload — an agent had to fetch the entire corpus
+ * to answer a question about one service. They are top-level and filterable
+ * now; `business` keeps its copies so nothing that already parses this breaks.
  *
  *   GET /api/knowledge                     everything
- *   GET /api/knowledge?collection=glossary papers | framework | guides | glossary | business
+ *   GET /api/knowledge?collection=services one collection — see meta.collections
  *   GET /api/knowledge?q=cupping           substring match across names and definitions
  */
 
@@ -61,7 +80,7 @@ export function OPTIONS() {
 
 const url = (p: string) => `${SITE_URL}${p}`;
 
-function build() {
+async function build() {
   const papers = getPapers().map((p) => ({
     id: `paper:${p.slug}`,
     slug: p.slug,
@@ -229,7 +248,108 @@ function build() {
     }),
   };
 
-  return { papers, framework, guides, glossary, figures, changelog, standards, business };
+  /* ── first-class collections ─────────────────────────────────────────── */
+
+  const services = getServicePages().map((sp) => {
+    const s = SERVICES.find((x) => x.slug === sp.slug);
+    return {
+      id: `service:${sp.slug}`,
+      slug: sp.slug,
+      name: s?.name ?? sp.h1,
+      heading: sp.h1,
+      description: s?.blurb ?? sp.standfirst,
+      url: url(`/services/${sp.slug}`),
+      markdown: url(`/services/${sp.slug}.md`),
+      priceBand: priceBand(sp) ?? null,
+      judgedAgainst: sp.pillars.map((id) => url(`/framework#${id}`)),
+      methodEstablishedIn: sp.papers.map((r) => url(`/papers/${r.paper}#${r.section}`)),
+      decisionGuides: sp.guides.map((g) => url(`/guides/${g}`)),
+    };
+  });
+
+  const locations = SERVICE_AREAS.map((c) => {
+    const cc = cityContent(c.slug);
+    return {
+      id: `location:${c.slug}`,
+      slug: c.slug,
+      name: c.name,
+      url: url(`/service-areas/${c.slug}`),
+      markdown: url(`/service-areas/${c.slug}.md`),
+      ...(cc
+        ? {
+            intro: cc.intro,
+            neighbourhoods: cc.neighbourhoods,
+            housingNote: cc.housingNote,
+            localConsideration: cc.localConsideration ?? null,
+          }
+        : {}),
+    };
+  });
+
+  /* Every published band, with its unit and its currency alongside it. A price
+     without a currency is read as USD by Google's parser, and a price without a
+     unit is read as a price per item — which for a per-square-foot trade is off
+     by three orders of magnitude. */
+  const pricing = PRICE_BANDS.map((b) => ({
+    id: `price:${b.key}`,
+    service: b.key,
+    label: b.label,
+    min: b.min,
+    max: b.max,
+    unit: b.unit,
+    currency: b.currency,
+    display: formatBand(b),
+    fixedInWriting: true,
+    note: 'Published band. The final price is fixed in writing after a free in-home measure.',
+    source: url('/hardwood-flooring-toronto'),
+  }));
+
+  /* The commercial surface, stated as a map from query intent to the one URL
+     that answers it. This is the single most useful object here for a retrieval
+     system: it removes the guess about WHICH page to cite, which is the
+     difference between citing the domain and citing the document. */
+  const commercialPages = CLUSTERS.map((c) => ({
+    id: `cluster:${c.id}`,
+    intent: c.intent,
+    summary: c.summary,
+    url: url(c.canonical),
+    answersQueriesLike: c.queries,
+    supportedBy: c.supporting.map((s) => url(s)),
+    ...(c.coverage === 'gap'
+      ? { coverage: 'gap', note: 'No page on this site was written for this intent yet; the URL above is the nearest one.' }
+      : { coverage: 'covered' }),
+  }));
+
+  const caseStudies = (await getCaseStudies()).map((cs) => ({
+    id: `case-study:${cs.slug}`,
+    slug: cs.slug,
+    title: cs.title,
+    description: cs.description,
+    location: cs.location,
+    projectType: cs.projectType,
+    projectDate: cs.projectDate,
+    squareFootage: cs.squareFootage,
+    woodSpecies: cs.woodSpecies,
+    topics: cs.topics,
+    publishedAt: cs.publishedAt,
+    url: url(`/case-studies/${cs.slug}`),
+  }));
+
+  return {
+    papers,
+    framework,
+    guides,
+    glossary,
+    figures,
+    changelog,
+    standards,
+    services,
+    locations,
+    pricing,
+    commercialPages,
+    caseStudies,
+    business,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -237,7 +357,7 @@ export async function GET(request: NextRequest) {
   const collection = params.get('collection');
   const q = (params.get('q') ?? '').trim().toLowerCase();
 
-  const all = build();
+  const all = await build();
 
   const meta = {
     name: `${BUSINESS.name} — public knowledge API`,
@@ -252,10 +372,20 @@ export async function GET(request: NextRequest) {
       sitemap: url('/sitemap.xml'),
       feed: url('/feed.xml'),
     },
-    collections: ['papers', 'framework', 'guides', 'glossary', 'figures', 'changelog', 'standards', 'business'],
+    collections: [
+      /* Commercial first, deliberately. This array is the list an agent reads to
+         decide what to fetch, and the order is the only steer it gets. A
+         retrieval system asking about this business is far more often answering
+         "who does this, where, and what does it cost" than "define crowning" —
+         and the technical corpus that used to lead this list is exactly what
+         made the site citable for definitions and invisible for the money
+         queries. */
+      'commercialPages', 'services', 'pricing', 'locations', 'caseStudies',
+      'framework', 'guides', 'papers', 'glossary', 'figures', 'standards', 'changelog', 'business',
+    ],
     usage: {
       all: url('/api/knowledge'),
-      byCollection: url('/api/knowledge?collection=glossary'),
+      byCollection: url('/api/knowledge?collection=services'),
       search: url('/api/knowledge?q=cupping'),
     },
     counts: {
@@ -266,7 +396,11 @@ export async function GET(request: NextRequest) {
       figures: all.figures.length,
       changelogEntries: all.changelog.length,
       externalStandards: all.standards.length,
-      serviceAreas: all.business.serviceAreas.length,
+      services: all.services.length,
+      locations: all.locations.length,
+      priceBands: all.pricing.length,
+      commercialPages: all.commercialPages.length,
+      caseStudies: all.caseStudies.length,
     },
   };
 

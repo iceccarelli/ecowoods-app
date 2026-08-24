@@ -1,0 +1,2989 @@
+{
+  "$schema": "audit/current-state.schema (informal)",
+  "generatedBy": "scripts/audit-current-state.mjs",
+  "generatedAt": "2026-08-24T14:46:49.494Z",
+  "method": "static analysis of the repository — no URL is fetched; see scripts/crawl-site.mjs for the live counterpart",
+  "repository": {
+    "root": "apps/web"
+  },
+  "summary": {
+    "routeFiles": 60,
+    "handlerFiles": 33,
+    "indexablePages": 35,
+    "dynamicRoutes": 14,
+    "pagesWithCanonical": 31,
+    "pagesWithoutCanonical": 1,
+    "pagesWithTitleLiteral": 26,
+    "pagesWithNoH1": 3,
+    "pagesWithMultipleH1": 0,
+    "pagesEmittingSchema": 25,
+    "machineSurfacesPresent": 10,
+    "machineSurfacesExpected": 10,
+    "priceLiteralsOutsideConstants": 0,
+    "commercialAliases": 33,
+    "findings": 2
+  },
+  "routes": [
+    {
+      "route": "/login",
+      "file": "apps/web/app/(auth)/login/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 366
+    },
+    {
+      "route": "/register",
+      "file": "apps/web/app/(auth)/register/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 341
+    },
+    {
+      "route": "/mypage/inquiries",
+      "file": "apps/web/app/(portal)/mypage/inquiries/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Inquiries",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 3318
+    },
+    {
+      "route": "/mypage/invoices/[id]/pay",
+      "file": "apps/web/app/(portal)/mypage/invoices/[id]/pay/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Invoice Already Paid",
+        "count": 2,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/mypage/invoices"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 3772
+    },
+    {
+      "route": "/mypage/invoices",
+      "file": "apps/web/app/(portal)/mypage/invoices/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Invoices &amp; Payments",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/#quote",
+        "/docs/invoice/${inv.id}",
+        "/mypage/invoices/${inv.id}/pay"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 7835
+    },
+    {
+      "route": "/mypage/orders",
+      "file": "apps/web/app/(portal)/mypage/orders/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "My Orders",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/mypage"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 3358
+    },
+    {
+      "route": "/mypage",
+      "file": "apps/web/app/(portal)/mypage/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Welcome back, · 👋",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/mypage/inquiries",
+        "/mypage/invoices",
+        "/mypage/projects",
+        "/mypage/quotes"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 8243
+    },
+    {
+      "route": "/mypage/projects",
+      "file": "apps/web/app/(portal)/mypage/projects/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "My Projects",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/#quote",
+        "/docs/contract/${proj.id}",
+        "/docs/invoice/${inv.id}",
+        "/mypage/invoices/${inv.id}/pay"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 10034
+    },
+    {
+      "route": "/mypage/quotes",
+      "file": "apps/web/app/(portal)/mypage/quotes/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "My Quote Requests",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/#quote",
+        "/docs/quote/${q.id}",
+        "/mypage/projects"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 5138
+    },
+    {
+      "route": "/about",
+      "file": "apps/web/app/about/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "About ${BUSINESS_NAP.shortName} — who we are, what we do, where we work",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/about",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "About ·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "AboutPage"
+        ],
+        "schemaScriptBlocks": 3
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/framework/assess"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 4767
+    },
+    {
+      "route": "/admin/inquiries",
+      "file": "apps/web/app/admin/inquiries/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Inquiries",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 3932
+    },
+    {
+      "route": "/admin/invoices/new",
+      "file": "apps/web/app/admin/invoices/new/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 199
+    },
+    {
+      "route": "/admin/invoices",
+      "file": "apps/web/app/admin/invoices/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Invoices",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/invoices",
+        "/admin/invoices/new",
+        "/admin/invoices?status=${s}",
+        "/admin/projects/${inv.projectId}"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 6055
+    },
+    {
+      "route": "/admin/orders/[id]",
+      "file": "apps/web/app/admin/orders/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Order #·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/orders"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 3862
+    },
+    {
+      "route": "/admin/orders",
+      "file": "apps/web/app/admin/orders/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Shop Orders",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/orders",
+        "/admin/orders/${order.id}",
+        "/admin/orders?status=${s}"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 3969
+    },
+    {
+      "route": "/admin",
+      "file": "apps/web/app/admin/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Dashboard",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/inquiries",
+        "/admin/invoices",
+        "/admin/invoices/new",
+        "/admin/orders",
+        "/admin/projects",
+        "/admin/quotes",
+        "/admin/quotes/${q.id}"
+      ],
+      "internalLinkCount": 7,
+      "bytes": 7558
+    },
+    {
+      "route": "/admin/projects/[id]",
+      "file": "apps/web/app/admin/projects/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/invoices/new?projectId=${project.id}",
+        "/admin/projects"
+      ],
+      "internalLinkCount": 2,
+      "bytes": 10746
+    },
+    {
+      "route": "/admin/projects",
+      "file": "apps/web/app/admin/projects/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Projects",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/projects",
+        "/admin/projects/${proj.id}",
+        "/admin/projects/new",
+        "/admin/projects?status=${s}"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 4469
+    },
+    {
+      "route": "/admin/quotes/[id]",
+      "file": "apps/web/app/admin/quotes/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/projects/${quote.project.id}",
+        "/admin/quotes"
+      ],
+      "internalLinkCount": 2,
+      "bytes": 8659
+    },
+    {
+      "route": "/admin/quotes",
+      "file": "apps/web/app/admin/quotes/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Quotes &amp; Leads",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/quotes",
+        "/admin/quotes/${q.id}",
+        "/admin/quotes?status=${s}"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 4223
+    },
+    {
+      "route": "/admin/settings",
+      "file": "apps/web/app/admin/settings/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Settings",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 516
+    },
+    {
+      "route": "/admin/users",
+      "file": "apps/web/app/admin/users/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Customers",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/admin/projects?userId=${user.id}"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 3050
+    },
+    {
+      "route": "/authority",
+      "file": "apps/web/app/authority/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Authority & Citation Guide",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "${SITE_URL}/authority",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Authority &amp; Citation Guide",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/",
+        "/api/knowledge",
+        "/api/knowledge?collection=glossary",
+        "/api/knowledge?q=cupping",
+        "/blog/${article.slug}",
+        "/case-studies/${caseStudy.slug}",
+        "/technical-library"
+      ],
+      "internalLinkCount": 7,
+      "bytes": 15785
+    },
+    {
+      "route": "/blog/[slug]",
+      "file": "apps/web/app/blog/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "canonical is an expression"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [
+          "buildArticle"
+        ],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 4594
+    },
+    {
+      "route": "/blog",
+      "file": "apps/web/app/blog/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Technical Articles",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/blog",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Technical articles",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/",
+        "/blog/${article.slug}",
+        "/technical-library"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 2853
+    },
+    {
+      "route": "/case-studies/[slug]",
+      "file": "apps/web/app/case-studies/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "canonical is an expression"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [
+          "buildCaseStudy"
+        ],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 5079
+    },
+    {
+      "route": "/case-studies",
+      "file": "apps/web/app/case-studies/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Case Studies",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/case-studies",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Case studies",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/",
+        "/case-studies/${caseStudy.slug}",
+        "/technical-library"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 2778
+    },
+    {
+      "route": "/data",
+      "file": "apps/web/app/data/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Data & Figures",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/data",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Data &amp; figures",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "DataDownload",
+          "Dataset",
+          "ImageObject"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/api/knowledge?collection=figures",
+        "/authority",
+        "/data#fig-${f.id}",
+        "/papers",
+        "/papers/${f.source.paper}#${f.source.section}",
+        "/resources"
+      ],
+      "internalLinkCount": 7,
+      "bytes": 5834
+    },
+    {
+      "route": "/design",
+      "file": "apps/web/app/design/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Design Your Floor",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "https://ecowoods.ca/design",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "The floor designer",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 1464
+    },
+    {
+      "route": "/docs/contract/[id]",
+      "file": "apps/web/app/docs/contract/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 5688
+    },
+    {
+      "route": "/docs/invoice/[id]",
+      "file": "apps/web/app/docs/invoice/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 5445
+    },
+    {
+      "route": "/docs/quote/[id]",
+      "file": "apps/web/app/docs/quote/[id]/page.tsx",
+      "indexable": false,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 5381
+    },
+    {
+      "route": "/framework/assess",
+      "file": "apps/web/app/framework/assess/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/framework/assess",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Score a quote",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [
+        "/",
+        "/framework"
+      ],
+      "internalLinkCount": 2,
+      "bytes": 2482
+    },
+    {
+      "route": "/framework",
+      "file": "apps/web/app/framework/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/framework",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CreativeWork",
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework/assess",
+        "/guides/${g.slug}",
+        "/papers"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 9621
+    },
+    {
+      "route": "/glossary/[slug]",
+      "file": "apps/web/app/glossary/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": "/glossary/${t.slug}",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CreativeWork",
+          "DefinedTerm"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework#${p.id}",
+        "/glossary",
+        "/glossary/${b.slug}",
+        "/glossary/${r.slug}",
+        "/glossary/${s.slug}"
+      ],
+      "internalLinkCount": 6,
+      "bytes": 8035
+    },
+    {
+      "route": "/glossary",
+      "file": "apps/web/app/glossary/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Hardwood Flooring Glossary",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/glossary",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Glossary",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "DefinedTerm",
+          "DefinedTermSet"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework",
+        "/glossary/${t.slug}",
+        "/guides",
+        "/papers"
+      ],
+      "internalLinkCount": 5,
+      "bytes": 5104
+    },
+    {
+      "route": "/guides/[slug]",
+      "file": "apps/web/app/guides/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": "/guides/${guide.slug}",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "CreativeWork",
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 3
+      },
+      "internalLinks": [
+        "/",
+        "/framework#${p.id}",
+        "/framework/assess",
+        "/guides",
+        "/guides/${g.slug}",
+        "/papers/${s.paper}#${s.section}"
+      ],
+      "internalLinkCount": 6,
+      "bytes": 13374
+    },
+    {
+      "route": "/guides",
+      "file": "apps/web/app/guides/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Decision Guides & Reference Installations",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/guides",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Decision guides",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildWebPageSchema"
+        ],
+        "inlineTypes": [
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework",
+        "/framework/assess",
+        "/guides/${g.slug}",
+        "/papers"
+      ],
+      "internalLinkCount": 5,
+      "bytes": 6576
+    },
+    {
+      "route": "/hardwood-floor-refinishing-toronto",
+      "file": "apps/web/app/hardwood-floor-refinishing-toronto/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Hardwood Floor Refinishing Toronto — Dust-Free Sanding, Fixed Written Price",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/hardwood-floor-refinishing-toronto",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Hardwood floor refinishing in Toronto",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildCommercialLandingSchema",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 4
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/hardwood-flooring-toronto",
+        "/papers/${CRAFT}",
+        "/service-areas"
+      ],
+      "internalLinkCount": 5,
+      "bytes": 11206
+    },
+    {
+      "route": "/hardwood-flooring-toronto",
+      "file": "apps/web/app/hardwood-flooring-toronto/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Hardwood Flooring Toronto — Installation & Refinishing, Fixed Written Price",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/hardwood-flooring-toronto",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Hardwood flooring in Toronto",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildCommercialLandingSchema",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 4
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/framework#${p.id}",
+        "/framework/assess",
+        "/guides/hardwood-flooring-cost-toronto",
+        "/papers/${papers[0]?.slug ?? ''}",
+        "/service-areas/${c.slug}",
+        "/services/${s.slug}"
+      ],
+      "internalLinkCount": 8,
+      "bytes": 15204
+    },
+    {
+      "route": "/hardwood-stairs-toronto",
+      "file": "apps/web/app/hardwood-stairs-toronto/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Hardwood Stairs Toronto — Refinishing, Installation & How They Are Priced",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/hardwood-stairs-toronto",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Hardwood stairs in Toronto",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildCommercialLandingSchema",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 4
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/case-studies/rosedale-estate-stairs-radiant-heat",
+        "/framework",
+        "/framework/assess",
+        "/guides/hardwood-flooring-cost-toronto",
+        "/papers/hardwood-refinishing-machines-and-sequence",
+        "/papers/toronto-hardwood-climate-moisture-protocol",
+        "/service-areas/${c.slug}",
+        "/services/stair-refinishing"
+      ],
+      "internalLinkCount": 10,
+      "bytes": 19431
+    },
+    {
+      "route": "/library",
+      "file": "apps/web/app/library/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Visual Library",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/library",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Visual library",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CollectionPage",
+          "ImageObject"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/glossary",
+        "/papers/hardwood-refinishing-machines-and-sequence",
+        "/resources"
+      ],
+      "internalLinkCount": 4,
+      "bytes": 10840
+    },
+    {
+      "route": "/market",
+      "file": "apps/web/app/market/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "What moves a hardwood quote",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/market",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "What moves a hardwood quote",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [
+        "/",
+        "/api/health",
+        "/api/market",
+        "/papers/${s.paperRef.paper}#${s.paperRef.section}",
+        "/papers/hardwood-selection-and-cost-framework-gta#fixed-price",
+        "/papers/hardwood-selection-and-cost-framework-gta#installed-cost"
+      ],
+      "internalLinkCount": 6,
+      "bytes": 8855
+    },
+    {
+      "route": "/",
+      "file": "apps/web/app/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "low",
+        "why": "metadata exported but title is not a string literal"
+      },
+      "canonical": {
+        "value": "/",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": null,
+        "count": 0,
+        "confidence": "none",
+        "why": "no <h1> in this file"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [],
+      "internalLinkCount": 0,
+      "bytes": 1509
+    },
+    {
+      "route": "/papers/[slug]",
+      "file": "apps/web/app/papers/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "canonical is an expression"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [
+          "BreadcrumbList",
+          "DigitalDocument",
+          "HowTo",
+          "HowToStep",
+          "ListItem",
+          "Place",
+          "TechArticle",
+          "Thing",
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/",
+        "/papers",
+        "/papers/${p.slug}"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 13740
+    },
+    {
+      "route": "/papers",
+      "file": "apps/web/app/papers/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Technical Papers",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "${SITE_URL}/papers",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Technical Papers",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [
+          "CollectionPage",
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [
+        "/",
+        "/papers/${paper.slug}",
+        "/technical-library"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 5964
+    },
+    {
+      "route": "/press",
+      "file": "apps/web/app/press/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Press and media kit",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/press",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Press and media kit",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/ai.txt",
+        "/api/knowledge",
+        "/authority",
+        "/framework",
+        "/glossary",
+        "/guides",
+        "/llms-full.txt",
+        "/papers",
+        "/reviews",
+        "/service-areas"
+      ],
+      "internalLinkCount": 11,
+      "bytes": 14744
+    },
+    {
+      "route": "/products/floorforge",
+      "file": "apps/web/app/products/floorforge/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Meet FloorForge. The future of floor refinishing.",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [
+          "Answer",
+          "FAQPage",
+          "Offer",
+          "Organization",
+          "Question",
+          "SoftwareApplication"
+        ],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/#quote",
+        "/technical-library"
+      ],
+      "internalLinkCount": 2,
+      "bytes": 28927
+    },
+    {
+      "route": "/r",
+      "file": "apps/web/app/r/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Leave a review",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/reviews",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Tell people what actually happened",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/reviews"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 4668
+    },
+    {
+      "route": "/resources",
+      "file": "apps/web/app/resources/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Resources",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/resources",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Resources",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildWebPageSchema"
+        ],
+        "inlineTypes": [
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/ai.txt",
+        "/api/knowledge",
+        "/authority",
+        "/blog",
+        "/blog/${a.slug}",
+        "/case-studies",
+        "/case-studies/${c.slug}",
+        "/data",
+        "/feed.xml",
+        "/framework",
+        "/framework#${p.id}",
+        "/framework/assess",
+        "/glossary",
+        "/guides/${g.slug}",
+        "/library",
+        "/llms.txt",
+        "/papers/${p.slug}",
+        "/service-areas",
+        "/service-areas/${c.slug}",
+        "/sitemap.xml",
+        "/technical-library"
+      ],
+      "internalLinkCount": 23,
+      "bytes": 14562
+    },
+    {
+      "route": "/reviews",
+      "file": "apps/web/app/reviews/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "${BUSINESS_NAP.shortName} reviews — ${P.count} reviews, ${P.rating.toFixed(1)}/${P.outOf} on ${P.platform}",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/reviews",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Reviews",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 13028
+    },
+    {
+      "route": "/service-areas/[city]",
+      "file": "apps/web/app/service-areas/[city]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": "/service-areas/${city.slug}",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Hardwood floor installation &amp; refinishing in· ·.",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/",
+        "/#craft",
+        "/#gallery",
+        "/#quote",
+        "/service-areas",
+        "/service-areas/${c.slug}",
+        "/services/${sp.slug}"
+      ],
+      "internalLinkCount": 7,
+      "bytes": 9047
+    },
+    {
+      "route": "/service-areas",
+      "file": "apps/web/app/service-areas/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Service Areas — Hardwood Flooring Across the GTA",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/service-areas",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Hardwood flooring across the GTA.",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/#quote",
+        "/service-areas/${c.slug}"
+      ],
+      "internalLinkCount": 2,
+      "bytes": 2120
+    },
+    {
+      "route": "/services/[slug]",
+      "file": "apps/web/app/services/[slug]/page.tsx",
+      "indexable": true,
+      "dynamic": true,
+      "title": {
+        "value": null,
+        "confidence": "dynamic",
+        "why": "generateMetadata() — resolved per request"
+      },
+      "canonical": {
+        "value": "/services/${page.slug}",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "·",
+        "count": 1,
+        "confidence": "partial",
+        "why": "contains a JSX expression, shown as ·"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "City",
+          "Offer",
+          "Service",
+          "UnitPriceSpecification"
+        ],
+        "schemaScriptBlocks": 3
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/framework",
+        "/framework#${p.id}",
+        "/framework/assess",
+        "/glossary/${t.slug}",
+        "/market",
+        "/papers/${ref.paper}#${ref.section}",
+        "/service-areas",
+        "/service-areas/${c.slug}",
+        "/services"
+      ],
+      "internalLinkCount": 11,
+      "bytes": 11452
+    },
+    {
+      "route": "/services",
+      "file": "apps/web/app/services/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Custom hardwood installation, refinishing & dust-free sanding",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/services",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Services",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CollectionPage"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework",
+        "/framework/assess",
+        "/papers",
+        "/service-areas",
+        "/services/${p.slug}"
+      ],
+      "internalLinkCount": 6,
+      "bytes": 5281
+    },
+    {
+      "route": "/standards",
+      "file": "apps/web/app/standards/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Standards Register",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/standards",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Standards register",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CollectionPage",
+          "CreativeWork",
+          "Organization"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/framework",
+        "/framework#${p.id}",
+        "/framework#c-${cid}",
+        "/whats-new"
+      ],
+      "internalLinkCount": 5,
+      "bytes": 9645
+    },
+    {
+      "route": "/team",
+      "file": "apps/web/app/team/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "The Ecowoods crew — salaried hardwood craftsmen in Toronto",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/team",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "The same crew from the first board to the final coat",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "AboutPage"
+        ],
+        "schemaScriptBlocks": 3
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/framework",
+        "/framework#${p.id}",
+        "/framework/assess",
+        "/guides/how-to-evaluate-a-hardwood-quote",
+        "/reviews"
+      ],
+      "internalLinkCount": 7,
+      "bytes": 13155
+    },
+    {
+      "route": "/technical-library",
+      "file": "apps/web/app/technical-library/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Technical Library",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/technical-library",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Technical Library",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildWebPageSchema"
+        ],
+        "inlineTypes": [
+          "CaseStudy",
+          "TechArticle"
+        ],
+        "schemaScriptBlocks": 1
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/blog/${article.slug}",
+        "/case-studies/${caseStudy.slug}",
+        "/papers/${paper.slug}"
+      ],
+      "internalLinkCount": 5,
+      "bytes": 8394
+    },
+    {
+      "route": "/verify-email",
+      "file": "apps/web/app/verify-email/page.tsx",
+      "indexable": false,
+      "dynamic": false,
+      "title": {
+        "value": null,
+        "confidence": "none",
+        "why": "no metadata export — inherits the layout title template"
+      },
+      "canonical": {
+        "value": null,
+        "confidence": "none",
+        "why": "no alternates.canonical — Next emits none"
+      },
+      "h1": {
+        "value": "Invalid link",
+        "count": 2,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [],
+        "inlineTypes": [],
+        "schemaScriptBlocks": 0
+      },
+      "internalLinks": [
+        "/register"
+      ],
+      "internalLinkCount": 1,
+      "bytes": 1739
+    },
+    {
+      "route": "/whats-new",
+      "file": "apps/web/app/whats-new/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "What's New",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/whats-new",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "What&rsquo;s new",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "CollectionPage",
+          "CreativeWork"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/feed.xml",
+        "/standards"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 5295
+    }
+  ],
+  "handlers": [
+    {
+      "route": "/8b9dff9a810eacdb42f0c91254401d8b.txt",
+      "file": "apps/web/app/8b9dff9a810eacdb42f0c91254401d8b.txt/route.ts",
+      "indexable": true,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/ai.txt",
+      "file": "apps/web/app/ai.txt/route.ts",
+      "indexable": true,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/api/admin/projects-list",
+      "file": "apps/web/app/api/admin/projects-list/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/appointments",
+      "file": "apps/web/app/api/appointments/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/auth/[...nextauth]",
+      "file": "apps/web/app/api/auth/[...nextauth]/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/availability",
+      "file": "apps/web/app/api/availability/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/backgrounds",
+      "file": "apps/web/app/api/backgrounds/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/chat",
+      "file": "apps/web/app/api/chat/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/contracts/[id]/pdf",
+      "file": "apps/web/app/api/contracts/[id]/pdf/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/docs/contract/[id]",
+      "file": "apps/web/app/api/docs/contract/[id]/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/docs/invoice/[id]",
+      "file": "apps/web/app/api/docs/invoice/[id]/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/docs/quote/[id]",
+      "file": "apps/web/app/api/docs/quote/[id]/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/estimate",
+      "file": "apps/web/app/api/estimate/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/health",
+      "file": "apps/web/app/api/health/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/indexnow",
+      "file": "apps/web/app/api/indexnow/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/invoices/[id]/checkout",
+      "file": "apps/web/app/api/invoices/[id]/checkout/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/invoices/[id]/pdf",
+      "file": "apps/web/app/api/invoices/[id]/pdf/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/knowledge",
+      "file": "apps/web/app/api/knowledge/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/api/leads",
+      "file": "apps/web/app/api/leads/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/market",
+      "file": "apps/web/app/api/market/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/pilot-leads",
+      "file": "apps/web/app/api/pilot-leads/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/quotes/[id]/pdf",
+      "file": "apps/web/app/api/quotes/[id]/pdf/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/shop/checkout",
+      "file": "apps/web/app/api/shop/checkout/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/api/webhooks/stripe",
+      "file": "apps/web/app/api/webhooks/stripe/route.ts",
+      "indexable": false,
+      "machineReadable": true,
+      "exportsGET": false,
+      "forceStatic": false
+    },
+    {
+      "route": "/feed.xml",
+      "file": "apps/web/app/feed.xml/route.ts",
+      "indexable": true,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/llms-full.txt",
+      "file": "apps/web/app/llms-full.txt/route.ts",
+      "indexable": true,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/llms.txt",
+      "file": "apps/web/app/llms.txt/route.ts",
+      "indexable": true,
+      "machineReadable": true,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/about",
+      "file": "apps/web/app/md/about/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/glossary/[slug]",
+      "file": "apps/web/app/md/glossary/[slug]/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/guides/[slug]",
+      "file": "apps/web/app/md/guides/[slug]/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/papers/[slug]",
+      "file": "apps/web/app/md/papers/[slug]/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/service-areas/[slug]",
+      "file": "apps/web/app/md/service-areas/[slug]/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    },
+    {
+      "route": "/md/services/[slug]",
+      "file": "apps/web/app/md/services/[slug]/route.ts",
+      "indexable": false,
+      "machineReadable": false,
+      "exportsGET": true,
+      "forceStatic": true
+    }
+  ],
+  "machineSurfaces": [
+    {
+      "path": "/robots.txt",
+      "impl": "apps/web/app/robots.ts",
+      "present": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "impl": "apps/web/app/sitemap.ts",
+      "present": true
+    },
+    {
+      "path": "/llms.txt",
+      "impl": "apps/web/app/llms.txt/route.ts",
+      "present": true
+    },
+    {
+      "path": "/llms-full.txt",
+      "impl": "apps/web/app/llms-full.txt/route.ts",
+      "present": true
+    },
+    {
+      "path": "/ai.txt",
+      "impl": "apps/web/app/ai.txt/route.ts",
+      "present": true
+    },
+    {
+      "path": "/feed.xml",
+      "impl": "apps/web/app/feed.xml/route.ts",
+      "present": true
+    },
+    {
+      "path": "/api/knowledge",
+      "impl": "apps/web/app/api/knowledge/route.ts",
+      "present": true
+    },
+    {
+      "path": "/api/estimate",
+      "impl": "apps/web/app/api/estimate/route.ts",
+      "present": true
+    },
+    {
+      "path": "/api/market",
+      "impl": "apps/web/app/api/market/route.ts",
+      "present": true
+    },
+    {
+      "path": "/api/health",
+      "impl": "apps/web/app/api/health/route.ts",
+      "present": true
+    }
+  ],
+  "collections": {
+    "caseStudies": [
+      "distillery-district-victorian-condo",
+      "forest-hill-walnut-wide-plank-color-stability",
+      "midtown-townhouse-three-level-transition",
+      "rosedale-estate-stairs-radiant-heat",
+      "yorkville-loft-basement-conversion-moisture-mitigation"
+    ],
+    "articles": [
+      "dust-free-sanding-hepa-extraction-explained",
+      "species-comparison-matrix-toronto-renovations",
+      "subfloor-moisture-testing-protocol",
+      "water-based-vs-oil-based-polyurethane-chemistry",
+      "white-oak-vs-red-oak-tannin-behavior",
+      "wood-acclimation-timeline-toronto-gta"
+    ],
+    "papers": [
+      "hardwood-refinishing-machines-and-sequence",
+      "hardwood-selection-and-cost-framework-gta",
+      "toronto-hardwood-climate-moisture-protocol"
+    ],
+    "guides": [
+      "dustless-hardwood-refinishing-toronto",
+      "hardwood-flooring-cost-toronto",
+      "herringbone-chevron-parquet-toronto",
+      "how-to-choose-hardwood-contractor-toronto",
+      "how-to-evaluate-a-hardwood-quote",
+      "nail-down-glue-down-or-floating",
+      "reference-condominium-concrete-slab",
+      "reference-radiant-heat-main-floor",
+      "reference-refinishing-existing-hardwood",
+      "solid-vs-engineered-hardwood-toronto",
+      "white-oak-flooring-toronto"
+    ],
+    "glossary": [
+      "acclimation",
+      "anisotropic",
+      "belt-sander",
+      "buckling",
+      "buffer",
+      "change-order",
+      "cross-ply-core",
+      "crowning",
+      "cupping",
+      "edge-peaking",
+      "edger",
+      "engineered-hardwood",
+      "expansion-gap",
+      "fixed-price",
+      "floating",
+      "glue-down",
+      "hepa-dust-containment",
+      "hygroscopic",
+      "intercoat-screening",
+      "janka-hardness",
+      "moisture-content",
+      "moisture-differential",
+      "nail-down",
+      "planetary-sander",
+      "progressive-grits",
+      "radiant-heat",
+      "relative-humidity",
+      "seasonal-gapping",
+      "solid-hardwood",
+      "subfloor",
+      "wear-layer",
+      "white-oak"
+    ],
+    "servicePages": [
+      "custom-inlays",
+      "dust-free-sanding",
+      "floor-refinishing",
+      "floor-restoration",
+      "hardwood-installation",
+      "stair-refinishing"
+    ]
+  },
+  "serviceAreas": {
+    "municipalities": [
+      "Downtown Toronto",
+      "North York",
+      "Etobicoke",
+      "Scarborough",
+      "East York",
+      "York",
+      "Vaughan",
+      "Markham",
+      "Richmond Hill",
+      "Mississauga",
+      "Oakville",
+      "Brampton",
+      "Aurora",
+      "Newmarket",
+      "Pickering",
+      "Ajax"
+    ],
+    "neighbourhoods": [
+      "Rosedale",
+      "Forest Hill",
+      "Yorkville",
+      "Leaside",
+      "The Annex",
+      "High Park",
+      "Riverdale",
+      "Leslieville",
+      "The Beaches",
+      "Lawrence Park",
+      "Cabbagetown",
+      "Swansea",
+      "Davisville Village",
+      "Midtown Toronto",
+      "King West",
+      "Liberty Village"
+    ],
+    "total": 32
+  },
+  "pricing": {
+    "source": "apps/web/content/constants/pricing.ts",
+    "literalsOutsideSource": []
+  },
+  "commercialCoverage": [
+    {
+      "alias": "/stairs",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-hardwood",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-hard-wood",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-flooring",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-toronto",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-gta",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-sanding",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-finishing",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-refinishing",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/stairs-install",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-stairs",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-hardwood-stairs",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-stairs-refinishing-toronto",
+      "canonical": "/hardwood-stairs-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-floor",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-flooring",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/flooring-toronto",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-flooring",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-hardwood",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-hard-wood",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-hardwood-flooring",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-floor",
+      "canonical": "/hardwood-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-installation-toronto",
+      "canonical": "/services/hardwood-installation",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-hardwood-install",
+      "canonical": "/services/hardwood-installation",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-installation",
+      "canonical": "/services/hardwood-installation",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-solid-wood",
+      "canonical": "/services/hardwood-installation",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-refinishing",
+      "canonical": "/hardwood-floor-refinishing-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-sanding",
+      "canonical": "/hardwood-floor-refinishing-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-finishing",
+      "canonical": "/hardwood-floor-refinishing-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/dust-free-sanding-toronto",
+      "canonical": "/services/dust-free-sanding",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/dustless-sanding-toronto",
+      "canonical": "/services/dust-free-sanding",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-flooring-cost-toronto",
+      "canonical": "/guides/hardwood-flooring-cost-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/solid-vs-engineered-hardwood-toronto",
+      "canonical": "/guides/solid-vs-engineered-hardwood-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/white-oak-flooring-toronto",
+      "canonical": "/guides/white-oak-flooring-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    }
+  ],
+  "findings": [
+    {
+      "id": "CS-01",
+      "severity": "high",
+      "subject": "dust capture percentage",
+      "summary": "The figure 99.7% is published in 19 place(s) with no source recorded anywhere in the repository. Separately, 12 place(s) — the case studies — report a MEASURED 99.5%, from on-site particle counts, for what may or may not be the same quantity.",
+      "why": "The two figures are probably measuring different things — a HEPA element is rated at the filter, a particle count is measured in the room — but nothing in this repository says so, and that is the whole problem: neither number carries a protocol, an instrument or a date. A published performance claim needs a source under the Competition Act, and this one is not a footnote: two of the occurrences are inside FAQ answers emitted as FAQPage JSON-LD and restated verbatim by answer engines, and one is the SERVICES blurb that feeds llms.txt and /api/knowledge.",
+      "resolution": "Owner decision, not a code change — which is why nothing here was edited. Either (a) state what the 99.7% measures, with instrument and protocol, and register it; or (b) publish the measured room figure and cite the case-study particle counts; or (c) drop the percentage and keep the claim that is already supported — HEPA-sealed extraction at the machine, containment at the room, most clients stay in the house. Registered as method.dustCapturePct (status: unsourced) in apps/web/content/claims.ts, where the policy fences it to editorial contexts; `pnpm seo:claims` reports the gap and `--strict` fails on it once the queue is meant to be empty.",
+      "occurrences": [
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 269,
+          "text": "proof: 'Your written estimate is the price you pay. HEPA containment captures 99.7% of dust.',"
+        },
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 316,
+          "text": "line: 'Salaried master craftsmen. No subcontractors — ever. 99.7% dust capture at the source.',"
+        },
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 349,
+          "text": "a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most refinishing c"
+        },
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 369,
+          "text": "a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured"
+        },
+        {
+          "file": "apps/web/app/products/floorforge/page.tsx",
+          "line": 333,
+          "text": "title: '99.7% Dust Capture',"
+        },
+        {
+          "file": "apps/web/app/service-areas/[city]/page.tsx",
+          "line": 144,
+          "text": "<li><strong>Dust-free sanding.</strong> HEPA-sealed containment captures ~99.7% of airborne dust, so most clients stay home during the work.</li>"
+        },
+        {
+          "file": "apps/web/lib/guides.ts",
+          "line": 435,
+          "text": "'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room, capturing rou"
+        },
+        {
+          "file": "apps/web/lib/guides.ts",
+          "line": 689,
+          "text": "'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room, capturing roughly 99.7% of ai"
+        },
+        {
+          "file": "apps/web/lib/seo-data.ts",
+          "line": 93,
+          "text": "{ slug: 'dust-free-sanding', name: 'Dust-Free Floor Sanding', blurb: 'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients st"
+        },
+        {
+          "file": "apps/web/lib/seo-data.ts",
+          "line": 105,
+          "text": "{ q: 'Can we stay in the house during the work?', a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed s"
+        },
+        {
+          "file": "apps/web/lib/seo-data.ts",
+          "line": 119,
+          "text": "{ q: 'What is dustless hardwood refinishing, and does it work in an occupied home?', a: 'Dustless means HEPA-sealed extraction at the machine and containment at"
+        },
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 2,
+          "text": "title: \"Dust-Free Sanding: HEPA Extraction, Efficiency, and Why 99.7% Capture Matters\""
+        },
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 14,
+          "text": "keywords: \"HEPA filtration, dust collection, wood sanding, air quality, 99.7% capture\""
+        },
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 25,
+          "text": "# Dust-Free Sanding: HEPA Extraction, Efficiency, and Why 99.7% Capture Matters"
+        },
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 182,
+          "text": "- Desired capture: 99.7%"
+        },
+        {
+          "file": "apps/web/content/articles/subfloor-moisture-testing-protocol.mdx",
+          "line": 274,
+          "text": "Once your moisture testing is complete and the subfloor is acclimated, the next critical step is execution—and execution means dust-free work. See [Dust-Free Sa"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 18,
+          "text": "*     confirmed it. `99.7% dust capture` is a number that appears in nine"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 247,
+          "text": "statement: 'Roughly 99.7% of airborne particulate is captured at the source.',"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 248,
+          "text": "value: '99.7%',"
+        }
+      ],
+      "adjacentMeasuredFigure": [
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 225,
+          "text": "**Data:** If baseline is 500 particles/cm³ and extraction brings it back to <520, system is 99.5%+ effective."
+        },
+        {
+          "file": "apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx",
+          "line": 260,
+          "text": "- **Effective capture: 99.5%**"
+        },
+        {
+          "file": "apps/web/content/case-studies/distillery-district-victorian-condo.mdx",
+          "line": 83,
+          "text": "- Final air quality: 680 particles/cm³ (baseline normal; 99.5% dust capture)"
+        },
+        {
+          "file": "apps/web/content/case-studies/distillery-district-victorian-condo.mdx",
+          "line": 240,
+          "text": "**Result:** Final indoor air quality: **680 particles/cm³** (99.5% dust capture)."
+        },
+        {
+          "file": "apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx",
+          "line": 120,
+          "text": "- Air quality: Final particle count = 600 particles/cm³ (99.5% dust capture)"
+        },
+        {
+          "file": "apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx",
+          "line": 144,
+          "text": "- Air quality: Final particle count = 620 particles/cm³ (99.5% dust capture)"
+        },
+        {
+          "file": "apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx",
+          "line": 123,
+          "text": "- Air quality: Final particle count = 650 particles/cm³ (99.5% dust capture)"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 21,
+          "text": "*     anywhere, while this site's own case studies measure 99.5%. One of those"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 259,
+          "text": "'studies report a MEASURED figure of 99.5%, from particle counts taken on the ' +"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 262,
+          "text": "'RESOLUTION, in order of preference: (1) publish 99.5% and cite the case-study ' +"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 271,
+          "text": "statement: 'Measured end-of-job particle counts correspond to 99.5% dust capture.',"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 272,
+          "text": "value: '99.5%',"
+        }
+      ]
+    },
+    {
+      "id": "CS-02",
+      "severity": "high",
+      "subject": "warranty length",
+      "summary": "Two incompatible warranty statements are live: \"25–35 years on finish, up to 50 years structural\" and \"Manufacturer finish and structural warranties — 25 to 50 years\".",
+      "why": "The second phrasing reads as a single span and implies a 50-year FINISH warranty, which no manufacturer offers. A warranty length is the one claim on this site that is directly contractual — it is restated in the quote and the contract.",
+      "resolution": "Reconcile onto the first phrasing and attach the manufacturer warranty documents. Registered as warranty.finish (status: unsourced) in apps/web/content/claims.ts.",
+      "occurrences": [
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 254,
+          "text": "proof: 'Premium finishes carry 25–35 year manufacturer warranties, structural to 50 — passed straight through to you, in writing.',"
+        },
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 353,
+          "text": "a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — and we pass every one through"
+        },
+        {
+          "file": "apps/web/lib/seo-data.ts",
+          "line": 106,
+          "text": "{ q: 'What warranty comes with the work?', a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 300,
+          "text": "'itemised in the contract — typically 25–35 years on finish, up to 50 years structural.',"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 301,
+          "text": "value: '25–35 years finish; up to 50 years structural',"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 308,
+          "text": "'\"25–35 years on finish, up to 50 years structural\". home-client.tsx also says ' +"
+        },
+        {
+          "file": "apps/web/app/home-client.tsx",
+          "line": 322,
+          "text": "line: 'Manufacturer finish and structural warranties — 25 to 50 years — documented in your contract, not just promised.',"
+        },
+        {
+          "file": "apps/web/content/claims.ts",
+          "line": 309,
+          "text": "'\"25 to 50 years\" in a differentiator line, which reads as a single span and ' +"
+        }
+      ]
+    }
+  ]
+}

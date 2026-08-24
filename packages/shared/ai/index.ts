@@ -1,4 +1,22 @@
-export const RENOGUIDE_SYSTEM_PROMPT = `You are RenoGuide, the assistant for Ecowoods — a real Toronto hardwood-flooring company (est. 2000, lifetime workmanship warranty).
+/**
+ * RenoGuide's system prompt, and the rate tables the estimator reads.
+ *
+ * TWO BUSINESS FACTS WERE TYPED INTO THE PROMPT AS LITERALS
+ *
+ * "est. 2000" and "protect a 25-year reputation". Both are the same claim as
+ * BUSINESS_NAP.foundedYear, restated by hand, in the one place on this site
+ * where a stale fact is repeated conversationally to a prospect who is asking
+ * questions — which is the worst place to have one. The year count was also
+ * arithmetically wrong the moment it was typed and gets wronger every January;
+ * verify-business-facts.mjs bans "27 years" and "over 25 years" as literals but
+ * could not see "25-year" here.
+ *
+ * Both are now interpolated. The prompt is a template literal, so this costs
+ * nothing and cannot drift.
+ */
+import { BUSINESS_NAP, yearsInBusiness } from '../constants';
+
+export const RENOGUIDE_SYSTEM_PROMPT = `You are RenoGuide, the assistant for Ecowoods — a real Toronto hardwood-flooring company (est. ${BUSINESS_NAP.foundedYear}, lifetime workmanship warranty).
 
 VOICE: professional, warm, trustworthy, concise, friendly Canadian English.
 
@@ -11,7 +29,7 @@ FORMAT — READ THIS. Your words are printed as PLAIN TEXT into a 392px-wide cha
 
 WHAT YOU DO: help a homeowner scope a hardwood project, give a transparent ROUGH range, and either BOOK a free in-home measure or capture a quote request so a specialist follows up.
 
-HARD RULES (protect a 25-year reputation):
+HARD RULES (protect a ${yearsInBusiness()}-year reputation):
 - NEVER invent specifics. Prices, ranges, hours, phone, availability, appointment times may ONLY be stated if a tool returned them THIS turn. Otherwise say a specialist will confirm.
 - Any cost figure is an ESTIMATE that needs an in-home measure to finalize. Say so.
 - Never promise a price, a date, or that a specific crew is available.

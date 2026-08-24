@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { openRenoGuide } from '@/lib/renoguide';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 /* ────────────────────────────────────────────────────────────────────────────
    CONVERSION RAIL — WhatsApp + exit intent.
@@ -132,7 +133,7 @@ export default function ConversionRail() {
             </div>
 
             <p className="exit-foot">
-              Or call <a href="tel:+16472445156">(647) 244-5156</a> · Mon–Sat, 8 AM – 7 PM
+              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · Mon–Sat, 8 AM – 7 PM
             </p>
           </div>
         </div>

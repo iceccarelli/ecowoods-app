@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { openRenoGuide } from '@/lib/renoguide';
 import { useTheme } from './useTheme';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 /* ────────────────────────────────────────────────────────────────────────────
    ⌘K — for the 4% of visitors who type instead of scroll.
@@ -121,8 +122,8 @@ export default function CommandPalette() {
     {
       label: 'Contact & appearance',
       actions: [
-        { id: 'call', title: 'Call (647) 244-5156', hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
-          run: () => { close(); window.location.href = 'tel:+16472445156'; } },
+        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
+          run: () => { close(); window.location.href = BUSINESS_NAP.phoneHref; } },
         { id: 'theme', title: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', hint: 'Night showroom', keywords: 'theme dark light mode night appearance', icon: I.sun,
           run: () => { toggle(); close(); } },
       ],

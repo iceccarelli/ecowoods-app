@@ -146,6 +146,14 @@ const FAQPAGE_ALLOWED = new Set([
   // actually uses.
   'apps/web/app/hardwood-flooring-toronto/page.tsx',
   'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
+  // The third commercial head-term page, on the same test and with one extra
+  // reason it passes it: the stairs FAQ answers the cost question by saying
+  // that no per-tread band is published and explaining what the price depends
+  // on. That is a real answer to the question people actually ask, rendered
+  // visibly on the page, and it is the opposite of a figure written for a rich
+  // result. The published per-square-foot bands it does quote are interpolated
+  // from content/constants/pricing.ts like everywhere else.
+  'apps/web/app/hardwood-stairs-toronto/page.tsx',
   // The guides. Qualifies under F-27 on the same test: the first pair is the
   // guide's own question and its published recommendation — the two strings
   // the page has always led with — and the rest are rendered visibly in the

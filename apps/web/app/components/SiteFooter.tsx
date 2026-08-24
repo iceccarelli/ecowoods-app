@@ -123,9 +123,9 @@ export default function SiteFooter() {
               Now booking · Spring 2026
             </div>
             {m && (
-              <a href="tel:+16472445156" className="footer-call">
+              <a href={BUSINESS_NAP.phoneHref} className="footer-call">
                 <span className="footer-call-label">Call the shop</span>
-                <span className="footer-call-num">(647) 244-5156</span>
+                <span className="footer-call-num">{BUSINESS_NAP.phoneDisplay}</span>
               </a>
             )}
           </div>
@@ -145,6 +145,7 @@ export default function SiteFooter() {
             <div className="footer-links">
               <a href="/hardwood-flooring-toronto">Hardwood Flooring Toronto</a>
               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
+              <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}
@@ -203,15 +204,20 @@ export default function SiteFooter() {
 
           {/* Visit */}
           <FooterCol title="Showroom & Office" mobile={m}>
+            {/* Was two hand-typed lines that printed the city twice —
+                "32 Norfield Crescent, Toronto, Ontario" followed by  claims-allow
+                "Toronto, ON M9W 1X6". Derived from BUSINESS_NAP, it cannot
+                say Toronto twice and cannot drift from the JSON-LD address. */}
             <p style={{ marginBottom: '1.25rem', lineHeight: 1.7 }}>
-              32 Norfield Crescent, Toronto, Ontario<br />
-              Toronto, ON M9W 1X6
+              {BUSINESS_NAP.address.streetAddress}<br />
+              {BUSINESS_NAP.address.addressLocality}, {BUSINESS_NAP.address.addressRegion}{' '}
+              {BUSINESS_NAP.address.postalCode}
             </p>
             <div className="footer-links" style={{ marginBottom: '1.5rem' }}>
-              <a href="tel:+16472445156" style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
-                (647) 244-5156
+              <a href={BUSINESS_NAP.phoneHref} style={{ color: 'var(--copper-bright)', fontWeight: 600 }}>
+                {BUSINESS_NAP.phoneDisplay}
               </a>
-              <a href="mailto:services@ecowoods.ca">services@ecowoods.ca</a>
+              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
             </div>
             <p style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
               <span style={{ color: 'var(--cream-50)', fontWeight: 600 }}>Hours</span>

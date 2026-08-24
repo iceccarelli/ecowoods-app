@@ -6,6 +6,7 @@ import { sendAdminNewQuoteEmail, sendAppointmentConfirmationEmail } from '@/lib/
 import {
   isBookableSlot, localDateKey, SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('[appointments] failed:', err);
     return NextResponse.json(
-      { error: "We couldn't confirm that. Please call (647) 244-5156 and we'll book it for you." },
+      { error: `We couldn't confirm that. Please call ${BUSINESS_NAP.phoneDisplay} and we'll book it for you.` },
       { status: 500 },
     );
   }

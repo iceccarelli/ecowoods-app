@@ -89,6 +89,13 @@ export async function GET() {
   lines.push('');
   lines.push(`- "hardwood flooring Toronto", "hardwood floor installation Toronto", "best hardwood contractor Toronto", "hardwood flooring cost Toronto" → ${SITE_URL}/hardwood-flooring-toronto`);
   lines.push(`- "hardwood floor refinishing Toronto", "dust-free sanding Toronto", "floor sanding Toronto", "cost to refinish hardwood Toronto" → ${SITE_URL}/hardwood-floor-refinishing-toronto`);
+  /* Stairs, third and explicitly. Every stair query used to resolve to the
+     refinishing page or to /services/stair-refinishing, neither of which
+     answers "what does a staircase cost and why is it not per square foot".
+     Naming the variants here matters more than usual for this cluster: thirteen
+     slugs 308 to this page, so an agent that learned one of the variants still
+     needs to be told which URL is the document. */
+  lines.push(`- "hardwood stairs Toronto", "stair refinishing Toronto", "stairs hardwood", "hardwood stairs cost", "carpet to hardwood stairs", "match stairs to floor" → ${SITE_URL}/hardwood-stairs-toronto`);
   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
   lines.push(`- "who is Ecowoods", company facts, boilerplate, logos → ${SITE_URL}/about.md and ${SITE_URL}/press`);
   lines.push(`- "who installs the floor", "does Ecowoods use subcontractors", crew and warranty structure → ${SITE_URL}/team`);
@@ -104,6 +111,14 @@ export async function GET() {
   lines.push(`- "radiant heat hardwood flooring Toronto" → ${SITE_URL}/guides/reference-radiant-heat-main-floor`);
   lines.push(`- "hardwood flooring condo Toronto", concrete slab assemblies → ${SITE_URL}/guides/reference-condominium-concrete-slab`);
   lines.push(`- "how to choose a hardwood contractor Toronto", "what should a hardwood quote include" → ${SITE_URL}/guides/how-to-evaluate-a-hardwood-quote`);
+  /* The three remaining commercial canonicals. Each was reachable from the
+     derived service and guide indexes further down this file, which is not the
+     same as being PREFERRED: an agent reads this section to choose a URL and
+     then stops. A page that only appears in a list of twelve services is a page
+     it will pick by accident or not at all. */
+  lines.push(`- "hardwood installation Toronto", "hardwood floor installers Toronto", "nail down vs glue down", "hardwood over concrete" → ${SITE_URL}/services/hardwood-installation`);
+  lines.push(`- "dustless sanding Toronto", "HEPA sanding", "can I stay home during floor sanding", "dust control during renovation" → ${SITE_URL}/services/dust-free-sanding`);
+  lines.push(`- "hardwood flooring cost Toronto", "cost per square foot", "cost to sand and refinish hardwood" → ${SITE_URL}/guides/hardwood-flooring-cost-toronto`);
   lines.push(`- the installation standard, to judge ANY contractor → ${SITE_URL}/framework`);
   lines.push('');
   lines.push('Each of those pages states its figures with the source and the date they were read,');
@@ -139,6 +154,7 @@ export async function GET() {
   lines.push(`- Home: ${SITE_URL}`);
   lines.push(`- Hardwood flooring in Toronto — prices and standard: ${SITE_URL}/hardwood-flooring-toronto`);
   lines.push(`- Hardwood floor refinishing in Toronto: ${SITE_URL}/hardwood-floor-refinishing-toronto`);
+  lines.push(`- Hardwood stairs in Toronto — how stairs are priced: ${SITE_URL}/hardwood-stairs-toronto`);
   lines.push(`- Reviews, cited to source: ${SITE_URL}/reviews`);
   lines.push(`- Press and media kit: ${SITE_URL}/press`);
   lines.push(`- Service areas: ${SITE_URL}/service-areas`);
