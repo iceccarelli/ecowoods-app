@@ -55,15 +55,39 @@ const ADVISORY_EXT = new Set(['.mdx', '.md']);
 const SKIP_DIR = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
 
 /**
- * A decimal price. `$4.75`, `$ 11.00`.
+ * THREE SHAPES, AND THE FIRST VERSION OF THIS GUARD ONLY CAUGHT ONE.
  *
- * Deliberately NOT matching bare `$13` or `$8`: an integer dollar figure in
- * prose is far more often a general amount than one of these bands, and a
- * guard that fires on every "$50 deposit" is a guard that gets an allowlist
- * entry per line until it means nothing. The three bands all have cents, so
- * requiring cents catches every copy of them and almost nothing else.
+ * It matched `$4.75` and passed a clean run — while the live homepage carried
+ * four hand-typed copies of the bands and one figure that was arithmetically
+ * wrong, none of which look like `$4.75`:
+ *
+ *   `pricePerSqFt: '4.75–7.50'`   the $ and the unit are rendered as separate
+ *                                 spans, so the literal has no dollar sign on it
+ *   `$4,500–$7,000`               a worked total, comma-grouped, no cents — and
+ *                                 the correct answer was $4,750–$7,500
+ *
+ * A guard that only sees one of the shapes a price can take reports the tree as
+ * clean and is worse than no guard, because someone then trusts it. All three
+ * are matched now.
+ *
+ * Still deliberately NOT matched: a bare `$13` or `$8`. An integer dollar figure
+ * in prose is far more often a general amount than one of these bands, and a
+ * guard that fires on every "$50 deposit" collects an allowlist entry per line
+ * until it means nothing.
  */
-const PRICE = /(?<![\w.])\$\s?\d{1,3}\.\d{2}(?![\d])/;
+const PRICE_SHAPES = [
+  /** `$4.75`, `$ 11.00` — a rate with cents. */
+  { re: /(?<![\w.])\$\s?\d{1,3}\.\d{2}(?![\d])/, what: 'a rate with cents' },
+  /** `$4,500` — a comma-grouped total. Almost always a worked example. */
+  { re: /(?<![\w.])\$\s?\d{1,3},\d{3}(?![\d])/, what: 'a comma-grouped dollar total' },
+  /**
+   * `'4.75–7.50'` — a bare decimal range in a string or JSX, no currency symbol
+   * attached because the markup renders it separately. En dash, hyphen or the
+   * word "to", because all three appear in this codebase.
+   */
+  { re: /['"`>]\s*\d{1,3}\.\d{2}\s*(?:–|—|-|to)\s*\d{1,3}\.\d{2}\s*['"`<]/, what: 'a bare decimal range' },
+];
+const matchesPrice = (line) => PRICE_SHAPES.find((s) => s.re.test(line));
 
 /**
  * Reasoned exemptions, by file and by the text on the line.
@@ -104,6 +128,23 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * In a SOURCE file a `//` or `*` line is a comment. It ships to nobody, and a
+ * comment explaining why a figure was removed is documentation, not a
+ * violation — but the first version of this scanner read it as one, so writing
+ * down why a price was wrong failed the guard that found it. That is F-58 and
+ * F-106 for the fourth time in this repository, and the fix is the same one
+ * verify-business-facts.mjs already ships.
+ *
+ * Markdown and MDX are NOT stripped: there, a line beginning `//` or `*` is
+ * something a reader sees.
+ */
+const isCode = (f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(f);
+const isComment = (line) => {
+  const t = line.trim();
+  return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('*/');
+};
+
 const scan = (roots, exts) => {
   const hits = [];
   for (const r of roots) {
@@ -111,10 +152,13 @@ const scan = (roots, exts) => {
       if (!exts.has(extname(f))) continue;
       const rel = relative(ROOT, f);
       if (rel === SOURCE) continue;
+      const code = isCode(f);
       readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
         if (line.includes(OPT_OUT)) return;
         if (allowed(rel, line)) return;
-        if (PRICE.test(line)) hits.push({ rel, line: i + 1, text: line.trim().slice(0, 130) });
+        if (code && isComment(line)) return;
+        const shape = matchesPrice(line);
+        if (shape) hits.push({ rel, line: i + 1, text: line.trim().slice(0, 130), what: shape.what });
       });
     }
   }
@@ -137,7 +181,7 @@ if (violations.length === 0) {
 
 console.error(`\n✗ ${violations.length} price literal(s) outside ${SOURCE}:\n`);
 for (const v of violations) {
-  console.error(`  ${v.rel}:${v.line}`);
+  console.error(`  ${v.rel}:${v.line}  (${v.what})`);
   console.error(`    ${v.text}\n`);
 }
 console.error(

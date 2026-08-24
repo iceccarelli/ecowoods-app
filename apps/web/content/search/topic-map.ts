@@ -326,35 +326,36 @@ export const CLUSTERS: QueryCluster[] = [
   {
     id: 'floor-problems',
     intent: 'problem',
-    canonical: '/guides/solid-vs-engineered-hardwood-toronto',
-    coverage: 'gap',
-    gapNote:
-      'THE LARGEST UNCOVERED CLUSTER ON THIS SITE. Someone typing "why is my hardwood ' +
-      'floor cupping" owns a floor and has a problem; they are not choosing between solid ' +
-      'and engineered, and the guide they currently land on answers a question they did ' +
-      'not ask. The mechanism is published — the climate and moisture paper covers every ' +
-      'one of these failure modes, and the glossary defines them — but there is no page ' +
-      'written from the homeowner\'s side: symptom, cause, is it recoverable, what does ' +
-      'fixing it cost. That page (a failure-mode atlas, one anchor per symptom, each ' +
-      'linking to the paper section and the relevant service) is the highest-value piece ' +
-      'of content this site does not have. It also converts: a cupped floor is a job.',
+    canonical: '/hardwood-floor-problems-toronto',
     summary:
-      'A floor that is already misbehaving. Cupping, gapping, crowning — all of ' +
-      'which are one mechanism, moisture, which is why one page could answer them.',
+      'A floor that is already misbehaving. Cupping, gapping, crowning, buckling ' +
+      'and edge peeling are five symptoms of one mechanism — moisture — which is ' +
+      'why one page answers all of them.',
     queries: [
       'hardwood floor cupping Toronto',
-      'gaps in hardwood floor winter',
       'why is my hardwood floor cupping',
-      'hardwood floor buckling',
-      'floor gaps between boards',
+      'gaps in hardwood floor winter',
+      'gaps between floorboards Toronto',
       'hardwood floor crowning',
+      'hardwood floor buckling',
+      'hardwood floor lifting off subfloor',
+      'finish peeling on hardwood floor',
+      'can a cupped floor be sanded flat',
+      'refinish or replace hardwood floor',
+      'is floor cupping covered by insurance',
       'humidity hardwood floors Toronto',
+      'water damaged hardwood floor Toronto',
+      'hardwood floor repair Toronto',
+      'wood floor restoration GTA',
     ],
     supporting: [
       '/glossary/cupping',
       '/glossary/crowning',
+      '/glossary/seasonal-gapping',
       '/papers/toronto-hardwood-climate-moisture-protocol',
       '/services/floor-restoration',
+      '/services/floor-refinishing',
+      '/guides/how-to-evaluate-a-hardwood-quote',
     ],
   },
   {

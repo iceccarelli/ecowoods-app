@@ -10,14 +10,14 @@
     "Run them by hand against each assistant, fill in the four booleans and the date, and",
     "commit. The point is the trend across dates, not any single run."
   ],
-  "generatedAt": "2026-08-24T14:32:13.393Z",
+  "generatedAt": "2026-08-24T15:31:49.588Z",
   "source": "apps/web/content/search/topic-map.ts",
   "totals": {
-    "prompts": 299,
+    "prompts": 307,
     "byIntent": {
       "commercial": 69,
       "decision": 19,
-      "problem": 7,
+      "problem": 15,
       "entity": 5,
       "local": 135,
       "technical": 64
@@ -1411,26 +1411,9 @@
       "id": "floor-problems:hardwood-floor-cupping-toronto",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
+      "coverage": "covered",
       "prompt": "hardwood floor cupping Toronto",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "floor-problems:gaps-in-hardwood-floor-winter",
-      "cluster": "floor-problems",
-      "intent": "problem",
-      "coverage": "gap",
-      "prompt": "gaps in hardwood floor winter",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -1445,9 +1428,9 @@
       "id": "floor-problems:why-is-my-hardwood-floor-cupping",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
+      "coverage": "covered",
       "prompt": "why is my hardwood floor cupping",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -1459,12 +1442,12 @@
       }
     },
     {
-      "id": "floor-problems:hardwood-floor-buckling",
+      "id": "floor-problems:gaps-in-hardwood-floor-winter",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
-      "prompt": "hardwood floor buckling",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "coverage": "covered",
+      "prompt": "gaps in hardwood floor winter",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -1476,12 +1459,12 @@
       }
     },
     {
-      "id": "floor-problems:floor-gaps-between-boards",
+      "id": "floor-problems:gaps-between-floorboards-toronto",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
-      "prompt": "floor gaps between boards",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "coverage": "covered",
+      "prompt": "gaps between floorboards Toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -1496,9 +1479,111 @@
       "id": "floor-problems:hardwood-floor-crowning",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
+      "coverage": "covered",
       "prompt": "hardwood floor crowning",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:hardwood-floor-buckling",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "hardwood floor buckling",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:hardwood-floor-lifting-off-subfloor",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "hardwood floor lifting off subfloor",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:finish-peeling-on-hardwood-floor",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "finish peeling on hardwood floor",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:can-a-cupped-floor-be-sanded-flat",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "can a cupped floor be sanded flat",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:refinish-or-replace-hardwood-floor",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "refinish or replace hardwood floor",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:is-floor-cupping-covered-by-insurance",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "is floor cupping covered by insurance",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -1513,9 +1598,60 @@
       "id": "floor-problems:humidity-hardwood-floors-toronto",
       "cluster": "floor-problems",
       "intent": "problem",
-      "coverage": "gap",
+      "coverage": "covered",
       "prompt": "humidity hardwood floors Toronto",
-      "expectedUrl": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:water-damaged-hardwood-floor-toronto",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "water damaged hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:hardwood-floor-repair-toronto",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "hardwood floor repair Toronto",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "floor-problems:wood-floor-restoration-gta",
+      "cluster": "floor-problems",
+      "intent": "problem",
+      "coverage": "covered",
+      "prompt": "wood floor restoration GTA",
+      "expectedUrl": "https://ecowoods.ca/hardwood-floor-problems-toronto",
       "result": {
         "cited": null,
         "correctUrl": null,

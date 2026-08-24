@@ -188,6 +188,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/hardwood-flooring-toronto', 'monthly', 0.95),
     entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
     entry('/hardwood-stairs-toronto', 'monthly', 0.95),
+    /* The failure-mode atlas. Same priority as the head terms, and it earns it:
+       the queries it answers ("why is my hardwood floor cupping") arrive from
+       someone whose floor is already failing, which is a shorter path to a job
+       than any shopping query on this list. */
+    entry('/hardwood-floor-problems-toronto', 'monthly', 0.95),
     entry('/service-areas', 'monthly', 0.9),                       // no date
   ];
 

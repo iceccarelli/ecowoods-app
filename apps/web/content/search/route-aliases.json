@@ -32,7 +32,6 @@
     "/toronto-stairs": "/hardwood-stairs-toronto",
     "/toronto-hardwood-stairs": "/hardwood-stairs-toronto",
     "/hardwood-stairs-refinishing-toronto": "/hardwood-stairs-toronto",
-
     "/hardwood-floor": "/hardwood-flooring-toronto",
     "/hardwood-flooring": "/hardwood-flooring-toronto",
     "/flooring-toronto": "/hardwood-flooring-toronto",
@@ -41,21 +40,25 @@
     "/toronto-hard-wood": "/hardwood-flooring-toronto",
     "/toronto-hardwood-flooring": "/hardwood-flooring-toronto",
     "/toronto-floor": "/hardwood-flooring-toronto",
-
     "/hardwood-installation-toronto": "/services/hardwood-installation",
     "/toronto-hardwood-install": "/services/hardwood-installation",
     "/toronto-installation": "/services/hardwood-installation",
     "/toronto-solid-wood": "/services/hardwood-installation",
-
     "/toronto-refinishing": "/hardwood-floor-refinishing-toronto",
     "/toronto-sanding": "/hardwood-floor-refinishing-toronto",
     "/toronto-finishing": "/hardwood-floor-refinishing-toronto",
-
     "/dust-free-sanding-toronto": "/services/dust-free-sanding",
     "/dustless-sanding-toronto": "/services/dust-free-sanding",
-
     "/hardwood-flooring-cost-toronto": "/guides/hardwood-flooring-cost-toronto",
     "/solid-vs-engineered-hardwood-toronto": "/guides/solid-vs-engineered-hardwood-toronto",
-    "/white-oak-flooring-toronto": "/guides/white-oak-flooring-toronto"
+    "/white-oak-flooring-toronto": "/guides/white-oak-flooring-toronto",
+    "/hardwood-floor-repair-toronto": "/hardwood-floor-problems-toronto",
+    "/floor-repair-toronto": "/hardwood-floor-problems-toronto",
+    "/hardwood-floor-cupping": "/hardwood-floor-problems-toronto",
+    "/cupping": "/hardwood-floor-problems-toronto",
+    "/water-damaged-hardwood-toronto": "/hardwood-floor-problems-toronto",
+    "/wood-floor-restoration-gta": "/hardwood-floor-problems-toronto",
+    "/floor-restoration-toronto": "/hardwood-floor-problems-toronto",
+    "/toronto-floor-repair": "/hardwood-floor-problems-toronto"
   }
 }

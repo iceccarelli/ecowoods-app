@@ -2,6 +2,62 @@
 
 Branch: `feat/search-ai-domination-2026-08`
 
+Two cycles. **Cycle 1** is everything below the divider — the foundation, the
+commercial surface, the machine surfaces. **Cycle 2** is at the end of this
+file: the live homepage price contradiction, the failure-mode atlas, and the
+link-density guard that found five commercial pages linking to zero evidence.
+
+Read [Cycle 2](#cycle-2--what-shipping-cycle-1-exposed) first if you only read
+one — it contains the only bug on this branch that was live and wrong.
+
+---
+
+## ⚠ Measured 2026-08-24, and it outranks everything else in this file
+
+**`ecowoodshardwood.com` is not redirecting. It is serving a complete second
+website for this business.**
+
+Not a leftover homepage. `www.ecowoodshardwood.com/` and
+`www.ecowoodshardwood.com/services` both answer **200**, with working
+navigation — About, Services, Testimonials, Blog — the same phone number as
+ecowoods.ca, and titles written to rank:
+
+| URL | title |
+| --- | --- |
+| `/` | Portfolio \| Hardwood Floor **Repair** in Toronto, Vaughan, Markham |
+| `/services` | Hardwood Floor Installation, Refinishing in Toronto, Hamilton ON |
+
+Why this is the most expensive item on the list:
+
+- **Two live sites, one business.** Google has to pick which one is the entity
+  and is being handed contradictory evidence by both. Everything else in this
+  report is signal engineering on one of two competing candidates.
+- **The old one is competing on the best cluster.** Its homepage title targets
+  *hardwood floor repair* — the exact query family
+  `/hardwood-floor-problems-toronto` was written for, in cycle 2.
+- **It publishes no prices.** An answer engine that reaches it from an old
+  citation learns this is a company that does not publish pricing — the exact
+  opposite of everything ecowoods.ca is built to demonstrate.
+- **Every inbound link, directory entry and citation pointing at it passes
+  nothing** to ecowoods.ca.
+
+`old-domain/README.md` recorded on 2026-08-23 that "every deep path answers
+404", which reads like a migration nearly finished with only a homepage left.
+That measurement is stale and it is now corrected in that file — deep paths
+serve, with content.
+
+**No code in this repository can fix it.** The host-scoped 308s in
+`vercel.json` and `next.config.js` only fire once that domain is attached to
+this Vercel project, and it is not — something else is serving it (Apache, per
+the earlier fingerprint). `old-domain/EXECUTE.md` has the runbook and
+`old-domain/.htaccess` is the file. `node scripts/verify-domain-redirect.mjs`
+reports all of this correctly, in one command, and **has never been run from a
+machine with open egress.**
+
+This is item 1. Everything else in this report is item 2 or later.
+
+---
+
 ---
 
 ## What was asked for, and what was built instead — read this first
@@ -466,3 +522,279 @@ EXECUTION_REPORT_SEARCH_AI_2026-08-24.md
 
 **Modified (40)** — entity graph (2), machine surfaces (5), NAP call sites (20),
 pricing call sites (5), components (5), config and CI (3)
+
+---
+---
+
+# Cycle 2 — what shipping cycle 1 exposed
+
+Cycle 1 built guards. Cycle 2 is mostly what those guards found once they were
+pointed at the whole tree, plus the one content gap the topic map had recorded
+and left open.
+
+## First: cycle 1 never applied
+
+`git pull` brought the patch file itself into `main` — the GitHub web upload
+stripped the dashes from the filename, so `0001-search-ai-2026-08-24.patch`
+landed as `0001searchai20260824.patch` and `git am` could not find it. The run
+that followed was `main`, unchanged, reporting all green. The tell was
+`verify:links` saying **27** public routes where this branch says **29**, and a
+build listing with no `/hardwood-stairs-toronto` in it.
+
+Both stray `.patch` files are deleted in this branch and `*.patch` is now in
+`.gitignore`, with the reason written there: a committed patch is a frozen
+second copy of changes that also exist in the history, it drifts from them the
+moment anything is amended, and it is half a megabyte of diff text that every
+clone and every CI checkout carries forever.
+
+---
+
+## The live bug
+
+The homepage said this, and still says it until this branch merges:
+
+> A typical 1,000 sq ft main floor runs about **$4,500–$7,000**
+
+Four hundred pixels above it, in the price card it refers to:
+
+> Full Sand & Finish — **$4.75–$7.50 / sq ft**
+
+A thousand square feet at the published band is **$4,750–$7,500**. The homepage
+of a company whose entire pitch is *fixed price in writing* was showing two
+different prices for the same job on the same screen, understating the top of
+its own range by $500 — a real number a real estimator then has to walk back in
+someone's living room.
+
+Three more hand-typed copies of the bands were in the same component's tier
+cards, under a stale warning saying they were market ranges to be replaced
+before launch. Three had been quietly corrected at some point; the fourth had
+not. That is the worst state a warning can be in: a stale instruction telling
+the next reader to change numbers that are now right.
+
+**Every figure in that component is derived now** — the tiers from
+`content/constants/pricing.ts`, the worked example multiplied out of the band at
+render time, so the arithmetic cannot disagree with the rate it comes from.
+
+### Why cycle 1's guard missed it
+
+Because it only knew one shape of price. `$4.75` matched; these did not:
+
+| shape | example | why it was invisible |
+| --- | --- | --- |
+| bare decimal range | `pricePerSqFt: '4.75–7.50'` | the `$` and the unit are separate spans |
+| comma-grouped total | `$4,500–$7,000` | no cents |
+
+A guard that sees one of the shapes a price can take reports the tree as clean
+and is **worse than no guard**, because someone then trusts it. All three shapes
+are matched now, and the guard also stops firing on its own documentation — a
+`//` or `*` line in a source file is a comment, which is F-58 and F-106 for the
+fourth time in this repository.
+
+---
+
+## `/hardwood-floor-problems-toronto` — the failure-mode atlas
+
+The one cluster the cycle-1 topic map carried as `coverage: 'gap'`. Someone
+typing *"why is my hardwood floor cupping"* owns a floor and has a problem; the
+map had to route them to a solid-vs-engineered guide, which answers a question
+they did not ask.
+
+Five symptoms — cupping, seasonal gapping, crowning, buckling, edge peeling —
+each with what it looks like, what causes it, an honest prognosis, and which
+published band the remedy lands in. Every definition is pulled from the glossary
+rather than restated, and the page emits `DefinedTerm` nodes pointing back at the
+canonical definitions, so a machine can get from symptom to definition without
+parsing prose.
+
+**Two of the five say the correct action is to do nothing.** A winter gap that
+closes in June is a house that is too dry and the answer is a humidifier, not a
+contractor. That is not restraint for its own sake — it is the reason the other
+three are believable, and it is a shape nobody writes for a rich result.
+
+Why this page is worth more than the keyword variants that were requested
+instead:
+
+- **It converts.** Every other commercial page meets someone *considering* work.
+  This one meets someone whose floor is already failing, in the hour they first
+  searched for it.
+- **It is the question an answer engine is actually asked.** "Why is my floor
+  cupping" has a real answer, which is the shape of query a retrieval system
+  settles by quoting a source. "Hardwood flooring Toronto" is a shopping query it
+  answers with a list.
+- **It cost nothing to say.** Every symptom was already published in the glossary
+  and established in the climate paper. Nothing was invented; the material was
+  re-cut from the homeowner's side instead of the technician's.
+
+Eight more aliases 308 into it (`/hardwood-floor-repair-toronto`, `/cupping`,
+`/water-damaged-hardwood-toronto`, …). Wired into the sitemap at 0.95, the
+`llms.txt` citation targets, `ai.txt`, the footer, and the head-term rail.
+
+---
+
+## `pnpm seo:density` — the P2 guard, and what it found
+
+`verify-links.mjs` asks whether a page has a way **in**. This asks whether it has
+enough ways **out**, and to the right places. Different failures:
+
+- No way in → not crawled, does not rank at all.
+- No way out → crawled, ranks thinly, and is the end of the journey. A crawler
+  reads a leaf as a page the site itself does not think is connected to anything.
+
+Quota for a money page: **≥2 services, ≥2 decision guides, ≥2 case studies, ≥1
+technical paper, ≥1 framework page, ≥1 estimate CTA.** Not a ranking trick — it
+is the shape of an answer a person needs (*what would you do, what do I have to
+decide, has it worked before, why does it work, how do I judge you, how do I
+start*), and an internal-link count is the only part of that a machine can check.
+
+**On its first run, five of nine commercial and decision canonicals reached ZERO
+case studies.** This site publishes five case studies containing subfloor MVTR
+readings, particle counts and eighteen-month deflection measurements, and not one
+of the pages a buyer lands on linked to any of them. That is the most expensive
+omission on the site and it is not an SEO one — a commercial page's whole job is
+to move someone from "this sounds right" to "these people have done this". The
+evidence existed. Nothing pointed at it.
+
+| | before | after |
+| --- | --- | --- |
+| `/hardwood-flooring-toronto` | 1 guide, **0 case studies** | all services, 3 guides, all evidence |
+| `/hardwood-floor-refinishing-toronto` | **0 services, 0 guides, 0 cases, no framework** | 3 / 2 / all / framework |
+| `/hardwood-stairs-toronto` | 1 / 1 / 1 | 3 / 2 / all |
+| `/services/[slug]` × 6 | **0 services, 0 guides, 0 cases** | all / all / all |
+| `/guides/[slug]` × 11 | **0 services, 0 cases**, CTA only to score someone else's quote | all / all / all + estimate CTA |
+| `/framework` | **0 services, 0 cases, no CTA at all** | all / all / CTA |
+| `/about`, `/service-areas` | **0 services, 0 cases** | all / all |
+
+The `/guides` template is the one worth pausing on: a reader who has just decided
+between solid and engineered is the most qualified visitor on this site, and the
+page ended.
+
+Two tiers, because one quota applied to every canonical is a quota nobody
+believes. `/about` does not need two case studies; it does need to say what the
+company does, show one job, and offer a way to start. **Raising a quota is a
+content decision. Lowering one to make the guard pass is not.**
+
+### The guard reports its own blind spot
+
+`<Link href={f.href}>` is a real link this scanner cannot resolve. Rather than
+undercount silently it prints an `unres` column, so a "0 guides" next to six
+unresolvable hrefs reads as *the scanner is blind*, not *the page is broken*.
+
+In the one place that mattered — the service template's six identical
+`Read the guide` anchors — the fix was worth making anyway. Six edges into six
+different documents, all labelled the same. Anchor text is one of the few signals
+a site controls completely; spending it on the word "guide" six times spends it
+on nothing. They now carry each guide's actual question.
+
+### Breadcrumbs
+
+`/products/floorforge` was the only deep page with no `BreadcrumbList` — two
+segments from the root, no declared parent, so Google had nothing to display and
+nowhere to attribute it. It is a `'use client'` page, so both its metadata and
+its JSON-LD have to live in the sibling `layout.tsx`; the breadcrumb is there now.
+
+---
+
+## Two audit false findings, fixed
+
+Cycle 1's audit reported things that were not true, and a false finding costs more
+than a missed one — someone goes and "fixes" something that was already right.
+
+- **"`/products/floorforge` has no canonical."** It has had one since it was
+  written. A `'use client'` page cannot export `metadata`; its canonical is in
+  the sibling layout, which the audit did not read. It does now.
+- **"Three pages have no H1."** The homepage's H1 is in `home-client.tsx`;
+  `/blog/[slug]` and `/case-studies/[slug]` take theirs from the MDX document.
+  The audit now follows one level of local component imports and recognises an
+  MDX-rendering route. The "fix" for any of those three would have been to add a
+  **second** H1.
+
+Both audits now: **0 pages without a canonical, 0 without an H1, 0 with more than
+one, 0 price literals outside the constants module.**
+
+---
+
+## Live checks that were finally possible
+
+`ecowoods.ca` is reachable from this environment through the fetch tool, so some
+of what was theory in cycle 1 is now measured:
+
+- The site serves. Homepage title, H1, phone and all three price bands render as
+  the source says — **including the wrong `$4,500–$7,000`**, which is how that
+  bug was found rather than reasoned about.
+- `/llms.txt` is live and complete, with its preferred-citation-target section
+  intact.
+
+**`ecowoodshardwood.com` still could not be measured** — its `robots.txt` fetch
+timed out from here. The old-domain 301s remain configured in two places and
+verified in none. `pnpm seo:live` from the Codespace is the only thing that
+settles it, and it is still item 2 below.
+
+---
+
+## Cycle 2 verification
+
+| check | result |
+| --- | --- |
+| `tsc --noEmit` | **107 errors — identical set to baseline** |
+| webpack production compile | **✓ Compiled successfully in 26.7s** — every module including the new pages |
+| `next build` full run | blocked here: Google Fonts and the Prisma binary host both 403 from this sandbox |
+| existing `verify:*` (27 scripts) | all pass |
+| `pnpm seo` (7 gates) | all pass |
+| every glossary + case-study slug referenced by the new pages | resolves |
+
+The compile result is the meaningful one: it proves every import, every component
+and every new page resolves and bundles. What follows it is type checking, which
+fails on the same 107 pre-existing Prisma errors it failed on before this branch
+existed, in `/mypage`, `/admin` and the PDF routes.
+
+---
+
+## The next ten, re-ordered
+
+Items 5 and 6 from cycle 1 are done. The rest have moved up.
+
+1. **Apply the patch and run `pnpm ci:local`.** Prisma generates in the
+   Codespace; the 107 type errors should go to zero and the build should list
+   `/hardwood-stairs-toronto` and `/hardwood-floor-problems-toronto`.
+2. **Run `pnpm seo:live`.** Still never executed anywhere with open egress. The
+   old-domain 301s are configured twice and measured zero times, and a redirect
+   that is configured and not live looks identical from inside this repository.
+3. **Resolve CS-01 (dust capture, 18 places, two inside FAQPage JSON-LD).**
+   Owner decision. Highest legal exposure on the site.
+4. **Resolve CS-02 (two incompatible warranty statements).** Owner decision.
+   Directly contractual.
+5. **Google Business Profile.** The one surface this repository cannot touch and
+   the one an AI agent read in August 2026 before leaving this company off a
+   Toronto ranking. `REVIEW_DESTINATIONS` still has no Google write-review URL
+   because nobody has fetched the Place ID.
+6. **Run the 307-prompt benchmark once** to set a baseline. Without a first run
+   there is no trend, and the trend is the whole point.
+7. **Publish a per-tread stair band**, or decide not to. If it goes in
+   `content/constants/pricing.ts`, `/hardwood-stairs-toronto` renders it without
+   being edited.
+8. **Source or withdraw the two GTA market figures** in the selection-and-cost
+   paper. It ships as a downloadable PDF — the most quotable format on the site.
+9. **More case studies.** The link-density quota is met by five, hand-curated in
+   `EvidenceRail`. At ten, hand-curation stops being better than matching and the
+   component should learn to match on topic. Not before.
+10. **Turn on `pnpm seo:claims --strict`** in CI once 3, 4 and 8 are done.
+
+---
+
+## Cycle 2 files
+
+**New (3)** — `apps/web/app/hardwood-floor-problems-toronto/page.tsx`,
+`apps/web/app/components/EvidenceRail.tsx`,
+`scripts/verify-link-density.mjs`
+
+**Deleted (2)** — `0001searchai20260824.patch`, `0082truthcontrolprobe.patch`
+
+**Modified (16)** — `PricingSection.tsx` (every figure derived),
+`verify-pricing-source.mjs` (three price shapes, comment stripping),
+`audit-current-state.mjs` (layouts, components, MDX, comment stripping),
+`topic-map.ts` + `route-aliases.json` (gap closed, 8 aliases),
+`services/[slug]`, `guides/[slug]`, `framework`, `about`, `service-areas`,
+`hardwood-flooring-toronto`, `hardwood-floor-refinishing-toronto`,
+`hardwood-stairs-toronto` (link density), `floorforge/layout.tsx` (breadcrumb),
+`sitemap.ts`, `llms.txt`, `SiteFooter`, `CommercialHeadTermRail`,
+`verify-schema.mjs`, `package.json`, `web.yml`, `.gitignore`

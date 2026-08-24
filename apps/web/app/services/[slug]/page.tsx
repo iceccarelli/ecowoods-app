@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SITE_URL, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
+import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../../components/Illustration';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
+import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import {
   getServicePages,
   getServicePage,
@@ -281,6 +282,82 @@ export default async function ServiceDetailPage({
           </div>
         </section>
       )}
+
+      {/* Sibling services and the evidence, on every service page.
+          `pnpm seo:density` found that this template reached zero other service
+          pages and zero case studies — so a visitor who landed on the wrong one
+          of the six had no path to the right one, and a visitor on the right one
+          had no proof it had been done. Both are one component away and neither
+          existed. */}
+      {/* Named guide links, replacing six identical "Read the guide" anchors.
+          Those anchors were real links that no static audit could resolve and
+          that told a crawler nothing about where they went — six edges into six
+          different documents, all labelled the same. Anchor text is one of the
+          few signals a site controls completely; spending it on the word
+          "guide" six times is spending it on nothing. */}
+      {page.guides.length > 0 && (
+        <section className="tlx-section" aria-label="Decide before you book">
+          <div className="shell">
+            <p className="tlx-kicker">The open questions behind this service</p>
+            <h2 className="tlx-h2">What to settle first</h2>
+            <p className="tlx-note">
+              {page.guides.map((g, i) => {
+                const guide = getGuide(g);
+                if (!guide) return null;
+                return (
+                  <span key={g}>
+                    {i > 0 && ' · '}
+                    <Link href={`/guides/${g}`}>{guide.question}</Link>
+                  </span>
+                );
+              })}
+            </p>
+            <p className="tlx-note">
+              Each is published in full with the reasoning rather than a recommendation, free to
+              apply to any contractor&rsquo;s quote — see also{' '}
+              <Link href="/guides">all decision guides</Link> and{' '}
+              <Link href="/framework">the standard they are judged against</Link>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      <section className="tlx-section" aria-label="The other services">
+        <div className="shell">
+          <p className="tlx-kicker">If this is not quite the job</p>
+          <h2 className="tlx-h2">The other five</h2>
+          <p className="tlx-note">
+            {SERVICES.filter((sv) => sv.slug !== page.slug).map((sv, i) => (
+              <span key={sv.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/services/${sv.slug}`}>{sv.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            Not sure which one you need? If the floor is already cupping, gapping or lifting, the
+            answer is a diagnosis rather than a service —{' '}
+            <Link href="/hardwood-floor-problems-toronto">what your floor is telling you</Link>{' '}
+            names each symptom, its cause and which of these it lands in. For a new floor, start at{' '}
+            <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>; for an
+            existing one,{' '}
+            <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>.
+          </p>
+        </div>
+      </section>
+
+      <EvidenceRail
+        heading="Jobs where this was the work"
+        intro={
+          'Published in full, with the readings taken before anything started. Not every job below ' +
+          'is this exact service — they are the ones where this service decided the outcome.'
+        }
+        items={[
+          { ...CASES.distillery, why: 'Over a concrete slab, where the moisture test decided the assembly before a species was chosen.' },
+          { ...CASES.yorkville, why: 'Below grade at a critical moisture reading, and the mitigation that made the floor possible.' },
+          { ...CASES.rosedale, why: 'Stairs and a main floor over radiant heat, finished to one colour across two assemblies.' },
+        ]}
+      />
 
       <section className="tlx-section" aria-label="Coverage">
         <div className="shell">

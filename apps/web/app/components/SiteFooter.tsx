@@ -146,6 +146,7 @@ export default function SiteFooter() {
               <a href="/hardwood-flooring-toronto">Hardwood Flooring Toronto</a>
               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
               <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
+              <a href="/hardwood-floor-problems-toronto">Floor Problems &amp; Repairs</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}

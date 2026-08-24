@@ -66,3 +66,22 @@ apply-*.sh
 
 # The npm lockfile is not used here — pnpm-lock.yaml is authoritative.
 package-lock.json
+
+# Patch files are a transport format, not source.
+#
+# THREE of them were committed to the repository root: 0082truthcontrolprobe.patch,
+# 0001searchai20260824.patch and ecowoodsseov2.patch. The last two are this
+# branch's own patches, uploaded through the GitHub web UI — which silently
+# strips the dashes from a filename, which is why `git am 0001-search-ai-...`
+# and `git am ecowoods-seo-v2.patch` both failed with "No such file or
+# directory" while the file sat in the directory the command was run from.
+#
+# If you are here because a patch will not apply: `ls *.patch` first. The name
+# on disk is not the name it was sent under.
+#
+# A committed patch is a second, frozen copy of changes that also exist in the
+# history, and it will drift from them the moment anything is amended. It is
+# also 500 KB of diff text that every clone, every CI checkout and every crawler
+# of the raw repository now carries forever. Deliver a patch as a file; apply it;
+# delete it.
+*.patch

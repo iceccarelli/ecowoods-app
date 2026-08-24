@@ -1,26 +1,26 @@
 {
   "$schema": "audit/current-state.schema (informal)",
   "generatedBy": "scripts/audit-current-state.mjs",
-  "generatedAt": "2026-08-24T14:46:49.494Z",
+  "generatedAt": "2026-08-24T15:37:41.385Z",
   "method": "static analysis of the repository — no URL is fetched; see scripts/crawl-site.mjs for the live counterpart",
   "repository": {
     "root": "apps/web"
   },
   "summary": {
-    "routeFiles": 60,
+    "routeFiles": 61,
     "handlerFiles": 33,
-    "indexablePages": 35,
+    "indexablePages": 36,
     "dynamicRoutes": 14,
-    "pagesWithCanonical": 31,
-    "pagesWithoutCanonical": 1,
-    "pagesWithTitleLiteral": 26,
-    "pagesWithNoH1": 3,
+    "pagesWithCanonical": 33,
+    "pagesWithoutCanonical": 0,
+    "pagesWithTitleLiteral": 29,
+    "pagesWithNoH1": 0,
     "pagesWithMultipleH1": 0,
-    "pagesEmittingSchema": 25,
+    "pagesEmittingSchema": 27,
     "machineSurfacesPresent": 10,
     "machineSurfacesExpected": 10,
     "priceLiteralsOutsideConstants": 0,
-    "commercialAliases": 33,
+    "commercialAliases": 41,
     "findings": 2
   },
   "routes": [
@@ -40,10 +40,10 @@
         "why": "no alternates.canonical — Next emits none"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "Sign in to your account",
+        "count": 1,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [],
@@ -70,10 +70,10 @@
         "why": "no alternates.canonical — Next emits none"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "Check your email",
+        "count": 2,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [],
@@ -241,7 +241,7 @@
         "/mypage/quotes"
       ],
       "internalLinkCount": 4,
-      "bytes": 8243
+      "bytes": 9732
     },
     {
       "route": "/mypage/projects",
@@ -342,10 +342,14 @@
       "internalLinks": [
         "/",
         "/#quote",
-        "/framework/assess"
+        "/framework/assess",
+        "/hardwood-floor-refinishing-toronto",
+        "/hardwood-flooring-toronto",
+        "/hardwood-stairs-toronto",
+        "/services/${sv.slug}"
       ],
-      "internalLinkCount": 3,
-      "bytes": 4767
+      "internalLinkCount": 7,
+      "bytes": 6372
     },
     {
       "route": "/admin/inquiries",
@@ -392,10 +396,10 @@
         "why": "no alternates.canonical — Next emits none"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "Create Invoice",
+        "count": 1,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [],
@@ -540,7 +544,7 @@
         "/admin/quotes/${q.id}"
       ],
       "internalLinkCount": 7,
-      "bytes": 7558
+      "bytes": 9264
     },
     {
       "route": "/admin/projects/[id]",
@@ -786,10 +790,10 @@
         "why": "canonical is an expression"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "·",
+        "count": 1,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [
@@ -849,10 +853,10 @@
         "why": "canonical is an expression"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "·",
+        "count": 1,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [
@@ -1119,12 +1123,17 @@
       },
       "internalLinks": [
         "/",
+        "/#quote",
         "/framework/assess",
         "/guides/${g.slug}",
-        "/papers"
+        "/hardwood-floor-refinishing-toronto",
+        "/hardwood-flooring-toronto",
+        "/hardwood-stairs-toronto",
+        "/papers",
+        "/services/${sv.slug}"
       ],
-      "internalLinkCount": 4,
-      "bytes": 9621
+      "internalLinkCount": 9,
+      "bytes": 12371
     },
     {
       "route": "/glossary/[slug]",
@@ -1238,14 +1247,21 @@
       },
       "internalLinks": [
         "/",
+        "/#quote",
+        "/framework",
         "/framework#${p.id}",
         "/framework/assess",
         "/guides",
         "/guides/${g.slug}",
-        "/papers/${s.paper}#${s.section}"
+        "/hardwood-floor-problems-toronto",
+        "/hardwood-floor-refinishing-toronto",
+        "/hardwood-flooring-toronto",
+        "/hardwood-stairs-toronto",
+        "/papers/${s.paper}#${s.section}",
+        "/services/${sv.slug}"
       ],
-      "internalLinkCount": 6,
-      "bytes": 13374
+      "internalLinkCount": 13,
+      "bytes": 16077
     },
     {
       "route": "/guides",
@@ -1286,6 +1302,58 @@
       "bytes": 6576
     },
     {
+      "route": "/hardwood-floor-problems-toronto",
+      "file": "apps/web/app/hardwood-floor-problems-toronto/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Hardwood Floor Problems Toronto — Cupping, Gaps, Crowning & What Fixes Them",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/hardwood-floor-problems-toronto",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "What your hardwood floor is telling you",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList",
+          "buildCommercialLandingSchema",
+          "buildFAQPage"
+        ],
+        "inlineTypes": [
+          "DefinedTerm",
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 4
+      },
+      "internalLinks": [
+        "/",
+        "/#quote",
+        "/case-studies/distillery-district-victorian-condo",
+        "/case-studies/yorkville-loft-basement-conversion-moisture-mitigation",
+        "/framework",
+        "/framework/assess",
+        "/glossary",
+        "/glossary/${r}",
+        "/glossary/${t?.slug ?? m.slug}",
+        "/guides/how-to-evaluate-a-hardwood-quote",
+        "/guides/reference-refinishing-existing-hardwood",
+        "/papers/${P_CLIMATE}",
+        "/papers/${P_CLIMATE}#failure-modes",
+        "/papers/${P_CLIMATE}#moisture-testing",
+        "/services/floor-refinishing",
+        "/services/floor-restoration",
+        "/services/hardwood-installation"
+      ],
+      "internalLinkCount": 17,
+      "bytes": 26845
+    },
+    {
       "route": "/hardwood-floor-refinishing-toronto",
       "file": "apps/web/app/hardwood-floor-refinishing-toronto/page.tsx",
       "indexable": true,
@@ -1317,12 +1385,21 @@
       "internalLinks": [
         "/",
         "/#quote",
+        "/framework",
+        "/framework/assess",
+        "/guides/dustless-hardwood-refinishing-toronto",
+        "/guides/reference-refinishing-existing-hardwood",
+        "/hardwood-floor-problems-toronto",
         "/hardwood-flooring-toronto",
+        "/hardwood-stairs-toronto",
         "/papers/${CRAFT}",
-        "/service-areas"
+        "/service-areas",
+        "/services/dust-free-sanding",
+        "/services/floor-refinishing",
+        "/services/floor-restoration"
       ],
-      "internalLinkCount": 5,
-      "bytes": 11206
+      "internalLinkCount": 14,
+      "bytes": 14756
     },
     {
       "route": "/hardwood-flooring-toronto",
@@ -1359,12 +1436,15 @@
         "/framework#${p.id}",
         "/framework/assess",
         "/guides/hardwood-flooring-cost-toronto",
+        "/guides/how-to-choose-hardwood-contractor-toronto",
+        "/guides/solid-vs-engineered-hardwood-toronto",
+        "/hardwood-floor-problems-toronto",
         "/papers/${papers[0]?.slug ?? ''}",
         "/service-areas/${c.slug}",
         "/services/${s.slug}"
       ],
-      "internalLinkCount": 8,
-      "bytes": 15204
+      "internalLinkCount": 11,
+      "bytes": 17458
     },
     {
       "route": "/hardwood-stairs-toronto",
@@ -1398,17 +1478,19 @@
       "internalLinks": [
         "/",
         "/#quote",
-        "/case-studies/rosedale-estate-stairs-radiant-heat",
         "/framework",
         "/framework/assess",
         "/guides/hardwood-flooring-cost-toronto",
+        "/guides/reference-refinishing-existing-hardwood",
         "/papers/hardwood-refinishing-machines-and-sequence",
         "/papers/toronto-hardwood-climate-moisture-protocol",
         "/service-areas/${c.slug}",
+        "/services/floor-refinishing",
+        "/services/floor-restoration",
         "/services/stair-refinishing"
       ],
-      "internalLinkCount": 10,
-      "bytes": 19431
+      "internalLinkCount": 12,
+      "bytes": 20567
     },
     {
       "route": "/library",
@@ -1489,19 +1571,18 @@
       "indexable": true,
       "dynamic": false,
       "title": {
-        "value": null,
-        "confidence": "low",
-        "why": "metadata exported but title is not a string literal"
+        "value": "Ecowoods — Technical Publications",
+        "confidence": "high"
       },
       "canonical": {
         "value": "/",
         "confidence": "high"
       },
       "h1": {
-        "value": null,
-        "count": 0,
-        "confidence": "none",
-        "why": "no <h1> in this file"
+        "value": "Hardwood, Done Once. Done Right.",
+        "count": 1,
+        "confidence": "component",
+        "why": "rendered by an imported component, not by the route file"
       },
       "schema": {
         "builders": [],
@@ -1510,7 +1591,7 @@
       },
       "internalLinks": [],
       "internalLinkCount": 0,
-      "bytes": 1509
+      "bytes": 8445
     },
     {
       "route": "/papers/[slug]",
@@ -1639,14 +1720,12 @@
       "indexable": true,
       "dynamic": false,
       "title": {
-        "value": null,
-        "confidence": "none",
-        "why": "no metadata export — inherits the layout title template"
+        "value": "FloorForge — Autonomous Floor Refinishing Pilot",
+        "confidence": "high"
       },
       "canonical": {
-        "value": null,
-        "confidence": "none",
-        "why": "no alternates.canonical — Next emits none"
+        "value": "/products/floorforge",
+        "confidence": "high"
       },
       "h1": {
         "value": "Meet FloorForge. The future of floor refinishing.",
@@ -1654,7 +1733,9 @@
         "confidence": "high"
       },
       "schema": {
-        "builders": [],
+        "builders": [
+          "buildBreadcrumbList"
+        ],
         "inlineTypes": [
           "Answer",
           "FAQPage",
@@ -1663,14 +1744,14 @@
           "Question",
           "SoftwareApplication"
         ],
-        "schemaScriptBlocks": 0
+        "schemaScriptBlocks": 1
       },
       "internalLinks": [
         "/#quote",
         "/technical-library"
       ],
       "internalLinkCount": 2,
-      "bytes": 28927
+      "bytes": 30889
     },
     {
       "route": "/r",
@@ -1852,10 +1933,14 @@
       },
       "internalLinks": [
         "/#quote",
-        "/service-areas/${c.slug}"
+        "/hardwood-floor-refinishing-toronto",
+        "/hardwood-flooring-toronto",
+        "/hardwood-stairs-toronto",
+        "/service-areas/${c.slug}",
+        "/services/${sv.slug}"
       ],
-      "internalLinkCount": 2,
-      "bytes": 2120
+      "internalLinkCount": 6,
+      "bytes": 4284
     },
     {
       "route": "/services/[slug]",
@@ -1897,14 +1982,20 @@
         "/framework#${p.id}",
         "/framework/assess",
         "/glossary/${t.slug}",
+        "/guides",
+        "/guides/${g}",
+        "/hardwood-floor-problems-toronto",
+        "/hardwood-floor-refinishing-toronto",
+        "/hardwood-flooring-toronto",
         "/market",
         "/papers/${ref.paper}#${ref.section}",
         "/service-areas",
         "/service-areas/${c.slug}",
-        "/services"
+        "/services",
+        "/services/${sv.slug}"
       ],
-      "internalLinkCount": 11,
-      "bytes": 11452
+      "internalLinkCount": 17,
+      "bytes": 15436
     },
     {
       "route": "/services",
@@ -2765,6 +2856,54 @@
       "canonical": "/guides/white-oak-flooring-toronto",
       "canonicalExists": true,
       "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-floor-repair-toronto",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/floor-repair-toronto",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/hardwood-floor-cupping",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/cupping",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/water-damaged-hardwood-toronto",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/wood-floor-restoration-gta",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/floor-restoration-toronto",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
+    },
+    {
+      "alias": "/toronto-floor-repair",
+      "canonical": "/hardwood-floor-problems-toronto",
+      "canonicalExists": true,
+      "aliasCollidesWithRealRoute": false
     }
   ],
   "findings": [
@@ -2772,7 +2911,7 @@
       "id": "CS-01",
       "severity": "high",
       "subject": "dust capture percentage",
-      "summary": "The figure 99.7% is published in 19 place(s) with no source recorded anywhere in the repository. Separately, 12 place(s) — the case studies — report a MEASURED 99.5%, from on-site particle counts, for what may or may not be the same quantity.",
+      "summary": "The figure 99.7% is published in 18 place(s) with no source recorded anywhere in the repository. Separately, 11 place(s) — the case studies — report a MEASURED 99.5%, from on-site particle counts, for what may or may not be the same quantity.",
       "why": "The two figures are probably measuring different things — a HEPA element is rated at the filter, a particle count is measured in the room — but nothing in this repository says so, and that is the whole problem: neither number carries a protocol, an instrument or a date. A published performance claim needs a source under the Competition Act, and this one is not a footnote: two of the occurrences are inside FAQ answers emitted as FAQPage JSON-LD and restated verbatim by answer engines, and one is the SERVICES blurb that feeds llms.txt and /api/knowledge.",
       "resolution": "Owner decision, not a code change — which is why nothing here was edited. Either (a) state what the 99.7% measures, with instrument and protocol, and register it; or (b) publish the measured room figure and cite the case-study particle counts; or (c) drop the percentage and keep the claim that is already supported — HEPA-sealed extraction at the machine, containment at the room, most clients stay in the house. Registered as method.dustCapturePct (status: unsourced) in apps/web/content/claims.ts, where the policy fences it to editorial contexts; `pnpm seo:claims` reports the gap and `--strict` fails on it once the queue is meant to be empty.",
       "occurrences": [
@@ -2858,11 +2997,6 @@
         },
         {
           "file": "apps/web/content/claims.ts",
-          "line": 18,
-          "text": "*     confirmed it. `99.7% dust capture` is a number that appears in nine"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
           "line": 247,
           "text": "statement: 'Roughly 99.7% of airborne particulate is captured at the source.',"
         },
@@ -2907,11 +3041,6 @@
           "file": "apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx",
           "line": 123,
           "text": "- Air quality: Final particle count = 650 particles/cm³ (99.5% dust capture)"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
-          "line": 21,
-          "text": "*     anywhere, while this site's own case studies measure 99.5%. One of those"
         },
         {
           "file": "apps/web/content/claims.ts",

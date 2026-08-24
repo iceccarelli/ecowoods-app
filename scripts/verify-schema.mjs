@@ -154,6 +154,12 @@ const FAQPAGE_ALLOWED = new Set([
   // result. The published per-square-foot bands it does quote are interpolated
   // from content/constants/pricing.ts like everywhere else.
   'apps/web/app/hardwood-stairs-toronto/page.tsx',
+  // The failure-mode atlas. It passes F-27 more clearly than anything else on
+  // this list: the page IS the FAQ. Every question is a symptom a homeowner
+  // types verbatim, every answer is rendered in the <dl> and expanded in the
+  // section above it, and two of the answers say the correct action is to do
+  // nothing — which is not a shape anyone writes for a rich result.
+  'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
   // The guides. Qualifies under F-27 on the same test: the first pair is the
   // guide's own question and its published recommendation — the two strings
   // the page has always led with — and the rest are rendered visibly in the

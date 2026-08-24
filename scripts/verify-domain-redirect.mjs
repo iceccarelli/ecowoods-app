@@ -53,6 +53,16 @@ const PATHS = [
   '/papers',
   '/reviews',
   '/service-areas/etobicoke',
+  /* Paths that EXIST on the old site, measured 2026-08-24. The list above is
+     ecowoods.ca's paths, which answers "does an old link survive"; these answer
+     the more urgent question, "is the old site still serving its own pages" —
+     and on 2026-08-24 the answer was yes, with full navigation and titles
+     written to rank. A redirect check that only probes the new site's paths can
+     report a clean migration while a whole second website is live. */
+  '/services',
+  '/about',
+  '/testimonials',
+  '/blog',
 ];
 const STRICT = process.argv.includes('--strict');
 

@@ -16,12 +16,54 @@
  * Ecowoods runs dustless + salaried masters, it sits in the upper band and can
  * say WHY. That is the AWS move: transparent about being premium, not cheapest.
  *
- * ⚠️ NUMBERS BELOW ARE PUBLISHED GTA MARKET RANGES (2026), NOT ECOWOODS' OWN
- *    RATES. Replace `pricePerSqFt` on each tier with your real pricing before
- *    this goes live, or the site states market data as if it were yours.
+ * EVERY NUMBER ON THIS COMPONENT IS NOW DERIVED. It used to carry four
+ * hand-typed figures and a warning above them saying they were GTA market
+ * ranges to be replaced before launch. The warning was stale — by the time this
+ * was found, three of the four had been quietly edited to match the published
+ * bands and the fourth had not. That is the worst possible state: a stale
+ * instruction telling the next reader to change numbers that are now correct.
+ *
+ * THE FOURTH ONE WAS WRONG ON THE LIVE SITE.
+ *
+ * "A typical 1,000 sq ft main floor runs about $4,500–$7,000", printed directly
+ * beneath a card stating $4.75–$7.50 per square foot. A thousand square feet at
+ * the published band is $4,750–$7,500. The homepage of a company whose entire
+ * pitch is "fixed price in writing" was showing two different prices for the
+ * same job, on the same screen, four hundred pixels apart — and understating
+ * the top of its own range by $500, which is a real quote a real estimator then
+ * has to walk back in someone's living room.
+ *
+ * It is derived now. The tier figures come from content/constants/pricing.ts and
+ * the worked example is multiplied out of the same band at render time, so the
+ * arithmetic cannot disagree with the rate it is derived from.
  */
 
 import SwipeDeck, { useIsMobile } from './SwipeDeck';
+import {
+  SCREEN_RECOAT,
+  FULL_SAND_FINISH,
+  NEW_INSTALL,
+  type PriceBand,
+} from '@/content/constants/pricing';
+
+/** "2.50–4.00" — the figure the card renders, with the $ and the unit around it. */
+const rate = (b: PriceBand) => `${b.min.toFixed(2)}–${b.max.toFixed(2)}`;
+
+/**
+ * The worked example, multiplied out of the band rather than typed.
+ *
+ * `en-CA` with zero fraction digits produces "$4,750" — the same shape the
+ * hand-typed version had, so nothing about the rendered sentence moves except
+ * that it is now arithmetically true.
+ */
+const EXAMPLE_SQFT = 1000;
+const cad = (n: number) =>
+  new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: FULL_SAND_FINISH.currency,
+    maximumFractionDigits: 0,
+  }).format(n);
+const exampleRange = `${cad(FULL_SAND_FINISH.min * EXAMPLE_SQFT)}–${cad(FULL_SAND_FINISH.max * EXAMPLE_SQFT)}`;
 
 type Tier = {
   id: string;
@@ -36,9 +78,9 @@ type Tier = {
 const TIERS: Tier[] = [
   {
     id: 'recoat',
-    name: 'Screen & Recoat',
+    name: SCREEN_RECOAT.label,
     tagline: 'Refresh a floor that’s still sound',
-    pricePerSqFt: '2.50–4.00',
+    pricePerSqFt: rate(SCREEN_RECOAT),
     blurb:
       'A light abrasion and a fresh topcoat. No full sand — right when the finish is worn but the wood underneath is healthy. Extends the floor 3–5 years.',
     best: 'Floors under ~10 years with surface wear only',
@@ -46,9 +88,9 @@ const TIERS: Tier[] = [
   },
   {
     id: 'standard',
-    name: 'Full Sand & Finish',
+    name: FULL_SAND_FINISH.label,
     tagline: 'The complete restoration',
-    pricePerSqFt: '4.75–7.50',
+    pricePerSqFt: rate(FULL_SAND_FINISH),
     blurb:
       'Sanded to bare wood, stained to your choice, three coats of premium finish — all dustless. This is what most Toronto main floors need every 7–10 years.',
     best: 'Most homes · scratches, greying, or a colour change',
@@ -58,7 +100,7 @@ const TIERS: Tier[] = [
     id: 'premium',
     name: 'Premium & Hardwood Install',
     tagline: 'New floors or specialty finishes',
-    pricePerSqFt: '11.00–18.00',
+    pricePerSqFt: rate(NEW_INSTALL),
     blurb:
       'New wide-plank hardwood, oil finishes like Rubio Monocoat, custom stain matching, stairs and repairs. Priced per project after we see the space.',
     best: 'New installs, oil finishes, stairs, board repair',
@@ -154,8 +196,11 @@ export default function PricingSection() {
 
         <div className="pricing-foot reveal">
           <div className="pricing-foot-fact">
-            <strong>A typical 1,000 sq ft main floor</strong> runs about $4,500–$7,000, finished in
-            3–5 days start to furniture back in place.
+            <strong>
+              A typical {EXAMPLE_SQFT.toLocaleString('en-CA')} sq ft main floor
+            </strong>{' '}
+            runs {exampleRange} at the {FULL_SAND_FINISH.label.toLowerCase()} band above, finished
+            in 3–5 days start to furniture back in place.
           </div>
           <p className="pricing-note">
             What moves the number: floor condition, stairs, species hardness, a light-to-dark colour

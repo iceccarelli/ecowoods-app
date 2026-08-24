@@ -8,6 +8,7 @@ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
+import { EvidenceRail, CASES } from '../components/EvidenceRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -202,6 +203,63 @@ export default function RefinishingTorontoPage() {
             addresses what settled, not what was breathed. Containment is a system, not a vacuum.
           </p>
           <Illustration id="term-hepa-containment" />
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="What this job actually is">
+        <div className="shell">
+          <p className="tlx-kicker">Three services, one decision</p>
+          <h2 className="tlx-h2">Which of these your floor needs</h2>
+          <p className="tlx-note">
+            <Link href="/services/floor-refinishing">Refinishing</Link> is the whole job: sand to
+            bare wood, re-stain if the colour is changing, re-finish.{' '}
+            <Link href="/services/dust-free-sanding">Dust-free sanding</Link> is the containment
+            that decides whether you can stay in the house while it happens. And{' '}
+            <Link href="/services/floor-restoration">restoration</Link> is what the job becomes when
+            boards have to be replaced or a water event has to be undone first — a different scope,
+            priced differently, and the reason the moisture readings are taken before the price is
+            given rather than after. Stairs come with the floor more often than they are quoted with
+            it: <Link href="/hardwood-stairs-toronto">how stairs are priced</Link>.
+          </p>
+          <p className="tlx-note">
+            The two questions worth settling before anyone quotes:{' '}
+            <Link href="/guides/reference-refinishing-existing-hardwood">
+              what refinishing an existing floor actually involves
+            </Link>{' '}
+            — including how many sands a floor has left in it — and{' '}
+            <Link href="/guides/dustless-hardwood-refinishing-toronto">
+              what &ldquo;dustless&rdquo; is and is not
+            </Link>
+            . If the floor is cupping, gapping or lifting, it is not a refinishing job yet:{' '}
+            <Link href="/hardwood-floor-problems-toronto">start with the diagnosis</Link>.
+          </p>
+        </div>
+      </section>
+
+      <EvidenceRail
+        heading="Where this protocol has been run"
+        intro={
+          'Refinishing and installation share the same first step, which is why these jobs are the ' +
+          'evidence for both: each one publishes what was measured before anything was sanded.'
+        }
+        items={[
+          { ...CASES.yorkville, why: 'A below-grade slab at a critical moisture reading, and the mitigation that made the floor possible at all.' },
+          { ...CASES.distillery, why: 'Historic loft over concrete. The dust containment and the finish chemistry were chosen together, not separately.' },
+          { ...CASES.midtown, why: 'Three substrates in one house, matched across levels — the case where sanding sequence decides whether the join is visible.' },
+        ]}
+      />
+
+      <section className="tlx-section" aria-label="Judging the quote">
+        <div className="shell">
+          <p className="tlx-kicker">Before you sign anything</p>
+          <h2 className="tlx-h2">Put any refinishing quote against the published standard</h2>
+          <p className="tlx-note">
+            <Link href="/framework">The Well-Installed Framework</Link> is published free to use on
+            any contractor in the GTA, including us. For a refinish the criteria that decide the
+            outcome are which machines run in which order, whether the floor was measured before it
+            was quoted, and whether depth above the tongue was checked at all —{' '}
+            <Link href="/framework/assess">score a quote you already have</Link>.
+          </p>
         </div>
       </section>
 

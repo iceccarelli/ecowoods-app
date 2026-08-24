@@ -145,12 +145,65 @@ const appFiles = walk(APP);
 const pageFiles = appFiles.filter((f) => /[\\/](page)\.(tsx|ts|jsx|js)$/.test(f));
 const handlerFiles = appFiles.filter((f) => /[\\/](route)\.(ts|js)$/.test(f));
 
+/**
+ * A `'use client'` page cannot export `metadata` — Next forbids it — so its
+ * title and canonical live in the sibling `layout.tsx`. The first version of
+ * this audit read only page.tsx and reported /products/floorforge as having no
+ * canonical when it has had one all along. A false finding costs more than a
+ * missed one: someone goes and adds a second canonical where it cannot work.
+ */
+const withLayout = (file) => {
+  const cand = join(dirname(file), 'layout.tsx');
+  return existsSync(cand) ? read(file) + '\n/* ---- sibling layout ---- */\n' + read(cand) : read(file);
+};
+
+/**
+ * The H1 is frequently not in page.tsx.
+ *
+ * The homepage renders `home-client.tsx`; /blog/[slug] and /case-studies/[slug]
+ * render MDX, where the H1 comes from the document's own first heading. A
+ * scanner that reads only the route file reports all three as having no H1 —
+ * three false findings on three of the most important URLs on the site, and the
+ * "fix" for any of them would be to add a SECOND H1.
+ *
+ * So the H1 pass follows one level of local component imports, and where the
+ * page renders MDX it says so rather than reporting an absence. One level is
+ * deliberate: it is enough for the real cases and it keeps this from wandering
+ * into the whole component tree, where the first <h1> found would belong to
+ * something else.
+ */
+const RESOLVE_RE = /from\s+['"](\.{1,2}\/[^'"]+|@\/[^'"]+)['"]/g;
+const resolveLocal = (file, spec) => {
+  const base = spec.startsWith('@/') ? join(WEB, spec.slice(2)) : join(dirname(file), spec);
+  for (const c of [`${base}.tsx`, `${base}.ts`, join(base, 'index.tsx')]) if (existsSync(c)) return c;
+  return null;
+};
+const srcWithComponents = (file) => {
+  let out = withLayout(file);
+  for (const m of out.matchAll(RESOLVE_RE)) {
+    const dep = resolveLocal(file, m[1]);
+    if (dep && dep !== file) out += '\n/* ---- ' + relative(ROOT, dep) + ' ---- */\n' + read(dep);
+  }
+  return out;
+};
+/** True where the route's content is an MDX document, whose own H1 is the H1. */
+const rendersMdx = (src) => /MDXRemote|compileMDX|mdx-remote|\.mdx/.test(src);
+
 const pages = pageFiles.map((file) => {
-  const src = read(file);
+  const src = withLayout(file);
   const route = routeFromFile(file);
   const title = extractTitle(src);
   const canonical = extractCanonical(src);
-  const h1 = extractH1(src);
+  const h1 = (() => {
+    const direct = extractH1(src);
+    if (direct.count > 0) return direct;
+    const wide = extractH1(srcWithComponents(file));
+    if (wide.count > 0) return { ...wide, confidence: 'component', why: 'rendered by an imported component, not by the route file' };
+    if (rendersMdx(src)) {
+      return { value: null, count: 1, confidence: 'mdx', why: 'the H1 is the first heading of the MDX document this route renders' };
+    }
+    return direct;
+  })();
   const schema = extractSchema(src);
   const links = extractLinks(src);
   return {
@@ -268,8 +321,11 @@ for (const rootDir of SCAN_ROOTS) {
     if (!SCAN_EXT.has(extname(f))) continue;
     const rel = relative(ROOT, f);
     if (PRICE_EXEMPT_FILES.has(rel)) continue;
+    const code = /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(f);
     read(f).split('\n').forEach((line, i) => {
       if (PRICE_EXEMPT_LINES.some((x) => line.includes(x))) return;
+      const t = line.trim();
+      if (code && (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*'))) return;
       for (const m of line.matchAll(PRICE_LITERAL)) {
         priceLiterals.push({ file: rel, line: i + 1, literal: m[0], text: line.trim().slice(0, 120).trimEnd() });
       }
@@ -284,13 +340,22 @@ for (const rootDir of SCAN_ROOTS) {
  * worry, not a finding.
  */
 const findings = [];
+/** A `//` or `*` line in a source file is documentation, not a published claim. */
+const isCodeFile = (f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(f);
+const isCommentLine = (line) => {
+  const t = line.trim();
+  return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('*/');
+};
+
 const grepAll = (re) => {
   const hits = [];
   for (const rootDir of SCAN_ROOTS) {
     for (const f of walk(join(ROOT, rootDir))) {
       if (!SCAN_EXT.has(extname(f))) continue;
       const rel = relative(ROOT, f);
+      const code = isCodeFile(f);
       read(f).split('\n').forEach((line, i) => {
+        if (code && isCommentLine(line)) return;
         if (re.test(line)) hits.push({ file: rel, line: i + 1, text: line.trim().slice(0, 160).trimEnd() });
         re.lastIndex = 0;
       });

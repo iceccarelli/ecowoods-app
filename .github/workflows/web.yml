@@ -77,6 +77,8 @@ jobs:
         run: node scripts/verify-claims.mjs
       - name: Topic map (every canonical resolves, no redirect chains)
         run: node scripts/verify-topic-map.mjs
+      - name: Link density (every commercial page reaches evidence and a CTA)
+        run: node scripts/verify-link-density.mjs
       - name: AI discoverability (commercial material leads every machine surface)
         run: node scripts/audit-ai-discoverability.mjs
 

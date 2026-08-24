@@ -87,9 +87,21 @@ export function CommercialHeadTermRail({ city }: { city?: string }) {
           </Link>
         </div>
 
-        {/* The third link is not a third money page. It is the standard, and it
-            goes here because the honest version of "pick us" is "here is what
-            correct looks like, use it on everyone". */}
+        {/* The foot carries two links, and neither is a fourth money page.
+            One is the standard, because the honest version of "pick us" is
+            "here is what correct looks like, use it on everyone". The other is
+            the failure-mode atlas, because a visitor whose floor is ALREADY
+            failing is not shopping and should not be handed a price card —
+            they need a diagnosis, and that is a different page and a shorter
+            path to a job. */}
+        <p className="chr-foot">
+          Floor already cupping, gapping or lifting?{' '}
+          <Link href="/hardwood-floor-problems-toronto">
+            What your floor is telling you
+          </Link>{' '}
+          gives each symptom its cause and an honest prognosis — including the two
+          where the answer is to do nothing yet.
+        </p>
         <p className="chr-foot">
           Judging quotes rather than buying yet?{' '}
           <Link href="/framework">The Well-Installed Framework</Link> sets out {criterionCount()}{' '}

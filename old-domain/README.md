@@ -3,8 +3,48 @@
 **Identified 2026-08-23:** `server: Apache/2.4.68 (Debian)`.
 **The file you need is `.htaccess`.** Everything else here is for other stacks.
 
-Measured state at the same moment: `www.ecowoodshardwood.com/` answers **200** —
-a second live homepage for this business — and every deep path answers **404**.
+## Measured 2026-08-24 — this is worse than the line below it recorded
+
+`www.ecowoodshardwood.com/` answers **200**, and so does
+`www.ecowoodshardwood.com/services`. Not a leftover homepage: a **complete,
+navigating website for this business**, with its own About, Services,
+Testimonials and Blog sections, the same phone number as ecowoods.ca, and
+titles written to rank:
+
+| URL | title it is competing on |
+| --- | --- |
+| `/` | Portfolio \| Hardwood Floor **Repair** in Toronto, Vaughan, Markham |
+| `/services` | Hardwood Floor Installation, Refinishing in Toronto, Hamilton ON |
+
+Four consequences, in descending order of how much they cost:
+
+1. **Two live sites for one business.** Google has to choose which is the
+   entity, and it is being handed contradictory evidence by both.
+2. **The old one is competing on the highest-intent cluster.** Its homepage
+   title targets *hardwood floor repair* — the exact query family
+   `/hardwood-floor-problems-toronto` was written for.
+3. **It publishes no prices.** An answer engine that lands there learns this is
+   a company that does not publish pricing, which is the opposite of the entire
+   positioning of ecowoods.ca, and it is one of the two pages an agent is most
+   likely to reach from an old citation.
+4. **Every inbound link, directory entry and citation pointing at it passes
+   nothing** to ecowoods.ca.
+
+**The earlier measurement below is stale and reading it will mislead you.** It
+recorded "every deep path answers 404", which suggested the migration was nearly
+done and only the homepage was left. Deep paths serve. Nothing about this has
+been fixed since 2026-08-23; it has been re-measured and it is bigger than it
+looked.
+
+`node scripts/verify-domain-redirect.mjs` reports every one of these correctly
+and has never been run from a machine with open egress. Run it.
+
+---
+
+### Superseded — measured 2026-08-23
+
+`www.ecowoodshardwood.com/` answers **200** — a second live homepage for this
+business — and every deep path answers **404**.
 
 | file | for |
 | --- | --- |

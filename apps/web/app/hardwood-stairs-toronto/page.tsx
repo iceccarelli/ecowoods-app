@@ -8,6 +8,7 @@ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+import { EvidenceRail, CASES } from '../components/EvidenceRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -250,6 +251,22 @@ export default function HardwoodStairsTorontoPage() {
             </table>
           </div>
           <p className="tlx-note">
+            The stairs usually arrive attached to a floor, and which service that floor needs
+            changes the stair scope with it:{' '}
+            <Link href="/services/stair-refinishing">stair refinishing</Link> where the treads are
+            sound, <Link href="/services/floor-refinishing">floor refinishing</Link> for the run
+            they meet, and <Link href="/services/floor-restoration">restoration</Link> where treads
+            have to be replaced rather than sanded. Worth reading first:{' '}
+            <Link href="/guides/reference-refinishing-existing-hardwood">
+              what refinishing an existing floor involves
+            </Link>{' '}
+            and{' '}
+            <Link href="/guides/hardwood-flooring-cost-toronto">
+              what moves a quote inside the published bands
+            </Link>
+            .
+          </p>
+          <p className="tlx-note">
             What moves a stair number: the tread count, whether the treads are solid or capped,
             the nosing profile, what is on them now (carpet, paint, an existing finish), whether
             the risers are being painted or finished, and whether there is a landing. The{' '}
@@ -301,19 +318,22 @@ export default function HardwoodStairsTorontoPage() {
         </div>
       </section>
 
+      <EvidenceRail
+        heading="Two staircases, written up in full"
+        intro={
+          'Both are the hard version of this job — a staircase that had to match a floor built on a ' +
+          'different assembly — and both publish the measurements rather than only the photograph.'
+        }
+        items={[
+          { ...CASES.rosedale, why: 'A grand staircase and a main floor over radiant heat: two assemblies that move differently, finished to one colour.' },
+          { ...CASES.midtown, why: 'A custom staircase joining three storeys on three substrates, with white oak treads and walnut stringers.' },
+        ]}
+      />
+
       <section className="tlx-section" aria-label="Evidence">
         <div className="shell">
-          <p className="tlx-kicker">One we have written up</p>
-          <h2 className="tlx-h2">Stairs over radiant heat, Rosedale</h2>
-          <p className="tlx-note">
-            A staircase and a main floor over radiant heat, where the stair assembly and the floor
-            assembly move differently and had to be finished to the same colour anyway. The
-            measurements, the decisions and the result are published in full:{' '}
-            <Link href="/case-studies/rosedale-estate-stairs-radiant-heat">
-              Rosedale estate — stairs and radiant heat
-            </Link>
-            .
-          </p>
+          <p className="tlx-kicker">The method behind them</p>
+          <h2 className="tlx-h2">Why stairs are the part that gives a job away</h2>
           <p className="tlx-note">
             The mechanism behind the moisture and movement decisions in that job is set out in{' '}
             <Link href="/papers/toronto-hardwood-climate-moisture-protocol">

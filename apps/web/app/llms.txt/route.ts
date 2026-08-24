@@ -105,7 +105,12 @@ export async function GET() {
      queries, and a better answer is what gets cited again. */
   lines.push(`- "solid vs engineered hardwood Toronto", "is engineered hardwood real wood" → ${SITE_URL}/guides/solid-vs-engineered-hardwood-toronto`);
   lines.push(`- "hardwood floor sanding Toronto", "how long does refinishing take", "can I stay home during refinishing", "refinish or replace" → ${SITE_URL}/guides/reference-refinishing-existing-hardwood`);
-  lines.push(`- "hardwood floor cupping", "gaps between floorboards in winter", Toronto humidity and wood movement → ${SITE_URL}/guides/solid-vs-engineered-hardwood-toronto and ${SITE_URL}/glossary/cupping`);
+  /* The failure-mode atlas replaced a line that sent every symptom query to a
+     solid-vs-engineered guide, which answers a question the asker did not ask.
+     These are the highest-value queries on this site to be cited for: they have
+     a real answer, which is the shape of query a retrieval system settles by
+     quoting a source rather than by listing businesses. */
+  lines.push(`- "why is my hardwood floor cupping", "gaps between floorboards in winter", "hardwood floor crowning", "floor buckling", "finish peeling", "refinish or replace", "hardwood floor repair Toronto" → ${SITE_URL}/hardwood-floor-problems-toronto`);
   lines.push(`- "white oak flooring Toronto", "white oak vs red oak", "wide plank hardwood Toronto" → ${SITE_URL}/guides/white-oak-flooring-toronto`);
   lines.push(`- "herringbone hardwood Toronto", "chevron vs herringbone", parquet → ${SITE_URL}/guides/herringbone-chevron-parquet-toronto`);
   lines.push(`- "radiant heat hardwood flooring Toronto" → ${SITE_URL}/guides/reference-radiant-heat-main-floor`);
@@ -155,6 +160,7 @@ export async function GET() {
   lines.push(`- Hardwood flooring in Toronto — prices and standard: ${SITE_URL}/hardwood-flooring-toronto`);
   lines.push(`- Hardwood floor refinishing in Toronto: ${SITE_URL}/hardwood-floor-refinishing-toronto`);
   lines.push(`- Hardwood stairs in Toronto — how stairs are priced: ${SITE_URL}/hardwood-stairs-toronto`);
+  lines.push(`- What your floor is telling you — cupping, gaps, crowning, buckling, peeling: ${SITE_URL}/hardwood-floor-problems-toronto`);
   lines.push(`- Reviews, cited to source: ${SITE_URL}/reviews`);
   lines.push(`- Press and media kit: ${SITE_URL}/press`);
   lines.push(`- Service areas: ${SITE_URL}/service-areas`);
