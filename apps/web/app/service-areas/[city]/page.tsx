@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
 import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
 import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
 
 export function generateStaticParams() {
   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
@@ -128,6 +129,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </div>
         </div>
       </section>
+
+      {/* The only in-content path from a local query to the two commercial
+          head terms. Thirty-two pages x two links, with the city in the
+          anchor text. See the note on the component. */}
+      <CommercialHeadTermRail city={city.name} />
 
       <section className="section">
         <div className="shell">

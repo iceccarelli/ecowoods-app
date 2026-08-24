@@ -142,7 +142,16 @@ export const paperToMarkdown = (paper: Paper): string => {
 
 export const guideToMarkdown = (guide: Guide): string => {
   const canonical = `${SITE_URL}/guides/${guide.slug}`;
-  const out: string[] = [`# ${guide.title}`, '', `**${guide.question}**`, '', guide.summary, ''];
+  /* The same headline the HTML page carries, so a retrieval system reading the
+     Markdown and one reading the page agree on what this document is called. */
+  const out: string[] = [
+    `# ${guide.seoTitle ?? guide.title}`,
+    '',
+    `**${guide.question}**`,
+    '',
+    guide.summary,
+    '',
+  ];
 
   if (guide.criteria?.length) {
     out.push('## What decides it', '');
@@ -177,6 +186,10 @@ export const guideToMarkdown = (guide: Guide): string => {
     out.push('## What goes wrong here', '');
     for (const w of guide.watchpoints) out.push(`- ${w}`);
     out.push('');
+  }
+  if (guide.faqs?.length) {
+    out.push('## Related questions', '');
+    for (const f of guide.faqs) out.push(`### ${f.q}`, '', f.a, '');
   }
   out.push('## Recommendation', '', guide.recommendation.text, '');
   if (guide.recommendation.conditions?.length) {

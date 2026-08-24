@@ -5,6 +5,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { illustrationImage } from '../data/illustration-images';
 import { getServicePages, serviceFor, priceBand, PRICE_PROMISE } from '@/lib/service-pages';
+import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 
 export const metadata: Metadata = {
   title: 'Custom hardwood installation, refinishing & dust-free sanding',
@@ -103,6 +104,8 @@ export default function ServicesPage() {
           </div>
         </div>
       </section>
+
+      <CommercialHeadTermRail />
 
       <section className="tlx-section" aria-label="Where we work">
         <div className="shell">

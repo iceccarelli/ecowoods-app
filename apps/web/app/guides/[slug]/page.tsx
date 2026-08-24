@@ -6,8 +6,9 @@ import { pillarById } from '@/lib/framework';
 import { getPaper } from '@/lib/papers';
 import { Illustration } from '../../components/Illustration';
 import { SITE_URL } from '@/lib/seo-data';
-import { buildBreadcrumbList } from '@/lib/schema/builders';
+import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
 
 /** Guide slug → illustration id. Kept here rather than in the guides manifest so
  *  the content manifest stays free of presentation concerns. */
@@ -38,7 +39,10 @@ export async function generateMetadata({
   const guide = getGuide(slug);
   if (!guide) return { title: 'Not found' };
   return {
-    title: guide.title,
+    /* The searcher's phrasing, where the guide sets one. See the note on
+       Guide.seoTitle — the slug already carried the keyword and the title did
+       not, which is the one place a rename is worth more than a new page. */
+    title: guide.seoTitle ?? guide.title,
     description: guide.summary,
     alternates: { canonical: `/guides/${guide.slug}` },
     openGraph: {
@@ -57,13 +61,14 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   if (!guide) notFound();
 
   const kindLabel = guide.kind === 'decision' ? 'Decision guide' : 'Reference installation';
+  const headline = guide.seoTitle ?? guide.title;
   const siblings = getGuides(guide.kind).filter((g) => g.slug !== guide.slug);
 
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
     '@id': `${SITE_URL}/guides/${guide.slug}#article`,
-    headline: guide.title,
+    headline,
     alternativeHeadline: guide.question,
     description: guide.summary,
     url: `${SITE_URL}/guides/${guide.slug}`,
@@ -84,6 +89,18 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   return (
     <div className="tlx-page">
       <SchemaScript schema={schema} />
+      {/* FAQPage, and it qualifies under F-27 for the reason the service pages
+          do: every pair below is rendered visibly further down this page, and
+          every answer is drawn from the papers, the glossary or the published
+          constants rather than written for the schema block. The first pair is
+          the guide's own question and its published recommendation — the two
+          strings this page has always led with. */}
+      <SchemaScript
+        schema={buildFAQPage([
+          { question: guide.question, answer: guide.recommendation.text },
+          ...(guide.faqs ?? []).map((f) => ({ question: f.q, answer: f.a })),
+        ])}
+      />
       <SchemaScript
         schema={buildBreadcrumbList([
           { name: 'Home', url: SITE_URL },
@@ -100,7 +117,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <span>{guide.title}</span>
           </nav>
           <p className="gd-kind">{kindLabel}</p>
-          <h1 className="tlx-title">{guide.title}</h1>
+          <h1 className="tlx-title">{headline}</h1>
           <p className="gd-question">{guide.question}</p>
           <p className="tlx-lede">{guide.summary}</p>
           <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority />
@@ -259,6 +276,25 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           )}
         </div>
       </section>
+
+      {guide.faqs && guide.faqs.length > 0 && (
+        <section className="tlx-section" aria-label="Related questions">
+          <div className="shell">
+            <p className="tlx-kicker">Also asked</p>
+            <h2 className="tlx-h2">Related questions this guide answers</h2>
+            <dl className="gd-spec">
+              {guide.faqs.map((f) => (
+                <div key={f.q}>
+                  <dt>{f.q}</dt>
+                  <dd>{f.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+      )}
+
+      <CommercialHeadTermRail />
 
       <section className="tlx-section" aria-label="Sources and framework">
         <div className="shell">

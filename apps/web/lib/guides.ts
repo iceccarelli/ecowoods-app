@@ -39,9 +39,31 @@ export type GuideTable = { caption?: string; head: string[]; rows: string[][] };
 export type Guide = {
   slug: string;
   kind: GuideKind;
+  /** The editorial title. Used on cards, in breadcrumbs and in listings. */
   title: string;
+  /**
+   * The title as a searcher would phrase it. Rendered as the <title> and the H1
+   * where it is set, with `title` retained for cards and breadcrumbs.
+   *
+   * WHY THIS FIELD EXISTS. Six of these guides answered a high-intent Toronto
+   * query in full — nail-down versus glue-down, refinishing sequence, condo
+   * slab — under headlines that named neither the service nor the city:
+   * "Nail-down, glue-down or floating". The slug carried the keyword, the body
+   * carried the answer, and the two strings a search engine weighs most heavily
+   * carried neither. This is the fix, and it is a rename rather than a new
+   * page on purpose: a second URL targeting a query this one already answers
+   * would split the signal between them, which is the opposite of the goal.
+   */
+  seoTitle?: string;
   /** The question, phrased the way it is actually asked. Used as the H2 and in FAQ schema. */
   question: string;
+  /**
+   * Long-tail questions this guide genuinely answers, rendered visibly on the
+   * page and emitted as FAQPage. Every answer must be derivable from the
+   * papers, the glossary or the published constants — these are not written
+   * for the schema block, which is the test F-27 set.
+   */
+  faqs?: { q: string; a: string }[];
   summary: string;
   publishedAt: string;
   readingMinutes: number;
@@ -73,6 +95,7 @@ export const GUIDES: Guide[] = [
     slug: 'solid-vs-engineered-hardwood-toronto',
     kind: 'decision',
     title: 'Solid or engineered hardwood',
+    seoTitle: 'Solid vs engineered hardwood flooring in Toronto',
     question: 'Should I install solid or engineered hardwood in my Toronto home?',
     summary:
       'The substrate decides this, not the budget and not the preference. This guide walks the same decision tree we use on site, in the order we walk it.',
@@ -128,6 +151,23 @@ export const GUIDES: Guide[] = [
       'Is the home subject to large seasonal RH swings? → Engineered preferred.',
       'Does the client want maximum future refinishing cycles? → Solid, only if the substrate allows.',
     ],
+    faqs: [
+      {
+        q: 'Why do gaps open between my hardwood boards every winter?',
+        a:
+          'Because Toronto indoor relative humidity falls to roughly 18–25% in deep winter against a stable band of 35–55%, and wood gives up moisture to the air around it. Some seasonal movement in solid hardwood is normal and is not a defect. It becomes one when the gaps are large, when they do not close again in summer, or when the material was never equalised to the space before it was laid — which is a process failure, not a property of the wood.',
+      },
+      {
+        q: 'What causes hardwood floors to cup in a Toronto home?',
+        a:
+          'Moisture entering the floor from below — an untested subfloor, a slab without a vapour barrier, or material laid before the two moisture contents were compatible. Cupping is a permanent visible record of that failure, and sanding it flat before the moisture has equalised produces crowning when it finally does. It is one of the five failure modes that follow from skipping moisture testing or acclimation.',
+      },
+      {
+        q: 'Is engineered hardwood real wood?',
+        a:
+          'Yes. An engineered board is a real hardwood wear layer over a cross-ply core laid at 90 degrees. The cross-ply is what provides dimensional stability; the surface you walk on and refinish is the same species as a solid board. What differs is how many refinishing cycles the wear layer permits, and where the assembly can be installed at all.',
+      },
+    ],
     recommendation: {
       text: 'Engineered is the correct specification for the majority of Toronto projects. We specify what the house can support, and we do not sell what will fail.',
       conditions: [
@@ -146,6 +186,7 @@ export const GUIDES: Guide[] = [
     slug: 'nail-down-glue-down-or-floating',
     kind: 'decision',
     title: 'Nail-down, glue-down or floating',
+    seoTitle: 'Nail-down, glue-down or floating hardwood installation in Toronto',
     question: 'Which hardwood installation method is correct for my subfloor?',
     summary:
       'Installation method is not a preference and not a sales option. It is determined by the substrate, the product construction, and the climate load the floor will face for decades.',
@@ -195,6 +236,7 @@ export const GUIDES: Guide[] = [
     slug: 'how-to-evaluate-a-hardwood-quote',
     kind: 'decision',
     title: 'How to evaluate a hardwood quote',
+    seoTitle: 'How to evaluate a hardwood flooring quote in Toronto',
     question: 'How do I tell a good hardwood flooring quote from a bad one?',
     summary:
       'Six questions that separate a company that has done the diligence from one that intends to discover the problems after your deposit has cleared. Any "no" is a red flag.',
@@ -222,6 +264,18 @@ export const GUIDES: Guide[] = [
       'Will they refuse the job if the substrate or conditions are wrong?',
       'Is there true lifetime workmanship warranty language in the contract itself?',
     ],
+    faqs: [
+      {
+        q: 'What should a hardwood flooring quote include?',
+        a:
+          'The moisture readings and the date they were taken, the species, grade and width, the subfloor preparation, the installation method and why, the grit sequence, the finish product and number of coats, stairs and transitions itemised, the schedule, and the workmanship warranty language in the contract itself rather than on a website. A quote missing the moisture readings was priced before anyone knew what the job was.',
+      },
+      {
+        q: 'How do I know if a hardwood contractor uses subcontractors?',
+        a:
+          'Ask who is on payroll and get the answer in writing. The question matters because a protocol can be requested of a subcontracted crew and required of a salaried one, and because a workmanship warranty is only meaningful from a company that still controls the people whose workmanship it covers when you call.',
+      },
+    ],
     recommendation: {
       text: 'Run all six against every quote you hold, including ours. The self-assessment scores the full twenty-four-criterion framework and tells you which questions to go back and ask.',
       conditions: [
@@ -241,6 +295,7 @@ export const GUIDES: Guide[] = [
     slug: 'reference-condominium-concrete-slab',
     kind: 'reference',
     title: 'Condominium over concrete slab',
+    seoTitle: 'Hardwood flooring over a concrete slab in a Toronto condominium',
     question: 'What does a correct hardwood installation over a Toronto condo slab look like, end to end?',
     summary:
       'The most common non-trivial scenario in the GTA: an engineered floor glued to a concrete slab, in a building with acoustic requirements and no forgiving substrate.',
@@ -284,6 +339,7 @@ export const GUIDES: Guide[] = [
     slug: 'reference-radiant-heat-main-floor',
     kind: 'reference',
     title: 'Radiant heat main floor',
+    seoTitle: 'Hardwood flooring over radiant heat in Toronto',
     question: 'What does a correct hardwood installation over radiant heat look like, end to end?',
     summary:
       'Radiant assemblies impose a thermal cycle on top of the seasonal one. Product construction and method are both constrained, and neither is a preference.',
@@ -310,6 +366,18 @@ export const GUIDES: Guide[] = [
       'A floor handed over without a stated operating range has no defensible warranty boundary in either direction.',
       'Thermal cycling compounds the seasonal RH swing rather than replacing it.',
     ],
+    faqs: [
+      {
+        q: 'Can you install hardwood over radiant heat in Toronto?',
+        a:
+          'Yes, with the assembly specified for it: an engineered construction, a floating or otherwise movement-tolerant installation, and a documented heat-up and cool-down schedule before and after laying. Solid hardwood over radiant is the specification most likely to fail here, because the heat drives a moisture gradient through the board in the same direction the Toronto winter is already pulling.',
+      },
+      {
+        q: 'What surface temperature is safe for hardwood over radiant heat?',
+        a:
+          'The controlling number is not the water temperature but the temperature at the top of the board, and it is set by the flooring manufacturer for the specific product. An assembly designed without reference to that figure, and without a commissioning schedule that brings the system up gradually, has no warranty boundary in either direction.',
+      },
+    ],
     recommendation: {
       text: 'Engineered construction, floated, with the humidity operating band and the responsibility for maintaining it written into the handover.',
     },
@@ -324,6 +392,7 @@ export const GUIDES: Guide[] = [
     slug: 'reference-refinishing-existing-hardwood',
     kind: 'reference',
     title: 'Refinishing an existing hardwood floor',
+    seoTitle: 'Hardwood floor sanding and refinishing in Toronto — the machine sequence',
     question: 'What is the correct machine sequence for refinishing a hardwood floor?',
     summary:
       'Four machines, each doing something the others cannot, in an order where every skipped step is a future liability that is invisible on handover day.',
@@ -351,6 +420,23 @@ export const GUIDES: Guide[] = [
       'Without the blending pass, the boundary between what the belt sander reached and what the edger reached stays visible for the life of the floor.',
       'Intercoat screening is invisible on handover day and produces an uneven surface and weaker adhesion when skipped.',
       'Dry to walk on and fully cured are different dates. Furniture returned to an uncured finish marks it permanently.',
+    ],
+    faqs: [
+      {
+        q: 'Can I stay in the house while my hardwood floors are refinished?',
+        a:
+          'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room, capturing roughly 99.7% of airborne particulate at the source, and the water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+      },
+      {
+        q: 'How long does hardwood floor refinishing take?',
+        a:
+          'Refinishing is typically 3–5 days for a standard floor; a new installation on 1,000–1,500 sq ft runs 5 to 7 working days including moisture testing, acclimation, installation, then sanding, staining and finishing. The written estimate includes a committed schedule rather than a range.',
+      },
+      {
+        q: 'Should I refinish or replace my hardwood floor?',
+        a:
+          'Refinish while there is wear layer left to remove and the boards are sound. Replace when the wear layer is spent, when boards are cupped or crowned beyond what a flat sand can correct without going through, or when the substrate underneath is the actual problem. The measurement that settles it is how much material remains above the tongue, and it is taken on site rather than guessed from a photograph.',
+      },
     ],
     recommendation: {
       text: 'All four machines, in sequence, with intercoat screening. Equipment is not the difference between companies — the sequence and the discipline to complete it are.',
@@ -411,6 +497,18 @@ export const GUIDES: Guide[] = [
       'A phone number without a moisture test is a marketing range, not a price.',
       'Lowest bid that skips substrate language is usually incomplete scope, not a bargain.',
       'Pattern multipliers and stair counts omitted from a quote will reappear as change orders.',
+    ],
+    faqs: [
+      {
+        q: 'Why does moisture testing change the price of my hardwood quote?',
+        a:
+          "Because it changes what the job actually is. Both the subfloor and the material carry a moisture content, and both are measured — at the estimate and again immediately before installation. A quote given before those readings is a guess that gets corrected later at the homeowner's expense, which is the mechanism behind most of the price increases people encounter mid-job.",
+      },
+      {
+        q: 'Why do hardwood quotes in Toronto vary so much for the same floor?',
+        a:
+          'Because they are usually not the same job. Whether the subfloor is being prepared, whether stairs and transitions are in scope, which grit sequence is run, how many finish coats, and whether the crew is salaried or subcontracted all sit behind a single per-square-foot number. The published bands on this site are for the whole scope, and the framework exists so the differences can be compared item by item rather than by price alone.',
+      },
     ],
     recommendation: {
       text: 'Use the published ranges to budget. Book the free in-home measure for the fixed written price. Compare quotes on scope completeness — machines, sequence, moisture protocol, warranties in writing — not on the headline number alone.',
@@ -521,6 +619,18 @@ export const GUIDES: Guide[] = [
         ],
       },
     ],
+    faqs: [
+      {
+        q: 'Is white oak or red oak better for a Toronto home?',
+        a:
+          'White oak is more tannin-stable under water-based finishes, takes grey and modern stains more evenly, and is the default for contemporary renovations. Red oak is the heritage Canadian floor with a more open grain. Neither is universally better — substrate, stain target and traffic decide.',
+      },
+      {
+        q: 'Is wide-plank hardwood a good idea in Toronto?',
+        a:
+          'Wide planks move more across their width than narrow ones, and Toronto indoor humidity swings from roughly 18–25% in winter to above 60% in summer. That does not rule wide plank out; it means the construction has to absorb the movement, which in practice means engineered over most Toronto substrates, and it means the operating humidity band has to be stated and kept.',
+      },
+    ],
     recommendation: {
       text: 'Default to white oak for contemporary Toronto work when oak is the design intent. Confirm construction (solid vs engineered) from the substrate, not from the species brochure. Match existing red oak with red oak rather than forcing a white-oak patch.',
     },
@@ -564,6 +674,18 @@ export const GUIDES: Guide[] = [
       'Dustless never means zero dust. It means controlled, captured, and contained dust.',
       'Skipping the blending pass leaves a visible perimeter halo after finish.',
       'Walk-on ready is not full cure; early furniture return marks soft finish.',
+    ],
+    faqs: [
+      {
+        q: 'Does dust-free hardwood sanding actually work?',
+        a:
+          'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room, capturing roughly 99.7% of airborne particulate at the source — not a bag on a sander and not a label. The test of a claim is whether the company will say what is sealed, at which machine, and whether you can stay in the house.',
+      },
+      {
+        q: 'Is dust-free sanding more expensive than ordinary sanding?',
+        a:
+          'Not as a separate line. The published band for a full sand and finish is the same whether or not containment is used, because containment is how the work is done here rather than an upgrade sold on top of it. What moves the price inside the band is area, species, the substrate, stairs and the condition of the existing floor.',
+      },
     ],
     recommendation: {
       text: 'Require HEPA-sealed extraction and room containment in the written scope. Stay home if you want to — that is a realistic outcome when the system is real. Treat dustless claims without equipment detail as incomplete.',
@@ -613,6 +735,18 @@ export const GUIDES: Guide[] = [
         name: 'Parquet / modular patterns',
         whenCorrect: 'Feature fields, borders, or heritage restorations where the pattern is part of the architecture.',
         notes: ['Often a feature zone rather than a whole-home field.', 'Matching existing historic parquet is specialist work.'],
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can herringbone be installed in a Toronto condominium?',
+        a:
+          "Yes, when the slab moisture, the acoustic assembly and the building's elevator and delivery windows are specified first. Pattern work multiplies labour and waste, but it does not change what the substrate allows: glue-down engineered over a tested slab is the usual condo path whatever the pattern.",
+      },
+      {
+        q: 'What is the difference between herringbone and chevron?',
+        a:
+          'Herringbone is made of rectangular boards laid at 90 degrees to each other, so the ends meet the sides in a staggered zig-zag. Chevron boards are cut at an angle at both ends so the points meet in a continuous V. Chevron costs more because the cut is part of the material, and it is far less forgiving of an out-of-square room.',
       },
     ],
     recommendation: {

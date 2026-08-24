@@ -8844,3 +8844,48 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .lib-card { border: 0; border-top: 1px solid #999; border-radius: 0; break-inside: avoid; }
   .rt-dots { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   COMMERCIAL HEAD-TERM RAIL (.chr-*)
+   ---------------------------------------------------------------------------
+   Rendered on the homepage, the services index, all service-area pages and all
+   guides — which means it crosses the .section/.tlx-* boundary. It therefore
+   owns its own interior and borrows only .shell, which both systems share.
+   Semantic tokens only: --surface-1, --line, --ink, --ink-soft, --copper*.
+   Do not copy .clp-card or .tlx-card rules in here; that is how a third design
+   system starts.
+   ------------------------------------------------------------------------- */
+
+.chr { padding: clamp(2.5rem, 5vw, 4rem) 0;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: var(--surface-1); }
+
+.chr-kicker { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--copper-text); margin: 0 0 1.25rem; }
+
+.chr-grid { display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+
+.chr-card { display: flex; flex-direction: column; gap: 0.55rem;
+  padding: 1.6rem 1.7rem; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--bg);
+  text-decoration: none; color: inherit;
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease; }
+.chr-card:hover { border-color: var(--copper); transform: translateY(-3px);
+  box-shadow: 0 14px 34px rgba(67, 48, 31, 0.10); }
+.chr-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
+
+.chr-card h3 { font-family: var(--font-display); font-size: 1.22rem; font-weight: 600;
+  line-height: 1.3; margin: 0; color: var(--ink); }
+.chr-card:hover h3 { color: var(--copper-text); }
+.chr-card p { margin: 0; font-size: 0.94rem; line-height: 1.6; color: var(--ink-soft); }
+.chr-card .chr-meta { font-family: var(--font-mono); font-size: 0.71rem; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); margin-top: auto; padding-top: 0.85rem;
+  border-top: 1px dashed var(--line); }
+
+.chr-foot { margin: 1.5rem 0 0; font-size: 0.92rem; line-height: 1.65; color: var(--ink-soft); }
+.chr-foot a { color: var(--copper-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chr-card, .chr-card:hover { transition: none; transform: none; }
+}

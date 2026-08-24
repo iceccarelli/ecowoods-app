@@ -147,6 +147,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/blog', 'weekly', 0.9, newestArticle),
     entry('/case-studies', 'weekly', 0.9, newestCase),
     entry('/about', 'monthly', 0.9),                              // no date
+    /* /team answers "who actually does the work", which is the trust query
+       behind every commercial one. No date: nothing dated backs it. */
+    entry('/team', 'monthly', 0.85),                               // no date
     /* The review evidence surface. lastModified is the date the figures were
        last read off the platform — the only date on this page that means
        anything, and a real one. */

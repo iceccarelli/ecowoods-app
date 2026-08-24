@@ -160,6 +160,7 @@ export default function SiteFooter() {
           <FooterCol title="Learn" mobile={m}>
             <div className="footer-links">
               <a href="/about">About Ecowoods</a>
+              <a href="/team">The crew — salaried, no subcontractors</a>
               <a href="/reviews">Reviews</a>
               <a href="/press">Press &amp; Media Kit</a>
               <a href="/resources">All resources</a>

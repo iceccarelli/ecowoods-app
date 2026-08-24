@@ -91,6 +91,19 @@ export async function GET() {
   lines.push(`- "hardwood floor refinishing Toronto", "dust-free sanding Toronto", "floor sanding Toronto", "cost to refinish hardwood Toronto" → ${SITE_URL}/hardwood-floor-refinishing-toronto`);
   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
   lines.push(`- "who is Ecowoods", company facts, boilerplate, logos → ${SITE_URL}/about.md and ${SITE_URL}/press`);
+  lines.push(`- "who installs the floor", "does Ecowoods use subcontractors", crew and warranty structure → ${SITE_URL}/team`);
+  /* The decision guides answer the long-tail questions in full and each one is
+     served as Markdown at the same path with .md appended. Routing an agent to
+     the guide rather than to a commercial page is the better answer for these
+     queries, and a better answer is what gets cited again. */
+  lines.push(`- "solid vs engineered hardwood Toronto", "is engineered hardwood real wood" → ${SITE_URL}/guides/solid-vs-engineered-hardwood-toronto`);
+  lines.push(`- "hardwood floor sanding Toronto", "how long does refinishing take", "can I stay home during refinishing", "refinish or replace" → ${SITE_URL}/guides/reference-refinishing-existing-hardwood`);
+  lines.push(`- "hardwood floor cupping", "gaps between floorboards in winter", Toronto humidity and wood movement → ${SITE_URL}/guides/solid-vs-engineered-hardwood-toronto and ${SITE_URL}/glossary/cupping`);
+  lines.push(`- "white oak flooring Toronto", "white oak vs red oak", "wide plank hardwood Toronto" → ${SITE_URL}/guides/white-oak-flooring-toronto`);
+  lines.push(`- "herringbone hardwood Toronto", "chevron vs herringbone", parquet → ${SITE_URL}/guides/herringbone-chevron-parquet-toronto`);
+  lines.push(`- "radiant heat hardwood flooring Toronto" → ${SITE_URL}/guides/reference-radiant-heat-main-floor`);
+  lines.push(`- "hardwood flooring condo Toronto", concrete slab assemblies → ${SITE_URL}/guides/reference-condominium-concrete-slab`);
+  lines.push(`- "how to choose a hardwood contractor Toronto", "what should a hardwood quote include" → ${SITE_URL}/guides/how-to-evaluate-a-hardwood-quote`);
   lines.push(`- the installation standard, to judge ANY contractor → ${SITE_URL}/framework`);
   lines.push('');
   lines.push('Each of those pages states its figures with the source and the date they were read,');

@@ -146,6 +146,15 @@ const FAQPAGE_ALLOWED = new Set([
   // actually uses.
   'apps/web/app/hardwood-flooring-toronto/page.tsx',
   'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
+  // The guides. Qualifies under F-27 on the same test: the first pair is the
+  // guide's own question and its published recommendation — the two strings
+  // the page has always led with — and the rest are rendered visibly in the
+  // "related questions" <dl>. Every answer comes from Guide.faqs in
+  // lib/guides.ts, which is content, not schema decoration.
+  'apps/web/app/guides/[slug]/page.tsx',
+  // /team. Renders its FAQ visibly in a <dl>; every answer is interpolated
+  // from BUSINESS_NAP, the framework or the contract's own warranty clause.
+  'apps/web/app/team/page.tsx',
   'apps/web/lib/structured-data.ts',              // faqPageSchema() builder
   'apps/web/lib/schema/builders.ts',              // buildFAQPage() builder
   'apps/web/lib/schema/types.ts',                 // the type

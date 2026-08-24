@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import HomePage from './home-client';
 import { ContentLibraryPromo } from './components/ContentLibraryPromo';
+import { CommercialHeadTermRail } from './components/CommercialHeadTermRail';
 
 /**
  * The homepage is the one route whose canonical genuinely is '/'. It used to get
@@ -23,5 +24,18 @@ export const metadata: Metadata = {
  * bundles `fs` for the browser and breaks the build.
  */
 export default function Page() {
-  return <HomePage contentPromo={<ContentLibraryPromo />} />;
+  /* The rail rides in on the same slot as the library promo. home-client.tsx
+     is a client component and CommercialHeadTermRail reads server-only
+     manifests, so it is composed here and passed down — the same reason
+     ContentLibraryPromo is a prop rather than an import. See F-80. */
+  return (
+    <HomePage
+      contentPromo={
+        <>
+          <CommercialHeadTermRail />
+          <ContentLibraryPromo />
+        </>
+      }
+    />
+  );
 }
