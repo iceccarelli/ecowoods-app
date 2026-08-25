@@ -9,7 +9,7 @@ import {
   SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
 import {
-  RENOGUIDE_SYSTEM_PROMPT,
+  ECOWOODS_GUIDE_SYSTEM_PROMPT,
   estimateInstalledRangeCad,
   FINISH_OPTIONS,
   PATTERN_OPTIONS,
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
-    system: RENOGUIDE_SYSTEM_PROMPT,
+    system: ECOWOODS_GUIDE_SYSTEM_PROMPT,
     messages,
     stopWhen: stepCountIs(8),
     tools: {
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
               const quote = await tx.quoteRequest.create({ data: {
                 name: b.name, email: b.email, phone: b.phone, city: b.postal ?? null,
                 service, squareFeet: b.squareFeet ?? null,
-                notes: `[booked via RenoGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
+                notes: `[booked via EcowoodsGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
               }});
               const appt = await tx.appointment.create({ data: {
                 quoteRequestId: quote.id, startsAt, durationMinutes: SLOT_DURATION_MINUTES,
@@ -198,13 +198,13 @@ export async function POST(req: Request) {
             sendAdminNewQuoteEmail({
               quoteId, name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
               service: lead.service ?? lead.species, squareFeet: lead.squareFeet,
-              notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
+              notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
             }).catch((e) => console.error('[chat] admin email failed:', e));
           try {
             const q = await db.quoteRequest.create({ data: {
               name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
               service: lead.service ?? lead.species ?? null, squareFeet: lead.squareFeet ?? null,
-              timeline: lead.timeline ?? null, notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
+              timeline: lead.timeline ?? null, notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
             }});
             adminNotify(q.id);
             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: q.id }));

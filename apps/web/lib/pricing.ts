@@ -14,7 +14,7 @@
  * price literal found anywhere outside the constants module, including here.
  *
  * Species-level installed ranges live in @ecowoods/shared/ai (FLOORING_RATES +
- * estimateInstalledRangeCad) so the configurator, RenoGuide and this module
+ * estimateInstalledRangeCad) so the configurator, EcowoodsGuide and this module
  * cannot drift.
  */
 import {

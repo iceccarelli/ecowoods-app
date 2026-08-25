@@ -104,7 +104,7 @@ export const PROCESSORS: Processor[] = [
   {
     name: 'Anthropic',
     purpose:
-      'Runs RenoGuide, the assistant in the chat window — scoping a project, giving a rough ' +
+      'Runs EcowoodsGuide, the assistant in the chat window — scoping a project, giving a rough ' +
       'range, and booking an in-home measure.',
     data:
       'What you type into the chat, and the square footage and species you give it. If you book ' +

@@ -1,7 +1,7 @@
 {
   "$schema": "audit/current-state.schema (informal)",
   "generatedBy": "scripts/audit-current-state.mjs",
-  "generatedAt": "2026-08-25T00:27:54.000Z",
+  "generatedAt": "2026-08-25T17:38:32.422Z",
   "method": "static analysis of the repository — no URL is fetched; see scripts/crawl-site.mjs for the live counterpart",
   "repository": {
     "root": "apps/web"
@@ -968,7 +968,7 @@
         "/"
       ],
       "internalLinkCount": 1,
-      "bytes": 1464
+      "bytes": 1468
     },
     {
       "route": "/docs/contract/[id]",

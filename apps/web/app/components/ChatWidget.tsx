@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { EW_MARK } from '@/lib/brand';
-import { onRenoGuideOpen } from '@/lib/renoguide';
+import { onAssistantOpen } from '@/lib/assistant';
+import { ASSISTANT, ASSISTANT_GREETING, ASSISTANT_CHIPS } from '@/lib/assistant-identity';
 
 // Theme-aware by construction: these are CSS custom properties, resolved by
 // the browser on every paint. Flipping data-theme on <html> restyles the whole
@@ -20,7 +21,7 @@ const C = {
   muted: 'var(--rg-muted)',
 };
 type Msg = { id: string; role: 'user' | 'assistant'; content: string };
-const QUICK = ['Get a ballpark estimate', 'Which species suits pets & kids?', 'Book a free in-home measure'];
+const QUICK = ASSISTANT_CHIPS;
 const uid = () => Math.random().toString(36).slice(2);
 
 export default function ChatWidget() {
@@ -94,10 +95,10 @@ export default function ChatWidget() {
   /* ────────────────────────────────────────────────────────────────
      THE SEAM. The floor configurator, the ⌘K palette, exit intent and
      the WhatsApp rail all reach the agent through here — they never
-     reimplement pricing or booking, they just hand RenoGuide a sentence
+     reimplement pricing or booking, they just hand the assistant a sentence
      and let estimate_project / get_availability / book_measure run.
      ──────────────────────────────────────────────────────────────── */
-  useEffect(() => onRenoGuideOpen(({ prefill, autoSend = true, source }) => {
+  useEffect(() => onAssistantOpen(({ prefill, autoSend = true, source }) => {
     setOpen(true);
     setShowNudge(false);
     if (!prefill) return;
@@ -110,7 +111,7 @@ export default function ChatWidget() {
     }
     if (source && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
       // Dev-only telemetry breadcrumb; wire to a real analytics sink for prod.
-      console.log(JSON.stringify({ event: 'renoguide.opened', source }));
+      console.log(JSON.stringify({ event: 'assistant.opened', source }));
     }
   }), []);
 
@@ -137,7 +138,7 @@ export default function ChatWidget() {
           </div>
         )}
         {!open && (
-          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
+          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label={ASSISTANT.ariaLaunch} style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={EW_MARK} alt="" width={34} height={34} style={{ borderRadius: 9, display: 'block' }} />
           </button>
@@ -145,17 +146,17 @@ export default function ChatWidget() {
       </div>
 
       {open && (
-        <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+        <div role="dialog" aria-label={ASSISTANT.ariaDialog} className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={EW_MARK} alt="" width={38} height={38} style={{ borderRadius: 11, display: 'block' }} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
+              <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>{ASSISTANT.name}</div>
               <div style={{ fontSize: 11.5, opacity: .92, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ height: 7, width: 7, borderRadius: 50, background: '#7ee0a0', boxShadow: '0 0 0 2px rgba(126,224,160,.3)' }} />
-                Ecowoods · Toronto &amp; GTA
+                {ASSISTANT.subtitle}
               </div>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat" style={{ border: 'none', background: 'rgba(255,255,255,.16)', color: '#fff', height: 30, width: 30, borderRadius: 8, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
@@ -165,7 +166,7 @@ export default function ChatWidget() {
             {messages.length === 0 && (
               <div style={{ animation: 'rg-pop .3s ease' }}>
                 <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px var(--rg-bubble-shadow)' }}>
-                  Hi — I’m <strong>RenoGuide</strong>. Tell me the wood species, rough square footage and your area, and I’ll give you a transparent ballpark and line up a specialist. What are you thinking?
+                  {ASSISTANT_GREETING}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                   {QUICK.map((q) => (<button key={q} className="rg-chip" onClick={() => send(q)} style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.muted, borderRadius: 999, padding: '7px 13px', fontSize: 13, cursor: 'pointer', transition: 'all .15s ease' }}>{q}</button>))}

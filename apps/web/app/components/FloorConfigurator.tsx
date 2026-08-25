@@ -10,7 +10,7 @@ import {
   describeFloorForChat,
   bookMeasureIntent,
 } from '@ecowoods/shared/ai';
-import { openRenoGuide } from '@/lib/renoguide';
+import { openAssistant } from '@/lib/assistant';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ import { EcowoodsLeaf } from './EcowoodsLeaf';
      · The number is never presented as a quote. It is a range, always labelled,
        always followed by "fixed in writing after the free measure" — which is
        the promise the rest of the site already makes.
-     · Every exit leads into RenoGuide, which owns the real tools.
+     · Every exit leads into EcowoodsGuide, which owns the real tools.
      · It reuses estimateInstalledRangeCad() — the exact function /api/chat's
        estimate_project tool calls. The page and the agent cannot disagree.
    ──────────────────────────────────────────────────────────────────────────── */
@@ -109,8 +109,8 @@ export default function FloorConfigurator() {
 
   const payload = { species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId, postal: postal.trim() || undefined };
 
-  const askRenoGuide = () => openRenoGuide({ prefill: describeFloorForChat(payload), source: 'configurator:ask' });
-  const bookMeasure = () => openRenoGuide({ prefill: bookMeasureIntent(payload), source: 'configurator:book' });
+  const askEcowoodsGuide = () => openAssistant({ prefill: describeFloorForChat(payload), source: 'configurator:ask' });
+  const bookMeasure = () => openAssistant({ prefill: bookMeasureIntent(payload), source: 'configurator:book' });
 
   return (
     <section className="section fc" id="configurator" aria-labelledby="fc-heading">
@@ -223,7 +223,7 @@ export default function FloorConfigurator() {
             </fieldset>
 
             <div className="fc-field">
-              <label htmlFor="fc-postal" className="fc-postal-label">Postal code <span>optional — lets RenoGuide check your area</span></label>
+              <label htmlFor="fc-postal" className="fc-postal-label">Postal code <span>optional — lets EcowoodsGuide check your area</span></label>
               <input
                 id="fc-postal"
                 className="fc-postal"
@@ -272,9 +272,9 @@ export default function FloorConfigurator() {
                 Book my free measure
                 <span className="btn-arrow" aria-hidden="true">→</span>
               </button>
-              <button type="button" className="fc-secondary" onClick={askRenoGuide}>
+              <button type="button" className="fc-secondary" onClick={askEcowoodsGuide}>
 <EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
-                Ask RenoGuide about this floor
+                Ask EcowoodsGuide about this floor
               </button>
              </div>
 

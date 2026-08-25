@@ -1,5 +1,5 @@
 /**
- * RenoGuide bus.
+ * EcowoodsGuide bus.
  *
  * WHY THIS EXISTS
  * ---------------
@@ -9,21 +9,21 @@
  *
  * Every new surface we add — the configurator, ⌘K, exit intent, WhatsApp —
  * is worthless if it dead-ends in its own little UI. So none of them get
- * their own state. They all do exactly one thing: hand RenoGuide a sentence
+ * their own state. They all do exactly one thing: hand EcowoodsGuide a sentence
  * and let the existing tools do the work.
  *
  * That means:
- *   configurator "Ask RenoGuide" → openRenoGuide({ prefill: '...' })
+ *   configurator "Ask EcowoodsGuide" → openAssistant({ prefill: '...' })
  *     → ChatWidget opens, sends it, model calls estimate_project
- *   configurator "Book my measure" → openRenoGuide({ prefill: '...' })
+ *   configurator "Book my measure" → openAssistant({ prefill: '...' })
  *     → model calls get_availability then book_measure → real Appointment row
  *
  * One seam. No duplicated pricing UI, no second booking flow, no drift.
  */
 
-export const RENOGUIDE_OPEN_EVENT = 'renoguide:open';
+export const ASSISTANT_OPEN_EVENT = 'assistant:open';
 
-export interface RenoGuideOpenDetail {
+export interface AssistantOpenDetail {
   /** Text dropped into the composer. */
   prefill?: string;
   /** Send it immediately instead of letting the user edit first. Default true. */
@@ -33,17 +33,17 @@ export interface RenoGuideOpenDetail {
 }
 
 /** Fire-and-forget. Safe to call during SSR (no-ops) and before ChatWidget mounts. */
-export function openRenoGuide(detail: RenoGuideOpenDetail = {}): void {
+export function openAssistant(detail: AssistantOpenDetail = {}): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(
-    new CustomEvent<RenoGuideOpenDetail>(RENOGUIDE_OPEN_EVENT, {
+    new CustomEvent<AssistantOpenDetail>(ASSISTANT_OPEN_EVENT, {
       detail: { autoSend: true, ...detail },
     }),
   );
 }
 
-export function onRenoGuideOpen(handler: (detail: RenoGuideOpenDetail) => void): () => void {
-  const listener = (e: Event) => handler((e as CustomEvent<RenoGuideOpenDetail>).detail ?? {});
-  window.addEventListener(RENOGUIDE_OPEN_EVENT, listener);
-  return () => window.removeEventListener(RENOGUIDE_OPEN_EVENT, listener);
+export function onAssistantOpen(handler: (detail: AssistantOpenDetail) => void): () => void {
+  const listener = (e: Event) => handler((e as CustomEvent<AssistantOpenDetail>).detail ?? {});
+  window.addEventListener(ASSISTANT_OPEN_EVENT, listener);
+  return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, listener);
 }

@@ -29,7 +29,7 @@ export default function DesignPage() {
           <h1 className="tlx-title">The floor designer</h1>
           <p className="tlx-lede">
             Take your time here. When a combination feels right, one tap books the free
-            in-home measure — or hands your exact configuration to RenoGuide. No retyping.
+            in-home measure — or hands your exact configuration to EcowoodsGuide. No retyping.
           </p>
         </div>
       </header>

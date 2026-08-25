@@ -12,7 +12,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 /**
  * GET/POST /api/estimate — public rough-range endpoint for humans, tools, and AI agents.
  *
- * Same numbers as the floor configurator and RenoGuide's estimate_project tool
+ * Same numbers as the floor configurator and EcowoodsGuide's estimate_project tool
  * (estimateInstalledRangeCad). Rate-limited. Never a fixed quote.
  *
  *   GET  /api/estimate?species=white%20oak&sqft=1200&finish=waterborne&pattern=straight

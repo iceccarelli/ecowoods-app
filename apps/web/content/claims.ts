@@ -357,11 +357,11 @@ export const CLAIMS: Claim[] = [
     id: 'warranty.lifetimeWorkmanship',
     statement: 'Lifetime workmanship warranty.',
     status: 'unsourced',
-    source: 'NONE RECORDED. Appears only in the RenoGuide system prompt.',
+    source: 'NONE RECORDED. Appears only in the EcowoodsGuide system prompt.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial'],
     note:
-      'This phrasing exists in exactly one place — RENOGUIDE_SYSTEM_PROMPT in ' +
+      'This phrasing exists in exactly one place — ECOWOODS_GUIDE_SYSTEM_PROMPT in ' +
       'packages/shared/ai — and it is stronger than warranty.workmanship, which is what ' +
       'the rest of the site says. A conversational assistant repeating "lifetime ' +
       'workmanship warranty" to a prospect is making a commitment the contract may not ' +

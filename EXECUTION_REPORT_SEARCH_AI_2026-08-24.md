@@ -977,3 +977,153 @@ the CI guards job. `pnpm domain:build` regenerates the three configs;
 `verify-domain-redirect.mjs` (real URLs, mapped destinations),
 `old-domain/README.md` (measurement corrected), `sitemap.ts`, `claims.ts`,
 `package.json`, `web.yml`
+
+---
+---
+
+# Cycle 4 — the space bar
+
+Reported as "the chat widget won't let me type spaces." The chat widget was
+innocent. The bug was on the homepage and it was eating every text field on it,
+including the estimate form.
+
+---
+
+## 1. Two carousels were deciding what your customers could type
+
+`FloorCatalog.tsx` and `MachineCatalog.tsx` each registered this:
+
+```ts
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
+});
+```
+
+A `window` listener fires **regardless of what has focus**. Both components are
+mounted on `home-client.tsx`. The homepage carries the primary lead-capture
+form.
+
+So on the highest-traffic page of a business whose entire funnel is *type your
+project into this box*:
+
+- **the space bar did nothing**, and
+- **the arrow keys jumped a carousel** instead of moving the text cursor.
+
+A customer typing *"White oak, main floor, about 600 square feet"* got
+`Whiteoak,mainfloor,about600squarefeet` — if they persevered past the second
+word at all. This is live right now and has been for as long as those components
+have existed.
+
+It is the most expensive bug found in this engagement. Bigger than the price
+contradiction, because a wrong price loses an argument and this loses the lead
+before there is an argument to have.
+
+**Fixed** in `apps/web/lib/keyboard.ts` — `whenNotTyping()` wraps a global
+handler so it ignores events originating in an `input`, `textarea`, `select`,
+anything `contentEditable`, or anything carrying `role="textbox"`/`combobox`.
+Escape is still delivered, because Escape types nothing and closing a dialog
+from inside its own field is what people expect.
+
+`CommandPalette` already hand-rolled this check and had it *nearly* right — it
+missed `<select>` and the ARIA roles. It now uses the shared predicate. One
+definition of "is a person typing here", used everywhere.
+
+### `pnpm seo:keys`
+
+Fails the build on any `window`/`document` key listener that calls
+`preventDefault()` without consulting `lib/keyboard.ts`. This class of bug is
+invisible to typecheck, invisible to the build, invisible to every other guard
+in this repository, and catastrophic to conversion — so it gets its own check.
+It found the `CommandPalette` case on its first run.
+
+---
+
+## 2. RenoGuide → EcowoodsGuide
+
+The name was typed as a literal in nineteen places: the widget header, the
+greeting, the launch button's `aria-label`, the dialog's accessible name, three
+command-palette entries, two configurator buttons, a form hint, and the system
+prompt the model reads.
+
+It was also the wrong name. Every other surface on this site is relentlessly one
+entity — the schema graph, `llms.txt`, `ai.txt`, the citation guide and the
+framework all say Ecowoods, because the whole retrieval strategy is making one
+entity unmistakable. Then the one thing a visitor actually *talks to* introduced
+itself as a different brand, in the highest-intent moment on the site. Same
+class of leak as two live domains, smaller scale.
+
+`lib/assistant-identity.ts` is now the single source: name, subtitle, both ARIA
+labels, the greeting and the three chips. `lib/renoguide.ts` → `lib/assistant.ts`,
+`openRenoGuide` → `openAssistant`, `RENOGUIDE_OPEN_EVENT` → `ASSISTANT_OPEN_EVENT`,
+`RENOGUIDE_SYSTEM_PROMPT` → `ECOWOODS_GUIDE_SYSTEM_PROMPT`.
+
+**The greeting was rewritten too**, because it asked for three things before
+offering anything: *"Tell me the wood species, rough square footage and your
+area."* That is a form with a chat interface painted on it, and someone whose
+floor is cupping does not know their square footage. It now says what Ecowoods
+does, then asks one open question.
+
+**The chips changed for the same reason.** *"Which species suits pets & kids?"*
+assumes a buyer who is shopping. The largest group of people who open a flooring
+chat window have a floor that is already misbehaving, and the widget had nothing
+to say to them. Now: **"My floor is cupping or gapping"**, which routes straight
+into the work.
+
+---
+
+## 3. Every reply now closes on what Ecowoods would do
+
+Added to the system prompt as the rule stated most emphatically, because it is
+the one most easily lost mid-conversation:
+
+> Every single reply — including answers to questions that have nothing to do
+> with buying, including "what is cupping" — ends by naming the specific Ecowoods
+> service or next step that follows from what was just said. **A reply that
+> answers the question and stops is a failed reply.**
+
+With the mapping written out: symptom → restoration + free diagnosis;
+refinishing question → the published band + the measure; stairs mentioned →
+per-tread pricing and the fact most quotes omit them; pure curiosity → answer it
+properly, then one line on what Ecowoods does about it in a real house.
+
+Plus a named service list the assistant may state verbatim, so it stops
+paraphrasing the offer into vagueness.
+
+The prompt also now says why this is not pushiness: *"Pushy is inventing urgency.
+Telling someone what a company can do about the problem they just described is
+the reason they opened the window."*
+
+`pnpm seo:assistant` fails the build if the retired name reappears, if a
+component types the current name as a literal instead of importing the constant,
+or if the always-close rule is trimmed out of the prompt.
+
+---
+
+## Cycle 4 verification
+
+| check | result |
+| --- | --- |
+| `tsc --noEmit` | **107 errors — identical set to baseline** |
+| all 27 `verify:*` | pass |
+| `pnpm seo` (now 11 gates) | pass |
+| `seo:keys` proven | found the `CommandPalette` case unprompted on its first run |
+
+One error was introduced and fixed: an escaped backtick from the edit script
+broke the system prompt's template literal. It surfaced as eight parse errors and
+a *lower* total error count, which is worth remembering — a falling error count
+can mean the compiler stopped early, not that things improved.
+
+New gates: `pnpm seo:keys`, `pnpm seo:assistant` — both in `verify`, `seo` and
+the CI guards job.
+
+---
+
+## Still open, unchanged
+
+1. Merge and deploy. Cycles 1–4 are all still on the branch.
+2. `old-domain/.htaccess` onto the Apache box. 35 live URLs, 22 testimonials.
+3. CS-01 dust capture · CS-02 warranty — owner decisions.
+4. Google Business Profile Place ID.
+5. Run the 307-prompt benchmark for a baseline.
