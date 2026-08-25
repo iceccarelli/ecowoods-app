@@ -186,7 +186,7 @@ export default function InvoiceIssueForm({
           </div>
           <div className="field">
             <label>Admin Notes</label>
-            <input value={paidNotes} onChange={(e) => setPaidNotes(e.target.value)} placeholder="e.g. Received $5,000" />
+            <input value={paidNotes} onChange={(e) => setPaidNotes(e.target.value)} placeholder="e.g. Received $5,000" />  {/* pricing-allow: an example of NOTE FORMAT in an admin-only field. Not a published price and not customer-facing — /admin is disallowed in robots.txt and behind auth. */}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleMarkPaid} disabled={loading} className="btn btn-copper btn-sm">

@@ -157,7 +157,9 @@ export const getServicePages = (): ServicePage[] => SERVICE_PAGES;
 export const getServicePage = (slug: string): ServicePage | undefined =>
   SERVICE_PAGES.find((p) => p.slug === slug);
 
-/** "$11.00–$18.00 per sq ft", or undefined where no band is published. */
+/** The rendered band, or undefined where no band is published.  pricing-allow
+ *  (the literal above is the FORMAT this returns, quoted in documentation —
+ *  not a price anyone is shown. The value itself comes from PRICING.) */
 export const priceBand = (page: ServicePage): string | undefined => {
   if (!page.pricing) return undefined;
   const p = PRICING[page.pricing];

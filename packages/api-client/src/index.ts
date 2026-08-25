@@ -116,7 +116,7 @@ export async function fetchAvailability(q: AvailabilityQuery = {}): Promise<Avai
   const res = await fetch(`/api/availability${qs ? '?' + qs : ''}`, { cache: 'no-store' });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
-    throw new Error(e.error || 'Could not load availability. Please call (647) 244-5156.');
+    throw new Error(e.error || `Could not load availability. Please call ${BUSINESS_NAP.phoneDisplay}.`);
   }
   return res.json();
 }
@@ -134,7 +134,7 @@ export async function submitAppointment(
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
     const err = new Error(
-      e.error || 'Could not confirm that time. Please try another or call (647) 244-5156.',
+      e.error || `Could not confirm that time. Please try another or call ${BUSINESS_NAP.phoneDisplay}.`,
     );
     (err as any).status = res.status;
     throw err;

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
 import { machines, machineImages, type Machine } from '../data/machines';
 import { SHOT_TYPE, type ShotType } from '../data/machine-images';
+import { whenNotTyping } from '@/lib/keyboard';
 
 const N = machines.length;
 const SHOTS = 6; // 6 photos per machine (set 1 = 01-03, set 2 = 04-06)
@@ -137,12 +138,15 @@ export default function MachineCatalog() {
   useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % SHOTS), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
   useEffect(() => { if (!active) return; const t = window.setInterval(() => { setIdx((i) => (i + 1) % N); setShotIdx(0); }, FLOOR_MS); return () => window.clearInterval(t); }, [active]);
 
+  /* Same window-level listener, same bug, same fix — see FloorCatalog and
+     lib/keyboard.ts. Two components independently swallowing the space bar on
+     the page that carries the estimate form. */
   useEffect(() => {
     if (lightbox !== null) return;
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = whenNotTyping((e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
-    };
+    });
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   }, [lightbox, go]);
 

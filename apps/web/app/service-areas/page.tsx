@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { breadcrumbSchema } from '@/lib/structured-data';
+import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 
 export const metadata: Metadata = {
   title: 'Service Areas — Hardwood Flooring Across the GTA',
@@ -39,6 +40,45 @@ export default function ServiceAreasIndex() {
           </p>
         </div>
       </section>
+
+      {/* The area index listed thirty-two places and nothing else — no service,
+          no evidence, no price. It is the page a "near me" query lands on, and
+          it answered "where" while saying nothing about "what" or "how much". */}
+      <section className="tlx-section" aria-label="What we do in all of them">
+        <div className="shell">
+          <p className="tlx-kicker">The same work everywhere</p>
+          <h2 className="tlx-h2">What the crews do, wherever the job is</h2>
+          <p className="tlx-note">
+            {SERVICES.map((sv, i) => (
+              <span key={sv.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/services/${sv.slug}`}>{sv.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            Price bands are published before you call and do not change by postal code:{' '}
+            <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
+            <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
+            <Link href="/hardwood-stairs-toronto">stairs</Link>. What does change by address is the
+            housing stock and the substrate under it, which is what each area page above is for.
+          </p>
+        </div>
+      </section>
+
+      <EvidenceRail
+        heading="Four of them, by neighbourhood"
+        intro={
+          'Each publishes the substrate it was built on and the readings taken before the work — ' +
+          'which is the part of a local job that actually varies.'
+        }
+        items={[
+          { ...CASES.distillery, why: 'Distillery District: a Victorian loft over concrete, tested before the assembly was specified.' },
+          { ...CASES.yorkville, why: 'Yorkville: below grade at a critical moisture reading, mitigated and re-measured.' },
+          { ...CASES.forestHill, why: 'Forest Hill: wide-plank walnut over plywood, with the colour held uniform.' },
+          { ...CASES.rosedale, why: 'Rosedale: a grand staircase and a radiant-heat main floor.' },
+        ]}
+      />
     </div>
   );
 }

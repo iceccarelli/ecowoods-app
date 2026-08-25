@@ -18,6 +18,13 @@
  * scripts/verify-business-facts.mjs for the list that must never come back.
  */
 
+import {
+  SCREEN_RECOAT,
+  FULL_SAND_FINISH,
+  NEW_INSTALL,
+  formatBandBare as bandBare,
+} from '@/content/constants/pricing';
+
 export type PaperTable = {
   caption?: string;
   head: string[];
@@ -215,12 +222,24 @@ export const PAPERS: Paper[] = [
         table: {
           caption: 'Fully installed pricing, Greater Toronto Area',
           head: ['Scope', 'Range'],
+          /* The last three rows are ECOWOODS' OWN published bands and are now
+             interpolated from content/constants/pricing.ts. They were typed by
+             hand here, which meant a paper — the most quotable document format
+             this site publishes, and the one served as a downloadable PDF —
+             could state a price the rest of the site had moved away from.
+
+             The first two rows are different in kind: they are GTA MARKET
+             figures, not this company's prices, and no source is recorded for
+             either. They are registered as market.installedAverage and
+             market.installedRange (status: unsourced) in content/claims.ts and
+             are left in place pending a citation, because a market figure is
+             not ours to change — only to source or withdraw. */
           rows: [
-            ['Fully installed, average', '≈ $13 / sq ft'],
-            ['Fully installed, typical range', '$8 – $18 / sq ft'],
-            ['Screen and recoat', '$2.50 – $4.00 / sq ft'],
-            ['Full sand and finish', '$4.75 – $7.50 / sq ft'],
-            ['Premium new install (wide-plank, oil finishes, stairs)', '$11 – $18 / sq ft'],
+            ['Fully installed, average (GTA market)', '≈ $13 / sq ft'],
+            ['Fully installed, typical range (GTA market)', '$8 – $18 / sq ft'],
+            [`Screen and recoat (${SCREEN_RECOAT.label})`, `${bandBare(SCREEN_RECOAT)} / sq ft`],
+            [`Full sand and finish (${FULL_SAND_FINISH.label})`, `${bandBare(FULL_SAND_FINISH)} / sq ft`],
+            ['Premium new install (wide-plank, oil finishes, stairs)', `${bandBare(NEW_INSTALL)} / sq ft`],
           ],
         },
       },

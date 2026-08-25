@@ -3,7 +3,8 @@
  *
  * This is injected into every page via the layout. All AI agents, crawlers and
  * structured data parsers ingest this to understand:
- * - Who EcoWoods is (LocalBusiness, 25 years old, Toronto)
+ * - Who EcoWoods is (LocalBusiness, Toronto — the age is derived from
+ *   BUSINESS_NAP.foundedYear, never written down)
  * - What they serve (6 core services)
  * - Where they serve (GTA)
  * - How to reach them (phone, email, address)
@@ -83,24 +84,37 @@ const servicePriceRange = (slug: string): string | undefined => {
   return page ? priceBand(page) : undefined;
 };
 
+/**
+ * THE ENTITY, DERIVED.
+ *
+ * Every field below was a string literal. They all agreed with
+ * BUSINESS_NAP — which is the dangerous state, not the safe one: a second
+ * copy that agrees looks exactly like a single source of truth right up to the
+ * day someone changes one of them. And this is the object a search engine reads
+ * to decide WHO this business is. lib/structured-data.ts held a third copy of
+ * the same five fields, on the thirty-two service-area pages. Both now derive.
+ *
+ * `pnpm seo:claims` fails the build on a NAP literal anywhere outside
+ * packages/shared/constants.
+ */
 export const ROOT_ORG_CONFIG: OrganizationConfig = {
   siteUrl: SITE_URL,
-  name: 'Ecowoods Inc.',
-  legalName: 'Ecowoods Hardwood Flooring Inc.',
-  phone: '+1-647-244-5156',
-  email: 'services@ecowoods.ca',
+  name: BUSINESS_NAP.name,
+  legalName: BUSINESS_NAP.legalName,
+  phone: BUSINESS_NAP.phoneSchema,
+  email: BUSINESS_NAP.email,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '32 Norfield Crescent',
-    addressLocality: 'Toronto',
-    addressRegion: 'ON',
-    postalCode: 'M9W 1X6',
-    addressCountry: 'CA',
+    streetAddress: BUSINESS_NAP.address.streetAddress,
+    addressLocality: BUSINESS_NAP.address.addressLocality,
+    addressRegion: BUSINESS_NAP.address.addressRegion,
+    postalCode: BUSINESS_NAP.address.postalCode,
+    addressCountry: BUSINESS_NAP.address.addressCountry,
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 43.72085,
-    longitude: -79.57542,
+    latitude: BUSINESS_NAP.address.latitude,
+    longitude: BUSINESS_NAP.address.longitude,
   },
   // Derived, like the per-service lists below. This block was sixteen
   // hand-typed City nodes that happened to agree with CITIES today; the

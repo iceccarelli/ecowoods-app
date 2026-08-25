@@ -59,6 +59,36 @@ jobs:
         run: node scripts/verify-business-facts.mjs
       - name: Schema / migration drift
         run: node scripts/verify-migrations.mjs
+      # ── search & retrieval gates ──────────────────────────────────────
+      #
+      # All four are dependency-free and connectionless, like the two above:
+      # they parse the repository as text and finish in about a second each.
+      # None of them fetches a URL, deliberately — a check that reaches the
+      # network from CI is a check that reports a proxy's 403 as a broken site,
+      # which this repository has recorded five times. The live half runs from a
+      # machine with open egress: `pnpm seo:live`.
+      #
+      # Each is a separate step rather than one `pnpm seo`, because the step
+      # name is what appears in the PR checks list — "Price source" failing
+      # tells you what broke before you open the log.
+      - name: Price source (one price, one file)
+        run: node scripts/verify-pricing-source.mjs
+      - name: Claim registry (no unregistered business fact ships)
+        run: node scripts/verify-claims.mjs
+      - name: Topic map (every canonical resolves, no redirect chains)
+        run: node scripts/verify-topic-map.mjs
+      - name: Link density (every commercial page reaches evidence and a CTA)
+        run: node scripts/verify-link-density.mjs
+      - name: Legal surface (every data processor is declared; /privacy and /terms exist)
+        run: node scripts/verify-legal.mjs
+      - name: Key handlers (no global shortcut can steal a keystroke)
+        run: node scripts/verify-key-handlers.mjs
+      - name: Assistant (one name, and the prompt still closes on Ecowoods)
+        run: node scripts/verify-assistant.mjs
+      - name: Old-domain configs match the path map
+        run: node scripts/build-old-domain-redirects.mjs --check
+      - name: AI discoverability (commercial material leads every machine surface)
+        run: node scripts/audit-ai-discoverability.mjs
 
   build:
     name: Typecheck & Build

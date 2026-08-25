@@ -9,7 +9,7 @@ import {
   SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
 import {
-  RENOGUIDE_SYSTEM_PROMPT,
+  ECOWOODS_GUIDE_SYSTEM_PROMPT,
   estimateInstalledRangeCad,
   FINISH_OPTIONS,
   PATTERN_OPTIONS,
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
-    system: RENOGUIDE_SYSTEM_PROMPT,
+    system: ECOWOODS_GUIDE_SYSTEM_PROMPT,
     messages,
     stopWhen: stepCountIs(8),
     tools: {
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'Ecowoods', phone: '(647) 244-5156', email: s?.companyEmail ?? 'services@ecowoods.ca', note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
+          return { company: 'Ecowoods', phone: BUSINESS_NAP.phoneDisplay, email: s?.companyEmail ?? BUSINESS_NAP.email, note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
         },
       }),
 
@@ -138,9 +138,9 @@ export async function POST(req: Request) {
             }
             return slots.length
               ? { timezone: BUSINESS_TIMEZONE, slots, note: 'Offer 2-3 of these exact times. Pass the startsAt value verbatim to book_measure.' }
-              : { timezone: BUSINESS_TIMEZONE, slots: [], note: 'No openings in range — ask them to call (647) 244-5156 to book.' };
+              : { timezone: BUSINESS_TIMEZONE, slots: [], note: `No openings in range — ask them to call ${BUSINESS_NAP.phoneDisplay} to book.` };
           } catch {
-            return { slots: [], note: 'Calendar unavailable — ask them to call (647) 244-5156 to book.' };
+            return { slots: [], note: `Calendar unavailable — ask them to call ${BUSINESS_NAP.phoneDisplay} to book.` };
           }
         },
       }),
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
               const quote = await tx.quoteRequest.create({ data: {
                 name: b.name, email: b.email, phone: b.phone, city: b.postal ?? null,
                 service, squareFeet: b.squareFeet ?? null,
-                notes: `[booked via RenoGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
+                notes: `[booked via EcowoodsGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
               }});
               const appt = await tx.appointment.create({ data: {
                 quoteRequestId: quote.id, startsAt, durationMinutes: SLOT_DURATION_MINUTES,
@@ -181,7 +181,7 @@ export async function POST(req: Request) {
             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
-            return { ok: false, message: 'Could not confirm that — ask them to call (647) 244-5156 and we will book it.' };
+            return { ok: false, message: `Could not confirm that — ask them to call ${BUSINESS_NAP.phoneDisplay} and we will book it.` };
           }
         },
       }),
@@ -198,13 +198,13 @@ export async function POST(req: Request) {
             sendAdminNewQuoteEmail({
               quoteId, name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
               service: lead.service ?? lead.species, squareFeet: lead.squareFeet,
-              notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
+              notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
             }).catch((e) => console.error('[chat] admin email failed:', e));
           try {
             const q = await db.quoteRequest.create({ data: {
               name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
               service: lead.service ?? lead.species ?? null, squareFeet: lead.squareFeet ?? null,
-              timeline: lead.timeline ?? null, notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
+              timeline: lead.timeline ?? null, notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
             }});
             adminNotify(q.id);
             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: q.id }));
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
       try {
         for await (const chunk of result.textStream) controller.enqueue(encoder.encode(chunk));
       } catch {
-        controller.enqueue(encoder.encode('\n\n(Sorry — something interrupted that. Please try again or call (647) 244-5156.)'));
+        controller.enqueue(encoder.encode(`\n\n(Sorry — something interrupted that. Please try again or call ${BUSINESS_NAP.phoneDisplay}.)`));
       }
       controller.close();
     },

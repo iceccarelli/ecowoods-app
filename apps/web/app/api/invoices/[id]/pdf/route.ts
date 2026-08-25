@@ -10,6 +10,7 @@ import { InvoiceDocument } from '@/lib/pdf/invoice-document';
 import { storePdf } from '@/lib/pdf/storage';
 import { createElement } from 'react';
 import type { Settings } from '@prisma/client';
+import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
 
 export const runtime = 'nodejs';
 
@@ -38,9 +39,9 @@ export async function POST(
   const effectiveSettings = (settings ?? {
     id: '00000000-0000-0000-0000-000000000001',
     companyName: 'Ecowoods Hardwood Flooring Inc.' as string | null,
-    companyAddress: '32 Norfield Crescent, Toronto, ON M9W 1X6' as string | null,
-    companyPhone: '(647) 244-5156' as string | null,
-    companyEmail: 'services@ecowoods.ca' as string | null,
+    companyAddress: BUSINESS_ADDRESS_LINE as string | null,
+    companyPhone: BUSINESS_NAP.phoneDisplay as string | null,
+    companyEmail: BUSINESS_NAP.email as string | null,
     companyNumberHst: null as string | null,
     companyLogoUrl: null as string | null,
     defaultDepositPct: 30,

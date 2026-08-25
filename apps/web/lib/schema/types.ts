@@ -86,7 +86,7 @@ export interface Service extends SchemaBase {
 export interface Offer extends SchemaBase {
   '@type': 'Offer';
   priceCurrency: string; // "CAD"
-  priceRange?: string; // "$2,500–$8,000"
+  priceRange?: string; // shape only, e.g. "$2,500–$8,000"  pricing-allow
   availability?: string; // "PT10M" (ISO 8601)
   url?: string;
 }

@@ -18,6 +18,7 @@ import {
 } from '@react-pdf/renderer';
 import type { Invoice, Project, User, Settings } from '@prisma/client';
 import { format } from 'date-fns';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 // Brand colors
 const WALNUT = '#1a0f08';
@@ -375,7 +376,8 @@ export function InvoiceDocument({
             <Text style={styles.payText}>
               Pay online at: ecowoods.ca/mypage/invoices{'\n'}
               Or e-transfer to: accounting@ecowoods.ca (memo: #{invoice.number ?? ''}){'\n'}
-              Questions? Call (647) 244-5156 or email {settings.companyEmail ?? ''}
+              Questions? Call {settings.companyPhone ?? BUSINESS_NAP.phoneDisplay} or email{' '}
+              {settings.companyEmail ?? BUSINESS_NAP.email}
             </Text>
           </View>
         )}

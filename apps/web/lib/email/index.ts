@@ -46,7 +46,7 @@ const resend = transport === 'resend'
 const FROM =
   process.env.RESEND_FROM_EMAIL ??
   process.env.SMTP_FROM ??
-  'services@ecowoods.ca';
+  BUSINESS_NAP.email;
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ecowoods.ca';
 
@@ -473,8 +473,8 @@ export async function sendAppointmentConfirmationEmail(data: {
           <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Duration</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.durationMinutes} minutes</td></tr>
           ${data.service ? `<tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Service</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.service}</td></tr>` : ''}
         </table>
-        <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="tel:+16472445156">${BUSINESS_NAP.phoneDisplay}</a>.</p>
-        <p style="color:#6b5d52;font-size:13px;">Ecowoods Hardwood Flooring · 32 Norfield Crescent, Toronto</p>
+        <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="${BUSINESS_NAP.phoneHref}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
+        <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
       </div>
     `,
     text: `Your Ecowoods in-home estimate is confirmed for ${data.whenLabel} (${data.durationMinutes} min). Questions? Call ${BUSINESS_NAP.phoneDisplay}.`,

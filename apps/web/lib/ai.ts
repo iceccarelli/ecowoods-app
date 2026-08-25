@@ -18,6 +18,7 @@
  */
 
 import { db } from '@/lib/db';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 // Lazy-load OpenAI so the app starts fine without the package installed
 async function getOpenAI() {
@@ -38,7 +39,7 @@ async function getOpenAI() {
 const SYSTEM_PROMPT = `You are a professional customer service representative for Ecowoods,
 a premium hardwood flooring company in Toronto, Canada.
 Tone: warm, knowledgeable, professional.
-Always sign off as "The Ecowoods Team" and mention the phone number (647) 244-5156 if the customer may need to call.
+Always sign off as "The Ecowoods Team" and mention the phone number ${BUSINESS_NAP.phoneDisplay} if the customer may need to call.
 Keep responses concise — 3-5 short paragraphs maximum.`;
 
 // ─── Generate a suggested reply to a new quote request ───────────────────────
@@ -67,7 +68,7 @@ Thank you for reaching out to Ecowoods! We'd love to help with your ${service ??
 
 A senior estimator will be in touch within 1 business day to schedule a free, no-obligation in-home consultation. We'll bring species samples and finish options to help you visualize the result.
 
-In the meantime, please don't hesitate to call us at (647) 244-5156 if you have any questions.
+In the meantime, please don't hesitate to call us at ${BUSINESS_NAP.phoneDisplay} if you have any questions.
 
 Warm regards,
 The Ecowoods Team`;
@@ -109,7 +110,7 @@ export async function generateInquiryReply({
 
 Thank you for your message regarding "${subject}".
 
-Our team is reviewing your inquiry and will provide a detailed response shortly. If you need to speak with someone immediately, please call us at (647) 244-5156.
+Our team is reviewing your inquiry and will provide a detailed response shortly. If you need to speak with someone immediately, please call us at ${BUSINESS_NAP.phoneDisplay}.
 
 Best regards,
 The Ecowoods Team`;

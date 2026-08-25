@@ -22,6 +22,12 @@ import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
+import {
+  SCREEN_RECOAT,
+  FULL_SAND_FINISH,
+  NEW_INSTALL,
+  formatBandBare as bandBare,
+} from '@/content/constants/pricing';
 
 // Heavy, below-the-fold, interactive tools with no indexable text: load them in
 // their own client chunks (ssr:false) so they never block first paint. The
@@ -356,7 +362,7 @@ const faqItems: FaqItem[] = [
   // is two answers a crawler has to choose between.
   {
     q: 'How much does hardwood flooring cost in Toronto?',
-    a: 'Installed ranges typically run about $11–$18 per sq ft for new hardwood, $4.75–$7.50 for full sand and finish, and $2.50–$4.00 for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.',
+    a: `Installed ranges typically run about ${bandBare(NEW_INSTALL)} per sq ft for new hardwood, ${bandBare(FULL_SAND_FINISH)} for full sand and finish, and ${bandBare(SCREEN_RECOAT)} for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.`,
   },
   {
     q: 'What is dustless hardwood refinishing, and does it work in an occupied home?',
@@ -434,7 +440,7 @@ const mutation = useMutation({
   },
   onError: (error: Error) => {
     toast.error("Something went wrong", {
-      description: error.message || "Please try again or call (647) 244-5156",
+      description: error.message || `Please try again or call ${BUSINESS_NAP.phoneDisplay}`,
     });
   },
 });
@@ -754,11 +760,11 @@ const onSubmit = (data: LeadFormData) => {
                 This section keeps ONE fast path — phone, plus when to use it —
                 and lets the footer own the reference block.
               */}
-              <a href="tel:+16472445156" className="quote-contact">
+              <a href={BUSINESS_NAP.phoneHref} className="quote-contact">
                 <span className="quote-contact-icon">{Icon.phone}</span>
                 <span className="quote-contact-text">
                   <span className="quote-contact-label">Prefer to talk?</span>
-                  <span className="quote-contact-num">(647) 244-5156</span>
+                  <span className="quote-contact-num">{BUSINESS_NAP.phoneDisplay}</span>
                   <span className="quote-contact-when">Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM</span>
                 </span>
               </a>
@@ -811,7 +817,7 @@ const onSubmit = (data: LeadFormData) => {
                       id="f-phone"
                       {...register('phone')}
                       aria-invalid={!!errors.phone}
-                      placeholder="(647) 244-5156"
+                      placeholder="(___) ___-____"
                       className={errors.phone ? 'field-error' : ''}
                     />
                     {errors.phone && <p className="error-message" role="alert">{errors.phone.message}</p>}

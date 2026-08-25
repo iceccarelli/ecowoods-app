@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { format } from 'date-fns';
+import { BUSINESS_ADDRESS_LINE, BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 function formatCAD(n: number | { toNumber(): number } | null | undefined) {
   if (n == null) return null;
@@ -154,7 +155,7 @@ export default async function PublicContractPage({
         </div>
 
         <div style={{ textAlign: 'center', padding: '24px', fontSize: '12px', color: '#6b5d52' }}>
-          Ecowoods Hardwood Flooring Inc. · 32 Norfield Crescent, Toronto, ON M9W 1X6 · (647) 244-5156
+          {BUSINESS_NAP.legalName} · {BUSINESS_ADDRESS_LINE} · {BUSINESS_NAP.phoneDisplay}
         </div>
       </div>
     </div>

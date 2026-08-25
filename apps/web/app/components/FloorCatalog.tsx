@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
 import { floors, floorImages, type Floor } from '../data/floors';
+import { whenNotTyping } from '@/lib/keyboard';
 
 const N = floors.length;
 const SHOT_KEYS = ['room', 'detail', 'lifestyle'] as const;
@@ -157,14 +158,19 @@ export default function FloorCatalog() {
     return () => window.clearInterval(flr);
   }, [active]);
 
-  // keyboard
+  /* Keyboard shortcuts for the carousel — wrapped, and the wrapper is the
+     whole point. This listener is on `window`, so it fired regardless of what
+     had focus, and this component is mounted on the homepage alongside the
+     lead-capture form. The space bar did nothing in that form and the arrow
+     keys jumped the carousel instead of moving the text cursor. See
+     lib/keyboard.ts. */
   useEffect(() => {
     if (lightbox !== null) return;
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = whenNotTyping((e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') goFloor(1);
       else if (e.key === 'ArrowLeft') goFloor(-1);
       else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
-    };
+    });
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [lightbox, goFloor]);

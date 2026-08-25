@@ -1,0 +1,158 @@
+{
+  "$comment": [
+    "ecowoodshardwood.com → ecowoods.ca, path by path.",
+    "",
+    "WHY THIS FILE EXISTS AND WHY THE PREVIOUS APPROACH COULD NOT WORK",
+    "",
+    "Every redirect config in this folder was path-preserving: /x → ecowoods.ca/x.",
+    "That is the correct default for a migration and it is exactly wrong here,",
+    "because the two sites share ZERO paths. The old site is a hosted store",
+    "platform whose URLs look like /pages/flooring-services-toronto-etobicoke-hamilton",
+    "and /blogs/testimonials/172376--audrey-in-toronto. Preserving those paths",
+    "sends every single one of them to a 404 on ecowoods.ca — which is worse than",
+    "the 404 they already return, because now it is ecowoods.ca serving it.",
+    "",
+    "WHERE THE INVENTORY CAME FROM",
+    "",
+    "https://www.ecowoodshardwood.com/sitemap.xml, read 2026-08-24. Thirty-six",
+    "URLs, and the navigation on /pages/flooring-services-... confirms what each",
+    "one is: the nav labels are Home, About, Services, Testimonials, Portfolio,",
+    "Blog, Contact. Every destination below was chosen against that label, not",
+    "against the slug — the Contact page's slug says 'installation-and-refinishing',",
+    "which is the kind of thing that makes slug-based mapping produce confident",
+    "wrong answers.",
+    "",
+    "THE TWENTY-TWO TESTIMONIALS ARE THE POINT",
+    "",
+    "Two thirds of that sitemap is individual customer testimonials with real",
+    "names — Audrey in Toronto, Andre Fauteux, Melissa McCormack, Joan Endersby,",
+    "Michelle P in East York. Twenty-two published reviews, on a domain that",
+    "currently competes with the live site, doing nothing for it. They are the",
+    "single largest stranded reputation asset this business has, and every one of",
+    "them is one line in this file away from pointing at /reviews.",
+    "",
+    "HOW TO ADD TO IT",
+    "",
+    "`from` is a regex anchored at both ends against the old path. `to` is a path",
+    "on ecowoods.ca. Order matters: the first match wins, so specific patterns go",
+    "above general ones and the catch-all stays last.",
+    "",
+    "scripts/build-old-domain-redirects.mjs generates .htaccess, nginx.conf and",
+    "_redirects from this file. Never hand-edit those three — regenerate them.",
+    "scripts/verify-domain-redirect.mjs reads this file too, so the live check",
+    "asserts each old URL lands where this says it should."
+  ],
+  "measuredAt": "2026-08-24",
+  "source": "https://www.ecowoodshardwood.com/sitemap.xml",
+  "oldHosts": [
+    "ecowoodshardwood.com",
+    "www.ecowoodshardwood.com"
+  ],
+  "newHost": "ecowoods.ca",
+  "rules": [
+    {
+      "from": "^/blogs/testimonials(/.*)?$",
+      "to": "/reviews",
+      "why": "22 individual customer testimonials plus their index. /reviews is where this site sends anyone asking about reputation, and it explains why the reviews live on platforms we cannot edit."
+    },
+    {
+      "from": "^/blogs/ecowoods-hardwood-flooring-blog(/.*)?$",
+      "to": "/blog",
+      "why": "The old blog index and its three posts. Two of the three are 'announcing the new website' and 'new website under construction', which is its own argument for consolidating."
+    },
+    {
+      "from": "^/pages/ecowoods-hardwood-flooring-testimonials-toronto-etobicoke/?$",
+      "to": "/reviews",
+      "why": "Nav label: Testimonials."
+    },
+    {
+      "from": "^/pages/ecowoods-hardwood-flooring-contractors-toronto-etobicoke-hamilton/?$",
+      "to": "/about",
+      "why": "Nav label: About."
+    },
+    {
+      "from": "^/pages/flooring-services-toronto-etobicoke-hamilton/?$",
+      "to": "/services",
+      "why": "Nav label: Services. Its H1 is 'Flooring Services in Greater Toronto Area' and it lists installation, refinishing, repair and stair refinishing — the same six services /services indexes, now with published price bands."
+    },
+    {
+      "from": "^/pages/hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton/?$",
+      "to": "/#quote",
+      "why": "Nav label: CONTACT. The slug describes services and the page is the contact form — which is exactly why this map was built from the navigation rather than from the slugs."
+    },
+    {
+      "from": "^/pages/home/?$",
+      "to": "/",
+      "why": "Nav label: Home."
+    },
+    {
+      "from": "^/privacy-policy/?$",
+      "to": "/privacy",
+      "why": "The old site published one. So must this one — see the note in apps/web/app/privacy/page.tsx about the four places that linked to /privacy while it 404ed."
+    },
+    {
+      "from": "^/$",
+      "to": "/",
+      "why": "Root to root. This page is titled 'Portfolio | Hardwood Floor Repair in Toronto, Vaughan, Markham' and its body says 'Coming soon...', so /case-studies is arguably the better content match — but a person typing the bare domain wants the company, and the company's front door is the front door. The repair-query equity it holds is picked up by /hardwood-floor-problems-toronto through the site's own internal linking, not by pointing a domain root at a subpage."
+    }
+  ],
+  "queryRules": [
+    {
+      "from": "^fuseaction=store\\.(terms|returns|shipping)$",
+      "to": "/",
+      "why": "Leftover store-platform endpoints listed in the old sitemap. There is no store on ecowoods.ca; nothing corresponds. They go to the front door rather than to a 404."
+    }
+  ],
+  "fallback": {
+    "to": "/",
+    "why": [
+      "Anything not matched above.",
+      "",
+      "Google treats a mass redirect of irrelevant URLs to the homepage as a soft",
+      "404, and that is a real cost — but it is the lesser one here. The",
+      "alternative is path-preservation, which for this pair of sites produces a",
+      "guaranteed hard 404 on every single URL, because the two share no paths at",
+      "all. A soft landing on a page about the same business beats a dead end.",
+      "",
+      "The way to shrink this fallback is to add rules above it, not to change it."
+    ]
+  },
+  "knownUrls": [
+    "/",
+    "/pages/home",
+    "/pages/ecowoods-hardwood-flooring-contractors-toronto-etobicoke-hamilton",
+    "/pages/flooring-services-toronto-etobicoke-hamilton",
+    "/pages/ecowoods-hardwood-flooring-testimonials-toronto-etobicoke",
+    "/blogs/ecowoods-hardwood-flooring-blog",
+    "/pages/hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton",
+    "/privacy-policy",
+    "/?fuseaction=store.terms",
+    "/?fuseaction=store.returns",
+    "/?fuseaction=store.shipping",
+    "/blogs/testimonials",
+    "/blogs/ecowoods-hardwood-flooring-blog/187827-meet-the-face-behind-ecowoods-hardwood",
+    "/blogs/ecowoods-hardwood-flooring-blog/172249-announcing-the-new-website",
+    "/blogs/ecowoods-hardwood-flooring-blog/172250-new-website-under-construction",
+    "/blogs/testimonials/172376--audrey-in-toronto",
+    "/blogs/testimonials/172375--private-user",
+    "/blogs/testimonials/172371--andre-fauteux-from-toronto",
+    "/blogs/testimonials/172372--nian-in-toronto",
+    "/blogs/testimonials/172374--melissa-mccormack-from-toronto",
+    "/blogs/testimonials/172373--joan-endersby-in-toronto",
+    "/blogs/testimonials/172370--micheal-in-toronto",
+    "/blogs/testimonials/172369--thea-p-in-toronto",
+    "/blogs/testimonials/172368--markodm-in-mississauga",
+    "/blogs/testimonials/172367--vikram-in-toronto",
+    "/blogs/testimonials/172366--pat-r--markham--ontario",
+    "/blogs/testimonials/172365--rosana-r--toronto--on",
+    "/blogs/testimonials/172364--michelle-p--east-york",
+    "/blogs/testimonials/172355--margaret-in",
+    "/blogs/testimonials/172354--wood-in-hornby",
+    "/blogs/testimonials/172304--casa-roja-in-north-york",
+    "/blogs/testimonials/172302--eliza-birch-in-dundas",
+    "/blogs/testimonials/172301--sal",
+    "/blogs/testimonials/172298--jmm",
+    "/blogs/testimonials/172293--rose"
+  ],
+  "knownUrlsNote": "Every URL in the old site's own sitemap, read 2026-08-24. Committed as evidence rather than described, because `pnpm domain:build --simulate` runs each one through the rules above and prints where it lands — which is the only way to know the map covers the inventory rather than looking like it does."
+}

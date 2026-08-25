@@ -25,6 +25,13 @@
  * see the same note at the top of lib/framework.ts.
  */
 
+import {
+  SCREEN_RECOAT,
+  FULL_SAND_FINISH,
+  NEW_INSTALL,
+  formatBandBare as bandBare,
+} from '@/content/constants/pricing';
+
 export type GuideKind = 'decision' | 'reference';
 
 export type GuideOption = {
@@ -482,9 +489,9 @@ export const GUIDES: Guide[] = [
     table: {
       head: ['Service', 'Typical installed range (CAD / sq ft)', 'What it includes'],
       rows: [
-        ['Screen & recoat', '$2.50 – $4.00', 'Abrasion of the existing finish, new top coats — no full sand to bare wood'],
-        ['Full sand & finish', '$4.75 – $7.50', 'Sand to bare wood, stain if specified, finish system'],
-        ['New hardwood install', '$11 – $18', 'Material and labour for straight-lay install; pattern and stairs extra'],
+        ['Screen & recoat', bandBare(SCREEN_RECOAT), 'Abrasion of the existing finish, new top coats — no full sand to bare wood'],
+        ['Full sand & finish', bandBare(FULL_SAND_FINISH), 'Sand to bare wood, stain if specified, finish system'],
+        ['New hardwood install', bandBare(NEW_INSTALL), 'Material and labour for straight-lay install; pattern and stairs extra'],
       ],
     },
     decisionTree: [

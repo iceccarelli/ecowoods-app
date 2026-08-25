@@ -15,6 +15,8 @@ import { SITE_URL } from '@/lib/seo-data';
 import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+import { SERVICES } from '@/lib/seo-data';
 
 /**
  * /framework — the published specification.
@@ -212,6 +214,57 @@ export default function FrameworkPage() {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The framework is published for anyone to use on anyone, and it should
+          stay that way — but a page that sets a standard and then never says
+          who meets it leaves the reader with a checklist and nowhere to take
+          it. `pnpm seo:density` found this page reaching zero services, zero
+          case studies and no estimate CTA at all: the single most persuasive
+          document on the site was a dead end. */}
+      <EvidenceRail
+        kicker="The standard, applied"
+        heading="Four jobs judged against these criteria"
+        intro={
+          'Use the criteria above on any contractor in the GTA. These are ours, published with the ' +
+          'readings so the criteria can actually be applied to them rather than taken on trust.'
+        }
+        items={[
+          { ...CASES.yorkville, why: 'Moisture pillar, the hard case: a below-grade slab at a critical reading, mitigated and re-measured.' },
+          { ...CASES.distillery, why: 'Substrate pillar: concrete tested before the assembly was specified, not after.' },
+          { ...CASES.rosedale, why: 'Movement pillar: radiant heat under two assemblies designed for the same seasonal range.' },
+          { ...CASES.midtown, why: 'Specification pillar: three substrates matched across three storeys as one floor.' },
+        ]}
+      />
+
+      <section className="tlx-section" aria-label="If you would rather we did it">
+        <div className="shell">
+          <p className="tlx-kicker">Or hand it to us</p>
+          <h2 className="tlx-h2">What we would actually do</h2>
+          <p className="tlx-note">
+            {SERVICES.map((sv, i) => (
+              <span key={sv.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/services/${sv.slug}`}>{sv.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            Price bands are published before you call:{' '}
+            <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
+            <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
+            <Link href="/hardwood-stairs-toronto">stairs</Link>. Applying the criteria above to our
+            own quote is not only allowed, it is the point.
+          </p>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/#quote">
+              Get a fixed written price →
+            </Link>
+            <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
+              Score a quote you already have
+            </Link>
           </div>
         </div>
       </section>

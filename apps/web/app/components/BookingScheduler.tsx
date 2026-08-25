@@ -10,6 +10,7 @@ import {
   type AppointmentFormData,
 } from '@ecowoods/api-client';
 import { APPOINTMENT_SERVICES, type AppointmentService } from '@ecowoods/shared';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 type Step = 'date' | 'time' | 'details' | 'done';
 
@@ -74,7 +75,7 @@ export function BookingScheduler() {
     },
     onError: (err: Error) => {
       toast.error("Couldn't confirm that time", {
-        description: err.message || 'Please pick another or call (647) 244-5156',
+        description: err.message || `Please pick another or call ${BUSINESS_NAP.phoneDisplay}`,
       });
     },
   });
@@ -135,7 +136,7 @@ export function BookingScheduler() {
             Free in-home estimate · Mon–Sat 8–7, Sun 10–4
           </p>
           {isLoading && <p style={{ color: 'var(--muted)' }}>Loading available dates…</p>}
-          {isError && <p style={{ color: 'var(--danger)' }}>Couldn’t load the calendar. Call (647) 244-5156 to book.</p>}
+          {isError && <p style={{ color: 'var(--danger)' }}>Couldn’t load the calendar. Call {BUSINESS_NAP.phoneDisplay} to book.</p>}
           {!isLoading && !isError && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -190,7 +191,7 @@ export function BookingScheduler() {
             <div className="field"><label>Full Name *</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" /></div>
             <div className="field"><label>Phone *</label>
-              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(647) 244-5156" /></div>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(___) ___-____" /></div>
           </div>
           <div className="field-row">
             <div className="field"><label>Email *</label>
@@ -232,7 +233,7 @@ export function BookingScheduler() {
           <p style={{ color: 'var(--muted)' }}>
             {confirmed.whenLabel}. A senior estimator will confirm by email and arrive with species and finish samples.
           </p>
-          <p style={{ color: 'var(--muted-soft, #999)', fontSize: 'var(--fs-sm)', marginTop: '1rem' }}>Need to change it? Call (647) 244-5156.</p>
+          <p style={{ color: 'var(--muted-soft, #999)', fontSize: 'var(--fs-sm)', marginTop: '1rem' }}>Need to change it? Call {BUSINESS_NAP.phoneDisplay}.</p>
         </div>
       )}
     </div>

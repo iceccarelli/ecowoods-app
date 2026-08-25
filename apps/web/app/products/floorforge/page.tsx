@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { submitLead } from '@ecowoods/api-client';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 /* ──────────────────────────────────────────────────────────────
    FLOORFORGE — Autonomous Floor Refinishing · Early Access
@@ -129,7 +130,7 @@ export default function FloorForgePage() {
     },
     onError: (error: Error) => {
       toast.error('Something went wrong', {
-        description: error.message || 'Please try again or call (647) 244-5156',
+        description: error.message || `Please try again or call ${BUSINESS_NAP.phoneDisplay}`,
       });
     },
   });

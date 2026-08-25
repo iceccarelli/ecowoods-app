@@ -1,16 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { openRenoGuide } from '@/lib/renoguide';
+import { openAssistant } from '@/lib/assistant';
 import { useTheme } from './useTheme';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { isTypingTarget } from '@/lib/keyboard';
+import { ASSISTANT } from '@/lib/assistant-identity';
 
 /* ────────────────────────────────────────────────────────────────────────────
    ⌘K — for the 4% of visitors who type instead of scroll.
 
    Deliberately opinionated: the highest-value rows are not navigation, they
    are the three questions that precede a booking. Each one drops the visitor
-   straight into RenoGuide with the question already asked, so the very first
+   straight into EcowoodsGuide with the question already asked, so the very first
    thing the agent does is call a real tool.
    ──────────────────────────────────────────────────────────────────────────── */
 
@@ -84,21 +87,21 @@ export default function CommandPalette() {
 
   const ask = useCallback((prefill: string) => () => {
     close();
-    openRenoGuide({ prefill, source: 'command-palette' });
+    openAssistant({ prefill, source: 'command-palette' });
   }, [close]);
 
   const groups: Group[] = useMemo(() => [
     {
-      label: 'Talk to RenoGuide',
+      label: `Talk to ${ASSISTANT.name}`,
       actions: [
-        { id: 'book', title: 'Book a free in-home measure', hint: 'RenoGuide checks real openings and confirms it', tag: 'AI', keywords: 'book appointment measure estimate schedule visit', icon: I.calendar,
+        { id: 'book', title: 'Book a free in-home measure', hint: `${ASSISTANT.name} checks real openings and confirms it`, tag: 'AI', keywords: 'book appointment measure estimate schedule visit', icon: I.calendar,
           run: ask('I would like to book a free in-home measure. What times are open?') },
         { id: 'estimate', title: 'Get a ballpark for my floor', hint: 'Tell it species and square footage', tag: 'AI', keywords: 'price cost estimate quote ballpark how much', icon: I.calc,
           run: ask('Can you give me a ballpark for hardwood in my home?') },
         { id: 'species', title: 'Which species survives kids and dogs?', tag: 'AI', keywords: 'species hardness janka pets dogs kids durable oak hickory', icon: I.chat,
           run: ask('Which hardwood species holds up best with kids and a large dog?') },
-        { id: 'chat', title: 'Open RenoGuide', hint: 'Just start typing', keywords: 'chat assistant ai help renoguide', icon: I.chat,
-          run: () => { close(); openRenoGuide({ source: 'command-palette' }); } },
+        { id: 'chat', title: `Open ${ASSISTANT.name}`, hint: 'Just start typing', keywords: 'chat assistant ai help guide', icon: I.chat,
+          run: () => { close(); openAssistant({ source: 'command-palette' }); } },
       ],
     },
     {
@@ -121,8 +124,8 @@ export default function CommandPalette() {
     {
       label: 'Contact & appearance',
       actions: [
-        { id: 'call', title: 'Call (647) 244-5156', hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
-          run: () => { close(); window.location.href = 'tel:+16472445156'; } },
+        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
+          run: () => { close(); window.location.href = BUSINESS_NAP.phoneHref; } },
         { id: 'theme', title: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', hint: 'Night showroom', keywords: 'theme dark light mode night appearance', icon: I.sun,
           run: () => { toggle(); close(); } },
       ],
@@ -141,14 +144,18 @@ export default function CommandPalette() {
 
   useEffect(() => { setActive(0); }, [query]);
 
-  // Global hotkey. Ignore when the visitor is typing somewhere real.
+  /* Global hotkey. Ignore when the visitor is typing somewhere real.
+     This component had the check right — and hand-rolled, which is why it was
+     also incomplete: it missed <select> and anything carrying role="textbox"
+     or role="combobox". `isTypingTarget` from lib/keyboard.ts is the one
+     definition of "is a person typing here", and it is the one the build guard
+     enforces. The behaviour is unchanged: ⌘K is ignored inside a field unless
+     the palette is already open, so it can always be used to close itself. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const isK = e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey);
       if (!isK) return;
-      const t = e.target as HTMLElement | null;
-      const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-      if (typing && !open) return;
+      if (isTypingTarget(e.target) && !open) return;
       e.preventDefault();
       setOpen((v) => {
         if (!v) restoreFocus.current = document.activeElement as HTMLElement;
@@ -231,7 +238,7 @@ export default function CommandPalette() {
             <div className="cmdk-list" id="cmdk-list" role="listbox" aria-label="Commands" ref={listRef}>
               {flat.length === 0 && (
                 <div className="cmdk-empty">
-                  Nothing matches “{query}”. <button className="fc-secondary" style={{ marginTop: '0.9rem' }} onClick={ask(query)}>Ask RenoGuide instead →</button>
+                  Nothing matches “{query}”. <button className="fc-secondary" style={{ marginTop: '0.9rem' }} onClick={ask(query)}>Ask {ASSISTANT.name} instead →</button>
                 </div>
               )}
 

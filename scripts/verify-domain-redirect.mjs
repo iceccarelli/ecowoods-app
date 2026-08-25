@@ -31,19 +31,48 @@
  *   node scripts/verify-domain-redirect.mjs
  *   node scripts/verify-domain-redirect.mjs --strict   (unresolved = failure)
  */
+import { readFileSync } from 'node:fs';
+
 const OLD = ['https://ecowoodshardwood.com', 'https://www.ecowoodshardwood.com'];
 const NEW_HOST = 'ecowoods.ca';
-const PATHS = [
-  '/',
-  '/services/floor-refinishing',
-  '/services/hardwood-installation',
-  '/hardwood-flooring-toronto',
-  '/framework',
-  '/papers',
-  '/reviews',
-  '/service-areas/etobicoke',
-];
+
+/**
+ * WHAT TO PROBE, AND WHY THE FIRST VERSION PROBED THE WRONG THING.
+ *
+ * It probed ecowoods.ca's paths — /framework, /papers, /service-areas/etobicoke
+ * — on the old domain. That answers "would an old link to a new-site path
+ * survive", which is a question nobody was ever going to ask, because those
+ * paths never existed on the old site. Every one came back 404 and the check
+ * reported fourteen failures that were all the same non-finding.
+ *
+ * The URLs that matter are the ones the old site actually publishes, and it
+ * publishes a sitemap listing them. They are committed in
+ * `old-domain/path-map.json` as `knownUrls`, and each one is checked against
+ * the destination the map assigns it — so this does not merely assert "a 301
+ * happened", it asserts the 301 went where the migration intends.
+ *
+ * A handful of new-site paths are kept at the end as a control: they SHOULD
+ * still resolve to their equivalent on ecowoods.ca once the catch-all is live.
+ */
+const map = JSON.parse(
+  readFileSync(new URL('../old-domain/path-map.json', import.meta.url), 'utf8'),
+);
+
+/** The destination path-map.json assigns to an old path. */
+const expectedFor = (raw) => {
+  const [pathname, query = ''] = raw.split('?');
+  for (const q of map.queryRules ?? []) {
+    if (query && new RegExp(q.from).test(query)) return q.to;
+  }
+  for (const r of map.rules ?? []) {
+    if (new RegExp(r.from).test(pathname)) return r.to;
+  }
+  return map.fallback.to;
+};
+
+const PATHS = [...new Set(map.knownUrls ?? ['/'])];
 const STRICT = process.argv.includes('--strict');
+
 
 const head = async (url) => {
   try {
@@ -151,11 +180,17 @@ for (const origin of OLD) {
       console.log(`  FAIL  ${from}\n        301 → ${dest.host}, expected ${NEW_HOST}`);
       continue;
     }
-    if (dest.pathname !== p) {
+    /* The destination is what path-map.json says it should be, not the same
+       path. These two sites share no paths, so "the path survived" is the
+       wrong assertion — it would pass only on a config that sends every URL
+       to a 404. */
+    const want = expectedFor(p);
+    const wantPath = want.split('#')[0] || '/';
+    if (dest.pathname.replace(/\/$/, '') !== wantPath.replace(/\/$/, '')) {
       failures++;
       console.log(
-        `  FAIL  ${from}\n        301 → ${dest.pathname}, expected ${p} — the path is being dropped,\n` +
-          `        which throws away most of the value of the redirect`,
+        `  FAIL  ${from}\n        301 → ${dest.pathname}, expected ${wantPath}\n` +
+          `        (old-domain/path-map.json assigns this URL to ${want})`,
       );
       continue;
     }
@@ -169,7 +204,7 @@ for (const origin of OLD) {
       continue;
     }
     ok++;
-    console.log(`  PASS  ${p.padEnd(34)} 301 → ${dest.href}`);
+    console.log(`  PASS  ${(p.length > 46 ? p.slice(0, 43) + '…' : p).padEnd(46)} → ${expectedFor(p)}`);
   }
 }
 

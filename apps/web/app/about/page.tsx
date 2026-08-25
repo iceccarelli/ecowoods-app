@@ -6,6 +6,8 @@ import { entityAnswers } from '@/lib/entity-answers';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { illustrationImage } from '../data/illustration-images';
+import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+import { SERVICES } from '@/lib/seo-data';
 
 export const metadata: Metadata = {
   title: `About ${BUSINESS_NAP.shortName} — who we are, what we do, where we work`,
@@ -100,6 +102,40 @@ export default function AboutPage() {
           </dl>
         </div>
       </section>
+
+      <section className="tlx-section" aria-label="Contact">
+        <div className="shell">
+          <p className="tlx-kicker">What we do</p>
+          <h2 className="tlx-h2">The work itself</h2>
+          <p className="tlx-note">
+            {SERVICES.map((sv, i) => (
+              <span key={sv.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/services/${sv.slug}`}>{sv.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            With the price bands published before you call —{' '}
+            <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
+            <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
+            <Link href="/hardwood-stairs-toronto">stairs</Link>.
+          </p>
+        </div>
+      </section>
+
+      <EvidenceRail
+        kicker="Rather than adjectives"
+        heading="Two jobs, published with their numbers"
+        intro={
+          'The most useful thing an about page can do is stop describing the company and show a ' +
+          'job. Both of these publish what was measured before the work started.'
+        }
+        items={[
+          { ...CASES.yorkville, why: 'A below-grade slab at a critical moisture reading, mitigated and re-measured before a board went down.' },
+          { ...CASES.rosedale, why: 'A grand staircase and a radiant-heat main floor, two assemblies finished to one colour.' },
+        ]}
+      />
 
       <section className="tlx-section" aria-label="Contact">
         <div className="shell">

@@ -9,6 +9,8 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
+import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+import { SERVICES } from '@/lib/seo-data';
 
 /** Guide slug → illustration id. Kept here rather than in the guides manifest so
  *  the content manifest stays free of presentation concerns. */
@@ -340,6 +342,56 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </div>
         </div>
       </section>
+
+      {/* A guide answers a question. It also has to say what happens next, and
+          this template said nothing: zero links to any service, zero to any
+          case study, and its only CTA sent people to score someone else's
+          quote. A reader who has just decided between solid and engineered is
+          the most qualified visitor on the site, and the page ended. */}
+      <section className="tlx-section" aria-label="What happens next">
+        <div className="shell">
+          <p className="tlx-kicker">Once this is decided</p>
+          <h2 className="tlx-h2">What the work actually is</h2>
+          <p className="tlx-note">
+            {SERVICES.map((sv, i) => (
+              <span key={sv.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/services/${sv.slug}`}>{sv.name}</Link>
+              </span>
+            ))}
+          </p>
+          <p className="tlx-note">
+            Prices for all three bands are published before you call —{' '}
+            <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for a new
+            floor, <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link> for an
+            existing one, <Link href="/hardwood-stairs-toronto">stairs</Link> for the part usually
+            left out of the quote. If the floor is already cupping, gapping or lifting, this is a
+            diagnosis rather than a decision:{' '}
+            <Link href="/hardwood-floor-problems-toronto">what your floor is telling you</Link>.
+          </p>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/#quote">
+              Get a fixed written price →
+            </Link>
+            <Link className="fw-cta fw-cta--ghost" href="/framework">
+              Read the standard first
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <EvidenceRail
+        heading="Where these decisions were made on real jobs"
+        intro={
+          'Each publishes the readings and the reasoning, not only the result — which is what makes ' +
+          'them worth reading next to a guide rather than instead of one.'
+        }
+        items={[
+          { ...CASES.distillery, why: 'Over a concrete slab: the moisture test decided the assembly before a species was chosen.' },
+          { ...CASES.rosedale, why: 'Radiant heat under a main floor and a staircase, with the thermal range designed for.' },
+          { ...CASES.forestHill, why: 'Wide-plank walnut, and keeping the colour uniform across boards that age photochemically.' },
+        ]}
+      />
 
       {siblings.length > 0 && (
         <section className="tlx-section" aria-label="More guides">

@@ -1,10 +1,42 @@
+# =============================================================================
 # ECOWOODS — ecowoodshardwood.com → ecowoods.ca
+#
+# GENERATED FILE. Do not edit.
+#   source:   old-domain/path-map.json
+#   generator: scripts/build-old-domain-redirects.mjs
+#   run:      pnpm domain:build
+#
+# Inventory measured 2026-08-24 from https://www.ecowoodshardwood.com/sitemap.xml — 36 URLs.
+#
+# NOT PATH-PRESERVING, AND THAT IS DELIBERATE. The two sites share no
+# paths at all: the old one serves /pages/… and /blogs/… from a hosted
+# store platform. A path-preserving rule turns every live URL into a 404
+# on the new domain, which is worse than the 404 it already returns.
+#
+# 301, never 302. A 302 tells a crawler to keep the OLD url indexed,
+# which is the opposite of consolidating two domains into one.
+#
+# ONE HOP. There is no separate HTTPS-forcing rule: the destination is
+# already https, and forcing the scheme first is what turns one redirect
+# into two. Every combination of scheme and host lands in a single 301.
+# =============================================================================
+#
 # Netlify. Place at the site root (or in the publish directory).
-#
-# 301! — the bang forces the rule even when a matching file exists in the
-# deploy, which is what makes this a complete redirect rather than one that
-# leaks any page still sitting in the build output.
-#
-# The splat preserves the path; Netlify preserves the query string by default.
+# Glob patterns, not regex — each rule below is the glob equivalent of its
+# entry in path-map.json. The trailing bang forces the rule even when a
+# matching file exists in the deploy.
 
-/*    https://ecowoods.ca/:splat    301!
+/blogs/testimonials                                                     https://ecowoods.ca/reviews  301!
+/blogs/testimonials/*                                                   https://ecowoods.ca/reviews  301!
+/blogs/ecowoods-hardwood-flooring-blog                                  https://ecowoods.ca/blog  301!
+/blogs/ecowoods-hardwood-flooring-blog/*                                https://ecowoods.ca/blog  301!
+/pages/ecowoods-hardwood-flooring-testimonials-toronto-etobicoke        https://ecowoods.ca/reviews  301!
+/pages/ecowoods-hardwood-flooring-contractors-toronto-etobicoke-hamilton  https://ecowoods.ca/about  301!
+/pages/flooring-services-toronto-etobicoke-hamilton                     https://ecowoods.ca/services  301!
+/pages/hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton  https://ecowoods.ca/#quote  301!
+/pages/home                                                             https://ecowoods.ca/  301!
+/privacy-policy                                                         https://ecowoods.ca/privacy  301!
+/                                                                       https://ecowoods.ca/  301!
+
+# Fallback — everything else.
+/*                                                                      https://ecowoods.ca/  301!

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { openRenoGuide } from '@/lib/renoguide';
+import { openAssistant } from '@/lib/assistant';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 /* ────────────────────────────────────────────────────────────────────────────
    CONVERSION RAIL — WhatsApp + exit intent.
@@ -13,13 +14,13 @@ import { openRenoGuide } from '@/lib/renoguide';
       chat nobody reads is worse than no icon. Set the env var to turn it on.
 
    2. Exit intent fires at most once per session, desktop only, never within
-      the first 20 seconds, and never while RenoGuide or a modal is open. An
+      the first 20 seconds, and never while EcowoodsGuide or a modal is open. An
       interstitial that ambushes someone reading the FAQ is not persuasion, it
       is a tax on trust — and this brand sells trust.
 
    The modal doesn't collect an email. It offers the two things that actually
    move a hardwood decision: a real answer, or a real appointment. Both land
-   in RenoGuide, which owns the tools.
+   in EcowoodsGuide, which owns the tools.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
@@ -80,7 +81,7 @@ export default function ConversionRail() {
 
   const handoff = (prefill: string, source: string) => {
     setExitOpen(false);
-    openRenoGuide({ prefill, source });
+    openAssistant({ prefill, source });
   };
 
   return (
@@ -132,7 +133,7 @@ export default function ConversionRail() {
             </div>
 
             <p className="exit-foot">
-              Or call <a href="tel:+16472445156">(647) 244-5156</a> · Mon–Sat, 8 AM – 7 PM
+              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · Mon–Sat, 8 AM – 7 PM
             </p>
           </div>
         </div>

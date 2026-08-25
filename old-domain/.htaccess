@@ -1,52 +1,82 @@
-# ============================================================================
+# =============================================================================
 # ECOWOODS — ecowoodshardwood.com → ecowoods.ca
-# Apache. Place as the ONLY .htaccess in the document root, on BOTH hosts.
-# ============================================================================
 #
-# ONE HOP, ALWAYS. This is the whole design and it is the thing most versions
-# of this file get wrong.
+# GENERATED FILE. Do not edit.
+#   source:   old-domain/path-map.json
+#   generator: scripts/build-old-domain-redirects.mjs
+#   run:      pnpm domain:build
 #
-# The obvious way to write it is to force HTTPS first and then redirect the
-# host. That produces:
+# Inventory measured 2026-08-24 from https://www.ecowoodshardwood.com/sitemap.xml — 36 URLs.
 #
-#     http://www.old/x  →  https://www.old/x  →  https://ecowoods.ca/x
+# NOT PATH-PRESERVING, AND THAT IS DELIBERATE. The two sites share no
+# paths at all: the old one serves /pages/… and /blogs/… from a hosted
+# store platform. A path-preserving rule turns every live URL into a 404
+# on the new domain, which is worse than the 404 it already returns.
 #
-# Two redirects where one was needed. Every hop costs signal, adds latency on
-# the slowest connections, and gives a crawler another chance to stop
-# following. The rules below send every combination of scheme and host to the
-# final URL in a single 301 — there is deliberately no HTTPS-forcing rule,
-# because the destination is already https and forcing it first is what creates
-# the chain.
+# 301, never 302. A 302 tells a crawler to keep the OLD url indexed,
+# which is the opposite of consolidating two domains into one.
 #
-# 301, not 302. A temporary redirect tells search engines to keep the OLD url
-# indexed, which is the exact opposite of consolidating.
-#
-# Path-preserving. A link earned by /services/floor-refinishing passes to that
-# page, not to a homepage the visitor then has to navigate. Redirecting
-# everything to / is common and it discards most of the value.
-#
-# Query strings survive: Apache appends the original query string to a
-# substitution that contains no "?" of its own. Do not add QSA — with R=301 it
-# is already the behaviour, and adding it alongside an explicit "?" is how
-# duplicated query strings happen.
-# ============================================================================
+# ONE HOP. There is no separate HTTPS-forcing rule: the destination is
+# already https, and forcing the scheme first is what turns one redirect
+# into two. Every combination of scheme and host lands in a single 301.
+# =============================================================================
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Everything, from any host on this domain, in one hop.
-  RewriteRule ^(.*)$ https://ecowoods.ca/$1 [R=301,L,NE]
+  # Leftover store-platform endpoints listed in the old sitemap. There is no store on ecowoods.ca; nothing corresponds. They go to the front door rather than to a 404.
+  RewriteCond %{QUERY_STRING} fuseaction=store\.(terms|returns|shipping)
+  RewriteRule ^ https://ecowoods.ca/? [R=301,L,NE]
+
+  # 22 individual customer testimonials plus their index. /reviews is where this site sends anyone asking about reputation, and it explains why the reviews live on platforms we cannot edit.
+  RewriteRule ^/?blogs/testimonials(/.*)?$ https://ecowoods.ca/reviews [R=301,L,NE]
+
+  # The old blog index and its three posts. Two of the three are 'announcing the new website' and 'new website under construction', which is its own argument for consolidating.
+  RewriteRule ^/?blogs/ecowoods-hardwood-flooring-blog(/.*)?$ https://ecowoods.ca/blog [R=301,L,NE]
+
+  # Nav label: Testimonials.
+  RewriteRule ^/?pages/ecowoods-hardwood-flooring-testimonials-toronto-etobicoke/?$ https://ecowoods.ca/reviews [R=301,L,NE]
+
+  # Nav label: About.
+  RewriteRule ^/?pages/ecowoods-hardwood-flooring-contractors-toronto-etobicoke-hamilton/?$ https://ecowoods.ca/about [R=301,L,NE]
+
+  # Nav label: Services. Its H1 is 'Flooring Services in Greater Toronto Area' and it lists installation, refinishing, repair and stair refinishing — the same six services /services indexes, now with published price bands.
+  RewriteRule ^/?pages/flooring-services-toronto-etobicoke-hamilton/?$ https://ecowoods.ca/services [R=301,L,NE]
+
+  # Nav label: CONTACT. The slug describes services and the page is the contact form — which is exactly why this map was built from the navigation rather than from the slugs.
+  RewriteRule ^/?pages/hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton/?$ https://ecowoods.ca/#quote [R=301,L,NE]
+
+  # Nav label: Home.
+  RewriteRule ^/?pages/home/?$ https://ecowoods.ca/ [R=301,L,NE]
+
+  # The old site published one. So must this one — see the note in apps/web/app/privacy/page.tsx about the four places that linked to /privacy while it 404ed.
+  RewriteRule ^/?privacy-policy/?$ https://ecowoods.ca/privacy [R=301,L,NE]
+
+  # Root to root. This page is titled 'Portfolio | Hardwood Floor Repair in Toronto, Vaughan, Markham' and its body says 'Coming soon...', so /case-studies is arguably the better content match — but a person typing the bare domain wants the company, and the company's front door is the front door. The repair-query equity it holds is picked up by /hardwood-floor-problems-toronto through the site's own internal linking, not by pointing a domain root at a subpage.
+  RewriteRule ^/?$ https://ecowoods.ca/ [R=301,L,NE]
+
+  # Fallback.
+  # Anything not matched above.
+  # Google treats a mass redirect of irrelevant URLs to the homepage as a soft
+  # 404, and that is a real cost — but it is the lesser one here. The
+  # alternative is path-preservation, which for this pair of sites produces a
+  # guaranteed hard 404 on every single URL, because the two share no paths at
+  # all. A soft landing on a page about the same business beats a dead end.
+  # The way to shrink this fallback is to add rules above it, not to change it.
+  RewriteRule ^(.*)$ https://ecowoods.ca/ [R=301,L,NE]
 </IfModule>
 
-# Fallback for a server without mod_rewrite. mod_alias is compiled in almost
-# everywhere mod_rewrite is not. RedirectMatch is also path-preserving.
+# A server without mod_rewrite. mod_alias is compiled in almost everywhere
+# mod_rewrite is not. It cannot express the map, so it does the one thing it
+# can do correctly: send everything to the front door in a single permanent
+# hop. Worse than the map above, far better than nothing.
 <IfModule !mod_rewrite.c>
   <IfModule mod_alias.c>
-    RedirectMatch permanent ^/(.*)$ https://ecowoods.ca/$1
+    RedirectMatch permanent ^/(.*)$ https://ecowoods.ca/
   </IfModule>
 </IfModule>
 
 # No index file, no residual content, no robots.txt of its own. The redirect
-# must fire before anything can be served. If an old index.html or index.php
-# survives in this directory it will never be reached — but delete it anyway,
-# so nobody restores a "temporary" homepage here in six months.
+# must fire before anything can be served. Delete whatever is in this document
+# root — if an old index survives here it will never be reached, but someone
+# will restore a "temporary" homepage on top of it in six months.

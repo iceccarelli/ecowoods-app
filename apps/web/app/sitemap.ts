@@ -15,6 +15,7 @@ import { CHANGELOG } from '@/lib/changelog';
 import { getServicePages } from '@/lib/service-pages';
 import { ILLUSTRATION_IMAGES } from '@/app/data/illustration-images';
 import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
+import { LEGAL_LAST_REVIEWED } from '@/lib/legal';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -174,13 +175,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),
     entry('/services', 'monthly', 0.95),                           // no date
-    /* The two commercial head terms. Priority 0.95 because these are the
-       highest-intent queries in this market and the site had no page for
-       either until F-193 — six service pages and thirty-two area pages, and
-       nothing answering "hardwood flooring Toronto". */
+    /* The commercial head terms. Priority 0.95 because these are the
+       highest-intent queries in this market and the site had no page for any
+       of them until F-193 — six service pages and thirty-two area pages, and
+       nothing answering "hardwood flooring Toronto".
+
+       Stairs joined them last: /hardwood-stairs-toronto is the canonical for
+       thirteen keyword-variant slugs that now 308 to it (see
+       content/search/route-aliases.json). The aliases are deliberately NOT in
+       this sitemap — a sitemap is a list of pages a crawler should index, and
+       every one of those slugs is a redirect. Listing a redirect here asks
+       Google to index a URL we have just told it is not a document. */
     entry('/hardwood-flooring-toronto', 'monthly', 0.95),
     entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
+    entry('/hardwood-stairs-toronto', 'monthly', 0.95),
+    /* The failure-mode atlas. Same priority as the head terms, and it earns it:
+       the queries it answers ("why is my hardwood floor cupping") arrive from
+       someone whose floor is already failing, which is a shorter path to a job
+       than any shopping query on this list. */
+    entry('/hardwood-floor-problems-toronto', 'monthly', 0.95),
     entry('/service-areas', 'monthly', 0.9),                       // no date
+    /* The two legal pages. Low priority — nobody searches for them — but
+       indexable and in the sitemap on purpose: a privacy policy a crawler
+       cannot find is one a compliance reviewer cannot find either, and both
+       carry a real dateModified because they state when they were last checked
+       against the code. */
+    entry('/privacy', 'yearly', 0.3, new Date(LEGAL_LAST_REVIEWED)),
+    entry('/terms', 'yearly', 0.3, new Date(LEGAL_LAST_REVIEWED)),
   ];
 
   /**

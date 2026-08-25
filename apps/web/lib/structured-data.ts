@@ -1,11 +1,31 @@
+/**
+ * lib/structured-data.ts — the LocalBusiness graph the service-area pages emit.
+ *
+ * THE SECOND COPY OF THE ENTITY
+ *
+ * lib/schema/root-schema.ts holds ROOT_ORG_CONFIG, injected site-wide by the
+ * layout. This file held a separate LocalBusiness node with its own hand-typed
+ * name, legal name, telephone, email, address and geo, rendered on all
+ * thirty-two /service-areas pages. Two entity descriptions, five duplicated
+ * fields each, no guard comparing them.
+ *
+ * They agreed. That is not reassuring — it is the state a drift starts from,
+ * and this file's own comment records the last one: the telephone here was a
+ * placeholder that contradicted the number shown in the header, in the chat
+ * widget and in the contact block, on the exact markup that decides local-pack
+ * eligibility.
+ *
+ * Every one of those fields now derives from BUSINESS_NAP. `pnpm seo:claims`
+ * fails the build on a NAP literal anywhere outside packages/shared/constants.
+ */
 export const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': ['LocalBusiness', 'HomeAndConstructionBusiness'],
       '@id': 'https://ecowoods.ca/#business',
-      name: 'Ecowoods Inc.',
-      legalName: 'Ecowoods Hardwood Flooring Inc.',
+      name: BUSINESS_NAP.name,
+      legalName: BUSINESS_NAP.legalName,
       url: 'https://ecowoods.ca',
       // Hardcoded 404s until F-162. See lib/brand-assets.ts.
       image: OG_IMAGE_URL,
@@ -14,24 +34,24 @@ export const localBusinessSchema = {
       // shown in Header, ChatWidget, the contact block and the AI's
       // get_company_context tool. A phone mismatch inside LocalBusiness markup is
       // exactly the kind of NAP inconsistency that suppresses local pack ranking.
-      telephone: '+1-647-244-5156',
-      email: 'services@ecowoods.ca',
+      telephone: BUSINESS_NAP.phoneSchema,
+      email: BUSINESS_NAP.email,
       priceRange: '$$',
       foundingDate: String(BUSINESS_NAP.foundedYear),
       slogan: "Toronto's master hardwood flooring artisans",
       description: 'Premium hardwood flooring in Toronto and the GTA. Installation, refinishing, sanding, custom inlays and dust-free restoration — backed by manufacturer warranties passed through in writing.',
       address: {
         '@type': 'PostalAddress',
-        streetAddress: '32 Norfield Crescent',
-        addressLocality: 'Toronto',
-        addressRegion: 'ON',
-        postalCode: 'M9W 1X6',
-        addressCountry: 'CA',
+        streetAddress: BUSINESS_NAP.address.streetAddress,
+        addressLocality: BUSINESS_NAP.address.addressLocality,
+        addressRegion: BUSINESS_NAP.address.addressRegion,
+        postalCode: BUSINESS_NAP.address.postalCode,
+        addressCountry: BUSINESS_NAP.address.addressCountry,
       },
       geo: {
         '@type': 'GeoCoordinates',
-        latitude: 43.72085,
-        longitude: -79.57542,
+        latitude: BUSINESS_NAP.address.latitude,
+        longitude: BUSINESS_NAP.address.longitude,
       },
       areaServed: [
         { '@type': 'City', name: 'Toronto' },

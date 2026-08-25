@@ -14,6 +14,7 @@ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
+import { EvidenceRail, CASES } from '../components/EvidenceRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -286,6 +287,41 @@ export default function HardwoodFlooringTorontoPage() {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      <EvidenceRail
+        heading="Four Toronto jobs, written up in full"
+        intro={
+          'Every one publishes the readings taken before the work started, not only the ' +
+          'photograph taken after it finished. That is the difference between a portfolio and ' +
+          'evidence, and it is the same difference the Well-Installed Framework asks you to look ' +
+          'for in any quote.'
+        }
+        items={[
+          { ...CASES.distillery, why: 'A condo over a concrete slab. The moisture test decided the entire assembly, before a species was chosen.' },
+          { ...CASES.rosedale, why: 'Stairs and a main floor over radiant heat, where the two assemblies move differently and had to finish to the same colour.' },
+          { ...CASES.forestHill, why: 'Wide-plank walnut, and how the colour was kept uniform across boards that age photochemically.' },
+          { ...CASES.midtown, why: 'Three storeys, three different substrates, one continuous floor. The hardest kind of match there is.' },
+        ]}
+      />
+
+      <section className="tlx-section" aria-label="Decide before you call">
+        <div className="shell">
+          <p className="tlx-kicker">The three questions that move the price</p>
+          <h2 className="tlx-h2">What you should settle before anyone quotes</h2>
+          <p className="tlx-note">
+            Each of these is published free, in full, with the reasoning rather than a
+            recommendation: <Link href="/guides/solid-vs-engineered-hardwood-toronto">solid or
+            engineered</Link> (the substrate decides it, not the budget),{' '}
+            <Link href="/guides/hardwood-flooring-cost-toronto">what actually moves a quote inside
+            the bands above</Link>, and{' '}
+            <Link href="/guides/how-to-choose-hardwood-contractor-toronto">how to choose a
+            contractor in this market</Link>. If your floor is already cupping, gapping or lifting,
+            start at{' '}
+            <Link href="/hardwood-floor-problems-toronto">what your floor is telling you</Link>{' '}
+            instead — that is a diagnosis, not a purchase.
+          </p>
         </div>
       </section>
 
