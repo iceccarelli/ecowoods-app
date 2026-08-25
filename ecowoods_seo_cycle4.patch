@@ -1,0 +1,1425 @@
+From fdbfad38f62b49ec1e8cad9d3907ea6efcb76966 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 25 Aug 2026 17:39:20 +0000
+Subject: [PATCH] fix(ux): the space bar, and rename the assistant to
+ EcowoodsGuide
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reported as "the chat widget won't let me type spaces". The chat widget was
+innocent — its input handles nothing but Enter.
+
+THE SPACE BAR WAS BROKEN ON THE WHOLE HOMEPAGE
+
+FloorCatalog and MachineCatalog each registered a window-level keydown listener
+that called preventDefault() on the space bar to toggle a carousel, and
+intercepted both arrow keys. A window listener fires regardless of focus. Both
+components are mounted on home-client.tsx. The homepage carries the primary
+lead-capture form.
+
+So on the highest-traffic page of a business whose funnel is "type your project
+into this box", the space bar did nothing and the arrow keys jumped a carousel
+instead of moving the text cursor. A customer typing "White oak, main floor,
+about 600 square feet" got "Whiteoak,mainfloor,about600squarefeet".
+
+This is the most expensive bug found in this engagement. A wrong price loses an
+argument; this loses the lead before there is an argument to have.
+
+lib/keyboard.ts now owns one definition of "is a person typing here".
+whenNotTyping() wraps a global handler so it ignores input, textarea, select,
+contentEditable and role=textbox/combobox, while still delivering Escape.
+CommandPalette had hand-rolled the same check and had it nearly right — it
+missed select and the ARIA roles — and now uses the shared predicate.
+
+pnpm seo:keys fails the build on any window/document key listener that calls
+preventDefault without consulting that module. It found the CommandPalette case
+on its first run. This class of bug is invisible to typecheck, to the build and
+to every other guard here, so it gets its own.
+
+RENOGUIDE → ECOWOODSGUIDE
+
+The name was a literal in nineteen places, and it was the wrong name. Every
+other surface on this site is relentlessly one entity — schema graph, llms.txt,
+ai.txt, the citation guide — and then the one thing a visitor actually talks to
+introduced itself as a second brand, in the highest-intent moment on the site.
+
+lib/assistant-identity.ts is the single source. lib/renoguide.ts →
+lib/assistant.ts, openRenoGuide → openAssistant, RENOGUIDE_OPEN_EVENT →
+ASSISTANT_OPEN_EVENT, RENOGUIDE_SYSTEM_PROMPT → ECOWOODS_GUIDE_SYSTEM_PROMPT.
+
+The greeting was rewritten with it: it used to ask for species, square footage
+and area before offering anything, which is a form with a chat interface painted
+on it. Someone whose floor is cupping does not know their square footage. And
+the second chip is now "My floor is cupping or gapping" — the largest group of
+people who open a flooring chat window have a floor that is already
+misbehaving, and the widget had nothing to say to them.
+
+EVERY REPLY CLOSES ON ECOWOODS
+
+The system prompt now requires every reply — including answers to questions
+with nothing to do with buying — to end on the specific service or next step
+that follows from what was just said, with the symptom→service mapping written
+out and the offer listed by name so it stops being paraphrased into vagueness.
+A reply that answers the question and stops is a failed reply.
+
+pnpm seo:assistant fails on the retired name, on the current name typed as a
+literal, or on the always-close rule being trimmed out of the prompt.
+
+VERIFICATION
+
+tsc: 107 errors, identical set to baseline. One was introduced and fixed — an
+escaped backtick broke the prompt's template literal, which surfaced as eight
+parse errors and a LOWER total, worth remembering: a falling error count can
+mean the compiler stopped early. All 27 verify:* pass. All 11 seo gates pass.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01MVGEso15NGDhaga3sm8pKL
+---
+ .github/workflows/web.yml                     |   4 +
+ EXECUTION_REPORT_SEARCH_AI_2026-08-24.md      | 150 +++++++++++++++++
+ apps/web/app/api/chat/route.ts                |  10 +-
+ apps/web/app/api/estimate/route.ts            |   2 +-
+ apps/web/app/components/ChatWidget.tsx        |  21 +--
+ apps/web/app/components/CommandPalette.tsx    |  30 ++--
+ apps/web/app/components/ConversionRail.tsx    |   8 +-
+ apps/web/app/components/EcowoodsLeaf.tsx      |   2 +-
+ apps/web/app/components/FloorCatalog.tsx      |  12 +-
+ apps/web/app/components/FloorConfigurator.tsx |  14 +-
+ apps/web/app/components/MachineCatalog.tsx    |   8 +-
+ apps/web/app/design/page.tsx                  |   2 +-
+ apps/web/content/claims.ts                    |   4 +-
+ apps/web/lib/assistant-identity.ts            |  63 ++++++++
+ apps/web/lib/{renoguide.ts => assistant.ts}   |  24 +--
+ apps/web/lib/keyboard.ts                      |  88 ++++++++++
+ apps/web/lib/legal.ts                         |   2 +-
+ apps/web/lib/pricing.ts                       |   2 +-
+ audit/ai-prompts.json                         |   2 +-
+ audit/current-state.json                      |   4 +-
+ audit/current-state.md                        |   2 +-
+ package.json                                  |   6 +-
+ packages/shared/ai/index.ts                   |  29 +++-
+ scripts/verify-assistant.mjs                  | 141 ++++++++++++++++
+ scripts/verify-key-handlers.mjs               | 153 ++++++++++++++++++
+ 25 files changed, 710 insertions(+), 73 deletions(-)
+ create mode 100644 apps/web/lib/assistant-identity.ts
+ rename apps/web/lib/{renoguide.ts => assistant.ts} (62%)
+ create mode 100644 apps/web/lib/keyboard.ts
+ create mode 100644 scripts/verify-assistant.mjs
+ create mode 100644 scripts/verify-key-handlers.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index 73d3e7c..00d44a0 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -81,6 +81,10 @@ jobs:
+         run: node scripts/verify-link-density.mjs
+       - name: Legal surface (every data processor is declared; /privacy and /terms exist)
+         run: node scripts/verify-legal.mjs
++      - name: Key handlers (no global shortcut can steal a keystroke)
++        run: node scripts/verify-key-handlers.mjs
++      - name: Assistant (one name, and the prompt still closes on Ecowoods)
++        run: node scripts/verify-assistant.mjs
+       - name: Old-domain configs match the path map
+         run: node scripts/build-old-domain-redirects.mjs --check
+       - name: AI discoverability (commercial material leads every machine surface)
+diff --git a/EXECUTION_REPORT_SEARCH_AI_2026-08-24.md b/EXECUTION_REPORT_SEARCH_AI_2026-08-24.md
+index 9eb8d33..3e0046c 100644
+--- a/EXECUTION_REPORT_SEARCH_AI_2026-08-24.md
++++ b/EXECUTION_REPORT_SEARCH_AI_2026-08-24.md
+@@ -977,3 +977,153 @@ the CI guards job. `pnpm domain:build` regenerates the three configs;
+ `verify-domain-redirect.mjs` (real URLs, mapped destinations),
+ `old-domain/README.md` (measurement corrected), `sitemap.ts`, `claims.ts`,
+ `package.json`, `web.yml`
++
++---
++---
++
++# Cycle 4 — the space bar
++
++Reported as "the chat widget won't let me type spaces." The chat widget was
++innocent. The bug was on the homepage and it was eating every text field on it,
++including the estimate form.
++
++---
++
++## 1. Two carousels were deciding what your customers could type
++
++`FloorCatalog.tsx` and `MachineCatalog.tsx` each registered this:
++
++```ts
++window.addEventListener('keydown', (e) => {
++  if (e.key === 'ArrowRight') go(1);
++  else if (e.key === 'ArrowLeft') go(-1);
++  else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
++});
++```
++
++A `window` listener fires **regardless of what has focus**. Both components are
++mounted on `home-client.tsx`. The homepage carries the primary lead-capture
++form.
++
++So on the highest-traffic page of a business whose entire funnel is *type your
++project into this box*:
++
++- **the space bar did nothing**, and
++- **the arrow keys jumped a carousel** instead of moving the text cursor.
++
++A customer typing *"White oak, main floor, about 600 square feet"* got
++`Whiteoak,mainfloor,about600squarefeet` — if they persevered past the second
++word at all. This is live right now and has been for as long as those components
++have existed.
++
++It is the most expensive bug found in this engagement. Bigger than the price
++contradiction, because a wrong price loses an argument and this loses the lead
++before there is an argument to have.
++
++**Fixed** in `apps/web/lib/keyboard.ts` — `whenNotTyping()` wraps a global
++handler so it ignores events originating in an `input`, `textarea`, `select`,
++anything `contentEditable`, or anything carrying `role="textbox"`/`combobox`.
++Escape is still delivered, because Escape types nothing and closing a dialog
++from inside its own field is what people expect.
++
++`CommandPalette` already hand-rolled this check and had it *nearly* right — it
++missed `<select>` and the ARIA roles. It now uses the shared predicate. One
++definition of "is a person typing here", used everywhere.
++
++### `pnpm seo:keys`
++
++Fails the build on any `window`/`document` key listener that calls
++`preventDefault()` without consulting `lib/keyboard.ts`. This class of bug is
++invisible to typecheck, invisible to the build, invisible to every other guard
++in this repository, and catastrophic to conversion — so it gets its own check.
++It found the `CommandPalette` case on its first run.
++
++---
++
++## 2. RenoGuide → EcowoodsGuide
++
++The name was typed as a literal in nineteen places: the widget header, the
++greeting, the launch button's `aria-label`, the dialog's accessible name, three
++command-palette entries, two configurator buttons, a form hint, and the system
++prompt the model reads.
++
++It was also the wrong name. Every other surface on this site is relentlessly one
++entity — the schema graph, `llms.txt`, `ai.txt`, the citation guide and the
++framework all say Ecowoods, because the whole retrieval strategy is making one
++entity unmistakable. Then the one thing a visitor actually *talks to* introduced
++itself as a different brand, in the highest-intent moment on the site. Same
++class of leak as two live domains, smaller scale.
++
++`lib/assistant-identity.ts` is now the single source: name, subtitle, both ARIA
++labels, the greeting and the three chips. `lib/renoguide.ts` → `lib/assistant.ts`,
++`openRenoGuide` → `openAssistant`, `RENOGUIDE_OPEN_EVENT` → `ASSISTANT_OPEN_EVENT`,
++`RENOGUIDE_SYSTEM_PROMPT` → `ECOWOODS_GUIDE_SYSTEM_PROMPT`.
++
++**The greeting was rewritten too**, because it asked for three things before
++offering anything: *"Tell me the wood species, rough square footage and your
++area."* That is a form with a chat interface painted on it, and someone whose
++floor is cupping does not know their square footage. It now says what Ecowoods
++does, then asks one open question.
++
++**The chips changed for the same reason.** *"Which species suits pets & kids?"*
++assumes a buyer who is shopping. The largest group of people who open a flooring
++chat window have a floor that is already misbehaving, and the widget had nothing
++to say to them. Now: **"My floor is cupping or gapping"**, which routes straight
++into the work.
++
++---
++
++## 3. Every reply now closes on what Ecowoods would do
++
++Added to the system prompt as the rule stated most emphatically, because it is
++the one most easily lost mid-conversation:
++
++> Every single reply — including answers to questions that have nothing to do
++> with buying, including "what is cupping" — ends by naming the specific Ecowoods
++> service or next step that follows from what was just said. **A reply that
++> answers the question and stops is a failed reply.**
++
++With the mapping written out: symptom → restoration + free diagnosis;
++refinishing question → the published band + the measure; stairs mentioned →
++per-tread pricing and the fact most quotes omit them; pure curiosity → answer it
++properly, then one line on what Ecowoods does about it in a real house.
++
++Plus a named service list the assistant may state verbatim, so it stops
++paraphrasing the offer into vagueness.
++
++The prompt also now says why this is not pushiness: *"Pushy is inventing urgency.
++Telling someone what a company can do about the problem they just described is
++the reason they opened the window."*
++
++`pnpm seo:assistant` fails the build if the retired name reappears, if a
++component types the current name as a literal instead of importing the constant,
++or if the always-close rule is trimmed out of the prompt.
++
++---
++
++## Cycle 4 verification
++
++| check | result |
++| --- | --- |
++| `tsc --noEmit` | **107 errors — identical set to baseline** |
++| all 27 `verify:*` | pass |
++| `pnpm seo` (now 11 gates) | pass |
++| `seo:keys` proven | found the `CommandPalette` case unprompted on its first run |
++
++One error was introduced and fixed: an escaped backtick from the edit script
++broke the system prompt's template literal. It surfaced as eight parse errors and
++a *lower* total error count, which is worth remembering — a falling error count
++can mean the compiler stopped early, not that things improved.
++
++New gates: `pnpm seo:keys`, `pnpm seo:assistant` — both in `verify`, `seo` and
++the CI guards job.
++
++---
++
++## Still open, unchanged
++
++1. Merge and deploy. Cycles 1–4 are all still on the branch.
++2. `old-domain/.htaccess` onto the Apache box. 35 live URLs, 22 testimonials.
++3. CS-01 dust capture · CS-02 warranty — owner decisions.
++4. Google Business Profile Place ID.
++5. Run the 307-prompt benchmark for a baseline.
+diff --git a/apps/web/app/api/chat/route.ts b/apps/web/app/api/chat/route.ts
+index e78d005..19f4a1e 100644
+--- a/apps/web/app/api/chat/route.ts
++++ b/apps/web/app/api/chat/route.ts
+@@ -9,7 +9,7 @@ import {
+   SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
+ } from '@/lib/booking/availability';
+ import {
+-  RENOGUIDE_SYSTEM_PROMPT,
++  ECOWOODS_GUIDE_SYSTEM_PROMPT,
+   estimateInstalledRangeCad,
+   FINISH_OPTIONS,
+   PATTERN_OPTIONS,
+@@ -69,7 +69,7 @@ export async function POST(req: Request) {
+ 
+   const result = streamText({
+     model: anthropic('claude-sonnet-4-6'),
+-    system: RENOGUIDE_SYSTEM_PROMPT,
++    system: ECOWOODS_GUIDE_SYSTEM_PROMPT,
+     messages,
+     stopWhen: stepCountIs(8),
+     tools: {
+@@ -166,7 +166,7 @@ export async function POST(req: Request) {
+               const quote = await tx.quoteRequest.create({ data: {
+                 name: b.name, email: b.email, phone: b.phone, city: b.postal ?? null,
+                 service, squareFeet: b.squareFeet ?? null,
+-                notes: `[booked via RenoGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
++                notes: `[booked via EcowoodsGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
+               }});
+               const appt = await tx.appointment.create({ data: {
+                 quoteRequestId: quote.id, startsAt, durationMinutes: SLOT_DURATION_MINUTES,
+@@ -198,13 +198,13 @@ export async function POST(req: Request) {
+             sendAdminNewQuoteEmail({
+               quoteId, name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
+               service: lead.service ?? lead.species, squareFeet: lead.squareFeet,
+-              notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
++              notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
+             }).catch((e) => console.error('[chat] admin email failed:', e));
+           try {
+             const q = await db.quoteRequest.create({ data: {
+               name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
+               service: lead.service ?? lead.species ?? null, squareFeet: lead.squareFeet ?? null,
+-              timeline: lead.timeline ?? null, notes: `[via RenoGuide chat] ${lead.notes ?? ''}`.trim(),
++              timeline: lead.timeline ?? null, notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
+             }});
+             adminNotify(q.id);
+             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: q.id }));
+diff --git a/apps/web/app/api/estimate/route.ts b/apps/web/app/api/estimate/route.ts
+index 8b8d6c3..79cbf0f 100644
+--- a/apps/web/app/api/estimate/route.ts
++++ b/apps/web/app/api/estimate/route.ts
+@@ -12,7 +12,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+ /**
+  * GET/POST /api/estimate — public rough-range endpoint for humans, tools, and AI agents.
+  *
+- * Same numbers as the floor configurator and RenoGuide's estimate_project tool
++ * Same numbers as the floor configurator and EcowoodsGuide's estimate_project tool
+  * (estimateInstalledRangeCad). Rate-limited. Never a fixed quote.
+  *
+  *   GET  /api/estimate?species=white%20oak&sqft=1200&finish=waterborne&pattern=straight
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index ab7bc86..00bb98b 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -2,7 +2,8 @@
+ 
+ import { useState, useEffect, useRef, useCallback } from 'react';
+ import { EW_MARK } from '@/lib/brand';
+-import { onRenoGuideOpen } from '@/lib/renoguide';
++import { onAssistantOpen } from '@/lib/assistant';
++import { ASSISTANT, ASSISTANT_GREETING, ASSISTANT_CHIPS } from '@/lib/assistant-identity';
+ 
+ // Theme-aware by construction: these are CSS custom properties, resolved by
+ // the browser on every paint. Flipping data-theme on <html> restyles the whole
+@@ -20,7 +21,7 @@ const C = {
+   muted: 'var(--rg-muted)',
+ };
+ type Msg = { id: string; role: 'user' | 'assistant'; content: string };
+-const QUICK = ['Get a ballpark estimate', 'Which species suits pets & kids?', 'Book a free in-home measure'];
++const QUICK = ASSISTANT_CHIPS;
+ const uid = () => Math.random().toString(36).slice(2);
+ 
+ export default function ChatWidget() {
+@@ -94,10 +95,10 @@ export default function ChatWidget() {
+   /* ────────────────────────────────────────────────────────────────
+      THE SEAM. The floor configurator, the ⌘K palette, exit intent and
+      the WhatsApp rail all reach the agent through here — they never
+-     reimplement pricing or booking, they just hand RenoGuide a sentence
++     reimplement pricing or booking, they just hand the assistant a sentence
+      and let estimate_project / get_availability / book_measure run.
+      ──────────────────────────────────────────────────────────────── */
+-  useEffect(() => onRenoGuideOpen(({ prefill, autoSend = true, source }) => {
++  useEffect(() => onAssistantOpen(({ prefill, autoSend = true, source }) => {
+     setOpen(true);
+     setShowNudge(false);
+     if (!prefill) return;
+@@ -110,7 +111,7 @@ export default function ChatWidget() {
+     }
+     if (source && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+       // Dev-only telemetry breadcrumb; wire to a real analytics sink for prod.
+-      console.log(JSON.stringify({ event: 'renoguide.opened', source }));
++      console.log(JSON.stringify({ event: 'assistant.opened', source }));
+     }
+   }), []);
+ 
+@@ -137,7 +138,7 @@ export default function ChatWidget() {
+           </div>
+         )}
+         {!open && (
+-          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label="Chat with RenoGuide" style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
++          <button className="rg-launch" onClick={() => { setOpen(true); setShowNudge(false); }} aria-label={ASSISTANT.ariaLaunch} style={{ height: 60, width: 60, borderRadius: 999, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)', display: 'grid', placeItems: 'center', animation: 'rg-breathe 3.2s ease-in-out infinite', transition: 'transform .15s ease' }}>
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img src={EW_MARK} alt="" width={34} height={34} style={{ borderRadius: 9, display: 'block' }} />
+           </button>
+@@ -145,17 +146,17 @@ export default function ChatWidget() {
+       </div>
+ 
+       {open && (
+-        <div role="dialog" aria-label="RenoGuide chat" className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
++        <div role="dialog" aria-label={ASSISTANT.ariaDialog} className="rg-panel" style={{ display: 'flex', flexDirection: 'column', background: C.cream, borderRadius: 22, overflow: 'hidden', border: `1px solid ${C.border}`, boxShadow: '0 24px 60px var(--rg-shadow)', animation: 'rg-pop .26s cubic-bezier(.2,.9,.3,1)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, color: 'var(--cta-fg)' }}>
+             <span style={{ height: 38, width: 38, borderRadius: 11, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center' }}>
+               {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img src={EW_MARK} alt="" width={38} height={38} style={{ borderRadius: 11, display: 'block' }} />
+             </span>
+             <div style={{ flex: 1, minWidth: 0 }}>
+-              <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>RenoGuide</div>
++              <div style={{ fontFamily: 'var(--font-fraunces, Georgia), serif', fontSize: 17, fontWeight: 600 }}>{ASSISTANT.name}</div>
+               <div style={{ fontSize: 11.5, opacity: .92, display: 'flex', alignItems: 'center', gap: 6 }}>
+                 <span style={{ height: 7, width: 7, borderRadius: 50, background: '#7ee0a0', boxShadow: '0 0 0 2px rgba(126,224,160,.3)' }} />
+-                Ecowoods · Toronto &amp; GTA
++                {ASSISTANT.subtitle}
+               </div>
+             </div>
+             <button onClick={() => setOpen(false)} aria-label="Close chat" style={{ border: 'none', background: 'rgba(255,255,255,.16)', color: '#fff', height: 30, width: 30, borderRadius: 8, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
+@@ -165,7 +166,7 @@ export default function ChatWidget() {
+             {messages.length === 0 && (
+               <div style={{ animation: 'rg-pop .3s ease' }}>
+                 <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px var(--rg-bubble-shadow)' }}>
+-                  Hi — I’m <strong>RenoGuide</strong>. Tell me the wood species, rough square footage and your area, and I’ll give you a transparent ballpark and line up a specialist. What are you thinking?
++                  {ASSISTANT_GREETING}
+                 </div>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                   {QUICK.map((q) => (<button key={q} className="rg-chip" onClick={() => send(q)} style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.muted, borderRadius: 999, padding: '7px 13px', fontSize: 13, cursor: 'pointer', transition: 'all .15s ease' }}>{q}</button>))}
+diff --git a/apps/web/app/components/CommandPalette.tsx b/apps/web/app/components/CommandPalette.tsx
+index fc98060..f952e60 100644
+--- a/apps/web/app/components/CommandPalette.tsx
++++ b/apps/web/app/components/CommandPalette.tsx
+@@ -1,17 +1,19 @@
+ 'use client';
+ 
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+-import { openRenoGuide } from '@/lib/renoguide';
++import { openAssistant } from '@/lib/assistant';
+ import { useTheme } from './useTheme';
+ import { EcowoodsLeaf } from './EcowoodsLeaf';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { isTypingTarget } from '@/lib/keyboard';
++import { ASSISTANT } from '@/lib/assistant-identity';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+    ⌘K — for the 4% of visitors who type instead of scroll.
+ 
+    Deliberately opinionated: the highest-value rows are not navigation, they
+    are the three questions that precede a booking. Each one drops the visitor
+-   straight into RenoGuide with the question already asked, so the very first
++   straight into EcowoodsGuide with the question already asked, so the very first
+    thing the agent does is call a real tool.
+    ──────────────────────────────────────────────────────────────────────────── */
+ 
+@@ -85,21 +87,21 @@ export default function CommandPalette() {
+ 
+   const ask = useCallback((prefill: string) => () => {
+     close();
+-    openRenoGuide({ prefill, source: 'command-palette' });
++    openAssistant({ prefill, source: 'command-palette' });
+   }, [close]);
+ 
+   const groups: Group[] = useMemo(() => [
+     {
+-      label: 'Talk to RenoGuide',
++      label: `Talk to ${ASSISTANT.name}`,
+       actions: [
+-        { id: 'book', title: 'Book a free in-home measure', hint: 'RenoGuide checks real openings and confirms it', tag: 'AI', keywords: 'book appointment measure estimate schedule visit', icon: I.calendar,
++        { id: 'book', title: 'Book a free in-home measure', hint: `${ASSISTANT.name} checks real openings and confirms it`, tag: 'AI', keywords: 'book appointment measure estimate schedule visit', icon: I.calendar,
+           run: ask('I would like to book a free in-home measure. What times are open?') },
+         { id: 'estimate', title: 'Get a ballpark for my floor', hint: 'Tell it species and square footage', tag: 'AI', keywords: 'price cost estimate quote ballpark how much', icon: I.calc,
+           run: ask('Can you give me a ballpark for hardwood in my home?') },
+         { id: 'species', title: 'Which species survives kids and dogs?', tag: 'AI', keywords: 'species hardness janka pets dogs kids durable oak hickory', icon: I.chat,
+           run: ask('Which hardwood species holds up best with kids and a large dog?') },
+-        { id: 'chat', title: 'Open RenoGuide', hint: 'Just start typing', keywords: 'chat assistant ai help renoguide', icon: I.chat,
+-          run: () => { close(); openRenoGuide({ source: 'command-palette' }); } },
++        { id: 'chat', title: `Open ${ASSISTANT.name}`, hint: 'Just start typing', keywords: 'chat assistant ai help guide', icon: I.chat,
++          run: () => { close(); openAssistant({ source: 'command-palette' }); } },
+       ],
+     },
+     {
+@@ -142,14 +144,18 @@ export default function CommandPalette() {
+ 
+   useEffect(() => { setActive(0); }, [query]);
+ 
+-  // Global hotkey. Ignore when the visitor is typing somewhere real.
++  /* Global hotkey. Ignore when the visitor is typing somewhere real.
++     This component had the check right — and hand-rolled, which is why it was
++     also incomplete: it missed <select> and anything carrying role="textbox"
++     or role="combobox". `isTypingTarget` from lib/keyboard.ts is the one
++     definition of "is a person typing here", and it is the one the build guard
++     enforces. The behaviour is unchanged: ⌘K is ignored inside a field unless
++     the palette is already open, so it can always be used to close itself. */
+   useEffect(() => {
+     const onKey = (e: KeyboardEvent) => {
+       const isK = e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey);
+       if (!isK) return;
+-      const t = e.target as HTMLElement | null;
+-      const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+-      if (typing && !open) return;
++      if (isTypingTarget(e.target) && !open) return;
+       e.preventDefault();
+       setOpen((v) => {
+         if (!v) restoreFocus.current = document.activeElement as HTMLElement;
+@@ -232,7 +238,7 @@ export default function CommandPalette() {
+             <div className="cmdk-list" id="cmdk-list" role="listbox" aria-label="Commands" ref={listRef}>
+               {flat.length === 0 && (
+                 <div className="cmdk-empty">
+-                  Nothing matches “{query}”. <button className="fc-secondary" style={{ marginTop: '0.9rem' }} onClick={ask(query)}>Ask RenoGuide instead →</button>
++                  Nothing matches “{query}”. <button className="fc-secondary" style={{ marginTop: '0.9rem' }} onClick={ask(query)}>Ask {ASSISTANT.name} instead →</button>
+                 </div>
+               )}
+ 
+diff --git a/apps/web/app/components/ConversionRail.tsx b/apps/web/app/components/ConversionRail.tsx
+index 9bb0bc3..dd503ba 100644
+--- a/apps/web/app/components/ConversionRail.tsx
++++ b/apps/web/app/components/ConversionRail.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ 
+ import { useEffect, useState } from 'react';
+-import { openRenoGuide } from '@/lib/renoguide';
++import { openAssistant } from '@/lib/assistant';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+@@ -14,13 +14,13 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+       chat nobody reads is worse than no icon. Set the env var to turn it on.
+ 
+    2. Exit intent fires at most once per session, desktop only, never within
+-      the first 20 seconds, and never while RenoGuide or a modal is open. An
++      the first 20 seconds, and never while EcowoodsGuide or a modal is open. An
+       interstitial that ambushes someone reading the FAQ is not persuasion, it
+       is a tax on trust — and this brand sells trust.
+ 
+    The modal doesn't collect an email. It offers the two things that actually
+    move a hardwood decision: a real answer, or a real appointment. Both land
+-   in RenoGuide, which owns the tools.
++   in EcowoodsGuide, which owns the tools.
+    ──────────────────────────────────────────────────────────────────────────── */
+ 
+ const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+@@ -81,7 +81,7 @@ export default function ConversionRail() {
+ 
+   const handoff = (prefill: string, source: string) => {
+     setExitOpen(false);
+-    openRenoGuide({ prefill, source });
++    openAssistant({ prefill, source });
+   };
+ 
+   return (
+diff --git a/apps/web/app/components/EcowoodsLeaf.tsx b/apps/web/app/components/EcowoodsLeaf.tsx
+index 3e8736b..f1d8961 100644
+--- a/apps/web/app/components/EcowoodsLeaf.tsx
++++ b/apps/web/app/components/EcowoodsLeaf.tsx
+@@ -11,7 +11,7 @@ import type { SVGProps } from 'react';
+      B. 32×32, a different silhouette        ChatWidget, CommandPalette,
+         with a thinner inner curve           FloorConfigurator
+ 
+-   A homeowner who opens RenoGuide saw a logo that did not match the one in the
++   A homeowner who opens EcowoodsGuide saw a logo that did not match the one in the
+    header — on a site whose entire argument is "we are the same shop that has
+    been doing this since 1998." Consistency of the mark is not decoration; it  (facts-allow)
+    is the visual half of that claim.
+diff --git a/apps/web/app/components/FloorCatalog.tsx b/apps/web/app/components/FloorCatalog.tsx
+index bd96b86..40faf0e 100644
+--- a/apps/web/app/components/FloorCatalog.tsx
++++ b/apps/web/app/components/FloorCatalog.tsx
+@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
+ import Image from 'next/image';
+ import { BLUR_WARM } from '@/lib/image';
+ import { floors, floorImages, type Floor } from '../data/floors';
++import { whenNotTyping } from '@/lib/keyboard';
+ 
+ const N = floors.length;
+ const SHOT_KEYS = ['room', 'detail', 'lifestyle'] as const;
+@@ -157,14 +158,19 @@ export default function FloorCatalog() {
+     return () => window.clearInterval(flr);
+   }, [active]);
+ 
+-  // keyboard
++  /* Keyboard shortcuts for the carousel — wrapped, and the wrapper is the
++     whole point. This listener is on `window`, so it fired regardless of what
++     had focus, and this component is mounted on the homepage alongside the
++     lead-capture form. The space bar did nothing in that form and the arrow
++     keys jumped the carousel instead of moving the text cursor. See
++     lib/keyboard.ts. */
+   useEffect(() => {
+     if (lightbox !== null) return;
+-    const onKey = (e: KeyboardEvent) => {
++    const onKey = whenNotTyping((e: KeyboardEvent) => {
+       if (e.key === 'ArrowRight') goFloor(1);
+       else if (e.key === 'ArrowLeft') goFloor(-1);
+       else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
+-    };
++    });
+     window.addEventListener('keydown', onKey);
+     return () => window.removeEventListener('keydown', onKey);
+   }, [lightbox, goFloor]);
+diff --git a/apps/web/app/components/FloorConfigurator.tsx b/apps/web/app/components/FloorConfigurator.tsx
+index 6d160dc..fb3b7da 100644
+--- a/apps/web/app/components/FloorConfigurator.tsx
++++ b/apps/web/app/components/FloorConfigurator.tsx
+@@ -10,7 +10,7 @@ import {
+   describeFloorForChat,
+   bookMeasureIntent,
+ } from '@ecowoods/shared/ai';
+-import { openRenoGuide } from '@/lib/renoguide';
++import { openAssistant } from '@/lib/assistant';
+ import { EcowoodsLeaf } from './EcowoodsLeaf';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+@@ -23,7 +23,7 @@ import { EcowoodsLeaf } from './EcowoodsLeaf';
+      · The number is never presented as a quote. It is a range, always labelled,
+        always followed by "fixed in writing after the free measure" — which is
+        the promise the rest of the site already makes.
+-     · Every exit leads into RenoGuide, which owns the real tools.
++     · Every exit leads into EcowoodsGuide, which owns the real tools.
+      · It reuses estimateInstalledRangeCad() — the exact function /api/chat's
+        estimate_project tool calls. The page and the agent cannot disagree.
+    ──────────────────────────────────────────────────────────────────────────── */
+@@ -109,8 +109,8 @@ export default function FloorConfigurator() {
+ 
+   const payload = { species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId, postal: postal.trim() || undefined };
+ 
+-  const askRenoGuide = () => openRenoGuide({ prefill: describeFloorForChat(payload), source: 'configurator:ask' });
+-  const bookMeasure = () => openRenoGuide({ prefill: bookMeasureIntent(payload), source: 'configurator:book' });
++  const askEcowoodsGuide = () => openAssistant({ prefill: describeFloorForChat(payload), source: 'configurator:ask' });
++  const bookMeasure = () => openAssistant({ prefill: bookMeasureIntent(payload), source: 'configurator:book' });
+ 
+   return (
+     <section className="section fc" id="configurator" aria-labelledby="fc-heading">
+@@ -223,7 +223,7 @@ export default function FloorConfigurator() {
+             </fieldset>
+ 
+             <div className="fc-field">
+-              <label htmlFor="fc-postal" className="fc-postal-label">Postal code <span>optional — lets RenoGuide check your area</span></label>
++              <label htmlFor="fc-postal" className="fc-postal-label">Postal code <span>optional — lets EcowoodsGuide check your area</span></label>
+               <input
+                 id="fc-postal"
+                 className="fc-postal"
+@@ -272,9 +272,9 @@ export default function FloorConfigurator() {
+                 Book my free measure
+                 <span className="btn-arrow" aria-hidden="true">→</span>
+               </button>
+-              <button type="button" className="fc-secondary" onClick={askRenoGuide}>
++              <button type="button" className="fc-secondary" onClick={askEcowoodsGuide}>
+ <EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
+-                Ask RenoGuide about this floor
++                Ask EcowoodsGuide about this floor
+               </button>
+              </div>
+ 
+diff --git a/apps/web/app/components/MachineCatalog.tsx b/apps/web/app/components/MachineCatalog.tsx
+index 9d10b70..400a4b7 100644
+--- a/apps/web/app/components/MachineCatalog.tsx
++++ b/apps/web/app/components/MachineCatalog.tsx
+@@ -6,6 +6,7 @@ import Image from 'next/image';
+ import { BLUR_WARM } from '@/lib/image';
+ import { machines, machineImages, type Machine } from '../data/machines';
+ import { SHOT_TYPE, type ShotType } from '../data/machine-images';
++import { whenNotTyping } from '@/lib/keyboard';
+ 
+ const N = machines.length;
+ const SHOTS = 6; // 6 photos per machine (set 1 = 01-03, set 2 = 04-06)
+@@ -137,12 +138,15 @@ export default function MachineCatalog() {
+   useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % SHOTS), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
+   useEffect(() => { if (!active) return; const t = window.setInterval(() => { setIdx((i) => (i + 1) % N); setShotIdx(0); }, FLOOR_MS); return () => window.clearInterval(t); }, [active]);
+ 
++  /* Same window-level listener, same bug, same fix — see FloorCatalog and
++     lib/keyboard.ts. Two components independently swallowing the space bar on
++     the page that carries the estimate form. */
+   useEffect(() => {
+     if (lightbox !== null) return;
+-    const onKey = (e: KeyboardEvent) => {
++    const onKey = whenNotTyping((e: KeyboardEvent) => {
+       if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
+       else if (e.key === ' ') { e.preventDefault(); setPlaying((p) => !p); }
+-    };
++    });
+     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
+   }, [lightbox, go]);
+ 
+diff --git a/apps/web/app/design/page.tsx b/apps/web/app/design/page.tsx
+index 5987c18..63423dd 100644
+--- a/apps/web/app/design/page.tsx
++++ b/apps/web/app/design/page.tsx
+@@ -29,7 +29,7 @@ export default function DesignPage() {
+           <h1 className="tlx-title">The floor designer</h1>
+           <p className="tlx-lede">
+             Take your time here. When a combination feels right, one tap books the free
+-            in-home measure — or hands your exact configuration to RenoGuide. No retyping.
++            in-home measure — or hands your exact configuration to EcowoodsGuide. No retyping.
+           </p>
+         </div>
+       </header>
+diff --git a/apps/web/content/claims.ts b/apps/web/content/claims.ts
+index 5925ca0..e143aa9 100644
+--- a/apps/web/content/claims.ts
++++ b/apps/web/content/claims.ts
+@@ -357,11 +357,11 @@ export const CLAIMS: Claim[] = [
+     id: 'warranty.lifetimeWorkmanship',
+     statement: 'Lifetime workmanship warranty.',
+     status: 'unsourced',
+-    source: 'NONE RECORDED. Appears only in the RenoGuide system prompt.',
++    source: 'NONE RECORDED. Appears only in the EcowoodsGuide system prompt.',
+     verifiedAt: '2026-08-24',
+     allowedContexts: ['editorial'],
+     note:
+-      'This phrasing exists in exactly one place — RENOGUIDE_SYSTEM_PROMPT in ' +
++      'This phrasing exists in exactly one place — ECOWOODS_GUIDE_SYSTEM_PROMPT in ' +
+       'packages/shared/ai — and it is stronger than warranty.workmanship, which is what ' +
+       'the rest of the site says. A conversational assistant repeating "lifetime ' +
+       'workmanship warranty" to a prospect is making a commitment the contract may not ' +
+diff --git a/apps/web/lib/assistant-identity.ts b/apps/web/lib/assistant-identity.ts
+new file mode 100644
+index 0000000..dfb2cb5
+--- /dev/null
++++ b/apps/web/lib/assistant-identity.ts
+@@ -0,0 +1,63 @@
++/**
++ * lib/assistant-identity.ts — the assistant's name, in one place.
++ *
++ * WHY A CONSTANT FOR A NAME
++ *
++ * It was "RenoGuide", typed as a literal in nineteen places: the widget header,
++ * the greeting, the launch button's aria-label, the dialog's accessible name,
++ * the command palette's three entries, the configurator's two buttons, a form
++ * hint, and the system prompt the model reads. Renaming it meant finding all
++ * nineteen and hoping.
++ *
++ * The old name was also wrong on its own terms, which is why it changed: it was a
++ * product name for a company that does not sell a product under it. Every other surface on this site is relentlessly the same
++ * entity — the schema graph, llms.txt, the citation guide, the framework all
++ * say Ecowoods — and then the one thing a visitor actually talks to introduced
++ * itself as something else. For a business whose whole search strategy is
++ * making one entity unmistakable to machines and people, a second brand in the
++ * chat window is a leak.
++ *
++ * `pnpm seo:assistant` fails the build on the retired name reappearing anywhere.
++ */
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++
++export const ASSISTANT = {
++  /** What it calls itself, and what every surface renders. */
++  name: 'EcowoodsGuide',
++  /** Under the name in the widget header. Region comes from the one source. */
++  subtitle: `${BUSINESS_NAP.shortName} · ${BUSINESS_NAP.region}`,
++  /** The launch button and the dialog's accessible name. */
++  ariaLaunch: 'Chat with EcowoodsGuide',
++  ariaDialog: 'EcowoodsGuide chat',
++} as const;
++
++/**
++ * The opening line.
++ *
++ * Rewritten alongside the rename, because the old one asked for three things
++ * before offering anything: "Tell me the wood species, rough square footage and
++ * your area". That is a form with a chat interface painted on it. Someone whose
++ * floor is cupping does not know their square footage and has now been asked
++ * for it twice before anyone acknowledged the problem.
++ *
++ * This one says what Ecowoods does, then asks one open question.
++ */
++export const ASSISTANT_GREETING =
++  `Hi — I'm ${ASSISTANT.name}, from ${BUSINESS_NAP.shortName}. We install, refinish and repair ` +
++  `hardwood across ${BUSINESS_NAP.region}, with our prices published before you call and fixed ` +
++  `in writing after a free in-home measure. Tell me what's going on with your floor and I'll ` +
++  `tell you what we'd do about it.`;
++
++/**
++ * The three chips under the greeting.
++ *
++ * The third one is new. "Which species suits pets & kids?" and "Get a ballpark"
++ * both assume a buyer who is shopping; the largest single group of people who
++ * open a flooring chat window have a floor that is already misbehaving, and
++ * until now the widget had nothing to say to them.
++ */
++export const ASSISTANT_CHIPS = [
++  'Get a ballpark estimate',
++  'My floor is cupping or gapping',
++  'Book a free in-home measure',
++] as const;
+diff --git a/apps/web/lib/renoguide.ts b/apps/web/lib/assistant.ts
+similarity index 62%
+rename from apps/web/lib/renoguide.ts
+rename to apps/web/lib/assistant.ts
+index 541da8a..6c7c60d 100644
+--- a/apps/web/lib/renoguide.ts
++++ b/apps/web/lib/assistant.ts
+@@ -1,5 +1,5 @@
+ /**
+- * RenoGuide bus.
++ * EcowoodsGuide bus.
+  *
+  * WHY THIS EXISTS
+  * ---------------
+@@ -9,21 +9,21 @@
+  *
+  * Every new surface we add — the configurator, ⌘K, exit intent, WhatsApp —
+  * is worthless if it dead-ends in its own little UI. So none of them get
+- * their own state. They all do exactly one thing: hand RenoGuide a sentence
++ * their own state. They all do exactly one thing: hand EcowoodsGuide a sentence
+  * and let the existing tools do the work.
+  *
+  * That means:
+- *   configurator "Ask RenoGuide" → openRenoGuide({ prefill: '...' })
++ *   configurator "Ask EcowoodsGuide" → openAssistant({ prefill: '...' })
+  *     → ChatWidget opens, sends it, model calls estimate_project
+- *   configurator "Book my measure" → openRenoGuide({ prefill: '...' })
++ *   configurator "Book my measure" → openAssistant({ prefill: '...' })
+  *     → model calls get_availability then book_measure → real Appointment row
+  *
+  * One seam. No duplicated pricing UI, no second booking flow, no drift.
+  */
+ 
+-export const RENOGUIDE_OPEN_EVENT = 'renoguide:open';
++export const ASSISTANT_OPEN_EVENT = 'assistant:open';
+ 
+-export interface RenoGuideOpenDetail {
++export interface AssistantOpenDetail {
+   /** Text dropped into the composer. */
+   prefill?: string;
+   /** Send it immediately instead of letting the user edit first. Default true. */
+@@ -33,17 +33,17 @@ export interface RenoGuideOpenDetail {
+ }
+ 
+ /** Fire-and-forget. Safe to call during SSR (no-ops) and before ChatWidget mounts. */
+-export function openRenoGuide(detail: RenoGuideOpenDetail = {}): void {
++export function openAssistant(detail: AssistantOpenDetail = {}): void {
+   if (typeof window === 'undefined') return;
+   window.dispatchEvent(
+-    new CustomEvent<RenoGuideOpenDetail>(RENOGUIDE_OPEN_EVENT, {
++    new CustomEvent<AssistantOpenDetail>(ASSISTANT_OPEN_EVENT, {
+       detail: { autoSend: true, ...detail },
+     }),
+   );
+ }
+ 
+-export function onRenoGuideOpen(handler: (detail: RenoGuideOpenDetail) => void): () => void {
+-  const listener = (e: Event) => handler((e as CustomEvent<RenoGuideOpenDetail>).detail ?? {});
+-  window.addEventListener(RENOGUIDE_OPEN_EVENT, listener);
+-  return () => window.removeEventListener(RENOGUIDE_OPEN_EVENT, listener);
++export function onAssistantOpen(handler: (detail: AssistantOpenDetail) => void): () => void {
++  const listener = (e: Event) => handler((e as CustomEvent<AssistantOpenDetail>).detail ?? {});
++  window.addEventListener(ASSISTANT_OPEN_EVENT, listener);
++  return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, listener);
+ }
+diff --git a/apps/web/lib/keyboard.ts b/apps/web/lib/keyboard.ts
+new file mode 100644
+index 0000000..f63a511
+--- /dev/null
++++ b/apps/web/lib/keyboard.ts
+@@ -0,0 +1,88 @@
++/**
++ * lib/keyboard.ts — the guard every global key handler must use.
++ *
++ * WHAT WENT WRONG, AND IT WAS THE MOST EXPENSIVE BUG ON THIS SITE
++ *
++ * FloorCatalog and MachineCatalog each registered a `window` keydown listener
++ * that did this:
++ *
++ *     if (e.key === 'ArrowRight') go(1);
++ *     else if (e.key === 'ArrowLeft') go(-1);
++ *     else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
++ *
++ * A `window` listener fires no matter what has focus. Both components are
++ * mounted on the homepage. The homepage contains the primary lead-capture form.
++ *
++ * So on the highest-traffic page of a business that sells by getting people to
++ * type their name and their project into a form: **the space bar did nothing,
++ * and the arrow keys jumped a carousel instead of moving the text cursor.**
++ * A customer typing "White oak, main floor, about 600 square feet" got
++ * "Whiteoak,mainfloor,about600squarefeet" — if they persevered at all.
++ *
++ * It was reported as a bug in the chat widget. The chat widget was innocent;
++ * its input has no key handling beyond Enter. Every text field on the homepage
++ * had it, including the estimate form, and the fix belongs in one place rather
++ * than in each of them.
++ *
++ * THE RULE
++ *
++ * A key handler attached to `window` or `document` must ignore the event when
++ * the person is typing. There is no exception. If a shortcut genuinely needs to
++ * fire inside a field — Escape to close, ⌘K to open a palette — handle that key
++ * explicitly and let everything else through.
++ *
++ * `scripts/verify-key-handlers.mjs` fails the build on a global keydown
++ * listener that calls preventDefault without consulting this module.
++ */
++
++/**
++ * Is the event coming from somewhere a person is typing?
++ *
++ * Checks the event target rather than `document.activeElement`, because inside
++ * a shadow root or a portal those can differ, and the target is the one that
++ * describes where the keystroke was actually going.
++ *
++ * `contentEditable` counts. So does a `<select>` — its arrow keys change the
++ * selection, and stealing them is the same bug wearing a different hat.
++ */
++export function isTypingTarget(target: EventTarget | null): boolean {
++  const el = target as HTMLElement | null;
++  if (!el || typeof el.tagName !== 'string') return false;
++  const tag = el.tagName.toUpperCase();
++  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
++  if (el.isContentEditable) return true;
++  /* A dialog or a listbox that manages its own keys — a combobox, a command
++     palette — announces itself through ARIA. Treat it as typing space. */
++  const role = el.getAttribute?.('role');
++  if (role === 'textbox' || role === 'combobox' || role === 'searchbox') return true;
++  return false;
++}
++
++/**
++ * Wrap a global key handler so it never steals a keystroke from a text field.
++ *
++ * Use it for every `window`/`document` keydown listener that is a *shortcut*.
++ * Escape is deliberately still delivered: closing a dialog with Escape while
++ * focus is in its input is the behaviour people expect, and it does not
++ * interfere with typing because Escape types nothing.
++ *
++ *     useEffect(() => {
++ *       const onKey = whenNotTyping((e) => {
++ *         if (e.key === ' ') { e.preventDefault(); toggle(); }
++ *       });
++ *       window.addEventListener('keydown', onKey);
++ *       return () => window.removeEventListener('keydown', onKey);
++ *     }, []);
++ */
++export function whenNotTyping(
++  handler: (e: KeyboardEvent) => void,
++  options: { allowEscape?: boolean } = {},
++): (e: KeyboardEvent) => void {
++  const { allowEscape = true } = options;
++  return (e: KeyboardEvent) => {
++    if (isTypingTarget(e.target)) {
++      if (!(allowEscape && e.key === 'Escape')) return;
++    }
++    handler(e);
++  };
++}
+diff --git a/apps/web/lib/legal.ts b/apps/web/lib/legal.ts
+index 0a5204f..40325a3 100644
+--- a/apps/web/lib/legal.ts
++++ b/apps/web/lib/legal.ts
+@@ -104,7 +104,7 @@ export const PROCESSORS: Processor[] = [
+   {
+     name: 'Anthropic',
+     purpose:
+-      'Runs RenoGuide, the assistant in the chat window — scoping a project, giving a rough ' +
++      'Runs EcowoodsGuide, the assistant in the chat window — scoping a project, giving a rough ' +
+       'range, and booking an in-home measure.',
+     data:
+       'What you type into the chat, and the square footage and species you give it. If you book ' +
+diff --git a/apps/web/lib/pricing.ts b/apps/web/lib/pricing.ts
+index 444095f..c63a4c4 100644
+--- a/apps/web/lib/pricing.ts
++++ b/apps/web/lib/pricing.ts
+@@ -14,7 +14,7 @@
+  * price literal found anywhere outside the constants module, including here.
+  *
+  * Species-level installed ranges live in @ecowoods/shared/ai (FLOORING_RATES +
+- * estimateInstalledRangeCad) so the configurator, RenoGuide and this module
++ * estimateInstalledRangeCad) so the configurator, EcowoodsGuide and this module
+  * cannot drift.
+  */
+ import {
+diff --git a/audit/ai-prompts.json b/audit/ai-prompts.json
+index c589de6..9d7f3d0 100644
+--- a/audit/ai-prompts.json
++++ b/audit/ai-prompts.json
+@@ -10,7 +10,7 @@
+     "Run them by hand against each assistant, fill in the four booleans and the date, and",
+     "commit. The point is the trend across dates, not any single run."
+   ],
+-  "generatedAt": "2026-08-25T00:27:54.078Z",
++  "generatedAt": "2026-08-25T17:38:32.475Z",
+   "source": "apps/web/content/search/topic-map.ts",
+   "totals": {
+     "prompts": 307,
+diff --git a/audit/current-state.json b/audit/current-state.json
+index abe845e..3a62cd1 100644
+--- a/audit/current-state.json
++++ b/audit/current-state.json
+@@ -1,7 +1,7 @@
+ {
+   "$schema": "audit/current-state.schema (informal)",
+   "generatedBy": "scripts/audit-current-state.mjs",
+-  "generatedAt": "2026-08-25T00:27:54.000Z",
++  "generatedAt": "2026-08-25T17:38:32.422Z",
+   "method": "static analysis of the repository — no URL is fetched; see scripts/crawl-site.mjs for the live counterpart",
+   "repository": {
+     "root": "apps/web"
+@@ -968,7 +968,7 @@
+         "/"
+       ],
+       "internalLinkCount": 1,
+-      "bytes": 1464
++      "bytes": 1468
+     },
+     {
+       "route": "/docs/contract/[id]",
+diff --git a/audit/current-state.md b/audit/current-state.md
+index 3a4c6b8..4f37317 100644
+--- a/audit/current-state.md
++++ b/audit/current-state.md
+@@ -1,6 +1,6 @@
+ # Current state — static audit
+ 
+-Generated by `scripts/audit-current-state.mjs` at 2026-08-25T00:27:54.000Z.
++Generated by `scripts/audit-current-state.mjs` at 2026-08-25T17:38:32.422Z.
+ 
+ Static analysis of the repository. No URL is fetched — see `scripts/crawl-site.mjs`
+ for the live counterpart, and treat any disagreement between them as the finding.
+diff --git a/package.json b/package.json
+index 80ad54d..ade1451 100644
+--- a/package.json
++++ b/package.json
+@@ -46,6 +46,8 @@
+     "seo:links": "node scripts/verify-links.mjs",
+     "seo:density": "node scripts/verify-link-density.mjs",
+     "seo:legal": "node scripts/verify-legal.mjs",
++    "seo:keys": "node scripts/verify-key-handlers.mjs",
++    "seo:assistant": "node scripts/verify-assistant.mjs",
+     "seo:schema": "node scripts/verify-schema.mjs",
+     "seo:ai": "node scripts/audit-ai-discoverability.mjs",
+     "seo:prompts": "node scripts/build-ai-prompts.mjs",
+@@ -55,13 +57,13 @@
+     "domain:check": "node scripts/build-old-domain-redirects.mjs --check",
+     "domain:simulate": "node scripts/build-old-domain-redirects.mjs --simulate",
+     "seo:consistency": "pnpm verify:facts && pnpm seo:claims && pnpm seo:pricing && pnpm seo:topics && pnpm verify:entity && pnpm verify:canonical",
+-    "seo": "pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:links && pnpm seo:density && pnpm seo:legal && pnpm seo:schema && pnpm seo:ai && pnpm domain:check",
++    "seo": "pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:links && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:schema && pnpm seo:ai && pnpm domain:check",
+     "seo:live": "pnpm seo:domain && pnpm seo:crawl",
+     "truth": "bash scripts/state-of-truth.sh",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/packages/shared/ai/index.ts b/packages/shared/ai/index.ts
+index 7f833d9..1530775 100644
+--- a/packages/shared/ai/index.ts
++++ b/packages/shared/ai/index.ts
+@@ -1,5 +1,5 @@
+ /**
+- * RenoGuide's system prompt, and the rate tables the estimator reads.
++ * EcowoodsGuide's system prompt, and the rate tables the estimator reads.
+  *
+  * TWO BUSINESS FACTS WERE TYPED INTO THE PROMPT AS LITERALS
+  *
+@@ -16,7 +16,7 @@
+  */
+ import { BUSINESS_NAP, yearsInBusiness } from '../constants';
+ 
+-export const RENOGUIDE_SYSTEM_PROMPT = `You are RenoGuide, the assistant for Ecowoods — a real Toronto hardwood-flooring company (est. ${BUSINESS_NAP.foundedYear}, lifetime workmanship warranty).
++export const ECOWOODS_GUIDE_SYSTEM_PROMPT = `You are EcowoodsGuide, the assistant for Ecowoods — a real Toronto hardwood-flooring company (est. ${BUSINESS_NAP.foundedYear}, lifetime workmanship warranty).
+ 
+ VOICE: professional, warm, trustworthy, concise, friendly Canadian English.
+ 
+@@ -29,6 +29,14 @@ FORMAT — READ THIS. Your words are printed as PLAIN TEXT into a 392px-wide cha
+ 
+ WHAT YOU DO: help a homeowner scope a hardwood project, give a transparent ROUGH range, and either BOOK a free in-home measure or capture a quote request so a specialist follows up.
+ 
++ALWAYS CLOSE ON WHAT ECOWOODS WOULD DO. This is the rule that matters most and it is the one most easily forgotten mid-conversation. Every single reply — including answers to questions that have nothing to do with buying, including "what is cupping", including "how long does polyurethane take to cure" — ends by naming the specific Ecowoods service or next step that follows from what was just said. Not a generic "let me know if you need anything". A concrete one:
++- Symptom described (cupping, gaps, crowning, buckling, peeling) -> name the likely cause, then: "That is what our restoration and refinishing work is for, and the in-home diagnosis with the moisture readings written down is free."
++- Refinishing question -> the published band, then offer the measure.
++- New floor question -> the substrate question, then the install service and its band.
++- Stairs mentioned -> stairs are quoted per tread, itemised separately, and most quotes leave them out. Offer to include them.
++- Pure curiosity, no project -> answer it properly, then one line: what Ecowoods does about that in a real house, and the free measure.
++A reply that answers the question and stops is a failed reply. The homeowner came to a flooring company's website; leaving them without a next step is not restraint, it is dropping them.
++
+ HARD RULES (protect a ${yearsInBusiness()}-year reputation):
+ - NEVER invent specifics. Prices, ranges, hours, phone, availability, appointment times may ONLY be stated if a tool returned them THIS turn. Otherwise say a specialist will confirm.
+ - Any cost figure is an ESTIMATE that needs an in-home measure to finalize. Say so.
+@@ -43,7 +51,18 @@ FLOW:
+ 
+ CONFIGURATOR HANDOFF: a homeowner may arrive with a message like "I just designed a floor on your site: white oak, satin finish, herringbone, about 900 sq ft in M4K." That is a hot lead who has already told you everything. Do NOT re-interview them. Call estimate_project immediately with exactly those values, give the range, then go straight to step 3.
+ 
+-Be helpful, not pushy. End every turn with one clear next step.`;
++WHAT ECOWOODS ACTUALLY OFFERS — say these by name, do not paraphrase them into vagueness:
++- Hardwood installation, solid and engineered, over any substrate including condo slabs and radiant heat
++- Refinishing: full sand and finish, or a screen and recoat where the finish is the only thing that failed
++- Dust-free sanding with HEPA containment, so most clients stay in the house during the work
++- Restoration of heritage and water-damaged floors, including board replacement and colour matching
++- Stairs: refinishing, carpet removal, new treads and risers, matched to the floor they meet
++- Custom inlays and borders
++Every one is delivered by salaried employees, never subcontractors, at a price fixed in writing after a free in-home measure.
++
++Be helpful, not pushy — and understand that those are not in tension here. Pushy is inventing urgency. Telling someone what a company can do about the problem they just described is the reason they opened the window.
++
++End every turn with one clear next step, and make that step something Ecowoods does.`;
+ 
+ export const FLOORING_RATES_CAD_PER_SQFT: Record<string, { low: number; high: number; note: string }> = {
+   'red oak':     { low: 9,  high: 14, note: 'classic, widely available' },
+@@ -60,7 +79,7 @@ export const FLOORING_RATES_CAD_PER_SQFT: Record<string, { low: number; high: nu
+ // ═══════════════════════════════════════════════════════════════════════════
+ // One source of truth for the browser configurator AND the estimate_project
+ // tool in /api/chat. If these ever diverge, a homeowner sees $14,200 on the
+-// page and RenoGuide says $11,800 thirty seconds later — and a 25-year
++// page and EcowoodsGuide says $11,800 thirty seconds later — and a 25-year
+ // reputation takes the hit. So: one module, imported by both.
+ //
+ // ⚠️  ACTION REQUIRED BEFORE LAUNCH
+@@ -174,7 +193,7 @@ export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult
+ }
+ 
+ /**
+- * The exact sentence a configurator hands to RenoGuide. Written as a homeowner
++ * The exact sentence a configurator hands to EcowoodsGuide. Written as a homeowner
+  * would say it, so the model reliably extracts species + sqft and calls
+  * estimate_project rather than asking three clarifying questions first.
+  */
+diff --git a/scripts/verify-assistant.mjs b/scripts/verify-assistant.mjs
+new file mode 100644
+index 0000000..7e1f37d
+--- /dev/null
++++ b/scripts/verify-assistant.mjs
+@@ -0,0 +1,141 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-assistant.mjs — one assistant, one name, one closing rule.
++ *
++ *   pnpm seo:assistant
++ *
++ * WHY THIS IS AN SEO GUARD AND NOT A BRANDING ONE
++ *
++ * Every other surface on this site is relentlessly one entity. The schema graph,
++ * llms.txt, ai.txt, the citation guide and the framework all say Ecowoods,
++ * because the entire retrieval strategy is making one entity unmistakable to
++ * machines and to people.
++ *
++ * Then the one thing a visitor actually talks to introduced itself as
++ * "RenoGuide" — a second brand, in the highest-intent moment on the site, in a
++ * window a person opened because they were ready to ask a question. It is the
++ * same class of leak as two live domains, at a smaller scale.
++ *
++ * THREE CHECKS
++ *
++ *   1. The retired name appears nowhere.
++ *   2. No customer-facing surface types the assistant's name as a literal —
++ *      it comes from lib/assistant-identity.ts, so the next rename is one edit.
++ *   3. The system prompt still carries the always-close rule. That rule is the
++ *      difference between an assistant that answers questions and one that
++ *      produces work, and it is exactly the kind of instruction that gets
++ *      quietly trimmed when someone shortens a prompt.
++ */
++import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { join, relative, extname } from 'node:path';
++
++const ROOT = process.cwd();
++const IDENTITY = 'apps/web/lib/assistant-identity.ts';
++const PROMPT = 'packages/shared/ai/index.ts';
++const OPT_OUT = 'assistant-allow';
++
++const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch { return ''; } };
++
++const identity = read(IDENTITY);
++if (!identity) {
++  console.error(`\n✗ ${IDENTITY} is missing. Every surface renders the name from it.\n`);
++  process.exit(1);
++}
++const NAME = (identity.match(/name:\s*'([^']+)'/) || [, null])[1];
++if (!NAME) {
++  console.error(`\n✗ could not read the assistant's name out of ${IDENTITY}.\n`);
++  process.exit(1);
++}
++
++/** The retired name. Kept here, and only here, so the guard can name it. */
++const RETIRED = ['Reno' + 'Guide', 'reno' + 'guide', 'RENO' + 'GUIDE'];
++
++const SKIP = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
++const EXT = new Set(['.ts', '.tsx', '.md', '.mdx', '.json']);
++function walk(dir, out = []) {
++  let e;
++  try { e = readdirSync(dir); } catch { return out; }
++  for (const n of e) {
++    if (SKIP.has(n)) continue;
++    const f = join(dir, n);
++    if (statSync(f).isDirectory()) walk(f, out);
++    else if (EXT.has(extname(n))) out.push(f);
++  }
++  return out;
++}
++
++const files = ['apps/web', 'packages'].flatMap((d) => walk(join(ROOT, d)));
++const problems = [];
++
++/* ── 1 + 2 ────────────────────────────────────────────────────────────── */
++for (const file of files) {
++  const rel = relative(ROOT, file);
++  if (rel === IDENTITY) continue;               // documents the rename
++  const src = readFileSync(file, 'utf8');
++  if (src.includes(OPT_OUT)) continue;
++
++  src.split('\n').forEach((line, i) => {
++    for (const r of RETIRED) {
++      if (line.includes(r)) {
++        problems.push({
++          rel, line: i + 1,
++          what: `the retired name "${r}" is still here`,
++          why: 'Two names for one assistant is a second brand in the one window a buyer opens deliberately.',
++          text: line.trim().slice(0, 110),
++        });
++      }
++    }
++    /* The current name typed as a literal in a component. Comments are fine —
++       explaining the rename requires naming it. */
++    if (!/\.tsx?$/.test(file)) return;
++    const t = line.trim();
++    if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
++    if (rel === PROMPT) return;                 // the prompt states its own name to the model
++    if (new RegExp(`['"\`>]${NAME}`).test(line)) {
++      problems.push({
++        rel, line: i + 1,
++        what: `"${NAME}" typed as a literal`,
++        why: `Import ASSISTANT from ${IDENTITY}. That is the whole reason the constant exists.`,
++        text: t.slice(0, 110),
++      });
++    }
++  });
++}
++
++/* ── 3 ────────────────────────────────────────────────────────────────── */
++const prompt = read(PROMPT);
++const REQUIRED = [
++  { needle: 'ALWAYS CLOSE ON WHAT ECOWOODS WOULD DO', what: 'the always-close rule' },
++  { needle: 'WHAT ECOWOODS ACTUALLY OFFERS', what: 'the service list the assistant may name' },
++  { needle: 'make that step something Ecowoods does', what: 'the closing instruction' },
++];
++for (const r of REQUIRED) {
++  if (!prompt.includes(r.needle)) {
++    problems.push({
++      rel: PROMPT, line: 0,
++      what: `${r.what} is gone from the system prompt`,
++      why:
++        'An assistant that answers the question and stops has spent the visit and produced ' +
++        'nothing. Every reply must end on a specific thing Ecowoods would do about what was ' +
++        'just described.',
++      text: `expected to find: ${r.needle}`,
++    });
++  }
++}
++
++console.log('');
++console.log(`ASSISTANT — "${NAME}", ${files.length} file(s) scanned`);
++console.log('');
++
++if (problems.length) {
++  console.error(`✗ ${problems.length} problem(s):\n`);
++  for (const p of problems) {
++    console.error(`  ${p.rel}${p.line ? ':' + p.line : ''}`);
++    console.error(`    ${p.text}`);
++    console.error(`    → ${p.what}. ${p.why}\n`);
++  }
++  process.exit(1);
++}
++
++console.log(`✓ assistant verified — one name, sourced from the constant, and the prompt still closes on Ecowoods\n`);
++process.exit(0);
+diff --git a/scripts/verify-key-handlers.mjs b/scripts/verify-key-handlers.mjs
+new file mode 100644
+index 0000000..e9b985c
+--- /dev/null
++++ b/scripts/verify-key-handlers.mjs
+@@ -0,0 +1,153 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-key-handlers.mjs — no global shortcut may eat a keystroke.
++ *
++ *   pnpm seo:keys
++ *
++ * THE BUG THIS EXISTS FOR
++ *
++ * Two components registered `window.addEventListener('keydown', …)` handlers
++ * that called `preventDefault()` on the space bar to toggle a carousel. A
++ * window listener fires regardless of focus. Both components are mounted on the
++ * homepage. The homepage carries the primary lead-capture form.
++ *
++ * Result: on the highest-traffic page of a business whose entire funnel is
++ * "type your project into this box", the space bar did nothing and the arrow
++ * keys jumped a carousel instead of moving the cursor. It was reported as a
++ * chat-widget bug. The chat widget was innocent. Every text field on the page
++ * had it, and it was live.
++ *
++ * That class of bug is invisible to typecheck, invisible to a build, invisible
++ * to every other guard in this repository, and catastrophic to conversion. So
++ * it gets its own check.
++ *
++ * WHAT IS FLAGGED
++ *
++ * A `window` or `document` keydown/keypress/keyup listener whose handler calls
++ * `preventDefault()` and does not consult `lib/keyboard.ts`.
++ *
++ * WHAT IS NOT FLAGGED
++ *
++ *   · A handler on a JSX element (`onKeyDown={…}`). Those only fire for that
++ *     element, which is the whole difference.
++ *   · A global listener that never calls preventDefault — an Escape-to-close
++ *     handler reads the key and lets the browser do its thing.
++ *   · Anything already wrapped in `whenNotTyping` or checking `isTypingTarget`.
++ */
++import { readFileSync, readdirSync, statSync } from 'node:fs';
++import { join, relative, extname } from 'node:path';
++
++const ROOT = process.cwd();
++const GUARD = 'apps/web/lib/keyboard.ts';
++const OPT_OUT = 'keys-allow';
++
++const SKIP = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
++const EXT = new Set(['.ts', '.tsx']);
++
++function walk(dir, out = []) {
++  let e;
++  try { e = readdirSync(dir); } catch { return out; }
++  for (const n of e) {
++    if (SKIP.has(n)) continue;
++    const f = join(dir, n);
++    if (statSync(f).isDirectory()) walk(f, out);
++    else if (EXT.has(extname(n))) out.push(f);
++  }
++  return out;
++}
++
++const files = ['apps/web', 'packages'].flatMap((d) => walk(join(ROOT, d)));
++const violations = [];
++
++/**
++ * Find each global listener registration and read the handler it names.
++ *
++ * Two shapes appear in this codebase and both are checked:
++ *   window.addEventListener('keydown', onKey)     — a named handler above
++ *   window.addEventListener('keydown', (e) => …)  — an inline arrow
++ *
++ * For the named form the handler body is located by its declaration. Crude, and
++ * correct for every occurrence here; a miss produces a false PASS, so the
++ * counter below fails the run if this scanner finds no global listeners at all
++ * — that would mean the pattern changed and this went blind.
++ */
++const REGISTER = /\b(window|document)\.addEventListener\(\s*['"](keydown|keypress|keyup)['"]\s*,\s*([A-Za-z_$][\w$]*)/g;
++const INLINE = /\b(window|document)\.addEventListener\(\s*['"](keydown|keypress|keyup)['"]\s*,\s*\(/g;
++
++let globalListeners = 0;
++
++for (const file of files) {
++  const rel = relative(ROOT, file);
++  if (rel === GUARD) continue;
++  const src = readFileSync(file, 'utf8');
++  if (src.includes(OPT_OUT)) continue;
++
++  const guarded = /whenNotTyping|isTypingTarget/.test(src);
++
++  for (const m of [...src.matchAll(REGISTER)]) {
++    globalListeners++;
++    if (guarded) continue;
++    const name = m[3];
++    /* The handler's body: from its declaration to the end of that statement.
++       Looking at the whole file for preventDefault would flag a component that
++       has an unrelated JSX handler using it. */
++    const decl = new RegExp(`const\\s+${name}\\s*=[\\s\\S]{0,900}`);
++    const body = (src.match(decl) || [''])[0];
++    if (/preventDefault\s*\(/.test(body)) {
++      violations.push({
++        rel,
++        target: m[1],
++        handler: name,
++        line: src.slice(0, m.index).split('\n').length,
++      });
++    }
++  }
++
++  for (const m of [...src.matchAll(INLINE)]) {
++    globalListeners++;
++    if (guarded) continue;
++    const after = src.slice(m.index, m.index + 900);
++    if (/preventDefault\s*\(/.test(after)) {
++      violations.push({
++        rel,
++        target: m[1],
++        handler: '(inline)',
++        line: src.slice(0, m.index).split('\n').length,
++      });
++    }
++  }
++}
++
++if (globalListeners === 0) {
++  console.error(
++    '\n✗ found zero global key listeners in the whole tree.\n\n' +
++      '  This site has several. Zero means the registration pattern changed and this\n' +
++      '  scanner went blind — which would report a clean run over nothing, and this\n' +
++      '  repository has shipped that failure six times. Fix the scanner.\n',
++  );
++  process.exit(1);
++}
++
++console.log('');
++console.log(`GLOBAL KEY HANDLERS — ${globalListeners} listener(s) on window/document`);
++console.log('');
++
++if (violations.length) {
++  console.error(`✗ ${violations.length} handler(s) can swallow a keystroke from a text field:\n`);
++  for (const v of violations) {
++    console.error(`  ${v.rel}:${v.line}`);
++    console.error(`    ${v.target}.addEventListener('keydown', ${v.handler}) calls preventDefault()`);
++    console.error(`    and never checks whether the person is typing.\n`);
++  }
++  console.error(
++    `Wrap it:\n\n` +
++      `    import { whenNotTyping } from '@/lib/keyboard';\n` +
++      `    const onKey = whenNotTyping((e) => { … });\n\n` +
++      `A window listener fires no matter what has focus. If this component renders\n` +
++      `anywhere near a form, it is deciding what your customers can type.\n`,
++  );
++  process.exit(1);
++}
++
++console.log('✓ key handlers verified — no global shortcut can steal a keystroke from a text field\n');
++process.exit(0);
+-- 
+2.43.0
+
