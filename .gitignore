@@ -69,8 +69,8 @@ package-lock.json
 
 # Patch files are a transport format, not source.
 #
-# THREE of them were committed to the repository root: 0082truthcontrolprobe.patch,
-# 0001searchai20260824.patch and ecowoodsseov2.patch. The last two are this
+# FOUR of them were committed to the repository root: 0082truthcontrolprobe.patch,
+# 0001searchai20260824.patch, ecowoodsseov2.patch and ecowoods_seo_v3.patch. The last two are this
 # branch's own patches, uploaded through the GitHub web UI — which silently
 # strips the dashes from a filename, which is why `git am 0001-search-ai-...`
 # and `git am ecowoods-seo-v2.patch` both failed with "No such file or

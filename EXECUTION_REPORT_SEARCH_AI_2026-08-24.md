@@ -7,8 +7,9 @@ commercial surface, the machine surfaces. **Cycle 2** is at the end of this
 file: the live homepage price contradiction, the failure-mode atlas, and the
 link-density guard that found five commercial pages linking to zero evidence.
 
-Read [Cycle 2](#cycle-2--what-shipping-cycle-1-exposed) first if you only read
-one — it contains the only bug on this branch that was live and wrong.
+Cycle 3 is the last section: the old domain, measured properly and mapped; and
+four live 404s on links this site promises exist, including the one a cookie
+consent banner depends on.
 
 ---
 
@@ -43,8 +44,8 @@ Why this is the most expensive item on the list:
 
 `old-domain/README.md` recorded on 2026-08-23 that "every deep path answers
 404", which reads like a migration nearly finished with only a homepage left.
-That measurement is stale and it is now corrected in that file — deep paths
-serve, with content.
+That measurement is stale. **Cycle 3 read the old site's own sitemap: 35 live
+URLs, 22 of them individual customer testimonials.** See the last section.
 
 **No code in this repository can fix it.** The host-scoped 308s in
 `vercel.json` and `next.config.js` only fire once that domain is attached to
@@ -798,3 +799,181 @@ Items 5 and 6 from cycle 1 are done. The rest have moved up.
 `hardwood-stairs-toronto` (link density), `floorforge/layout.tsx` (breadcrumb),
 `sitemap.ts`, `llms.txt`, `SiteFooter`, `CommercialHeadTermRail`,
 `verify-schema.mjs`, `package.json`, `web.yml`, `.gitignore`
+
+---
+---
+
+# Cycle 3 — the old domain, and four links that promised a page
+
+Cycle 2 shipped and built clean: 246 static pages, both new commercial routes
+prerendered, zero type errors. Then `pnpm seo:live` ran for the first time in
+this project's history and the two findings below came out of it.
+
+---
+
+## 1. The old domain: 35 live URLs, and a redirect config that would have 404'd every one
+
+`seo:live` proved `www.ecowoodshardwood.com` is serving a complete second
+website. Reading its **own sitemap** gave the exact inventory:
+
+| what | count | destination now assigned |
+| --- | ---: | --- |
+| individual customer testimonials | 22 | `/reviews` |
+| blog index + posts | 4 | `/blog` |
+| store-platform leftovers (`?fuseaction=store.*`) | 3 | `/` |
+| About / Services / Contact / Home / root | 5 | `/about`, `/services`, `/#quote`, `/` |
+| privacy policy | 1 | `/privacy` |
+
+**Twenty-two published customer testimonials** — Audrey in Toronto, Andre
+Fauteux, Melissa McCormack, Joan Endersby, Michelle P in East York — sitting on
+a domain that currently competes with the live site, doing nothing for it.
+That is the largest stranded reputation asset this business has, and each one
+was one line away from pointing at `/reviews`.
+
+### The config in this repo would have made it worse
+
+Every redirect file in `old-domain/` was **path-preserving** — `/x →
+ecowoods.ca/x`. That is the correct default for almost every migration and it
+is exactly wrong here, because **the two sites share zero paths.** The old one
+serves `/pages/flooring-services-toronto-etobicoke-hamilton` and
+`/blogs/testimonials/172376--audrey-in-toronto`. Preserving those sends all 35
+live URLs to a 404 *on ecowoods.ca* — worse than the status quo, because a
+crawler following a 301 into a 404 concludes the destination is broken.
+
+So: `old-domain/path-map.json` is now the source of truth, and
+`scripts/build-old-domain-redirects.mjs` generates `.htaccess`, `nginx.conf` and
+`_redirects` from it. Three syntaxes, one set of rules; `--check` fails CI on a
+hand-edit. `pnpm domain:simulate` runs all 35 URLs through the rules offline and
+prints where each lands:
+
+```
+  ✓ every known URL has a rule of its own — nothing relies on the fallback
+```
+
+**One bug caught in my own generator before it shipped.** The first `.htaccess`
+it produced used patterns anchored `^/blogs/…`. In a per-directory context —
+which `.htaccess` is — Apache strips the leading slash before matching, so those
+patterns match *nothing, ever*. The file installs cleanly, throws no error, and
+silently does not fire. It is the most common way an `.htaccess` migration
+fails. The generator now emits `^/?`, correct in both per-directory and
+`<VirtualHost>` context.
+
+**`verify-domain-redirect.mjs` was probing the wrong URLs.** It checked
+*ecowoods.ca's* paths on the old domain — `/framework`, `/papers`,
+`/service-areas/etobicoke` — which never existed there. All 14 came back 404 and
+it reported fourteen failures that were one non-finding. It now probes the 35
+real URLs and asserts each lands on the destination `path-map.json` assigns it,
+so it verifies the migration is *correct*, not merely that a 301 happened.
+
+---
+
+## 2. Four live 404s on links that promise a page exists
+
+`/privacy` and `/terms` are linked from:
+
+- **`SiteFooter.tsx`** — the footer of all 246 pages
+- **`CookieConsentBanner.tsx`** — the "learn more" link
+- **`RegisterForm.tsx`** — *"I agree to the Privacy Policy and Terms of Service"*, both linked
+
+Neither route existed.
+
+The dead footer link on 246 pages is the cheap part. The consent banner's own
+header comment cites PIPEDA as the reason it exists — and **the document that
+consent was supposed to be informed by was a 404.** A registration form asking
+someone to agree to two documents that do not exist is asking for agreement to
+nothing.
+
+`verify-links.mjs` missed it because check 3 verifies that *fragment* anchors
+(`#services`) in the chrome resolve, and never checked that a *path* href does.
+It does now, on the surfaces where a dead link is a broken promise rather than a
+broken link: chrome, consent banner, auth forms. **Verified by deletion** — I
+removed `/privacy` and the guard named all three call sites.
+
+### The pages
+
+Both are generated from `apps/web/lib/legal.ts`, which lists every processor
+with the file and import that wires it. Not borrowed boilerplate — PIPEDA's
+openness principle asks for information about *actual* practices made readily
+available, and a true description of this application's data flow is worth more
+than a template describing a different company.
+
+**`REVIEW.approved` is `false` and both pages say so in their own body, above
+the fold.** That is uncomfortable and it is correct: a policy implying legal
+review it has not had is a worse document than one that states its provenance.
+Flip it in `lib/legal.ts` when someone with the standing to bind the business has
+read them.
+
+`/terms` deliberately refuses to be the contract for the work. The written quote
+is that. Everything on this site rests on *"the fixed price in writing is the
+agreement"*; a page of boilerplate quietly claiming to also govern the job would
+undercut the one promise the business is built on.
+
+### `pnpm seo:legal` found an undeclared processor on its first run
+
+The guard checks that every data-processing SDK the code imports appears in the
+processor list. It immediately failed on **`@ai-sdk/anthropic` in
+`app/api/chat/route.ts`** — the RenoGuide assistant has been sending customers'
+chat messages to Anthropic, and my own privacy page did not list it. That is
+precisely the failure mode a privacy policy has: it becomes false when a
+dependency changes, silently, because a document has no tests. Now declared, and
+a new one fails the build with the file that introduced it.
+
+---
+
+## Cycle 3 verification
+
+| check | result |
+| --- | --- |
+| `tsc --noEmit` | **107 errors — identical set to baseline** |
+| all 27 `verify:*` | pass |
+| `pnpm seo` (now 9 gates) | pass |
+| `pnpm domain:simulate` | 35/35 URLs matched, 0 on the fallback |
+| new guard proven by deletion | `verify-links` names all 3 call sites when `/privacy` is removed |
+
+One type error was introduced and fixed: `entry()` in the sitemap takes a `Date`
+and `LEGAL_LAST_REVIEWED` is a string.
+
+New gates: `pnpm seo:legal`, `pnpm domain:check` — both in `verify`, `seo` and
+the CI guards job. `pnpm domain:build` regenerates the three configs;
+`pnpm domain:simulate` tests the map offline.
+
+---
+
+## The next ten, again
+
+1. **Deploy `old-domain/.htaccess`.** Everything else on this branch is signal
+   engineering on one of two competing entities. Apache, per the fingerprint —
+   `old-domain/EXECUTE.md` has the runbook. Then `pnpm seo:live` until it
+   reports zero failures, and only then file the Search Console change of
+   address.
+2. **Read `/privacy` and `/terms` and flip `REVIEW.approved`** in
+   `lib/legal.ts`, or send them to a lawyer first. They are live and honest
+   about their own status either way.
+3. **CS-01 — dust capture.** 18 places, two inside FAQPage JSON-LD. Owner
+   decision, highest legal exposure.
+4. **CS-02 — two incompatible warranty statements.** Directly contractual.
+5. **Google Business Profile.** Still no Place ID in `REVIEW_DESTINATIONS`. The
+   surface an AI agent read before leaving this company off a Toronto ranking.
+6. **Run the 307-prompt benchmark once** for a baseline.
+7. **Per-tread stair band**, or a decision not to publish one.
+8. **Source or withdraw the two GTA market figures** in the cost paper — it
+   ships as a PDF.
+9. **More case studies.** Five, hand-curated in `EvidenceRail`. At ten, write
+   the matcher.
+10. **`pnpm seo:claims --strict`** in CI once 3, 4 and 8 are done.
+
+---
+
+## Cycle 3 files
+
+**New (6)** — `apps/web/app/privacy/page.tsx`, `apps/web/app/terms/page.tsx`,
+`apps/web/lib/legal.ts`, `scripts/verify-legal.mjs`,
+`scripts/build-old-domain-redirects.mjs`, `old-domain/path-map.json`
+
+**Regenerated (3)** — `old-domain/.htaccess`, `old-domain/nginx.conf`,
+`old-domain/_redirects`
+
+**Modified (7)** — `verify-links.mjs` (chrome path guard),
+`verify-domain-redirect.mjs` (real URLs, mapped destinations),
+`old-domain/README.md` (measurement corrected), `sitemap.ts`, `claims.ts`,
+`package.json`, `web.yml`

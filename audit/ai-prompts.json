@@ -10,7 +10,7 @@
     "Run them by hand against each assistant, fill in the four booleans and the date, and",
     "commit. The point is the trend across dates, not any single run."
   ],
-  "generatedAt": "2026-08-24T15:31:49.588Z",
+  "generatedAt": "2026-08-25T00:27:54.078Z",
   "source": "apps/web/content/search/topic-map.ts",
   "totals": {
     "prompts": 307,

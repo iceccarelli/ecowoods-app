@@ -15,6 +15,7 @@ import { CHANGELOG } from '@/lib/changelog';
 import { getServicePages } from '@/lib/service-pages';
 import { ILLUSTRATION_IMAGES } from '@/app/data/illustration-images';
 import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
+import { LEGAL_LAST_REVIEWED } from '@/lib/legal';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -194,6 +195,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        than any shopping query on this list. */
     entry('/hardwood-floor-problems-toronto', 'monthly', 0.95),
     entry('/service-areas', 'monthly', 0.9),                       // no date
+    /* The two legal pages. Low priority — nobody searches for them — but
+       indexable and in the sitemap on purpose: a privacy policy a crawler
+       cannot find is one a compliance reviewer cannot find either, and both
+       carry a real dateModified because they state when they were last checked
+       against the code. */
+    entry('/privacy', 'yearly', 0.3, new Date(LEGAL_LAST_REVIEWED)),
+    entry('/terms', 'yearly', 0.3, new Date(LEGAL_LAST_REVIEWED)),
   ];
 
   /**

@@ -1,22 +1,22 @@
 {
   "$schema": "audit/current-state.schema (informal)",
   "generatedBy": "scripts/audit-current-state.mjs",
-  "generatedAt": "2026-08-24T15:37:41.385Z",
+  "generatedAt": "2026-08-25T00:27:54.000Z",
   "method": "static analysis of the repository — no URL is fetched; see scripts/crawl-site.mjs for the live counterpart",
   "repository": {
     "root": "apps/web"
   },
   "summary": {
-    "routeFiles": 61,
+    "routeFiles": 63,
     "handlerFiles": 33,
-    "indexablePages": 36,
+    "indexablePages": 38,
     "dynamicRoutes": 14,
-    "pagesWithCanonical": 33,
+    "pagesWithCanonical": 35,
     "pagesWithoutCanonical": 0,
-    "pagesWithTitleLiteral": 29,
+    "pagesWithTitleLiteral": 31,
     "pagesWithNoH1": 0,
     "pagesWithMultipleH1": 0,
-    "pagesEmittingSchema": 27,
+    "pagesEmittingSchema": 29,
     "machineSurfacesPresent": 10,
     "machineSurfacesExpected": 10,
     "priceLiteralsOutsideConstants": 0,
@@ -1715,6 +1715,41 @@
       "bytes": 14744
     },
     {
+      "route": "/privacy",
+      "file": "apps/web/app/privacy/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Privacy — what we collect, who processes it, and how to get it deleted",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/privacy",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "What we collect, and what happens to it",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/authority",
+        "/terms"
+      ],
+      "internalLinkCount": 3,
+      "bytes": 10986
+    },
+    {
       "route": "/products/floorforge",
       "file": "apps/web/app/products/floorforge/page.tsx",
       "indexable": true,
@@ -2151,6 +2186,46 @@
       ],
       "internalLinkCount": 5,
       "bytes": 8394
+    },
+    {
+      "route": "/terms",
+      "file": "apps/web/app/terms/page.tsx",
+      "indexable": true,
+      "dynamic": false,
+      "title": {
+        "value": "Terms of use — this website, and what is actually binding",
+        "confidence": "high"
+      },
+      "canonical": {
+        "value": "/terms",
+        "confidence": "high"
+      },
+      "h1": {
+        "value": "Terms of use",
+        "count": 1,
+        "confidence": "high"
+      },
+      "schema": {
+        "builders": [
+          "buildBreadcrumbList"
+        ],
+        "inlineTypes": [
+          "WebPage"
+        ],
+        "schemaScriptBlocks": 2
+      },
+      "internalLinks": [
+        "/",
+        "/ai.txt",
+        "/api/knowledge",
+        "/authority",
+        "/framework",
+        "/llms.txt",
+        "/privacy",
+        "/whats-new"
+      ],
+      "internalLinkCount": 8,
+      "bytes": 9120
     },
     {
       "route": "/verify-email",

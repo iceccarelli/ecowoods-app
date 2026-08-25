@@ -369,6 +369,31 @@ export const CLAIMS: Claim[] = [
       'in the contract.',
   },
 
+  // ── Legal surface ─────────────────────────────────────────────────────
+  {
+    id: 'legal.privacyPolicy',
+    statement:
+      'The privacy page describes what this application actually collects, every processor it ' +
+      'sends data to, and how to ask for access or deletion.',
+    status: 'unsourced',
+    source: 'Derived from the application code — apps/web/lib/legal.ts names the file and the import for each processor. NOT reviewed by a lawyer.',
+    verifiedAt: '2026-08-24',
+    allowedContexts: ['editorial', 'marketing'],
+    note:
+      'THE PAGE ITSELF IS TRUE; ITS STATUS IS THE OPEN ITEM. /privacy and /terms were linked ' +
+      'from four places — the footer of every page, the cookie banner\'s "learn more", and the ' +
+      'registration form\'s "I agree to the Privacy Policy and Terms of Service" — and neither ' +
+      'route existed. All four were 404s. A consent banner whose policy link does not resolve ' +
+      'cannot produce informed consent, which is the whole reason PIPEDA asks for the banner, ' +
+      'and a registration form asking for agreement to two documents that do not exist is asking ' +
+      'for agreement to nothing. Both pages now exist and describe the real behaviour. What is ' +
+      'still missing is a person with the standing to bind the business having read them: ' +
+      'REVIEW.approved in lib/legal.ts is false, and both pages say so in their own body. Flip ' +
+      'it when that has happened. `pnpm seo:legal` fails the build if a new data processor is ' +
+      'imported without being declared — it caught Anthropic on its first run, which the chat ' +
+      'assistant had been sending customer messages to, undeclared.',
+  },
+
   // ── Standards ─────────────────────────────────────────────────────────
   {
     id: 'framework.published',

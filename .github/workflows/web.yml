@@ -79,6 +79,10 @@ jobs:
         run: node scripts/verify-topic-map.mjs
       - name: Link density (every commercial page reaches evidence and a CTA)
         run: node scripts/verify-link-density.mjs
+      - name: Legal surface (every data processor is declared; /privacy and /terms exist)
+        run: node scripts/verify-legal.mjs
+      - name: Old-domain configs match the path map
+        run: node scripts/build-old-domain-redirects.mjs --check
       - name: AI discoverability (commercial material leads every machine surface)
         run: node scripts/audit-ai-discoverability.mjs
 
