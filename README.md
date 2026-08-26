@@ -90,14 +90,17 @@ It encodes the exact state of production as of **24 August 2026**, the activatio
 | **`POST /api/leads`**                      | 🟢 **Live**    | Zod → durable log → best-effort Prisma → best-effort email                         | Set `DATABASE_URL` + `RESEND_API_KEY` |
 | **32 service-area pages**                  | 🟢 **Live**    | Unique local content per neighbourhood                                             | Keep                             |
 | **Technical library + framework**          | 🟢 **Live**    | 3 papers, 11 guides, 27-criterion framework, glossary, case studies                | Expand volume                    |
-| **Old domain 301s**                        | 🔴 **Broken**  | `ecowoodshardwood.com` still returns 200 / 404                                     | **Fix today** (see roadmap)      |
+| **Old domain 301s**                        | 🔴 **Broken**  | Measured 2026-08-26: apex AND www, http AND https, all serve a live 200 page titled “Portfolio \| Hardwood Floor Repair in Toronto, Vaughan, Markham”, with a 33-URL sitemap. It outranks ecowoods.ca on the company’s own branded query. Repo side is **ready**: `old-domain/` + `vercel.json` + `next.config.js` all now redirect from `old-domain/path-map.json`. Blocked on host access or a DNS/domain attach. | **Fix today** (see roadmap)      |
 | **Google Business Profile**                | 🟠 **Partial** | Exists but not fully optimized for map-pack                                        | Execute checklist this week      |
 | **Review volume automation**               | 🟠 **Process** | Docs exist; Day +1 / Day +7 not wired                                              | Wire into closed-job flow        |
 | **Directory consistency**                  | 🟠 **Partial** | HomeStars strong; Apple/Bing/Yelp/Houzz/BBB incomplete                             | Claim + exact NAP                |
 | **Prisma + Email**                         | 🟢 **Ready**   | Full schema + Resend/SMTP coded                                                    | Activate with env vars           |
 | **RenoGuide AI / Booking / Stripe / PDF**  | 🟠 **Ready**   | Fully coded, not surfaced                                                          | Surface after P0                 |
 | **FastAPI marketplace**                    | 🟠 **Real**    | Complete, undeployed                                                               | Deploy or archive                |
-| **Web CI / Analytics / Rate limit**        | 🔴 **None**    | —                                                                                  | Add after revenue path safe      |
+| **Web CI**                                 | 🟢 **Live**    | `.github/workflows/web.yml` — 13 guards → `prisma generate` → `tsc --noEmit` → production build, on every push to `main` and every PR | Keep green                       |
+| **Rate limiting**                          | 🟢 **Live**    | `apps/web/lib/rate-limit.ts`, imported by `/api/leads`, `/api/pilot-leads`, `/api/estimate` | Move to a shared store before it matters |
+| **Analytics / error tracking**             | 🔴 **None**    | —                                                                                  | Add after revenue path safe      |
+| **`ecowoods-app.vercel.app`**              | 🔴 **Broken**  | Publicly serves a STALE build with different copy, different price bands, and the retired “4.9 · 348 verified reviews / aggregated across Google, HomeStars, Houzz, and BBB” claim. `vercel.json` now 301s that host, but only a fresh production deploy of THIS repo can put that rule in force. | Deploy, then confirm the alias 301s |
 
 **Legend**  
 🟢 Live / production-wired / DONE · 🟠 Fully coded or process-ready, not yet production-complete · 🔴 Blocking or missing
@@ -226,9 +229,11 @@ These are non-negotiable and enforced by the verification suite:
 1. **No aggregateRating** in any schema (reviews are cited to HomeStars with read date).
 2. **No currency or percentage literals** under `apps/web/lib/schema` or `apps/web/lib/graph`.
 3. Every number that appears in schema or public claims must be derived from a published constant or live external source with date.
-4. `llms.txt` must list the two commercial pages as the first preferred citation targets for the head terms.
+4. `llms.txt` must list the two commercial pages as the first preferred citation targets for the head terms. Order below them is fixed: `/hardwood-stairs-toronto`, `/reviews`, then one routed row per `SERVICE_AREAS` entry for local hire-intent, then the library. Local rows are generated from `SERVICE_AREAS` — never hand-listed.
 5. Every major document must also be available as clean Markdown (`.md` suffix or `/llms-full.txt`).
 6. Robots.txt must explicitly allow all major AI crawlers.
+7. **`sameAs` comes from `PROFILE_LINKS` and nothing else.** A profile gets an `href` only after someone opened the URL and saw this company on it. Confirmed and linked: HomeStars (`2776939-ecowoods`), Instagram, Facebook, YellowPages.ca. Searched 2026-08-26 and confirmed ABSENT — leave unlinked, do not construct a URL: Google Business Profile, Houzz, Apple, Bing Places, Foursquare, Yelp, BBB, ThreeBestRated. HomeStars `2897115-ecowood` is a **different company**; never wire it.
+8. **The old domain redirects from one map.** `old-domain/path-map.json` is the source; `pnpm domain:build` generates `.htaccess`, `nginx.conf`, `_redirects` and `vercel-redirects.json`; `vercel.json` carries a verbatim copy and `apps/web/next.config.js` requires the generated file. `pnpm domain:check` fails the build on drift. **These redirects are deliberately NOT path-preserving** — the two sites share zero paths, so preserving them 404s every legacy URL.
 
 Breaking any of these fails the corresponding `verify:*` script and is a regression.
 
@@ -244,7 +249,9 @@ Breaking any of these fails the corresponding `verify:*` script and is a regress
 | 2 | File Google Search Console Change of Address (old property → ecowoods.ca) | Confirmed |
 | 3 | Fully optimize Google Business Profile (categories, services with exact ranges, photos, weekly posts, Q&A seeded from commercial FAQs) | Map-pack ready |
 | 4 | Set `DATABASE_URL` + `RESEND_API_KEY` + `ADMIN_EMAIL` | Leads persist + owner email arrives |
-| 5 | Rate-limit `/api/leads` + move Unsplash key to env | Spam impossible, no secret in source |
+| 5 | ~~Rate-limit `/api/leads` + move Unsplash key to env~~ — **DONE.** `lib/rate-limit.ts` is wired into three routes; `api/backgrounds/route.ts` reads `UNSPLASH_ACCESS_KEY` from env with no fallback | Closed |
+| 6 | **Point `ecowoods-app.vercel.app` at the canonical host.** The rule is in `vercel.json`; it takes effect on the next production deploy of this repo. If that alias belongs to a different project, detach it. | The alias 301s to ecowoods.ca and stops serving the 348-review claim |
+| 7 | **Correct the YellowPages.ca listing’s website field** — it currently reads `ecowoodshardwood.com`. Real, NAP-matched listing; wrong canonical. | Website field reads `ecowoods.ca` |
 
 ### 🟠 P1 — Convert + Compound (Next 2 Weeks)
 
