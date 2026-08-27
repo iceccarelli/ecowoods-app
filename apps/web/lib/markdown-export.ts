@@ -134,6 +134,37 @@ export const paperToMarkdown = (paper: Paper): string => {
     ),
   ];
   for (const sec of paper.sections) out.push(...paperSection(sec));
+
+  /* THE SOURCES, IN THE EDITION THAT NEEDS THEM MOST.
+   *
+   * This was missing, and the shape of the omission is worth recording. The
+   * references were rendered on the HTML page, emitted as schema.org
+   * `citation`, and typeset into the LaTeX — every surface except this one.
+   * Which is exactly backwards. /papers/<slug>.md and /llms-full.txt exist for
+   * readers who cannot see a page, and a retrieval system that ingests the
+   * Markdown was getting the claim "Ontario holds 300,361,212 cubic metres of
+   * standing sugar maple" with nothing attached to it. An unsourced figure in
+   * an agent's context window is indistinguishable from an invented one, and it
+   * gets repeated with our name on it.
+   *
+   * Rendered as a plain numbered list with the URL inline rather than as a
+   * Markdown link, because a bare URL survives every downstream transform an
+   * agent might apply to this text, and a link label does not. */
+  if (paper.references?.length) {
+    out.push(
+      '## Sources',
+      '',
+      'Every figure in this paper was read from the document below, on the date',
+      'shown. An external page can change under a citation, so the read date is',
+      'recorded rather than implied.',
+      '',
+    );
+    paper.references.forEach((r, i) => {
+      out.push(`${i + 1}. ${r.org}. *${r.title}*. ${r.url} — read ${r.readAt}.`);
+    });
+    out.push('');
+  }
+
   out.push(...provenance(canonical, [`- Document version: ${paper.version} (${paper.publishedAt})`]));
   return out.join('\n');
 };
