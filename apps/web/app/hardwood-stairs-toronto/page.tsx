@@ -284,7 +284,7 @@ export default function HardwoodStairsTorontoPage() {
           <h2 className="tlx-h2">Four different jobs, all called &ldquo;stairs&rdquo;</h2>
           <IllustrationPair a="stairs-four-jobs" b="stairs-four-jobs-b" />
           <dl className="gd-spec">
-            <div>
+            <div className="gd-spec-row">
               <dt>Refinishing existing hardwood stairs</dt>
               <dd>
                 Sand to bare wood, fill, stain to match the floor, finish. The work is in the
@@ -292,7 +292,7 @@ export default function HardwoodStairsTorontoPage() {
                 <Link href="/services/stair-refinishing">stair refinishing</Link>.
               </dd>
             </div>
-            <div>
+            <div className="gd-spec-row">
               <dt>Carpet off, hardwood underneath</dt>
               <dd>
                 Common in Toronto houses built before the 1970s, where solid oak treads sit under
@@ -301,7 +301,7 @@ export default function HardwoodStairsTorontoPage() {
                 one tread&rsquo;s worth of carpet at the estimate, not guessed at afterwards.
               </dd>
             </div>
-            <div>
+            <div className="gd-spec-row">
               <dt>New treads and risers</dt>
               <dd>
                 Where the existing stairs were never meant to be seen — construction-grade pine or
@@ -309,7 +309,7 @@ export default function HardwoodStairsTorontoPage() {
                 existing structure, finished to match the floor.
               </dd>
             </div>
-            <div>
+            <div className="gd-spec-row">
               <dt>Matching stairs to a floor that is already finished</dt>
               <dd>
                 The hardest colour match there is, and the most common standalone stair job,
@@ -384,7 +384,7 @@ export default function HardwoodStairsTorontoPage() {
           <h2 className="tlx-h2">Questions people actually ask about stairs</h2>
           <dl className="gd-spec">
             {FAQS.map((f) => (
-              <div key={f.question}>
+              <div className="gd-spec-row" key={f.question}>
                 <dt>{f.question}</dt>
                 <dd>{f.answer}</dd>
               </div>
@@ -404,7 +404,7 @@ export default function HardwoodStairsTorontoPage() {
             solid oak under the carpet, post-war bungalows in Etobicoke and North York often do
             not, and a downtown slab condo has no stairs at all until someone builds them.
           </p>
-          <div className="footer-links">
+          <div className="area-links">
             {SERVICE_AREAS.map((c) => (
               <Link key={c.slug} href={`/service-areas/${c.slug}`}>
                 {c.name}

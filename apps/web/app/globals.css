@@ -1679,6 +1679,44 @@ p {
   color: var(--copper-bright);
 }
 
+/* === EW:AREA-LINKS === */
+/* The city list on a LIGHT page — F-155.
+   .footer-links was reused verbatim on /hardwood-flooring-toronto,
+   /hardwood-floor-refinishing-toronto and /hardwood-stairs-toronto. Its link
+   colour is rgba(245,239,230,0.7): near-white, correct on the dark footer,
+   and 1.04:1 against the cream page background. Ninety-six internal links to
+   the thirty-two service areas, on the three highest-commercial-intent pages
+   on this site, rendered invisible — legible only on hover, at 2.27:1, which
+   still fails AA.
+   That is not only an accessibility failure. Text a crawler can read and a
+   visitor cannot see is the exact shape of hidden text, and these are the pages
+   that carry the money queries.
+   A colour is not portable. .footer-links carries the footer in its name and
+   the footer in its palette; a page body needs its own class. --ink-soft is
+   14.24:1 here, and --copper-text is 4.81:1 for the hover. */
+.area-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.15rem 1.5rem;
+  margin-top: 1.4rem;
+}
+.area-links a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;              /* F-31 — the tap target, kept */
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.area-links a:hover,
+.area-links a:focus-visible {
+  color: var(--copper-text);
+  border-bottom-color: var(--copper-surface);
+}
+/* === EW:AREA-LINKS END === */
+
 /* Footer legal row: the Cookie Preferences button (132x22) and the Privacy /
    Terms links (48x22, 41x22) all sat well under 44px on every route. */
 .footer-legal-btn {
@@ -8209,6 +8247,25 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 
 .gd-spec { display: grid; gap: 1px; margin: 1.3rem 0 0; background: var(--line);
   border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+
+/* THE FAIL-SAFE, AND WHY IT IS NOT OPTIONAL — F-154.
+   .gd-spec paints --line (a translucent brown) and relies on every child
+   painting --surface-1 back over it, with the 1px grid gap left showing as the
+   divider. Elegant, and it has exactly one failure mode: a child without
+   .gd-spec-row paints nothing, so the whole list renders as an unpadded grey
+   slab with 2.29:1 label contrast instead of 5.88:1.
+   That shipped on eight blocks — the FAQ list on all sixteen guides and four of
+   the five commercial pages — and no guard could see it, because the markup was
+   valid, the classes existed and the build was green.
+   So every DIRECT CHILD now paints its own ground, whatever it is: a
+   .gd-spec-row div, or a bare <dt>/<dd> pair (which /press uses, and which is
+   the more correct HTML of the two). The broken state is now "no divider
+   lines", not "unreadable". A component whose failure mode is invisible text
+   is a component that will fail invisibly again. */
+.gd-spec > * { background: var(--surface-1); padding: 0.85rem 1.15rem; }
+.gd-spec > dt { padding-bottom: 0.15rem; }
+.gd-spec > dd { padding-top: 0.15rem; }
+
 .gd-spec-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.15rem;
   background: var(--surface-1); padding: 0.85rem 1.15rem; }
 @media (min-width: 640px) {
@@ -8966,6 +9023,13 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 }
 .ilpair-toggle:hover { border-color: var(--copper-surface); color: var(--copper-text); }
 .ilpair-toggle:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 2px; }
+/* The pair's single caption — in normal flow, BELOW the absolutely positioned
+   stage. See the note in IllustrationPair.tsx: when the caption lived inside
+   .ilpair-layer it had no height budget and the next section of the page was
+   painted over it. This is the whole fix for F-153, and it is a layout rule
+   rather than a colour one: the stage is out of flow, the caption must not be. */
+.ilpair-caption { margin: 0.75rem 0 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .ilpair-layer { transition: none; }
 }

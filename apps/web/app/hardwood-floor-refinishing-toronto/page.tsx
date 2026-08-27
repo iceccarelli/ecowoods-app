@@ -271,7 +271,7 @@ export default function RefinishingTorontoPage() {
           <IllustrationPair a="wear-layer-refinish-budget" b="wear-layer-refinish-budget-b" />
           <dl className="gd-spec">
             {FAQS.map((f) => (
-              <div key={f.question}>
+              <div className="gd-spec-row" key={f.question}>
                 <dt>{f.question}</dt>
                 <dd>{f.answer}</dd>
               </div>
@@ -309,7 +309,7 @@ export default function RefinishingTorontoPage() {
             refinish — original 1920s strip oak in Riverdale and a 2018 engineered floor over a
             downtown slab need different machines and different expectations.
           </p>
-          <div className="footer-links">
+          <div className="area-links">
             {SERVICE_AREAS.map((c) => (
               <Link key={c.slug} href={`/service-areas/${c.slug}`}>
                 {c.name}

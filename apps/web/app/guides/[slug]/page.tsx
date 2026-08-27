@@ -316,7 +316,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <h2 className="tlx-h2">Related questions this guide answers</h2>
             <dl className="gd-spec">
               {guide.faqs.map((f) => (
-                <div key={f.q}>
+                <div className="gd-spec-row" key={f.q}>
                   <dt>{f.q}</dt>
                   <dd>{f.a}</dd>
                 </div>
