@@ -11,6 +11,20 @@ import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
+import { IllustrationPair } from '../../components/Illustration';
+
+/* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
+   drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
+   see the note above IllustrationMotion in components/Illustration.tsx: a scale
+   inside a fixed frame crops, and on an explanatory figure the crop removes the
+   thing the figure exists to show. */
+const GUIDE_PAIRS: Record<string, [string, string][]> = {
+  'reference-condominium-concrete-slab': [['assembly-condo-slab-stack', 'assembly-condo-slab-stack-b'], ['gap-midfield-obstructions', 'gap-midfield-obstructions-b']],
+  'reference-radiant-heat-main-floor': [['radiant-failure-delay', 'radiant-failure-delay-b']],
+  'hardwood-flooring-cost-toronto': [['price-bands-to-scale', 'price-bands-to-scale-b'], ['change-order-drift', 'change-order-drift-b']],
+  'nail-down-glue-down-or-floating': [['acoustic-three-methods', 'acoustic-three-methods-b']],
+  'herringbone-chevron-parquet-toronto': [['pattern-layout-three', 'pattern-layout-three-b']],
+};
 
 /** Guide slug → illustration id. Kept here rather than in the guides manifest so
  *  the content manifest stays free of presentation concerns. */
@@ -123,6 +137,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <p className="gd-question">{guide.question}</p>
           <p className="tlx-lede">{guide.summary}</p>
           <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority />
+          {(GUIDE_PAIRS[guide.slug] ?? []).map((p) => (
+            <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
+          ))}
           <p className="fw-meta">
             <span>{guide.readingMinutes} min read</span>
             <span aria-hidden="true">·</span>

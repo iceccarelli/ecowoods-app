@@ -9,6 +9,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
+import { IllustrationPair } from '../components/Illustration';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -209,6 +210,7 @@ export default function HardwoodStairsTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Before you call anyone</p>
           <h2 className="tlx-h2">Stairs are not priced by the square foot</h2>
+          <IllustrationPair a="stairs-labour-vs-area" b="stairs-labour-vs-area-b" />
           <p className="tlx-note">
             A flight of thirteen treads is roughly forty square feet of surface and roughly three
             times the labour of the four hundred square feet of floor it leads to. Every tread has
@@ -280,6 +282,7 @@ export default function HardwoodStairsTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">What people actually mean</p>
           <h2 className="tlx-h2">Four different jobs, all called &ldquo;stairs&rdquo;</h2>
+          <IllustrationPair a="stairs-four-jobs" b="stairs-four-jobs-b" />
           <dl className="gd-spec">
             <div>
               <dt>Refinishing existing hardwood stairs</dt>
@@ -334,6 +337,8 @@ export default function HardwoodStairsTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">The method behind them</p>
           <h2 className="tlx-h2">Why stairs are the part that gives a job away</h2>
+          <IllustrationPair a="stairs-anatomy" b="stairs-anatomy-b" />
+          <IllustrationPair a="stairs-tread-vs-cap" b="stairs-tread-vs-cap-b" />
           <p className="tlx-note">
             The mechanism behind the moisture and movement decisions in that job is set out in{' '}
             <Link href="/papers/toronto-hardwood-climate-moisture-protocol">

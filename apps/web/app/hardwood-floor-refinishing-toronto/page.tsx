@@ -7,7 +7,7 @@ import { getPaper } from '@/lib/papers';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
-import { Illustration } from '../components/Illustration';
+import { Illustration, IllustrationPair } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -210,6 +210,7 @@ export default function RefinishingTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Three services, one decision</p>
           <h2 className="tlx-h2">Which of these your floor needs</h2>
+          <IllustrationPair a="depth-three-refinishing-services" b="depth-three-refinishing-services-b" />
           <p className="tlx-note">
             <Link href="/services/floor-refinishing">Refinishing</Link> is the whole job: sand to
             bare wood, re-stain if the colour is changing, re-finish.{' '}
@@ -267,6 +268,7 @@ export default function RefinishingTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Straight answers</p>
           <h2 className="tlx-h2">Questions people actually ask</h2>
+          <IllustrationPair a="wear-layer-refinish-budget" b="wear-layer-refinish-budget-b" />
           <dl className="gd-spec">
             {FAQS.map((f) => (
               <div key={f.question}>

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
-import { Illustration } from '../../components/Illustration';
+import { Illustration, IllustrationPair } from '../../components/Illustration';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
@@ -19,6 +19,14 @@ import {
   termsFor,
   PRICE_PROMISE,
 } from '@/lib/service-pages';
+/* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
+   drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
+   see the note above IllustrationMotion in components/Illustration.tsx: a scale
+   inside a fixed frame crops, and on an explanatory figure the crop removes the
+   thing the figure exists to show. */
+const SERVICE_PAIRS: Record<string, [string, string][]> = {
+  'hardwood-installation': [['protocol-timeline-install', 'protocol-timeline-install-b'], ['concept-acclimation-72h', 'concept-acclimation-72h-b']],
+};
 
 export function generateStaticParams() {
   return getServicePages().map((p) => ({ slug: p.slug }));
@@ -156,6 +164,9 @@ export default async function ServiceDetailPage({
         <section className="tlx-section tlx-section--flush" aria-label={`${page.h1} illustrated`}>
           <div className="shell">
             <Illustration id={SERVICE_IMAGE[slug]} priority motion="kenburns" />
+          {(SERVICE_PAIRS[slug] ?? []).map((p) => (
+            <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
+          ))}
           </div>
         </section>
       )}

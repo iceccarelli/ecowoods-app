@@ -125,3 +125,9 @@ export function Illustration({
     </figure>
   );
 }
+
+/* The paired variant lives in its own file because it is a client component
+   and this one is not. It is re-exported here so a page importing figures
+   imports one module — and so scripts/verify-images.mjs, which recognises a
+   drawing page by this exact import path, sees pages that use only pairs. */
+export { IllustrationPair } from './IllustrationPair';

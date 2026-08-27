@@ -9,6 +9,7 @@ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+import { IllustrationPair } from '../components/Illustration';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -346,6 +347,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Start here</p>
           <h2 className="tlx-h2">Find your symptom</h2>
+          <IllustrationPair a="symptom-cause-tree" b="symptom-cause-tree-b" />
           <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Failure modes at a glance">
             <table className="wp-table">
               <thead>
