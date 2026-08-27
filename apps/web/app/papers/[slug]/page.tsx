@@ -4,6 +4,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPaper, getPapers, pdfHref, pdfIsPublished, type Paper } from '@/lib/papers';
 import { SchemaScripts } from '@/lib/schema/components';
+import { IllustrationPair } from '../../components/Illustration';
+
+/* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
+   drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
+   see the note above IllustrationMotion in components/Illustration.tsx: a scale
+   inside a fixed frame crops, and on an explanatory figure the crop removes the
+   thing the figure exists to show. */
+const SECTION_PAIRS: Record<string, [string, string][]> = {
+  'hardwood-refinishing-machines-and-sequence#the-four-machines': [['machine-footprints-to-scale', 'machine-footprints-to-scale-b']],
+  'hardwood-refinishing-machines-and-sequence#belt-sander': [['machine-belt-drum-section', 'machine-belt-drum-section-b']],
+  'hardwood-refinishing-machines-and-sequence#edger': [['machine-edger-reach', 'machine-edger-reach-b']],
+  'hardwood-refinishing-machines-and-sequence#planetary': [['machine-planetary-rotation', 'machine-planetary-rotation-b']],
+};
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -262,6 +275,9 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
               {SECTION_IMAGE[`${paper.slug}#${section.id}`] && (
                 <Illustration id={SECTION_IMAGE[`${paper.slug}#${section.id}`]} />
               )}
+              {(SECTION_PAIRS[`${paper.slug}#${section.id}`] ?? []).map((p) => (
+                <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
+              ))}
 
               {section.bullets && (
                 <ul className="wp-bullets">

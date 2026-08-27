@@ -9,6 +9,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
+import { IllustrationPair } from '../components/Illustration';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -210,6 +211,7 @@ export default function RefinishingTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Three services, one decision</p>
           <h2 className="tlx-h2">Which of these your floor needs</h2>
+          <IllustrationPair a="depth-three-refinishing-services" b="depth-three-refinishing-services-b" />
           <p className="tlx-note">
             <Link href="/services/floor-refinishing">Refinishing</Link> is the whole job: sand to
             bare wood, re-stain if the colour is changing, re-finish.{' '}
@@ -267,6 +269,7 @@ export default function RefinishingTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Straight answers</p>
           <h2 className="tlx-h2">Questions people actually ask</h2>
+          <IllustrationPair a="wear-layer-refinish-budget" b="wear-layer-refinish-budget-b" />
           <dl className="gd-spec">
             {FAQS.map((f) => (
               <div key={f.question}>
@@ -280,40 +283,6 @@ export default function RefinishingTorontoPage() {
             GTA. See <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for
             new installation, or <Link href="/service-areas">the coverage list</Link>.
           </p>
-        </div>
-      </section>
-
-      {/* COVERAGE, IN CONTENT — the same section the installation hub carries,
-          and the asymmetry it removes was a real one. Both pages are money
-          pages and both are entered from local queries, but only one of them
-          named the places. This page reached the area pages through a single
-          prose link; the other reached all {SERVICE_AREAS.length} of them by
-          name. Refinishing is the more local of the two services — a screen and
-          recoat is decided by the state of one existing floor in one house, not
-          by a catalogue — so the page a homeowner in Leslieville lands on for
-          "floor sanding Leslieville" should be one click from the page about
-          Leslieville, in content, not through a footer.
-
-          Derived from SERVICE_AREAS, so an added area adds its link here. Same
-          .footer-links block the installation hub uses; no new CSS. */}
-      <section className="tlx-section" aria-label="Where we refinish">
-        <div className="shell">
-          <p className="tlx-kicker">Coverage</p>
-          <h2 className="tlx-h2">
-            Hardwood floor refinishing across {SERVICE_AREAS.length} Toronto and GTA areas
-          </h2>
-          <p className="tlx-note">
-            Each area has its own page describing the housing stock there and what it means for a
-            refinish — original 1920s strip oak in Riverdale and a 2018 engineered floor over a
-            downtown slab need different machines and different expectations.
-          </p>
-          <div className="footer-links">
-            {SERVICE_AREAS.map((c) => (
-              <Link key={c.slug} href={`/service-areas/${c.slug}`}>
-                {c.name}
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
     </div>

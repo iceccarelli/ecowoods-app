@@ -6,21 +6,24 @@
   "outputDirectory": "apps/web/.next",
 
   "redirects": [
-    {"source": "/", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}, {"type": "query", "key": "fuseaction", "value": "store\\.(terms|returns|shipping)"}], "destination": "https://ecowoods.ca/", "permanent": true},
-    {"source": "/blogs/testimonials", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/reviews", "permanent": true},
-    {"source": "/blogs/testimonials/:rest*", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/reviews", "permanent": true},
-    {"source": "/blogs/ecowoods-hardwood-flooring-blog", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/blog", "permanent": true},
-    {"source": "/blogs/ecowoods-hardwood-flooring-blog/:rest*", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/blog", "permanent": true},
-    {"source": "/pages/ecowoods-hardwood-flooring-testimonials-toronto-etobicoke", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/reviews", "permanent": true},
-    {"source": "/pages/ecowoods-hardwood-flooring-contractors-toronto-etobicoke-hamilton", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/about", "permanent": true},
-    {"source": "/pages/flooring-services-toronto-etobicoke-hamilton", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/services", "permanent": true},
-    {"source": "/pages/hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/#quote", "permanent": true},
-    {"source": "/pages/home", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/", "permanent": true},
-    {"source": "/privacy-policy", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/privacy", "permanent": true},
-    {"source": "/", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/", "permanent": true},
-    {"source": "/:path*", "has": [{"type": "host", "value": "(www\\.)?ecowoodshardwood\\.com"}], "destination": "https://ecowoods.ca/", "permanent": true},
-    {"source": "/:path*", "has": [{"type": "host", "value": "www\\.ecowoods\\.ca"}], "destination": "https://ecowoods.ca/:path*", "permanent": true},
-    {"source": "/:path*", "has": [{"type": "host", "value": "ecowoods-app\\.vercel\\.app"}], "destination": "https://ecowoods.ca/:path*", "permanent": true}
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "ecowoodshardwood.com" }],
+      "destination": "https://ecowoods.ca/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.ecowoodshardwood.com" }],
+      "destination": "https://ecowoods.ca/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.ecowoods.ca" }],
+      "destination": "https://ecowoods.ca/:path*",
+      "permanent": true
+    }
   ],
 
   "headers": [

@@ -1,4 +1,4 @@
-import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, FAQ_ITEMS } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, CITIES, FAQ_ITEMS } from '@/lib/seo-data';
 import { getArticles } from '@/lib/content/loader';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
@@ -47,28 +47,14 @@ export async function GET() {
   lines.push(`- Full citation guide: ${SITE_URL}/ai.txt`);
   lines.push('');
 
-  /* This section and the one further down were BOTH headed "## Services".
-     A file whose whole job is to be parsed by a machine had two sections with
-     one name, and the second — the one carrying the URLs and the price bands —
-     was the one that mattered. Renamed to what it actually is. */
-  lines.push('## What we do');
+  lines.push('## Services');
   for (const s of SERVICES) lines.push(`- ${s.name}: ${s.blurb}`);
   lines.push('');
 
-  /* THIS LIST WAS HALF THE SITE.
-     It read from CITIES — the sixteen municipalities — while the site publishes
-     a page for all thirty-two entries of SERVICE_AREAS. The sixteen missing
-     were the Toronto neighbourhoods: Rosedale, Forest Hill, Leslieville, King
-     West, The Beaches and eleven more. Those are not padding, they are the
-     highest hire-intent local queries this business gets — a homeowner asks for
-     "hardwood floors Rosedale", not "hardwood floors Toronto Division". Every
-     one of those pages existed, was in the sitemap, and was invisible to any
-     agent that read this file to learn where the company works.
-     Derived from SERVICE_AREAS so it cannot drift from the routes again. */
   lines.push('## Service areas');
-  lines.push(SERVICE_AREAS.map((c) => c.name).join(', ') + '.');
+  lines.push(CITIES.map((c) => c.name).join(', ') + '.');
   lines.push('');
-  for (const c of SERVICE_AREAS) lines.push(`- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`);
+  for (const c of CITIES) lines.push(`- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`);
   lines.push('');
 
   lines.push('## Services');
@@ -111,27 +97,6 @@ export async function GET() {
      needs to be told which URL is the document. */
   lines.push(`- "hardwood stairs Toronto", "stair refinishing Toronto", "stairs hardwood", "hardwood stairs cost", "carpet to hardwood stairs", "match stairs to floor" → ${SITE_URL}/hardwood-stairs-toronto`);
   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
-
-  /* LOCAL HIRE-INTENT, ROUTED. Fourth, after the two commercial hubs and the
-     reputation page, and before the library — which is the order of how a
-     hiring question actually narrows.
-
-     Before this, no line in this file mapped a place query to a place page.
-     Eighteen citation targets, and an agent asked "who refinishes hardwood
-     floors in Leslieville" had nothing to route on but the bare name list
-     further up, which carries no query strings and no arrows. The page that
-     answers it has existed the whole time.
-
-     Generated from SERVICE_AREAS, in the same phrasings a homeowner types, so
-     adding an area adds its routing. No page is invented here: every URL is a
-     route generateStaticParams already builds. */
-  for (const c of SERVICE_AREAS) {
-    lines.push(
-      `- "hardwood flooring ${c.name}", "hardwood floor refinishing ${c.name}", ` +
-        `"hardwood floor installation ${c.name}", "floor sanding ${c.name}", ` +
-        `"hardwood flooring contractor ${c.name}" → ${SITE_URL}/service-areas/${c.slug}`,
-    );
-  }
   lines.push(`- "who is Ecowoods", company facts, boilerplate, logos → ${SITE_URL}/about.md and ${SITE_URL}/press`);
   lines.push(`- "who installs the floor", "does Ecowoods use subcontractors", crew and warranty structure → ${SITE_URL}/team`);
   /* The decision guides answer the long-tail questions in full and each one is

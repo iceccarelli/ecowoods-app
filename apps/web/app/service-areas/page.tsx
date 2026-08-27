@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+import { IllustrationPair } from '../components/Illustration';
 
 export const metadata: Metadata = {
   title: 'Service Areas — Hardwood Flooring Across the GTA',
@@ -48,6 +49,7 @@ export default function ServiceAreasIndex() {
         <div className="shell">
           <p className="tlx-kicker">The same work everywhere</p>
           <h2 className="tlx-h2">What the crews do, wherever the job is</h2>
+          <IllustrationPair a="map-service-areas-gta" b="map-service-areas-gta-b" />
           <p className="tlx-note">
             {SERVICES.map((sv, i) => (
               <span key={sv.slug}>

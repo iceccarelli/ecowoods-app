@@ -113,33 +113,23 @@ const nextConfig = {
    * here is not a real route, or if a key collides with one.
    */
   async redirects() {
+    const OLD = ['ecowoodshardwood.com', 'www.ecowoodshardwood.com'];
     const { aliases } = require('./content/search/route-aliases.json');
 
-    /**
-     * THE RULES THAT USED TO BE HERE WERE PATH-PRESERVING, AND THAT WAS THE BUG.
-     *
-     * They read `/:path*` → `https://ecowoods.ca/:path*` for both old hosts,
-     * which is the correct default for almost every domain migration and is
-     * exactly wrong for this one. old-domain/path-map.json is the evidence:
-     * the two sites share ZERO paths. The old URLs are
-     * /pages/flooring-services-toronto-etobicoke-hamilton and
-     * /blogs/testimonials/172376--audrey-in-toronto — twenty-two of those
-     * testimonials, with real customer names, being the largest stranded
-     * reputation asset this business has. Preserving those paths sends every
-     * one of them to a hard 404 on ecowoods.ca, which is worse than the state
-     * they are in now, because now it is ecowoods.ca serving the dead end.
-     *
-     * The rules never fired, because the domain has never been attached to this
-     * project — so nothing surfaced the defect. Attaching the domain, which is
-     * the simplest way to fix the old-domain leak, would have shipped it.
-     *
-     * They are now generated from the same map that generates .htaccess,
-     * nginx.conf and _redirects: `pnpm domain:build`. Requiring the generated
-     * file rather than re-deriving it here is the point — the edge layer
-     * (vercel.json) and this layer cannot disagree about where an old URL goes,
-     * and `pnpm domain:check` fails the build if either drifts from the map.
-     */
-    const { redirects: oldDomain } = require('../../old-domain/vercel-redirects.json');
+    const oldDomain = OLD.flatMap((host) => [
+      {
+        source: '/',
+        has: [{ type: 'host', value: host }],
+        destination: 'https://ecowoods.ca/',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: host }],
+        destination: 'https://ecowoods.ca/:path*',
+        permanent: true,
+      },
+    ]);
 
     const commercialAliases = Object.entries(aliases).map(([source, destination]) => ({
       source,

@@ -17,6 +17,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
+import { IllustrationPair } from '../components/Illustration';
 
 /**
  * /framework — the published specification.
@@ -130,6 +131,7 @@ export default function FrameworkPage() {
         <div className="shell">
           <p className="tlx-kicker">How to use it</p>
           <h2 className="tlx-h2">Three ways this is meant to be used</h2>
+          <IllustrationPair a="concept-document-set" b="concept-document-set-b" />
           <div className="fw-use">
             <div className="fw-use-item">
               <h3>As a homeowner</h3>

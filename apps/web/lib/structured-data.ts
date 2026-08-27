@@ -86,13 +86,8 @@ export const localBusinessSchema = {
       // itself. Shipping it is a documented cause of manual "Spammy structured
       // markup" actions, which cost the rich result AND the local pack.
       //
-      // The 4.9 / 348 figure this file used to name is not legitimate anywhere.  (facts-allow)
-      // No platform reports it; verify-business-facts.mjs bans the string; and
-      // the only place it still renders is a stale deployment on the
-      // ecowoods-app.vercel.app alias, which vercel.json now 301s to the
-      // canonical host. The real, citable figure is REVIEW_EVIDENCE in
-      // packages/shared/constants — HomeStars, with its URL and read date.
-      // If Ecowoods wants stars in the SERP, the supported route is
+      // The 4.9 / 348 figure is legitimate on-page copy. It is not legitimate
+      // JSON-LD. If Ecowoods wants stars in the SERP, the supported route is
       // third-party aggregators (Google Business Profile, HomeStars, Houzz)
       // emitting it about Ecowoods — which they already do.
       hasOfferCatalog: {
