@@ -89,6 +89,22 @@ function schemasFor(paper: Paper) {
         name: 'Toronto and the Greater Toronto Area',
       },
       articleSection: paper.sections.map((s) => s.heading),
+      /* The primary sources, as machine-readable citations.
+         `citation` is the field an answer engine reads to decide whether a
+         document is grounded or asserted, and it is the single cheapest
+         difference between a trade page and a technical paper. It is emitted
+         only where the manifest actually carries references — an empty
+         citation array is a claim of rigour with nothing behind it. */
+      ...(paper.references?.length
+        ? {
+            citation: paper.references.map((r) => ({
+              '@type': 'CreativeWork',
+              name: r.title,
+              url: r.url,
+              publisher: { '@type': 'Organization', name: r.org },
+            })),
+          }
+        : {}),
       ...(pdfIsPublished(paper)
         ? {
             associatedMedia: {
@@ -155,6 +171,8 @@ const PAPER_IMAGE: Record<string, string> = {
   'toronto-hardwood-climate-moisture-protocol': 'paper-climate',
   'hardwood-selection-and-cost-framework-gta': 'paper-selection',
   'hardwood-refinishing-machines-and-sequence': 'paper-craft',
+  'where-toronto-hardwood-comes-from': 'provenance-forest-to-floor',
+  'hardwood-grading-standards-nhla-nwfa': 'grading-lumber-versus-flooring',
 };
 
 /**
@@ -194,6 +212,33 @@ const SECTION_IMAGE: Record<string, string> = {
 
   'hardwood-selection-and-cost-framework-gta#installed-cost': 'fig-installed-cost-bands',
   'hardwood-selection-and-cost-framework-gta#species': 'fig-species-janka',
+
+  /* Provenance and Grade. These ids are wired here BEFORE the art exists, and
+     that is deliberate rather than sloppy. <Illustration> returns null for an id
+     the manifest does not carry, so an unbuilt slot renders nothing at all — no
+     placeholder, no broken icon, no layout shift. The moment the .webp files
+     land and scripts/add-provenance-slots.mjs registers them, every figure below
+     appears in the right section without a second edit to this file.
+
+     The reverse order does not work on this deployment: apps/web/public is not
+     served, so a manifest entry with no file and no static import fails
+     verify-images.mjs. The manifest and the art have to arrive together, and
+     the page can wait for both. */
+  'where-toronto-hardwood-comes-from#why-provenance': 'provenance-kiln-moisture-journey',
+  'where-toronto-hardwood-comes-from#ontario-forest': 'provenance-ontario-hardwood-zone',
+  'where-toronto-hardwood-comes-from#growing-stock': 'provenance-growing-stock-species',
+  'where-toronto-hardwood-comes-from#selection-system': 'provenance-selection-system',
+  'where-toronto-hardwood-comes-from#manufacturing': 'provenance-vertical-integration',
+  'where-toronto-hardwood-comes-from#chain': 'provenance-log-breakdown',
+  'where-toronto-hardwood-comes-from#certification': 'provenance-certification-chain',
+  'where-toronto-hardwood-comes-from#ash': 'provenance-ash-supply-inversion',
+  'where-toronto-hardwood-comes-from#what-to-ask': 'provenance-what-you-should-receive',
+
+  'hardwood-grading-standards-nhla-nwfa#nhla-yield': 'grading-nhla-yield-ladder',
+  'hardwood-grading-standards-nhla-nwfa#nwfa-appearance': 'grading-flooring-character',
+  'hardwood-grading-standards-nhla-nwfa#moisture-at-manufacture': 'provenance-moisture-differential-gate',
+  'hardwood-grading-standards-nhla-nwfa#dimensions': 'provenance-sawn-face-macro',
+  'hardwood-grading-standards-nhla-nwfa#engineered': 'provenance-wear-layer-budget',
 };
 
 export default async function PaperPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -260,6 +305,11 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
                 <a href={`#${s.id}`}>{s.heading}</a>
               </li>
             ))}
+            {paper.references && paper.references.length > 0 && (
+              <li>
+                <a href="#sources">Sources</a>
+              </li>
+            )}
           </ol>
         </nav>
 
@@ -335,6 +385,28 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
               )}
             </section>
           ))}
+
+          {paper.references && paper.references.length > 0 && (
+            <section id="sources" className="wp-section">
+              <h2>Sources</h2>
+              <p>
+                Every figure in this paper was read from the document below, on the date shown
+                beside it. An external page can change under a citation, so the read date is
+                recorded rather than implied.
+              </p>
+              <ol className="wp-refs">
+                {paper.references.map((r, i) => (
+                  <li key={r.url + i}>
+                    <span className="wp-ref-org">{r.org}</span>
+                    <a href={r.url} rel="nofollow noopener external" target="_blank">
+                      {r.title}
+                    </a>
+                    <span className="wp-ref-read">Read {fmt(r.readAt)}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
           {pdfIsPublished(paper) && (
             <section className="wp-section" aria-label="Download">

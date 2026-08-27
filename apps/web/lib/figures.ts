@@ -67,6 +67,8 @@ export type Figure = {
 
 const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
 const P_COST = 'hardwood-selection-and-cost-framework-gta';
+const P_PROV = 'where-toronto-hardwood-comes-from';
+const P_GRADE = 'hardwood-grading-standards-nhla-nwfa';
 
 export const FIGURES: Figure[] = [
   {
@@ -116,6 +118,43 @@ export const FIGURES: Figure[] = [
       { label: 'Black walnut', value: 1010, note: 'Luxury accent' },
     ],
     source: { paper: P_COST, section: 'species' },
+  },
+  {
+    id: 'ontario-hardwood-growing-stock',
+    number: 3,
+    kind: 'bar',
+    title: 'Ontario growing stock, the hardwoods that become floors',
+    caption:
+      'Standing volume in Ontario by species, from the province\u2019s own 2021 forest inventory. Sugar maple 300,361,212 m\u00b3, red oak 85,019,702 m\u00b3, yellow birch 82,005,013 m\u00b3, ash as a group 42,273,003 m\u00b3, basswood 18,444,080 m\u00b3. Growing stock is what stands in the forest, not what is cut \u2014 Ontario publishes no hardwood-specific harvest volume at all, which is why the harvest is absent from this chart rather than estimated onto it.',
+    unit: 'million cubic metres standing',
+    axisMax: 320,
+    axisTicks: [0, 100, 200, 300],
+    barRows: [
+      { label: 'Sugar maple', value: 300, approx: true, note: 'Largest Ontario flooring hardwood' },
+      { label: 'Red oak', value: 85, approx: true, note: 'Principal tolerant hardwood' },
+      { label: 'Yellow birch', value: 82, approx: true, note: 'Principal tolerant hardwood' },
+      { label: 'Ash (group)', value: 42, approx: true, note: 'Under emerald ash borer pressure' },
+      { label: 'Basswood', value: 18, approx: true, note: 'Not used for flooring' },
+    ],
+    source: { paper: P_PROV, section: 'growing-stock' },
+  },
+  {
+    id: 'nhla-clear-face-yield',
+    number: 4,
+    kind: 'bar',
+    title: 'NHLA lumber grades, by required clear-face yield',
+    caption:
+      'What each National Hardwood Lumber Association grade requires a board to yield in clear cuttings, under the rulebook effective 1 January 2023: FAS 83-1/3% (10/12), No. 1 Common 66-2/3% (8/12), No. 2A Common 50% (6/12), No. 3A Common 33-1/3% (4/12). This is a lumber grade and it is fixed at the sawmill. It is not the flooring grade on your quote \u2014 that is a separate NWFA/NOFMA appearance grade, and the two systems do not cross-reference each other.',
+    unit: '% clear-face yield required',
+    axisMax: 100,
+    axisTicks: [0, 25, 50, 75, 100],
+    barRows: [
+      { label: 'FAS', value: 83, approx: true, note: 'Boards 6" and wider, 8\u201316 ft' },
+      { label: 'No. 1 Common', value: 66, approx: true, note: 'Boards 3" and wider, 4\u201316 ft' },
+      { label: 'No. 2A Common', value: 50, note: 'Minimum cutting 3"\u00d72 ft' },
+      { label: 'No. 3A Common', value: 33, approx: true, note: 'Minimum cutting 3"\u00d72 ft' },
+    ],
+    source: { paper: P_GRADE, section: 'nhla-yield' },
   },
 ];
 

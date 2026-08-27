@@ -7897,6 +7897,57 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 }
 .wp-callout p:last-child { margin-bottom: 0 !important; color: var(--ink); }
 
+/* The sources register at the foot of a technical paper.
+   Numbered, monospaced counters, each entry three stacked lines: who published
+   it, what it is, and the date a human opened the URL. Deliberately plain — a
+   reference list that competes with the prose for attention is a design that
+   has misunderstood what it is for. */
+.wp-refs {
+  list-style: none;
+  counter-reset: wpref;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+.wp-refs li {
+  counter-increment: wpref;
+  position: relative;
+  padding: 0 0 0 2.6rem;
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.wp-refs li::before {
+  content: '[' counter(wpref) ']';
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--copper-text);
+}
+.wp-ref-org {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+.wp-refs li a {
+  display: block;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.wp-refs li a:hover { color: var(--copper-text); }
+.wp-ref-read {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+
 /* Two destinations under the homepage library teaser, wrapping on narrow
    screens instead of overflowing. */
 .clp-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }

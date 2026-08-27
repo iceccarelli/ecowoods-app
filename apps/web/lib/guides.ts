@@ -95,6 +95,8 @@ export type Guide = {
 const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
 const P_COST = 'hardwood-selection-and-cost-framework-gta';
 const P_CRAFT = 'hardwood-refinishing-machines-and-sequence';
+const P_PROV = 'where-toronto-hardwood-comes-from';
+const P_GRADE = 'hardwood-grading-standards-nhla-nwfa';
 
 export const GUIDES: Guide[] = [
   /* ── decision guides ───────────────────────────────────────────────────── */
@@ -762,6 +764,329 @@ export const GUIDES: Guide[] = [
     sources: [
       { paper: P_COST, section: 'decision-tree' },
       { paper: P_CLIMATE, section: 'method-and-substrate' },
+    ],
+    pillars: ['specification'],
+  },
+  /* ── species dossiers ──────────────────────────────────────────────────── */
+  /*
+   * WHY THESE ARE `reference` AND NOT CASE STUDIES
+   *
+   * The obvious way to add five more case studies is to write five more case
+   * studies. We did not, and the reason is worth recording where the next
+   * person will find it.
+   *
+   * The five case studies on this site are real jobs with measured pre-work
+   * readings. Five invented ones would read identically, satisfy every guard in
+   * this repository — because the guards check consistency, not truth — and be
+   * indistinguishable to a reader from the real ones, which is precisely what
+   * makes them corrosive. A fabricated case study does not merely add a lie; it
+   * withdraws the credit the true ones had earned.
+   *
+   * So these are case studies of the MATERIAL. Every figure below is sourced to
+   * a document a government, a standards body or the manufacturer itself
+   * published, cited in the paper each guide draws from. They answer the same
+   * commercial question a case study answers — "what happens if I choose this?"
+   * — from evidence that can be checked.
+   */
+  {
+    slug: 'red-oak-flooring-toronto',
+    kind: 'reference',
+    title: 'Red oak',
+    seoTitle: 'Red oak hardwood flooring in Toronto — supply, grades and what to specify',
+    question: 'Is red oak the right hardwood floor for a Toronto home?',
+    summary:
+      'Red oak is one of the seven principal tolerant hardwoods the Government of Ontario names, it is the second-largest hardwood growing stock in the province, and it is the species most Toronto homes already have. This dossier sets out what is actually published about its supply, its hardness and the grades it is sold in.',
+    publishedAt: '2026-08-27',
+    readingMinutes: 6,
+    spec: [
+      { label: 'Botanical name', value: 'Quercus rubra' },
+      { label: 'Side hardness, 12% MC', value: '1,290 lbf (USDA Forest Products Laboratory, Wood Handbook Table 5-3b)' },
+      { label: 'Ontario range', value: 'East of Lake Superior and across Central and Southern Ontario (Ontario Tree Atlas)' },
+      { label: 'Ontario status', value: 'One of the seven principal tolerant hardwoods named by the Ministry of Natural Resources' },
+      { label: 'Ontario growing stock', value: '85,019,702 m³ (Forest Resources of Ontario 2021)' },
+      { label: 'US growing stock', value: '17.9% of the US total, 2.62 billion m³ (American Hardwood Export Council)' },
+      { label: 'US annual growth against harvest', value: '60.6 million m³ grown against 31.9 million m³ harvested per year' },
+      { label: 'Flooring grades published', value: 'Clear, Select, No. 1 Common, No. 2 Common (NWFA/NOFMA oak rules)' },
+    ],
+    table: {
+      caption: 'What each NWFA/NOFMA oak grade permits, as published',
+      head: ['Grade', 'Permits'],
+      rows: [
+        ['Clear', 'Heartwood-dominant, minimal character. Up to 3/8" bright sapwood along the full length, small burls, fine pin worm holes, tight checks.'],
+        ['Select', 'Unlimited sound sapwood, one small tight knot per 3 ft, slightly open checks, machine burns to 1/4" wide.'],
+        ['No. 1 Common', 'Open characters — checks and knot holes — that are sound and fillable. Excludes broken knots over 1/2".'],
+        ['No. 2 Common', 'Sound natural forest variation and manufacturing imperfections. The NWFA calls it most desirable where prominent character is wanted.'],
+      ],
+    },
+    watchpoints: [
+      'Red oak and white oak are different woods and are routinely quoted as "oak". Red oak is 1,290 lbf against white oak at 1,360; the grain is more open and it takes stain differently. Ask for the botanical name on the quote.',
+      'A very common claim — that red oak historically dominates Ontario housing stock — has no source we could find. We looked hard, found only unattributed blog content, and do not publish it. Neither should anyone quoting it to you.',
+      'Ontario publishes growing stock, not hardwood harvest. Nobody can tell you what share of Toronto red oak flooring is Ontario-grown, because that number is not published by anyone.',
+    ],
+    faqs: [
+      {
+        q: 'Is red oak harder than white oak?',
+        a: 'No. The USDA Forest Products Laboratory publishes red oak at 1,290 lbf side hardness at 12% moisture content and white oak at 1,360 lbf. The difference is real but modest, and it is not the reason to choose between them — grain openness, colour and how each takes a stain matter more in a finished floor.',
+      },
+      {
+        q: 'Is red oak flooring sustainable?',
+        a: 'On the published inventory, red oak grows considerably faster than it is cut: the American Hardwood Export Council records 60.6 million cubic metres of annual growth against 31.9 million cubic metres of annual harvest across the US resource, and Ontario holds a further 85,019,702 cubic metres of standing red oak. That is a statement about the resource, not about any individual supply chain — for that, ask who milled the boards.',
+      },
+      {
+        q: 'What grade of red oak flooring should I buy?',
+        a: 'Grade is an appearance decision, not a durability one: the NWFA/NOFMA standard states that all grades are equally strong and serviceable in any application. Clear gives a near-uniform heartwood face, Select allows sapwood and small tight knots, and No. 1 and No. 2 Common carry progressively more character. Choose the look, then require the grade by name on the quote.',
+      },
+    ],
+    recommendation: {
+      text: 'Red oak is the correct default for matching or extending an existing Toronto hardwood floor, and a sound choice on its own merits. Specify the botanical species and the NWFA/NOFMA grade in writing; both are free to ask for and neither is usually offered.',
+      conditions: [
+        'If the floor is being matched to existing boards, red oak is very often what is already there — confirm by inspection, not by assumption.',
+        'If a whiter, tighter grain is wanted, white oak is the comparison to make, and it is a different guide.',
+      ],
+    },
+    sources: [
+      { paper: P_PROV, section: 'tolerant-hardwoods' },
+      { paper: P_PROV, section: 'growing-stock' },
+      { paper: P_PROV, section: 'ash' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'hard-maple-flooring-toronto',
+    kind: 'reference',
+    title: 'Hard maple',
+    seoTitle: 'Hard maple hardwood flooring in Toronto — supply, grades and what to specify',
+    question: 'Is hard maple the right hardwood floor for a Toronto home?',
+    summary:
+      'Sugar maple is the largest hardwood growing stock in Ontario by a wide margin, the province describes it as the most common tree in the Great Lakes–St. Lawrence and Deciduous Forest regions, and it is the one flooring species Ontario explicitly says is amenable to single-tree selection. It is also the least forgiving species on the finishing bench.',
+    publishedAt: '2026-08-27',
+    readingMinutes: 6,
+    spec: [
+      { label: 'Botanical name', value: 'Acer saccharum (sugar maple)' },
+      { label: 'Side hardness, 12% MC', value: '1,450 lbf (USDA Forest Products Laboratory, Wood Handbook Table 5-3b)' },
+      { label: 'Ontario range', value: 'Central, Southern and parts of Northwestern Ontario (Ontario Tree Atlas)' },
+      { label: 'Ontario status', value: 'Principal tolerant hardwood; roughly 3% of Ontario’s managed forest' },
+      { label: 'Ontario growing stock', value: '300,361,212 m³ — the largest of any Ontario flooring hardwood' },
+      { label: 'Silviculture', value: 'Ontario states it is amenable to the single-tree selection silvicultural system' },
+      { label: 'US growing stock', value: '6.5% of the US total, 955.4 million m³ (American Hardwood Export Council)' },
+      { label: 'US annual growth against harvest', value: '19.1 million m³ grown against 10.2 million m³ harvested per year' },
+      { label: 'Flooring grades published', value: 'Special Clear, Select & Better, No. 1 Common, No. 2 Common (NWFA/NOFMA hard maple, beech and birch rules)' },
+    ],
+    table: {
+      caption: 'NWFA/NOFMA hard maple, beech and birch grades',
+      head: ['Grade', 'Permits'],
+      rows: [
+        ['Special Clear', 'Requires 95% sapwood on the face, free from stain, with the heartwood portion nearly white.'],
+        ['Select & Better', 'A nearly defect-free face with natural colour variation permitted. Occasional pin knots to 1/8" diameter, dark green or black spots to 1/4" × 3", bird’s eyes and small burls.'],
+        ['No. 1 Common', 'Distinct colour variation, numerous streaks, stained sapwood, sound tight knots away from edges and ends, checks to 3".'],
+        ['No. 2 Common', 'Must provide serviceable flooring with firm wood. Excludes knot holes over 3/8" diameter, unsound knots, shake, heart checks and badly split ends.'],
+      ],
+    },
+    watchpoints: [
+      'Maple is a closed-grain, pale wood, and that is exactly why it punishes sanding errors. A drum mark or an edger halo that hides in oak is visible across a maple floor in raking light. This is the species where the machine sequence and the operator matter most.',
+      'Maple grades are graded on colour as much as on defect. Select & Better admits natural colour variation; if a uniform white floor is the goal, Special Clear is the grade that says so, and it costs accordingly.',
+      'Site-applied stain on maple is a specialist operation. Its density resists penetration and blotches readily; a supplier who agrees to stain maple without discussing conditioning has not done it often.',
+    ],
+    faqs: [
+      {
+        q: 'Is maple harder than oak?',
+        a: 'Yes. The USDA Forest Products Laboratory publishes hard maple at 1,450 lbf side hardness at 12% moisture content, against white oak at 1,360 and red oak at 1,290. It is the second-hardest of the six species commonly installed in this market, behind hickory at 1,880.',
+      },
+      {
+        q: 'Is maple flooring Canadian?',
+        a: 'Sugar maple is the largest hardwood growing stock in Ontario at 300,361,212 cubic metres, and the vertically integrated flooring manufacturers serving the GTA — Mercier, Lauzon, Preverco, Mirage, Wickham — all operate their own Quebec sawmills. Domestic supply demonstrably exists. What no source publishes is the share of maple flooring sold in Ontario that is domestically milled, so we do not state one.',
+      },
+      {
+        q: 'Why does my maple floor look blotchy after staining?',
+        a: 'Maple is dense and closed-grain, so stain sits unevenly on it unless the floor is conditioned first and the sanding sequence has left a genuinely uniform surface. Blotching on maple is usually a process record rather than a material defect, and it is the reason many specifications keep maple clear-finished.',
+      },
+    ],
+    recommendation: {
+      text: 'Hard maple is the right specification for a bright, contemporary, high-traffic floor where the client accepts a pale palette. It is the wrong specification for a project that wants a rich stain and is hiring on price, because maple is the species where a cheap sanding job shows.',
+      conditions: [
+        'Specify the grade by name — Special Clear and Select & Better are different floors at different prices.',
+        'If a stain is planned, require the conditioning step in writing before the quote is accepted.',
+      ],
+    },
+    sources: [
+      { paper: P_PROV, section: 'growing-stock' },
+      { paper: P_PROV, section: 'selection-system' },
+      { paper: P_PROV, section: 'manufacturing' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
+    ],
+    pillars: ['specification', 'containment'],
+  },
+  {
+    slug: 'white-ash-flooring-toronto',
+    kind: 'reference',
+    title: 'White ash',
+    seoTitle: 'White ash hardwood flooring in Toronto — the supply problem nobody mentions',
+    question: 'Should I choose white ash flooring in Toronto, given the emerald ash borer?',
+    summary:
+      'Ash is a hard, pale, beautifully grained floor, and it is the only one of the six species used in this market being cut faster than it grows. That is not a demand story. It is an insect, first detected at Windsor in 2002, and any honest ash specification has to start there.',
+    publishedAt: '2026-08-27',
+    readingMinutes: 6,
+    spec: [
+      { label: 'Botanical name', value: 'Fraxinus americana' },
+      { label: 'Side hardness, 12% MC', value: '1,320 lbf (USDA Forest Products Laboratory, Wood Handbook Table 5-3b)' },
+      { label: 'Ontario range', value: 'Throughout Southern Ontario and north to Lake Nipissing and Sault Ste. Marie (Ontario Tree Atlas)' },
+      { label: 'Ontario status', value: 'One of the seven principal tolerant hardwoods named by the Ministry of Natural Resources' },
+      { label: 'Ontario growing stock', value: '42,273,003 m³ for ash as a group (Forest Resources of Ontario 2021)' },
+      { label: 'US growing stock', value: '4.5% of the US total, 657.8 million m³ (American Hardwood Export Council)' },
+      { label: 'US annual growth against harvest', value: '3.3 million m³ grown against 6.9 million m³ harvested per year — the only inversion among the six' },
+      { label: 'Principal supply pressure', value: 'Emerald ash borer, first detected near Detroit and Windsor in 2002; up to 99% of ash trees killed within 8 to 10 years of establishment' },
+      { label: 'Flooring grades published', value: 'Clear, Select, No. 1 Common, No. 2 Common (NWFA/NOFMA ash rules)' },
+    ],
+    table: {
+      caption: 'Annual growth against annual harvest, US hardwood resource (American Hardwood Export Council)',
+      head: ['Species', 'Annual growth', 'Annual harvest'],
+      rows: [
+        ['Red oak', '60.6 million m³', '31.9 million m³'],
+        ['White oak', '40.1 million m³', '20.1 million m³'],
+        ['Hard maple', '19.1 million m³', '10.2 million m³'],
+        ['Hickory', '14.6 million m³', '6.0 million m³'],
+        ['Black walnut', '4.8 million m³', '1.9 million m³'],
+        ['White ash', '3.3 million m³', '6.9 million m³'],
+      ],
+    },
+    watchpoints: [
+      'Plan the whole floor, including waste and a future repair allowance, in one order. Ash is the species where a reorder two years later is least likely to match, and least likely to be available at all.',
+      'Salvage harvesting ahead of an insect changes what reaches the mill. Expect more colour variation batch to batch than in oak, and require the grade in writing rather than trusting a sample board.',
+      'Ash is frequently offered as a cheaper alternative to white oak. On hardness that is defensible — 1,320 against 1,360 lbf. On supply security it is not, and the difference should be disclosed before the deposit, not after.',
+    ],
+    faqs: [
+      {
+        q: 'Is ash flooring a bad choice because of the emerald ash borer?',
+        a: 'Not bad — constrained, and honestly so. Ash performs well as a floor at 1,320 lbf side hardness with an open, expressive grain. What has changed is supply: the American Hardwood Export Council records US white ash growth at 3.3 million cubic metres a year against 6.9 million harvested, the only inversion among the six species used in this market, and the Invasive Species Centre records that up to 99% of ash trees are killed within eight to ten years of the borer establishing. Specify it knowing that, and order the whole job at once.',
+      },
+      {
+        q: 'Will I be able to match my ash floor in five years?',
+        a: 'Nobody can promise that, and anyone who does is guessing. The published inventory is contracting rather than growing, and the colour of salvaged material varies. The practical answer is to buy the repair allowance with the original order and store it in the house, acclimated to the same conditions as the floor.',
+      },
+      {
+        q: 'Is ash harder than oak?',
+        a: 'It sits between the two oaks. The USDA Forest Products Laboratory publishes white ash at 1,320 lbf side hardness at 12% moisture content, red oak at 1,290 and white oak at 1,360. On hardness alone the three are near-equivalent; the differences that matter in a finished floor are grain, colour and availability.',
+      },
+    ],
+    recommendation: {
+      text: 'Ash is a legitimate specification for a client who wants an open, pale grain and is told the supply position before they commit. It is not a specification to make on price alone, and it is not one to phase across two orders.',
+      conditions: [
+        'Order the entire floor, the waste allowance and a stored repair allowance in a single purchase.',
+        'If the project will certainly extend in a later phase, specify a species with a growing inventory instead.',
+      ],
+    },
+    sources: [
+      { paper: P_PROV, section: 'ash' },
+      { paper: P_PROV, section: 'tolerant-hardwoods' },
+      { paper: P_PROV, section: 'growing-stock' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'hickory-flooring-toronto',
+    kind: 'reference',
+    title: 'Hickory',
+    seoTitle: 'Hickory hardwood flooring in Toronto — the hardest floor on the shelf',
+    question: 'Is hickory flooring worth it in a Toronto home?',
+    summary:
+      'Hickory is the hardest species commonly sold as flooring in this market at 1,880 lbf, and the most visually dramatic — the colour range within a single board is the point of it, not a defect. It is also the species where the grading conversation matters most, because "hickory" covers a group rather than one wood.',
+    publishedAt: '2026-08-27',
+    readingMinutes: 5,
+    spec: [
+      { label: 'Botanical name', value: 'Carya ovata (shagbark hickory) and related species in the group' },
+      { label: 'Side hardness, 12% MC', value: '1,880 lbf for shagbark hickory — the hardest of the six (USDA Forest Products Laboratory, Wood Handbook Table 5-3b)' },
+      { label: 'Ontario range', value: 'Southern Ontario, including along the St. Lawrence River and into Quebec (Ontario Tree Atlas)' },
+      { label: 'Ontario commercial status', value: 'Not among the seven principal tolerant hardwoods named by the Ministry of Natural Resources, and not a separate line in the 2021 growing-stock table' },
+      { label: 'US growing stock', value: '5.1% of the US total, 742.3 million m³ (American Hardwood Export Council)' },
+      { label: 'US annual growth against harvest', value: '14.6 million m³ grown against 6.0 million m³ harvested per year' },
+      { label: 'Milled in Ontario', value: 'Superior Flooring / Herwynen Sawmill, Rockwood, Ontario, lists hickory among its five species' },
+      { label: 'Flooring grades published', value: 'Special Clear, Select, No. 1 Common, No. 2 Common (NWFA/NOFMA hickory-pecan rules)' },
+    ],
+    watchpoints: [
+      'The American Hardwood Export Council declines to publish a single hardness figure for hickory, noting that mechanical properties vary within the group. The 1,880 lbf figure is specifically shagbark. A board sold as "hickory" is not guaranteed to be that species.',
+      'Hickory’s colour range within one board — pale sapwood against dark heartwood — is its defining character. Clients who have only seen a single sample board are frequently surprised by the assembled floor. Show a laid-out area, not a plank.',
+      'It is hard on tooling and hard on the sanding sequence. A refinishing quote priced as though it were oak is a quote that has not read the species.',
+    ],
+    faqs: [
+      {
+        q: 'Is hickory the hardest hardwood flooring?',
+        a: 'Among the species commonly installed in the Greater Toronto Area, yes. The USDA Forest Products Laboratory publishes shagbark hickory at 1,880 lbf side hardness at 12% moisture content, against hard maple at 1,450, white oak at 1,360, white ash at 1,320, red oak at 1,290 and black walnut at 1,010. Note that the American Hardwood Export Council publishes no single figure for hickory because properties vary within the group.',
+      },
+      {
+        q: 'Is hickory flooring too busy for a small room?',
+        a: 'That is an aesthetic judgement, and it depends on grade rather than species. The NWFA/NOFMA hickory-pecan rules publish a Special Clear grade for a far more uniform face, alongside Select, No. 1 Common and No. 2 Common with progressively more colour contrast. Specify the grade rather than arguing about the species.',
+      },
+      {
+        q: 'Can hickory be sourced in Ontario?',
+        a: 'Shagbark hickory grows in Southern Ontario according to the province’s own tree atlas, and Superior Flooring at Rockwood, Ontario lists hickory among the five species it mills. What Ontario does not publish is whether hickory is commercially harvested in the province at any scale — it is not among the seven principal tolerant hardwoods and does not appear as a separate line in the growing-stock inventory. We treat that as evidence of non-prominence, not evidence of zero harvest.',
+      },
+    ],
+    recommendation: {
+      text: 'Hickory is the right specification where maximum dent resistance and strong visual character are both wanted — a busy family floor, a rural or transitional interior, a rental that has to survive tenants. It is the wrong specification where a quiet, uniform floor is the goal, unless the Special Clear grade is being bought deliberately.',
+      conditions: [
+        'View a laid-out area before ordering, never a single board.',
+        'Confirm the grade in writing; the character range between Special Clear and No. 2 Common is larger in hickory than in any other species here.',
+      ],
+    },
+    sources: [
+      { paper: P_PROV, section: 'tolerant-hardwoods' },
+      { paper: P_PROV, section: 'manufacturing' },
+      { paper: P_PROV, section: 'not-published' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'black-walnut-flooring-toronto',
+    kind: 'reference',
+    title: 'Black walnut',
+    seoTitle: 'Black walnut hardwood flooring in Toronto — the scarcest floor in the market',
+    question: 'Is black walnut flooring a good idea in a Toronto home?',
+    summary:
+      'Walnut is the softest of the six species used in this market at 1,010 lbf and the scarcest by a wide margin — one percent of the US hardwood growing stock. Both facts are the specification. It is a beautiful floor bought with its limits understood, or an expensive disappointment bought without them.',
+    publishedAt: '2026-08-27',
+    readingMinutes: 5,
+    spec: [
+      { label: 'Botanical name', value: 'Juglans nigra' },
+      { label: 'Side hardness, 12% MC', value: '1,010 lbf — the softest of the six (USDA Forest Products Laboratory, Wood Handbook Table 5-3b)' },
+      { label: 'Ontario range', value: 'Common in moist, low-lying areas in Southwestern Ontario, often planted north and east of its range (Ontario Tree Atlas)' },
+      { label: 'Ontario commercial status', value: 'Not among the seven principal tolerant hardwoods; Ontario lists its wood use as high quality furniture and veneer' },
+      { label: 'US growing stock', value: '1.0% of the US total, 139.3 million m³ — the scarcest of the six (American Hardwood Export Council)' },
+      { label: 'US annual growth against harvest', value: '4.8 million m³ grown against 1.9 million m³ harvested per year' },
+      { label: 'Flooring grades published', value: 'Clear, Select, No. 1 Common, No. 2 Common (NWFA/NOFMA black walnut rules); No. 1 Common requires heartwood to be a minimum of 25% of the piece' },
+    ],
+    watchpoints: [
+      'At 1,010 lbf, walnut dents. That is not a defect and it is not a reason to avoid it — it is a reason to be explicit about it before the floor is bought, particularly in a household with dogs, chairs on hard castors or a piano.',
+      'Ontario names walnut’s wood use as furniture and veneer, not flooring. The species is present in the province; the flooring supply is a different market, and the volume behind it is one percent of the US growing stock.',
+      'Walnut’s heartwood is what people are buying. The NWFA/NOFMA rules set a minimum heartwood proportion only at No. 1 Common and below — at 25% of the piece — so the grade named on the quote materially changes what arrives.',
+    ],
+    faqs: [
+      {
+        q: 'Does black walnut flooring dent easily?',
+        a: 'More easily than any other species commonly sold here. The USDA Forest Products Laboratory publishes black walnut at 1,010 lbf side hardness at 12% moisture content, against hickory at 1,880 and hard maple at 1,450. It is a floor chosen for its colour and depth, and it should be specified with that trade-off stated out loud.',
+      },
+      {
+        q: 'Why is walnut flooring so expensive?',
+        a: 'Scarcity, on the published inventory. The American Hardwood Export Council records black walnut at 1.0% of the US hardwood growing stock — 139.3 million cubic metres against red oak’s 2.62 billion — with an annual harvest of 1.9 million cubic metres. It is the smallest resource of the six by an order of magnitude, and price follows.',
+      },
+      {
+        q: 'Is walnut flooring sustainable?',
+        a: 'On the published resource figures, black walnut grows faster than it is cut: 4.8 million cubic metres of annual growth against 1.9 million harvested. Scarcity here is a matter of how little exists, not of overcutting. As with every species, the resource figure says nothing about an individual supply chain — for that, ask who milled it.',
+      },
+    ],
+    recommendation: {
+      text: 'Walnut is the correct specification where colour and depth outrank dent resistance and the client has heard the hardness number before choosing. Engineered walnut over a stable core is frequently the better assembly, because the wear layer is the part that has to be walnut.',
+      conditions: [
+        'State the 1,010 lbf hardness figure in the proposal, in writing, before the deposit.',
+        'For a high-traffic household, compare against white oak at 1,360 lbf in the same finish before deciding.',
+      ],
+    },
+    sources: [
+      { paper: P_PROV, section: 'tolerant-hardwoods' },
+      { paper: P_PROV, section: 'ash' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
     ],
     pillars: ['specification'],
   },
