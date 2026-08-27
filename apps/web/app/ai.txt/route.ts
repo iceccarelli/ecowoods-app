@@ -1,4 +1,4 @@
-import { SITE_URL, BUSINESS, SERVICES, CITIES } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, PROFILE_LINKS } from '@ecowoods/shared';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
@@ -76,7 +76,11 @@ export async function GET() {
     '',
     '## Where it works',
     '',
-    ...CITIES.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
+    /* SERVICE_AREAS, not CITIES. This read from the sixteen municipalities
+       while the site publishes a page for all thirty-two — the sixteen missing
+       being the Toronto neighbourhoods, which are the local queries with the
+       most hire intent behind them. Same defect, same fix, as llms.txt. */
+    ...SERVICE_AREAS.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
     '',
   );
 

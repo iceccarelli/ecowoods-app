@@ -34,6 +34,15 @@ import path from 'node:path';
 const ROOT = process.cwd();
 const FILE = 'vercel.json';
 const CANONICAL = 'ecowoods.ca';
+
+/* The host patterns the old-domain map owns. Rules carrying one of these are
+ * generated from old-domain/path-map.json and are exempt from the
+ * path-preservation rule below — see the note there. Read from the map so this
+ * file cannot disagree with it about which hosts are the retired ones. */
+const OLD_HOST_PATTERNS = new Set(
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'old-domain', 'vercel-redirects.json'), 'utf8'))
+    .redirects.flatMap((r) => (r.has ?? []).filter((h) => h.type === 'host').map((h) => h.value)),
+);
 const problems = [];
 
 let cfg;
@@ -73,11 +82,51 @@ for (const [i, r] of (cfg.redirects ?? []).entries()) {
         `      which is the opposite of consolidating a domain.`,
     );
   }
-  if (/:path\*/.test(r.source) && !/:path\*/.test(r.destination)) {
+  /* PATH PRESERVATION IS THE RULE, AND THE OLD DOMAIN IS THE EXCEPTION.
+   *
+   * This check used to be unconditional: a `:path*` source whose destination
+   * drops the path was always a defect. That is right for a host serving the
+   * same site under a different name — www.ecowoods.ca must preserve the path,
+   * because /services/floor-refinishing exists on both sides.
+   *
+   * It is wrong for ecowoodshardwood.com, and old-domain/path-map.json is the
+   * proof: the two sites share ZERO paths. The old URLs are
+   * /pages/flooring-services-toronto-etobicoke-hamilton and
+   * /blogs/testimonials/172376--audrey-in-toronto. Preserving those produces a
+   * guaranteed hard 404 for every one of them. The map routes each old URL to
+   * the page that answers the same question and sends the remainder to the
+   * front door — a soft landing on the right business rather than a dead end.
+   *
+   * So the exemption is not "the old host may do anything". It is: the old
+   * host's rules must come from the map, and the map decides. The drift check
+   * that enforces that lives in scripts/build-old-domain-redirects.mjs.
+   */
+  const isMappedOldHost = hosts.some((h) => OLD_HOST_PATTERNS.has(h));
+  if (!isMappedOldHost && /:path\*/.test(r.source) && !/:path\*/.test(r.destination)) {
     problems.push(
       `${where}\n      drops the path. A link earned by /services/floor-refinishing must land on\n` +
         `      that page, not on the homepage.`,
     );
+  }
+
+  /* A host condition is a REGEX on Vercel, not a literal. The equality check
+   * above catches `ecowoods.ca` typed out; it does not catch `.*` or
+   * `ecowoods\\.(ca|com)`, either of which matches the canonical host and loops
+   * the site exactly as the pasted config would have. Test the pattern. */
+  for (const h of hosts) {
+    let re;
+    try {
+      re = new RegExp(`^(?:${h})$`);
+    } catch {
+      problems.push(`${where}\n      host condition "${h}" is not a valid regular expression.`);
+      continue;
+    }
+    if (h !== CANONICAL && re.test(CANONICAL)) {
+      problems.push(
+        `${where}\n      host pattern "${h}" MATCHES the canonical host ${CANONICAL}.\n` +
+          `      Vercel treats has.host as a regex, so this is the loop with extra steps.`,
+      );
+    }
   }
 }
 

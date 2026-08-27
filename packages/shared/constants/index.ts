@@ -110,8 +110,54 @@ export const PROFILE_LINKS: ProfileLink[] = [
   { label: 'Instagram', href: 'https://www.instagram.com/ecowoodshardwood' },
   { label: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood' },
 
-  // ── NOT LINKED until someone opens the real profile and pastes the URL ─
-  // Every one of these previously pointed at a platform home page.
+  /* ── Directory citation, opened and NAP-matched 2026-08-26 ──────────────
+   *
+   * YellowPages.ca is the one high-authority Canadian directory carrying a
+   * real listing for this company. Opened this session; the page shows
+   * "Ecowoods Inc." / "32 Norfield Cres, Etobicoke, ON M9W 1X6" /
+   * "647-244-5156" under "Floor Refinishing, Laying & Resurfacing" — a
+   * character match against BUSINESS_NAP on all three fields.
+   *
+   * It is not a review platform, so no `review: true`: it contributes to the
+   * entity graph as a `sameAs` citation, not as proof of reputation.
+   *
+   * ONE THING ON IT IS WRONG, AND IT IS NOT OURS TO EDIT FROM HERE. Its
+   * website field reads ecowoodshardwood.com — the retired domain. Every
+   * crawler reconciling this entity is being handed the wrong canonical by the
+   * strongest directory citation the business has. Once the old domain 301s,
+   * that resolves itself; until then it is an operator task, recorded in
+   * ecowoods-unmissable.REPORT.md.
+   */
+  { label: 'YellowPages', href: 'https://www.yellowpages.ca/bus/Ontario/Etobicoke/Ecowoods-Inc/102363922.html' },
+
+  /* ── NOT LINKED until someone opens the real profile and pastes the URL ──
+   *
+   * Every one of these previously pointed at a platform home page. The policy
+   * has not changed and must not: an unlinked profile costs a citation, and an
+   * invented one costs the credibility of every other URL in this array.
+   *
+   * SEARCHED 2026-08-26 AND CONFIRMED ABSENT — recorded so the next person does
+   * not spend the afternoon re-running the same queries, and so nobody
+   * "resolves" a blank by constructing a plausible URL:
+   *
+   *   Google Business Profile   no place URL surfaced in 12 searches
+   *   Houzz                     not in the Etobicoke flooring directory
+   *   Apple Business Connect    no indexed listing
+   *   Bing Places               no listing
+   *   Foursquare                no venue
+   *   Yelp                      no listing
+   *   BBB                       only Ecowood Floors Inc. (Burlington, VT) — a
+   *                             DIFFERENT company, not this one
+   *   ThreeBestRated            not among the three Toronto flooring listings
+   *
+   * Google and Houzz stay `review: true` because they are review surfaces this
+   * business should have and does not yet — the flag records the intent, the
+   * missing `href` records the truth, and /reviews renders only what has one.
+   *
+   * DISAMBIGUATION, PERMANENT. HomeStars profile 2897115-ecowood — "Ecowood",
+   * 4.9 from 559 reviews — is a DIFFERENT COMPANY. Ours is 2776939-ecowoods,
+   * 5.0 from 177. Never wire 2897115.
+   */
   { label: 'Google Reviews', review: true },  // needs the Business Profile / Maps place URL
   { label: 'Houzz', review: true },           // needs the real /pro/ URL
   { label: 'YouTube' },

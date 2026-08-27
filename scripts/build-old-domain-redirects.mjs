@@ -5,7 +5,8 @@
  *   pnpm domain:build          write the files
  *   pnpm domain:build --check  fail if they are out of date (CI)
  *
- * WRITES: old-domain/.htaccess, old-domain/nginx.conf, old-domain/_redirects
+ * WRITES: old-domain/.htaccess, old-domain/nginx.conf, old-domain/_redirects,
+ *         old-domain/vercel-redirects.json
  *
  * WHY THESE ARE GENERATED
  *
@@ -195,6 +196,101 @@ const redirects = [
   '',
 ].join('\n');
 
+/* ── Vercel / Next.js ─────────────────────────────────────────────────────── */
+/**
+ * THE FOURTH TARGET, AND THE REASON IT EXISTS.
+ *
+ * `old-domain/EXECUTE.md` describes uploading .htaccess to whatever serves
+ * ecowoodshardwood.com. The other route — attaching the old domain to THIS
+ * Vercel project — is simpler, needs no host access, and was already
+ * half-written: both `vercel.json` and `apps/web/next.config.js` carried
+ * host-conditioned rules for the old domain.
+ *
+ * Both were PATH-PRESERVING: `/:path*` → `https://ecowoods.ca/:path*`.
+ *
+ * That is the one thing path-map.json exists to say is wrong. The two sites
+ * share zero paths. The old URLs look like
+ * /blogs/testimonials/172376--audrey-in-toronto and
+ * /pages/flooring-services-toronto-etobicoke-hamilton. Preserving those sends
+ * every one of them to a hard 404 on ecowoods.ca — including the 22 customer
+ * testimonials, which are the single largest stranded reputation asset this
+ * business has. The rules were inert because the domain was never attached, so
+ * nothing ever surfaced the defect. Attaching the domain would have shipped it.
+ *
+ * So the same map that generates the three server configs now also generates
+ * the redirect array Vercel and Next understand, and `--check` fails the build
+ * if `vercel.json` drifts from it. One source of truth, four targets.
+ *
+ * The host condition is a regex covering apex and www in one rule, which is how
+ * Vercel matches `has.host`. scripts/verify-vercel-config.mjs asserts that no
+ * host pattern here can match the canonical host.
+ */
+const HOST_RE = `(www\\.)?${map.oldHosts[0].replace(/\./g, '\\.')}`;
+
+/**
+ * One regex can need TWO sources, for the same reason globsOf returns two:
+ * `^/blogs/testimonials(/.*)?$` matches the index AND every post beneath it,
+ * and path-to-regexp expresses those as separate patterns.
+ */
+const sourcesOf = (re) => {
+  const bare = re.replace(/^\^/, '').replace(/\$$/, '');
+  if (bare === '/') return ['/'];
+  if (bare.endsWith('(/.*)?')) {
+    const stem = bare.slice(0, -6);
+    return [stem, `${stem}/:rest*`];
+  }
+  if (bare.endsWith('/?')) return [bare.slice(0, -2)];
+  return [bare];
+};
+
+const hostHas = { type: 'host', value: HOST_RE };
+
+const vercelRedirects = [
+  /* Query rules first: the legacy store endpoints arrive as `/?fuseaction=…`,
+     so their path is `/` and a plain `/` rule above them would swallow them. */
+  ...map.queryRules.map((q) => {
+    const m = q.from.match(/^\^([^=]+)=(.*)\$$/);
+    if (!m) throw new Error(`queryRule not in key=value form: ${q.from}`);
+    return {
+      source: '/',
+      has: [hostHas, { type: 'query', key: m[1], value: m[2] }],
+      destination: `${NEW}${q.to}`,
+      permanent: true,
+    };
+  }),
+  ...map.rules.flatMap((r) =>
+    sourcesOf(r.from).map((source) => ({
+      source,
+      has: [hostHas],
+      destination: `${NEW}${r.to}`,
+      permanent: true,
+    })),
+  ),
+  /* Fallback. Last, and deliberately not path-preserving — see path-map.json. */
+  {
+    source: '/:path*',
+    has: [hostHas],
+    destination: `${NEW}${map.fallback.to}`,
+    permanent: true,
+  },
+];
+
+const vercelJson = `${JSON.stringify(
+  {
+    $comment: [
+      'GENERATED FILE — do not hand-edit. Source: old-domain/path-map.json.',
+      'Regenerate: pnpm domain:build. Verify: pnpm domain:check.',
+      'These objects are copied verbatim into the `redirects` array of the root',
+      'vercel.json, ahead of the canonical-host rules, and are required by',
+      'apps/web/next.config.js so the Next layer cannot disagree with the edge.',
+      'NOT PATH-PRESERVING, AND THAT IS DELIBERATE.',
+    ],
+    redirects: vercelRedirects,
+  },
+  null,
+  2,
+)}\n`;
+
 /* ── simulate ─────────────────────────────────────────────────────────────
  *
  *   pnpm domain:build --simulate
@@ -252,6 +348,7 @@ const files = [
   ['.htaccess', htaccess],
   ['nginx.conf', nginx],
   ['_redirects', redirects],
+  ['vercel-redirects.json', vercelJson],
 ];
 
 let stale = 0;
@@ -272,13 +369,45 @@ for (const [name, content] of files) {
   console.log(`  write old-domain/${name}`);
 }
 
+/* ── the two consumers must not drift ─────────────────────────────────────── */
+/**
+ * vercel.json cannot import. Its `redirects` array therefore carries a verbatim
+ * copy of the generated objects above, and this is the check that makes the
+ * copy safe: every generated rule must appear in vercel.json, in order, ahead
+ * of the hand-maintained canonical-host rules.
+ *
+ * apps/web/next.config.js has it easier — it `require()`s the generated file
+ * directly, so it cannot drift and is not checked here.
+ */
+const vercelPath = join(ROOT, 'vercel.json');
+let vercelCfg = null;
+try {
+  vercelCfg = JSON.parse(readFileSync(vercelPath, 'utf8'));
+} catch (e) {
+  console.error(`  STALE vercel.json is unreadable or invalid JSON: ${e.message}`);
+  stale++;
+}
+if (vercelCfg) {
+  const live = (vercelCfg.redirects ?? []).slice(0, vercelRedirects.length);
+  if (JSON.stringify(live) !== JSON.stringify(vercelRedirects)) {
+    console.error(
+      '  STALE vercel.json — its first ' +
+        `${vercelRedirects.length} redirect(s) do not match old-domain/vercel-redirects.json.\n` +
+        '        Copy that file’s `redirects` array to the TOP of vercel.json’s.',
+    );
+    stale++;
+  } else {
+    console.log('  ok    vercel.json (old-domain block)');
+  }
+}
+
 console.log('');
 if (CHECK && stale) {
   console.error(`✗ ${stale} generated redirect config(s) out of date with old-domain/path-map.json\n`);
   process.exit(1);
 }
 console.log(
-  `✓ ${map.rules.length} path rule(s) + ${map.queryRules.length} query rule(s) + fallback → three configs\n` +
+  `✓ ${map.rules.length} path rule(s) + ${map.queryRules.length} query rule(s) + fallback → four targets\n` +
     `  Deploy exactly one of them, on whatever serves ecowoodshardwood.com.\n` +
     `  Which one: old-domain/EXECUTE.md. Measured 2026-08-23 as Apache — use .htaccess.\n`,
 );
