@@ -40,6 +40,19 @@ const GUIDE_IMAGE: Record<string, string> = {
   'white-oak-flooring-toronto': 'guide-white-oak',
   'dustless-hardwood-refinishing-toronto': 'guide-dustless',
   'herringbone-chevron-parquet-toronto': 'guide-herringbone-parquet',
+
+  /* The five species dossiers share one hero, and that is the correct answer
+     rather than a shortcut. Each of them exists to place ONE species on a
+     comparative hardness scale that runs from black walnut at 1,010 lbf to
+     hickory at 1,880; five separate drawings of the same ladder would be five
+     chances for the ladder to disagree with itself. Wired ahead of the art —
+     <Illustration> renders nothing for an id the manifest does not carry, so
+     these are inert until the file lands. */
+  'red-oak-flooring-toronto': 'species-hardness-ladder',
+  'hard-maple-flooring-toronto': 'species-hardness-ladder',
+  'white-ash-flooring-toronto': 'species-hardness-ladder',
+  'hickory-flooring-toronto': 'species-hardness-ladder',
+  'black-walnut-flooring-toronto': 'species-hardness-ladder',
 };
 
 export function generateStaticParams() {

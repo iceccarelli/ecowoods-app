@@ -51,6 +51,8 @@ export type GlossaryTerm = {
 const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
 const P_COST = 'hardwood-selection-and-cost-framework-gta';
 const P_CRAFT = 'hardwood-refinishing-machines-and-sequence';
+const P_PROV = 'where-toronto-hardwood-comes-from';
+const P_GRADE = 'hardwood-grading-standards-nhla-nwfa';
 
 export const GLOSSARY: GlossaryTerm[] = [
   /* ── wood behaviour ────────────────────────────────────────────────────── */
@@ -104,7 +106,7 @@ export const GLOSSARY: GlossaryTerm[] = [
       'Both the subfloor and the flooring material have a moisture content, and both must be measured. Testing only the subfloor measures half the system: every board arrives with its own moisture history.',
       'Testing happens twice — at the free estimate, and again immediately before installation. Conditions change between quoting and installing, and a single reading months earlier describes a building that no longer exists.',
     ],
-    related: ['moisture-differential', 'acclimation', 'subfloor', 'cupping'],
+    related: ['moisture-differential', 'acclimation', 'subfloor', 'cupping', 'kiln-drying'],
     pillars: ['moisture'],
     source: { paper: P_CLIMATE, section: 'moisture-testing' },
   },
@@ -226,7 +228,7 @@ export const GLOSSARY: GlossaryTerm[] = [
       'Solid hardwood is one material all the way through, which is both its advantage and its constraint. The advantage is a wear layer that supports many refinishing cycles. The constraint is that there is no cross-ply construction resisting seasonal movement.',
       'It is correct over a plywood subfloor, nailed down, in a home with a controlled humidity range. It is not correct over concrete or radiant heat, and no budget argument changes that.',
     ],
-    related: ['engineered-hardwood', 'wear-layer', 'nail-down', 'subfloor'],
+    related: ['engineered-hardwood', 'wear-layer', 'nail-down', 'subfloor', 'strip-plank-wide-plank'],
     pillars: ['specification', 'substrate'],
     source: { paper: P_CLIMATE, section: 'solid-vs-engineered' },
   },
@@ -491,6 +493,178 @@ export const GLOSSARY: GlossaryTerm[] = [
     related: ['fixed-price', 'subfloor', 'glue-down'],
     pillars: ['accountability'],
     source: { paper: P_COST, section: 'fixed-price' },
+  },
+  /* \u2500\u2500 provenance and grading \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+  {
+    slug: 'tolerant-hardwood',
+    term: 'Tolerant hardwood',
+    aka: ['Shade-tolerant hardwood'],
+    short:
+      'A hardwood species that regenerates and grows under a closed forest canopy, and can therefore be harvested without opening the stand.',
+    body: [
+      'Ontario groups its principal deciduous timber species as tolerant hardwoods \u2014 tolerant of shade, meaning seedlings survive under the canopy of mature trees rather than needing open ground. The Ministry of Natural Resources names seven: sugar maple, American beech, yellow birch, red oak, white ash, black cherry and basswood.',
+      'The classification is not botanical trivia. It is what makes the selection system possible: a shade-tolerant stand can be partially harvested every few decades and stay a forest throughout, which is a fundamentally different operation from a clear-cut.',
+      'Read the list against the six hardwoods a Toronto homeowner is shown and the interesting result is the absence. Red oak, hard maple and white ash are on it. White oak, hickory and black walnut are not \u2014 all three grow in Ontario, and none is a named principal commercial tolerant hardwood.',
+    ],
+    related: ['selection-system', 'growing-stock', 'janka-hardness'],
+    pillars: ['specification'],
+    source: { paper: P_PROV, section: 'tolerant-hardwoods' },
+  },
+  {
+    slug: 'selection-system',
+    term: 'Selection system',
+    aka: ['Single-tree selection', 'Selection harvest'],
+    short:
+      'A silvicultural system of periodic partial harvests that keeps mature forest cover in place permanently, rather than removing and replacing a stand.',
+    body: [
+      'Ontario defines the selection system as periodic partial harvests timed on basal-area recruitment, using vigour, risk and species preference to decide which trees are taken and which are kept. The stated outcome is an all-aged future forest with regeneration established under at least 70% residual cover, and dense mature forest cover maintained in perpetuity.',
+      'The province records that residual trees in a selection harvest may be retained for multiple cutting cycles totalling 100 years or more, and describes sugar maple specifically as amenable to single-tree selection.',
+      'This has a direct bearing on the floor. Slow, even growth under a closed canopy produces tight, consistent grain, and tight consistent grain is what grades well and machines well. The silviculture and the grade are the same fact seen at opposite ends of the supply chain.',
+    ],
+    related: ['tolerant-hardwood', 'growing-stock', 'forest-certification'],
+    pillars: ['specification'],
+    source: { paper: P_PROV, section: 'selection-system' },
+  },
+  {
+    slug: 'growing-stock',
+    term: 'Growing stock',
+    short:
+      'The volume of wood standing in a forest \u2014 what exists, as distinct from what is harvested.',
+    body: [
+      'Growing stock is an inventory figure. Ontario publishes it by species: sugar maple at 300,361,212 cubic metres, red oak at 85,019,702, yellow birch at 82,005,013, ash as a group at 42,273,003, basswood at 18,444,080.',
+      'It is the most useful provenance number available to an Ontario homeowner, because it says which species the province could keep supplying without importing anything. It is also routinely confused with harvest, which is a different number entirely.',
+      'Ontario does not publish a hardwood-specific harvest volume. The species split it does publish stops at spruce, jack pine and poplar. Anyone quoting an Ontario hardwood harvest figure should be asked which document it came from.',
+    ],
+    related: ['tolerant-hardwood', 'selection-system', 'emerald-ash-borer'],
+    pillars: ['specification'],
+    source: { paper: P_PROV, section: 'growing-stock' },
+  },
+  {
+    slug: 'forest-certification',
+    term: 'Forest certification',
+    aka: ['FSC', 'SFI', 'PEFC'],
+    short:
+      'Third-party verification that a forest is managed to a published standard \u2014 a claim about management practice, not about legality and not about the wood itself.',
+    body: [
+      'The Forest Products Association of Canada publishes 154 million hectares of certified forest land in Canada across FSC, PEFC and SFI, putting Canada at 38% of the world\u2019s certified forest while only 10% of the world\u2019s forests are certified at all.',
+      'Ontario publishes its own position as unit counts rather than hectares. As of December 2020, 26.1 million hectares were certified \u2014 29 of 39 management units, 77% of the public lands and waters within management units, comprising 13 FSC units, 9 SFI, 6 dual, 1 CSA and 10 uncertified.',
+      'Certification is a separate instrument from legality. Canada\u2019s Wild Animal and Plant Protection and Regulation of International and Interprovincial Trade Act and the United States Lacey Act both prohibit trade in illegally sourced timber, and Natural Resources Canada states that the risk of illegal logging is negligible in all regions of Canada. A certification mark answers a management question; the statutes answer a legality one.',
+    ],
+    related: ['selection-system', 'tolerant-hardwood'],
+    pillars: ['specification'],
+    source: { paper: P_PROV, section: 'certification' },
+  },
+  {
+    slug: 'emerald-ash-borer',
+    term: 'Emerald ash borer',
+    aka: ['EAB', 'Agrilus planipennis'],
+    short:
+      'An invasive beetle first detected near Detroit and Windsor in 2002 that kills up to 99% of ash trees within eight to ten years of establishing.',
+    body: [
+      'The Invasive Species Centre records that up to 99% of ash trees are killed by the emerald ash borer within 8 to 10 years of its establishment, and that it was first detected near Detroit, Michigan and Windsor, Ontario in 2002.',
+      'The flooring consequence is visible in the inventory. White ash is the only one of the six species used in this market where annual harvest exceeds annual growth \u2014 3.3 million cubic metres grown against 6.9 million harvested, on the American Hardwood Export Council\u2019s figures. Every other species in the set shows growth at roughly double harvest.',
+      'That inversion is salvage, not demand. Standing ash is being cut ahead of an insect. A homeowner specifying ash should order the whole floor, the waste allowance and a stored repair allowance in one purchase, because a matching reorder in five years cannot be promised by anyone.',
+    ],
+    related: ['growing-stock', 'tolerant-hardwood'],
+    pillars: ['specification'],
+    source: { paper: P_PROV, section: 'ash' },
+  },
+  {
+    slug: 'nhla-grade',
+    term: 'NHLA grade',
+    aka: ['Lumber grade', 'FAS', 'No. 1 Common'],
+    short:
+      'A hardwood lumber grade set at the sawmill by how much clear material a board will yield when cut up \u2014 not a statement about a finished floor.',
+    body: [
+      'The National Hardwood Lumber Association grades lumber on clear-face yield, expressed in twelfths. FAS requires 83-1/3%, or 10/12, from boards 6 inches and wider at 8 to 16 feet. No. 1 Common requires 66-2/3%, or 8/12. No. 2A Common requires 50%. No. 3A Common requires 33-1/3%.',
+      'The grade is fixed at the sawmill and never improves. A flooring mill works within it; a finish does not change it.',
+      'This is not the grade on a flooring quote. That is an NWFA/NOFMA appearance grade, published by a different body in a separate document with the opposite logic, and the flooring standard does not cross-reference the lumber rules at all.',
+    ],
+    related: ['clear-face-yield', 'flooring-grade'],
+    pillars: ['specification'],
+    source: { paper: P_GRADE, section: 'nhla-yield' },
+  },
+  {
+    slug: 'clear-face-yield',
+    term: 'Clear-face yield',
+    short:
+      'The proportion of a board\u2019s face that will produce clear cuttings of a stated minimum size \u2014 the measurement an NHLA lumber grade is built on.',
+    body: [
+      'Yield is expressed in twelfths because the NHLA rules measure a board in units of twelve. FAS at 10/12 is 83-1/3%; No. 1 Common at 8/12 is 66-2/3%; No. 2A Common at 6/12 is 50%; No. 3A Common at 4/12 is 33-1/3%.',
+      'The cutting size is part of the definition and is not optional. FAS requires a minimum cutting of 4 inches by 5 feet, or 3 inches by 7 feet. No. 1 Common accepts 4 by 2 feet or 3 by 3 feet. A board can carry a high proportion of clear face and still fail a grade because the clear areas are too small to cut usefully.',
+    ],
+    related: ['nhla-grade', 'flooring-grade'],
+    pillars: ['specification'],
+    source: { paper: P_GRADE, section: 'nhla-yield' },
+  },
+  {
+    slug: 'flooring-grade',
+    term: 'Flooring grade',
+    aka: ['NWFA grade', 'NOFMA grade', 'Clear, Select, No. 1 Common, No. 2 Common'],
+    short:
+      'An appearance classification for finished flooring. The standard states outright that all grades are equally strong and serviceable in any application.',
+    body: [
+      'The NWFA/NOFMA International Standards for Unfinished Solid Wood Flooring, revised April 2018, grade a finished board on how it looks and on nothing else. Its governing sentence is unambiguous: appearance alone determines the grades of hardwood flooring since all grades are equally strong and serviceable in any application.',
+      'For oak the ladder runs Clear, Select, No. 1 Common, No. 2 Common, with each grade\u2019s permitted characters published in detail \u2014 Clear still allows up to 3/8 inch of bright sapwood along the full length. For hard maple, beech and birch the top grades are Special Clear and Select & Better, and colour is graded as heavily as defect.',
+      'The practical consequence is that choosing No. 2 Common is an aesthetic decision, not a compromise on the floor. The NWFA itself describes it as most desirable where numerous notable character marks and prominent colour contrast are wanted.',
+    ],
+    related: ['nhla-grade', 'clear-face-yield', 'heartwood', 'sapwood'],
+    pillars: ['specification'],
+    source: { paper: P_GRADE, section: 'nwfa-appearance' },
+  },
+  {
+    slug: 'heartwood',
+    term: 'Heartwood',
+    short:
+      'The darker, denser inner wood of a tree, no longer conducting sap \u2014 the part most flooring grades are written around.',
+    body: [
+      'Grades are written in terms of how much heartwood and sapwood a face may carry. NWFA/NOFMA Clear oak is described as a heartwood-dominant product allowing minimal character marks, while Select permits unlimited sound sapwood.',
+      'In black walnut the proportion is stated explicitly: No. 1 Common requires heartwood to be a minimum of 25% of the piece. Since walnut is bought almost entirely for the colour of its heartwood, the grade named on a quote materially changes what arrives.',
+    ],
+    related: ['sapwood', 'flooring-grade'],
+    pillars: ['specification'],
+    source: { paper: P_GRADE, section: 'nwfa-appearance' },
+  },
+  {
+    slug: 'sapwood',
+    term: 'Sapwood',
+    short:
+      'The paler outer wood of a tree, still conducting sap when the tree was standing. Permitted, limited or required depending on the grade.',
+    body: [
+      'Sapwood is a grading variable rather than a defect. NWFA/NOFMA Clear oak permits up to 3/8 inch of bright sapwood along the full length of a board, or 1 inch wide for a third of its length; Select permits unlimited sound sapwood.',
+      'In hard maple the relationship inverts, because the pale wood is the product. Special Clear hard maple requires 95% sapwood on the face, free from stain, with the heartwood portion nearly white \u2014 a grade that exists to exclude the darker wood other species are graded to include.',
+    ],
+    related: ['heartwood', 'flooring-grade'],
+    pillars: ['specification'],
+    source: { paper: P_GRADE, section: 'nwfa-appearance' },
+  },
+  {
+    slug: 'strip-plank-wide-plank',
+    term: 'Strip, plank and wide plank',
+    short:
+      'Board-width categories defined by the flooring standard, not descriptive terms a showroom is free to apply as it likes.',
+    body: [
+      'The NWFA/NOFMA standard defines them by measurement. Strip is less than 3 inches, or 76.2 mm. Plank is 3 to 5 inches. Wide plank is greater than 5 inches.',
+      'The same standard fixes solid flooring thickness at .750 inches \u2014 19.05 mm \u2014 with a tolerance of plus or minus .015 inches, or .38 mm.',
+      'Width is not only a look. The permitted moisture differential between flooring and subfloor is tighter for wider boards: no more than 4 percentage points for strip under 3 inches, and no more than 2 for flooring 3 inches or wider.',
+    ],
+    related: ['flooring-grade', 'moisture-differential', 'solid-hardwood'],
+    pillars: ['specification', 'moisture'],
+    source: { paper: P_GRADE, section: 'dimensions' },
+  },
+  {
+    slug: 'kiln-drying',
+    term: 'Kiln drying',
+    short:
+      'Controlled drying of sawn boards to a target moisture content before they are milled into flooring.',
+    body: [
+      'The kiln is the third link in the chain from standing timber to a finished floor, after the forest and the sawmill. The NWFA/NOFMA standard puts manufactured flooring at 6% to 9% moisture content, with a 5% allowance for pieces outside that range up to 12%.',
+      'That is a manufacturing specification and not a site condition, and the gap between the two is where most Toronto floor failures live. A board correctly dried to 7% at the mill will still cup if it is laid against an untested subfloor.',
+      'Kiln schedules and drying times for Ontario hardwood are not published in any document we could open. Where a supplier states one, ask which document it comes from.',
+    ],
+    related: ['moisture-content', 'moisture-differential', 'acclimation'],
+    pillars: ['moisture'],
+    source: { paper: P_PROV, section: 'chain' },
   },
 ];
 

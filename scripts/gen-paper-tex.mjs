@@ -1,0 +1,250 @@
+#!/usr/bin/env node
+/**
+ * scripts/gen-paper-tex.mjs — render every paper in the manifest to LaTeX.
+ *
+ * WHY THIS EXISTS
+ *
+ * Two of the three founding papers cannot be published as PDFs, because the
+ * exports predate the business-facts remediation and carry two retired claims
+ * on their title slide. The LaTeX they came from was hand-written, so the
+ * HTML at /papers/<slug> and the PDF beside it are two independently authored
+ * documents that happen to agree today. That is a drift waiting to happen, and
+ * it is exactly the failure lib/papers.ts was created to end for every other
+ * derived surface.
+ *
+ * So the PDF becomes a derived surface too. This script reads lib/papers.ts —
+ * the same single source the pages, the schema, the sitemap and the machine
+ * files read — and writes docs/papers-pending/<pdf-basename>.tex. Re-export
+ * that in any LaTeX toolchain and the download can no longer disagree with the
+ * page, because there is only one manuscript.
+ *
+ * HOW IT READS TYPESCRIPT WITHOUT A BUILD STEP
+ *
+ * The PAPERS array is pure data: object literals, strings, arrays. The only
+ * non-literal values in it are three pricing interpolations. So the array text
+ * is extracted, handed to `new Function` with the three pricing constants and
+ * `bandBare` supplied as arguments, and evaluated. The constants themselves are
+ * read out of content/constants/pricing.ts by regex, so a price change there
+ * reaches the LaTeX with everything else.
+ *
+ * If the manifest ever stops being pure data, this fails loudly rather than
+ * emitting a document with a hole in it.
+ *
+ *   node scripts/gen-paper-tex.mjs
+ *   node scripts/gen-paper-tex.mjs --check   parse only; write nothing
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+
+const ROOT = process.cwd();
+const CHECK = process.argv.includes('--check');
+const MANIFEST = path.join(ROOT, 'apps/web/lib/papers.ts');
+const PRICING = path.join(ROOT, 'apps/web/content/constants/pricing.ts');
+const OUT_DIR = path.join(ROOT, 'docs/papers-pending');
+
+const read = (p) => fs.readFileSync(p, 'utf8');
+
+/* ── the pricing constants, read from their one source ───────────────────── */
+function band(src, name) {
+  const m = src.match(
+    new RegExp(`export const ${name}: PriceBand = \\{([\\s\\S]*?)\\} as const;`),
+  );
+  if (!m) throw new Error(`gen-paper-tex: could not read ${name} out of content/constants/pricing.ts`);
+  const num = (k) => Number((m[1].match(new RegExp(`${k}: ([\\d.]+)`)) || [])[1]);
+  const label = (m[1].match(/label: '([^']+)'/) || [])[1];
+  return { min: num('min'), max: num('max'), label, unit: 'sq ft' };
+}
+const pricingSrc = read(PRICING);
+const SCREEN_RECOAT = band(pricingSrc, 'SCREEN_RECOAT');
+const FULL_SAND_FINISH = band(pricingSrc, 'FULL_SAND_FINISH');
+const NEW_INSTALL = band(pricingSrc, 'NEW_INSTALL');
+const bandBare = (b) => `$${b.min.toFixed(2)}\u2013$${b.max.toFixed(2)}`;
+
+/* ── the manifest, evaluated as the data it is ───────────────────────────── */
+const src = read(MANIFEST);
+const start = src.indexOf('export const PAPERS: Paper[] = [');
+if (start < 0) throw new Error('gen-paper-tex: PAPERS array not found — the manifest shape changed.');
+const open = src.indexOf('[', start);
+const end = src.indexOf('\n];', open);
+if (end < 0) throw new Error('gen-paper-tex: could not find the end of the PAPERS array.');
+const body = src.slice(open + 1, end);
+
+let PAPERS;
+try {
+  // eslint-disable-next-line no-new-func
+  PAPERS = new Function(
+    'SCREEN_RECOAT', 'FULL_SAND_FINISH', 'NEW_INSTALL', 'bandBare',
+    `return [${body}];`,
+  )(SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL, bandBare);
+} catch (err) {
+  console.error(
+    '\n\u2717 gen-paper-tex: the PAPERS array is no longer pure data.\n\n' +
+      `  ${err.message}\n\n` +
+      '  Something in lib/papers.ts now calls a function or reads an import this script\n' +
+      '  does not supply. Add it to the argument list above, or move the computation out\n' +
+      '  of the manifest. Failing here is deliberate: the alternative is a PDF with a\n' +
+      '  hole in it that nobody notices until a customer downloads it.\n',
+  );
+  process.exit(1);
+}
+
+/* ── LaTeX escaping ──────────────────────────────────────────────────────── */
+const TEX = (s) =>
+  String(s)
+    .replace(/\\/g, '\\textbackslash{}')
+    .replace(/([&%$#_{}])/g, '\\$1')
+    .replace(/~/g, '\\textasciitilde{}')
+    .replace(/\^/g, '\\textasciicircum{}')
+    .replace(/\u00b3/g, '\\textsuperscript{3}')
+    .replace(/\u00b2/g, '\\textsuperscript{2}')
+    .replace(/\u00d7/g, '$\\times$')
+    .replace(/\u00b0/g, '\\textdegree{}')
+    .replace(/\u2019/g, "'")
+    .replace(/\u2018/g, "`")
+    .replace(/\u201c/g, '``')
+    .replace(/\u201d/g, "''")
+    .replace(/\u2014/g, '---')
+    .replace(/\u2013/g, '--');
+
+const PREAMBLE = (paper) => `% ============================================================================
+%  GENERATED by scripts/gen-paper-tex.mjs from apps/web/lib/papers.ts
+%  DO NOT EDIT BY HAND. Edit the manifest and regenerate:
+%
+%      node scripts/gen-paper-tex.mjs
+%
+%  The HTML at /papers/${paper.slug} and this document are the same manuscript.
+%  That is the point: a hand-written .tex beside a manifest-driven page is two
+%  documents that agree until the day they do not.
+%
+%  To publish the PDF:
+%      1. compile this file (pdflatex, twice, for the table of contents)
+%      2. mkdir -p apps/web/public/papers && mv <the-new>.pdf apps/web/public/papers/
+%      3. git add apps/web/public/papers   -- in the same commit
+%  The download button appears on its own; pdfIsPublished() checks the file.
+% ============================================================================
+\\documentclass[11pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage[margin=2.4cm]{geometry}
+\\usepackage{booktabs}
+\\usepackage{longtable}
+\\usepackage{array}
+\\usepackage{ragged2e}
+\\usepackage{enumitem}
+\\usepackage{xcolor}
+\\usepackage{mdframed}
+\\usepackage{titlesec}
+\\usepackage{fancyhdr}
+\\usepackage[hidelinks]{hyperref}
+
+\\definecolor{ecodark}{RGB}{16,20,28}
+\\definecolor{ecowood}{RGB}{145,95,45}
+\\definecolor{ecoaccent}{RGB}{0,100,120}
+\\definecolor{ecolite}{RGB}{250,247,242}
+
+\\titleformat{\\section}{\\Large\\bfseries\\color{ecodark}}{\\thesection}{0.7em}{}
+\\titleformat{\\subsection}{\\large\\bfseries\\color{ecoaccent}}{}{0em}{}
+\\setlist[itemize]{leftmargin=1.4em,itemsep=0.25em,topsep=0.4em}
+\\setlist[enumerate]{leftmargin=1.6em,itemsep=0.25em,topsep=0.4em}
+
+\\newmdenv[
+  linecolor=ecowood,linewidth=2pt,topline=false,bottomline=false,rightline=false,
+  backgroundcolor=ecolite,leftmargin=0pt,rightmargin=0pt,
+  innerleftmargin=1em,innertopmargin=0.7em,innerbottommargin=0.7em,skipabove=1em,skipbelow=1em
+]{callout}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyhead[L]{\\footnotesize\\color{ecodark}EcoWoods Hardwood Flooring \\textbullet{} Toronto}
+\\fancyhead[R]{\\footnotesize\\color{ecodark}${TEX(paper.title)} v${TEX(paper.version)}}
+\\fancyfoot[C]{\\footnotesize\\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
+
+\\begin{document}
+`;
+
+function tabular(t) {
+  const cols = t.head.length;
+  const spec = 'p{' + (16 / cols).toFixed(2) + 'cm}';
+  let out = '\n\\begin{center}\n\\footnotesize\n';
+  out += `\\begin{longtable}{${Array(cols).fill(spec).join('')}}\n`;
+  if (t.caption) out += `\\caption*{\\small\\itshape ${TEX(t.caption)}}\\\\\n`;
+  out += '\\toprule\n';
+  out += t.head.map((h) => `\\textbf{${TEX(h)}}`).join(' & ') + ' \\\\\n\\midrule\n\\endhead\n';
+  for (const row of t.rows) out += row.map(TEX).join(' & ') + ' \\\\\n';
+  out += '\\bottomrule\n\\end{longtable}\n\\end{center}\n';
+  return out;
+}
+
+function render(paper) {
+  let out = PREAMBLE(paper);
+  out += `\\begin{titlepage}\n\\vspace*{3cm}\n\\begin{flushleft}\n`;
+  out += `{\\Huge\\bfseries\\color{ecodark}${TEX(paper.title)}}\\\\[0.6em]\n`;
+  out += `{\\LARGE\\color{ecoaccent}${TEX(paper.subtitle)}}\\\\[2em]\n`;
+  out += `{\\large ${TEX(paper.abstract)}}\\\\[2.5em]\n`;
+  out += `\\rule{\\textwidth}{0.6pt}\\\\[0.8em]\n`;
+  out += `\\textbf{Version} ${TEX(paper.version)} \\quad\\textbullet\\quad `;
+  out += `\\textbf{Published} ${TEX(paper.publishedAt)} \\quad\\textbullet\\quad `;
+  out += `\\textbf{Reading time} ${TEX(paper.readingMinutes)} minutes\\\\[0.4em]\n`;
+  out += `\\textbf{Audience} ${TEX(paper.audience)}\\\\[0.4em]\n`;
+  out += `\\textbf{Topics} ${TEX((paper.topics || []).join(' \u00b7 '))}\\\\[1.2em]\n`;
+  out += `\\small\\textit{The current edition of this paper is published as HTML at }`;
+  out += `\\texttt{ecowoods.ca/papers/${TEX(paper.slug)}}\\textit{. Where the two disagree, the page is correct.}\n`;
+  out += `\\end{flushleft}\n\\end{titlepage}\n\n`;
+  out += `\\tableofcontents\n\\newpage\n\n`;
+  out += `\\section*{Summary}\n\\addcontentsline{toc}{section}{Summary}\n${TEX(paper.summary)}\n\n`;
+
+  for (const s of paper.sections) {
+    out += `\\section{${TEX(s.heading)}}\n`;
+    for (const para of s.body || []) out += `${TEX(para)}\n\n`;
+    if (s.bullets?.length) {
+      out += '\\begin{itemize}\n';
+      for (const b of s.bullets) out += `  \\item ${TEX(b)}\n`;
+      out += '\\end{itemize}\n\n';
+    }
+    if (s.ordered?.length) {
+      out += '\\begin{enumerate}\n';
+      for (const b of s.ordered) out += `  \\item ${TEX(b)}\n`;
+      out += '\\end{enumerate}\n\n';
+    }
+    if (s.table) out += tabular(s.table);
+    if (s.callout) {
+      out += `\\begin{callout}\n\\textbf{\\color{ecowood}${TEX(s.callout.label)}}\\\\[0.3em]\n${TEX(s.callout.text)}\n\\end{callout}\n\n`;
+    }
+  }
+
+  if (paper.references?.length) {
+    out += `\\section*{Sources}\n\\addcontentsline{toc}{section}{Sources}\n`;
+    out += `Every figure in this paper was read from the document below, on the date shown. `;
+    out += `An external page can change under a citation; the read date is the only honest thing to record.\n\n`;
+    out += '\\begin{enumerate}[label={[\\arabic*]}]\n';
+    for (const r of paper.references) {
+      out += `  \\item ${TEX(r.org)}. \\textit{${TEX(r.title)}}. \\\\ \\texttt{\\footnotesize ${TEX(r.url)}} \\\\ Read ${TEX(r.readAt)}.\n`;
+    }
+    out += '\\end{enumerate}\n\n';
+  }
+
+  out += '\\end{document}\n';
+  return out;
+}
+
+/* ── write ───────────────────────────────────────────────────────────────── */
+if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
+let written = 0;
+for (const paper of PAPERS) {
+  const name = paper.pdf.replace(/\.pdf$/, '.tex');
+  const target = path.join(OUT_DIR, name);
+  const tex = render(paper);
+  if (CHECK) { written++; continue; }
+  /* A hand-written .tex is never silently overwritten. The three founding
+     papers were typeset by hand and their sources carry corrections this
+     generator cannot know about; only files this generator wrote are its to
+     rewrite. */
+  if (fs.existsSync(target) && !read(target).startsWith('% ============================================================================\n%  GENERATED by scripts/gen-paper-tex.mjs')) {
+    console.log(`  · skipped ${name} — hand-written, not generated by this script`);
+    continue;
+  }
+  fs.writeFileSync(target, tex);
+  written++;
+}
+console.log(`\u2713 ${CHECK ? 'parsed' : 'generated'} ${written} paper source(s) \u2192 docs/papers-pending/`);
