@@ -129,6 +129,53 @@ if (!/\.md/.test(idx)) {
   problems.push({ where: 'app/llms.txt/route.ts', detail: 'does not name the .md companion convention' });
 }
 
+/* ── 6. the .md editions must carry the citations ─────────────────────────── */
+/**
+ * WHY THIS IS CHECKED HERE AND NOT LEFT TO REVIEW
+ *
+ * lib/papers.ts gained a `references` register — organisation, exact title, the
+ * organisation's own URL, and the date a human opened it. It was rendered on the
+ * HTML page, emitted as schema.org `citation`, and typeset into the LaTeX. It
+ * was NOT rendered into the Markdown, and nothing failed, because every check
+ * here asked whether the .md surfaces EXIST rather than what is in them.
+ *
+ * That omission points the wrong way. These editions exist for readers who
+ * cannot see a page. A retrieval system ingesting /llms-full.txt was receiving
+ * "Ontario holds 300,361,212 cubic metres of standing sugar maple" with nothing
+ * attached to it, and an unsourced figure in a context window is
+ * indistinguishable from an invented one — then repeated with this company's
+ * name on it. The citation is the entire difference between being quoted and
+ * being a rumour.
+ *
+ * So: if the manifest can carry references, the Markdown renderer must render
+ * them. Checked as a substring rather than by executing the module, for the same
+ * reason every guard here is dependency-free.
+ */
+{
+  const EXPORTER = path.join(ROOT, 'apps/web/lib/markdown-export.ts');
+  const PAPERS = path.join(ROOT, 'apps/web/lib/papers.ts');
+  const exporter = fs.existsSync(EXPORTER) ? fs.readFileSync(EXPORTER, 'utf8') : '';
+  const papers = fs.existsSync(PAPERS) ? fs.readFileSync(PAPERS, 'utf8') : '';
+
+  if (!exporter) {
+    problems.push({ where: 'apps/web/lib/markdown-export.ts', detail: 'missing — every .md surface is rendered from it' });
+  } else if (/references\?:\s*PaperReference\[\]/.test(papers) && !/paper\.references/.test(exporter)) {
+    problems.push({
+      where: 'apps/web/lib/markdown-export.ts',
+      detail:
+        'papers.ts carries `references` and paperToMarkdown does not render them.\n' +
+        '      The .md editions and /llms-full.txt would publish every figure with no\n' +
+        '      source attached — to precisely the readers who cannot check the page.',
+    });
+  }
+  if (exporter && /paper\.references/.test(exporter) && !/## Sources/.test(exporter)) {
+    problems.push({
+      where: 'apps/web/lib/markdown-export.ts',
+      detail: 'references are read but no "## Sources" heading is emitted — an agent has no way to find them',
+    });
+  }
+}
+
 /* ── report ───────────────────────────────────────────────────────────────── */
 if (problems.length) {
   console.error(`\n✗ ${problems.length} problem(s) in the machine-readable editions:\n`);

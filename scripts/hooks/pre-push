@@ -23,6 +23,49 @@ cd "$ROOT"
 
 echo "▸ pre-push guards"
 
+# ── the push that sends nothing ──────────────────────────────────────────────
+#
+# F-152's second half. `git push -u origin feat/x` where feat/x still points at
+# origin/main succeeds, creates the remote branch, and reports:
+#
+#     Total 0 (delta 0), reused 0 (delta 0), pack-reused 0
+#      * [new branch]      feat/x -> feat/x
+#
+# That is indistinguishable from a real push unless you read the object count.
+# The work was on a different branch — main — and stayed there. Production did
+# not change and nothing said so for another twenty minutes.
+#
+# So: pushing a branch whose tip is identical to origin/main is refused. There is
+# no legitimate reason to publish a feature branch with nothing on it, and the
+# one case where it looks reasonable — "I will add commits later" — is precisely
+# the case that produced a silent success here.
+BRANCH="$(git branch --show-current || true)"
+if [ -n "$BRANCH" ] && [ "$BRANCH" != "main" ] && [ "$BRANCH" != "master" ]; then
+  if git rev-parse --verify --quiet origin/main >/dev/null; then
+    if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
+      cat >&2 <<MSG
+
+✗ push blocked — '$BRANCH' is identical to origin/main. There is nothing on it.
+
+  Git would have accepted this, created the remote branch, and printed
+  "Total 0 (delta 0)" — a successful push of no work. That is F-152; see the
+  header of scripts/hooks/pre-commit.
+
+  Your commits are almost certainly on another branch. Find them:
+
+      git log --oneline --all --not origin/main
+
+  Then point this branch at them:
+
+      git branch -f <this-branch> <the-commit>
+
+  Bypass with: git push --no-verify
+MSG
+      exit 1
+    fi
+  fi
+fi
+
 FAILED=0
 node scripts/verify-business-facts.mjs || FAILED=1
 node scripts/verify-migrations.mjs    || FAILED=1

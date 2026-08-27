@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#
+# Pre-commit guard — nothing is committed directly onto the integration branch.
+#
+# Installed by: pnpm hooks:install
+# Bypass once with: git commit --no-verify
+#
+# WHY THIS EXISTS — F-152, 2026-08-27
+#
+# Seventeen illustrations, a manifest registration, a regenerated import table
+# and a clean 36-guard run were committed onto local `main` and never reached
+# production. Nobody made a wrong decision. The failure was mechanical, and it is
+# worth writing down in full because it will otherwise happen again:
+#
+#   1. A recovery procedure was pasted as one multi-line block. Its second line
+#      was `git checkout -b feat/provenance-art`.
+#   2. That branch already existed — an earlier attempt at the same procedure had
+#      created it before failing for an unrelated reason.
+#   3. `git checkout -b` on an existing branch exits 128 with
+#      "fatal: a branch named '...' already exists" AND LEAVES YOU WHERE YOU WERE.
+#      It does not switch. It does not stop the rest of a pasted block.
+#   4. Every one of the next twenty commands ran on `main`. The build passed. All
+#      36 guards passed. `git commit` reported `[main f1ed47d]` — the branch name
+#      is right there in the output and reads as noise after a 300-line build log.
+#   5. `git push -u origin feat/provenance-art` then pushed the STALE branch
+#      pointer, which still equalled origin/main. Git reported
+#      "Total 0 (delta 0), reused 0" and a new remote branch. That is a
+#      successful push of nothing, and it looks exactly like a successful push.
+#   6. `gh pr create` said "head branch main is the same as base branch main" —
+#      the one honest error in the sequence, three commands too late.
+#
+# Every individual command behaved as documented. The composition was the defect.
+#
+# So: the integration branch does not accept commits. A procedure that lands work
+# in the wrong place is now interrupted at step 4 rather than discovered at step 6,
+# and the seventeen-command tail after it never runs on the wrong branch.
+#
+# WHAT THIS DOES NOT BLOCK
+#
+#   · fast-forwarding main from origin — that is not a commit
+#   · `gh pr merge`, which happens on GitHub's servers
+#   · a merge commit, which fires pre-merge-commit, not this hook
+#   · a detached HEAD or an in-progress rebase, both of which are transient
+#
+set -euo pipefail
+
+# A rebase, a cherry-pick, a revert or a bisect can legitimately replay commits
+# while HEAD is on main. Those are transient states git tells us about.
+GIT_DIR_PATH="$(git rev-parse --git-dir)"
+for marker in rebase-merge rebase-apply CHERRY_PICK_HEAD REVERT_HEAD BISECT_LOG MERGE_HEAD; do
+  [ -e "$GIT_DIR_PATH/$marker" ] && exit 0
+done
+
+BRANCH="$(git branch --show-current)"
+
+# Detached HEAD returns empty. Nothing to protect.
+[ -z "$BRANCH" ] && exit 0
+
+case "$BRANCH" in
+  main|master)
+    if [ "${ECOWOODS_ALLOW_MAIN_COMMIT:-}" = "1" ]; then
+      echo "▸ pre-commit: committing on $BRANCH because ECOWOODS_ALLOW_MAIN_COMMIT=1"
+      exit 0
+    fi
+    cat >&2 <<MSG
+
+✗ commit blocked — you are on '$BRANCH'.
+
+  Work on this repository reaches production through a pull request. A commit on
+  '$BRANCH' does not, and the way it fails is silent: the build passes, all 36
+  guards pass, and the later push reports success while sending nothing. That is
+  F-152, and it cost a full day. The header of scripts/hooks/pre-commit has the
+  whole sequence.
+
+  Move to a branch. This is safe with a staged index and safe if the branch
+  already exists — which is the exact case that caused F-152:
+
+      git switch -c feat/<name> 2>/dev/null || git switch feat/<name>
+      git branch --show-current          # confirm before you commit
+
+  Then commit normally.
+
+  If you genuinely mean to commit on '$BRANCH':
+
+      ECOWOODS_ALLOW_MAIN_COMMIT=1 git commit ...
+      git commit --no-verify ...
+
+MSG
+    exit 1
+    ;;
+esac
+
+exit 0
