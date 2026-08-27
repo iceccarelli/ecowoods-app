@@ -1,0 +1,656 @@
+From 39277ec2c2fb2e92c948bd2372d0c50c5c18004d Mon Sep 17 00:00:00 2001
+From: EcoWoods Build <build@ecowoods.ca>
+Date: Thu, 27 Aug 2026 20:16:29 +0000
+Subject: [PATCH] fix(agents): the .md editions carry their sources; the repo
+ root stops carrying litter
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three things, one theme: the surfaces built for machines were the ones missing
+the thing that makes this site quotable, and the repository root had become a
+place where unchecked files accumulate.
+
+1. THE CITATIONS WERE MISSING FROM THE EDITIONS THAT NEED THEM MOST
+
+`Paper.references` shipped last week — organisation, exact title, the
+organisation's own URL, the date a human opened it. It was rendered on the HTML
+page, emitted as schema.org `citation`, and typeset into the LaTeX. It was not
+rendered into the Markdown.
+
+That is backwards. /papers/<slug>.md and /llms-full.txt exist for readers who
+cannot see a page. A retrieval system ingesting the Markdown was receiving
+"Ontario holds 300,361,212 cubic metres of standing sugar maple" with nothing
+attached to it — and an unsourced figure in a context window is
+indistinguishable from an invented one, then repeated with this company's name
+on it. The citation is the entire difference between being quoted and being a
+rumour.
+
+paperToMarkdown now emits a `## Sources` section. 24 primary sources across the
+two papers, each with a bare URL rather than a Markdown link, because a bare URL
+survives every downstream transform an agent might apply and a link label does
+not. Both .md mirrors and /llms-full.txt pick it up from the same function.
+
+verify-markdown.mjs now fails if papers.ts can carry references and the exporter
+does not render them. Every check in that guard previously asked whether the .md
+surfaces EXIST; none asked what was in them, which is why this shipped.
+
+2. 2.8 MB OF LITTER AT THE REPOSITORY ROOT
+
+Four patch files, two one-off shell scripts, a duplicate paper source, a
+browser-numbered `vercel (3).json`, and — the dangerous ones — `nginx.conf`,
+`htaccess.txt`, `netlify_redirects.txt` and `index.php`: older, superseded copies
+of what `pnpm domain:build` generates into old-domain/. `domain:check` validates
+old-domain/ and has never looked at the root, so this repository was carrying
+redirect rules no guard has ever checked, under names that read exactly like the
+ones that are checked, one confident `scp` away from serving a live domain.
+
+.gitignore has listed `*.patch` and `*.zip` for weeks, with a paragraph
+explaining why. It failed for a reason worth recording: **.gitignore does not
+apply to a file uploaded through the GitHub web UI**, which is the only way a
+patch has ever entered this repository — and it never applies to a file that is
+already tracked either. The rule was written for the one workflow that could not
+obey it.
+
+scripts/verify-repo-hygiene.mjs is the enforceable version, and it runs FIRST in
+`pnpm verify`. It deliberately does not flag the ~30 EXECUTION_REPORT_*.md at the
+root: those are the written record, not litter, and a guard that nags about them
+is a guard people learn to ignore.
+
+3. THE F-152 HOOKS, ACTUALLY APPLIED
+
+The branch-discipline patch was uploaded to main and never applied — the file sat
+in the root for a day and got swept into #65 as content. Its commit is folded in
+here: pre-commit refuses main, pre-push refuses a branch identical to origin/main,
+verify-hooks asserts both still exist and still work.
+
+TESTED
+
+  · verify-markdown fails when the Sources block is removed, passes when restored
+  · verify-repo-hygiene found all 12 files, passes after removal, 52 kept
+  · the rendered Sources block previewed against the real manifest — 24 entries
+  · 38 guards green
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UxqCPG5NQPxEeadUNbHXZr
+---
+ apps/web/lib/markdown-export.ts |  31 +++++++
+ package.json                    |   4 +-
+ scripts/hooks/pre-commit        |  93 +++++++++++++++++++
+ scripts/hooks/pre-push          |  43 +++++++++
+ scripts/verify-hooks.mjs        | 118 +++++++++++++++++++++++
+ scripts/verify-markdown.mjs     |  47 ++++++++++
+ scripts/verify-repo-hygiene.mjs | 160 ++++++++++++++++++++++++++++++++
+ 7 files changed, 495 insertions(+), 1 deletion(-)
+ create mode 100755 scripts/hooks/pre-commit
+ create mode 100755 scripts/verify-hooks.mjs
+ create mode 100755 scripts/verify-repo-hygiene.mjs
+
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 1181ec4..787a1dd 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -134,6 +134,37 @@ export const paperToMarkdown = (paper: Paper): string => {
+     ),
+   ];
+   for (const sec of paper.sections) out.push(...paperSection(sec));
++
++  /* THE SOURCES, IN THE EDITION THAT NEEDS THEM MOST.
++   *
++   * This was missing, and the shape of the omission is worth recording. The
++   * references were rendered on the HTML page, emitted as schema.org
++   * `citation`, and typeset into the LaTeX — every surface except this one.
++   * Which is exactly backwards. /papers/<slug>.md and /llms-full.txt exist for
++   * readers who cannot see a page, and a retrieval system that ingests the
++   * Markdown was getting the claim "Ontario holds 300,361,212 cubic metres of
++   * standing sugar maple" with nothing attached to it. An unsourced figure in
++   * an agent's context window is indistinguishable from an invented one, and it
++   * gets repeated with our name on it.
++   *
++   * Rendered as a plain numbered list with the URL inline rather than as a
++   * Markdown link, because a bare URL survives every downstream transform an
++   * agent might apply to this text, and a link label does not. */
++  if (paper.references?.length) {
++    out.push(
++      '## Sources',
++      '',
++      'Every figure in this paper was read from the document below, on the date',
++      'shown. An external page can change under a citation, so the read date is',
++      'recorded rather than implied.',
++      '',
++    );
++    paper.references.forEach((r, i) => {
++      out.push(`${i + 1}. ${r.org}. *${r.title}*. ${r.url} — read ${r.readAt}.`);
++    });
++    out.push('');
++  }
++
+   out.push(...provenance(canonical, [`- Document version: ${paper.version} (${paper.publishedAt})`]));
+   return out.join('\n');
+ };
+diff --git a/package.json b/package.json
+index 888fa09..2ad7cc8 100644
+--- a/package.json
++++ b/package.json
+@@ -10,6 +10,8 @@
+     "lint": "turbo lint",
+     "typecheck": "turbo typecheck",
+     "format": "prettier --write .",
++    "verify:hygiene": "node scripts/verify-repo-hygiene.mjs",
++    "verify:hooks": "node scripts/verify-hooks.mjs",
+     "verify:facts": "node scripts/verify-business-facts.mjs",
+     "verify:migrations": "node scripts/verify-migrations.mjs",
+     "verify:tokens": "node scripts/verify-tokens.mjs",
+@@ -65,7 +67,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:hygiene && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/hooks/pre-commit b/scripts/hooks/pre-commit
+new file mode 100755
+index 0000000..855feaf
+--- /dev/null
++++ b/scripts/hooks/pre-commit
+@@ -0,0 +1,93 @@
++#!/usr/bin/env bash
++#
++# Pre-commit guard — nothing is committed directly onto the integration branch.
++#
++# Installed by: pnpm hooks:install
++# Bypass once with: git commit --no-verify
++#
++# WHY THIS EXISTS — F-152, 2026-08-27
++#
++# Seventeen illustrations, a manifest registration, a regenerated import table
++# and a clean 36-guard run were committed onto local `main` and never reached
++# production. Nobody made a wrong decision. The failure was mechanical, and it is
++# worth writing down in full because it will otherwise happen again:
++#
++#   1. A recovery procedure was pasted as one multi-line block. Its second line
++#      was `git checkout -b feat/provenance-art`.
++#   2. That branch already existed — an earlier attempt at the same procedure had
++#      created it before failing for an unrelated reason.
++#   3. `git checkout -b` on an existing branch exits 128 with
++#      "fatal: a branch named '...' already exists" AND LEAVES YOU WHERE YOU WERE.
++#      It does not switch. It does not stop the rest of a pasted block.
++#   4. Every one of the next twenty commands ran on `main`. The build passed. All
++#      36 guards passed. `git commit` reported `[main f1ed47d]` — the branch name
++#      is right there in the output and reads as noise after a 300-line build log.
++#   5. `git push -u origin feat/provenance-art` then pushed the STALE branch
++#      pointer, which still equalled origin/main. Git reported
++#      "Total 0 (delta 0), reused 0" and a new remote branch. That is a
++#      successful push of nothing, and it looks exactly like a successful push.
++#   6. `gh pr create` said "head branch main is the same as base branch main" —
++#      the one honest error in the sequence, three commands too late.
++#
++# Every individual command behaved as documented. The composition was the defect.
++#
++# So: the integration branch does not accept commits. A procedure that lands work
++# in the wrong place is now interrupted at step 4 rather than discovered at step 6,
++# and the seventeen-command tail after it never runs on the wrong branch.
++#
++# WHAT THIS DOES NOT BLOCK
++#
++#   · fast-forwarding main from origin — that is not a commit
++#   · `gh pr merge`, which happens on GitHub's servers
++#   · a merge commit, which fires pre-merge-commit, not this hook
++#   · a detached HEAD or an in-progress rebase, both of which are transient
++#
++set -euo pipefail
++
++# A rebase, a cherry-pick, a revert or a bisect can legitimately replay commits
++# while HEAD is on main. Those are transient states git tells us about.
++GIT_DIR_PATH="$(git rev-parse --git-dir)"
++for marker in rebase-merge rebase-apply CHERRY_PICK_HEAD REVERT_HEAD BISECT_LOG MERGE_HEAD; do
++  [ -e "$GIT_DIR_PATH/$marker" ] && exit 0
++done
++
++BRANCH="$(git branch --show-current)"
++
++# Detached HEAD returns empty. Nothing to protect.
++[ -z "$BRANCH" ] && exit 0
++
++case "$BRANCH" in
++  main|master)
++    if [ "${ECOWOODS_ALLOW_MAIN_COMMIT:-}" = "1" ]; then
++      echo "▸ pre-commit: committing on $BRANCH because ECOWOODS_ALLOW_MAIN_COMMIT=1"
++      exit 0
++    fi
++    cat >&2 <<MSG
++
++✗ commit blocked — you are on '$BRANCH'.
++
++  Work on this repository reaches production through a pull request. A commit on
++  '$BRANCH' does not, and the way it fails is silent: the build passes, all 36
++  guards pass, and the later push reports success while sending nothing. That is
++  F-152, and it cost a full day. The header of scripts/hooks/pre-commit has the
++  whole sequence.
++
++  Move to a branch. This is safe with a staged index and safe if the branch
++  already exists — which is the exact case that caused F-152:
++
++      git switch -c feat/<name> 2>/dev/null || git switch feat/<name>
++      git branch --show-current          # confirm before you commit
++
++  Then commit normally.
++
++  If you genuinely mean to commit on '$BRANCH':
++
++      ECOWOODS_ALLOW_MAIN_COMMIT=1 git commit ...
++      git commit --no-verify ...
++
++MSG
++    exit 1
++    ;;
++esac
++
++exit 0
+diff --git a/scripts/hooks/pre-push b/scripts/hooks/pre-push
+index e13f453..89dee58 100755
+--- a/scripts/hooks/pre-push
++++ b/scripts/hooks/pre-push
+@@ -23,6 +23,49 @@ cd "$ROOT"
+ 
+ echo "▸ pre-push guards"
+ 
++# ── the push that sends nothing ──────────────────────────────────────────────
++#
++# F-152's second half. `git push -u origin feat/x` where feat/x still points at
++# origin/main succeeds, creates the remote branch, and reports:
++#
++#     Total 0 (delta 0), reused 0 (delta 0), pack-reused 0
++#      * [new branch]      feat/x -> feat/x
++#
++# That is indistinguishable from a real push unless you read the object count.
++# The work was on a different branch — main — and stayed there. Production did
++# not change and nothing said so for another twenty minutes.
++#
++# So: pushing a branch whose tip is identical to origin/main is refused. There is
++# no legitimate reason to publish a feature branch with nothing on it, and the
++# one case where it looks reasonable — "I will add commits later" — is precisely
++# the case that produced a silent success here.
++BRANCH="$(git branch --show-current || true)"
++if [ -n "$BRANCH" ] && [ "$BRANCH" != "main" ] && [ "$BRANCH" != "master" ]; then
++  if git rev-parse --verify --quiet origin/main >/dev/null; then
++    if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
++      cat >&2 <<MSG
++
++✗ push blocked — '$BRANCH' is identical to origin/main. There is nothing on it.
++
++  Git would have accepted this, created the remote branch, and printed
++  "Total 0 (delta 0)" — a successful push of no work. That is F-152; see the
++  header of scripts/hooks/pre-commit.
++
++  Your commits are almost certainly on another branch. Find them:
++
++      git log --oneline --all --not origin/main
++
++  Then point this branch at them:
++
++      git branch -f <this-branch> <the-commit>
++
++  Bypass with: git push --no-verify
++MSG
++      exit 1
++    fi
++  fi
++fi
++
+ FAILED=0
+ node scripts/verify-business-facts.mjs || FAILED=1
+ node scripts/verify-migrations.mjs    || FAILED=1
+diff --git a/scripts/verify-hooks.mjs b/scripts/verify-hooks.mjs
+new file mode 100755
+index 0000000..22583c3
+--- /dev/null
++++ b/scripts/verify-hooks.mjs
+@@ -0,0 +1,118 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-hooks.mjs — the guards that protect the guards.
++ *
++ * WHY THIS EXISTS — F-152
++ *
++ * Every other check in this repository verifies the code. This one verifies the
++ * process, because on 2026-08-27 the code was perfect and shipped nowhere: a
++ * full day of work was committed onto local `main`, the build passed, all 36
++ * guards passed, and the push that followed sent zero objects while reporting
++ * success. See the header of scripts/hooks/pre-commit for the full sequence.
++ *
++ * The fix for that is two git hooks. A git hook, however, is the easiest thing
++ * in a repository to lose: it lives outside the working tree unless
++ * `core.hooksPath` points at it, it stops working the moment someone drops the
++ * executable bit, and nothing anywhere fails when it silently stops running.
++ * A protection that can disappear without a sound is not a protection.
++ *
++ * So this asserts what the repository can actually own:
++ *
++ *   · both hook files exist and are executable
++ *   · pre-commit still refuses main, and still offers the documented escape
++ *   · pre-push still runs the two fast guards AND still catches the empty push
++ *   · package.json still carries `hooks:install`, which is how they get wired
++ *
++ * And it reports — without failing — whether `core.hooksPath` is set in THIS
++ * checkout. That part cannot be a hard failure: CI clones have no hooks and must
++ * not, and a fresh clone would be red before anyone had a chance to run the
++ * install. It is printed loudly instead, which is the correct strength for a
++ * fact that is true of a machine rather than of the code.
++ *
++ *   node scripts/verify-hooks.mjs
++ */
++import { readFileSync, existsSync, statSync } from 'node:fs';
++import { execFileSync } from 'node:child_process';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const problems = [];
++const fail = (m) => problems.push(m);
++const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch { return ''; } };
++
++/** Every hook, and the substrings that prove it still does its job. */
++const HOOKS = [
++  {
++    path: 'scripts/hooks/pre-commit',
++    must: [
++      { needle: 'git branch --show-current', why: 'it no longer reads which branch you are on' },
++      { needle: 'main|master)', why: 'it no longer matches the integration branch' },
++      { needle: 'ECOWOODS_ALLOW_MAIN_COMMIT', why: 'the documented escape hatch is gone — people will use --no-verify for everything instead' },
++      { needle: 'F-152', why: 'the incident reference is gone; the next person will not know why this exists and will delete it' },
++    ],
++  },
++  {
++    path: 'scripts/hooks/pre-push',
++    must: [
++      { needle: 'verify-business-facts.mjs', why: 'it no longer runs the business-facts guard before a push' },
++      { needle: 'verify-migrations.mjs', why: 'it no longer runs the migration guard before a push' },
++      { needle: 'rev-parse origin/main', why: 'it no longer detects a branch identical to origin/main — the silent empty push is back' },
++    ],
++  },
++];
++
++for (const hook of HOOKS) {
++  const abs = join(ROOT, hook.path);
++  if (!existsSync(abs)) {
++    fail(`${hook.path} is missing. Without it the protection it carries is gone and nothing else notices.`);
++    continue;
++  }
++  const mode = statSync(abs).mode;
++  if (!(mode & 0o111)) {
++    fail(
++      `${hook.path} is not executable (mode ${(mode & 0o777).toString(8)}).\n` +
++        `      Git skips a non-executable hook SILENTLY — no warning, no error, no hook.\n` +
++        `      Fix: git update-index --chmod=+x ${hook.path} && chmod +x ${hook.path}`,
++    );
++  }
++  const body = readFileSync(abs, 'utf8');
++  if (!body.startsWith('#!')) fail(`${hook.path} has no shebang — git will not execute it.`);
++  for (const { needle, why } of hook.must) {
++    if (!body.includes(needle)) fail(`${hook.path}: ${why} (looked for "${needle}")`);
++  }
++}
++
++/* The hooks are inert unless something wires core.hooksPath at them. */
++const pkg = read('package.json');
++if (!pkg.includes('core.hooksPath scripts/hooks')) {
++  fail(
++    'package.json no longer carries a `hooks:install` script setting core.hooksPath.\n' +
++      '      The hook files would still be committed and would still never run.',
++  );
++}
++
++/* Advisory, deliberately: true of a machine, not of the repository. */
++let hooksPath = '';
++try {
++  hooksPath = execFileSync('git', ['config', '--get', 'core.hooksPath'], { encoding: 'utf8' }).trim();
++} catch { /* unset — git exits 1 */ }
++
++console.log('');
++console.log(`GIT HOOKS — ${HOOKS.length} hook(s) in scripts/hooks`);
++if (hooksPath === 'scripts/hooks') {
++  console.log('  core.hooksPath  scripts/hooks — hooks are live in this checkout');
++} else {
++  console.log(`  core.hooksPath  ${hooksPath || '(unset)'} — HOOKS ARE NOT RUNNING HERE`);
++  console.log('                  Run: pnpm hooks:install');
++  console.log('                  Not a failure: CI clones have no hooks and must not.');
++}
++console.log('');
++
++if (problems.length) {
++  console.error(`✗ ${problems.length} hook problem(s):\n`);
++  for (const m of problems) console.error(`  · ${m}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log('✓ hooks verified — main refuses commits, and a branch with nothing on it refuses to push');
+diff --git a/scripts/verify-markdown.mjs b/scripts/verify-markdown.mjs
+index 8f86e5f..b354233 100644
+--- a/scripts/verify-markdown.mjs
++++ b/scripts/verify-markdown.mjs
+@@ -129,6 +129,53 @@ if (!/\.md/.test(idx)) {
+   problems.push({ where: 'app/llms.txt/route.ts', detail: 'does not name the .md companion convention' });
+ }
+ 
++/* ── 6. the .md editions must carry the citations ─────────────────────────── */
++/**
++ * WHY THIS IS CHECKED HERE AND NOT LEFT TO REVIEW
++ *
++ * lib/papers.ts gained a `references` register — organisation, exact title, the
++ * organisation's own URL, and the date a human opened it. It was rendered on the
++ * HTML page, emitted as schema.org `citation`, and typeset into the LaTeX. It
++ * was NOT rendered into the Markdown, and nothing failed, because every check
++ * here asked whether the .md surfaces EXIST rather than what is in them.
++ *
++ * That omission points the wrong way. These editions exist for readers who
++ * cannot see a page. A retrieval system ingesting /llms-full.txt was receiving
++ * "Ontario holds 300,361,212 cubic metres of standing sugar maple" with nothing
++ * attached to it, and an unsourced figure in a context window is
++ * indistinguishable from an invented one — then repeated with this company's
++ * name on it. The citation is the entire difference between being quoted and
++ * being a rumour.
++ *
++ * So: if the manifest can carry references, the Markdown renderer must render
++ * them. Checked as a substring rather than by executing the module, for the same
++ * reason every guard here is dependency-free.
++ */
++{
++  const EXPORTER = path.join(ROOT, 'apps/web/lib/markdown-export.ts');
++  const PAPERS = path.join(ROOT, 'apps/web/lib/papers.ts');
++  const exporter = fs.existsSync(EXPORTER) ? fs.readFileSync(EXPORTER, 'utf8') : '';
++  const papers = fs.existsSync(PAPERS) ? fs.readFileSync(PAPERS, 'utf8') : '';
++
++  if (!exporter) {
++    problems.push({ where: 'apps/web/lib/markdown-export.ts', detail: 'missing — every .md surface is rendered from it' });
++  } else if (/references\?:\s*PaperReference\[\]/.test(papers) && !/paper\.references/.test(exporter)) {
++    problems.push({
++      where: 'apps/web/lib/markdown-export.ts',
++      detail:
++        'papers.ts carries `references` and paperToMarkdown does not render them.\n' +
++        '      The .md editions and /llms-full.txt would publish every figure with no\n' +
++        '      source attached — to precisely the readers who cannot check the page.',
++    });
++  }
++  if (exporter && /paper\.references/.test(exporter) && !/## Sources/.test(exporter)) {
++    problems.push({
++      where: 'apps/web/lib/markdown-export.ts',
++      detail: 'references are read but no "## Sources" heading is emitted — an agent has no way to find them',
++    });
++  }
++}
++
+ /* ── report ───────────────────────────────────────────────────────────────── */
+ if (problems.length) {
+   console.error(`\n✗ ${problems.length} problem(s) in the machine-readable editions:\n`);
+diff --git a/scripts/verify-repo-hygiene.mjs b/scripts/verify-repo-hygiene.mjs
+new file mode 100755
+index 0000000..cdb31e8
+--- /dev/null
++++ b/scripts/verify-repo-hygiene.mjs
+@@ -0,0 +1,160 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-repo-hygiene.mjs — the repository root is not a scratch folder.
++ *
++ * WHY THIS EXISTS
++ *
++ * .gitignore already lists `*.patch`, `*.diff` and `*.zip`, with a paragraph
++ * explaining exactly why. Four patch files, two one-off shell scripts and a
++ * 1.5 MB zip were committed to the root anyway.
++ *
++ * Not because anyone ignored the rule. Because **.gitignore does not apply to a
++ * file uploaded through the GitHub web UI.** That is the only way a patch gets
++ * into this repository — it is how every patch in this project has been
++ * delivered — and it is the one path .gitignore cannot see. Once the file is
++ * tracked, .gitignore never applies to it again either. So the rule was written
++ * for the one workflow that could not obey it, and nothing has ever failed.
++ *
++ * Two categories, and the second is the one that can actually hurt someone.
++ *
++ * TRANSPORT ARTIFACTS. A committed patch is a frozen second copy of changes
++ * that also exist in the history, and it drifts from them the moment anything is
++ * amended. It is also diff text that every clone, every CI checkout and every
++ * crawler of the raw repository carries forever. A zip is worse: 1.5 MB of
++ * binary that git cannot delta-compress, permanent in the object store even
++ * after deletion.
++ *
++ * UNVALIDATED DUPLICATE CONFIGS. This is the dangerous one. `nginx.conf`,
++ * `htaccess.txt` and `netlify_redirects.txt` sat at the root as older,
++ * superseded copies of what `pnpm domain:build` now generates into old-domain/.
++ * `domain:check` validates old-domain/ and has never looked at the root. So the
++ * repository was carrying redirect rules that no guard has ever checked, under
++ * names that read exactly like the ones that are checked, one confident `scp`
++ * away from serving a live domain. `vercel (3).json` was the same shape of
++ * problem: a second, smaller, unread Vercel config beside the real one.
++ *
++ * WHAT IS DELIBERATELY NOT FLAGGED
++ *
++ * The reports. There are around thirty EXECUTION_REPORT_*.md and similar at the
++ * root, and they are the written record of what was done and why. They are not
++ * litter, they are the history, and a guard that nags about them would be
++ * ignored — which is how a guard stops working.
++ *
++ *   node scripts/verify-repo-hygiene.mjs
++ *   node scripts/verify-repo-hygiene.mjs --list
++ */
++import { readdirSync, statSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const LIST = process.argv.includes('--list');
++
++/** Transport formats. Deliver it, apply it, delete it. */
++const TRANSPORT = [
++  { re: /\.patch$/i, why: 'a patch is a transport format — apply it, then delete it. The history already has the change.' },
++  { re: /\.diff$/i, why: 'a diff is a transport format — apply it, then delete it.' },
++  { re: /\.(zip|tar|tar\.gz|tgz|rar|7z)$/i, why: 'an archive at the root is permanent in the git object store even after deletion, and git cannot delta-compress it.' },
++];
++
++/**
++ * Config filenames that have a validated home elsewhere. A copy at the root is
++ * an unchecked config wearing the name of a checked one.
++ */
++const SHADOW_CONFIG = new Map([
++  ['nginx.conf', 'old-domain/nginx.conf, generated and checked by `pnpm domain:check`'],
++  ['htaccess.txt', 'old-domain/.htaccess, generated and checked by `pnpm domain:check`'],
++  ['.htaccess', 'old-domain/.htaccess, generated and checked by `pnpm domain:check`'],
++  ['netlify_redirects.txt', 'old-domain/_redirects, generated and checked by `pnpm domain:check`'],
++  ['index.php', 'old-domain/index.php, which is the copy old-domain/EXECUTE.md tells you to deploy'],
++]);
++
++/**
++ * A paper source at the root. `ecowoodsmachinesCORRECTED.tex` was byte-identical
++ * to docs/papers-pending/ecowoods-hardwood-refinishing-machines-and-sequence-v1.0-2026-08.tex,
++ * under a name that says nothing about which paper it is or whether it is current.
++ * scripts/gen-paper-tex.mjs writes to docs/papers-pending/; a .tex anywhere else
++ * is a copy that will not be regenerated and will quietly go stale.
++ */
++const STRAY_TEX = /\.tex$/i;
++
++/** A duplicate a browser made: "vercel (3).json", "schema (1).ts". */
++const BROWSER_DUPE = /\s\(\d+\)\.[a-z0-9]+$/i;
++
++/** One-off operational scripts. scripts/ is where a script that matters lives. */
++const ONE_OFF_SCRIPT = /^(integrate|apply|statecheck|state-check|fix|run|do)[-_a-z0-9]*\.(sh|py|mjs|js)$/i;
++
++const problems = [];
++const kept = [];
++
++for (const name of readdirSync(ROOT)) {
++  const full = join(ROOT, name);
++  let st;
++  try { st = statSync(full); } catch { continue; }
++  if (st.isDirectory()) continue;
++
++  const transport = TRANSPORT.find((t) => t.re.test(name));
++  if (transport) {
++    problems.push({ name, kb: Math.round(st.size / 1024), why: transport.why });
++    continue;
++  }
++  if (SHADOW_CONFIG.has(name)) {
++    problems.push({
++      name,
++      kb: Math.round(st.size / 1024),
++      why:
++        `an unvalidated duplicate of ${SHADOW_CONFIG.get(name)}.\n` +
++        `        No guard reads this copy. Deploying it serves rules nothing has checked.`,
++    });
++    continue;
++  }
++  if (BROWSER_DUPE.test(name)) {
++    problems.push({
++      name,
++      kb: Math.round(st.size / 1024),
++      why: 'a browser-numbered duplicate — the "(3)" is what a download manager adds when the real file already existed.',
++    });
++    continue;
++  }
++  if (STRAY_TEX.test(name)) {
++    problems.push({
++      name,
++      kb: Math.round(st.size / 1024),
++      why: 'a paper source at the root. docs/papers-pending/ is where scripts/gen-paper-tex.mjs writes and where verify-papers.mjs looks; a copy anywhere else goes stale silently.',
++    });
++    continue;
++  }
++  if (ONE_OFF_SCRIPT.test(name)) {
++    problems.push({
++      name,
++      kb: Math.round(st.size / 1024),
++      why: 'a one-off operational script at the root. If it is worth keeping it belongs in scripts/ with a header saying what it is for; if it has run, it is done.',
++    });
++    continue;
++  }
++  kept.push(name);
++}
++
++if (LIST) {
++  console.log('\nRepository root — files kept\n');
++  for (const k of kept.sort()) console.log(`  ${k}`);
++  console.log('');
++}
++
++if (problems.length) {
++  const kb = problems.reduce((n, p) => n + p.kb, 0);
++  console.error(`\n✗ ${problems.length} file(s) at the repository root that should not be tracked (${kb} KB):\n`);
++  for (const p of problems) {
++    console.error(`  · ${p.name}  (${p.kb} KB)`);
++    console.error(`        ${p.why}\n`);
++  }
++  console.error(
++    '  .gitignore already lists most of these. It does not apply to a file uploaded\n' +
++      "  through the GitHub web UI, and it never applies to a file that is already\n" +
++      '  tracked — which is every file above. Remove them:\n\n' +
++      `      git rm --cached ${problems.map((p) => `'${p.name}'`).join(' ')}\n` +
++      `      rm -f ${problems.map((p) => `'${p.name}'`).join(' ')}\n`,
++  );
++  process.exit(1);
++}
++
++console.log(`✓ repo hygiene verified — ${kept.length} file(s) at the root, no transport artifacts, no unvalidated duplicate configs`);
+-- 
+2.43.0
+
