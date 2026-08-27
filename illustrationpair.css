@@ -1,0 +1,30 @@
+/* === EW:ILLUSTRATION-PAIR START ===
+   One fact, two drawings, alternating. Opacity only — the note above
+   IllustrationMotion in components/Illustration.tsx is why: a scale inside a
+   fixed frame crops, and on an explanatory figure the crop removes the thing
+   the figure exists to show. The stage is locked to the taller of the pair's
+   two ratios so the page never resizes mid-rotation. */
+.ilpair { position: relative; }
+.ilpair-stage { position: relative; width: 100%; }
+.ilpair-layer {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  opacity: 0; transition: opacity 700ms ease;
+  pointer-events: none;
+}
+.ilpair-layer.is-on { opacity: 1; pointer-events: auto; }
+.ilpair-layer :is(figure, img) { max-width: 100%; max-height: 100%; margin: 0; }
+.ilpair-toggle {
+  position: absolute; right: 0.5rem; bottom: 0.5rem;
+  display: grid; place-items: center;
+  min-width: 2.6rem; height: 1.9rem; padding: 0 0.5rem;
+  border: 1px solid var(--line); border-radius: var(--radius-full);
+  background: var(--surface-1); color: var(--ink-muted);
+  font-size: 0.7rem; letter-spacing: 0.12em; cursor: pointer;
+}
+.ilpair-toggle:hover { border-color: var(--copper-surface); color: var(--copper-text); }
+.ilpair-toggle:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .ilpair-layer { transition: none; }
+}
+/* === EW:ILLUSTRATION-PAIR END === */
