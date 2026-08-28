@@ -67,6 +67,11 @@ const COMMERCIAL = [
   'apps/web/app/hardwood-stairs-toronto/page.tsx',
   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
   'apps/web/app/services/[slug]/page.tsx',
+  /* The homepage kept a <button> that opened a modal long after the five
+     commercial pages had a real form, so the busiest url on the site still
+     served zero <form> elements — and the site chrome had no `#estimate` to
+     point at, which is how verify-links.mjs caught it. */
+  'apps/web/app/home-client.tsx',
 ];
 
 /* ── 1. every commercial page renders a real form ────────────────────────── */
@@ -192,6 +197,50 @@ for (const rel of COMMERCIAL) {
     problems.push({
       rel: 'apps/web/app/api/knowledge/route.ts',
       why: 'emits pdfUrl unconditionally. Gate it on pdfIsPublished() so the API never names a 404.',
+    });
+  }
+}
+
+/* ── 6. the chrome keeps the phone, and the tree survives the phone ──────── */
+/**
+ * The AWS layout patterns this site adopted are mechanisms, and each one exists
+ * because something measurable was wrong. A guard per mechanism, so the reason
+ * survives the next redesign.
+ */
+{
+  const ub = read(path.join(ROOT, 'apps/web/app/components/UtilityBar.tsx'));
+  const layout = read(path.join(ROOT, 'apps/web/app/layout.tsx'));
+  if (!ub) {
+    problems.push({ rel: 'apps/web/app/components/UtilityBar.tsx', why: 'missing — the phone number returns to being homepage-only' });
+  } else if (!/phoneHref/.test(ub) || !/phoneDisplay/.test(ub)) {
+    problems.push({
+      rel: 'apps/web/app/components/UtilityBar.tsx',
+      why:
+        'no longer renders the phone number. The strip exists so a trade business has its\n' +
+        '      highest-converting element on every page without spending a slot in the primary nav.',
+    });
+  }
+  if (ub && !/<UtilityBar/.test(layout)) {
+    problems.push({ rel: 'apps/web/app/layout.tsx', why: 'does not render <UtilityBar> — the strip exists and appears nowhere' });
+  }
+
+  const header = read(path.join(ROOT, 'apps/web/app/components/Header.tsx'));
+  if (!/<MegaMenu/.test(header)) {
+    problems.push({
+      rel: 'apps/web/app/components/Header.tsx',
+      why:
+        'no <MegaMenu>. Five papers, sixteen guides, forty-four glossary terms and nine\n' +
+        '      standards go back to being reachable only by guessing which of eight hubs to open.\n' +
+        '      Two independent audits scored information architecture 5/10 and 6/10 for exactly this.',
+    });
+  }
+  if (/<MegaMenu/.test(header) && !/mnav-group/.test(header)) {
+    problems.push({
+      rel: 'apps/web/app/components/Header.tsx',
+      why:
+        'has a mega-menu and no mobile accordion. .mm is display:none under 1000px, so the\n' +
+        '      whole library tree would exist on a desktop and vanish on the phone — which is where\n' +
+        '      a homeowner actually reads about cupping at 9pm.',
     });
   }
 }

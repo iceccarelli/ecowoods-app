@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import {
@@ -370,6 +371,7 @@ export default function HardwoodFlooringTorontoPage() {
           </div>
         </div>
       </section>
+      <FeedbackBand topic="this page" />
     </div>
   );
 }

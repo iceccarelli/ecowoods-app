@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import Header from './components/Header';
+import { UtilityBar } from './components/UtilityBar';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
@@ -163,6 +164,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a href="#main" className="skip-link">Skip to content</a>
         <Providers>
           <ReadingProgress />
+          <UtilityBar />
           <Header />
           <main id="main">{children}</main>
           <SiteFooter />

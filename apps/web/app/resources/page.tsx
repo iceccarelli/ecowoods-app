@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { WhatsNewGrid } from '../components/WhatsNewGrid';
+import { FeedbackBand } from '../components/FeedbackBand';
 import Link from 'next/link';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
@@ -113,6 +115,11 @@ export default async function ResourcesPage() {
           </p>
         </div>
       </header>
+
+      {/* The publication record, on the page where someone is deciding whether
+          this library is maintained. Twenty-eight written entries lived at
+          /whats-new, linked from the footer, and nowhere else. */}
+      <WhatsNewGrid />
 
       <section className="tlx-section tlx-section--flush" aria-label="The science behind these resources">
         <div className="shell">
@@ -351,6 +358,7 @@ export default async function ResourcesPage() {
           </div>
         </div>
       </section>
+      <FeedbackBand topic="the library" />
     </div>
   );
 }

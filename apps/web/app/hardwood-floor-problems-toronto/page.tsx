@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
@@ -565,6 +566,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
       </section>
 
       <CommercialHeadTermRail />
+      <FeedbackBand topic="this page" />
     </div>
   );
 }
