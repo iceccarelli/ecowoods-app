@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
@@ -196,7 +197,7 @@ export default function HardwoodStairsTorontoPage() {
             <span>Salaried crews, no subcontractors</span>
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            <Link className="fw-cta" href="#estimate">
               Get a fixed written price →
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
@@ -205,6 +206,18 @@ export default function HardwoodStairsTorontoPage() {
           </div>
         </div>
       </header>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It is here now, above every
+          explanatory section, because a buyer who has read the price and decided
+          should not have to navigate to act on it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source="hardwood-stairs-toronto" service="stairs" heading="Get a fixed written price for your stairs" intro="Stairs are quoted per tread and per flight, because the work is geometry rather than area. Tell us the flight and we come and count it." />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="How stairs are priced">
         <div className="shell">

@@ -434,7 +434,7 @@ export const GUIDES: Guide[] = [
       {
         q: 'Can I stay in the house while my hardwood floors are refinished?',
         a:
-          'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room, capturing roughly 99.7% of airborne particulate at the source, and the water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+          'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room. We publish no room-capture percentage because we have not measured one on a job. The water-based finishes are low-odour and walk-on ready in 2–4 hours.',
       },
       {
         q: 'How long does hardwood floor refinishing take?',
@@ -688,7 +688,7 @@ export const GUIDES: Guide[] = [
       {
         q: 'Does dust-free hardwood sanding actually work?',
         a:
-          'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room, capturing roughly 99.7% of airborne particulate at the source — not a bag on a sander and not a label. The test of a claim is whether the company will say what is sealed, at which machine, and whether you can stay in the house.',
+          'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room — not a bag on a sander and not a label. We publish no room-capture percentage, because a filter’s certified rating and the fraction of dust actually captured in your hallway are two different numbers, and this industry quotes the first as if it were the second. The test of a claim is whether the company will say what is sealed, at which machine, and whether you can stay in the house.',
       },
       {
         q: 'Is dust-free sanding more expensive than ordinary sanding?',

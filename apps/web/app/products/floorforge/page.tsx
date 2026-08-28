@@ -330,7 +330,7 @@ export default function FloorForgePage() {
                 },
                 {
                   icon: Icon.leaf,
-                  title: '99.7% Dust Capture',
+                  title: 'HEPA-Sealed Containment',
                   text: 'HEPA-sealed sanding head with real-time airflow monitoring. Homeowners stay home. No evacuation.',
                 },
                 {

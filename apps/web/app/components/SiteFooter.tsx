@@ -84,6 +84,29 @@ function FooterCol({
   );
 }
 
+/**
+ * The booking window, derived — F-164.
+ *
+ * This pill read "Now booking · Spring 2026" on 28 August 2026. A hardcoded
+ * season is a promise with a shelf life, and past its date it does not read as
+ * an old string: it reads as a business that stopped paying attention, on the
+ * element whose entire job is to say the opposite.
+ *
+ * Derived from the clock instead, so it cannot go stale. Deliberately coarse —
+ * a season, not a date — because the honest claim is availability, and a
+ * specific week would be a scheduling commitment nobody here has authorised the
+ * footer to make.
+ */
+function bookingWindow(now = new Date()): string {
+  const m = now.getMonth();
+  const y = now.getFullYear();
+  if (m <= 1) return `Winter ${y}`;
+  if (m <= 4) return `Spring ${y}`;
+  if (m <= 7) return `Summer ${y}`;
+  if (m <= 9) return `Autumn ${y}`;
+  return `Winter ${y + 1}`;
+}
+
 export default function SiteFooter() {
   const { mounted, isMobile } = useIsMobile();
   const m = mounted && isMobile;
@@ -120,7 +143,7 @@ export default function SiteFooter() {
             </p>
             <div className="availability-pill dark">
               <span className="availability-dot" />
-              Now booking · Spring 2026
+              Now booking · {bookingWindow()}
             </div>
             {m && (
               <a href={BUSINESS_NAP.phoneHref} className="footer-call">
@@ -180,6 +203,12 @@ export default function SiteFooter() {
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>
               <a href="/design">Floor Designer</a>
+              {/* F-163 moved FloorForge out of the primary nav, where it spent a
+                  tenth of the header on a product name a homeowner comparing three
+                  quotes has never heard. It is a real page and it keeps a real
+                  inbound link — verify-links.mjs failed the build the moment it
+                  had none, which is exactly what that guard is for. */}
+              <a href="/products/floorforge">FloorForge</a>
               <a href="/authority">Citation Guide</a>
               <a href="/feed.xml">RSS Feed</a>
             </div>

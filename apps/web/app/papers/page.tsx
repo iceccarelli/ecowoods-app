@@ -71,7 +71,7 @@ export default function PapersIndexPage() {
           <h1 className="tlx-title">Technical Papers</h1>
           <p className="tlx-lede">
             The engineering behind the work, written down and published. Each paper is readable in
-            full on this site and downloadable as a PDF.
+            full on this site. Each carries its sources, with the date a human opened each one.
           </p>
         </div>
       </header>

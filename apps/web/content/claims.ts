@@ -244,9 +244,20 @@ export const CLAIMS: Claim[] = [
   },
   {
     id: 'method.dustCapturePct',
-    statement: 'Roughly 99.7% of airborne particulate is captured at the source.',
-    value: '99.7%',
+    statement: 'Roughly 99.7% of airborne particulate is captured at the source.', // facts-allow: the registry names a retired claim in order to record that it was retired
+    value: '99.7%', // facts-allow
     status: 'unsourced',
+    /* RETIRED FROM PUBLICATION 2026-08-28 (F-165). This number was live on the
+       homepage, the dust-free service page, all 32 service-area pages, two
+       guides, FloorForge and /llms.txt — and inside FAQ answers that become
+       FAQPage JSON-LD, which is the `schema` context this claim was explicitly
+       fenced out of. The fence was written and never enforced.
+       It is almost certainly a HEPA filter's certified rating quoted as a
+       room-capture fraction. Those are different measurements, and the first
+       general contractor with a particle counter ends the argument — taking the
+       credibility of every sourced figure standing next to it.
+       verify-business-facts.mjs now bans the string. It comes back the day a
+       Toronto job is measured and the method is published. */
     source: 'NONE RECORDED.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial'],
@@ -268,7 +279,7 @@ export const CLAIMS: Claim[] = [
   },
   {
     id: 'method.dustCaptureMeasured',
-    statement: 'Measured end-of-job particle counts correspond to 99.5% dust capture.',
+    statement: 'Measured end-of-job particle counts correspond to 99.5% dust capture.', // facts-allow: retired from publication 2026-08-28; the counts stay, the derived percentage does not
     value: '99.5%',
     status: 'verified',
     source:

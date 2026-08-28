@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import {
   BUSINESS_NAP,
@@ -176,7 +177,7 @@ export default function HardwoodFlooringTorontoPage() {
             <span>Salaried crews, no subcontractors</span>
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            <Link className="fw-cta" href="#estimate">
               Get a fixed written price →
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
@@ -185,6 +186,18 @@ export default function HardwoodFlooringTorontoPage() {
           </div>
         </div>
       </header>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It is here now, above every
+          explanatory section, because a buyer who has read the price and decided
+          should not have to navigate to act on it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source="hardwood-flooring-toronto" service="installation" heading="Get a fixed written price for your install" intro="The bands above are real ranges, not a starting-from number. Tell us the rooms and we measure, then write one price that does not move." />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="What it costs">
         <div className="shell">

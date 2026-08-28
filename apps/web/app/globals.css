@@ -1717,6 +1717,59 @@ p {
 }
 /* === EW:AREA-LINKS END === */
 
+/* === EW:ESTIMATE-FORM === */
+/* The ask, on the page that earned it — F-160.
+   Deliberately plain. This is the one component on the site whose job is to be
+   filled in, not admired: two columns on a wide screen, one on a phone, labels
+   above inputs (never placeholders-as-labels, which vanish the moment someone
+   starts typing and are the classic reason a form gets abandoned half-done),
+   and a 48px control height so a thumb hits it. */
+.ef {
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 14px;
+  background: var(--surface-1);
+  padding: 1.75rem 1.5rem;
+  max-width: 46rem;
+  scroll-margin-top: 5rem;
+}
+.ef-h { margin: 0 0 0.4rem; font-family: var(--font-display); font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.2; color: var(--ink); }
+.ef-intro { margin: 0 0 1.4rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; max-width: 52ch; }
+.ef-row { display: grid; gap: 0.9rem; }
+@media (min-width: 620px) { .ef-row { grid-template-columns: 1fr 1fr; } }
+.ef-field { display: block; margin-bottom: 0.9rem; }
+.ef-field > span {
+  display: block; margin-bottom: 0.35rem;
+  font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ef-field > span em { font-style: normal; text-transform: none; letter-spacing: 0; opacity: 0.75; }
+.ef-field :is(input, select, textarea) {
+  width: 100%; min-height: 48px;                 /* thumb-sized, per F-31 */
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit; font-size: 1rem;                /* 16px — anything less zooms iOS */
+}
+.ef-field textarea { min-height: 90px; resize: vertical; }
+.ef-field :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--copper-text); outline-offset: 1px; border-color: var(--copper-text);
+}
+.ef-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 0.4rem; }
+.ef-actions .btn { min-height: 48px; }
+.ef-call { color: var(--copper-text); font-size: 0.92rem; text-decoration: underline; text-underline-offset: 3px; }
+.ef-err { display: block; margin-top: 0.3rem; font-style: normal; font-size: 0.82rem; color: var(--danger-text, #a3341f); }
+.ef-err--block { margin-top: 0.9rem; }
+.ef-fine { margin: 1rem 0 0; font-size: 0.8rem; line-height: 1.55; color: var(--muted); }
+.ef--done { border-color: var(--copper-surface); }
+
+/* The honeypot. Visually gone, still focusable by a bot that ignores CSS —
+   which is the point. `display:none` is skipped by some fillers, and a bot that
+   leaves it empty is indistinguishable from a person. */
+.ef-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* === EW:ESTIMATE-FORM END === */
+
 /* Footer legal row: the Cookie Preferences button (132x22) and the Privacy /
    Terms links (48x22, 41x22) all sat well under 44px on every route. */
 .footer-legal-btn {
@@ -7298,7 +7351,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
 .tlx-crumbs a { color: inherit; text-decoration: none; }
-.tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper); }
+.tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper-text); }
 .tlx-crumbs span[aria-hidden] { color: var(--muted-soft); }
 .tlx-title { font-family: var(--font-display); font-weight: 600; line-height: 1.12;
   font-size: clamp(1.9rem, 4.5vw, 3rem); letter-spacing: -0.01em; margin: 0 0 1rem; }
@@ -7367,7 +7420,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--line);
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
   color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
-.tlx-card-cta { color: var(--copper); font-weight: 600; font-size: 0.9rem; }
+.tlx-card-cta { color: var(--copper-text); font-weight: 600; font-size: 0.9rem; }
 
 /* ── Pillars ── */
 .tlx-pillar { background: var(--surface-1); border: 1px solid var(--line);
@@ -7377,7 +7430,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-pillar ul { list-style: none; margin: 0; padding: 0;
   font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
 .tlx-pillar li { padding: 0.22rem 0; }
-.tlx-pillar li::before { content: '✓ '; color: var(--copper); }
+.tlx-pillar li::before { content: '✓ '; color: var(--copper-text); }
 
 /* ── Case-study spec strip (the job card) ── */
 .tlx-specs { display: grid; gap: 1px; background: var(--line);
@@ -7400,10 +7453,10 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-body p { margin: 0 0 1.1rem; }
 .tlx-body a { color: var(--copper-deep); text-decoration: underline;
   text-decoration-color: var(--copper); text-underline-offset: 3px; }
-.tlx-body a:hover { color: var(--copper); }
+.tlx-body a:hover { color: var(--copper-text); }
 .tlx-body ul, .tlx-body ol { margin: 0 0 1.2rem; padding-left: 1.4rem; }
 .tlx-body li { margin: 0.3rem 0; }
-.tlx-body li::marker { color: var(--copper); }
+.tlx-body li::marker { color: var(--copper-text); }
 .tlx-body li > input[type='checkbox'] { accent-color: var(--copper); margin-right: 0.5rem; }
 .tlx-body strong { color: var(--ink); }
 .tlx-body blockquote { margin: 1.5rem 0; padding: 0.9rem 1.25rem;
@@ -7529,7 +7582,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .clp-col .tlx-card + .tlx-card { margin-top: 1rem; }
 .clp-more { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1.25rem;
   color: var(--copper-deep); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
-.clp-more:hover, .clp-more:focus-visible { color: var(--copper); }
+.clp-more:hover, .clp-more:focus-visible { color: var(--copper-text); }
 
 /* ============================================================
    FLOORFORGE (/products/floorforge) — component namespace

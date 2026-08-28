@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
 import { getServicePages, priceBand } from '@/lib/service-pages';
-import { getPapers } from '@/lib/papers';
+import { pdfIsPublished, getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
@@ -66,7 +66,28 @@ import {
  *   GET /api/knowledge?q=cupping           substring match across names and definitions
  */
 
-export const dynamic = 'force-static';
+/**
+ * NOT force-static — F-161, and the reason is worth writing down.
+ *
+ * This route was `export const dynamic = 'force-static'`. Next prerenders such a
+ * route once at build time, and `request.nextUrl.searchParams` is then ALWAYS
+ * EMPTY. The `collection` and `q` filtering below is correct code that could
+ * never run: every query returned the same byte-identical 330 KB dump.
+ *
+ * Two independent audits measured the symptom — `?q=hickory`,
+ * `?collection=glossary` and the bare url returning the same length and the same
+ * hash — and neither could see the cause, because nothing about the response
+ * says "your query string was discarded before the handler saw it".
+ *
+ * `meta.usage` was simultaneously advertising both parameters. An agent that
+ * tries `?q=` once, receives the entire company, and truncates, does not try
+ * again — it quotes something shorter, somewhere else.
+ *
+ * Dynamic, with the same s-maxage: Vercel's edge still caches, and the cache key
+ * is the full URL including the query, so a filtered request is cached per query
+ * rather than collapsed into one.
+ */
+export const dynamic = 'force-dynamic';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -94,7 +115,14 @@ async function build() {
     audience: p.audience,
     topics: p.topics,
     url: url(`/papers/${p.slug}`),
-    pdfUrl: url(`/papers/${p.pdf}`),
+    /* Only advertise the PDF when the PDF exists — F-162.
+       This emitted a versioned pdfUrl for all five papers while
+       apps/web/public/papers/ was empty, so every one 404'd. An agent that
+       follows a machine surface to a 404 stops trusting the surface, and a
+       download link is the one promise on this site that had nothing behind it.
+       pdfIsPublished() reads the filesystem; it is the same check the page uses
+       to decide whether to draw the button. */
+    ...(pdfIsPublished(p) ? { pdfUrl: url(`/papers/${p.pdf}`) } : {}),
     sections: p.sections.map((s) => ({
       id: s.id,
       heading: s.heading,
@@ -426,7 +454,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return new Response(JSON.stringify({ meta, ...data }, null, 2), {
+  /* Say whether filtering happened. Without this an agent cannot tell a filter
+     that matched everything from a filter that was silently ignored — which is
+     exactly the ambiguity that let F-161 live in production. */
+  const filtered = Boolean(collection || q);
+  const returned = Object.fromEntries(
+    Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.length : 1]),
+  );
+  const metaOut = {
+    ...meta,
+    filtered,
+    ...(filtered ? { query: { collection: collection || null, q: q || null }, returned } : {}),
+  };
+
+  return new Response(JSON.stringify({ meta: metaOut, ...data }, null, 2), {
     headers: {
       ...CORS,
       'content-type': 'application/json; charset=utf-8',

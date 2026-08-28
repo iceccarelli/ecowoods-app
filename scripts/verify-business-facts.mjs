@@ -54,6 +54,25 @@ const BANNED = [
     why: 'Founding year is BUSINESS_NAP.foundedYear. Do not hardcode it.' },
   { pattern: /27\+?\s*years|27-year/i, why: 'Hardcoded year count goes stale. Use yearsInBusiness().' },
   { pattern: /over 25 years|25\+\s*yrs/i, why: 'Hardcoded year count goes stale. Use yearsInBusiness().' },
+
+  // ── Unmeasured performance percentages ─────────────────────────────────
+  // F-165. "99.7% dust capture" was published on the homepage, the dust-free
+  // service page, all 32 service-area pages, two guides, FloorForge, and
+  // /llms.txt — where an agent reads it as a measured fact about this business
+  // and repeats it. The claim registry had it as `unsourced`, fenced to
+  // `editorial`, and it was live in FAQ answers that become FAQPage JSON-LD,
+  // which is the `schema` context the fence exists to prevent.
+  //
+  // The number is almost certainly a HEPA filter's certified rating quoted as a
+  // room-capture fraction. Those are different measurements. The first sceptical
+  // general contractor with a particle counter ends the argument, and takes the
+  // credibility of everything sourced beside it.
+  //
+  // It can come back the day a Toronto job is measured and the method published.
+  { pattern: /99\.7\s*%|99\.5\s*%\s*(of\s*)?(airborne|dust|particulate)/i,
+    why: 'Unmeasured dust-capture percentage. Describe the system (HEPA-sealed extraction at the machine, containment at the room) or publish a measured job with its method.' },
+  { pattern: /9[05]%\+?\s*(customer\s*)?satisfaction/i,
+    why: 'Unmeasured satisfaction percentage. Cite a platform with a read date, as /reviews does.' },
 ];
 
 // Where the retired values are still legitimately allowed to appear.
@@ -71,7 +90,13 @@ const ALLOWLIST = [
  */
 const OPT_OUT = 'facts-allow';
 
-const SCAN_DIRS = ['apps/web/app', 'apps/web/lib', 'apps/web/public', 'packages'];
+/* apps/web/content was NOT scanned until F-166. Every article and case study in
+   it is published — rendered at /blog/<slug> and /case-studies/<slug>, mirrored
+   into .md, and fed to /api/knowledge — and none of it was ever checked against
+   the retired-claim list. That is how "95%+ customer satisfaction" survived in a
+   case-study description and how an article kept a capture percentage in its own
+   H1. The guard was reading the code and skipping the copy. */
+const SCAN_DIRS = ['apps/web/app', 'apps/web/lib', 'apps/web/public', 'apps/web/content', 'packages'];
 const SCAN_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.txt', '.md', '.mdx', '.json']);
 const SKIP_DIR = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
 
