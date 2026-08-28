@@ -1,0 +1,51 @@
+
+UI CONTRAST — 76 dark ground(s), 42 context-dependent light class(es)
+
+   1.00:1   .hero-stat                var(--cream-50)
+   1.00:1   .service-card             var(--on-copper)
+   1.00:1   .gallery-caption          var(--cream-50)
+   1.00:1   .photo-bg-section         var(--cream-50) !important
+   1.00:1   .estimate-cta-title       var(--cream-50)
+   1.00:1   .standard-pillar          var(--cream-50)
+   1.00:1   .pfd-title                var(--cream-50)
+   1.00:1   .pfd-panel-title          var(--cream-50)
+   1.00:1   .pfd-quote                var(--cream-50)
+   1.00:1   .pfd-avatar               var(--on-copper)
+   1.00:1   .pfd-author-name          var(--cream-50)
+   1.00:1   .teaser--onDark           var(--cream-50)
+   1.00:1   .quote-contact-num        var(--cream-50)
+   1.00:1   .gc-card-cap              #faf6ef
+   1.00:1   .gc-counter               var(--cream-50)
+   1.03:1   .footer-bottom            rgba(245, 239, 230, 0.5)
+   1.03:1   .footer-call-label        rgba(245, 239, 230, 0.55)
+   1.03:1   .quote-contact-label      rgba(245, 239, 230, 0.55)
+   1.04:1   .estimator-result         rgba(245, 239, 230, 0.6)
+   1.04:1   .portal-nav-icon          rgba(245,239,230,0.6)
+   1.04:1   .estimate-cta-sub         rgba(245, 239, 230, 0.6)
+   1.04:1   .pfd-author-place         rgba(245, 239, 230, 0.6)
+   1.04:1   .svt--dark                rgba(245, 239, 230, 0.6)
+   1.04:1   .quote-contact-when       rgba(245, 239, 230, 0.6)
+   1.04:1   .footer-grid              rgba(245, 239, 230, 0.65)
+   1.04:1   .portal-nav-item          rgba(245,239,230,0.7)
+   1.05:1   .hero-lede                rgba(245, 239, 230, 0.78)
+   1.05:1   .pfd-panel-body           rgba(245, 239, 230, 0.78)
+   1.05:1   .pfd-sub                  rgba(245, 239, 230, 0.82)
+   1.06:1   .ff-card--dark            var(--on-dark)
+   1.26:1   .gc-card-eyebrow          #f0d9c4
+   2.27:1   .footer-links             var(--copper-bright)
+   2.27:1   .pillar-num               var(--copper-bright)
+   2.27:1   .estimate-cta-arrow       var(--copper-bright)
+   2.27:1   .pfd-review-stars         var(--copper-bright)
+   2.27:1   .svt-value--up            var(--copper-bright)
+   2.27:1   .footer-call-num          var(--copper-bright)
+   2.97:1   .tlx-crumbs               var(--copper)
+   2.97:1   .tlx-card-cta             var(--copper)
+   2.97:1   .tlx-pillar               var(--copper)
+   2.97:1   .tlx-body                 var(--copper)
+   2.97:1   .clp-more                 var(--copper)
+
+  Advisory. Each of these is light text with no ground of its own; most sit on a dark
+  parent this parser cannot follow. Read it, and promote anything genuinely wrong into
+  CONTEXT_RULES, where it fails the build.
+
+✓ UI contract verified — no footer palette outside the footer, every .gd-spec row paints its own ground, fail-safe intact
