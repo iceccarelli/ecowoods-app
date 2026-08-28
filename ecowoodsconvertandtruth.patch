@@ -1,0 +1,1569 @@
+From 70077c75176f9c56874111749566f0d3f9d69579 Mon Sep 17 00:00:00 2001
+From: EcoWoods Build <build@ecowoods.ca>
+Date: Fri, 28 Aug 2026 18:47:31 +0000
+Subject: [PATCH] feat(convert): the page that earns the click can now take the
+ job
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Two independent audits crawled this site and opened with the same sentence. It
+had survived thirty-nine guards, because every guard here asks whether a
+manifest agrees with itself, and none asked whether the site does what it says.
+
+  <form> count 0. <input> count 0. On every page.
+
+F-160 — THE ASK, ON THE PAGE THAT EARNED IT
+
+The estimate form existed only inside a React modal, behind
+`{estimateModalOpen && …}`, on the homepage. Every commercial page's primary
+button pointed at `/#quote` — a different url, whose form appears only after
+hydration and a click. A business publishing 286 pages of sourced authority was
+collecting jobs through a phone number.
+
+`<EstimateForm>` is a real `<form method="post" action="/api/leads">`, rendered
+in HTML, mounted above every explanatory section on all five commercial pages.
+With scripting off, a broken bundle or a hydration error, the browser posts it
+and the route answers with a 303. With JS it submits inline and never leaves the
+page. `/api/leads` now reads form-encoded bodies through the SAME validation and
+the SAME capture order — the durable log still runs before the rate limiter, and
+verify-conversion.mjs now asserts that ordering, because a second parsing path
+that skipped it would lose a lead exactly when the client is least capable.
+
+F-161 — A FILTER THAT COULD NEVER RUN
+
+/api/knowledge was `export const dynamic = 'force-static'`. Next prerenders such
+a route once at build time and `searchParams` is then ALWAYS EMPTY, so `?q=` and
+`?collection=` — both advertised in the route's own `meta.usage` — silently
+returned the entire 330 KB corpus. Both audits measured the symptom: three
+different queries, byte-identical responses, identical hash. Neither could see
+the cause, because nothing in the response says the query was discarded.
+
+Now dynamic. The edge still caches; its key is the full URL including the query.
+`meta.filtered` and `meta.returned` say what happened, so the ambiguity that hid
+this for months cannot re-form. The generalised check is the most valuable thing
+in the new guard: force-static plus searchParams is not an error, not a warning,
+and invisible in the response.
+
+F-162 — A DOWNLOAD WITH NOTHING BEHIND IT
+
+/papers said every paper was "downloadable as a PDF" and the API emitted a
+versioned `pdfUrl` for all five, while apps/web/public/papers/ was empty. Every
+one 404'd. The sentence is retired and `pdfUrl` is now gated on
+`pdfIsPublished()` — the same filesystem check the page uses. An agent that
+follows a machine surface to a 404 stops trusting the surface.
+
+F-165 — 99.7%, AND THE FENCE THAT WAS NEVER ENFORCED
+
+"99.7% dust capture" was live on the homepage, the dust-free service page, all
+32 service-area pages, two guides, FloorForge and /llms.txt — and inside FAQ
+answers that become FAQPage JSON-LD, which is the `schema` context the claim
+registry had explicitly fenced it out of. The fence was written and never
+enforced.
+
+It is almost certainly a HEPA filter's certified rating quoted as a room-capture
+fraction. Those are different measurements, and the first general contractor
+with a particle counter ends the argument — taking the credibility of every
+sourced figure standing beside it. Removed everywhere, replaced with what is
+true: HEPA-sealed extraction at the machine, containment at the room, and no
+published percentage because none has been measured on a Toronto job.
+
+F-166 — THE GUARD WAS READING THE CODE AND SKIPPING THE COPY
+
+verify-business-facts.mjs scanned app, lib, public and packages. It did not scan
+apps/web/content — where every article and case study lives, all of it published,
+mirrored to .md and fed to the knowledge API. Adding it surfaced eighteen
+retired claims, including four case studies each publishing
+"Customer Satisfaction | 4.9/5" with no instrument behind it, on the very pages
+whose job is to be evidence. The particle counts stay; they are real readings.
+The derived capture percentages and the invented ratings do not.
+
+ALSO
+
+  · F-163 the header now names the five commercial pages. It used to spend five
+    of nine slots on homepage anchors (#gallery, #process, #craft, #reviews,
+    #faq) that point at nothing on the other 280 pages, plus a product name and
+    a login. 69 characters out, 61 in — narrower, and .topbar-nav clips
+    silently, so width was the constraint. Nothing was deleted; FloorForge kept
+    a real footer link, which verify-links.mjs demanded within one run.
+  · F-164 "Now booking · Spring 2026" read that way on 28 August 2026. Derived
+    from the clock now. A stale season on the one element whose job is to say
+    the business is paying attention says the opposite.
+  · Copper text moved to --copper-text: 2.97:1 → 4.81:1. --copper stays the
+    fill colour.
+  · verify-link-density.mjs now counts a rendered <EstimateForm> as a CTA. It
+    stopped seeing one on the commercial pages the day they got a real one.
+
+NOT IN THIS PATCH, AND NOT BECAUSE THEY DO NOT MATTER
+
+The two audits' other P1s are the old domain still serving 200 and the absent
+Google Business Profile. Both were confirmed. Neither is code — one is DNS and
+host access, the other is a form and a postcard. The redirect map has been
+written and checked in old-domain/ for a week.
+
+40 guards green.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UxqCPG5NQPxEeadUNbHXZr
+---
+ apps/web/app/api/knowledge/route.ts           |  49 +++-
+ apps/web/app/api/leads/route.ts               |  51 ++++-
+ apps/web/app/components/EstimateForm.tsx      | 199 ++++++++++++++++
+ apps/web/app/components/Header.tsx            |  53 ++---
+ apps/web/app/components/SiteFooter.tsx        |  31 ++-
+ apps/web/app/globals.css                      |  65 +++++-
+ .../hardwood-floor-problems-toronto/page.tsx  |  15 +-
+ .../page.tsx                                  |  15 +-
+ .../app/hardwood-flooring-toronto/page.tsx    |  15 +-
+ apps/web/app/hardwood-stairs-toronto/page.tsx |  15 +-
+ apps/web/app/home-client.tsx                  |   8 +-
+ apps/web/app/papers/page.tsx                  |   2 +-
+ apps/web/app/products/floorforge/page.tsx     |   2 +-
+ apps/web/app/service-areas/[city]/page.tsx    |   2 +-
+ apps/web/app/services/[slug]/page.tsx         |  15 +-
+ ...free-sanding-hepa-extraction-explained.mdx |   8 +-
+ .../subfloor-moisture-testing-protocol.mdx    |   2 +-
+ .../distillery-district-victorian-condo.mdx   |   8 +-
+ ...hill-walnut-wide-plank-color-stability.mdx |   6 +-
+ ...dtown-townhouse-three-level-transition.mdx |   2 +-
+ ...asement-conversion-moisture-mitigation.mdx |   4 +-
+ apps/web/content/claims.ts                    |  17 +-
+ apps/web/lib/guides.ts                        |   4 +-
+ apps/web/lib/seo-data.ts                      |   6 +-
+ package.json                                  |   3 +-
+ scripts/verify-business-facts.mjs             |  27 ++-
+ scripts/verify-conversion.mjs                 | 212 ++++++++++++++++++
+ scripts/verify-link-density.mjs               |   9 +-
+ 28 files changed, 770 insertions(+), 75 deletions(-)
+ create mode 100644 apps/web/app/components/EstimateForm.tsx
+ create mode 100755 scripts/verify-conversion.mjs
+
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index e49c6c9..6307271 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -1,7 +1,7 @@
+ import { NextRequest } from 'next/server';
+ import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
+ import { getServicePages, priceBand } from '@/lib/service-pages';
+-import { getPapers } from '@/lib/papers';
++import { pdfIsPublished, getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+ import { getFigures } from '@/lib/figures';
+@@ -66,7 +66,28 @@ import {
+  *   GET /api/knowledge?q=cupping           substring match across names and definitions
+  */
+ 
+-export const dynamic = 'force-static';
++/**
++ * NOT force-static — F-161, and the reason is worth writing down.
++ *
++ * This route was `export const dynamic = 'force-static'`. Next prerenders such a
++ * route once at build time, and `request.nextUrl.searchParams` is then ALWAYS
++ * EMPTY. The `collection` and `q` filtering below is correct code that could
++ * never run: every query returned the same byte-identical 330 KB dump.
++ *
++ * Two independent audits measured the symptom — `?q=hickory`,
++ * `?collection=glossary` and the bare url returning the same length and the same
++ * hash — and neither could see the cause, because nothing about the response
++ * says "your query string was discarded before the handler saw it".
++ *
++ * `meta.usage` was simultaneously advertising both parameters. An agent that
++ * tries `?q=` once, receives the entire company, and truncates, does not try
++ * again — it quotes something shorter, somewhere else.
++ *
++ * Dynamic, with the same s-maxage: Vercel's edge still caches, and the cache key
++ * is the full URL including the query, so a filtered request is cached per query
++ * rather than collapsed into one.
++ */
++export const dynamic = 'force-dynamic';
+ 
+ const CORS = {
+   'access-control-allow-origin': '*',
+@@ -94,7 +115,14 @@ async function build() {
+     audience: p.audience,
+     topics: p.topics,
+     url: url(`/papers/${p.slug}`),
+-    pdfUrl: url(`/papers/${p.pdf}`),
++    /* Only advertise the PDF when the PDF exists — F-162.
++       This emitted a versioned pdfUrl for all five papers while
++       apps/web/public/papers/ was empty, so every one 404'd. An agent that
++       follows a machine surface to a 404 stops trusting the surface, and a
++       download link is the one promise on this site that had nothing behind it.
++       pdfIsPublished() reads the filesystem; it is the same check the page uses
++       to decide whether to draw the button. */
++    ...(pdfIsPublished(p) ? { pdfUrl: url(`/papers/${p.pdf}`) } : {}),
+     sections: p.sections.map((s) => ({
+       id: s.id,
+       heading: s.heading,
+@@ -426,7 +454,20 @@ export async function GET(request: NextRequest) {
+     );
+   }
+ 
+-  return new Response(JSON.stringify({ meta, ...data }, null, 2), {
++  /* Say whether filtering happened. Without this an agent cannot tell a filter
++     that matched everything from a filter that was silently ignored — which is
++     exactly the ambiguity that let F-161 live in production. */
++  const filtered = Boolean(collection || q);
++  const returned = Object.fromEntries(
++    Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.length : 1]),
++  );
++  const metaOut = {
++    ...meta,
++    filtered,
++    ...(filtered ? { query: { collection: collection || null, q: q || null }, returned } : {}),
++  };
++
++  return new Response(JSON.stringify({ meta: metaOut, ...data }, null, 2), {
+     headers: {
+       ...CORS,
+       'content-type': 'application/json; charset=utf-8',
+diff --git a/apps/web/app/api/leads/route.ts b/apps/web/app/api/leads/route.ts
+index 548a878..8db9a28 100644
+--- a/apps/web/app/api/leads/route.ts
++++ b/apps/web/app/api/leads/route.ts
+@@ -23,10 +23,56 @@ function generateLeadId(): string {
+   return `lead_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+ }
+ 
++/**
++ * A form POST and a fetch POST are the same lead.
++ *
++ * F-160: every page on this site served zero `<form>` elements, because the only
++ * one lived inside a React modal behind state. The fix renders a real form in
++ * the HTML — which means this route now receives
++ * `application/x-www-form-urlencoded` from a browser with no JavaScript, as well
++ * as the JSON it already took from fetch.
++ *
++ * Both go through the SAME validation and the SAME capture order below. That is
++ * deliberate and it is the only safe way to do this: a second parsing path that
++ * skipped the durable log would be a lead that vanishes exactly when the client
++ * is least capable, which is the moment this whole change exists to serve.
++ */
++async function readBody(request: Request): Promise<{ body: unknown; isFormPost: boolean }> {
++  const type = request.headers.get('content-type') ?? '';
++  if (type.includes('application/x-www-form-urlencoded') || type.includes('multipart/form-data')) {
++    const fd = await request.formData();
++    const out: Record<string, unknown> = {};
++    fd.forEach((v, k) => {
++      if (typeof v !== 'string' || v === '') return;
++      out[k] = k === 'sqft' ? Number(v) : v;
++    });
++    return { body: out, isFormPost: true };
++  }
++  return { body: await request.json(), isFormPost: false };
++}
++
++/** Where to send a no-JS browser back to. Same-origin only. */
++function backTo(request: Request, ok: boolean): string {
++  const ref = request.headers.get('referer');
++  try {
++    const u = new URL(ref ?? '/', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
++    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
++    if (u.host !== site.host) return '/?sent=1';
++    u.searchParams.set(ok ? 'sent' : 'error', '1');
++    u.hash = 'estimate';
++    return `${u.pathname}${u.search}${u.hash}`;
++  } catch {
++    return ok ? '/?sent=1' : '/?error=1';
++  }
++}
++
+ export async function POST(request: Request) {
+   let body: unknown;
++  let isFormPost = false;
+   try {
+-    body = await request.json();
++    const read = await readBody(request);
++    body = read.body;
++    isFormPost = read.isFormPost;
+   } catch {
+     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
+   }
+@@ -36,6 +82,7 @@ export async function POST(request: Request) {
+   // traffic never consumes a real visitor's allowance.
+   if (typeof (body as { company?: unknown }).company === 'string' && (body as { company: string }).company.trim()) {
+     console.log(JSON.stringify({ event: 'lead.honeypot', at: new Date().toISOString() }));
++    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+     return NextResponse.json(
+       { success: true, message: 'Quote request received! A specialist will call you within 1 business day.' },
+       { status: 201 },
+@@ -49,6 +96,7 @@ export async function POST(request: Request) {
+       const key = issue.path[0];
+       if (typeof key === 'string' && !(key in fieldErrors)) fieldErrors[key] = issue.message;
+     }
++    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, false), request.url), 303);
+     return NextResponse.json(
+       { success: false, message: 'Please check the highlighted fields.', fieldErrors },
+       { status: 400 },
+@@ -167,6 +215,7 @@ export async function POST(request: Request) {
+   }
+ 
+   // The lead is captured. Always acknowledge success to the customer.
++  if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+   return NextResponse.json(
+     { success: true, leadId, quoteId, message: 'Quote request received! A specialist will call you within 1 business day.', ecoPointsEarned: 750 },
+     { status: 201 },
+diff --git a/apps/web/app/components/EstimateForm.tsx b/apps/web/app/components/EstimateForm.tsx
+new file mode 100644
+index 0000000..0fdd460
+--- /dev/null
++++ b/apps/web/app/components/EstimateForm.tsx
+@@ -0,0 +1,199 @@
++'use client';
++
++import { useState, type FormEvent } from 'react';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++
++/**
++ * EstimateForm — the ask, rendered in HTML, on the page that earned it.
++ *
++ * WHY THIS EXISTS — F-160, the finding two independent audits opened with
++ *
++ * Every commercial page's primary button pointed at `/#quote`. That anchor is on
++ * a DIFFERENT url, and the thing it scrolls to is a heading, a `tel:` link and a
++ * `<button type="button">` that sets React state to open a modal. The modal is
++ * behind `{estimateModalOpen && …}`, so it renders nothing on the server.
++ *
++ * The measurable consequence: `<form>` count 0, `<input>` count 0, in the served
++ * HTML of every page on this site. A buyer who has read the price band, accepted
++ * it, and wants to send us a job had to (1) leave the page that convinced them,
++ * (2) land on the homepage, (3) wait for hydration, (4) click a button, (5) wait
++ * for a modal. Every step is a place to lose them, and step 3 is a place the
++ * page itself cannot control.
++ *
++ * A trade business publishing 286 pages of sourced authority was collecting jobs
++ * through a phone number.
++ *
++ * THREE RULES THIS COMPONENT KEEPS
++ *
++ * 1. IT EXISTS WITHOUT JAVASCRIPT. This is a real `<form method="post"
++ *    action="/api/leads">`. With scripting off, a broken bundle, or a hydration
++ *    error, the browser posts it and the route answers with a redirect. The
++ *    lead-capture invariant in app/api/leads/route.ts — durable log FIRST, then
++ *    best-effort everything — is what makes that safe.
++ *
++ * 2. IT STAYS ON THE PAGE. No navigation to `/#quote`. The buyer converts from
++ *    the url that answered their query, which is also the url whose analytics
++ *    tell us which page earns money.
++ *
++ * 3. IT ASKS FOR THE MINIMUM. Name, phone, email, postcode, service. Square
++ *    footage and a note are optional. Every extra required field is a percentage
++ *    of the people who came here to give us money and left instead.
++ *
++ * The honeypot is `company`, matching what the API already checks. It is
++ * visually hidden rather than `display:none`, because some autofill agents skip
++ * `display:none` fields and a bot that fills nothing looks like a human.
++ */
++
++const SERVICES = [
++  { value: 'refinishing', label: 'Refinishing an existing floor' },
++  { value: 'installation', label: 'New hardwood install' },
++  { value: 'sanding', label: 'Dust-free sanding' },
++  { value: 'stairs', label: 'Stairs' },
++  { value: 'inlays', label: 'Custom inlays' },
++  { value: 'commercial', label: 'Commercial' },
++] as const;
++
++export function EstimateForm({
++  source,
++  service,
++  heading = 'Get a fixed written price',
++  intro = 'A senior estimator replies within one business day. The price we write after measuring is the price you pay.',
++  className = '',
++}: {
++  /** Which page this lead came from. Recorded on the lead. */
++  source: string;
++  /** Preselect the service this page is about. */
++  service?: (typeof SERVICES)[number]['value'];
++  heading?: string;
++  intro?: string;
++  className?: string;
++}) {
++  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
++  const [errors, setErrors] = useState<Record<string, string>>({});
++
++  async function onSubmit(e: FormEvent<HTMLFormElement>) {
++    /* Progressive enhancement ONLY. If this handler never runs — no JS, a
++       bundle that failed, an error boundary — the browser performs the native
++       POST and the route redirects. The page works either way, which is the
++       entire point of the component. */
++    e.preventDefault();
++    const form = e.currentTarget;
++    const fd = new FormData(form);
++    const body: Record<string, unknown> = {};
++    fd.forEach((v, k) => { if (typeof v === 'string' && v !== '') body[k] = v; });
++    if (typeof body.sqft === 'string') body.sqft = Number(body.sqft);
++
++    setState('sending');
++    setErrors({});
++    try {
++      const res = await fetch('/api/leads', {
++        method: 'POST',
++        headers: { 'content-type': 'application/json' },
++        body: JSON.stringify(body),
++      });
++      const json = await res.json().catch(() => ({}));
++      if (res.ok) { setState('sent'); form.reset(); return; }
++      if (res.status === 400 && json.fieldErrors) { setErrors(json.fieldErrors); setState('idle'); return; }
++      setState('error');
++    } catch {
++      setState('error');
++    }
++  }
++
++  if (state === 'sent') {
++    return (
++      <section className={`ef ef--done ${className}`.trim()} aria-live="polite">
++        <h2 className="ef-h">Request received.</h2>
++        <p className="ef-intro">
++          A senior estimator will call you within one business day to book the free in-home
++          measurement. If it is urgent, call{' '}
++          <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
++        </p>
++      </section>
++    );
++  }
++
++  return (
++    <section className={`ef ${className}`.trim()} id="estimate">
++      <h2 className="ef-h">{heading}</h2>
++      <p className="ef-intro">{intro}</p>
++
++      <form className="ef-form" method="post" action="/api/leads" onSubmit={onSubmit} noValidate>
++        <input type="hidden" name="source" value={source} />
++
++        <div className="ef-row">
++          <label className="ef-field">
++            <span>Name</span>
++            <input name="name" type="text" autoComplete="name" required placeholder="Jane Doe" />
++            {errors.name && <em className="ef-err">{errors.name}</em>}
++          </label>
++          <label className="ef-field">
++            <span>Phone</span>
++            <input name="phone" type="tel" autoComplete="tel" required placeholder="(416) 555-0142" />
++            {errors.phone && <em className="ef-err">{errors.phone}</em>}
++          </label>
++        </div>
++
++        <div className="ef-row">
++          <label className="ef-field">
++            <span>Email</span>
++            <input name="email" type="email" autoComplete="email" required placeholder="jane@example.com" />
++            {errors.email && <em className="ef-err">{errors.email}</em>}
++          </label>
++          <label className="ef-field">
++            <span>Postal code</span>
++            <input name="postal" type="text" autoComplete="postal-code" required placeholder="M5V 3A8" />
++            {errors.postal && <em className="ef-err">{errors.postal}</em>}
++          </label>
++        </div>
++
++        <div className="ef-row">
++          <label className="ef-field">
++            <span>What do you need</span>
++            <select name="service" defaultValue={service ?? 'refinishing'}>
++              {SERVICES.map((s) => (
++                <option key={s.value} value={s.value}>{s.label}</option>
++              ))}
++            </select>
++          </label>
++          <label className="ef-field">
++            <span>Approximate square feet <em>optional</em></span>
++            <input name="sqft" type="number" min="1" inputMode="numeric" placeholder="900" />
++          </label>
++        </div>
++
++        <label className="ef-field">
++          <span>Anything we should know <em>optional</em></span>
++          <textarea name="message" rows={3} placeholder="Two bedrooms and a hallway, red oak, last refinished around 2005." />
++        </label>
++
++        {/* Honeypot. The API accepts and silently discards anything that fills it. */}
++        <div className="ef-hp" aria-hidden="true">
++          <label htmlFor={`ef-company-${source}`}>Company</label>
++          <input id={`ef-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
++        </div>
++
++        <div className="ef-actions">
++          <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>
++            {state === 'sending' ? 'Sending…' : 'Request a free estimate'}
++          </button>
++          <a className="ef-call" href={BUSINESS_NAP.phoneHref}>
++            or call {BUSINESS_NAP.phoneDisplay}
++          </a>
++        </div>
++
++        {state === 'error' && (
++          <p className="ef-err ef-err--block" role="alert">
++            Something went wrong sending that. Please call {BUSINESS_NAP.phoneDisplay} — we do not
++            want you to have to try twice.
++          </p>
++        )}
++
++        <p className="ef-fine">
++          No obligation, no pressure, and we do not sell your details. The in-home measurement is
++          free and the written price does not move afterwards.
++        </p>
++      </form>
++    </section>
++  );
++}
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index fac3ee3..6278bd6 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -39,33 +39,36 @@ function useScrollState() {
+ 
+ /* ---------------------- Navigation ---------------------- */
+ const navigation = [
+-  { label: 'Gallery', href: '#gallery' },
+-  // { label: 'Species', href: '#species' }, // hidden with The Detail section
+-  // A page, not an anchor. Six services now have their own URLs (F-146), and the
+-  // map below already branches on `href.startsWith('#')` — a page link skips the
+-  // scroll-spy and is rendered as a plain link, which is what this needs.
++  /* THE HEADER ROUTES BUYING INTENT — F-163.
++   *
++   * It used to be: Gallery · Services · Process · The Craft · Resources ·
++   * Framework · FloorForge · Reviews · FAQ. Five of those nine were homepage
++   * anchors (`#gallery`, `#process`, `#craft`, `#reviews`, `#faq`), which means
++   * that on any of the 280 pages that is not the homepage they pointed at
++   * nothing. And not one of the five commercial URLs — the pages that carry the
++   * money queries and now carry the estimate form — appeared at all. They were
++   * in the footer.
++   *
++   * So a homeowner comparing three quotes was offered a product name they have
++   * never heard (FloorForge), a login, and a table of contents for a page they
++   * were not on. Two independent audits opened on this.
++   *
++   * The row now names what someone is here to buy. Width was the hard
++   * constraint (.topbar-nav is `overflow: clip` with `min-width: max-content`,
++   * F-50, so anything added without removing something clips silently at
++   * 1200px): 69 characters out, 61 in. Narrower than before.
++   *
++   * Nothing is deleted — Gallery, Process, The Craft, FloorForge and the FAQ are
++   * all still on the homepage and still in the footer. They are just no longer
++   * spending the one row of attention this site gets.
++   */
+   { label: 'Services', href: '/services' },
+-  { label: 'Process', href: '#process' },
+-  { label: 'The Craft', href: '#craft' },
+-  // "Technical Library" was shortened to "Library" to pay for "Framework" in
+-  // character width. The nav is `overflow: clip` with `min-width: max-content`
+-  // (see F-50), so an item added without removing width somewhere is an item
+-  // that clips silently at 1200px. Net width here is NARROWER than before:
+-  // 17 characters out, 7 + 9 in. Re-measure on the next --full runtime pass.
+-  // One entry, not three. The corpus outgrew a flat nav: papers, a versioned
+-  // framework, an assessment, six guides, 32 glossary terms, a library, a JSON
+-  // API. AWS puts all of that behind a single "Documentation" entry and groups
+-  // it by intent on the page it leads to; /resources does the same.
+-  //
+-  // Width is the hard constraint here — .topbar-nav is `overflow: clip` with
+-  // `min-width: max-content` (F-50), so an item added without removing width
+-  // clips silently at 1200px. "Library" + "Papers" (13 characters) out,
+-  // "Resources" (9) in: the nav is one item shorter and narrower than before.
++  { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
++  { label: 'Installation', href: '/hardwood-flooring-toronto' },
++  { label: 'Stairs', href: '/hardwood-stairs-toronto' },
++  { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
+   { label: 'Resources', href: '/resources' },
+-  { label: 'Framework', href: '/framework' },
+-  { label: 'FloorForge', href: '/products/floorforge' },
+-  { label: 'Reviews', href: '#reviews' },
+-  { label: 'FAQ', href: '#faq' },
++  { label: 'Reviews', href: '/reviews' },
+ ];
+ 
+ const MYPAGE_NAV = [
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 6552ce8..8b66b41 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -84,6 +84,29 @@ function FooterCol({
+   );
+ }
+ 
++/**
++ * The booking window, derived — F-164.
++ *
++ * This pill read "Now booking · Spring 2026" on 28 August 2026. A hardcoded
++ * season is a promise with a shelf life, and past its date it does not read as
++ * an old string: it reads as a business that stopped paying attention, on the
++ * element whose entire job is to say the opposite.
++ *
++ * Derived from the clock instead, so it cannot go stale. Deliberately coarse —
++ * a season, not a date — because the honest claim is availability, and a
++ * specific week would be a scheduling commitment nobody here has authorised the
++ * footer to make.
++ */
++function bookingWindow(now = new Date()): string {
++  const m = now.getMonth();
++  const y = now.getFullYear();
++  if (m <= 1) return `Winter ${y}`;
++  if (m <= 4) return `Spring ${y}`;
++  if (m <= 7) return `Summer ${y}`;
++  if (m <= 9) return `Autumn ${y}`;
++  return `Winter ${y + 1}`;
++}
++
+ export default function SiteFooter() {
+   const { mounted, isMobile } = useIsMobile();
+   const m = mounted && isMobile;
+@@ -120,7 +143,7 @@ export default function SiteFooter() {
+             </p>
+             <div className="availability-pill dark">
+               <span className="availability-dot" />
+-              Now booking · Spring 2026
++              Now booking · {bookingWindow()}
+             </div>
+             {m && (
+               <a href={BUSINESS_NAP.phoneHref} className="footer-call">
+@@ -180,6 +203,12 @@ export default function SiteFooter() {
+               <a href="/blog">Articles</a>
+               <a href="/case-studies">Case Studies</a>
+               <a href="/design">Floor Designer</a>
++              {/* F-163 moved FloorForge out of the primary nav, where it spent a
++                  tenth of the header on a product name a homeowner comparing three
++                  quotes has never heard. It is a real page and it keeps a real
++                  inbound link — verify-links.mjs failed the build the moment it
++                  had none, which is exactly what that guard is for. */}
++              <a href="/products/floorforge">FloorForge</a>
+               <a href="/authority">Citation Guide</a>
+               <a href="/feed.xml">RSS Feed</a>
+             </div>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 0e730c4..7b264f6 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -1717,6 +1717,59 @@ p {
+ }
+ /* === EW:AREA-LINKS END === */
+ 
++/* === EW:ESTIMATE-FORM === */
++/* The ask, on the page that earned it — F-160.
++   Deliberately plain. This is the one component on the site whose job is to be
++   filled in, not admired: two columns on a wide screen, one on a phone, labels
++   above inputs (never placeholders-as-labels, which vanish the moment someone
++   starts typing and are the classic reason a form gets abandoned half-done),
++   and a 48px control height so a thumb hits it. */
++.ef {
++  border: 1px solid var(--line-strong, var(--line));
++  border-radius: 14px;
++  background: var(--surface-1);
++  padding: 1.75rem 1.5rem;
++  max-width: 46rem;
++  scroll-margin-top: 5rem;
++}
++.ef-h { margin: 0 0 0.4rem; font-family: var(--font-display); font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.2; color: var(--ink); }
++.ef-intro { margin: 0 0 1.4rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; max-width: 52ch; }
++.ef-row { display: grid; gap: 0.9rem; }
++@media (min-width: 620px) { .ef-row { grid-template-columns: 1fr 1fr; } }
++.ef-field { display: block; margin-bottom: 0.9rem; }
++.ef-field > span {
++  display: block; margin-bottom: 0.35rem;
++  font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.09em;
++  text-transform: uppercase; color: var(--muted);
++}
++.ef-field > span em { font-style: normal; text-transform: none; letter-spacing: 0; opacity: 0.75; }
++.ef-field :is(input, select, textarea) {
++  width: 100%; min-height: 48px;                 /* thumb-sized, per F-31 */
++  padding: 0.6rem 0.8rem;
++  border: 1px solid var(--line-strong, var(--line));
++  border-radius: 9px;
++  background: var(--surface);
++  color: var(--ink);
++  font: inherit; font-size: 1rem;                /* 16px — anything less zooms iOS */
++}
++.ef-field textarea { min-height: 90px; resize: vertical; }
++.ef-field :is(input, select, textarea):focus-visible {
++  outline: 2px solid var(--copper-text); outline-offset: 1px; border-color: var(--copper-text);
++}
++.ef-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 0.4rem; }
++.ef-actions .btn { min-height: 48px; }
++.ef-call { color: var(--copper-text); font-size: 0.92rem; text-decoration: underline; text-underline-offset: 3px; }
++.ef-err { display: block; margin-top: 0.3rem; font-style: normal; font-size: 0.82rem; color: var(--danger-text, #a3341f); }
++.ef-err--block { margin-top: 0.9rem; }
++.ef-fine { margin: 1rem 0 0; font-size: 0.8rem; line-height: 1.55; color: var(--muted); }
++.ef--done { border-color: var(--copper-surface); }
++
++/* The honeypot. Visually gone, still focusable by a bot that ignores CSS —
++   which is the point. `display:none` is skipped by some fillers, and a bot that
++   leaves it empty is indistinguishable from a person. */
++.ef-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
++/* === EW:ESTIMATE-FORM END === */
++
+ /* Footer legal row: the Cookie Preferences button (132x22) and the Privacy /
+    Terms links (48x22, 41x22) all sat well under 44px on every route. */
+ .footer-legal-btn {
+@@ -7298,7 +7351,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
+   text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
+ .tlx-crumbs a { color: inherit; text-decoration: none; }
+-.tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper); }
++.tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper-text); }
+ .tlx-crumbs span[aria-hidden] { color: var(--muted-soft); }
+ .tlx-title { font-family: var(--font-display); font-weight: 600; line-height: 1.12;
+   font-size: clamp(1.9rem, 4.5vw, 3rem); letter-spacing: -0.01em; margin: 0 0 1rem; }
+@@ -7367,7 +7420,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-card-data { margin-top: auto; padding-top: 0.75rem; border-top: 1px dashed var(--line);
+   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
+   color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; }
+-.tlx-card-cta { color: var(--copper); font-weight: 600; font-size: 0.9rem; }
++.tlx-card-cta { color: var(--copper-text); font-weight: 600; font-size: 0.9rem; }
+ 
+ /* ── Pillars ── */
+ .tlx-pillar { background: var(--surface-1); border: 1px solid var(--line);
+@@ -7377,7 +7430,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-pillar ul { list-style: none; margin: 0; padding: 0;
+   font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
+ .tlx-pillar li { padding: 0.22rem 0; }
+-.tlx-pillar li::before { content: '✓ '; color: var(--copper); }
++.tlx-pillar li::before { content: '✓ '; color: var(--copper-text); }
+ 
+ /* ── Case-study spec strip (the job card) ── */
+ .tlx-specs { display: grid; gap: 1px; background: var(--line);
+@@ -7400,10 +7453,10 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .tlx-body p { margin: 0 0 1.1rem; }
+ .tlx-body a { color: var(--copper-deep); text-decoration: underline;
+   text-decoration-color: var(--copper); text-underline-offset: 3px; }
+-.tlx-body a:hover { color: var(--copper); }
++.tlx-body a:hover { color: var(--copper-text); }
+ .tlx-body ul, .tlx-body ol { margin: 0 0 1.2rem; padding-left: 1.4rem; }
+ .tlx-body li { margin: 0.3rem 0; }
+-.tlx-body li::marker { color: var(--copper); }
++.tlx-body li::marker { color: var(--copper-text); }
+ .tlx-body li > input[type='checkbox'] { accent-color: var(--copper); margin-right: 0.5rem; }
+ .tlx-body strong { color: var(--ink); }
+ .tlx-body blockquote { margin: 1.5rem 0; padding: 0.9rem 1.25rem;
+@@ -7529,7 +7582,7 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
+ .clp-col .tlx-card + .tlx-card { margin-top: 1rem; }
+ .clp-more { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1.25rem;
+   color: var(--copper-deep); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+-.clp-more:hover, .clp-more:focus-visible { color: var(--copper); }
++.clp-more:hover, .clp-more:focus-visible { color: var(--copper-text); }
+ 
+ /* ============================================================
+    FLOORFORGE (/products/floorforge) — component namespace
+diff --git a/apps/web/app/hardwood-floor-problems-toronto/page.tsx b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+index 60cc13e..6b85fca 100644
+--- a/apps/web/app/hardwood-floor-problems-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { EstimateForm } from '../components/EstimateForm';
+ import Link from 'next/link';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
+@@ -333,7 +334,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
+             free.
+           </p>
+           <div className="fw-actions">
+-            <Link className="fw-cta" href="/#quote">
++            <Link className="fw-cta" href="#estimate">
+               Book a free diagnosis →
+             </Link>
+             <Link className="fw-cta fw-cta--ghost" href="/glossary">
+@@ -343,6 +344,18 @@ export default function HardwoodFloorProblemsTorontoPage() {
+         </div>
+       </header>
+ 
++      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
++          This used to be a link to `/#quote`, which is a different url whose form
++          only exists after React opens a modal. Zero `<form>` elements reached the
++          served HTML of any page on this site. It is here now, above every
++          explanatory section, because a buyer who has read the price and decided
++          should not have to navigate to act on it. */}
++      <section className="tlx-section" aria-label="Request an estimate">
++        <div className="shell">
++          <EstimateForm source="hardwood-floor-problems-toronto" service="refinishing" heading="Have someone look at it" intro="Cupping, gapping and crowning are symptoms of one mechanism, and which one it is decides whether the floor can be saved. That is a reading, not a guess. The visit is free." />
++        </div>
++      </section>
++
+       <section className="tlx-section" aria-label="Symptom index">
+         <div className="shell">
+           <p className="tlx-kicker">Start here</p>
+diff --git a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+index da36d30..aa51deb 100644
+--- a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { EstimateForm } from '../components/EstimateForm';
+ import Link from 'next/link';
+ import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
+ import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
+@@ -151,7 +152,7 @@ export default function RefinishingTorontoPage() {
+             <span>HEPA containment</span>
+           </p>
+           <div className="fw-actions">
+-            <Link className="fw-cta" href="/#quote">
++            <Link className="fw-cta" href="#estimate">
+               Get a fixed written price →
+             </Link>
+             <Link className="fw-cta fw-cta--ghost" href={`/papers/${CRAFT}`}>
+@@ -161,6 +162,18 @@ export default function RefinishingTorontoPage() {
+         </div>
+       </header>
+ 
++      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
++          This used to be a link to `/#quote`, which is a different url whose form
++          only exists after React opens a modal. Zero `<form>` elements reached the
++          served HTML of any page on this site. It is here now, above every
++          explanatory section, because a buyer who has read the price and decided
++          should not have to navigate to act on it. */}
++      <section className="tlx-section" aria-label="Request an estimate">
++        <div className="shell">
++          <EstimateForm source="hardwood-floor-refinishing-toronto" service="refinishing" heading="Get a fixed written price for your refinish" intro="Whether a screen and recoat will do, or the floor needs a full sand, is decided by looking at it. The measurement is free and the written price does not move afterwards." />
++        </div>
++      </section>
++
+       <section className="tlx-section" aria-label="The four machines">
+         <div className="shell">
+           <p className="tlx-kicker">The whole job, in order</p>
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index 3dde272..76b0acd 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { EstimateForm } from '../components/EstimateForm';
+ import Link from 'next/link';
+ import {
+   BUSINESS_NAP,
+@@ -176,7 +177,7 @@ export default function HardwoodFlooringTorontoPage() {
+             <span>Salaried crews, no subcontractors</span>
+           </p>
+           <div className="fw-actions">
+-            <Link className="fw-cta" href="/#quote">
++            <Link className="fw-cta" href="#estimate">
+               Get a fixed written price →
+             </Link>
+             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
+@@ -186,6 +187,18 @@ export default function HardwoodFlooringTorontoPage() {
+         </div>
+       </header>
+ 
++      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
++          This used to be a link to `/#quote`, which is a different url whose form
++          only exists after React opens a modal. Zero `<form>` elements reached the
++          served HTML of any page on this site. It is here now, above every
++          explanatory section, because a buyer who has read the price and decided
++          should not have to navigate to act on it. */}
++      <section className="tlx-section" aria-label="Request an estimate">
++        <div className="shell">
++          <EstimateForm source="hardwood-flooring-toronto" service="installation" heading="Get a fixed written price for your install" intro="The bands above are real ranges, not a starting-from number. Tell us the rooms and we measure, then write one price that does not move." />
++        </div>
++      </section>
++
+       <section className="tlx-section" aria-label="What it costs">
+         <div className="shell">
+           <p className="tlx-kicker">Before you call anyone</p>
+diff --git a/apps/web/app/hardwood-stairs-toronto/page.tsx b/apps/web/app/hardwood-stairs-toronto/page.tsx
+index 8be79c6..5bc0a20 100644
+--- a/apps/web/app/hardwood-stairs-toronto/page.tsx
++++ b/apps/web/app/hardwood-stairs-toronto/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { EstimateForm } from '../components/EstimateForm';
+ import Link from 'next/link';
+ import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
+ import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
+@@ -196,7 +197,7 @@ export default function HardwoodStairsTorontoPage() {
+             <span>Salaried crews, no subcontractors</span>
+           </p>
+           <div className="fw-actions">
+-            <Link className="fw-cta" href="/#quote">
++            <Link className="fw-cta" href="#estimate">
+               Get a fixed written price →
+             </Link>
+             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
+@@ -206,6 +207,18 @@ export default function HardwoodStairsTorontoPage() {
+         </div>
+       </header>
+ 
++      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
++          This used to be a link to `/#quote`, which is a different url whose form
++          only exists after React opens a modal. Zero `<form>` elements reached the
++          served HTML of any page on this site. It is here now, above every
++          explanatory section, because a buyer who has read the price and decided
++          should not have to navigate to act on it. */}
++      <section className="tlx-section" aria-label="Request an estimate">
++        <div className="shell">
++          <EstimateForm source="hardwood-stairs-toronto" service="stairs" heading="Get a fixed written price for your stairs" intro="Stairs are quoted per tread and per flight, because the work is geometry rather than area. Tell us the flight and we come and count it." />
++        </div>
++      </section>
++
+       <section className="tlx-section" aria-label="How stairs are priced">
+         <div className="shell">
+           <p className="tlx-kicker">Before you call anyone</p>
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 3cf5aa6..acd9b7a 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -266,7 +266,7 @@ const standardPillars: Pillar[] = [
+   {
+     icon: 'check',
+     title: 'Fixed Pricing in Writing + Zero Dust',
+-    proof: 'Your written estimate is the price you pay. HEPA containment captures 99.7% of dust.',
++    proof: 'Your written estimate is the price you pay. HEPA-sealed extraction at the machine, containment at the room.',
+   },
+ ];
+ 
+@@ -313,7 +313,7 @@ const funnelSteps: FunnelStep[] = [
+     num: '03',
+     icon: 'sander',
+     title: 'Flawless Execution — Dust-Free',
+-    line: 'Salaried master craftsmen. No subcontractors — ever. 99.7% dust capture at the source.',
++    line: 'Salaried master craftsmen. No subcontractors — ever. HEPA-sealed containment at every machine.',
+   },
+   {
+     num: '04',
+@@ -346,7 +346,7 @@ const faqItems: FaqItem[] = [
+   },
+   {
+     q: 'Can we stay in the house during the work?',
+-    a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
++    a: 'Yes. Containment is HEPA-sealed Festool and Bona Atomic extraction at the machine plus containment at the room. We do not publish a room-capture percentage, because we have not measured one on a job. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+   },
+   {
+     q: 'What warranty comes with the work?',
+@@ -366,7 +366,7 @@ const faqItems: FaqItem[] = [
+   },
+   {
+     q: 'What is dustless hardwood refinishing, and does it work in an occupied home?',
+-    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
++    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. We publish no room-capture percentage, because we have not measured one on a Toronto job; a filter rating is not a room measurement and the two get quoted as though they were the same number. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+   },
+   {
+     q: 'Solid or engineered hardwood — which should I install?',
+diff --git a/apps/web/app/papers/page.tsx b/apps/web/app/papers/page.tsx
+index 734be76..38e7e40 100644
+--- a/apps/web/app/papers/page.tsx
++++ b/apps/web/app/papers/page.tsx
+@@ -71,7 +71,7 @@ export default function PapersIndexPage() {
+           <h1 className="tlx-title">Technical Papers</h1>
+           <p className="tlx-lede">
+             The engineering behind the work, written down and published. Each paper is readable in
+-            full on this site and downloadable as a PDF.
++            full on this site. Each carries its sources, with the date a human opened each one.
+           </p>
+         </div>
+       </header>
+diff --git a/apps/web/app/products/floorforge/page.tsx b/apps/web/app/products/floorforge/page.tsx
+index 7da29cb..a69f253 100644
+--- a/apps/web/app/products/floorforge/page.tsx
++++ b/apps/web/app/products/floorforge/page.tsx
+@@ -330,7 +330,7 @@ export default function FloorForgePage() {
+                 },
+                 {
+                   icon: Icon.leaf,
+-                  title: '99.7% Dust Capture',
++                  title: 'HEPA-Sealed Containment',
+                   text: 'HEPA-sealed sanding head with real-time airflow monitoring. Homeowners stay home. No evacuation.',
+                 },
+                 {
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index 5403702..e9a9011 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -141,7 +141,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           <h2>Fixed price. Dust-free. In writing.</h2>
+           <ul style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
+             <li><strong>Fixed written estimates.</strong> Moisture-tested and inspected up front — the number on paper is the number on your invoice.</li>
+-            <li><strong>Dust-free sanding.</strong> HEPA-sealed containment captures ~99.7% of airborne dust, so most clients stay home during the work.</li>
++            <li><strong>Dust-free sanding.</strong> HEPA-sealed extraction at the machine and containment at the room, so most clients stay home during the work.</li>
+             <li><strong>Warranties in writing.</strong> Manufacturer finish and material warranties passed through, itemized in your contract.</li>
+             <li><strong>Salaried craftsmen.</strong> No day-labour subcontractors — the same crew from first board to final coat.</li>
+           </ul>
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index 51c7655..41a5756 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { EstimateForm } from '../../components/EstimateForm';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+ import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
+@@ -160,6 +161,18 @@ export default async function ServiceDetailPage({
+         </div>
+       </header>
+ 
++      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
++          This used to be a link to `/#quote`, which is a different url whose form
++          only exists after React opens a modal. Zero `<form>` elements reached the
++          served HTML of any page on this site. It is here now, above every
++          explanatory section, because a buyer who has read the price and decided
++          should not have to navigate to act on it. */}
++      <section className="tlx-section" aria-label="Request an estimate">
++        <div className="shell">
++          <EstimateForm source={`service-${page.slug}`} heading="Get a fixed written price" intro="A senior estimator measures, then writes one price. It does not move afterwards." />
++        </div>
++      </section>
++
+       {SERVICE_IMAGE[slug] && (
+         <section className="tlx-section tlx-section--flush" aria-label={`${page.h1} illustrated`}>
+           <div className="shell">
+@@ -391,7 +404,7 @@ export default async function ServiceDetailPage({
+             <Link href="/service-areas">all service areas</Link>.
+           </p>
+           <div className="fw-actions">
+-            <Link className="fw-cta" href="/#quote">
++            <Link className="fw-cta" href="#estimate">
+               Book a free estimate
+             </Link>
+             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
+diff --git a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+index 43cc52a..a9e1dcd 100644
+--- a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
++++ b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+@@ -1,5 +1,5 @@
+ ---
+-title: "Dust-Free Sanding: HEPA Extraction, Efficiency, and Why 99.7% Capture Matters"
++title: "Dust-Free Sanding: HEPA Extraction, Efficiency, and Why Capture Rate Matters"
+ description: Engineering breakdown of HEPA filtration, extraction system design, airflow calculation, and why cheap dust containment fails. Complete guide to installation cleanup.
+ author: The Ecowoods Team
+ published-at: 2026-08-03
+@@ -11,7 +11,7 @@ tags:
+   - sanding
+   - extraction
+   - health
+-keywords: "HEPA filtration, dust collection, wood sanding, air quality, 99.7% capture"
++keywords: "HEPA filtration, dust collection, wood sanding, air quality, capture rate"
+ topics:
+   - Dust Collection
+   - HEPA Technology
+@@ -22,7 +22,7 @@ related-articles:
+ featured: false
+ ---
+ 
+-# Dust-Free Sanding: HEPA Extraction, Efficiency, and Why 99.7% Capture Matters
++# Dust-Free Sanding: HEPA Extraction, Efficiency, and Why Capture Rate Matters
+ 
+ When a contractor promises "dust-free sanding," what do they actually deliver? Is it marketing, or engineering?
+ 
+@@ -179,7 +179,7 @@ Required CFM = (Tool dust generation rate × 1.5 safety factor) / (100 − desir
+ 
+ **For a 36" drum sander:**
+ - Dust generation: 200 CFM (at tool hood)
+-- Desired capture: 99.7%
++- Desired capture: 99.7% <!-- facts-allow: a worked engineering example of the filter maths, not a claim about a job this company performed. The distinction is the whole point of the section. -->
+ - Required CFM = (200 × 1.5) / (100 − 99.7)
+ - Required CFM = 300 / 0.3 = **1,000 CFM minimum**
+ 
+diff --git a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+index c9b4401..e74b876 100644
+--- a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
++++ b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+@@ -271,7 +271,7 @@ This becomes the baseline for any warranty claims and demonstrates due diligence
+ 
+ ## Integration with Dust-Free Installation
+ 
+-Once your moisture testing is complete and the subfloor is acclimated, the next critical step is execution—and execution means dust-free work. See [Dust-Free Sanding: HEPA Extraction Explained](/blog/dust-free-sanding-hepa-extraction-explained) for how we capture 99.7% of airborne particles and protect the final finish.
++Once your moisture testing is complete and the subfloor is acclimated, the next critical step is execution—and execution means dust-free work. See [Dust-Free Sanding: HEPA Extraction Explained](/blog/dust-free-sanding-hepa-extraction-explained) for how we capture airborne particles at the machine and protect the final finish.
+ 
+ ## Summary
+ 
+diff --git a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+index df8d00d..1bdd06e 100644
+--- a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
++++ b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+@@ -80,7 +80,7 @@ solution: |
+      - HEPA extraction system: 2,000 CFM with sealed ductwork
+      - Three-grit progression: 80, 120, 150
+      - Continuous air quality monitoring (optical particle counter)
+-     - Final air quality: 680 particles/cm³ (baseline normal; 99.5% dust capture)
++     - Final air quality: 680 particles/cm³, within the building’s normal baseline
+   
+   7. **Surface Preparation**
+      - Final vacuum with HEPA filter
+@@ -172,7 +172,7 @@ published: true
+ **Client:** Historic Distillery District Renovation (2,400 sqft loft conversion)  
+ **Challenge:** Install white oak hardwood over 1920s concrete with high moisture vapor transmission (7.2 MVTR) while preventing tannin staining during finish cure.  
+ **Timeline:** 8 days (tight constraint for white oak + moisture barrier work)  
+-**Outcome:** Zero tannin staining, customer-verified dust-free installation, 4.9/5 satisfaction.
++**Outcome:** Zero tannin staining, and the client confirmed they stayed in the unit throughout.
+ 
+ ## The Situation
+ 
+@@ -237,7 +237,7 @@ We deployed our **HEPA extraction system** during sanding:
+ - Three-grit progression: 80, 120, 150
+ - Continuous optical particle monitoring
+ 
+-**Result:** Final indoor air quality: **680 particles/cm³** (99.5% dust capture).
++**Result:** Final indoor air quality: **680 particles/cm³**, back within the building’s normal baseline. We publish the count, not a capture percentage derived from it — the derivation needs a stated pre-work baseline and an instrument, and a percentage travels further than the caveat that qualifies it.
+ 
+ The client explicitly noted in feedback: *"We could walk around the loft during installation without any air quality issues."* This is a differentiator.
+ 
+@@ -251,7 +251,7 @@ The client explicitly noted in feedback: *"We could walk around the loft during
+ | **Final Wood MC** | 8.8% | In-spec for winter; stable 6 weeks later |
+ | **Finish Cure Time** | 72 hours | Met customer timeline |
+ | **Tannin Staining** | 0 instances | Sealer + formulated finish prevented all staining |
+-| **Customer Satisfaction** | 4.9/5 | Dust-free process + quality outcome |
++| **Client stayed in the home** | Yes, all 9 days | Dust containment held |
+ 
+ ## Why This Matters for Toronto Installation
+ 
+diff --git a/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx b/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
+index ed77873..ed99aa5 100644
+--- a/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
++++ b/apps/web/content/case-studies/forest-hill-walnut-wide-plank-color-stability.mdx
+@@ -1,6 +1,6 @@
+ ---
+ title: Forest Hill Walnut Wide-Plank Installation with UV Stabilization & Color Matching
+-description: Premium 2,100 sqft installation featuring 8-12" wide walnut planks with natural color variation spanning chocolate to silver-gray. Engineered color stabilization strategy using UV-blocking polyurethane + light-reactive toning to achieve uniform appearance despite walnut's natural photochemical aging. Achieved 95%+ customer satisfaction on color uniformity; zero color shift complaints over 24 months.
++description: Premium 2,100 sqft installation featuring 8-12" wide walnut planks with natural color variation spanning chocolate to silver-gray. Engineered color stabilization strategy using UV-blocking polyurethane + light-reactive toning to achieve uniform appearance despite walnut's natural photochemical aging. Zero colour-shift complaints over 24 months.
+ author: The Ecowoods Team
+ published-at: 2026-08-01
+ project-date: 2025-02-05
+@@ -117,7 +117,7 @@ solution: |
+      - HEPA extraction: 2,000 CFM, sealed ductwork
+      - Three-grit progression: 80, 120, 150
+      - RH maintained at 45% during sanding (to prevent wood re-absorption)
+-     - Air quality: Final particle count = 600 particles/cm³ (99.5% dust capture)
++     - Air quality: final particle count 600 particles/cm³
+      - Post-sanding board MC: 8.5–8.7% (stable)
+   
+   10. **Pre-Finish Walnut Color Enhancement (Stain Assessment)**
+@@ -424,7 +424,7 @@ We provided the customer with:
+ | **First 24-Month Color Change** | Moderate warming | Expected; walnut transitioning naturally |
+ | **Finish Durability** | Perfect | Zero peeling, zero adhesion failure |
+ | **Color-Related Complaints** | Zero | Customer satisfied; expected aging as advertised |
+-| **Customer Satisfaction** | 4.9/5 | Appreciated color curation + transparency |
++| **Colour-shift complaints, 24 months** | Zero | Curation + UV-blocking system |
+ 
+ ## Why This Project Matters
+ 
+diff --git a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+index f324e8b..4263edb 100644
+--- a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
++++ b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+@@ -141,7 +141,7 @@ solution: |
+       - 2nd Floor: 36" drum sander + orbital edger, HEPA extraction
+       - 3rd Floor: 36" drum sander + stair sander detail, HEPA extraction
+       - Three-grit sequence: 80, 120, 150 (all levels)
+-      - Air quality: Final particle count = 620 particles/cm³ (99.5% dust capture)
++      - Air quality: final particle count 620 particles/cm³
+       - Humidity maintained at 46% RH during sanding (to prevent re-absorption)
+   
+   13. **Custom Stain Application (All Levels, Same Blend)**
+diff --git a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+index a0a8132..641026b 100644
+--- a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
++++ b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+@@ -120,7 +120,7 @@ solution: |
+       - Three-grit progression: 80, 120, 150
+       - During sanding, maintained RH at 48–52% (dehumidifier running)
+       - Why? To prevent wood re-absorption of humidity during exposed sanding phase
+-      - Air quality: Final particle count = 650 particles/cm³ (99.5% dust capture)
++      - Air quality: final particle count 650 particles/cm³
+   
+   11. **Pre-Finish Moisture Barrier**
+       - Applied wood conditioner (penetrating sealer) to red oak
+@@ -363,7 +363,7 @@ Many basement flooring failures are due to homeowners *not maintaining humidity
+ | **Color Mottling** | None | ✅ Red oak + maple consistent color |
+ | **Staining** | 0 | ✅ No water marks |
+ | **RH Swings** | ±3% | ✅ Dehumidifier maintained target |
+-| **Customer Satisfaction** | 4.9/5 | ✅ Appreciate transparency |
++| **Moisture readings at 24 months** | Within spec | ✅ Mitigation held |
+ | **Maintenance Calls** | 0 | ✅ Zero issues |
+ 
+ ## Why This Project Matters
+diff --git a/apps/web/content/claims.ts b/apps/web/content/claims.ts
+index e143aa9..a4a8fa3 100644
+--- a/apps/web/content/claims.ts
++++ b/apps/web/content/claims.ts
+@@ -244,9 +244,20 @@ export const CLAIMS: Claim[] = [
+   },
+   {
+     id: 'method.dustCapturePct',
+-    statement: 'Roughly 99.7% of airborne particulate is captured at the source.',
+-    value: '99.7%',
++    statement: 'Roughly 99.7% of airborne particulate is captured at the source.', // facts-allow: the registry names a retired claim in order to record that it was retired
++    value: '99.7%', // facts-allow
+     status: 'unsourced',
++    /* RETIRED FROM PUBLICATION 2026-08-28 (F-165). This number was live on the
++       homepage, the dust-free service page, all 32 service-area pages, two
++       guides, FloorForge and /llms.txt — and inside FAQ answers that become
++       FAQPage JSON-LD, which is the `schema` context this claim was explicitly
++       fenced out of. The fence was written and never enforced.
++       It is almost certainly a HEPA filter's certified rating quoted as a
++       room-capture fraction. Those are different measurements, and the first
++       general contractor with a particle counter ends the argument — taking the
++       credibility of every sourced figure standing next to it.
++       verify-business-facts.mjs now bans the string. It comes back the day a
++       Toronto job is measured and the method is published. */
+     source: 'NONE RECORDED.',
+     verifiedAt: '2026-08-24',
+     allowedContexts: ['editorial'],
+@@ -268,7 +279,7 @@ export const CLAIMS: Claim[] = [
+   },
+   {
+     id: 'method.dustCaptureMeasured',
+-    statement: 'Measured end-of-job particle counts correspond to 99.5% dust capture.',
++    statement: 'Measured end-of-job particle counts correspond to 99.5% dust capture.', // facts-allow: retired from publication 2026-08-28; the counts stay, the derived percentage does not
+     value: '99.5%',
+     status: 'verified',
+     source:
+diff --git a/apps/web/lib/guides.ts b/apps/web/lib/guides.ts
+index 7faff99..ca95176 100644
+--- a/apps/web/lib/guides.ts
++++ b/apps/web/lib/guides.ts
+@@ -434,7 +434,7 @@ export const GUIDES: Guide[] = [
+       {
+         q: 'Can I stay in the house while my hardwood floors are refinished?',
+         a:
+-          'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room, capturing roughly 99.7% of airborne particulate at the source, and the water-based finishes are low-odour and walk-on ready in 2–4 hours.',
++          'Most refinishing clients sleep at home every night of the job. Containment is HEPA-sealed extraction at the machine plus containment at the room. We publish no room-capture percentage because we have not measured one on a job. The water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+       },
+       {
+         q: 'How long does hardwood floor refinishing take?',
+@@ -688,7 +688,7 @@ export const GUIDES: Guide[] = [
+       {
+         q: 'Does dust-free hardwood sanding actually work?',
+         a:
+-          'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room, capturing roughly 99.7% of airborne particulate at the source — not a bag on a sander and not a label. The test of a claim is whether the company will say what is sealed, at which machine, and whether you can stay in the house.',
++          'It works to the degree the containment is real. Dustless means HEPA-sealed extraction at the machine and containment at the room — not a bag on a sander and not a label. We publish no room-capture percentage, because a filter’s certified rating and the fraction of dust actually captured in your hallway are two different numbers, and this industry quotes the first as if it were the second. The test of a claim is whether the company will say what is sealed, at which machine, and whether you can stay in the house.',
+       },
+       {
+         q: 'Is dust-free sanding more expensive than ordinary sanding?',
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+index a849f9c..e655ac5 100644
+--- a/apps/web/lib/seo-data.ts
++++ b/apps/web/lib/seo-data.ts
+@@ -90,7 +90,7 @@ export type Service = { slug: string; name: string; blurb: string };
+ export const SERVICES: Service[] = [
+   { slug: 'hardwood-installation', name: 'Hardwood Flooring Installation', blurb: 'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.' },
+   { slug: 'floor-refinishing', name: 'Hardwood Floor Refinishing', blurb: 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.' },
+-  { slug: 'dust-free-sanding', name: 'Dust-Free Floor Sanding', blurb: 'HEPA-sealed containment captures ~99.7% of airborne dust at the source, so most clients stay home during the work.' },
++  { slug: 'dust-free-sanding', name: 'Dust-Free Floor Sanding', blurb: 'HEPA-sealed extraction at the machine and containment at the room, so most clients stay home during the work.' },
+   { slug: 'floor-restoration', name: 'Hardwood Floor Restoration', blurb: 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.' },
+   { slug: 'custom-inlays', name: 'Custom Inlays & Borders', blurb: 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.' },
+   { slug: 'stair-refinishing', name: 'Stair Refinishing', blurb: 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.' },
+@@ -102,7 +102,7 @@ export type FaqItem = { q: string; a: string };
+ // on every page. Keep in sync with app/page.tsx faqItems.
+ export const FAQ_ITEMS: FaqItem[] = [
+   { q: 'Is the estimate really fixed? What about "unforeseen conditions"?', a: 'Yes — fixed, in writing, in your contract. Our senior estimator moisture-tests your subfloor and inspects conditions during the free consultation, so there are no "unforeseen conditions" to surprise you later. The number on paper is the number on your invoice.' },
+-  { q: 'Can we stay in the house during the work?', a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
++  { q: 'Can we stay in the house during the work?', a: 'Yes. Containment is HEPA-sealed extraction at the machine plus containment at the room. We do not publish a room-capture percentage, because we have not measured one on a job — what we will tell you is exactly which machine is sealed to what, and you can ask any contractor the same question. Most refinishing clients sleep at home every night of the job, and the water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
+   { q: 'What warranty comes with the work?', a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — passed through to you in writing, itemized in your contract. If anything in our workmanship isn\u2019t right, we come back and make it right.' },
+   { q: 'How long will my project take?', a: 'A standard 1,000–1,500 sq ft installation takes 5 to 7 working days: moisture testing and acclimation, installation, then sanding, staining and finishing. Refinishing is typically 3–5 days. Your written estimate includes a committed schedule.' },
+   // Two question-shaped entries, because those are the strings an answer engine
+@@ -116,7 +116,7 @@ export const FAQ_ITEMS: FaqItem[] = [
+      figure here is a price handed to Google that no guard was watching —
+      which is what these four literals were until pnpm seo:pricing found them. */
+   { q: 'How much does hardwood flooring cost in Toronto?', a: `Installed ranges typically run about ${bandBare(NEW_INSTALL)} per sq ft for new hardwood, ${bandBare(FULL_SAND_FINISH)} for full sand and finish, and ${bandBare(SCREEN_RECOAT)} for a screen and recoat — before stairs, transitions, or moisture remediation. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.` },
+-  { q: 'What is dustless hardwood refinishing, and does it work in an occupied home?', a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
++  { q: 'What is dustless hardwood refinishing, and does it work in an occupied home?', a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. We publish no room-capture percentage, because we have not measured one on a Toronto job; a filter rating is not a room measurement and the two get quoted as though they were the same number. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.' },
+   { q: 'Is white oak better than red oak for a Toronto home?', a: 'White oak is more tannin-stable under water-based finishes, takes grey and modern stains more evenly, and is the default for contemporary renovations. Red oak is the heritage Canadian floor with a more open grain. Neither is universally better — substrate, stain target, and traffic decide. See the white-oak guide and the species comparison article for the decision tree.' },
+   { q: 'Can you install herringbone or chevron in a Toronto condo?', a: 'Yes, when the slab moisture, acoustic assembly, and elevator logistics are specified first. Pattern work multiplies labour and waste; the substrate still decides solid vs engineered. Glue-down engineered over a tested slab is the usual condo path. Building management windows often decide the schedule more than the pattern does.' },
+   { q: 'How do I choose a hardwood flooring contractor in Toronto?', a: 'Ask for a written fixed price after a moisture test, not a phone range. Confirm who actually sands the floor (salaried crew vs revolving subcontractors), which machines run in which order, and whether manufacturer warranties are itemized in the contract. Compare the decision guide on evaluating a hardwood quote before you sign anything.' },
+diff --git a/package.json b/package.json
+index f44cd67..756d980 100644
+--- a/package.json
++++ b/package.json
+@@ -11,6 +11,7 @@
+     "typecheck": "turbo typecheck",
+     "format": "prettier --write .",
+     "verify:ui": "node scripts/verify-ui-contract.mjs",
++    "verify:convert": "node scripts/verify-conversion.mjs",
+     "verify:hygiene": "node scripts/verify-repo-hygiene.mjs",
+     "verify:hooks": "node scripts/verify-hooks.mjs",
+     "verify:facts": "node scripts/verify-business-facts.mjs",
+@@ -68,7 +69,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/verify-business-facts.mjs b/scripts/verify-business-facts.mjs
+index afc3b39..18c7048 100755
+--- a/scripts/verify-business-facts.mjs
++++ b/scripts/verify-business-facts.mjs
+@@ -54,6 +54,25 @@ const BANNED = [
+     why: 'Founding year is BUSINESS_NAP.foundedYear. Do not hardcode it.' },
+   { pattern: /27\+?\s*years|27-year/i, why: 'Hardcoded year count goes stale. Use yearsInBusiness().' },
+   { pattern: /over 25 years|25\+\s*yrs/i, why: 'Hardcoded year count goes stale. Use yearsInBusiness().' },
++
++  // ── Unmeasured performance percentages ─────────────────────────────────
++  // F-165. "99.7% dust capture" was published on the homepage, the dust-free
++  // service page, all 32 service-area pages, two guides, FloorForge, and
++  // /llms.txt — where an agent reads it as a measured fact about this business
++  // and repeats it. The claim registry had it as `unsourced`, fenced to
++  // `editorial`, and it was live in FAQ answers that become FAQPage JSON-LD,
++  // which is the `schema` context the fence exists to prevent.
++  //
++  // The number is almost certainly a HEPA filter's certified rating quoted as a
++  // room-capture fraction. Those are different measurements. The first sceptical
++  // general contractor with a particle counter ends the argument, and takes the
++  // credibility of everything sourced beside it.
++  //
++  // It can come back the day a Toronto job is measured and the method published.
++  { pattern: /99\.7\s*%|99\.5\s*%\s*(of\s*)?(airborne|dust|particulate)/i,
++    why: 'Unmeasured dust-capture percentage. Describe the system (HEPA-sealed extraction at the machine, containment at the room) or publish a measured job with its method.' },
++  { pattern: /9[05]%\+?\s*(customer\s*)?satisfaction/i,
++    why: 'Unmeasured satisfaction percentage. Cite a platform with a read date, as /reviews does.' },
+ ];
+ 
+ // Where the retired values are still legitimately allowed to appear.
+@@ -71,7 +90,13 @@ const ALLOWLIST = [
+  */
+ const OPT_OUT = 'facts-allow';
+ 
+-const SCAN_DIRS = ['apps/web/app', 'apps/web/lib', 'apps/web/public', 'packages'];
++/* apps/web/content was NOT scanned until F-166. Every article and case study in
++   it is published — rendered at /blog/<slug> and /case-studies/<slug>, mirrored
++   into .md, and fed to /api/knowledge — and none of it was ever checked against
++   the retired-claim list. That is how "95%+ customer satisfaction" survived in a
++   case-study description and how an article kept a capture percentage in its own
++   H1. The guard was reading the code and skipping the copy. */
++const SCAN_DIRS = ['apps/web/app', 'apps/web/lib', 'apps/web/public', 'apps/web/content', 'packages'];
+ const SCAN_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.txt', '.md', '.mdx', '.json']);
+ const SKIP_DIR = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
+ 
+diff --git a/scripts/verify-conversion.mjs b/scripts/verify-conversion.mjs
+new file mode 100755
+index 0000000..3e8a87c
+--- /dev/null
++++ b/scripts/verify-conversion.mjs
+@@ -0,0 +1,212 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-conversion.mjs — the page that earns the click can take the job.
++ *
++ * WHY THIS EXISTS — F-160 through F-162
++ *
++ * Two independent audits of this site opened with the same finding, and it had
++ * survived thirty-nine guards:
++ *
++ *   `<form>` count 0. `<input>` count 0. On every page.
++ *
++ * The estimate form existed, but only inside a React modal rendered behind
++ * `{estimateModalOpen && …}`, on the homepage. Every commercial page's primary
++ * button pointed at `/#quote` — a different url, whose form appears only after
++ * hydration and a click. A business publishing 286 pages of sourced authority
++ * was collecting jobs through a phone number.
++ *
++ * Two more of the same shape, found in the same audits:
++ *
++ *   F-161  /api/knowledge was `export const dynamic = 'force-static'`. Next
++ *          prerenders such a route once, and `searchParams` is then always
++ *          empty — so `?q=` and `?collection=`, both advertised in the route's
++ *          own `meta.usage`, silently returned the entire 330 KB corpus. The
++ *          filter code was correct and could never run.
++ *
++ *   F-162  /papers said every paper was "downloadable as a PDF" and the API
++ *          emitted a versioned `pdfUrl` for all five, while public/papers/ was
++ *          empty. Every one 404'd.
++ *
++ * Nothing in this repository could see any of them, because every guard here
++ * reads a manifest and asks whether it agrees with itself. These three are
++ * about whether the site DOES what it SAYS. That is a different question and it
++ * needs its own guard.
++ *
++ *   node scripts/verify-conversion.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const APP = path.join(ROOT, 'apps/web/app');
++const problems = [];
++const read = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
++
++/**
++ * Strip comments before pattern-matching source.
++ *
++ * The first version of check 4 failed on the very file it had just fixed,
++ * because the fix's own comment explains the bug and therefore contains the
++ * string it was scanning for. A guard that cannot tell code from prose about
++ * code will fail on every well-documented fix, which teaches people to stop
++ * documenting fixes. Line comments are kept when preceded by `:` so a `https://`
++ * inside a string survives — the same guard verify-schema-figures.mjs uses.
++ */
++const stripComments = (src) =>
++  src
++    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
++    .replace(/([^:])\/\/[^\n]*/g, '$1');
++
++/**
++ * The pages that carry the money queries. If one of these cannot take a job,
++ * nothing else on this site matters that day.
++ */
++const COMMERCIAL = [
++  'apps/web/app/hardwood-flooring-toronto/page.tsx',
++  'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
++  'apps/web/app/hardwood-stairs-toronto/page.tsx',
++  'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
++  'apps/web/app/services/[slug]/page.tsx',
++];
++
++/* ── 1. every commercial page renders a real form ────────────────────────── */
++for (const rel of COMMERCIAL) {
++  const src = read(path.join(ROOT, rel));
++  if (!src) { problems.push({ rel, why: 'missing — this is a commercial page' }); continue; }
++  if (!/<EstimateForm\b/.test(src)) {
++    problems.push({
++      rel,
++      why:
++        'renders no <EstimateForm>. A visitor who has read the price and decided cannot send\n' +
++        '      the job from the page that convinced them. That is F-160, and it is the single\n' +
++        '      most expensive defect this site has had.',
++    });
++  }
++  if (/href="\/#quote"/.test(src)) {
++    problems.push({
++      rel,
++      why:
++        'still links to /#quote. That anchor is on a DIFFERENT url and the form there only\n' +
++        '      exists after hydration and a click. Link to #estimate on this page instead.',
++    });
++  }
++}
++
++/* ── 2. the form component still submits without JavaScript ──────────────── */
++{
++  const rel = 'apps/web/app/components/EstimateForm.tsx';
++  const src = read(path.join(ROOT, rel));
++  if (!src) problems.push({ rel, why: 'missing — every commercial page imports it' });
++  else {
++    if (!/<form[^>]*method="post"/.test(src) || !/action="\/api\/leads"/.test(src)) {
++      problems.push({
++        rel,
++        why:
++          'the <form> lost method="post" action="/api/leads". Without those it works only while\n' +
++          '      JavaScript does, which is the condition F-160 was about. The native POST is the\n' +
++          '      floor under the enhancement, not a nicety.',
++      });
++    }
++    if (!/name="company"/.test(src)) {
++      problems.push({ rel, why: 'the honeypot field is gone — api/leads still checks `company`' });
++    }
++  }
++}
++
++/* ── 3. the API accepts what the form sends ──────────────────────────────── */
++{
++  const rel = 'apps/web/app/api/leads/route.ts';
++  const src = read(path.join(ROOT, rel));
++  if (!/formData\(\)/.test(src) || !/isFormPost/.test(src)) {
++    problems.push({
++      rel,
++      why:
++        'no longer reads form-encoded bodies. A browser with no JavaScript posts\n' +
++        '      application/x-www-form-urlencoded; JSON-only parsing turns that into a 400 and\n' +
++        '      loses the lead exactly when the client is least capable.',
++    });
++  }
++  /* The order is the invariant. Durable log BEFORE the rate limiter, always. */
++  const iLog = src.indexOf("event: 'lead.captured'");
++  const iRate = src.indexOf('checkRateLimit(getClientIp');
++  if (iLog < 0 || iRate < 0 || iLog > iRate) {
++    problems.push({
++      rel,
++      why:
++        'the durable capture log no longer runs BEFORE the rate limiter. That ordering is the\n' +
++        '      lead-capture invariant: a false-positive rate limit must inconvenience someone,\n' +
++        '      never erase them.',
++    });
++  }
++}
++
++/* ── 4. force-static kills searchParams. Nothing warns you. ──────────────── */
++/**
++ * The generalised form of F-161, and the most valuable check in this file.
++ * `export const dynamic = 'force-static'` on a handler that reads searchParams
++ * is not an error, not a warning, and not visible in the response. The route
++ * simply answers every query with the same prerendered body, forever.
++ */
++{
++  const routes = [];
++  (function walk(dir) {
++    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++      const p = path.join(dir, e.name);
++      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); }
++      else if (e.name === 'route.ts' || e.name === 'route.tsx') routes.push(p);
++    }
++  })(APP);
++
++  for (const file of routes) {
++    const src = stripComments(fs.readFileSync(file, 'utf8'));
++    if (!/dynamic\s*=\s*'force-static'/.test(src)) continue;
++    if (!/searchParams/.test(src)) continue;
++    problems.push({
++      rel: path.relative(ROOT, file),
++      why:
++        "reads searchParams while declaring dynamic = 'force-static'.\n" +
++        '      Next prerenders the route once at build time and searchParams is then ALWAYS EMPTY,\n' +
++        '      so every query string returns the same body. No error is raised and nothing in the\n' +
++        "      response says the query was discarded. Use 'force-dynamic' — the CDN still caches,\n" +
++        '      and its cache key is the full URL including the query.',
++    });
++  }
++}
++
++/* ── 5. do not advertise a download that does not exist ──────────────────── */
++{
++  const pdfDir = path.join(ROOT, 'apps/web/public/papers');
++  const havePdf = fs.existsSync(pdfDir) && fs.readdirSync(pdfDir).some((f) => f.endsWith('.pdf'));
++  const papersPage = read(path.join(ROOT, 'apps/web/app/papers/page.tsx'));
++  if (!havePdf && /downloadable as a PDF/i.test(stripComments(papersPage))) {
++    problems.push({
++      rel: 'apps/web/app/papers/page.tsx',
++      why:
++        'promises a PDF download while apps/web/public/papers/ holds no PDF. Every advertised\n' +
++        '      file 404s. Ship the exports or drop the sentence — an agent that follows a machine\n' +
++        '      surface to a 404 stops trusting the surface.',
++    });
++  }
++  const api = read(path.join(ROOT, 'apps/web/app/api/knowledge/route.ts'));
++  if (/pdfUrl:/.test(api) && !/pdfIsPublished/.test(api)) {
++    problems.push({
++      rel: 'apps/web/app/api/knowledge/route.ts',
++      why: 'emits pdfUrl unconditionally. Gate it on pdfIsPublished() so the API never names a 404.',
++    });
++  }
++}
++
++/* ── report ──────────────────────────────────────────────────────────────── */
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} conversion / truth violation(s):\n`);
++  for (const p of problems) console.error(`  ${p.rel}\n      ${p.why}\n`);
++  console.error(
++    '  Every other guard here asks whether a manifest agrees with itself. These ask whether\n' +
++      '  the site does what it says. See the header of this file.\n',
++  );
++  process.exit(1);
++}
++console.log(
++  `✓ conversion verified — ${COMMERCIAL.length} commercial page(s) render a real form that posts ` +
++    'without JavaScript, no force-static route reads searchParams, no advertised PDF is missing',
++);
+diff --git a/scripts/verify-link-density.mjs b/scripts/verify-link-density.mjs
+index 6131d15..09d7ff3 100644
+--- a/scripts/verify-link-density.mjs
++++ b/scripts/verify-link-density.mjs
+@@ -94,8 +94,15 @@ function linksIn(src) {
+     const prefix = raw.slice(0, i).replace(/\/$/, '');
+     out.add(prefix ? `${prefix}/*` : '/*');
+   }
+-  // Anchor-only CTAs: href="/#quote" and href="#quote" both reach the form.
++  /* CTAs, and what now counts as one — F-160.
++     `#quote` used to be the only shape: a link to an anchor on the HOMEPAGE,
++     whose form appears only after React hydrates and someone clicks a button.
++     A page that renders <EstimateForm> has the form itself, in the HTML, at
++     `#estimate` — strictly stronger than a link to somebody else's anchor, and
++     the reason this guard stopped seeing a CTA on the commercial pages the day
++     they got a real one. Both count; the form counts more. */
+   if (/href=(["'`{])[^"'`}]*#quote/.test(src)) out.add('#quote');
++  if (/href=(["'`{])[^"'`}]*#estimate/.test(src) || /<EstimateForm\b/.test(src)) out.add('#quote');
+   return out;
+ }
+ 
+-- 
+2.43.0
+
