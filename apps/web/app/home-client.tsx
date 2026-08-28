@@ -266,7 +266,7 @@ const standardPillars: Pillar[] = [
   {
     icon: 'check',
     title: 'Fixed Pricing in Writing + Zero Dust',
-    proof: 'Your written estimate is the price you pay. HEPA containment captures 99.7% of dust.',
+    proof: 'Your written estimate is the price you pay. HEPA-sealed extraction at the machine, containment at the room.',
   },
 ];
 
@@ -313,7 +313,7 @@ const funnelSteps: FunnelStep[] = [
     num: '03',
     icon: 'sander',
     title: 'Flawless Execution — Dust-Free',
-    line: 'Salaried master craftsmen. No subcontractors — ever. 99.7% dust capture at the source.',
+    line: 'Salaried master craftsmen. No subcontractors — ever. HEPA-sealed containment at every machine.',
   },
   {
     num: '04',
@@ -346,7 +346,7 @@ const faqItems: FaqItem[] = [
   },
   {
     q: 'Can we stay in the house during the work?',
-    a: 'Yes. Our dust containment captures roughly 99.7% of airborne particulate at the source using HEPA-sealed Festool and Bona Atomic systems. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+    a: 'Yes. Containment is HEPA-sealed Festool and Bona Atomic extraction at the machine plus containment at the room. We do not publish a room-capture percentage, because we have not measured one on a job. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
   },
   {
     q: 'What warranty comes with the work?',
@@ -366,7 +366,7 @@ const faqItems: FaqItem[] = [
   },
   {
     q: 'What is dustless hardwood refinishing, and does it work in an occupied home?',
-    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. Roughly 99.7% of airborne particulate is captured at the source. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
+    a: 'Dustless means HEPA-sealed extraction at the machine and containment at the room — not a marketing label. We publish no room-capture percentage, because we have not measured one on a Toronto job; a filter rating is not a room measurement and the two get quoted as though they were the same number. Most refinishing clients sleep at home every night of the job. Water-based finishes are low-odour and walk-on ready in 2–4 hours.',
   },
   {
     q: 'Solid or engineered hardwood — which should I install?',

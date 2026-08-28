@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
@@ -151,7 +152,7 @@ export default function RefinishingTorontoPage() {
             <span>HEPA containment</span>
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            <Link className="fw-cta" href="#estimate">
               Get a fixed written price →
             </Link>
             <Link className="fw-cta fw-cta--ghost" href={`/papers/${CRAFT}`}>
@@ -160,6 +161,18 @@ export default function RefinishingTorontoPage() {
           </div>
         </div>
       </header>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It is here now, above every
+          explanatory section, because a buyer who has read the price and decided
+          should not have to navigate to act on it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source="hardwood-floor-refinishing-toronto" service="refinishing" heading="Get a fixed written price for your refinish" intro="Whether a screen and recoat will do, or the floor needs a full sand, is decided by looking at it. The measurement is free and the written price does not move afterwards." />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="The four machines">
         <div className="shell">

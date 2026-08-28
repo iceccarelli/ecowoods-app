@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
@@ -333,7 +334,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
             free.
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            <Link className="fw-cta" href="#estimate">
               Book a free diagnosis →
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/glossary">
@@ -342,6 +343,18 @@ export default function HardwoodFloorProblemsTorontoPage() {
           </div>
         </div>
       </header>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It is here now, above every
+          explanatory section, because a buyer who has read the price and decided
+          should not have to navigate to act on it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source="hardwood-floor-problems-toronto" service="refinishing" heading="Have someone look at it" intro="Cupping, gapping and crowning are symptoms of one mechanism, and which one it is decides whether the floor can be saved. That is a reading, not a guess. The visit is free." />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="Symptom index">
         <div className="shell">

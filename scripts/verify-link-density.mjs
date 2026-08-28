@@ -94,8 +94,15 @@ function linksIn(src) {
     const prefix = raw.slice(0, i).replace(/\/$/, '');
     out.add(prefix ? `${prefix}/*` : '/*');
   }
-  // Anchor-only CTAs: href="/#quote" and href="#quote" both reach the form.
+  /* CTAs, and what now counts as one — F-160.
+     `#quote` used to be the only shape: a link to an anchor on the HOMEPAGE,
+     whose form appears only after React hydrates and someone clicks a button.
+     A page that renders <EstimateForm> has the form itself, in the HTML, at
+     `#estimate` — strictly stronger than a link to somebody else's anchor, and
+     the reason this guard stopped seeing a CTA on the commercial pages the day
+     they got a real one. Both count; the form counts more. */
   if (/href=(["'`{])[^"'`}]*#quote/.test(src)) out.add('#quote');
+  if (/href=(["'`{])[^"'`}]*#estimate/.test(src) || /<EstimateForm\b/.test(src)) out.add('#quote');
   return out;
 }
 

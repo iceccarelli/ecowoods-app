@@ -23,10 +23,56 @@ function generateLeadId(): string {
   return `lead_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * A form POST and a fetch POST are the same lead.
+ *
+ * F-160: every page on this site served zero `<form>` elements, because the only
+ * one lived inside a React modal behind state. The fix renders a real form in
+ * the HTML — which means this route now receives
+ * `application/x-www-form-urlencoded` from a browser with no JavaScript, as well
+ * as the JSON it already took from fetch.
+ *
+ * Both go through the SAME validation and the SAME capture order below. That is
+ * deliberate and it is the only safe way to do this: a second parsing path that
+ * skipped the durable log would be a lead that vanishes exactly when the client
+ * is least capable, which is the moment this whole change exists to serve.
+ */
+async function readBody(request: Request): Promise<{ body: unknown; isFormPost: boolean }> {
+  const type = request.headers.get('content-type') ?? '';
+  if (type.includes('application/x-www-form-urlencoded') || type.includes('multipart/form-data')) {
+    const fd = await request.formData();
+    const out: Record<string, unknown> = {};
+    fd.forEach((v, k) => {
+      if (typeof v !== 'string' || v === '') return;
+      out[k] = k === 'sqft' ? Number(v) : v;
+    });
+    return { body: out, isFormPost: true };
+  }
+  return { body: await request.json(), isFormPost: false };
+}
+
+/** Where to send a no-JS browser back to. Same-origin only. */
+function backTo(request: Request, ok: boolean): string {
+  const ref = request.headers.get('referer');
+  try {
+    const u = new URL(ref ?? '/', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
+    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
+    if (u.host !== site.host) return '/?sent=1';
+    u.searchParams.set(ok ? 'sent' : 'error', '1');
+    u.hash = 'estimate';
+    return `${u.pathname}${u.search}${u.hash}`;
+  } catch {
+    return ok ? '/?sent=1' : '/?error=1';
+  }
+}
+
 export async function POST(request: Request) {
   let body: unknown;
+  let isFormPost = false;
   try {
-    body = await request.json();
+    const read = await readBody(request);
+    body = read.body;
+    isFormPost = read.isFormPost;
   } catch {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
@@ -36,6 +82,7 @@ export async function POST(request: Request) {
   // traffic never consumes a real visitor's allowance.
   if (typeof (body as { company?: unknown }).company === 'string' && (body as { company: string }).company.trim()) {
     console.log(JSON.stringify({ event: 'lead.honeypot', at: new Date().toISOString() }));
+    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
     return NextResponse.json(
       { success: true, message: 'Quote request received! A specialist will call you within 1 business day.' },
       { status: 201 },
@@ -49,6 +96,7 @@ export async function POST(request: Request) {
       const key = issue.path[0];
       if (typeof key === 'string' && !(key in fieldErrors)) fieldErrors[key] = issue.message;
     }
+    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, false), request.url), 303);
     return NextResponse.json(
       { success: false, message: 'Please check the highlighted fields.', fieldErrors },
       { status: 400 },
@@ -167,6 +215,7 @@ export async function POST(request: Request) {
   }
 
   // The lead is captured. Always acknowledge success to the customer.
+  if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
   return NextResponse.json(
     { success: true, leadId, quoteId, message: 'Quote request received! A specialist will call you within 1 business day.', ecoPointsEarned: 750 },
     { status: 201 },

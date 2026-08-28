@@ -141,7 +141,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           <h2>Fixed price. Dust-free. In writing.</h2>
           <ul style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
             <li><strong>Fixed written estimates.</strong> Moisture-tested and inspected up front — the number on paper is the number on your invoice.</li>
-            <li><strong>Dust-free sanding.</strong> HEPA-sealed containment captures ~99.7% of airborne dust, so most clients stay home during the work.</li>
+            <li><strong>Dust-free sanding.</strong> HEPA-sealed extraction at the machine and containment at the room, so most clients stay home during the work.</li>
             <li><strong>Warranties in writing.</strong> Manufacturer finish and material warranties passed through, itemized in your contract.</li>
             <li><strong>Salaried craftsmen.</strong> No day-labour subcontractors — the same crew from first board to final coat.</li>
           </ul>

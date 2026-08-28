@@ -39,33 +39,36 @@ function useScrollState() {
 
 /* ---------------------- Navigation ---------------------- */
 const navigation = [
-  { label: 'Gallery', href: '#gallery' },
-  // { label: 'Species', href: '#species' }, // hidden with The Detail section
-  // A page, not an anchor. Six services now have their own URLs (F-146), and the
-  // map below already branches on `href.startsWith('#')` — a page link skips the
-  // scroll-spy and is rendered as a plain link, which is what this needs.
+  /* THE HEADER ROUTES BUYING INTENT — F-163.
+   *
+   * It used to be: Gallery · Services · Process · The Craft · Resources ·
+   * Framework · FloorForge · Reviews · FAQ. Five of those nine were homepage
+   * anchors (`#gallery`, `#process`, `#craft`, `#reviews`, `#faq`), which means
+   * that on any of the 280 pages that is not the homepage they pointed at
+   * nothing. And not one of the five commercial URLs — the pages that carry the
+   * money queries and now carry the estimate form — appeared at all. They were
+   * in the footer.
+   *
+   * So a homeowner comparing three quotes was offered a product name they have
+   * never heard (FloorForge), a login, and a table of contents for a page they
+   * were not on. Two independent audits opened on this.
+   *
+   * The row now names what someone is here to buy. Width was the hard
+   * constraint (.topbar-nav is `overflow: clip` with `min-width: max-content`,
+   * F-50, so anything added without removing something clips silently at
+   * 1200px): 69 characters out, 61 in. Narrower than before.
+   *
+   * Nothing is deleted — Gallery, Process, The Craft, FloorForge and the FAQ are
+   * all still on the homepage and still in the footer. They are just no longer
+   * spending the one row of attention this site gets.
+   */
   { label: 'Services', href: '/services' },
-  { label: 'Process', href: '#process' },
-  { label: 'The Craft', href: '#craft' },
-  // "Technical Library" was shortened to "Library" to pay for "Framework" in
-  // character width. The nav is `overflow: clip` with `min-width: max-content`
-  // (see F-50), so an item added without removing width somewhere is an item
-  // that clips silently at 1200px. Net width here is NARROWER than before:
-  // 17 characters out, 7 + 9 in. Re-measure on the next --full runtime pass.
-  // One entry, not three. The corpus outgrew a flat nav: papers, a versioned
-  // framework, an assessment, six guides, 32 glossary terms, a library, a JSON
-  // API. AWS puts all of that behind a single "Documentation" entry and groups
-  // it by intent on the page it leads to; /resources does the same.
-  //
-  // Width is the hard constraint here — .topbar-nav is `overflow: clip` with
-  // `min-width: max-content` (F-50), so an item added without removing width
-  // clips silently at 1200px. "Library" + "Papers" (13 characters) out,
-  // "Resources" (9) in: the nav is one item shorter and narrower than before.
+  { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
+  { label: 'Installation', href: '/hardwood-flooring-toronto' },
+  { label: 'Stairs', href: '/hardwood-stairs-toronto' },
+  { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
   { label: 'Resources', href: '/resources' },
-  { label: 'Framework', href: '/framework' },
-  { label: 'FloorForge', href: '/products/floorforge' },
-  { label: 'Reviews', href: '#reviews' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Reviews', href: '/reviews' },
 ];
 
 const MYPAGE_NAV = [

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EstimateForm } from '../../components/EstimateForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
@@ -159,6 +160,18 @@ export default async function ServiceDetailPage({
           <p className="tlx-note">{svc?.blurb}</p>
         </div>
       </header>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It is here now, above every
+          explanatory section, because a buyer who has read the price and decided
+          should not have to navigate to act on it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source={`service-${page.slug}`} heading="Get a fixed written price" intro="A senior estimator measures, then writes one price. It does not move afterwards." />
+        </div>
+      </section>
 
       {SERVICE_IMAGE[slug] && (
         <section className="tlx-section tlx-section--flush" aria-label={`${page.h1} illustrated`}>
@@ -391,7 +404,7 @@ export default async function ServiceDetailPage({
             <Link href="/service-areas">all service areas</Link>.
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            <Link className="fw-cta" href="#estimate">
               Book a free estimate
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/framework/assess">
