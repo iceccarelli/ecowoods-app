@@ -331,7 +331,7 @@ export default function HardwoodFlooringTorontoPage() {
           <h2 className="tlx-h2">Questions people actually ask</h2>
           <dl className="gd-spec">
             {FAQS.map((f) => (
-              <div key={f.question}>
+              <div className="gd-spec-row" key={f.question}>
                 <dt>{f.question}</dt>
                 <dd>{f.answer}</dd>
               </div>
@@ -348,7 +348,7 @@ export default function HardwoodFlooringTorontoPage() {
             Each area has its own page describing the housing stock there and what it means for a
             floor — a 1920s semi in Leslieville and a 2018 slab condo downtown are different jobs.
           </p>
-          <div className="footer-links">
+          <div className="area-links">
             {SERVICE_AREAS.map((c) => (
               <Link key={c.slug} href={`/service-areas/${c.slug}`}>
                 {c.name}

@@ -397,19 +397,19 @@ export default function HardwoodFloorProblemsTorontoPage() {
               <h2 className="tlx-h2">{t?.term ?? m.slug}</h2>
               {t?.short && <p className="tlx-note"><strong>{t.short}</strong></p>}
               <dl className="gd-spec">
-                <div>
+                <div className="gd-spec-row">
                   <dt>What it looks like</dt>
                   <dd>{m.looksLike}</dd>
                 </div>
-                <div>
+                <div className="gd-spec-row">
                   <dt>What causes it</dt>
                   <dd>{m.cause}</dd>
                 </div>
-                <div>
+                <div className="gd-spec-row">
                   <dt>Can it be fixed</dt>
                   <dd>{m.prognosis}</dd>
                 </div>
-                <div>
+                <div className="gd-spec-row">
                   <dt>What fixing it involves</dt>
                   <dd>
                     {m.remedyText}
@@ -542,7 +542,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
           <h2 className="tlx-h2">Questions people ask about a failing floor</h2>
           <dl className="gd-spec">
             {FAQS.map((f) => (
-              <div key={f.question}>
+              <div className="gd-spec-row" key={f.question}>
                 <dt>{f.question}</dt>
                 <dd>{f.answer}</dd>
               </div>

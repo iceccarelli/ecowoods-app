@@ -54,12 +54,30 @@ export function Illustration({
   priority = false,
   className = '',
   motion = 'reveal',
+  caption = true,
 }: {
   id: string;
   sizes?: string;
   priority?: boolean;
   className?: string;
   motion?: IllustrationMotion;
+  /**
+   * Render the caption and the full-size link. `false` ONLY where the caller
+   * renders them itself, outside this figure.
+   *
+   * WHY THIS EXISTS — F-153. IllustrationPair stacks two of these inside
+   * `.ilpair-layer`, which is `position: absolute; inset: 0` on a stage sized
+   * from the image ratio alone. The caption is part of the <figure>, so it was
+   * laid out inside that absolute box with no height budget: it spilled out of
+   * flow and the next element on the page — the grey spec list on
+   * /hardwood-stairs-toronto — was painted straight over the top of it. Two
+   * captions, both invisible, one of them aria-hidden, sitting under a panel.
+   *
+   * A caption is not an accessory to a picture; on a technical figure it is
+   * half the content. So the pair renders ONE caption for the one fact it
+   * shows, in normal flow, below the stage.
+   */
+  caption?: boolean;
 }) {
   const img = getImage(id);
   if (!img) return null;
@@ -84,7 +102,7 @@ export function Illustration({
             {img.kind === 'diagram' ? 'Diagram' : 'Illustration'}
           </span>
         </div>
-        {img.caption && <figcaption className="ill-caption">{img.caption}</figcaption>}
+        {caption && img.caption && <figcaption className="ill-caption">{img.caption}</figcaption>}
       </figure>
     );
   }
@@ -110,18 +128,20 @@ export function Illustration({
           />
         ) : null}
       </div>
-      <figcaption className="ill-caption">
-        {img.caption}
-        <a
-          className="ill-full"
-          href={asset?.src ?? `${IMAGE_DIR}/${img.file}`}
-          target="_blank"
-          rel="noopener"
-        >
-          View full size <span aria-hidden="true">↗</span>
-          <span className="sr-only"> — {img.alt}</span>
-        </a>
-      </figcaption>
+      {caption && (
+        <figcaption className="ill-caption">
+          {img.caption}
+          <a
+            className="ill-full"
+            href={asset?.src ?? `${IMAGE_DIR}/${img.file}`}
+            target="_blank"
+            rel="noopener"
+          >
+            View full size <span aria-hidden="true">↗</span>
+            <span className="sr-only"> — {img.alt}</span>
+          </a>
+        </figcaption>
+      )}
     </figure>
   );
 }

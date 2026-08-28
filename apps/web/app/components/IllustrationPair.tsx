@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Illustration } from './Illustration';
-import { getImage } from '@/lib/images';
+import { getImage, IMAGE_DIR } from '@/lib/images';
+import { illustrationImage } from '../data/illustration-images';
 
 /**
  * IllustrationPair — one fact, two drawings of it, alternating.
@@ -80,6 +81,22 @@ export function IllustrationPair({
 
   const ratio = Math.max(ia.height / ia.width, ib.height / ib.width);
 
+  /* ONE CAPTION, BELOW THE STAGE, IN NORMAL FLOW — F-153.
+   *
+   * The captions used to render inside `.ilpair-layer`, which is
+   * `position: absolute; inset: 0`. The stage height comes from the image ratio
+   * and nothing else, so the caption had no height budget: it spilled out of
+   * flow, and the very next element on the page was painted over it. On
+   * /hardwood-stairs-toronto that element is the grey spec list, and the result
+   * was two paragraphs of text overlapping each other, unreadable, on a
+   * commercial page.
+   *
+   * The component's own premise is that these are ONE fact seen twice. One
+   * fact takes one caption, and the caption belongs in the document flow with
+   * the height that gives it. The full-size link points at whichever drawing is
+   * currently showing, because that is the one a reader asked to see. */
+  const active = i === 0 ? ia : ib;
+
   return (
     <div
       className={`ilpair ${className}`}
@@ -90,10 +107,10 @@ export function IllustrationPair({
     >
       <div className="ilpair-stage" style={{ aspectRatio: `1 / ${ratio}` }}>
         <div className={`ilpair-layer ${i === 0 ? 'is-on' : ''}`} aria-hidden={i === 0 ? undefined : true}>
-          <Illustration id={a} motion="none" priority={priority} />
+          <Illustration id={a} motion="none" priority={priority} caption={false} />
         </div>
         <div className={`ilpair-layer ${i === 1 ? 'is-on' : ''}`} aria-hidden={i === 1 ? undefined : true}>
-          <Illustration id={b} motion="none" />
+          <Illustration id={b} motion="none" caption={false} />
         </div>
       </div>
       <button
@@ -104,6 +121,24 @@ export function IllustrationPair({
       >
         <span aria-hidden="true">{i === 0 ? '○ ●' : '● ○'}</span>
       </button>
+      {active.caption && (
+        <p className="ill-caption ilpair-caption">
+          {active.caption}
+          {/* The BUNDLED url, not the public/ path — this deployment does not
+              serve apps/web/public, so `${IMAGE_DIR}/…` is a 404 (F-131). The
+              public path stays only as the same last-resort fallback
+              Illustration uses. */}
+          <a
+            className="ill-full"
+            href={illustrationImage(active.id)?.src ?? `${IMAGE_DIR}/${active.file}`}
+            target="_blank"
+            rel="noopener"
+          >
+            View full size <span aria-hidden="true">↗</span>
+            <span className="sr-only"> — {active.alt}</span>
+          </a>
+        </p>
+      )}
     </div>
   );
 }

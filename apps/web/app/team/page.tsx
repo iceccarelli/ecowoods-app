@@ -241,7 +241,7 @@ export default function TeamPage() {
           <h2 className="tlx-h2">Questions people ask about the crew</h2>
           <dl className="gd-spec">
             {FAQS.map((f) => (
-              <div key={f.question}>
+              <div className="gd-spec-row" key={f.question}>
                 <dt>{f.question}</dt>
                 <dd>{f.answer}</dd>
               </div>
