@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { EstimateForm } from './components/EstimateForm';
 import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES } from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -769,14 +770,19 @@ const onSubmit = (data: LeadFormData) => {
                 </span>
               </a>
 
-              <button type="button" className="estimate-cta-card" onClick={() => setEstimateModalOpen(true)}>
-                <span className="estimate-cta-icon">{Icon.mail}</span>
-                <span className="estimate-cta-text">
-                  <span className="estimate-cta-title">Request a free estimate</span>
-                  <span className="estimate-cta-sub">Takes 60 seconds — no pressure, no obligation.</span>
-                </span>
-                <span className="estimate-cta-arrow">{Icon.arrow}</span>
-              </button>
+              {/* THE FORM, NOT A BUTTON THAT OPENS ONE — F-160 finished.
+                  The five commercial pages got a real form; the homepage kept a
+                  <button> that set React state to open a modal, so the busiest
+                  url on the site still served zero <form> elements and the site
+                  chrome had nowhere to point. verify-links.mjs failed the build
+                  the moment the drawer offered "#estimate", because no element
+                  on this page carried that id. It does now. */}
+              <EstimateForm
+                source="homepage"
+                className="ef--onDark"
+                heading="Request a free estimate"
+                intro="A senior estimator replies within one business day. The measurement is free and the written price does not move afterwards."
+              />
             </div>
 
             {/* Right column: the booking calendar (inline on desktop, sheet on mobile) */}

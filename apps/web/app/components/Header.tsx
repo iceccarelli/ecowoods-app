@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import { MegaMenu, type MegaColumn } from './MegaMenu';
 
 import { useState, useEffect, useRef } from 'react';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
@@ -38,37 +40,106 @@ function useScrollState() {
 }
 
 /* ---------------------- Navigation ---------------------- */
+/* THE PANELS — the AWS "Products ▾" mechanism, applied to a corpus this site
+ * had no way to show anyone.
+ *
+ * Curated, not generated. AWS does not list 240 services in its panel; it lists
+ * the categories a visitor arrives with. Dumping forty-four glossary terms here
+ * would be a directory, and a directory is what /glossary already is. These are
+ * the entries that answer a question someone is holding.
+ *
+ * Every href is a real page and every one is also reachable from its hub, so
+ * nothing here is the ONLY path to anything — a mega-menu that is the sole route
+ * to a page is a page that dies the day the menu breaks.
+ */
+const SERVICES_MENU: MegaColumn[] = [
+  {
+    title: 'By the job',
+    href: '/services',
+    items: [
+      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand' },
+      { label: 'New installation', href: '/hardwood-flooring-toronto', note: 'Solid and engineered' },
+      { label: 'Dust-free sanding', href: '/services/dust-free-sanding', note: 'HEPA-sealed, stay in the house' },
+      { label: 'Stairs', href: '/hardwood-stairs-toronto', note: 'Four different jobs, one word' },
+      { label: 'Floor restoration', href: '/services/floor-restoration' },
+      { label: 'Custom inlays', href: '/services/custom-inlays' },
+    ],
+  },
+  {
+    title: 'By the problem',
+    href: '/hardwood-floor-problems-toronto',
+    items: [
+      { label: 'Cupping, gapping, crowning', href: '/hardwood-floor-problems-toronto', note: 'Five symptoms, one mechanism' },
+      { label: 'Buckling and edge peaking', href: '/hardwood-floor-problems-toronto' },
+      { label: 'Matching stairs to a floor', href: '/hardwood-stairs-toronto' },
+      { label: 'Is my floor refinishable?', href: '/guides/reference-refinishing-existing-hardwood' },
+    ],
+  },
+  {
+    title: 'Before you decide',
+    href: '/guides',
+    items: [
+      { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+      { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
+      { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
+      { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
+    ],
+  },
+];
+
+const LIBRARY_MENU: MegaColumn[] = [
+  {
+    title: 'Technical papers',
+    href: '/papers',
+    items: [
+      { label: 'Provenance', href: '/papers/where-toronto-hardwood-comes-from', note: 'Where the wood comes from' },
+      { label: 'Grade', href: '/papers/hardwood-grading-standards-nhla-nwfa', note: 'NHLA and NWFA, side by side' },
+      { label: 'Climate Mastery', href: '/papers/toronto-hardwood-climate-moisture-protocol' },
+      { label: 'The Craft', href: '/papers/hardwood-refinishing-machines-and-sequence' },
+      { label: 'Selection and cost', href: '/papers/hardwood-selection-and-cost-framework-gta' },
+    ],
+  },
+  {
+    title: 'Species dossiers',
+    href: '/guides',
+    items: [
+      { label: 'White oak', href: '/guides/white-oak-flooring-toronto' },
+      { label: 'Red oak', href: '/guides/red-oak-flooring-toronto' },
+      { label: 'Hard maple', href: '/guides/hard-maple-flooring-toronto' },
+      { label: 'White ash', href: '/guides/white-ash-flooring-toronto', note: 'Cut faster than it grows' },
+      { label: 'Hickory · Black walnut', href: '/guides/hickory-flooring-toronto' },
+    ],
+  },
+  {
+    title: 'Reference',
+    href: '/resources',
+    items: [
+      { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
+      { label: 'Standards register', href: '/standards', note: 'NHLA, NWFA, ASTM, FPL' },
+      { label: 'Figures and data', href: '/data' },
+      { label: 'The Well-Installed Framework', href: '/framework' },
+      { label: 'Visual library', href: '/library' },
+    ],
+  },
+  {
+    title: 'Evidence',
+    href: '/case-studies',
+    items: [
+      { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
+      { label: 'Reviews', href: '/reviews' },
+      { label: 'What we publish about ourselves', href: '/about' },
+      { label: 'Everything, as it shipped', href: '/whats-new' },
+    ],
+  },
+];
+
 const navigation = [
-  /* THE HEADER ROUTES BUYING INTENT — F-163.
-   *
-   * It used to be: Gallery · Services · Process · The Craft · Resources ·
-   * Framework · FloorForge · Reviews · FAQ. Five of those nine were homepage
-   * anchors (`#gallery`, `#process`, `#craft`, `#reviews`, `#faq`), which means
-   * that on any of the 280 pages that is not the homepage they pointed at
-   * nothing. And not one of the five commercial URLs — the pages that carry the
-   * money queries and now carry the estimate form — appeared at all. They were
-   * in the footer.
-   *
-   * So a homeowner comparing three quotes was offered a product name they have
-   * never heard (FloorForge), a login, and a table of contents for a page they
-   * were not on. Two independent audits opened on this.
-   *
-   * The row now names what someone is here to buy. Width was the hard
-   * constraint (.topbar-nav is `overflow: clip` with `min-width: max-content`,
-   * F-50, so anything added without removing something clips silently at
-   * 1200px): 69 characters out, 61 in. Narrower than before.
-   *
-   * Nothing is deleted — Gallery, Process, The Craft, FloorForge and the FAQ are
-   * all still on the homepage and still in the footer. They are just no longer
-   * spending the one row of attention this site gets.
-   */
-  { label: 'Services', href: '/services' },
+  /* Two panels and four links. See MegaMenu.tsx for why a panel beats a hub, and
+   * F-163 for why the five commercial pages are here at all. */
   { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
   { label: 'Installation', href: '/hardwood-flooring-toronto' },
   { label: 'Stairs', href: '/hardwood-stairs-toronto' },
   { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
-  { label: 'Resources', href: '/resources' },
-  { label: 'Reviews', href: '/reviews' },
 ];
 
 const MYPAGE_NAV = [
@@ -97,6 +168,12 @@ export default function Header() {
   const { direction, scrolled } = useScrollState();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [portalExpanded, setPortalExpanded] = useState(false);
+  /* Which mega-menu group is open in the mobile drawer. The panel is a pointer
+     affordance and hides under 1000px (see .mm in globals.css), so without this
+     the library tree — five papers, sixteen guides, forty-four glossary terms —
+     would exist on desktop and vanish on a phone. AWS solves the same problem
+     the same way: the footer and drawer become accordions. */
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [portalMenuOpen, setPortalMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [baseUrl, setBaseUrl] = useState('/');
@@ -212,6 +289,8 @@ export default function Header() {
 
           {/* Primary Nav */}
           <nav className="topbar-nav" aria-label="Primary">
+            <MegaMenu label="Services" id="services" columns={SERVICES_MENU} footer={{ label: 'All six services', href: '/services' }} />
+            <MegaMenu label="Library" id="library" columns={LIBRARY_MENU} footer={{ label: 'Everything published here', href: '/resources' }} />
             {navigation.map((item) => {
               // Check if this is an anchor link or a page link
               const isAnchor = item.href.startsWith('#');
@@ -383,8 +462,41 @@ export default function Header() {
               </a>
             );
           })}
-          <a href={`${baseUrl}#quote`} onClick={() => setMobileOpen(false)}>
-            Free Quote
+          {[
+            { key: 'services', label: 'Services', cols: SERVICES_MENU },
+            { key: 'library', label: 'Library', cols: LIBRARY_MENU },
+          ].map((group) => (
+            <div className="mnav-group" key={group.key}>
+              <button
+                type="button"
+                className="mnav-group-trigger"
+                aria-expanded={openGroup === group.key}
+                onClick={() => setOpenGroup((v) => (v === group.key ? null : group.key))}
+              >
+                <span>{group.label}</span>
+                <span className="mnav-group-sign" aria-hidden="true">{openGroup === group.key ? '\u2212' : '+'}</span>
+              </button>
+              {openGroup === group.key && (
+                <div className="mnav-group-body">
+                  {group.cols.map((col) => (
+                    <div key={col.title}>
+                      <p className="mnav-group-title">{col.title}</p>
+                      <ul>
+                        {col.items.map((it) => (
+                          <li key={it.href}>
+                            <Link href={it.href} onClick={() => setMobileOpen(false)}>{it.label}</Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <a href={`${baseUrl}#estimate`} onClick={() => setMobileOpen(false)}>
+            Get a written price
             <span className="num">0{navigation.length + 1}</span>
           </a>
 

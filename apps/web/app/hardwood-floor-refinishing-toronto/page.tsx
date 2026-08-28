@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
 import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
@@ -331,6 +332,7 @@ export default function RefinishingTorontoPage() {
           </div>
         </div>
       </section>
+      <FeedbackBand topic="this page" />
     </div>
   );
 }

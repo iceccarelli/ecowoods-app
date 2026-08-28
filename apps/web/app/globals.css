@@ -1768,7 +1768,234 @@ p {
    which is the point. `display:none` is skipped by some fillers, and a bot that
    leaves it empty is indistinguishable from a person. */
 .ef-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* The same form on the homepage's dark conversion band. Only the palette
+   changes — one component, two grounds, no second implementation to drift. */
+.ef--onDark {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--on-dark) 22%, transparent);
+  padding: 0;
+  max-width: none;
+  border: 0;
+}
+.ef--onDark .ef-h { color: var(--on-dark); }
+.ef--onDark .ef-intro,
+.ef--onDark .ef-fine { color: var(--on-dark-muted); }
+.ef--onDark .ef-field > span { color: var(--on-dark-muted); }
+.ef--onDark .ef-field :is(input, select, textarea) {
+  background: color-mix(in srgb, var(--on-dark) 8%, transparent);
+  border-color: color-mix(in srgb, var(--on-dark) 26%, transparent);
+  color: var(--on-dark);
+}
+.ef--onDark .ef-field :is(input, select, textarea)::placeholder { color: color-mix(in srgb, var(--on-dark) 55%, transparent); }
+.ef--onDark .ef-call { color: var(--copper-bright); }
 /* === EW:ESTIMATE-FORM END === */
+
+/* ============================================================================
+   EW:AWS-ARCHITECTURE
+   ============================================================================
+   The layout SYSTEM from aws.amazon.com, in this company's palette.
+
+   WHAT WAS TAKEN, AND WHAT DELIBERATELY WAS NOT
+
+   Taken: the utility strip above the masthead, the mega-menu panel, the card
+   grid with a category chip, the feedback band above the footer, the grouped
+   four-column dark footer, and the rounded sheet that overlaps the hero. Those
+   are MECHANISMS. They solve problems this site measurably has — a buried
+   corpus, a header spending its only row badly, a phone number reachable from
+   one page, twenty-eight changelog entries nobody sees.
+
+   Not taken: the palette, the typeface, the logo lockup, the illustration
+   language, the blue-violet gradients. Copying those would put a Toronto
+   hardwood company in a cloud provider's clothes — legally other people's trade
+   dress, and strategically an own goal. Cream, walnut and copper say wood. That
+   is the whole asset.
+
+   Bezos does not copy a competitor's storefront. He copies the mechanism and
+   runs it better. This is that.
+   ========================================================================= */
+
+/* ── the utility strip ──────────────────────────────────────────────────── */
+.ub {
+  background: var(--surface-deep);
+  color: var(--on-dark-muted);
+  font-size: 0.78rem;
+  /* currentColor, because --line is a DARK hairline and this bar is dark: the
+     token is correct for the light page and invisible here. */
+  border-bottom: 1px solid currentColor;
+  border-bottom-color: color-mix(in srgb, currentColor 22%, transparent);
+}
+.ub-inner {
+  max-width: 1240px; margin: 0 auto; padding: 0 1.25rem;
+  display: flex; align-items: center; gap: 1rem; min-height: 38px;
+}
+.ub-grow { flex: 1 1 auto; }
+.ub-sep { width: 1px; height: 12px; background: currentColor; opacity: 0.3; }
+.ub-item { white-space: nowrap; }
+.ub-link { color: var(--on-dark-muted); text-decoration: none; }
+.ub-link:hover, .ub-link:focus-visible { color: var(--copper-bright); text-decoration: underline; }
+.ub-phone {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  color: var(--on-dark); font-weight: 600; text-decoration: none;
+  padding: 0.2rem 0.1rem; white-space: nowrap;
+}
+.ub-phone:hover, .ub-phone:focus-visible { color: var(--copper-bright); }
+@media (max-width: 720px) {
+  /* On a phone the strip keeps the two facts that convert and drops the rest.
+     Everything hidden here is still in the footer and still in the mega-menu. */
+  .ub-area, .ub-sep, .ub-hide-sm { display: none; }
+  .ub-inner { gap: 0.75rem; font-size: 0.72rem; }
+}
+
+/* ── the mega-menu ──────────────────────────────────────────────────────── */
+.mm { position: relative; display: inline-flex; }
+.mm-trigger {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: none; border: 0; cursor: pointer;
+  font: inherit; color: inherit; padding: 0.4rem 0.1rem;
+  border-bottom: 2px solid transparent;
+}
+.mm-trigger:hover, .mm-trigger.is-open { color: var(--copper-text); border-bottom-color: var(--copper-surface); }
+.mm-trigger:focus-visible { outline: 2px solid var(--copper-text); outline-offset: 3px; }
+.mm-trigger svg { transition: transform 180ms ease; }
+.mm-trigger.is-open svg { transform: rotate(180deg); }
+
+.mm-panel {
+  position: absolute; top: calc(100% + 0.55rem); left: 50%; transform: translateX(-50%);
+  z-index: 120;
+  width: min(1120px, calc(100vw - 2.5rem));
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(26, 20, 16, 0.18);
+}
+.mm-panel-inner { padding: 1.5rem 1.6rem 1.2rem; }
+.mm-cols { display: grid; gap: 1.75rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.mm-col-title {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.mm-col-title a { color: inherit; text-decoration: none; }
+.mm-col-title a:hover { color: var(--copper-text); text-decoration: underline; }
+.mm-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.mm-col a {
+  display: block; padding: 0.45rem 0.5rem; margin-left: -0.5rem;
+  border-radius: 8px; text-decoration: none; color: var(--ink);
+}
+.mm-col a:hover, .mm-col a:focus-visible { background: var(--surface-2); color: var(--copper-text); }
+.mm-label { display: block; font-size: 0.93rem; font-weight: 500; line-height: 1.3; }
+.mm-note { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; line-height: 1.4; }
+.mm-footer {
+  display: inline-block; margin-top: 1.2rem; padding-top: 1rem;
+  border-top: 1px solid var(--line); width: 100%;
+  color: var(--copper-text); font-size: 0.88rem; font-weight: 600; text-decoration: none;
+}
+.mm-footer:hover { text-decoration: underline; }
+@media (max-width: 1000px) {
+  /* The panel is a pointer affordance. Below this the mobile drawer already
+     carries the same tree, so the trigger stops competing for the row. */
+  .mm { display: none; }
+}
+
+/* ── the card grid ──────────────────────────────────────────────────────── */
+.wn { padding: 4rem 0 3.5rem; background: var(--surface); }
+.wn-h { font-family: var(--font-display); font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin: 0 0 0.6rem; color: var(--ink); }
+.wn-intro { margin: 0 0 2rem; color: var(--ink-soft); max-width: 62ch; line-height: 1.65; }
+.wn-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+.wn-card { display: flex; }
+.wn-card-link {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  width: 100%; padding: 1.35rem 1.35rem 1.1rem;
+  background: var(--surface-1);
+  border: 1px solid var(--line); border-radius: 14px;
+  text-decoration: none; color: inherit;
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.wn-card-link:hover, .wn-card-link:focus-visible {
+  border-color: var(--copper-surface);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(26, 20, 16, 0.08);
+}
+.wn-chip {
+  align-self: flex-start;
+  font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--copper-text); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.6rem;
+}
+.wn-card-h { margin: 0; font-family: var(--font-display); font-size: 1.12rem; line-height: 1.3; color: var(--ink); }
+.wn-card-body {
+  margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--ink-soft);
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.wn-card-foot {
+  margin-top: auto; padding-top: 0.6rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.05em; color: var(--muted);
+}
+.wn-arrow { color: var(--copper-text); font-size: 1rem; }
+.wn-all { display: inline-block; margin-top: 1.6rem; color: var(--copper-text); font-weight: 600; text-decoration: none; }
+.wn-all:hover { text-decoration: underline; }
+
+/* ── the feedback band ──────────────────────────────────────────────────── */
+.fb {
+  /* The one place a warm gradient earns its keep: it separates the page from
+     the footer without a rule, exactly as the peach band does on AWS. */
+  background: linear-gradient(100deg, var(--surface-2) 0%, rgba(200, 126, 79, 0.16) 100%);
+  border-top: 1px solid var(--line);
+  padding: 2.25rem 0;
+}
+.fb-inner { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2rem; }
+.fb-copy { flex: 1 1 22rem; }
+.fb-h { margin: 0 0 0.35rem; font-family: var(--font-display); font-size: 1.25rem; color: var(--ink); }
+.fb-sub { margin: 0; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; }
+.fb-sub a { color: var(--copper-text); font-weight: 600; }
+.fb-actions { display: flex; gap: 0.75rem; }
+.fb-btn {
+  min-height: 48px; padding: 0 1.6rem;
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--surface-deep); color: var(--on-dark);
+  font: inherit; font-weight: 600; font-size: 0.95rem;
+}
+.fb-btn:hover { background: var(--copper-text); }
+.fb-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ── the rounded sheet that overlaps a hero ─────────────────────────────── */
+.sheet {
+  position: relative; z-index: 2;
+  margin-top: -2.5rem;
+  border-radius: 28px 28px 0 0;
+  background: var(--surface);
+}
+@media (max-width: 720px) { .sheet { margin-top: -1.5rem; border-radius: 20px 20px 0 0; } }
+
+/* ── the mobile drawer accordion ────────────────────────────────────────── */
+/* The mega-menu panel is a pointer affordance and hides under 1000px. Without
+   this the whole library tree would be desktop-only, which is the opposite of
+   the point — the phone is where a homeowner reads about cupping at 9pm.
+   AWS makes the same trade the same way: panels on the pointer, accordions on
+   the touchscreen (its mobile footer collapses "Help" behind a +). */
+.mnav-group { border-top: 1px solid var(--line); }
+.mnav-group-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; min-height: 56px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font: inherit; color: inherit; text-align: left;
+}
+.mnav-group-sign { font-size: 1.35rem; line-height: 1; color: var(--copper-text); }
+.mnav-group-body { padding: 0 0 1.1rem; display: grid; gap: 1.1rem; }
+.mnav-group-title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.mnav-group-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.1rem; }
+.mnav-group-body li a {
+  display: flex; align-items: center; min-height: 44px;  /* F-31 tap target */
+  font-size: 0.95rem; color: var(--ink-soft); text-decoration: none;
+}
+.mnav-group-body li a:hover, .mnav-group-body li a:focus-visible { color: var(--copper-text); }
+/* === EW:AWS-ARCHITECTURE END === */
 
 /* Footer legal row: the Cookie Preferences button (132x22) and the Privacy /
    Terms links (48x22, 41x22) all sat well under 44px on every route. */
