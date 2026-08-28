@@ -15,7 +15,7 @@ import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
 import { FigureRotator } from './components/FigureRotator';
 import { HOME_ROTATION } from './data/rotator-slides';
-import CountUp from './components/CountUp';
+import HeroRotator from './components/HeroRotator';
 import SpecsCoverage from './components/SpecsCoverage';
 import FloorCatalog from './components/FloorCatalog';
 import MachineCatalog from './components/MachineCatalog';
@@ -473,28 +473,29 @@ const onSubmit = (data: LeadFormData) => {
         <div className="hero-bg" aria-hidden="true" />
         <RotatingBackground />
         <div className="shell hero-content">
-          <h1 className="reveal" data-delay="1">
-            Hardwood, Done Once.<br />
-            <em>Done Right.</em>
-          </h1>
+          {/* The eyebrow, h1, lede and CTA live in HeroRotator. Fifteen ways of
+              saying the same true thing, resolving one at a time. The CTA is
+              passed in and never rotates; HERO_VARIANTS[0] is what the server
+              renders, so the HTML a crawler reads is the canonical brand line. */}
+          <HeroRotator
+            ctaHref="#quote"
+            ctaLabel="Get Your Free Written Estimate"
+            ctaArrow={Icon.arrow}
+          />
 
-          <p className="hero-lede reveal" data-delay="2">
-            Fixed price in writing. Zero dust. Salaried master artisans using FSC-certified
-            sustainable materials. Toronto homes transformed with certainty — not hope.
-          </p>
-
-          <div className="hero-actions reveal" data-delay="3">
-            <a className="btn btn-copper btn-lg" href="#quote">
-              Get Your Free Written Estimate
-              <span className="btn-arrow">{Icon.arrow}</span>
-            </a>
-          </div>
-
+          {/* F-205 — THE STAT DOES NOT ROTATE AND DOES NOT ANIMATE.
+              It used to render through the CountUp component, which published
+              three times in the DOM (hidden sizer + live value + .sr-only
+              copy). Concatenated, ecowoods.ca served `26026+ Years in Toronto`
+              in its server HTML and `262626+` after the roll finished — the
+              one number in the hero, on the site whose whole strategy is being
+              quotable by machines. One value, one text node, derived from
+              BUSINESS_NAP.foundedYear so it cannot go stale in January. */}
           <div className="hero-stats reveal" data-delay="4">
             {trustStats.map((s) => (
               <div className="hero-stat" key={s.lbl}>
                 <div className="val">
-                  <CountUp to={s.to} decimals={s.decimals} unit={s.unit} />
+                  <span className="hero-stat-num">{`${s.to}${s.unit ?? ''}`}</span>
                   {s.em && <em>{s.em}</em>}
                 </div>
                 <div className="lbl">{s.lbl}</div>
