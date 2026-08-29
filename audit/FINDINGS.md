@@ -6273,3 +6273,73 @@ Stating both numbers stops the gap looking like a discrepancy — the first
 version counted 30 by grepping the aggregate line as well as the definitions,
 which double-counted every guard and reported a number that was always wrong in
 the flattering direction.
+
+---
+
+### F-205 · The one number in the hero was published as `26026+` · P1 · fixed
+
+**Where.** `apps/web/app/components/CountUp.tsx`, rendered by the `.hero-stat`
+block in `apps/web/app/home-client.tsx`. Live on ecowoods.ca until this patch.
+
+**What was served.** `CountUp` rendered its value three times:
+
+```
+<span class="countup-sizer" aria-hidden>26</span>   width reservation
+<span class="countup-live"  aria-hidden>0</span>    the animated value
+<span class="sr-only">26</span>                     the accessible copy
+```
+
+`visibility: hidden` and `.sr-only` hide text from a person looking at the
+screen. Neither removes it from the document. Flattened, the homepage hero's
+only trust stat read:
+
+```
+26026+ Years in Toronto      server HTML — measured on ecowoods.ca 2026-08-28
+262626+ Years in Toronto     after hydration, once the roll finished
+```
+
+**Why it survived everything.** Three separate representations of this page
+disagreed, and only one of them was wrong:
+
+| representation | what it showed | who reads it |
+| --- | --- | --- |
+| the source | `<CountUp to={yearsInBusiness()} />` | reviewers |
+| the rendered screen | `26+` | everyone looking at it |
+| the extracted text | `26026+` | **every crawler and answer engine** |
+
+Forty guards parse source. Screenshots show the screen. Nothing in this
+repository read the third column — which is the audience the entire
+`llms.txt` / `ai.txt` / `/api/knowledge` strategy exists to serve. A defect
+cannot be found by a check that never looks at the representation it lives in.
+
+**Fix.** `CountUp` now renders ONE text node; width is reserved with
+`min-width` in `ch` against the final string plus `tabular-nums`, and the
+initial state is the target rather than zero, so the server emits the real
+figure and a JavaScript-off visitor keeps it. The hero stat no longer uses
+`CountUp` at all: it is one text node, derived from `BUSINESS_NAP.foundedYear`,
+and it does not animate and does not rotate.
+
+**Guard.** `scripts/verify-ui-contract.mjs` check 5 fails the build on both
+halves of the pattern — a `*sizer*` class in JSX, and a `-sizer` CSS rule that
+hides itself.
+
+---
+
+### F-206 · SwipeDeck publishes every card's text twice on mobile · P2 · open
+
+**Where.** `apps/web/app/components/SwipeDeck.tsx:220` — the content-deck sizer
+layer renders every card a second time with `aria-hidden` so the stack is as
+tall as its tallest card.
+
+**Severity, honestly stated.** Lower than F-205 and deliberately not fixed in
+the same patch. `SwipeDeck` mounts only behind `mounted && isMobile`, so the
+duplicate is never in the server HTML and no crawler sees it. A mobile screen
+reader and a mobile reader mode both do.
+
+**Fix when it is taken.** Measure once on mount (`ResizeObserver` on the stack
+for width changes), keep the measured height as `min-height`, and unmount the
+sizer layer. Keep the layer as the fallback if measurement returns zero.
+
+**Until then** it is the one entry in `SIZER_ALLOW` in
+`scripts/verify-ui-contract.mjs`, with the reason recorded there, so the
+allowance is visible rather than absent.

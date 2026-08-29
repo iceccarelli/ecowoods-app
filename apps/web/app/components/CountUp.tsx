@@ -1,22 +1,46 @@
 'use client';
 
 /**
- * CountUp — a number that rolls from 0 to its target when it scrolls into view.
+ * CountUp — a number that rolls to its target when it scrolls into view.
  *
- * Re-arms on exit, so it replays every time the stat re-enters the viewport
- * (and on every page load) rather than firing once and going inert.
+ * F-205 — WHAT WAS WRONG, BECAUSE IT SHIPPED AND STAYED SHIPPED
  *
- * Details that matter:
- *  - IntersectionObserver, not a scroll listener: no main-thread work while the
- *    bar is off-screen.
- *  - requestAnimationFrame with an ease-out curve, so it decelerates into the
- *    final value. Linear counters read as slot machines.
- *  - The element reserves its FINAL width up front (a hidden sizer holding the
- *    finished string). Without it, "0" -> "5,200" widens mid-flight and shoves
- *    the row around — undoing the subgrid alignment.
- *  - prefers-reduced-motion: renders the final value immediately. Numbers
- *    ticking in peripheral vision is a real vestibular trigger.
- *  - Assistive tech gets the FINAL number once, never the intermediate ticks.
+ * This component used to render its value THREE TIMES in the DOM:
+ *
+ *     <span class="countup-sizer" aria-hidden>26</span>   width reservation
+ *     <span class="countup-live"  aria-hidden>0</span>    the animated value
+ *     <span class="sr-only">26</span>                     the accessible copy
+ *
+ * `visibility: hidden` and `.sr-only` hide text from a person looking at the
+ * screen. They do not remove it from the document. Every crawler, every answer
+ * engine, every reader-mode extractor and every "read this page" assistant
+ * concatenates the text nodes — so the homepage hero's single trust stat was
+ * published as:
+ *
+ *     26026+ Years in Toronto        (server HTML, verified on ecowoods.ca)
+ *     262626+ Years in Toronto       (after hydration, once the roll finished)
+ *
+ * On a site whose entire strategy is being quotable by machines, the one
+ * number in the hero was unquotable, and no guard could see it because every
+ * guard reads source and every human reads the rendered screen, where it looks
+ * perfect. `scripts/verify-ui-contract.mjs` check 5 now fails the build on the
+ * pattern that caused it.
+ *
+ * WHAT IT DOES NOW
+ *
+ * One text node. Nothing hidden, nothing duplicated, nothing to concatenate.
+ *
+ *  - WIDTH is reserved with `min-width` in `ch` against the FINAL string plus
+ *    `font-variant-numeric: tabular-nums`, so every digit is one `ch` wide and
+ *    "0" occupies exactly the cell "26" will. No second copy of the number is
+ *    needed to hold the space open.
+ *  - THE INITIAL STATE IS THE TARGET, not zero. The server therefore renders
+ *    the real figure, a JavaScript-off visitor keeps it, and hydration matches.
+ *    The roll starts from zero only inside the IntersectionObserver callback,
+ *    which never runs on the server.
+ *  - prefers-reduced-motion renders the final value and never animates.
+ *  - Assistive technology reads the same node everyone else sees. Because the
+ *    element is not a live region, the intermediate ticks are not announced.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -37,8 +61,8 @@ export default function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const raf = useRef<number | null>(null);
-  const [value, setValue] = useState(0);
-  const [reduced, setReduced] = useState(false);
+  /* Target, not 0 — see the note above. This is the whole SSR fix. */
+  const [value, setValue] = useState(to);
 
   const fmt = (n: number) =>
     n.toLocaleString('en-CA', {
@@ -46,16 +70,16 @@ export default function CountUp({
       maximumFractionDigits: decimals,
     });
 
+  const finalText = `${fmt(to)}${unit}`;
+
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mq.matches) {
-      setReduced(true);
+    const el = ref.current;
+    if (!el) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setValue(to);
       return;
     }
-
-    const el = ref.current;
-    if (!el) return;
 
     const run = () => {
       const start = performance.now();
@@ -87,19 +111,15 @@ export default function CountUp({
   }, [to]);
 
   return (
-    <span ref={ref} className="countup">
-      <span className="countup-sizer" aria-hidden="true">
-        {fmt(to)}
-        {unit}
-      </span>
-      <span className="countup-live" aria-hidden="true">
-        {fmt(reduced ? to : value)}
-        {unit}
-      </span>
-      <span className="sr-only">
-        {fmt(to)}
-        {unit}
-      </span>
+    <span
+      ref={ref}
+      className="countup"
+      /* the cell is born at its finished width — no hidden twin required */
+      style={{ minWidth: `${finalText.length}ch` }}
+    >
+      {/* ONE expression, so React emits ONE text node. Two adjacent
+          expressions would be split by a comment marker in the SSR HTML. */}
+      {`${fmt(value)}${unit}`}
     </span>
   );
 }

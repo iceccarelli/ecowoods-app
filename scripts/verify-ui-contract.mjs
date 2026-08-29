@@ -48,7 +48,15 @@
  *   3. Footer classes stay in the footer. `.footer-*` is named for one container
  *      and palettes for one container. Anywhere else is F-155 again.
  *
- *   4. The .gd-spec fail-safe survives. `.gd-spec > *` must keep painting its own
+ *   4. NO COMPONENT PUBLISHES ITS OWN TEXT TWICE. F-205 — `CountUp` reserved
+ *      its width with a hidden duplicate of the number, so the homepage hero's
+ *      single trust stat shipped as `26026+ Years in Toronto` in the server
+ *      HTML. Hidden is not absent. Every crawler, answer engine and reader
+ *      mode reads the flattened text, and that is the audience this whole site
+ *      is built for. Source review could not see it; a screenshot could not
+ *      see it; only the extracted text could.
+ *
+ *   5. The .gd-spec fail-safe survives. `.gd-spec > *` must keep painting its own
  *      ground, so a missing `.gd-spec-row` degrades to "no divider lines" rather
  *      than "unreadable". A component whose failure mode is invisible text will
  *      fail invisibly again.
@@ -232,6 +240,84 @@ for (const file of files) {
     }
     i = end;
   }
+}
+
+/* ── 5. HARD — no component publishes its own text twice ────────────────── */
+/**
+ * F-205. `CountUp` reserved its final width by rendering a SECOND, hidden copy
+ * of the number beside the live one, and a third inside `.sr-only`:
+ *
+ *     <span class="countup-sizer" aria-hidden>26</span>
+ *     <span class="countup-live"  aria-hidden>0</span>
+ *     <span class="sr-only">26</span>
+ *
+ * `visibility: hidden` and `.sr-only` hide text from a person looking at the
+ * screen. Neither removes it from the document. Concatenated by any crawler,
+ * answer engine, reader mode or "summarise this page" assistant, the homepage
+ * hero's single trust stat was published as `26026+ Years in Toronto` in the
+ * server HTML and `262626+` once the roll finished. Verified on ecowoods.ca.
+ *
+ * It was invisible to all forty guards for the same reason it survived every
+ * review: source looks correct, the rendered screen looks correct, and the
+ * defect lives only in the flattened text — which is the one representation
+ * this site is optimised for and nobody was reading.
+ *
+ * THE RULE. Width and height are reserved with units (`ch`, `min-height`,
+ * `aspect-ratio`) or by measurement, never by a hidden duplicate of live
+ * content. A "sizer" that carries text is banned; ALLOW records the one that
+ * is still here, why it is survivable, and what has to happen to it.
+ */
+const SIZER_ALLOW = new Map([
+  [
+    'apps/web/app/components/SwipeDeck.tsx',
+    'F-206, open. The content-deck sizer layer renders every card again with ' +
+      'aria-hidden so the stack is as tall as its tallest card. It is NOT in ' +
+      'the server HTML — SwipeDeck mounts only behind `mounted && isMobile`, ' +
+      'so no crawler ever sees it — but a mobile screen reader and a mobile ' +
+      'reader mode both do. Fix: measure once on mount, keep the height, drop ' +
+      'the layer.',
+  ],
+]);
+
+for (const file of files) {
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  if (SIZER_ALLOW.has(rel)) continue;
+  const src = fs.readFileSync(file, 'utf8');
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (t.startsWith('*') || t.startsWith('//') || t.startsWith('/*')) continue;
+    const cm = lines[i].match(/className=(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\})/);
+    if (!cm) continue;
+    const cls = (cm[1] ?? cm[2] ?? cm[3] ?? '')
+      .split(/[\s${}]+/)
+      .find((tok) => /sizer/i.test(tok));
+    if (!cls) continue;
+    problems.push({
+      rel, line: i + 1, cls,
+      why:
+        'a hidden "sizer" element. If it carries text, that text is published twice —\n' +
+        '      invisible on screen, fully present to every crawler and screen reader. That is F-205,\n' +
+        '      which shipped `26026+ Years in Toronto` as this site\'s only hero stat. Reserve space\n' +
+        '      with `ch` / `min-height` / `aspect-ratio`, or measure it — never with a second copy.',
+      text: t.slice(0, 100),
+    });
+  }
+}
+
+/* The CSS side of the same rule: a `-sizer` class that hides itself is how the
+   duplicate stays invisible long enough to survive review. */
+for (const r of rules) {
+  if (!/-sizer\b/.test(r.sel)) continue;
+  if (/\.pfd-card--sizer/.test(r.sel)) continue; // F-206, see SIZER_ALLOW
+  if (!/visibility\s*:\s*hidden|opacity\s*:\s*0/.test(r.body)) continue;
+  /* the rule splitter keeps whatever preceded the selector, comments included */
+  const sel = r.sel.split('\n').pop().replace(/^.*\*\//, '').trim().replace(/^\./, '');
+  problems.push({
+    rel: 'apps/web/app/globals.css', line: 0, cls: sel,
+    why: 'a hidden sizer rule — the CSS half of F-205. Reserve space with units, not a hidden copy.',
+    text: `.${sel} { … }`,
+  });
 }
 
 /* ── 4. ADVISORY — everything below AA, ranked, never fatal ─────────────── */
