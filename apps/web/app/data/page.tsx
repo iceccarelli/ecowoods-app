@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     'Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. Every value is drawn from a published technical paper and free to reuse under CC BY 4.0.',
   alternates: { canonical: '/data' },
   openGraph: {
-    title: 'Data & Figures — EcoWoods',
+    title: 'Data & Figures — Ecowoods',
     description:
       'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
     type: 'website',
@@ -46,7 +46,7 @@ export default function DataPage() {
           '@context': 'https://schema.org',
           '@type': 'Dataset',
           '@id': `${SITE_URL}/data#dataset`,
-          name: 'EcoWoods hardwood flooring figures',
+          name: 'Ecowoods hardwood flooring figures',
           description:
             'Charted data on hardwood flooring in Toronto and the GTA, each figure drawn from a published technical paper.',
           url: `${SITE_URL}/data`,

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     'Canonical definitions for hardwood flooring terms — acclimation, cupping, crowning, moisture differential, cross-ply core, intercoat screening and more. Every entry sourced to a published technical paper.',
   alternates: { canonical: '/glossary' },
   openGraph: {
-    title: 'Hardwood Flooring Glossary — EcoWoods',
+    title: 'Hardwood Flooring Glossary — Ecowoods',
     description:
       'Canonical, sourced definitions for the terms that decide whether a hardwood floor succeeds or fails.',
     type: 'website',
@@ -37,7 +37,7 @@ export default function GlossaryPage() {
     '@context': 'https://schema.org',
     '@type': 'DefinedTermSet',
     '@id': `${SITE_URL}/glossary#termset`,
-    name: 'EcoWoods Hardwood Flooring Glossary',
+    name: 'Ecowoods Hardwood Flooring Glossary',
     description:
       'Canonical definitions for hardwood flooring terminology, each sourced to a published technical paper.',
     url: `${SITE_URL}/glossary`,

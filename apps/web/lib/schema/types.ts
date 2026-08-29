@@ -100,6 +100,8 @@ export interface Organization extends SchemaBase {
   '@id': string;
   name: string;
   legalName?: string;
+  /** Name forms on verified third-party listings — entity reconciliation. */
+  alternateName?: string[];
   url: string;
   image?: string;
   logo?: string;

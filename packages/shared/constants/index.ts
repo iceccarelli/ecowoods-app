@@ -11,8 +11,20 @@
  */
 export const BUSINESS_NAP = {
   legalName: 'Ecowoods Hardwood Flooring Inc.',
-  name: 'Ecowoods Inc.',
+  /**
+   * PUBLIC NAME — P0-8. "Ecowoods", one word, capital E, nothing appended.
+   * This is what schema.org `name`, GBP, and every heading should carry.
+   * Was 'Ecowoods Inc.', which is neither the legal name nor the brand name —
+   * a third form that split the entity three ways. Directory listings that
+   * still read "Ecowoods Inc." (YellowPages) are reconciled via
+   * `alternateNames` below, emitted as schema.org `alternateName`.
+   */
+  name: 'Ecowoods',
   shortName: 'Ecowoods',
+  /** Forms of the name that appear on third-party listings this business
+   *  controls or has verified. Emitted as `alternateName` so an entity
+   *  resolver can join "Ecowoods Inc." (YellowPages) to this organization. */
+  alternateNames: ['Ecowoods Inc.', 'Ecowoods Hardwood Flooring'],
 
   /** E.164 — for schema.org, tel: hrefs and click-to-call. */
   phoneE164: '+16472445156',
@@ -50,6 +62,33 @@ export const BUSINESS_NAP = {
 export function yearsInBusiness(now: Date = new Date()): number {
   return now.getFullYear() - BUSINESS_NAP.foundedYear;
 }
+
+/* ---------------------- Business hours (SINGLE SOURCE OF TRUTH) --------
+ *
+ * P0-7. The schema, the footer and the utility bar all said
+ * Mon–Sat 8–7 + Sun 10–4, while the header drawer, the exit-intent rail and
+ * the command palette advertised Mon–Sat only. Two truths about when the
+ * phone is answered is one too many. Every surface — JSON-LD
+ * openingHoursSpecification, header, footer, GBP copy — derives from here.
+ */
+export const BUSINESS_HOURS = [
+  {
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const,
+    opens: '08:00',
+    closes: '19:00',
+  },
+  {
+    days: ['Sunday'] as const,
+    opens: '10:00',
+    closes: '16:00',
+  },
+] as const;
+
+/** One human-readable line, for chrome and copy. Derives nothing — states the
+ *  same fact as BUSINESS_HOURS in the format the UI already uses. */
+export const HOURS_LINE = 'Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM';
+/** Compact form for tight chrome (utility bar). */
+export const HOURS_LINE_SHORT = 'Mon–Sat 8–7 · Sun 10–4';
 
 /** One-line address, used in document footers. */
 export const BUSINESS_ADDRESS_LINE =

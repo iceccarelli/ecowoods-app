@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     'Pick species, finish, pattern, and size — and see a live installed-price range built from the same numbers our estimator carries in the truck. Toronto & GTA.',
   alternates: { canonical: 'https://ecowoods.ca/design' },
   openGraph: {
-    title: 'Design Your Floor — EcoWoods',
+    title: 'Design Your Floor — Ecowoods',
     description:
       'Configure your hardwood floor and see a live installed-price range. A range, not a quote — the fixed price is written after we measure your subfloor.',
     type: 'website',

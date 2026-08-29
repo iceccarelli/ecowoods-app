@@ -26,6 +26,7 @@ export const localBusinessSchema = {
       '@id': 'https://ecowoods.ca/#business',
       name: BUSINESS_NAP.name,
       legalName: BUSINESS_NAP.legalName,
+      alternateName: [...BUSINESS_NAP.alternateNames],
       url: 'https://ecowoods.ca',
       // Hardcoded 404s until F-162. See lib/brand-assets.ts.
       image: OG_IMAGE_URL,
@@ -65,20 +66,15 @@ export const localBusinessSchema = {
         { '@type': 'City', name: 'Oakville' },
         { '@type': 'City', name: 'Brampton' },
       ],
-      openingHoursSpecification: [
-        {
-          '@type': 'OpeningHoursSpecification',
-          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-          opens: '08:00',
-          closes: '19:00',
-        },
-        {
-          '@type': 'OpeningHoursSpecification',
-          dayOfWeek: 'Sunday',
-          opens: '10:00',
-          closes: '16:00',
-        },
-      ],
+      // P0-7: one hours constant. Derived from BUSINESS_HOURS so schema,
+      // header, footer and GBP copy cannot disagree about when the phone is
+      // answered.
+      openingHoursSpecification: BUSINESS_HOURS.map((h) => ({
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: [...h.days],
+        opens: h.opens,
+        closes: h.closes,
+      })),
       // ⚠️  aggregateRating REMOVED ON PURPOSE — do not re-add.
       //
       // Google's structured-data policy forbids self-serving review markup: a
@@ -121,7 +117,7 @@ export const localBusinessSchema = {
  * The localBusinessSchema above is unchanged.
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
-import { BUSINESS_NAP, PROFILE_LINKS } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 
 /** WebSite entity — helps Google understand the site + name. */

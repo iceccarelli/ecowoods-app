@@ -135,7 +135,7 @@ export const PAPERS: Paper[] = [
         ordered: [
           'Subfloor moisture content must be measured.',
           'Flooring material moisture content must be measured.',
-          "Both readings must sit within the manufacturer's and EcoWoods' acceptable delta.",
+          "Both readings must sit within the manufacturer's and Ecowoods' acceptable delta.",
           'Testing occurs at the free estimate, and again immediately before installation.',
         ],
       },
@@ -168,7 +168,7 @@ export const PAPERS: Paper[] = [
       },
       {
         id: 'protocol',
-        heading: 'The EcoWoods non-negotiable protocol',
+        heading: 'The Ecowoods non-negotiable protocol',
         body: [
           'These steps prevent physical failure, and they are what make a lifetime workmanship warranty something a company can offer and still sleep at night.',
         ],

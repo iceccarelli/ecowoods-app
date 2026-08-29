@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     'The traded commodity inputs behind an installed hardwood floor in Ontario — forestry, energy and the US dollar — live from the Bank of Canada, with the mechanism for each and why they are volatile. Published so a price change can be evaluated rather than suspected.',
   alternates: { canonical: '/market' },
   openGraph: {
-    title: 'What moves a hardwood quote — EcoWoods',
+    title: 'What moves a hardwood quote — Ecowoods',
     description:
       'Forestry, energy and FX: the three inputs that move the price of a hardwood floor, live from the Bank of Canada.',
     type: 'website',

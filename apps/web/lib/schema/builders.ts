@@ -1,9 +1,9 @@
 /**
  * Schema builders — produce production-grade JSON-LD for all entity types.
- * These functions are the source of truth for what EcoWoods emits to search engines and AI agents.
+ * These functions are the source of truth for what Ecowoods emits to search engines and AI agents.
  */
 
-import { PROFILE_LINKS } from '@ecowoods/shared/constants';
+import { PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
 import type {
   Organization,
   Service,
@@ -34,6 +34,10 @@ export interface OrganizationConfig {
   siteUrl: string;
   name: string;
   legalName: string;
+  /** Name forms on verified third-party listings (e.g. "Ecowoods Inc." on
+   *  YellowPages), emitted as schema.org alternateName so an entity resolver
+   *  can join those listings to this organization. */
+  alternateName?: string[];
   phone: string;
   email: string;
   address: PostalAddress;
@@ -66,6 +70,7 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     // Core identity
     name: config.name,
     legalName: config.legalName,
+    ...(config.alternateName?.length ? { alternateName: config.alternateName } : {}),
     url: baseUrl,
     telephone: config.phone,
     email: config.email,
@@ -99,21 +104,13 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     geo: config.geo,
     areaServed: config.areaServed,
 
-    // Hours (Mon-Sat 8am-7pm, Sun 10am-4pm)
-    openingHoursSpecification: [
-      {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        opens: '08:00',
-        closes: '19:00',
-      },
-      {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: 'Sunday',
-        opens: '10:00',
-        closes: '16:00',
-      },
-    ] as OpeningHoursSpecification[],
+    // P0-7: hours derive from the one BUSINESS_HOURS constant.
+    openingHoursSpecification: BUSINESS_HOURS.map((h) => ({
+      '@type': 'OpeningHoursSpecification' as const,
+      dayOfWeek: [...h.days] as string[],
+      opens: h.opens,
+      closes: h.closes,
+    })) as OpeningHoursSpecification[],
 
     // Services (nested)
     service: config.services.map((svc) =>

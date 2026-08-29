@@ -21,7 +21,7 @@
 
 import { EW_MARK } from '@/lib/brand';
 import { CITIES, SERVICES } from '@/lib/seo-data';
-import { BUSINESS_NAP, REVIEW_PROFILES } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { useIsMobile } from './SwipeDeck';
@@ -252,8 +252,7 @@ export default function SiteFooter() {
             <p style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
               <span style={{ color: 'var(--cream-50)', fontWeight: 600 }}>Hours</span>
               <br />
-              Mon–Sat · 8:00 AM – 7:00 PM<br />
-              Sunday · 10:00 AM – 4:00 PM
+              {HOURS_LINE}
             </p>
           </FooterCol>
         </div>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { openAssistant } from '@/lib/assistant';
 import { useTheme } from './useTheme';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
 import { isTypingTarget } from '@/lib/keyboard';
 import { ASSISTANT } from '@/lib/assistant-identity';
 
@@ -124,7 +124,7 @@ export default function CommandPalette() {
     {
       label: 'Contact & appearance',
       actions: [
-        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
+        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: HOURS_LINE, keywords: 'call phone telephone ring speak human', icon: I.phone,
           run: () => { close(); window.location.href = BUSINESS_NAP.phoneHref; } },
         { id: 'theme', title: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', hint: 'Night showroom', keywords: 'theme dark light mode night appearance', icon: I.sun,
           run: () => { toggle(); close(); } },

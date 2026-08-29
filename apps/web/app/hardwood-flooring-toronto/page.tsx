@@ -168,6 +168,17 @@ export default function HardwoodFlooringTorontoPage() {
             the papers the protocol comes from — all of it free to read and free to use on any
             contractor in the GTA, including us.
           </p>
+          {/* P0-5: the three published bands, printed on the first screen —
+              the same pattern as /hardwood-floor-refinishing-toronto. The
+              estimate form below says "the bands above are real ranges"; these
+              are the bands above. Derived from lib/pricing.ts, never typed. */}
+          <p className="fw-meta">
+            <span>{PRICING.newInstall.label} {band('newInstall')}/sq ft</span>
+            <span aria-hidden="true">·</span>
+            <span>{PRICING.fullSandAndFinish.label} {band('fullSandAndFinish')}/sq ft</span>
+            <span aria-hidden="true">·</span>
+            <span>{PRICING.screenAndRecoat.label} {band('screenAndRecoat')}/sq ft</span>
+          </p>
           <p className="fw-meta">
             <span>Established {BUSINESS_NAP.foundedYear}</span>
             <span aria-hidden="true">·</span>

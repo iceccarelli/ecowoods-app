@@ -10,7 +10,7 @@ import {
   type AppointmentFormData,
 } from '@ecowoods/api-client';
 import { APPOINTMENT_SERVICES, type AppointmentService } from '@ecowoods/shared';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
 
 type Step = 'date' | 'time' | 'details' | 'done';
 
@@ -133,7 +133,7 @@ export function BookingScheduler() {
         <>
           <h3 style={{ marginBottom: '0.25rem' }}>Pick a day</h3>
           <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.25rem' }}>
-            Free in-home estimate · Mon–Sat 8–7, Sun 10–4
+            Free in-home estimate · {HOURS_LINE_SHORT}
           </p>
           {isLoading && <p style={{ color: 'var(--muted)' }}>Loading available dates…</p>}
           {isError && <p style={{ color: 'var(--danger)' }}>Couldn’t load the calendar. Call {BUSINESS_NAP.phoneDisplay} to book.</p>}

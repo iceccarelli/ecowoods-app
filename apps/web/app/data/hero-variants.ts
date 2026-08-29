@@ -35,6 +35,18 @@
  *   v06  "26+ years"           → `${yearsInBusiness()}+ years`
  *   v09  "Since 2000 · 32 Norfield Crescent" → both interpolated
  *
+ *   ALL  "Zero dust." → "HEPA-sealed dust containment." (P0-4)
+ *        The site's own dust-free-sanding copy and guides state, verbatim:
+ *        "Dustless never means zero dust. It means controlled, captured, and
+ *        contained dust." The homepage was the one surface still claiming the
+ *        absolute the inner pages explicitly refuse. The replacement is the
+ *        registered claim (content/claims.ts: HEPA at the machine, containment
+ *        at the room), which the company can stand behind in a contract.
+ *
+ *   v01  headline "Hardwood, Done Once." → "Hardwood Flooring in Toronto,"
+ *        The server-rendered H1 must name the job and the city (P4), not only
+ *        the slogan; the slogan survives in the em line.
+ *
  * ORDER IS LOAD-BEARING. `HERO_VARIANTS[0]` is what the server renders and
  * what every crawler that does not execute JavaScript reads. It is the
  * canonical brand line and must stay first; the other fourteen are a
@@ -61,11 +73,14 @@ export type HeroVariant = {
 export const HERO_VARIANTS: HeroVariant[] = [
   {
     id: 'v01-done-once',
-    eyebrow: 'Hardwood floors · Toronto',
-    headline: { lead: 'Hardwood, Done Once.', em: 'Done Right.' },
+    eyebrow: 'Installation · Refinishing · Toronto & the GTA',
+    /* The server-rendered H1. It must name the job and the city, not only the
+       slogan — "Done Once" alone is a brand line, not an answer to "what is
+       this page". P4: hardwood + Toronto + install/refinish in the H1. */
+    headline: { lead: 'Hardwood Flooring in Toronto,', em: 'Done Once. Done Right.' },
     support:
-      'Fixed price in writing. Zero dust. Salaried master artisans. FSC-certified ' +
-      'materials. Toronto homes transformed with certainty — not hope.',
+      'Fixed price in writing. HEPA-sealed dust containment. Salaried master artisans. ' +
+      'FSC-certified materials. Toronto homes transformed with certainty — not hope.',
   },
   {
     id: 'v02-price-you-pay',
@@ -81,7 +96,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
     headline: { lead: 'Certainty.', em: 'Not hope.' },
     lede: 'Hardwood installed and refinished the way a home deserves.',
     support:
-      'Fixed price in writing. Zero dust. Master artisans on salary. FSC-certified materials.',
+      'Fixed price in writing. HEPA-sealed dust containment. Master artisans on salary. FSC-certified materials.',
   },
   {
     id: 'v04-finished-once',
@@ -105,7 +120,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
     eyebrow: 'Master artisans · Not subcontractors',
     headline: { lead: 'The estimate', em: 'is the contract.' },
     lede: 'Toronto hardwood with a number that does not move.',
-    support: `Zero dust. FSC-certified stock. ${yearsInBusiness()}+ years in this city.`,
+    support: `HEPA-sealed dust containment. FSC-certified stock. ${yearsInBusiness()}+ years in this city.`,
   },
   {
     id: 'v07-stay-finished',
@@ -128,7 +143,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
     eyebrow: `Since ${BUSINESS_NAP.foundedYear} · ${BUSINESS_NAP.address.streetAddress}`,
     headline: { lead: 'Hardwood for people who want', em: 'the answer in writing.' },
     lede: 'Installation and refinishing with one accountable crew.',
-    support: 'Zero dust. Fixed price. FSC-certified materials. Toronto and the GTA.',
+    support: 'HEPA dust containment. Fixed price. FSC-certified materials. Toronto and the GTA.',
   },
   {
     id: 'v10-not-an-ordeal',
@@ -158,21 +173,21 @@ export const HERO_VARIANTS: HeroVariant[] = [
     eyebrow: 'Salaried craftsmen · Not a subcontractor list',
     headline: { lead: 'We do not flip crews', em: 'on your house.' },
     lede: 'The same people who estimate the floor are the people who finish it.',
-    support: 'Zero dust. Written price. Sustainable materials. Toronto, done right.',
+    support: 'HEPA dust containment. Written price. Sustainable materials. Toronto, done right.',
   },
   {
     id: 'v14-get-the-number',
     eyebrow: 'Free in-home estimate · Toronto',
     headline: { lead: 'Get the number.', em: 'Then we work.' },
     lede: 'Hardwood installation and refinishing with the price locked on paper.',
-    support: 'Zero dust. FSC-certified wood. Master artisans. Certainty — not hope.',
+    support: 'HEPA dust containment. FSC-certified wood. Master artisans. Certainty — not hope.',
   },
   {
     id: 'v15-transformed',
     eyebrow: 'Ecowoods · Hardwood flooring Toronto',
     headline: { lead: 'Hardwood, Done Once.', em: 'Done Right.' },
     support:
-      'Fixed price in writing. Zero dust. Salaried master artisans using FSC-certified ' +
+      'Fixed price in writing. HEPA-sealed dust containment. Salaried master artisans using FSC-certified ' +
       'materials. Toronto homes transformed with certainty — not hope.',
   },
 ];

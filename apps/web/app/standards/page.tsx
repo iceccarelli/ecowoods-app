@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     'The external standards and bodies hardwood flooring work in Toronto answers to — ASTM concrete moisture and floor preparation methods, NWFA guidelines — each mapped to the Well-Installed Framework criteria that depend on it, with the date we last verified it at the source.',
   alternates: { canonical: '/standards' },
   openGraph: {
-    title: 'Standards Register — EcoWoods',
+    title: 'Standards Register — Ecowoods',
     description:
       'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
     type: 'website',
@@ -69,7 +69,7 @@ export default function StandardsPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': `${SITE_URL}/standards#collection`,
-          name: 'Standards Register — EcoWoods',
+          name: 'Standards Register — Ecowoods',
           url: `${SITE_URL}/standards`,
           isPartOf: { '@id': `${SITE_URL}/#website` },
           publisher: { '@id': `${SITE_URL}/#organization` },

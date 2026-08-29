@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     'Custom hardwood floor installation, dust-free refinishing, restoration, stairs and inlays in Toronto and the GTA — each with a published price band and the paper behind the method.',
   alternates: { canonical: '/services' },
   openGraph: {
-    title: 'Hardwood flooring services — EcoWoods',
+    title: 'Hardwood flooring services — Ecowoods',
     description:
       'Six services, each with a published price band and the technical paper behind it.',
     type: 'website',
@@ -49,7 +49,7 @@ export default function ServicesPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': `${SITE_URL}/services#collection`,
-          name: 'Hardwood flooring services — EcoWoods',
+          name: 'Hardwood flooring services — Ecowoods',
           description:
             'Hardwood flooring services in Toronto and the GTA, each with its published price band and the technical paper behind it.',
           url: `${SITE_URL}/services`,

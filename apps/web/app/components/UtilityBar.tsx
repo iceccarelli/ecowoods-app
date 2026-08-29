@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
 
 /**
  * UtilityBar — the thin strip above the masthead.
@@ -33,7 +33,7 @@ export function UtilityBar() {
       <div className="ub-inner">
         <span className="ub-item ub-area">Serving Toronto &amp; the GTA</span>
         <span className="ub-sep" aria-hidden="true" />
-        <span className="ub-item ub-hours">Mon–Sat 8–7 · Sun 10–4</span>
+        <span className="ub-item ub-hours">{HOURS_LINE_SHORT}</span>
         <span className="ub-grow" />
         <Link className="ub-item ub-link" href="/service-areas">Service areas</Link>
         <Link className="ub-item ub-link" href="/reviews">Reviews</Link>

@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!paper) return {};
   const url = `${SITE_URL}/papers/${paper.slug}`;
   return {
-    // Title only. This used to be `${title} — ${subtitle} | EcoWoods`, which the
+    // Title only. This used to be `${title} — ${subtitle} | Ecowoods`, which the
     // root template then extended with ' · Ecowoods' — 130+ characters ending in
     // the brand name twice, of which a search result shows roughly sixty. The
     // subtitle is not lost: it is the first thing in the description below and it
@@ -43,7 +43,7 @@ export async function generateMetadata({
     description: paper.abstract,
     alternates: { canonical: url },
     openGraph: {
-      title: `${paper.title} — EcoWoods Technical Paper`,
+      title: `${paper.title} — Ecowoods Technical Paper`,
       description: paper.abstract,
       type: 'article',
       url,
