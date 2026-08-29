@@ -1,0 +1,1373 @@
+diff --git a/apps/web/app/(auth)/login/page.tsx b/apps/web/app/(auth)/login/page.tsx
+index 202224c..90d4c51 100644
+--- a/apps/web/app/(auth)/login/page.tsx
++++ b/apps/web/app/(auth)/login/page.tsx
+@@ -1,9 +1,22 @@
+ import { Suspense } from 'react';
++import type { Metadata } from 'next';
+ import { getEnabledProviders } from '@/lib/auth-providers';
+ import LoginForm from './LoginForm';
+ 
+ export const dynamic = 'force-dynamic';
+ 
++/**
++ * P0-6. This page had no metadata at all, so it served the HOMEPAGE title with
++ * the site-wide `X-Robots-Tag: index, follow` (vercel.json) — while robots.txt
++ * disallows /login. Three surfaces, three answers. A sign-in form is not a
++ * search result: it gets its own title and an explicit noindex, and vercel.json
++ * now sends the matching X-Robots-Tag header for this route.
++ */
++export const metadata: Metadata = {
++  title: 'Client sign in',
++  robots: { index: false, follow: false },
++};
++
+ export default function LoginPage() {
+   const enabledProviders = getEnabledProviders();
+   return (
+diff --git a/apps/web/app/(auth)/register/page.tsx b/apps/web/app/(auth)/register/page.tsx
+index 6d8ea0c..ade0cba 100644
+--- a/apps/web/app/(auth)/register/page.tsx
++++ b/apps/web/app/(auth)/register/page.tsx
+@@ -1,11 +1,18 @@
+ /**
+  * 회원가입 페이지 — 서버 컴포넌트 (wrapper)
+  */
++import type { Metadata } from 'next';
+ import { getEnabledProviders } from '@/lib/auth-providers';
+ import RegisterForm from './RegisterForm';
+ 
+ export const dynamic = 'force-dynamic';
+ 
++/** Same fix as /login (P0-6): own title, explicit noindex. */
++export const metadata: Metadata = {
++  title: 'Create an account',
++  robots: { index: false, follow: false },
++};
++
+ export default function RegisterPage() {
+   const enabledProviders = getEnabledProviders();
+   return <RegisterForm enabledProviders={enabledProviders} />;
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index 6307271..90c90cb 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -440,15 +440,46 @@ export async function GET(request: NextRequest) {
+   }
+ 
+   if (q) {
+-    // Substring match, not a ranked search. An agent asking for "cupping" wants
+-    // every record that mentions it, and a relevance model here would be a
+-    // second, unversioned source of truth about what this corpus contains.
+-    const hit = (v: unknown): boolean => {
+-      if (typeof v === 'string') return v.toLowerCase().includes(q);
+-      if (Array.isArray(v)) return v.some(hit);
+-      if (v && typeof v === 'object') return Object.values(v).some(hit);
++    // Substring match first, not a ranked search. An agent asking for
++    // "cupping" wants every record that mentions it, and a relevance model
++    // here would be a second, unversioned source of truth about what this
++    // corpus contains.
++    //
++    // TOKENISED FALLBACK — P1-4. Whole-phrase substring alone made recall a
++    // function of the corpus's exact wording: `q=FAS` returned the grading
++    // paper while `q=FAS grade` and `q=what is FAS` returned empty lists,
++    // because no sentence in the corpus happens to contain the literal
++    // characters "fas grade". An agent that phrases a question the way a
++    // person does — "what is FAS grade" — got an empty payload from the one
++    // endpoint built to answer it, and an agent that gets an empty payload
++    // once does not come back.
++    //
++    // So: a record hits if it contains the whole phrase, OR if it contains
++    // every meaningful word of the query somewhere (AND across tokens,
++    // anywhere in the record). Stopwords are dropped from the token pass so
++    // "what is FAS" reduces to "fas" — but only when at least one real token
++    // survives, so a query made only of stopwords still returns nothing
++    // rather than everything.
++    const STOPWORDS = new Set([
++      'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
++      'what', 'which', 'who', 'whom', 'whose', 'when', 'where', 'why', 'how',
++      'do', 'does', 'did', 'can', 'could', 'should', 'would', 'will',
++      'in', 'on', 'at', 'to', 'of', 'for', 'with', 'and', 'or', 'my', 'i',
++      'it', 'its', 'this', 'that', 'there', 'have', 'has', 'had',
++    ]);
++    const tokens = q
++      .split(/\s+/)
++      .map((t) => t.trim())
++      .filter((t) => t.length > 0 && !STOPWORDS.has(t));
++
++    const contains = (v: unknown, needle: string): boolean => {
++      if (typeof v === 'string') return v.toLowerCase().includes(needle);
++      if (Array.isArray(v)) return v.some((x) => contains(x, needle));
++      if (v && typeof v === 'object') return Object.values(v).some((x) => contains(x, needle));
+       return false;
+     };
++    const hit = (v: unknown): boolean =>
++      contains(v, q) || (tokens.length > 0 && tokens.every((t) => contains(v, t)));
+     data = Object.fromEntries(
+       Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.filter(hit) : v]),
+     );
+diff --git a/apps/web/app/components/BookingPanel.tsx b/apps/web/app/components/BookingPanel.tsx
+index 244dee5..0105777 100644
+--- a/apps/web/app/components/BookingPanel.tsx
++++ b/apps/web/app/components/BookingPanel.tsx
+@@ -18,6 +18,7 @@
+  * should.
+  */
+ 
++import { HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
+ import { useRef, useState } from 'react';
+ import { BookingScheduler } from './BookingScheduler';
+ import MobileSheet from './MobileSheet';
+@@ -51,7 +52,7 @@ export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
+           Pick a day that <span className="serif-italic">suits you.</span>
+         </h3>
+         <p className="teaser-body">
+-          Free in-home estimate · Mon–Sat 8–7, Sun 10–4. Most weeks have openings within a few
++          Free in-home estimate · {HOURS_LINE_SHORT}. Most weeks have openings within a few
+           days.
+         </p>
+         <button
+diff --git a/apps/web/app/components/BookingScheduler.tsx b/apps/web/app/components/BookingScheduler.tsx
+index ff90b0c..dba43f8 100644
+--- a/apps/web/app/components/BookingScheduler.tsx
++++ b/apps/web/app/components/BookingScheduler.tsx
+@@ -10,7 +10,7 @@ import {
+   type AppointmentFormData,
+ } from '@ecowoods/api-client';
+ import { APPOINTMENT_SERVICES, type AppointmentService } from '@ecowoods/shared';
+-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
+ 
+ type Step = 'date' | 'time' | 'details' | 'done';
+ 
+@@ -133,7 +133,7 @@ export function BookingScheduler() {
+         <>
+           <h3 style={{ marginBottom: '0.25rem' }}>Pick a day</h3>
+           <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.25rem' }}>
+-            Free in-home estimate · Mon–Sat 8–7, Sun 10–4
++            Free in-home estimate · {HOURS_LINE_SHORT}
+           </p>
+           {isLoading && <p style={{ color: 'var(--muted)' }}>Loading available dates…</p>}
+           {isError && <p style={{ color: 'var(--danger)' }}>Couldn’t load the calendar. Call {BUSINESS_NAP.phoneDisplay} to book.</p>}
+diff --git a/apps/web/app/components/CommandPalette.tsx b/apps/web/app/components/CommandPalette.tsx
+index f952e60..6765402 100644
+--- a/apps/web/app/components/CommandPalette.tsx
++++ b/apps/web/app/components/CommandPalette.tsx
+@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import { openAssistant } from '@/lib/assistant';
+ import { useTheme } from './useTheme';
+ import { EcowoodsLeaf } from './EcowoodsLeaf';
+-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
+ import { isTypingTarget } from '@/lib/keyboard';
+ import { ASSISTANT } from '@/lib/assistant-identity';
+ 
+@@ -124,7 +124,7 @@ export default function CommandPalette() {
+     {
+       label: 'Contact & appearance',
+       actions: [
+-        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: 'Mon–Sat · 8 AM – 7 PM', keywords: 'call phone telephone ring speak human', icon: I.phone,
++        { id: 'call', title: `Call ${BUSINESS_NAP.phoneDisplay}`, hint: HOURS_LINE, keywords: 'call phone telephone ring speak human', icon: I.phone,
+           run: () => { close(); window.location.href = BUSINESS_NAP.phoneHref; } },
+         { id: 'theme', title: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', hint: 'Night showroom', keywords: 'theme dark light mode night appearance', icon: I.sun,
+           run: () => { toggle(); close(); } },
+diff --git a/apps/web/app/components/ConversionRail.tsx b/apps/web/app/components/ConversionRail.tsx
+index dd503ba..1361f0f 100644
+--- a/apps/web/app/components/ConversionRail.tsx
++++ b/apps/web/app/components/ConversionRail.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useEffect, useState } from 'react';
+ import { openAssistant } from '@/lib/assistant';
+-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+    CONVERSION RAIL — WhatsApp + exit intent.
+@@ -133,7 +133,7 @@ export default function ConversionRail() {
+             </div>
+ 
+             <p className="exit-foot">
+-              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · Mon–Sat, 8 AM – 7 PM
++              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · {HOURS_LINE}
+             </p>
+           </div>
+         </div>
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index a57b72a..08a1f02 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -3,7 +3,7 @@ import Link from 'next/link';
+ import { MegaMenu, type MegaColumn } from './MegaMenu';
+ 
+ import { useState, useEffect, useRef } from 'react';
+-import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
+ import { useSession, signOut } from 'next-auth/react';
+ import ThemeToggle from './ThemeToggle';
+ import CommandPalette from './CommandPalette';
+@@ -558,7 +558,7 @@ export default function Header() {
+             Request a free in-home estimate
+           </a>
+           <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+-            Mon–Sat · 8:00 AM – 7:00 PM<br />
++            {HOURS_LINE}<br />
+             Showroom: {BUSINESS_ADDRESS_LINE}
+           </p>
+         </div>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 8b66b41..3209969 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -21,7 +21,7 @@
+ 
+ import { EW_MARK } from '@/lib/brand';
+ import { CITIES, SERVICES } from '@/lib/seo-data';
+-import { BUSINESS_NAP, REVIEW_PROFILES } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+ import type { ReactNode } from 'react';
+ import CookiePreferencesButton from './CookiePreferencesButton';
+ import { useIsMobile } from './SwipeDeck';
+@@ -252,8 +252,7 @@ export default function SiteFooter() {
+             <p style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
+               <span style={{ color: 'var(--cream-50)', fontWeight: 600 }}>Hours</span>
+               <br />
+-              Mon–Sat · 8:00 AM – 7:00 PM<br />
+-              Sunday · 10:00 AM – 4:00 PM
++              {HOURS_LINE}
+             </p>
+           </FooterCol>
+         </div>
+diff --git a/apps/web/app/components/UtilityBar.tsx b/apps/web/app/components/UtilityBar.tsx
+index 170a72e..13da235 100644
+--- a/apps/web/app/components/UtilityBar.tsx
++++ b/apps/web/app/components/UtilityBar.tsx
+@@ -1,5 +1,5 @@
+ import Link from 'next/link';
+-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
+ 
+ /**
+  * UtilityBar — the thin strip above the masthead.
+@@ -33,7 +33,7 @@ export function UtilityBar() {
+       <div className="ub-inner">
+         <span className="ub-item ub-area">Serving Toronto &amp; the GTA</span>
+         <span className="ub-sep" aria-hidden="true" />
+-        <span className="ub-item ub-hours">Mon–Sat 8–7 · Sun 10–4</span>
++        <span className="ub-item ub-hours">{HOURS_LINE_SHORT}</span>
+         <span className="ub-grow" />
+         <Link className="ub-item ub-link" href="/service-areas">Service areas</Link>
+         <Link className="ub-item ub-link" href="/reviews">Reviews</Link>
+diff --git a/apps/web/app/data/hero-variants.ts b/apps/web/app/data/hero-variants.ts
+index f250894..e0e5f89 100644
+--- a/apps/web/app/data/hero-variants.ts
++++ b/apps/web/app/data/hero-variants.ts
+@@ -35,6 +35,18 @@
+  *   v06  "26+ years"           → `${yearsInBusiness()}+ years`
+  *   v09  "Since 2000 · 32 Norfield Crescent" → both interpolated
+  *
++ *   ALL  "Zero dust." → "HEPA-sealed dust containment." (P0-4)
++ *        The site's own dust-free-sanding copy and guides state, verbatim:
++ *        "Dustless never means zero dust. It means controlled, captured, and
++ *        contained dust." The homepage was the one surface still claiming the
++ *        absolute the inner pages explicitly refuse. The replacement is the
++ *        registered claim (content/claims.ts: HEPA at the machine, containment
++ *        at the room), which the company can stand behind in a contract.
++ *
++ *   v01  headline "Hardwood, Done Once." → "Hardwood Flooring in Toronto,"
++ *        The server-rendered H1 must name the job and the city (P4), not only
++ *        the slogan; the slogan survives in the em line.
++ *
+  * ORDER IS LOAD-BEARING. `HERO_VARIANTS[0]` is what the server renders and
+  * what every crawler that does not execute JavaScript reads. It is the
+  * canonical brand line and must stay first; the other fourteen are a
+@@ -61,11 +73,14 @@ export type HeroVariant = {
+ export const HERO_VARIANTS: HeroVariant[] = [
+   {
+     id: 'v01-done-once',
+-    eyebrow: 'Hardwood floors · Toronto',
+-    headline: { lead: 'Hardwood, Done Once.', em: 'Done Right.' },
++    eyebrow: 'Installation · Refinishing · Toronto & the GTA',
++    /* The server-rendered H1. It must name the job and the city, not only the
++       slogan — "Done Once" alone is a brand line, not an answer to "what is
++       this page". P4: hardwood + Toronto + install/refinish in the H1. */
++    headline: { lead: 'Hardwood Flooring in Toronto,', em: 'Done Once. Done Right.' },
+     support:
+-      'Fixed price in writing. Zero dust. Salaried master artisans. FSC-certified ' +
+-      'materials. Toronto homes transformed with certainty — not hope.',
++      'Fixed price in writing. HEPA-sealed dust containment. Salaried master artisans. ' +
++      'FSC-certified materials. Toronto homes transformed with certainty — not hope.',
+   },
+   {
+     id: 'v02-price-you-pay',
+@@ -81,7 +96,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
+     headline: { lead: 'Certainty.', em: 'Not hope.' },
+     lede: 'Hardwood installed and refinished the way a home deserves.',
+     support:
+-      'Fixed price in writing. Zero dust. Master artisans on salary. FSC-certified materials.',
++      'Fixed price in writing. HEPA-sealed dust containment. Master artisans on salary. FSC-certified materials.',
+   },
+   {
+     id: 'v04-finished-once',
+@@ -105,7 +120,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
+     eyebrow: 'Master artisans · Not subcontractors',
+     headline: { lead: 'The estimate', em: 'is the contract.' },
+     lede: 'Toronto hardwood with a number that does not move.',
+-    support: `Zero dust. FSC-certified stock. ${yearsInBusiness()}+ years in this city.`,
++    support: `HEPA-sealed dust containment. FSC-certified stock. ${yearsInBusiness()}+ years in this city.`,
+   },
+   {
+     id: 'v07-stay-finished',
+@@ -128,7 +143,7 @@ export const HERO_VARIANTS: HeroVariant[] = [
+     eyebrow: `Since ${BUSINESS_NAP.foundedYear} · ${BUSINESS_NAP.address.streetAddress}`,
+     headline: { lead: 'Hardwood for people who want', em: 'the answer in writing.' },
+     lede: 'Installation and refinishing with one accountable crew.',
+-    support: 'Zero dust. Fixed price. FSC-certified materials. Toronto and the GTA.',
++    support: 'HEPA dust containment. Fixed price. FSC-certified materials. Toronto and the GTA.',
+   },
+   {
+     id: 'v10-not-an-ordeal',
+@@ -158,21 +173,21 @@ export const HERO_VARIANTS: HeroVariant[] = [
+     eyebrow: 'Salaried craftsmen · Not a subcontractor list',
+     headline: { lead: 'We do not flip crews', em: 'on your house.' },
+     lede: 'The same people who estimate the floor are the people who finish it.',
+-    support: 'Zero dust. Written price. Sustainable materials. Toronto, done right.',
++    support: 'HEPA dust containment. Written price. Sustainable materials. Toronto, done right.',
+   },
+   {
+     id: 'v14-get-the-number',
+     eyebrow: 'Free in-home estimate · Toronto',
+     headline: { lead: 'Get the number.', em: 'Then we work.' },
+     lede: 'Hardwood installation and refinishing with the price locked on paper.',
+-    support: 'Zero dust. FSC-certified wood. Master artisans. Certainty — not hope.',
++    support: 'HEPA dust containment. FSC-certified wood. Master artisans. Certainty — not hope.',
+   },
+   {
+     id: 'v15-transformed',
+     eyebrow: 'Ecowoods · Hardwood flooring Toronto',
+     headline: { lead: 'Hardwood, Done Once.', em: 'Done Right.' },
+     support:
+-      'Fixed price in writing. Zero dust. Salaried master artisans using FSC-certified ' +
++      'Fixed price in writing. HEPA-sealed dust containment. Salaried master artisans using FSC-certified ' +
+       'materials. Toronto homes transformed with certainty — not hope.',
+   },
+ ];
+diff --git a/apps/web/app/data/page.tsx b/apps/web/app/data/page.tsx
+index ea516ab..5bb246a 100644
+--- a/apps/web/app/data/page.tsx
++++ b/apps/web/app/data/page.tsx
+@@ -27,7 +27,7 @@ export const metadata: Metadata = {
+     'Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. Every value is drawn from a published technical paper and free to reuse under CC BY 4.0.',
+   alternates: { canonical: '/data' },
+   openGraph: {
+-    title: 'Data & Figures — EcoWoods',
++    title: 'Data & Figures — Ecowoods',
+     description:
+       'Numbered, captioned, citable figures on Toronto hardwood flooring. Free to reuse with attribution.',
+     type: 'website',
+@@ -46,7 +46,7 @@ export default function DataPage() {
+           '@context': 'https://schema.org',
+           '@type': 'Dataset',
+           '@id': `${SITE_URL}/data#dataset`,
+-          name: 'EcoWoods hardwood flooring figures',
++          name: 'Ecowoods hardwood flooring figures',
+           description:
+             'Charted data on hardwood flooring in Toronto and the GTA, each figure drawn from a published technical paper.',
+           url: `${SITE_URL}/data`,
+diff --git a/apps/web/app/design/page.tsx b/apps/web/app/design/page.tsx
+index 63423dd..57ae77d 100644
+--- a/apps/web/app/design/page.tsx
++++ b/apps/web/app/design/page.tsx
+@@ -8,7 +8,7 @@ export const metadata: Metadata = {
+     'Pick species, finish, pattern, and size — and see a live installed-price range built from the same numbers our estimator carries in the truck. Toronto & GTA.',
+   alternates: { canonical: 'https://ecowoods.ca/design' },
+   openGraph: {
+-    title: 'Design Your Floor — EcoWoods',
++    title: 'Design Your Floor — Ecowoods',
+     description:
+       'Configure your hardwood floor and see a live installed-price range. A range, not a quote — the fixed price is written after we measure your subfloor.',
+     type: 'website',
+diff --git a/apps/web/app/glossary/page.tsx b/apps/web/app/glossary/page.tsx
+index a52c7aa..4a8b502 100644
+--- a/apps/web/app/glossary/page.tsx
++++ b/apps/web/app/glossary/page.tsx
+@@ -20,7 +20,7 @@ export const metadata: Metadata = {
+     'Canonical definitions for hardwood flooring terms — acclimation, cupping, crowning, moisture differential, cross-ply core, intercoat screening and more. Every entry sourced to a published technical paper.',
+   alternates: { canonical: '/glossary' },
+   openGraph: {
+-    title: 'Hardwood Flooring Glossary — EcoWoods',
++    title: 'Hardwood Flooring Glossary — Ecowoods',
+     description:
+       'Canonical, sourced definitions for the terms that decide whether a hardwood floor succeeds or fails.',
+     type: 'website',
+@@ -37,7 +37,7 @@ export default function GlossaryPage() {
+     '@context': 'https://schema.org',
+     '@type': 'DefinedTermSet',
+     '@id': `${SITE_URL}/glossary#termset`,
+-    name: 'EcoWoods Hardwood Flooring Glossary',
++    name: 'Ecowoods Hardwood Flooring Glossary',
+     description:
+       'Canonical definitions for hardwood flooring terminology, each sourced to a published technical paper.',
+     url: `${SITE_URL}/glossary`,
+diff --git a/apps/web/app/guides/page.tsx b/apps/web/app/guides/page.tsx
+index 97d18fc..ec92eb8 100644
+--- a/apps/web/app/guides/page.tsx
++++ b/apps/web/app/guides/page.tsx
+@@ -12,7 +12,7 @@ export const metadata: Metadata = {
+     'Structured answers to the decisions a Toronto homeowner actually faces — solid versus engineered, nail-down versus glue-down versus floating, how to evaluate a quote — plus complete reference specifications for the common GTA scenarios.',
+   alternates: { canonical: '/guides' },
+   openGraph: {
+-    title: 'Decision Guides & Reference Installations — EcoWoods',
++    title: 'Decision Guides & Reference Installations — Ecowoods',
+     description:
+       'The decision, the criteria that settle it, and the complete specification for the common Toronto scenarios.',
+     type: 'website',
+@@ -43,7 +43,7 @@ export default function GuidesPage() {
+     <div className="tlx-page">
+       <SchemaScript
+         schema={buildWebPageSchema({
+-          title: 'Decision Guides & Reference Installations — EcoWoods',
++          title: 'Decision Guides & Reference Installations — Ecowoods',
+           description:
+             'Structured decision guides and complete reference specifications for hardwood flooring in Toronto and the GTA.',
+           url: `${SITE_URL}/guides`,
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index a0551a1..1830071 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -168,6 +168,17 @@ export default function HardwoodFlooringTorontoPage() {
+             the papers the protocol comes from — all of it free to read and free to use on any
+             contractor in the GTA, including us.
+           </p>
++          {/* P0-5: the three published bands, printed on the first screen —
++              the same pattern as /hardwood-floor-refinishing-toronto. The
++              estimate form below says "the bands above are real ranges"; these
++              are the bands above. Derived from lib/pricing.ts, never typed. */}
++          <p className="fw-meta">
++            <span>{PRICING.newInstall.label} {band('newInstall')}/sq ft</span>
++            <span aria-hidden="true">·</span>
++            <span>{PRICING.fullSandAndFinish.label} {band('fullSandAndFinish')}/sq ft</span>
++            <span aria-hidden="true">·</span>
++            <span>{PRICING.screenAndRecoat.label} {band('screenAndRecoat')}/sq ft</span>
++          </p>
+           <p className="fw-meta">
+             <span>Established {BUSINESS_NAP.foundedYear}</span>
+             <span aria-hidden="true">·</span>
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 48a1edd..2fdafc6 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useEffect, useRef, useState, type ReactNode } from 'react';
+ import { EstimateForm } from './components/EstimateForm';
+-import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+ import dynamic from 'next/dynamic';
+ import Link from 'next/link';
+ import { useForm } from 'react-hook-form';
+@@ -767,7 +767,7 @@ const onSubmit = (data: LeadFormData) => {
+                 <span className="quote-contact-text">
+                   <span className="quote-contact-label">Prefer to talk?</span>
+                   <span className="quote-contact-num">{BUSINESS_NAP.phoneDisplay}</span>
+-                  <span className="quote-contact-when">Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM</span>
++                  <span className="quote-contact-when">{HOURS_LINE}</span>
+                 </span>
+               </a>
+ 
+diff --git a/apps/web/app/library/page.tsx b/apps/web/app/library/page.tsx
+index 69d34c8..5ebac88 100644
+--- a/apps/web/app/library/page.tsx
++++ b/apps/web/app/library/page.tsx
+@@ -39,7 +39,7 @@ export const metadata: Metadata = {
+     'Every diagram and photograph on this site in one index: 28 technical cross-sections explaining moisture, substrate, movement and the refinishing sequence, plus the floor collection and the machines that produce it.',
+   alternates: { canonical: '/library' },
+   openGraph: {
+-    title: 'Visual Library — EcoWoods',
++    title: 'Visual Library — Ecowoods',
+     description:
+       'Technical cross-sections, the floor collection, and the machines — every image indexed and linked to what explains it.',
+     type: 'website',
+@@ -72,7 +72,7 @@ export default function LibraryPage() {
+           '@context': 'https://schema.org',
+           '@type': 'CollectionPage',
+           '@id': `${SITE_URL}/library#collection`,
+-          name: 'Visual Library — EcoWoods',
++          name: 'Visual Library — Ecowoods',
+           description: 'Every technical diagram and photograph on this site, indexed.',
+           url: `${SITE_URL}/library`,
+           isPartOf: { '@id': `${SITE_URL}/#website` },
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 8f53aaf..d125d38 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -1,6 +1,7 @@
+ import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, FAQ_ITEMS } from '@/lib/seo-data';
++import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
+ import { getArticles } from '@/lib/content/loader';
+-import { getPapers } from '@/lib/papers';
++import { pdfIsPublished, getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+ import { getFigures } from '@/lib/figures';
+@@ -40,9 +41,16 @@ export async function GET() {
+     `> Hardwood flooring in ${BUSINESS.region}. Installation, refinishing, dust-free sanding, restoration and custom inlays. Fixed written estimates, manufacturer warranties passed through in writing, free in-home consultations.`,
+   );
+   lines.push('');
++  /* Identity, complete (P1-2). An entity resolver reads this block first;
++     legal name, address and founding year were only in /ai.txt, which is one
++     fetch further than many agents go. */
++  lines.push(`- Legal name: ${BUSINESS_NAP.legalName}`);
++  lines.push(`- Public name: ${BUSINESS_NAP.shortName}`);
+   lines.push(`- Website: ${SITE_URL}`);
+   lines.push(`- Phone: ${BUSINESS.phoneDisplay}`);
+   lines.push(`- Email: ${BUSINESS.email}`);
++  lines.push(`- Address: ${BUSINESS_ADDRESS_LINE}`);
++  lines.push(`- Founded: ${BUSINESS_NAP.foundedYear}`);
+   lines.push(`- Service area: ${BUSINESS.region}`);
+   lines.push(`- Full citation guide: ${SITE_URL}/ai.txt`);
+   lines.push('');
+@@ -161,6 +169,16 @@ export async function GET() {
+   lines.push(`- "hardwood flooring cost Toronto", "cost per square foot", "cost to sand and refinish hardwood" → ${SITE_URL}/guides/hardwood-flooring-cost-toronto`);
+   lines.push(`- the installation standard, to judge ANY contractor → ${SITE_URL}/framework`);
+   lines.push('');
++  /* Three questions this site answers better than anyone (P1-2 §6). Each is a
++     question with a real, sourced answer already published here — the shape of
++     query an answer engine settles by quoting a document rather than by
++     listing businesses. Named explicitly so no agent has to infer the routing
++     from the lists above. */
++  lines.push('## Three questions this site answers better than anyone');
++  lines.push(`- "Does white ash flooring have a supply problem?" → ${SITE_URL}/guides/white-ash-flooring-toronto (emerald ash borer, Ontario growing stock vs. harvest, sourced)`);
++  lines.push(`- "What is FAS grade in hardwood?" → ${SITE_URL}/papers/hardwood-grading-standards-nhla-nwfa and ${SITE_URL}/glossary/nhla-grade (NHLA clear-face yield in twelfths, sourced)`);
++  lines.push(`- "What moisture content should hardwood arrive at?" → ${SITE_URL}/papers/hardwood-grading-standards-nhla-nwfa and ${SITE_URL}/glossary/moisture-content (NWFA 6% to 9%, with the 5% allowance, sourced)`);
++  lines.push('');
+   lines.push('Each of those pages states its figures with the source and the date they were read,');
+   lines.push('and every price on this site is per square foot, published, and fixed in writing');
+   lines.push('before any deposit. There is no aggregateRating anywhere in this site\'s markup —');
+@@ -239,7 +257,7 @@ export async function GET() {
+   lines.push(`- Structured JSON of the same material: ${SITE_URL}/api/knowledge`);
+   lines.push('');
+ 
+-  lines.push(`## The EcoWoods Well-Installed Framework v${FRAMEWORK_VERSION}`);
++  lines.push(`## The Ecowoods Well-Installed Framework v${FRAMEWORK_VERSION}`);
+   lines.push(
+     `A published, versioned specification for judging any hardwood flooring installation: ${PILLARS.length} pillars, ${criterionCount()} binary criteria, each one sourced to a technical paper on this site. Free to cite (CC BY). Cite as "Well-Installed Framework v${FRAMEWORK_VERSION}, criterion N.N" — criterion ids are permanent and are never renumbered in place.`,
+   );
+@@ -333,11 +351,17 @@ export async function GET() {
+   if (papers.length) {
+     lines.push('## Technical papers');
+     lines.push(
+-      'Each paper is published in full as an HTML page and also as a PDF. Cite the HTML page.'
++      'Each paper is published in full as an HTML page, and as clean Markdown at the same URL with `.md` appended. Cite the HTML page.'
+     );
++    /* PDF lines only when the PDF file actually exists — the same
++       pdfIsPublished() check /api/knowledge and the paper pages use (F-162).
++       This file was still advertising a versioned PDF URL for every paper
++       while public/papers/ was empty: five promised downloads, five 404s,
++       handed to exactly the agents this file exists to win over. */
+     for (const p of papers) {
+       lines.push(`- [${p.title} — ${p.subtitle}](${SITE_URL}/papers/${p.slug}): ${p.abstract}`);
+-      lines.push(`  PDF: ${SITE_URL}/papers/${p.pdf}`);
++      lines.push(`  Markdown: ${SITE_URL}/papers/${p.slug}.md`);
++      if (pdfIsPublished(p)) lines.push(`  PDF: ${SITE_URL}/papers/${p.pdf}`);
+     }
+     lines.push('');
+   }
+diff --git a/apps/web/app/market/page.tsx b/apps/web/app/market/page.tsx
+index b9ffeaa..2f0aad8 100644
+--- a/apps/web/app/market/page.tsx
++++ b/apps/web/app/market/page.tsx
+@@ -26,7 +26,7 @@ export const metadata: Metadata = {
+     'The traded commodity inputs behind an installed hardwood floor in Ontario — forestry, energy and the US dollar — live from the Bank of Canada, with the mechanism for each and why they are volatile. Published so a price change can be evaluated rather than suspected.',
+   alternates: { canonical: '/market' },
+   openGraph: {
+-    title: 'What moves a hardwood quote — EcoWoods',
++    title: 'What moves a hardwood quote — Ecowoods',
+     description:
+       'Forestry, energy and FX: the three inputs that move the price of a hardwood floor, live from the Bank of Canada.',
+     type: 'website',
+diff --git a/apps/web/app/papers/[slug]/page.tsx b/apps/web/app/papers/[slug]/page.tsx
+index 633940e..d13d119 100644
+--- a/apps/web/app/papers/[slug]/page.tsx
++++ b/apps/web/app/papers/[slug]/page.tsx
+@@ -34,7 +34,7 @@ export async function generateMetadata({
+   if (!paper) return {};
+   const url = `${SITE_URL}/papers/${paper.slug}`;
+   return {
+-    // Title only. This used to be `${title} — ${subtitle} | EcoWoods`, which the
++    // Title only. This used to be `${title} — ${subtitle} | Ecowoods`, which the
+     // root template then extended with ' · Ecowoods' — 130+ characters ending in
+     // the brand name twice, of which a search result shows roughly sixty. The
+     // subtitle is not lost: it is the first thing in the description below and it
+@@ -43,7 +43,7 @@ export async function generateMetadata({
+     description: paper.abstract,
+     alternates: { canonical: url },
+     openGraph: {
+-      title: `${paper.title} — EcoWoods Technical Paper`,
++      title: `${paper.title} — Ecowoods Technical Paper`,
+       description: paper.abstract,
+       type: 'article',
+       url,
+diff --git a/apps/web/app/papers/page.tsx b/apps/web/app/papers/page.tsx
+index 38e7e40..0ba9805 100644
+--- a/apps/web/app/papers/page.tsx
++++ b/apps/web/app/papers/page.tsx
+@@ -12,7 +12,7 @@ export const metadata: Metadata = {
+     'Downloadable engineering papers on hardwood flooring in Toronto and the GTA: moisture protocol, climate behaviour, species selection, installed cost, and how to evaluate an installer.',
+   alternates: { canonical: `${SITE_URL}/papers` },
+   openGraph: {
+-    title: 'Technical Papers — EcoWoods',
++    title: 'Technical Papers — Ecowoods',
+     description:
+       'Engineering papers on hardwood flooring in Toronto: moisture protocol, species selection, installed cost, and installer evaluation.',
+     type: 'website',
+@@ -41,7 +41,7 @@ export default function PapersIndexPage() {
+     '@context': 'https://schema.org',
+     '@type': 'CollectionPage',
+     '@id': `${SITE_URL}/papers#collection`,
+-    name: 'EcoWoods Technical Papers',
++    name: 'Ecowoods Technical Papers',
+     description: metadata.description,
+     url: `${SITE_URL}/papers`,
+     inLanguage: 'en-CA',
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index ab87e82..e76082e 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -43,7 +43,7 @@ export const metadata: Metadata = {
+     'Everything Ecowoods publishes on hardwood flooring, organised by what you are trying to do: decision guides, the Well-Installed Framework and its self-assessment, technical papers, a 32-term glossary, engineering case studies, and a public JSON API.',
+   alternates: { canonical: '/resources' },
+   openGraph: {
+-    title: 'Resources — EcoWoods',
++    title: 'Resources — Ecowoods',
+     description:
+       'Decision guides, a published framework, technical papers, a glossary and a public data API for hardwood flooring in Toronto and the GTA.',
+     type: 'website',
+@@ -63,7 +63,7 @@ export default async function ResourcesPage() {
+     <div className="tlx-page">
+       <SchemaScript
+         schema={buildWebPageSchema({
+-          title: 'Resources — EcoWoods',
++          title: 'Resources — Ecowoods',
+           description: 'Every published hardwood flooring resource, organised by intent.',
+           url: `${SITE_URL}/resources`,
+           items: [
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index 41a5756..b15e2d7 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -49,7 +49,7 @@ export async function generateMetadata({
+     description: `${svc?.blurb ?? page.standfirst}${band ? ` Published price band: ${band}.` : ''}`,
+     alternates: { canonical: `/services/${page.slug}` },
+     openGraph: {
+-      title: `${svc?.name ?? page.h1} — EcoWoods`,
++      title: `${svc?.name ?? page.h1} — Ecowoods`,
+       description: svc?.blurb ?? page.standfirst,
+       type: 'website',
+       url,
+diff --git a/apps/web/app/services/page.tsx b/apps/web/app/services/page.tsx
+index 5a6bdf9..9a123e5 100644
+--- a/apps/web/app/services/page.tsx
++++ b/apps/web/app/services/page.tsx
+@@ -13,7 +13,7 @@ export const metadata: Metadata = {
+     'Custom hardwood floor installation, dust-free refinishing, restoration, stairs and inlays in Toronto and the GTA — each with a published price band and the paper behind the method.',
+   alternates: { canonical: '/services' },
+   openGraph: {
+-    title: 'Hardwood flooring services — EcoWoods',
++    title: 'Hardwood flooring services — Ecowoods',
+     description:
+       'Six services, each with a published price band and the technical paper behind it.',
+     type: 'website',
+@@ -49,7 +49,7 @@ export default function ServicesPage() {
+           '@context': 'https://schema.org',
+           '@type': 'CollectionPage',
+           '@id': `${SITE_URL}/services#collection`,
+-          name: 'Hardwood flooring services — EcoWoods',
++          name: 'Hardwood flooring services — Ecowoods',
+           description:
+             'Hardwood flooring services in Toronto and the GTA, each with its published price band and the technical paper behind it.',
+           url: `${SITE_URL}/services`,
+diff --git a/apps/web/app/standards/page.tsx b/apps/web/app/standards/page.tsx
+index 8dadc13..2452224 100644
+--- a/apps/web/app/standards/page.tsx
++++ b/apps/web/app/standards/page.tsx
+@@ -42,7 +42,7 @@ export const metadata: Metadata = {
+     'The external standards and bodies hardwood flooring work in Toronto answers to — ASTM concrete moisture and floor preparation methods, NWFA guidelines — each mapped to the Well-Installed Framework criteria that depend on it, with the date we last verified it at the source.',
+   alternates: { canonical: '/standards' },
+   openGraph: {
+-    title: 'Standards Register — EcoWoods',
++    title: 'Standards Register — Ecowoods',
+     description:
+       'Which bodies govern hardwood flooring, what each document covers, and when we last checked.',
+     type: 'website',
+@@ -69,7 +69,7 @@ export default function StandardsPage() {
+           '@context': 'https://schema.org',
+           '@type': 'CollectionPage',
+           '@id': `${SITE_URL}/standards#collection`,
+-          name: 'Standards Register — EcoWoods',
++          name: 'Standards Register — Ecowoods',
+           url: `${SITE_URL}/standards`,
+           isPartOf: { '@id': `${SITE_URL}/#website` },
+           publisher: { '@id': `${SITE_URL}/#organization` },
+diff --git a/apps/web/app/technical-library/page.tsx b/apps/web/app/technical-library/page.tsx
+index 3055ca1..72afca8 100644
+--- a/apps/web/app/technical-library/page.tsx
++++ b/apps/web/app/technical-library/page.tsx
+@@ -13,7 +13,7 @@ export const metadata: Metadata = {
+   description:
+     'Engineering reference for hardwood flooring installation, finishing, and maintenance in Toronto and the GTA: moisture protocols, species science, and finish chemistry.',
+   openGraph: {
+-    title: 'Technical Library — EcoWoods',
++    title: 'Technical Library — Ecowoods',
+     description:
+       'Deep-dive technical content on hardwood flooring installation, moisture management, species selection, and finishing chemistry.',
+     type: 'website',
+@@ -44,7 +44,7 @@ export default async function TechnicalLibraryPage() {
+   const caseStudies = await getCaseStudies();
+ 
+   const collectionSchema = buildWebPageSchema({
+-    title: 'Technical Library — EcoWoods',
++    title: 'Technical Library — Ecowoods',
+     description:
+       'Complete technical reference for hardwood flooring engineering, installation, and maintenance.',
+     url: 'https://ecowoods.ca/technical-library',
+diff --git a/apps/web/app/whats-new/page.tsx b/apps/web/app/whats-new/page.tsx
+index 03d9c82..2aba7a4 100644
+--- a/apps/web/app/whats-new/page.tsx
++++ b/apps/web/app/whats-new/page.tsx
+@@ -28,7 +28,7 @@ export const metadata: Metadata = {
+     'Everything newly published by Ecowoods on hardwood flooring — technical papers, decision guides, figures, the Well-Installed Framework and the public data API — dated, newest first.',
+   alternates: { canonical: '/whats-new' },
+   openGraph: {
+-    title: "What's New — EcoWoods",
++    title: "What's New — Ecowoods",
+     description: 'Newly published papers, guides, figures and tools. Dated, newest first.',
+     type: 'website',
+     url: `${SITE_URL}/whats-new`,
+@@ -48,7 +48,7 @@ export default function WhatsNewPage() {
+           '@context': 'https://schema.org',
+           '@type': 'CollectionPage',
+           '@id': `${SITE_URL}/whats-new#collection`,
+-          name: "What's New — EcoWoods",
++          name: "What's New — Ecowoods",
+           url: `${SITE_URL}/whats-new`,
+           isPartOf: { '@id': `${SITE_URL}/#website` },
+           publisher: { '@id': `${SITE_URL}/#organization` },
+diff --git a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+index a9e1dcd..4006f36 100644
+--- a/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
++++ b/apps/web/content/articles/dust-free-sanding-hepa-extraction-explained.mdx
+@@ -75,7 +75,7 @@ HEPA = High-Efficiency Particulate Air filter.
+   2. **Impaction** (particles hit fiber dead-on)
+   3. **Diffusion** (smallest particles bounce randomly, hit fibers by chance)
+ 
+-### EcoWoods HEPA System Specification
++### Ecowoods HEPA System Specification
+ 
+ **Equipment:**
+ - **Sander:** 36" drum sander with sealed collection hood
+@@ -107,7 +107,7 @@ Cleaned air → vented outside (0.003% dust remains)
+ - HEPA alone: 99.97% at rated CFM
+ - With pre-filter: 99.98%+ (pre-filter removes coarse, extends HEPA life)
+ 
+-**Actual field efficiency (EcoWoods measurement):**
++**Actual field efficiency (Ecowoods measurement):**
+ - Start of filter life: 99.98%
+ - Mid-life (50% saturation): 99.97%
+ - End of filter life (80% saturation): 99.95%
+@@ -243,7 +243,7 @@ So a tool generating 200 CFM at sander hood needs **at least 4-inch diameter duc
+ 3. With extraction running, dust should be barely visible within 5 minutes
+ 4. Without extraction, room becomes opaque within 20 minutes
+ 
+-## Real-World Performance: EcoWoods Case Study
++## Real-World Performance: Ecowoods Case Study
+ 
+ ### Project: Downtown Toronto Condo, 2,400 sq ft
+ 
+diff --git a/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx b/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
+index 0478aa0..029f80b 100644
+--- a/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
++++ b/apps/web/content/articles/species-comparison-matrix-toronto-renovations.mdx
+@@ -410,4 +410,4 @@ For real-world species selection in action, see [Distillery District Victorian C
+ 
+ Each species is not "better." Each species is **fit for purpose**. Match species to project constraints, customer expectations, and seasonal timing. When you do, callbacks disappear and reputations build.
+ 
+-**EcoWoods approach:** We interview the customer, assess moisture conditions, understand timeline, and recommend species accordingly. Premium customers get white oak (with full tannin protocols). Cost-conscious customers get ash or red oak. Everyone gets exactly what their project needs—and everyone is happy.
++**Ecowoods approach:** We interview the customer, assess moisture conditions, understand timeline, and recommend species accordingly. Premium customers get white oak (with full tannin protocols). Cost-conscious customers get ash or red oak. Everyone gets exactly what their project needs—and everyone is happy.
+diff --git a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+index e74b876..64bfaf4 100644
+--- a/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
++++ b/apps/web/content/articles/subfloor-moisture-testing-protocol.mdx
+@@ -28,7 +28,7 @@ featured: true
+ 
+ Moisture is the primary cause of hardwood flooring failure: cupping, crowning, delamination, and finish separation. A single missed baseline moisture reading can mean the difference between a floor that lasts 50 years and one that fails within 24 months.
+ 
+-This guide covers the engineering methodology EcoWoods uses on every Toronto-area installation.
++This guide covers the engineering methodology Ecowoods uses on every Toronto-area installation.
+ 
+ ## Why Moisture Matters in Toronto
+ 
+diff --git a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+index 1bdd06e..c170342 100644
+--- a/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
++++ b/apps/web/content/case-studies/distillery-district-victorian-condo.mdx
+@@ -277,7 +277,7 @@ Our vapor barrier reduced this to safe levels: final wood MC stayed at 8.8% and
+ 
+ 1. **Never skip the epoxy sealer on unsealed concrete.** Polyethylene adhesion fails on porous, alkaline concrete.
+ 2. **White oak in winter is EASIER** (lower RH → faster acclimation, less tannin risk).
+-3. **Dust-free sanding is a market differentiator.** Customers notice air quality and are willing to pay for zero dust.
++3. **Dust-free sanding is a market differentiator.** Customers notice air quality and are willing to pay for HEPA extraction at the machine and containment at the room.
+ 4. **Timeline pressure is when mistakes happen.** We built in 72 hours for epoxy cure even though customer wanted it faster. This was non-negotiable.
+ 
+ ## Customer Feedback
+@@ -290,7 +290,7 @@ Our vapor barrier reduced this to safe levels: final wood MC stayed at 8.8% and
+ 
+ ## Engineering Summary
+ 
+-This project demonstrates **EcoWoods' core differentiators:**
++This project demonstrates **Ecowoods' core differentiators:**
+ - Rigorous moisture assessment (calcium chloride + wood meter, not guessing)
+ - Chemistry-first finish selection (tannin-blocking sealer + formulated poly)
+ - Precision climate control (acclimation, humidity during cure)
+diff --git a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+index 4263edb..8747f20 100644
+--- a/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
++++ b/apps/web/content/case-studies/midtown-townhouse-three-level-transition.mdx
+@@ -458,7 +458,7 @@ Any squeaking, deflection, or finish peeling is immediately visible and catastro
+ 
+ Multi-level installations with custom elements are rare because they're complex. Most contractors specialize in single-level (easier, faster, lower risk).
+ 
+-This project demonstrates EcoWoods' capability to handle architectural complexity:
++This project demonstrates Ecowoods' capability to handle architectural complexity:
+ 
+ 1. **Substrate Engineering:** Three different substrates, three different strategies
+ 2. **Custom Design:** Staircase engineering that achieves museum quality
+diff --git a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+index 641026b..d464f53 100644
+--- a/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
++++ b/apps/web/content/case-studies/yorkville-loft-basement-conversion-moisture-mitigation.mdx
+@@ -377,7 +377,7 @@ The difference:
+ 
+ The cost difference is 15–20% of the project. The risk reduction is 100%.
+ 
+-This project proves that EcoWoods can handle the "hard" installations—the ones other contractors reject.
++This project proves that Ecowoods can handle the "hard" installations—the ones other contractors reject.
+ 
+ ---
+ 
+diff --git a/apps/web/content/claims.ts b/apps/web/content/claims.ts
+index a4a8fa3..4a8c85e 100644
+--- a/apps/web/content/claims.ts
++++ b/apps/web/content/claims.ts
+@@ -409,7 +409,7 @@ export const CLAIMS: Claim[] = [
+   {
+     id: 'framework.published',
+     statement:
+-      'The EcoWoods Well-Installed Framework is published, versioned, and free to ' +
++      'The Ecowoods Well-Installed Framework is published, versioned, and free to ' +
+       'apply to any contractor in the GTA including Ecowoods.',
+     status: 'derived',
+     source: 'lib/framework.ts — FRAMEWORK_VERSION, PILLARS, criterionCount().',
+diff --git a/apps/web/lib/changelog.ts b/apps/web/lib/changelog.ts
+index 487312e..25087bd 100644
+--- a/apps/web/lib/changelog.ts
++++ b/apps/web/lib/changelog.ts
+@@ -250,7 +250,7 @@ export const CHANGELOG: ChangeEntry[] = [
+     id: 'framework-v1',
+     date: '2026-08-19',
+     kind: 'framework',
+-    title: 'The EcoWoods Well-Installed Framework v1.0',
++    title: 'The Ecowoods Well-Installed Framework v1.0',
+     body: 'Six pillars and 27 binary criteria for judging a hardwood installation, published under CC BY with permanent criterion ids. Written to be used on any contractor in the GTA, including us. The self-assessment scores a quote in the browser and sends nothing anywhere.',
+     href: '/framework',
+   },
+diff --git a/apps/web/lib/email/index.ts b/apps/web/lib/email/index.ts
+index 0e452d2..0a328b1 100644
+--- a/apps/web/lib/email/index.ts
++++ b/apps/web/lib/email/index.ts
+@@ -489,16 +489,16 @@ export async function sendQuoteReceivedEmail(data: {
+ }) {
+   await sendEmail({
+     to: data.email,
+-    subject: 'We received your EcoWoods estimate request',
++    subject: 'We received your Ecowoods estimate request',
+     html: `
+       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
+         <h2>Request received</h2>
+-        <p>Hi ${data.name}, EcoWoods has your estimate request (reference ${data.leadId}). A specialist will call within one business day.</p>
++        <p>Hi ${data.name}, Ecowoods has your estimate request (reference ${data.leadId}). A specialist will call within one business day.</p>
+         <p>If it is urgent, call <a href="tel:${BUSINESS_NAP.phoneE164}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
+         <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
+       </div>
+     `,
+-    text: `Hi ${data.name}, EcoWoods received your estimate request (${data.leadId}). We will call within one business day. Urgent? ${BUSINESS_NAP.phoneDisplay}.`,
++    text: `Hi ${data.name}, Ecowoods received your estimate request (${data.leadId}). We will call within one business day. Urgent? ${BUSINESS_NAP.phoneDisplay}.`,
+   });
+ }
+ 
+diff --git a/apps/web/lib/framework.ts b/apps/web/lib/framework.ts
+index fd3947c..e657105 100644
+--- a/apps/web/lib/framework.ts
++++ b/apps/web/lib/framework.ts
+@@ -1,5 +1,5 @@
+ /**
+- * The EcoWoods Well-Installed Framework — the manifest.
++ * The Ecowoods Well-Installed Framework — the manifest.
+  *
+  * WHY THIS EXISTS
+  *
+@@ -63,7 +63,7 @@ export type FrameworkPillar = {
+ 
+ export const FRAMEWORK_VERSION = '1.0';
+ export const FRAMEWORK_PUBLISHED_AT = '2026-08-19';
+-export const FRAMEWORK_NAME = 'The EcoWoods Well-Installed Framework';
++export const FRAMEWORK_NAME = 'The Ecowoods Well-Installed Framework';
+ 
+ const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
+ const P_COST = 'hardwood-selection-and-cost-framework-gta';
+diff --git a/apps/web/lib/images.ts b/apps/web/lib/images.ts
+index b33e768..2b21b5d 100644
+--- a/apps/web/lib/images.ts
++++ b/apps/web/lib/images.ts
+@@ -649,7 +649,7 @@ export const IMAGES: SiteImage[] = [
+   /* ── Detailed register: heroes and one added failure mode ────────── */
+   p(
+     'framework-hero',
+-    'Overview of the six pillars of the EcoWoods Well-Installed Framework, arranged around a cutaway floor assembly with the Toronto skyline behind it.',
++    'Overview of the six pillars of the Ecowoods Well-Installed Framework, arranged around a cutaway floor assembly with the Toronto skyline behind it.',
+     'The six pillars of the Well-Installed Framework. Each one is a question a correctly installed floor can answer, and the pillar names in the panels below are the authoritative wording.',
+     'A wide hero composition with a cutaway hardwood floor assembly centred in the foreground showing boards, subfloor and joists, and the Toronto skyline across the water behind it. Six labelled medallion icons arranged three to a side, each naming one pillar of the framework and carrying a one-line summary beneath it.',
+   ),
+diff --git a/apps/web/lib/papers.ts b/apps/web/lib/papers.ts
+index ea48bad..3edb240 100644
+--- a/apps/web/lib/papers.ts
++++ b/apps/web/lib/papers.ts
+@@ -135,7 +135,7 @@ export const PAPERS: Paper[] = [
+         ordered: [
+           'Subfloor moisture content must be measured.',
+           'Flooring material moisture content must be measured.',
+-          "Both readings must sit within the manufacturer's and EcoWoods' acceptable delta.",
++          "Both readings must sit within the manufacturer's and Ecowoods' acceptable delta.",
+           'Testing occurs at the free estimate, and again immediately before installation.',
+         ],
+       },
+@@ -168,7 +168,7 @@ export const PAPERS: Paper[] = [
+       },
+       {
+         id: 'protocol',
+-        heading: 'The EcoWoods non-negotiable protocol',
++        heading: 'The Ecowoods non-negotiable protocol',
+         body: [
+           'These steps prevent physical failure, and they are what make a lifetime workmanship warranty something a company can offer and still sleep at night.',
+         ],
+diff --git a/apps/web/lib/schema/builders.ts b/apps/web/lib/schema/builders.ts
+index f8c3c84..0a07bb7 100644
+--- a/apps/web/lib/schema/builders.ts
++++ b/apps/web/lib/schema/builders.ts
+@@ -1,9 +1,9 @@
+ /**
+  * Schema builders — produce production-grade JSON-LD for all entity types.
+- * These functions are the source of truth for what EcoWoods emits to search engines and AI agents.
++ * These functions are the source of truth for what Ecowoods emits to search engines and AI agents.
+  */
+ 
+-import { PROFILE_LINKS } from '@ecowoods/shared/constants';
++import { PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
+ import type {
+   Organization,
+   Service,
+@@ -34,6 +34,10 @@ export interface OrganizationConfig {
+   siteUrl: string;
+   name: string;
+   legalName: string;
++  /** Name forms on verified third-party listings (e.g. "Ecowoods Inc." on
++   *  YellowPages), emitted as schema.org alternateName so an entity resolver
++   *  can join those listings to this organization. */
++  alternateName?: string[];
+   phone: string;
+   email: string;
+   address: PostalAddress;
+@@ -66,6 +70,7 @@ export function buildOrganization(config: OrganizationConfig): Organization {
+     // Core identity
+     name: config.name,
+     legalName: config.legalName,
++    ...(config.alternateName?.length ? { alternateName: config.alternateName } : {}),
+     url: baseUrl,
+     telephone: config.phone,
+     email: config.email,
+@@ -99,21 +104,13 @@ export function buildOrganization(config: OrganizationConfig): Organization {
+     geo: config.geo,
+     areaServed: config.areaServed,
+ 
+-    // Hours (Mon-Sat 8am-7pm, Sun 10am-4pm)
+-    openingHoursSpecification: [
+-      {
+-        '@type': 'OpeningHoursSpecification',
+-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+-        opens: '08:00',
+-        closes: '19:00',
+-      },
+-      {
+-        '@type': 'OpeningHoursSpecification',
+-        dayOfWeek: 'Sunday',
+-        opens: '10:00',
+-        closes: '16:00',
+-      },
+-    ] as OpeningHoursSpecification[],
++    // P0-7: hours derive from the one BUSINESS_HOURS constant.
++    openingHoursSpecification: BUSINESS_HOURS.map((h) => ({
++      '@type': 'OpeningHoursSpecification' as const,
++      dayOfWeek: [...h.days] as string[],
++      opens: h.opens,
++      closes: h.closes,
++    })) as OpeningHoursSpecification[],
+ 
+     // Services (nested)
+     service: config.services.map((svc) =>
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 5ef3bb7..b9a0426 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -1,9 +1,9 @@
+ /**
+- * Root schema configuration — THE SINGLE SOURCE OF TRUTH for EcoWoods' entity graph.
++ * Root schema configuration — THE SINGLE SOURCE OF TRUTH for Ecowoods' entity graph.
+  *
+  * This is injected into every page via the layout. All AI agents, crawlers and
+  * structured data parsers ingest this to understand:
+- * - Who EcoWoods is (LocalBusiness, Toronto — the age is derived from
++ * - Who Ecowoods is (LocalBusiness, Toronto — the age is derived from
+  *   BUSINESS_NAP.foundedYear, never written down)
+  * - What they serve (6 core services)
+  * - Where they serve (GTA)
+@@ -35,7 +35,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+  * ────────────────────────────────────────────────────────────────────────
+  *
+  * This is the root entity that all other schemas reference.
+- * Update these values to change what EcoWoods emits to the world.
++ * Update these values to change what Ecowoods emits to the world.
+  */
+ 
+ /**
+@@ -101,6 +101,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+   siteUrl: SITE_URL,
+   name: BUSINESS_NAP.name,
+   legalName: BUSINESS_NAP.legalName,
++  alternateName: [...BUSINESS_NAP.alternateNames],
+   phone: BUSINESS_NAP.phoneSchema,
+   email: BUSINESS_NAP.email,
+   address: {
+diff --git a/apps/web/lib/schema/types.ts b/apps/web/lib/schema/types.ts
+index f3c9d9d..6a5111a 100644
+--- a/apps/web/lib/schema/types.ts
++++ b/apps/web/lib/schema/types.ts
+@@ -100,6 +100,8 @@ export interface Organization extends SchemaBase {
+   '@id': string;
+   name: string;
+   legalName?: string;
++  /** Name forms on verified third-party listings — entity reconciliation. */
++  alternateName?: string[];
+   url: string;
+   image?: string;
+   logo?: string;
+diff --git a/apps/web/lib/structured-data.ts b/apps/web/lib/structured-data.ts
+index 5457266..955b5e8 100644
+--- a/apps/web/lib/structured-data.ts
++++ b/apps/web/lib/structured-data.ts
+@@ -26,6 +26,7 @@ export const localBusinessSchema = {
+       '@id': 'https://ecowoods.ca/#business',
+       name: BUSINESS_NAP.name,
+       legalName: BUSINESS_NAP.legalName,
++      alternateName: [...BUSINESS_NAP.alternateNames],
+       url: 'https://ecowoods.ca',
+       // Hardcoded 404s until F-162. See lib/brand-assets.ts.
+       image: OG_IMAGE_URL,
+@@ -65,20 +66,15 @@ export const localBusinessSchema = {
+         { '@type': 'City', name: 'Oakville' },
+         { '@type': 'City', name: 'Brampton' },
+       ],
+-      openingHoursSpecification: [
+-        {
+-          '@type': 'OpeningHoursSpecification',
+-          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+-          opens: '08:00',
+-          closes: '19:00',
+-        },
+-        {
+-          '@type': 'OpeningHoursSpecification',
+-          dayOfWeek: 'Sunday',
+-          opens: '10:00',
+-          closes: '16:00',
+-        },
+-      ],
++      // P0-7: one hours constant. Derived from BUSINESS_HOURS so schema,
++      // header, footer and GBP copy cannot disagree about when the phone is
++      // answered.
++      openingHoursSpecification: BUSINESS_HOURS.map((h) => ({
++        '@type': 'OpeningHoursSpecification',
++        dayOfWeek: [...h.days],
++        opens: h.opens,
++        closes: h.closes,
++      })),
+       // ⚠️  aggregateRating REMOVED ON PURPOSE — do not re-add.
+       //
+       // Google's structured-data policy forbids self-serving review markup: a
+@@ -121,7 +117,7 @@ export const localBusinessSchema = {
+  * The localBusinessSchema above is unchanged.
+  * ──────────────────────────────────────────────────────────────────────── */
+ import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
+-import { BUSINESS_NAP, PROFILE_LINKS } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
+ import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+ 
+ /** WebSite entity — helps Google understand the site + name. */
+diff --git a/audit/SPRINT_2026-08-29_OBSERVABILITY.md b/audit/SPRINT_2026-08-29_OBSERVABILITY.md
+new file mode 100644
+index 0000000..185ef4d
+--- /dev/null
++++ b/audit/SPRINT_2026-08-29_OBSERVABILITY.md
+@@ -0,0 +1,165 @@
++# Sprint 2026-08-29 — Observability & Entity Consistency
++
++One unified patch. Every change below is in `fix-observability-sprint.patch`;
++apply instructions at the bottom of this file. Verification: the full repo
++guard suite (`pnpm verify`, 40 guards) passes after these changes, and
++`tsc --noEmit` reports the same 107 pre-existing errors before and after
++(none in touched files — all are portal/admin pages with implicit `any` and
++ungenerated Prisma types).
++
++## Shipped
++
++### P0-4 — Homepage dust claim
++`app/data/hero-variants.ts` still said "Zero dust." in seven variants
++(v01, v03, v06, v09, v13, v14, v15) while `lib/guides.ts` publishes, verbatim:
++"Dustless never means zero dust." The homepage was the one surface claiming
++the absolute the inner pages explicitly refuse. All seven now carry the
++registered claim (content/claims.ts): HEPA-sealed dust containment.
++One same-shape line in the Distillery case study reworded.
++Consequence: the homepage can no longer be quoted against the site's own
++papers by an answer engine looking for a contradiction.
++
++### P0-5 — Install-page bands on the first screen
++`/hardwood-flooring-toronto` hero now prints all three published bands in
++`fw-meta` (same pattern as `/hardwood-floor-refinishing-toronto`), derived
++from `content/constants/pricing.ts`. The estimate form's sentence "The bands
++above are real ranges" is now true of the layout — the bands are above it.
++
++### P0-6 — /login and /register
++Both pages had no metadata: they served the homepage `<title>` and the
++site-wide `X-Robots-Tag: index, follow` while robots.txt disallows them.
++Now: own titles ("Client sign in", "Create an account" — brand appended by
++the layout template), explicit `robots: noindex, nofollow` metadata, and
++vercel.json sends `X-Robots-Tag: noindex, nofollow` for
++`/(login|register|verify-email)` and `/(admin|mypage|docs)(/.*)?`.
++robots.txt Disallow stays; the three surfaces now agree.
++
++### P0-7 — Hours, one constant
++Schema and footer said Mon–Sat 8–19 + Sun 10–16; the header drawer,
++exit-intent rail and command palette advertised Mon–Sat only. New
++`BUSINESS_HOURS` + `HOURS_LINE` / `HOURS_LINE_SHORT` in
++`packages/shared/constants`. Both JSON-LD builders
++(`lib/structured-data.ts`, `lib/schema/builders.ts`) and all seven chrome
++surfaces (Header, SiteFooter, UtilityBar, ConversionRail, CommandPalette,
++BookingPanel, BookingScheduler, home-client quote panel) now derive from it.
++Operational truth kept as the fuller set already published in schema:
++Mon–Sat 08:00–19:00, Sun 10:00–16:00. If that is not the phone reality,
++change the one constant. GBP must be set to the same values (operator task).
++
++### P0-8 — Public name
++`BUSINESS_NAP.name` was `'Ecowoods Inc.'` — a third form that is neither the
++legal name nor the brand. It is now `'Ecowoods'` (public name), with
++`alternateNames: ['Ecowoods Inc.', 'Ecowoods Hardwood Flooring']` emitted as
++schema.org `alternateName` (type + both builders wired), so the YellowPages
++listing ("Ecowoods Inc.") still reconciles to this entity. `legalName`
++unchanged: Ecowoods Hardwood Flooring Inc.
++
++### Brand spelling — "EcoWoods" purged
++49 occurrences of "EcoWoods" (capital W) across 30 files — page titles,
++schema `name` fields, `FRAMEWORK_NAME` ("The EcoWoods Well-Installed
++Framework"), email subjects, MDX content — while /press states the name is
++never written "EcoWoods". Global rename to "Ecowoods"; the one intentional
++mention on /press (the "do not write it this way" line) kept.
++
++### P4 — Homepage H1
++Server-rendered H1 was "Hardwood, Done Once. Done Right." — slogan only.
++v01 headline is now "Hardwood Flooring in Toronto, / Done Once. Done Right."
++and its eyebrow names installation + refinishing + GTA. Slogan preserved in
++the em line; crawlers without JS now read job + city in the H1.
++
++### P1-4 — /api/knowledge recall
++Whole-phrase substring matching made recall a function of the corpus's exact
++wording: `q=FAS` hit, `q=FAS grade` and `q=what is FAS` returned empty
++lists. Added a tokenised AND fallback (phrase match first; else every
++non-stopword token must appear somewhere in the record; stopword-only
++queries still return nothing). Tested against the real corpus:
++
++| query | papers | glossary/guides |
++|---|---|---|
++| FAS grade | hardwood-grading-standards-nhla-nwfa | nhla-grade, clear-face-yield |
++| what is FAS | hardwood-grading-standards-nhla-nwfa | nhla-grade |
++| NHLA FAS | hardwood-grading-standards-nhla-nwfa | nhla-grade |
++| white ash supply | where-toronto-hardwood-comes-from | white-ash-flooring-toronto |
++| emerald ash borer | where-toronto-hardwood-comes-from | white-ash-flooring-toronto, emerald-ash-borer |
++| 6% to 9% | grading + provenance papers | kiln-drying |
++| moisture content | 3 papers | moisture-content, acclimation |
++| hickory | 2 papers | hickory guide, janka-hardness |
++| cupping | 2 papers | cupping, crowning |
++
++### P1-2 — /llms.txt
++- Identity block now complete: legal name, public name, address, founded
++  (were only in /ai.txt, one fetch further than many agents go).
++- New section "Three questions this site answers better than anyone" with
++  exact URLs: white-ash supply → guide; FAS grade → grading paper +
++  /glossary/nhla-grade; arrival moisture content → grading paper +
++  /glossary/moisture-content (NWFA 6%–9%).
++- PDF links now gated on `pdfIsPublished()` — the file was advertising five
++  versioned PDF URLs while zero PDFs are published (0/5 per verify:papers);
++  every one 404'd. Markdown twin URL added per paper instead.
++
++## Confirmed already correct (no change)
++- robots.txt (P1-6): named AI-crawler allows, /api/knowledge carve-out,
++  host + sitemap. Matches the brief.
++- Old-domain 301 map (P0-1): 13 host-scoped rules in vercel.json +
++  next.config.js, generated from old-domain/path-map.json, deliberately not
++  path-preserving (the two sites share zero paths). www→apex and
++  vercel.app→apex rules present (P0-2).
++- Contrast (P1-11): `--copper-text #9f5c32`, `--copper-surface #a56034` +
++  `--on-copper` (4.51:1) already shipped and used; btn-copper hover guarded.
++- sameAs discipline (R13): PROFILE_LINKS only links opened-and-confirmed
++  profiles; HomeStars 2897115-ecowood documented as a DIFFERENT company and
++  excluded. Unchanged.
++- Sitemap lastmod honesty, llms-full.txt Sources registers, .md twins,
++  IndexNow wiring: verified present.
++
++## Not done from inside this repo (operator tasks)
++- Attach ecowoodshardwood.com (all four host variants) to the Vercel
++  project so the 301 map actually fires; then Search Console change of
++  address. The rules are inert until the domain points here.
++- Live-site curl evidence: this sandbox's egress proxy blocks direct
++  requests to the production hosts, so redirect behaviour could not be
++  re-probed from here this sprint. Run the curl matrix from any
++  unrestricted shell: `curl -sI "https://www.ecowoodshardwood.com/?cb=$RANDOM"` etc.
++- Google Business Profile: create/claim, exact NAP from BUSINESS_NAP, hours
++  from BUSINESS_HOURS, published bands; paste the confirmed profile URL into
++  PROFILE_LINKS (`Google Reviews`) and REVIEW_DESTINATIONS only after a
++  human opens it.
++- Named principal (P1-1): needs the owner's sign-off on publishing a real
++  name and role; /team currently explains why there are no names. A code
++  change cannot decide this.
++- GBP/Bing/IndexNow submissions after deploy.
++
++## Refused, and the rule
++- Fake/aggregated review markup (`aggregateRating` from HomeStars figures):
++  Google's structured-data policy forbids self-serving and third-party-
++  aggregated review markup; the repo's own guard (verify:reviews) fails the
++  build on it. The cited-evidence pattern (count + rating + source + read
++  date, no markup) stays.
++- Review seeding/gating/filtering: prohibited by Google Maps UGC policy;
++  verify:outreach enforces the ungated /r page.
++- Keyword-stuffing, hidden text, cloaking, doorway pages, spun content,
++  link farms, authoring "10 best" listicles to pitch ourselves into:
++  Google spam policies (doorway, scaled content abuse, link spam,
++  site-reputation abuse). The existing pattern — one canonical per intent,
++  308 aliases, published bands — is the compliant version of the same goal.
++- Linking HomeStars 2897115-ecowood: different company. R13 itself requires
++  human-confirmed profiles; wiring a competitor's reviews to this entity
++  would be misrepresentation.
++- Adding "best/#1" to titles, H1s, schema: unverifiable superlatives are a
++  Competition Act exposure the claims registry exists to prevent; the
++  grading/pricing evidence is the site's differentiator.
++- Indexing /login (the literal reading of P0-6): a login page in the index
++  with the homepage title is a defect, not a goal. Shipped the coherent
++  version: noindex everywhere, own title.
++- 301'ing /services/hardwood-installation and /services/floor-refinishing
++  into the money pages: each service page carries a schema Service @id the
++  organisation graph and verify:services depend on; topic-map already
++  routes commercial intent to the money canonicals. Collapsing them would
++  break the graph for no recall gain.
++
++## Apply
++From the repo root (e.g. /workspaces/ecowoods-app):
++
++    git apply --check fix-observability-sprint.patch   # dry run
++    git apply --3way fix-observability-sprint.patch
++    pnpm verify                                        # 40 guards, all green
+diff --git a/packages/shared/constants/index.ts b/packages/shared/constants/index.ts
+index 865b2d9..f2f21c4 100644
+--- a/packages/shared/constants/index.ts
++++ b/packages/shared/constants/index.ts
+@@ -11,8 +11,20 @@
+  */
+ export const BUSINESS_NAP = {
+   legalName: 'Ecowoods Hardwood Flooring Inc.',
+-  name: 'Ecowoods Inc.',
++  /**
++   * PUBLIC NAME — P0-8. "Ecowoods", one word, capital E, nothing appended.
++   * This is what schema.org `name`, GBP, and every heading should carry.
++   * Was 'Ecowoods Inc.', which is neither the legal name nor the brand name —
++   * a third form that split the entity three ways. Directory listings that
++   * still read "Ecowoods Inc." (YellowPages) are reconciled via
++   * `alternateNames` below, emitted as schema.org `alternateName`.
++   */
++  name: 'Ecowoods',
+   shortName: 'Ecowoods',
++  /** Forms of the name that appear on third-party listings this business
++   *  controls or has verified. Emitted as `alternateName` so an entity
++   *  resolver can join "Ecowoods Inc." (YellowPages) to this organization. */
++  alternateNames: ['Ecowoods Inc.', 'Ecowoods Hardwood Flooring'],
+ 
+   /** E.164 — for schema.org, tel: hrefs and click-to-call. */
+   phoneE164: '+16472445156',
+@@ -51,6 +63,33 @@ export function yearsInBusiness(now: Date = new Date()): number {
+   return now.getFullYear() - BUSINESS_NAP.foundedYear;
+ }
+ 
++/* ---------------------- Business hours (SINGLE SOURCE OF TRUTH) --------
++ *
++ * P0-7. The schema, the footer and the utility bar all said
++ * Mon–Sat 8–7 + Sun 10–4, while the header drawer, the exit-intent rail and
++ * the command palette advertised Mon–Sat only. Two truths about when the
++ * phone is answered is one too many. Every surface — JSON-LD
++ * openingHoursSpecification, header, footer, GBP copy — derives from here.
++ */
++export const BUSINESS_HOURS = [
++  {
++    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const,
++    opens: '08:00',
++    closes: '19:00',
++  },
++  {
++    days: ['Sunday'] as const,
++    opens: '10:00',
++    closes: '16:00',
++  },
++] as const;
++
++/** One human-readable line, for chrome and copy. Derives nothing — states the
++ *  same fact as BUSINESS_HOURS in the format the UI already uses. */
++export const HOURS_LINE = 'Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM';
++/** Compact form for tight chrome (utility bar). */
++export const HOURS_LINE_SHORT = 'Mon–Sat 8–7 · Sun 10–4';
++
+ /** One-line address, used in document footers. */
+ export const BUSINESS_ADDRESS_LINE =
+   `${BUSINESS_NAP.address.streetAddress}, ${BUSINESS_NAP.address.addressLocality}, ` +
+diff --git a/vercel.json b/vercel.json
+index 1d9920f..4b2ecb7 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -38,6 +38,14 @@
+         { "key": "X-Robots-Tag", "value": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" }
+       ]
+     },
++    {
++      "source": "/(login|register|verify-email)",
++      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
++    },
++    {
++      "source": "/(admin|mypage|docs)(/.*)?",
++      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
++    },
+     {
+       "source": "/_next/static/(.*)",
+       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
