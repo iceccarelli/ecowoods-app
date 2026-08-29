@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     'Structured answers to the decisions a Toronto homeowner actually faces — solid versus engineered, nail-down versus glue-down versus floating, how to evaluate a quote — plus complete reference specifications for the common GTA scenarios.',
   alternates: { canonical: '/guides' },
   openGraph: {
-    title: 'Decision Guides & Reference Installations — EcoWoods',
+    title: 'Decision Guides & Reference Installations — Ecowoods',
     description:
       'The decision, the criteria that settle it, and the complete specification for the common Toronto scenarios.',
     type: 'website',
@@ -43,7 +43,7 @@ export default function GuidesPage() {
     <div className="tlx-page">
       <SchemaScript
         schema={buildWebPageSchema({
-          title: 'Decision Guides & Reference Installations — EcoWoods',
+          title: 'Decision Guides & Reference Installations — Ecowoods',
           description:
             'Structured decision guides and complete reference specifications for hardwood flooring in Toronto and the GTA.',
           url: `${SITE_URL}/guides`,

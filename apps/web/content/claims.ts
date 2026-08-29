@@ -409,7 +409,7 @@ export const CLAIMS: Claim[] = [
   {
     id: 'framework.published',
     statement:
-      'The EcoWoods Well-Installed Framework is published, versioned, and free to ' +
+      'The Ecowoods Well-Installed Framework is published, versioned, and free to ' +
       'apply to any contractor in the GTA including Ecowoods.',
     status: 'derived',
     source: 'lib/framework.ts — FRAMEWORK_VERSION, PILLARS, criterionCount().',

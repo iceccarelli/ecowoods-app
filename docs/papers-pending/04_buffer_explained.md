@@ -28,3 +28,11 @@ Keep the machine moving in overlapping passes.
 ## EcoWoods Context
 The buffer enables the low-VOC, GreenGuard Gold finishes specified by EcoWoods.  
 It is the final mechanical step that protects the lifetime performance of the floor.
+cd /workspaces/ecowoods-app
+for f in *.patch; do
+  [ -e "$f" ] || continue
+  git rm -q --cached -- "$f" 2>/dev/null || true
+  rm -f -- "$f"
+done
+git commit -q -m "chore: remove the uploaded patch files from the repository root" 2>/dev/null || echo "(nothing staged — already untracked)"
+git status --short

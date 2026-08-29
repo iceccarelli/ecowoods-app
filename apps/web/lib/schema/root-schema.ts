@@ -1,9 +1,9 @@
 /**
- * Root schema configuration — THE SINGLE SOURCE OF TRUTH for EcoWoods' entity graph.
+ * Root schema configuration — THE SINGLE SOURCE OF TRUTH for Ecowoods' entity graph.
  *
  * This is injected into every page via the layout. All AI agents, crawlers and
  * structured data parsers ingest this to understand:
- * - Who EcoWoods is (LocalBusiness, Toronto — the age is derived from
+ * - Who Ecowoods is (LocalBusiness, Toronto — the age is derived from
  *   BUSINESS_NAP.foundedYear, never written down)
  * - What they serve (6 core services)
  * - Where they serve (GTA)
@@ -35,7 +35,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
  * ────────────────────────────────────────────────────────────────────────
  *
  * This is the root entity that all other schemas reference.
- * Update these values to change what EcoWoods emits to the world.
+ * Update these values to change what Ecowoods emits to the world.
  */
 
 /**
@@ -101,6 +101,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   siteUrl: SITE_URL,
   name: BUSINESS_NAP.name,
   legalName: BUSINESS_NAP.legalName,
+  alternateName: [...BUSINESS_NAP.alternateNames],
   phone: BUSINESS_NAP.phoneSchema,
   email: BUSINESS_NAP.email,
   address: {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { openAssistant } from '@/lib/assistant';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
 
 /* ────────────────────────────────────────────────────────────────────────────
    CONVERSION RAIL — WhatsApp + exit intent.
@@ -133,7 +133,7 @@ export default function ConversionRail() {
             </div>
 
             <p className="exit-foot">
-              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · Mon–Sat, 8 AM – 7 PM
+              Or call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> · {HOURS_LINE}
             </p>
           </div>
         </div>

@@ -649,7 +649,7 @@ export const IMAGES: SiteImage[] = [
   /* ── Detailed register: heroes and one added failure mode ────────── */
   p(
     'framework-hero',
-    'Overview of the six pillars of the EcoWoods Well-Installed Framework, arranged around a cutaway floor assembly with the Toronto skyline behind it.',
+    'Overview of the six pillars of the Ecowoods Well-Installed Framework, arranged around a cutaway floor assembly with the Toronto skyline behind it.',
     'The six pillars of the Well-Installed Framework. Each one is a question a correctly installed floor can answer, and the pillar names in the panels below are the authoritative wording.',
     'A wide hero composition with a cutaway hardwood floor assembly centred in the foreground showing boards, subfloor and joists, and the Toronto skyline across the water behind it. Six labelled medallion icons arranged three to a side, each naming one pillar of the framework and carrying a one-line summary beneath it.',
   ),

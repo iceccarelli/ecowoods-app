@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     'Everything newly published by Ecowoods on hardwood flooring — technical papers, decision guides, figures, the Well-Installed Framework and the public data API — dated, newest first.',
   alternates: { canonical: '/whats-new' },
   openGraph: {
-    title: "What's New — EcoWoods",
+    title: "What's New — Ecowoods",
     description: 'Newly published papers, guides, figures and tools. Dated, newest first.',
     type: 'website',
     url: `${SITE_URL}/whats-new`,
@@ -48,7 +48,7 @@ export default function WhatsNewPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': `${SITE_URL}/whats-new#collection`,
-          name: "What's New — EcoWoods",
+          name: "What's New — Ecowoods",
           url: `${SITE_URL}/whats-new`,
           isPartOf: { '@id': `${SITE_URL}/#website` },
           publisher: { '@id': `${SITE_URL}/#organization` },

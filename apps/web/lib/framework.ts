@@ -1,5 +1,5 @@
 /**
- * The EcoWoods Well-Installed Framework — the manifest.
+ * The Ecowoods Well-Installed Framework — the manifest.
  *
  * WHY THIS EXISTS
  *
@@ -63,7 +63,7 @@ export type FrameworkPillar = {
 
 export const FRAMEWORK_VERSION = '1.0';
 export const FRAMEWORK_PUBLISHED_AT = '2026-08-19';
-export const FRAMEWORK_NAME = 'The EcoWoods Well-Installed Framework';
+export const FRAMEWORK_NAME = 'The Ecowoods Well-Installed Framework';
 
 const P_CLIMATE = 'toronto-hardwood-climate-moisture-protocol';
 const P_COST = 'hardwood-selection-and-cost-framework-gta';

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EstimateForm } from './components/EstimateForm';
-import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -767,7 +767,7 @@ const onSubmit = (data: LeadFormData) => {
                 <span className="quote-contact-text">
                   <span className="quote-contact-label">Prefer to talk?</span>
                   <span className="quote-contact-num">{BUSINESS_NAP.phoneDisplay}</span>
-                  <span className="quote-contact-when">Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM</span>
+                  <span className="quote-contact-when">{HOURS_LINE}</span>
                 </span>
               </a>
 

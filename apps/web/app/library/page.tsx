@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     'Every diagram and photograph on this site in one index: 28 technical cross-sections explaining moisture, substrate, movement and the refinishing sequence, plus the floor collection and the machines that produce it.',
   alternates: { canonical: '/library' },
   openGraph: {
-    title: 'Visual Library — EcoWoods',
+    title: 'Visual Library — Ecowoods',
     description:
       'Technical cross-sections, the floor collection, and the machines — every image indexed and linked to what explains it.',
     type: 'website',
@@ -72,7 +72,7 @@ export default function LibraryPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': `${SITE_URL}/library#collection`,
-          name: 'Visual Library — EcoWoods',
+          name: 'Visual Library — Ecowoods',
           description: 'Every technical diagram and photograph on this site, indexed.',
           url: `${SITE_URL}/library`,
           isPartOf: { '@id': `${SITE_URL}/#website` },

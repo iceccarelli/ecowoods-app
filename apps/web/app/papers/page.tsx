@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     'Downloadable engineering papers on hardwood flooring in Toronto and the GTA: moisture protocol, climate behaviour, species selection, installed cost, and how to evaluate an installer.',
   alternates: { canonical: `${SITE_URL}/papers` },
   openGraph: {
-    title: 'Technical Papers — EcoWoods',
+    title: 'Technical Papers — Ecowoods',
     description:
       'Engineering papers on hardwood flooring in Toronto: moisture protocol, species selection, installed cost, and installer evaluation.',
     type: 'website',
@@ -41,7 +41,7 @@ export default function PapersIndexPage() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     '@id': `${SITE_URL}/papers#collection`,
-    name: 'EcoWoods Technical Papers',
+    name: 'Ecowoods Technical Papers',
     description: metadata.description,
     url: `${SITE_URL}/papers`,
     inLanguage: 'en-CA',

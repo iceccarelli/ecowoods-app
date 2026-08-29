@@ -49,7 +49,7 @@ export async function generateMetadata({
     description: `${svc?.blurb ?? page.standfirst}${band ? ` Published price band: ${band}.` : ''}`,
     alternates: { canonical: `/services/${page.slug}` },
     openGraph: {
-      title: `${svc?.name ?? page.h1} — EcoWoods`,
+      title: `${svc?.name ?? page.h1} — Ecowoods`,
       description: svc?.blurb ?? page.standfirst,
       type: 'website',
       url,

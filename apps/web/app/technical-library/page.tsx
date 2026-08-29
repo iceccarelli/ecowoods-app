@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     'Engineering reference for hardwood flooring installation, finishing, and maintenance in Toronto and the GTA: moisture protocols, species science, and finish chemistry.',
   openGraph: {
-    title: 'Technical Library — EcoWoods',
+    title: 'Technical Library — Ecowoods',
     description:
       'Deep-dive technical content on hardwood flooring installation, moisture management, species selection, and finishing chemistry.',
     type: 'website',
@@ -44,7 +44,7 @@ export default async function TechnicalLibraryPage() {
   const caseStudies = await getCaseStudies();
 
   const collectionSchema = buildWebPageSchema({
-    title: 'Technical Library — EcoWoods',
+    title: 'Technical Library — Ecowoods',
     description:
       'Complete technical reference for hardwood flooring engineering, installation, and maintenance.',
     url: 'https://ecowoods.ca/technical-library',

@@ -440,15 +440,46 @@ export async function GET(request: NextRequest) {
   }
 
   if (q) {
-    // Substring match, not a ranked search. An agent asking for "cupping" wants
-    // every record that mentions it, and a relevance model here would be a
-    // second, unversioned source of truth about what this corpus contains.
-    const hit = (v: unknown): boolean => {
-      if (typeof v === 'string') return v.toLowerCase().includes(q);
-      if (Array.isArray(v)) return v.some(hit);
-      if (v && typeof v === 'object') return Object.values(v).some(hit);
+    // Substring match first, not a ranked search. An agent asking for
+    // "cupping" wants every record that mentions it, and a relevance model
+    // here would be a second, unversioned source of truth about what this
+    // corpus contains.
+    //
+    // TOKENISED FALLBACK — P1-4. Whole-phrase substring alone made recall a
+    // function of the corpus's exact wording: `q=FAS` returned the grading
+    // paper while `q=FAS grade` and `q=what is FAS` returned empty lists,
+    // because no sentence in the corpus happens to contain the literal
+    // characters "fas grade". An agent that phrases a question the way a
+    // person does — "what is FAS grade" — got an empty payload from the one
+    // endpoint built to answer it, and an agent that gets an empty payload
+    // once does not come back.
+    //
+    // So: a record hits if it contains the whole phrase, OR if it contains
+    // every meaningful word of the query somewhere (AND across tokens,
+    // anywhere in the record). Stopwords are dropped from the token pass so
+    // "what is FAS" reduces to "fas" — but only when at least one real token
+    // survives, so a query made only of stopwords still returns nothing
+    // rather than everything.
+    const STOPWORDS = new Set([
+      'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      'what', 'which', 'who', 'whom', 'whose', 'when', 'where', 'why', 'how',
+      'do', 'does', 'did', 'can', 'could', 'should', 'would', 'will',
+      'in', 'on', 'at', 'to', 'of', 'for', 'with', 'and', 'or', 'my', 'i',
+      'it', 'its', 'this', 'that', 'there', 'have', 'has', 'had',
+    ]);
+    const tokens = q
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0 && !STOPWORDS.has(t));
+
+    const contains = (v: unknown, needle: string): boolean => {
+      if (typeof v === 'string') return v.toLowerCase().includes(needle);
+      if (Array.isArray(v)) return v.some((x) => contains(x, needle));
+      if (v && typeof v === 'object') return Object.values(v).some((x) => contains(x, needle));
       return false;
     };
+    const hit = (v: unknown): boolean =>
+      contains(v, q) || (tokens.length > 0 && tokens.every((t) => contains(v, t)));
     data = Object.fromEntries(
       Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.filter(hit) : v]),
     );

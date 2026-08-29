@@ -18,6 +18,7 @@
  * should.
  */
 
+import { HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
 import { useRef, useState } from 'react';
 import { BookingScheduler } from './BookingScheduler';
 import MobileSheet from './MobileSheet';
@@ -51,7 +52,7 @@ export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
           Pick a day that <span className="serif-italic">suits you.</span>
         </h3>
         <p className="teaser-body">
-          Free in-home estimate · Mon–Sat 8–7, Sun 10–4. Most weeks have openings within a few
+          Free in-home estimate · {HOURS_LINE_SHORT}. Most weeks have openings within a few
           days.
         </p>
         <button

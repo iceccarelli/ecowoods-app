@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     'Everything Ecowoods publishes on hardwood flooring, organised by what you are trying to do: decision guides, the Well-Installed Framework and its self-assessment, technical papers, a 32-term glossary, engineering case studies, and a public JSON API.',
   alternates: { canonical: '/resources' },
   openGraph: {
-    title: 'Resources — EcoWoods',
+    title: 'Resources — Ecowoods',
     description:
       'Decision guides, a published framework, technical papers, a glossary and a public data API for hardwood flooring in Toronto and the GTA.',
     type: 'website',
@@ -63,7 +63,7 @@ export default async function ResourcesPage() {
     <div className="tlx-page">
       <SchemaScript
         schema={buildWebPageSchema({
-          title: 'Resources — EcoWoods',
+          title: 'Resources — Ecowoods',
           description: 'Every published hardwood flooring resource, organised by intent.',
           url: `${SITE_URL}/resources`,
           items: [

@@ -250,7 +250,7 @@ export const CHANGELOG: ChangeEntry[] = [
     id: 'framework-v1',
     date: '2026-08-19',
     kind: 'framework',
-    title: 'The EcoWoods Well-Installed Framework v1.0',
+    title: 'The Ecowoods Well-Installed Framework v1.0',
     body: 'Six pillars and 27 binary criteria for judging a hardwood installation, published under CC BY with permanent criterion ids. Written to be used on any contractor in the GTA, including us. The self-assessment scores a quote in the browser and sends nothing anywhere.',
     href: '/framework',
   },

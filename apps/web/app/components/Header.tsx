@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { MegaMenu, type MegaColumn } from './MegaMenu';
 
 import { useState, useEffect, useRef } from 'react';
-import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette from './CommandPalette';
@@ -558,7 +558,7 @@ export default function Header() {
             Request a free in-home estimate
           </a>
           <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
-            Mon–Sat · 8:00 AM – 7:00 PM<br />
+            {HOURS_LINE}<br />
             Showroom: {BUSINESS_ADDRESS_LINE}
           </p>
         </div>
