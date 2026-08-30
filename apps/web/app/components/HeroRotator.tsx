@@ -55,7 +55,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { HERO_VARIANTS, headlineText, type HeroVariant } from '../data/hero-variants';
+import { HERO_VARIANTS, type HeroVariant } from '../data/hero-variants';
 
 /** How long a variant is held before the next one starts resolving. */
 const HOLD_MS = 7600;
@@ -167,6 +167,8 @@ export default function HeroRotator({
   ctaHref,
   ctaLabel,
   ctaArrow,
+  secondaryHref,
+  secondaryLabel,
 }: {
   variants?: HeroVariant[];
   holdMs?: number;
@@ -175,6 +177,9 @@ export default function HeroRotator({
   ctaHref: string;
   ctaLabel: string;
   ctaArrow?: ReactNode;
+  /** P0.4 dual CTA — the photo-triage track, rendered beside the primary. */
+  secondaryHref?: string;
+  secondaryLabel?: string;
 }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -264,16 +269,19 @@ export default function HeroRotator({
         <i className="hr-caret" />
       </p>
 
-      <h1 className="hr-h1 reveal" data-delay="1" aria-label={headlineText(v)}>
-        <span ref={leadRef} aria-hidden="true">
-          {v.headline.lead}
-        </span>
+      {/* P0.4 — THE VISIBLE H1 TEXT IS THE ACCESSIBLE H1 TEXT.
+          The previous version hid every text node behind aria-hidden and named
+          the heading with aria-label instead. That kept a mid-decode scramble
+          out of a screen reader, but it also meant the only H1 on the busiest
+          page announced a string no sighted user could select or see match.
+          The homepage now renders a single static variant (no decode ever
+          runs), so the spans are real, exposed text — rule 7. */}
+      <h1 className="hr-h1 reveal" data-delay="1">
+        <span ref={leadRef}>{v.headline.lead}</span>
         {v.headline.em && (
           <>
             <br />
-            <em ref={emRef} aria-hidden="true">
-              {v.headline.em}
-            </em>
+            <em ref={emRef}>{v.headline.em}</em>
           </>
         )}
       </h1>
@@ -293,6 +301,12 @@ export default function HeroRotator({
           {ctaLabel}
           {ctaArrow && <span className="btn-arrow">{ctaArrow}</span>}
         </a>
+
+        {secondaryHref && secondaryLabel && (
+          <a className="btn btn-ghost-light btn-lg hr-secondary" href={secondaryHref}>
+            {secondaryLabel}
+          </a>
+        )}
 
         {/* WCAG 2.2.2 (Pause, Stop, Hide). Rendered only once motion is on,
             because with reduced motion there is nothing running to pause.

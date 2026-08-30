@@ -24,6 +24,7 @@ import type {
   OpeningHoursSpecification,
   AreaServedCity,
   Person,
+  OfferCatalog,
 } from './types';
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -49,6 +50,12 @@ export interface OrganizationConfig {
   description: string;
   logoUrl: string;
   ogImageUrl: string;
+  /**
+   * The published price bands as an OfferCatalog. Built in root-schema.ts from
+   * content/constants/pricing.ts — the only module allowed to originate a
+   * price — and passed in whole. This builder never constructs a price.
+   */
+  offerCatalog?: OfferCatalog;
 }
 
 export interface ServiceConfig {
@@ -123,6 +130,10 @@ export function buildOrganization(config: OrganizationConfig): Organization {
         siteUrl: baseUrl,
       })
     ),
+
+    // The three published bands, priced, in one catalog — only when the caller
+    // supplies one built from the pricing constants.
+    ...(config.offerCatalog ? { hasOfferCatalog: config.offerCatalog } : {}),
 
     /**
      * sameAs tells Google which external profiles are THIS entity. A wrong URL

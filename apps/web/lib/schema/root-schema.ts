@@ -14,6 +14,7 @@
  */
 
 import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
+import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
@@ -82,6 +83,42 @@ const GTA = Array.from(
 const servicePriceRange = (slug: string): string | undefined => {
   const page = getServicePages().find((p) => p.slug === slug);
   return page ? priceBand(page) : undefined;
+};
+
+/**
+ * THE PUBLISHED BANDS AS AN OfferCatalog.
+ *
+ * Three Offers, one per band in content/constants/pricing.ts — min, max,
+ * currency and the FTK unit code all come out of priceSpecification(), so no
+ * price is originated here and scripts/verify-schema-figures.mjs stays green.
+ *
+ * `itemOffered` is an @id REFERENCE to the Service node the organization
+ * already emits (which /services/[slug] also renders), never a copy: the band
+ * name a machine reads in this catalog is the same name a person reads on the
+ * pricing cards, and the service it prices is the same node the rest of the
+ * graph points at. Screen & Recoat and Full Sand & Finish both price
+ * floor-refinishing — two published intensities of the same service.
+ */
+const BAND_SERVICE_SLUG: Record<PriceBand['key'], string> = {
+  screenAndRecoat: 'floor-refinishing',
+  fullSandAndFinish: 'floor-refinishing',
+  newInstall: 'hardwood-installation',
+};
+
+const BAND_OFFER_CATALOG = {
+  '@type': 'OfferCatalog' as const,
+  name: 'Hardwood flooring — published price bands',
+  itemListElement: PRICE_BANDS.map((band) => ({
+    '@context': 'https://schema.org' as const,
+    '@type': 'Offer' as const,
+    name: band.label,
+    priceCurrency: band.currency,
+    priceSpecification: priceSpecification(band),
+    itemOffered: { '@id': `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}#service` },
+    areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
+    availability: 'https://schema.org/InStock',
+    url: `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}`,
+  })),
 };
 
 /**
@@ -172,6 +209,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     },
   ],
   foundingYear: BUSINESS_NAP.foundedYear,
+  offerCatalog: BAND_OFFER_CATALOG,
   slogan: "Toronto's master hardwood flooring artisans",
   description:
     'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',

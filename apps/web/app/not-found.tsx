@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { getServicePages, serviceFor } from '@/lib/service-pages';
 
@@ -59,6 +60,26 @@ export default function NotFound() {
             editions of everything are listed in{' '}
             <a href={`${SITE_URL}/llms.txt`}>llms.txt</a>.
           </p>
+
+          {/* P0.6 — a person who mistyped a URL is often a person mid-decision.
+              Route them to the two things that close: the phone and the form —
+              and to the reviews, which are the third question they will ask. */}
+          <div className="fw-actions" style={{ marginTop: '1.25rem' }}>
+            <a className="fw-cta" href={BUSINESS_NAP.phoneHref}>
+              Call {BUSINESS_NAP.phoneDisplay}
+            </a>
+            <Link className="fw-cta" href="/#quote">
+              Get a free written estimate
+            </Link>
+            <a
+              className="fw-cta fw-cta--ghost"
+              href={PRIMARY_REVIEW_EVIDENCE.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Read our reviews on HomeStars
+            </a>
+          </div>
         </div>
       </header>
 

@@ -1,3 +1,6 @@
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { FULL_SAND_FINISH, formatBandBare as bandBare } from '@/content/constants/pricing';
+
 /**
  * The transactional phrases this site is written to answer.
  *
@@ -86,8 +89,18 @@ export const ALPHA = {
  * nobody is searching for yet and never said "installation" or "refinishing".
  */
 export const HOME_TITLE =
-  'Hardwood Floor Installation & Refinishing Toronto · Ecowoods';
+  'Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods';
 
-/** ≤160 characters. No rating, no superlative, no award. */
+/**
+ * ≤160 characters. No rating, no superlative, no award.
+ *
+ * The refinish band, the founding year and the phone number are INTERPOLATED
+ * from their single sources — `content/constants/pricing.ts` and
+ * `BUSINESS_NAP` — never typed here. `pnpm seo:pricing` and `pnpm seo:claims`
+ * fail the build on a literal, and a meta description is exactly the string
+ * that goes stale silently when a band moves.
+ */
 export const HOME_DESCRIPTION =
-  'Custom hardwood installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates, warranties in writing, free in-home consultation.';
+  `Fixed written price. HEPA dust containment. Salaried crews since ${BUSINESS_NAP.foundedYear}. ` +
+  `Refinish ${bandBare(FULL_SAND_FINISH)}/sq ft. Free in-home measure across the GTA. ` +
+  `Call ${BUSINESS_NAP.phoneDisplay}.`;
