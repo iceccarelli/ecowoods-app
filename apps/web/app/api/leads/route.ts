@@ -3,7 +3,7 @@ import { leadSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -67,6 +67,15 @@ function backTo(request: Request, ok: boolean): string {
 }
 
 export async function POST(request: Request) {
+  // P0.7 — CSRF hygiene. A browser POST carrying a foreign Origin header is
+  // refused before anything is read. An absent Origin is allowed: the no-JS
+  // form fallback and non-browser clients depend on it, and a non-browser
+  // client can forge any Origin anyway — this blocks cross-site browser
+  // posts, it does not pretend to be authentication.
+  if (!isTrustedBrowserOrigin(request)) {
+    return NextResponse.json({ success: false, message: 'Origin not allowed.' }, { status: 403 });
+  }
+
   let body: unknown;
   let isFormPost = false;
   try {
@@ -133,11 +142,13 @@ export async function POST(request: Request) {
    * which means the worst a false positive can now do is inconvenience someone
    * — not erase them.
    *
-   * The limit is also raised to twenty per minute. Five was tuned for an
-   * endpoint where every request costs something; this one is protecting
-   * against a flood, and a flood is not twenty.
+   * The limit is the P0.7 contract for every public lead POST: a token bucket
+   * of ten per minute per IP (LEAD_POST_LIMIT). Ten is protecting against a
+   * flood, and a flood is not ten — while the token bucket (unlike the old
+   * fixed window) refills continuously, so a household correcting typos never
+   * feels it.
    */
-  const rl = checkRateLimit(getClientIp(request), { windowMs: 60_000, maxRequests: 20 });
+  const rl = checkRateLimit(getClientIp(request), LEAD_POST_LIMIT);
   if (!rl.allowed) {
     console.warn(
       JSON.stringify({

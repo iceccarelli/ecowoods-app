@@ -48,20 +48,31 @@ const FROM =
   process.env.SMTP_FROM ??
   BUSINESS_NAP.email;
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ecowoods.ca';
+/**
+ * Internal notifications land on the PUBLISHED business inbox unless ADMIN_EMAIL
+ * overrides it. The previous default, admin@ecowoods.ca, is an address that
+ * appears nowhere in the business facts — a lead emailed to a mailbox nobody
+ * reads is a lead lost politely.
+ */
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email;
 
 // ── Core sendEmail function ───────────────────────────────────────────────────
+
+export type EmailAttachment = { filename: string; content: Buffer };
 
 export async function sendEmail({
   to,
   subject,
   html,
   text,
+  attachments,
 }: {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  /** Small files only (photo triage sends ≤3 compressed images). */
+  attachments?: EmailAttachment[];
 }) {
   // ── Dev mode — log to console, no real email ────────────────────────────
   if (transport === 'dev') {
@@ -69,6 +80,7 @@ export async function sendEmail({
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
     if (text) console.log(`  Body:    ${text.slice(0, 200)}`);
+    if (attachments?.length) console.log(`  Attachments: ${attachments.map((a) => a.filename).join(', ')}`);
     console.log();
     return;
   }
@@ -81,6 +93,7 @@ export async function sendEmail({
       subject,
       html,
       text,
+      ...(attachments?.length ? { attachments } : {}),
     });
     if (result.error) {
       throw new Error(`Resend error: ${result.error.message}`);
@@ -114,8 +127,60 @@ export async function sendEmail({
       subject,
       html,
       text,
+      ...(attachments?.length ? { attachments } : {}),
     });
   }
+}
+
+// ─── Photo triage (track B of the quote form) ─────────────────────────────────
+export async function sendAdminPhotoTriageEmail({
+  leadId,
+  name,
+  email,
+  phone,
+  area,
+  intent,
+  sqft,
+  designSummary,
+  attachments,
+}: {
+  leadId: string;
+  name: string;
+  email: string;
+  phone: string;
+  area: string;
+  intent: string;
+  sqft?: number;
+  designSummary?: string;
+  attachments: EmailAttachment[];
+}) {
+  const rows = [
+    ['Name', name],
+    ['Phone', phone],
+    ['Email', email],
+    ['Area', area],
+    ['They think it needs', intent],
+    ['Approx. sq ft', sqft ? String(sqft) : '—'],
+    ['Floor designer config', designSummary ?? '—'],
+    ['Lead id', leadId],
+  ]
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`,
+    )
+    .join('');
+
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Photo triage — ${name} (${area})`,
+    html: `
+      <h2 style="margin:0 0 8px;">New photo triage request</h2>
+      <p style="margin:0 0 16px;">Photos attached (${attachments.length}). This is a triage, not a quote — call them back, then book the measure.</p>
+      <table style="border-collapse:collapse;">${rows}</table>
+    `,
+    text: `Photo triage from ${name} (${phone}, ${email}) — ${area}, ${intent}${sqft ? `, ~${sqft} sq ft` : ''}. ${attachments.length} photo(s) attached.`,
+    attachments,
+  });
 }
 
 // ─── Welcome email ─────────────────────────────────────────────────────────────

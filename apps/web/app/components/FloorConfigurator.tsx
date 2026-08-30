@@ -11,6 +11,8 @@ import {
   bookMeasureIntent,
 } from '@ecowoods/shared/ai';
 import { openAssistant } from '@/lib/assistant';
+import { saveDesignConfig } from '@/lib/design-config';
+import { track } from '@/lib/analytics';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -94,6 +96,36 @@ export default function FloorConfigurator() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!reduced) setAnimate(true);
   }, []);
+
+  /* P0.5 — a shared link restores a configuration. Querystring wins over the
+     stored copy, read once, in an effect (never during render: SSR match). */
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const qsSpecies = q.get('species');
+    const qsFinish = q.get('finish');
+    const qsPattern = q.get('pattern');
+    const qsSqft = Number(q.get('sqft'));
+    if (qsSpecies && SPECIES.some((s) => s.id === qsSpecies)) setSpeciesId(qsSpecies);
+    if (qsFinish && FINISH_OPTIONS.some((f) => f.id === qsFinish)) setFinishId(qsFinish);
+    if (qsPattern && PATTERN_OPTIONS.some((p) => p.id === qsPattern)) setPatternId(qsPattern);
+    if (Number.isFinite(qsSqft) && qsSqft >= SQFT_MIN && qsSqft <= SQFT_MAX) setSqft(qsSqft);
+  }, []);
+
+  /* P0.5 — every change persists: localStorage `ew-design-v1` (the quote form
+     reads it and prefills) + the querystring (reload- and share-proof). */
+  useEffect(() => {
+    saveDesignConfig({ species: speciesId, finish: finishId, pattern: patternId, sqft });
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('species', speciesId);
+      url.searchParams.set('finish', finishId);
+      url.searchParams.set('pattern', patternId);
+      url.searchParams.set('sqft', String(sqft));
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      /* history unavailable — localStorage still carries it */
+    }
+  }, [speciesId, finishId, patternId, sqft]);
 
   const species = SPECIES.find((s) => s.id === speciesId) ?? SPECIES[0];
   const finish = FINISH_OPTIONS.find((f) => f.id === finishId) ?? FINISH_OPTIONS[1];
@@ -268,9 +300,16 @@ export default function FloorConfigurator() {
 
             <div>
              <div className="fc-actions">
-              <button type="button" className="btn btn-copper btn-lg fc-cta" onClick={bookMeasure}>
-                Book my free measure
+              <a
+                className="btn btn-copper btn-lg fc-cta"
+                href="/#quote"
+                onClick={() => track('design_handoff', { species: speciesId, finish: finishId, pattern: patternId, sqft })}
+              >
+                Get this floor priced in writing
                 <span className="btn-arrow" aria-hidden="true">→</span>
+              </a>
+              <button type="button" className="fc-secondary" onClick={bookMeasure}>
+                Book my free measure
               </button>
               <button type="button" className="fc-secondary" onClick={askEcowoodsGuide}>
 <EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
@@ -279,7 +318,7 @@ export default function FloorConfigurator() {
              </div>
 
             <p className="fc-handoff">
-              Either button carries your exact configuration into the chat. No retyping.
+              Your exact configuration travels with you — into the quote form or the chat. No retyping.
             </p>
             </div>
            </div>

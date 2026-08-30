@@ -38,6 +38,35 @@ export const leadSchema = z
   })
   .passthrough();
 
+/**
+ * Photo-triage lead — track B of the two-track quote form.
+ *
+ * The FILES are validated in the route (count/type/size live on the multipart
+ * body, not on this object); this schema owns the typed fields. It is a
+ * triage, not a quote: the disclaimer the UI shows is part of the product,
+ * so `intent` deliberately includes 'not sure'.
+ */
+export const PHOTO_TRIAGE_INTENTS = ['refinish', 'install', 'stairs', 'not-sure'] as const;
+
+export const photoTriageSchema = z.object({
+  name: z.string().min(2, 'Please enter your full name'),
+  email: z.string().email('Please enter a valid email'),
+  phone: z.string().min(7, 'Please enter a valid phone number'),
+  area: z.string().min(2, 'Choose your area'),
+  intent: z.enum(PHOTO_TRIAGE_INTENTS, {
+    errorMap: () => ({ message: 'Tell us what the photos show' }),
+  }),
+  company: z.string().optional(), // honeypot
+  source: z.string().optional(),
+  designSummary: z.string().max(300).optional(),
+  sqft: z.preprocess(
+    (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : Number(v)),
+    z.number().positive().optional(),
+  ),
+});
+
+export type PhotoTriageData = z.infer<typeof photoTriageSchema>;
+
 export type LeadFormData = z.infer<typeof leadSchema>;
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateBidInput = z.infer<typeof createBidSchema>;

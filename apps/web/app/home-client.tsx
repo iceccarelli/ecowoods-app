@@ -2,20 +2,22 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EstimateForm } from './components/EstimateForm';
-import { BUSINESS_NAP, yearsInBusiness, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+import {
+  BUSINESS_NAP,
+  BUSINESS_ADDRESS_LINE,
+  yearsInBusiness,
+  REVIEW_PROFILES,
+  PRIMARY_REVIEW_EVIDENCE,
+  HOURS_LINE,
+} from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { submitLead } from '@ecowoods/api-client';
-import { leadSchema, type LeadFormData } from '@ecowoods/shared';
 import { RotatingBackground } from './components/RotatingBackground';
 import PricingSection from './components/PricingSection';
 import { FigureRotator } from './components/FigureRotator';
 import { HOME_ROTATION } from './data/rotator-slides';
 import HeroRotator from './components/HeroRotator';
+import { HERO_VARIANTS } from './data/hero-variants';
 import SpecsCoverage from './components/SpecsCoverage';
 import FloorCatalog from './components/FloorCatalog';
 import MachineCatalog from './components/MachineCatalog';
@@ -23,6 +25,8 @@ import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
+import { EvidenceRail, CASES } from './components/EvidenceRail';
+import { SERVICE_AREAS } from '@/lib/seo-data';
 import {
   SCREEN_RECOAT,
   FULL_SAND_FINISH,
@@ -404,51 +408,14 @@ function useReveal() {
 export default function HomePage({ contentPromo }: { contentPromo?: ReactNode }) {
   const root = useReveal();
 
-  /* ---------- FAQ + modal state ---------- */
+  /* ---------- FAQ state ---------- */
+  /* The legacy estimate MODAL is gone, and with it react-hook-form, zod
+     resolver, react-query and the toast stack it shipped to every homepage
+     visitor. It was unreachable — nothing ever set `estimateModalOpen` to
+     true — and the real, no-JS-safe form (EstimateForm, F-160) has owned the
+     conversion since. Dead UI that still hydrates is a payload, not a
+     feature. */
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [estimateModalOpen, setEstimateModalOpen] = useState(false);
-
-/* ---------- Contact Form - PERFECT INTEGRATION ---------- */
-const queryClient = useQueryClient();
-
-const {
-  register,
-  handleSubmit,
-  formState: { errors, isSubmitting },
-  reset,
-  watch,
-} = useForm<LeadFormData>({
-  resolver: zodResolver(leadSchema),
-  defaultValues: {
-    source: 'website',
-    service: 'installation',
-    timeline: 'flexible',
-  },
-});
-
-const mutation = useMutation({
-  mutationFn: (data: LeadFormData) => submitLead(data),
-  onSuccess: () => {
-    toast.success("Estimate request received!", {
-      description: "A senior estimator will contact you within 1 business day.",
-      action: {
-        label: "Track in App",
-        onClick: () => window.open('https://app.ecowoods.ca', '_blank'),
-      },
-    });
-    reset();
-    queryClient.invalidateQueries({ queryKey: ['leads'] });
-  },
-  onError: (error: Error) => {
-    toast.error("Something went wrong", {
-      description: error.message || `Please try again or call ${BUSINESS_NAP.phoneDisplay}`,
-    });
-  },
-});
-
-const onSubmit = (data: LeadFormData) => {
-  mutation.mutate(data);
-};
 
   return (
     <div ref={root as React.MutableRefObject<HTMLDivElement>}>
@@ -468,19 +435,22 @@ const onSubmit = (data: LeadFormData) => {
           }),
         }}
       />
-      {/* 1 · HERO — minimalist authority */}
+      {/* 1 · HERO — minimalist authority.
+          P0.4: NO AUTOPLAY. The background is one static image with
+          fetchpriority="high" and a responsive srcset; the copy is the single
+          canonical variant — no timers, no decode, and the H1 text is real,
+          exposed text in the accessibility tree. */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />
-        <RotatingBackground />
+        <RotatingBackground rotate={false} />
         <div className="shell hero-content">
-          {/* The eyebrow, h1, lede and CTA live in HeroRotator. Fifteen ways of
-              saying the same true thing, resolving one at a time. The CTA is
-              passed in and never rotates; HERO_VARIANTS[0] is what the server
-              renders, so the HTML a crawler reads is the canonical brand line. */}
           <HeroRotator
+            variants={[HERO_VARIANTS[0]!]}
             ctaHref="#quote"
-            ctaLabel="Get Your Free Written Estimate"
+            ctaLabel="Get a fixed price in writing"
             ctaArrow={Icon.arrow}
+            secondaryHref="#photo-triage"
+            secondaryLabel="Send 3 photos today"
           />
 
           {/* F-205 — THE STAT DOES NOT ROTATE AND DOES NOT ANIMATE.
@@ -507,6 +477,115 @@ const onSubmit = (data: LeadFormData) => {
         <div className="hero-scroll" aria-hidden="true">
           <span>Scroll</span>
           <span className="line" />
+        </div>
+      </section>
+
+      {/* 2 · DUAL CTA — the two ways to start, stated in one breath. */}
+      <section className="section-tight home-cta" id="start">
+        <div className="shell">
+          <div className="home-cta-inner reveal">
+            <h2 className="home-cta-h">
+              Get a fixed price in writing — <span className="serif-italic">or send 3 photos today.</span>
+            </h2>
+            <p className="home-cta-sub">
+              HEPA-sealed sanding. Salaried crew. The number on the page is the number on the invoice.
+            </p>
+            <div className="home-cta-actions">
+              <a className="btn btn-copper btn-lg" href="#quote">
+                Get a fixed price in writing
+              </a>
+              <a className="btn btn-ghost btn-lg" href="#photo-triage">
+                Send 3 photos today
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3 · THE NUMBER — the three published bands, before anything asks for
+             a click. Every figure derives from content/constants/pricing.ts. */}
+      <PricingSection />
+
+      {/* 4 · FIRST-PARTY PROOF — three published case studies, each one a job
+             with its measurements kept on the case-study page (never restated
+             here — a number quoted twice is a number that drifts). */}
+      <EvidenceRail
+        kicker="Recent work"
+        heading="Three Toronto jobs, checkable in full"
+        intro="No stock photos, no invented reviews — each card is a published case study naming the substrate, the species and the readings."
+        items={[
+          { ...CASES.midtown, why: 'A refinish spanning three levels and the transitions between them — the scope most quotes miss.' },
+          { ...CASES.forestHill, why: 'Wide-plank walnut, and what colour stability asks of the finish schedule and the room’s humidity.' },
+          { ...CASES.yorkville, why: 'Hardwood below grade — the moisture mitigation that made it possible, documented.' },
+        ]}
+      />
+
+      {/* 5 · TRUST RAIL — the claims the rest of the site substantiates, one
+             line each, every number derived from its source module. */}
+      <section className="section-tight trust-rail-section" aria-label="Why homeowners choose Ecowoods">
+        <div className="shell">
+          <ul className="trust-rail reveal">
+            <li>{yearsInBusiness()}+ years in Toronto</li>
+            <li>
+              <a href={PRIMARY_REVIEW_EVIDENCE.href} target="_blank" rel="noopener noreferrer">
+                {PRIMARY_REVIEW_EVIDENCE.count} reviews at {PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} on HomeStars
+              </a>{' '}
+              <span className="trust-rail-asof">(read {PRIMARY_REVIEW_EVIDENCE.asOf})</span>
+            </li>
+            <li>Salaried craftsmen, never subcontractors</li>
+            <li>HEPA-sealed sanding</li>
+            <li>Fixed price in writing</li>
+            <li>FSC-certified wood · GreenGuard Gold finishes</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 6 · CONVERSION — moved UP from the bottom of the page (P0.4): the
+             form is now reachable without scrolling through the library. */}
+      <section className="section wood-grain-dark noise-overlay section--card" id="quote">
+        <div className="shell">
+          <div className="contact-grid">
+            <div className="contact-info reveal" style={{ color: 'var(--cream-50)' }}>
+              <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
+                Free In-Home Estimate
+              </span>
+              <h2 style={{ color: 'var(--cream-50)', marginTop: '1rem' }}>
+                Tell us about<br />
+                your <span className="serif-italic">project.</span>
+              </h2>
+              <p style={{ color: 'rgba(245, 239, 230, 0.75)' }}>
+                A senior estimator will be in touch within one business day to schedule a free,
+                no-obligation in-home consultation. We bring species samples, finish samples, and a
+                portfolio of completed Toronto projects.
+              </p>
+              <a href={BUSINESS_NAP.phoneHref} className="quote-contact">
+                <span className="quote-contact-icon">{Icon.phone}</span>
+                <span className="quote-contact-text">
+                  <span className="quote-contact-label">Prefer to talk?</span>
+                  <span className="quote-contact-num">{BUSINESS_NAP.phoneDisplay}</span>
+                  <span className="quote-contact-when">{HOURS_LINE}</span>
+                </span>
+              </a>
+              <p className="quote-showroom" style={{ color: 'rgba(245, 239, 230, 0.65)' }}>
+                Shop and warehouse in Etobicoke — we come to you. {BUSINESS_ADDRESS_LINE}.
+              </p>
+
+              {/* Two-track lead capture (P0.5). The wrapper id is the anchor the
+                  sticky header's “Send photos” CTA scrolls to; the form itself
+                  switches to the photo track when that hash is present. */}
+              <div id="photo-triage">
+                <EstimateForm
+                  source="homepage"
+                  className="ef--onDark"
+                  heading="Request a free estimate"
+                  intro="A senior estimator replies within one business day. Book the measure — or send three photos and we triage the job first."
+                />
+              </div>
+            </div>
+
+            {/* Right column: the booking calendar (inline on desktop, sheet on mobile) */}
+            <BookingPanel clockIcon={Icon.clock} />
+          </div>
         </div>
       </section>
 
@@ -557,15 +636,9 @@ const onSubmit = (data: LeadFormData) => {
           Re-enable by uncommenting the next line. */}
       {/* <SpecsCoverage species={speciesList} areas={serviceAreas} /> */}
 
-      {/* 3 · THE NUMBER — moved here from position 9 (it used to sit after the
-             FAQ). This section's own first line is "Every other Toronto floor
-             company makes you book a visit to hear a number. Here's the range
-             up front." Nine screens down is not up front, and the one claim
-             that separates this business from every competitor in the GTA was
-             the last thing a visitor reached. It now lands immediately after
-             the proof band that earns it. See audit/FINDINGS.md F-55. */}
-
-      <PricingSection />
+      {/* THE NUMBER moved again (P0.4): it now sits directly under the hero's
+             dual CTA, before the first scroll. See audit/FINDINGS.md F-55 for
+             the first move; the argument only got stronger. */}
 
       {/* 3b · WHAT WE CAN EXPLAIN — the corpus, shown rather than linked.
 
@@ -737,203 +810,26 @@ const onSubmit = (data: LeadFormData) => {
              table. Two article cards; never a detour before the ask. */}
       {contentPromo}
 
-
-      {/* 6 · CONVERSION — preserved Free In-Home Estimate section (untouched) */}
-      <section className="section wood-grain-dark noise-overlay section--card" id="quote">
+      {/* 7 · WHERE WE WORK — every published service-area page, linked. The
+             quote form asks for one of these 32; the crawler gets the edges. */}
+      <section className="section-tight" id="areas" aria-label="Service areas">
         <div className="shell">
-          <div className="contact-grid">
-            <div className="contact-info reveal" style={{ color: 'var(--cream-50)' }}>
-              <span className="eyebrow" style={{ color: 'var(--copper-bright)' }}>
-                Free In-Home Estimate
-              </span>
-              <h2 style={{ color: 'var(--cream-50)', marginTop: '1rem' }}>
-                Tell us about<br />
-                your <span className="serif-italic">project.</span>
-              </h2>
-              <p style={{ color: 'rgba(245, 239, 230, 0.75)' }}>
-                A senior estimator will be in touch within one business day to schedule a free,
-                no-obligation in-home consultation. We bring species samples, finish samples, and a
-                portfolio of completed Toronto projects.
-              </p>
-              {/*
-                The footer already publishes email, showroom address and full
-                hours ~300px below this. Repeating them here made the reader
-                process the same four facts twice and buried the actual action.
-                This section keeps ONE fast path — phone, plus when to use it —
-                and lets the footer own the reference block.
-              */}
-              <a href={BUSINESS_NAP.phoneHref} className="quote-contact">
-                <span className="quote-contact-icon">{Icon.phone}</span>
-                <span className="quote-contact-text">
-                  <span className="quote-contact-label">Prefer to talk?</span>
-                  <span className="quote-contact-num">{BUSINESS_NAP.phoneDisplay}</span>
-                  <span className="quote-contact-when">{HOURS_LINE}</span>
-                </span>
-              </a>
-
-              {/* THE FORM, NOT A BUTTON THAT OPENS ONE — F-160 finished.
-                  The five commercial pages got a real form; the homepage kept a
-                  <button> that set React state to open a modal, so the busiest
-                  url on the site still served zero <form> elements and the site
-                  chrome had nowhere to point. verify-links.mjs failed the build
-                  the moment the drawer offered "#estimate", because no element
-                  on this page carried that id. It does now. */}
-              <EstimateForm
-                source="homepage"
-                className="ef--onDark"
-                heading="Request a free estimate"
-                intro="A senior estimator replies within one business day. The measurement is free and the written price does not move afterwards."
-              />
-            </div>
-
-            {/* Right column: the booking calendar (inline on desktop, sheet on mobile) */}
-            <BookingPanel clockIcon={Icon.clock} />
+          <div className="section-head reveal" style={{ maxWidth: '720px' }}>
+            <span className="eyebrow">Where we work</span>
+            <h2>
+              Across Toronto <span className="serif-italic">and the GTA.</span>
+            </h2>
           </div>
+          <p className="areas-links reveal">
+            {SERVICE_AREAS.map((c, i) => (
+              <span key={c.slug}>
+                {i > 0 && ' · '}
+                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+              </span>
+            ))}
+          </p>
         </div>
       </section>
-
-      {estimateModalOpen && (
-        <div className="estimate-modal-overlay" onClick={() => setEstimateModalOpen(false)}>
-          <div className="estimate-modal" role="dialog" aria-modal="true" aria-label="Request a free estimate" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="estimate-modal-close" aria-label="Close" onClick={() => setEstimateModalOpen(false)}>×</button>
-            <div className="contact-form">
-              <form 
-                onSubmit={handleSubmit(onSubmit)} 
-                noValidate
-              >
-                <h3 style={{ marginBottom: '0.5rem' }}>Request a free estimate</h3>
-                <p style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)', marginBottom: '1.75rem' }}>
-                  Takes 60 seconds. No pressure, no spam, no obligation.
-                </p>
-
-                <div className="field-row">
-                  <div className="field">
-                    <label htmlFor="f-name">Full Name *</label>
-                    <input
-                      id="f-name"
-                      {...register('name')}
-                      placeholder="Jane Doe"
-                      aria-invalid={!!errors.name}
-                      className={errors.name ? 'field-error' : ''}
-                    />
-                    {errors.name && <p className="error-message" role="alert">{errors.name.message}</p>}
-                  </div>
-                  <div className="field">
-                    <label htmlFor="f-phone">Phone *</label>
-                    <input
-                      id="f-phone"
-                      {...register('phone')}
-                      aria-invalid={!!errors.phone}
-                      placeholder="(___) ___-____"
-                      className={errors.phone ? 'field-error' : ''}
-                    />
-                    {errors.phone && <p className="error-message" role="alert">{errors.phone.message}</p>}
-                  </div>
-                </div>
-
-                <div className="field-row">
-                  <div className="field">
-                    <label htmlFor="f-email">Email *</label>
-                    <input
-                      id="f-email"
-                      type="email"
-                      {...register('email')}
-                      aria-invalid={!!errors.email}
-                      placeholder="jane@example.com"
-                      className={errors.email ? 'field-error' : ''}
-                    />
-                    {errors.email && <p className="error-message" role="alert">{errors.email.message}</p>}
-                  </div>
-                  <div className="field">
-                    <label htmlFor="f-postal">Postal Code *</label>
-                    <input
-                      id="f-postal"
-                      {...register('postal')}
-                      aria-invalid={!!errors.postal}
-                      placeholder="M5V 3A8"
-                      maxLength={7}
-                      className={errors.postal ? 'field-error' : ''}
-                    />
-                    {errors.postal && <p className="error-message" role="alert">{errors.postal.message}</p>}
-                  </div>
-
-                  {/* Honeypot — hidden from humans, bots fill it. */}
-                  <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
-                    <label htmlFor="f-company">Company</label>
-                    <input id="f-company" type="text" tabIndex={-1} autoComplete="off" {...register('company')} />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label>Service Needed</label>
-                  <div className="field-radio-group">
-                    {[
-                      { value: 'installation', label: 'New Install' },
-                      { value: 'refinishing', label: 'Refinishing' },
-                      { value: 'sanding', label: 'Dust-Free Sanding' },
-                      { value: 'stairs', label: 'Stairs' },
-                      { value: 'inlays', label: 'Custom Inlays' },
-                      { value: 'commercial', label: 'Commercial' },
-                    ].map((s) => (
-                      <label
-                        key={s.value}
-                        className={`field-radio ${watch('service') === s.value ? 'checked' : ''}`}
-                      >
-                        <input type="radio" value={s.value} {...register('service')} />
-                        {s.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="field-row">
-                  <div className="field">
-                    <label htmlFor="f-sqft">Approx. Square Footage</label>
-                    <input
-                      id="f-sqft"
-                      type="number"
-                      {...register('sqft', { valueAsNumber: true })}
-                      placeholder="e.g. 1200"
-                    />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="f-timeline">Timeline</label>
-                    <select id="f-timeline" {...register('timeline')}>
-                      <option value="asap">As soon as possible</option>
-                      <option value="1-2_weeks">1–2 weeks</option>
-                      <option value="1_month">Within 1 month</option>
-                      <option value="flexible">Just exploring</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label htmlFor="f-message">Project Details (Optional)</label>
-                  <textarea
-                    id="f-message"
-                    {...register('message')}
-                    placeholder="Tell us about your home, current floors, and what you're hoping to achieve…"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-copper btn-lg"
-                  style={{ width: '100%' }}
-                  disabled={isSubmitting || mutation.isPending}
-                >
-                  {isSubmitting || mutation.isPending ? 'Sending…' : 'Request my free estimate'}
-                  {!isSubmitting && !mutation.isPending && <span className="btn-arrow">→</span>}
-                </button>
-
-                <p className="form-disclosure">
-                  By submitting, you agree to be contacted by Ecowoods about your project. We never share your information.
-                </p>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -45,6 +45,8 @@ export const viewport: Viewport = {
 };
 
 import ChatWidgetLoader from "./components/ChatWidgetLoader";
+import CookieConsentBanner from './components/CookieConsentBanner';
+import TelClickTracker from './components/TelClickTracker';
 import { HOME_TITLE, HOME_DESCRIPTION } from '@/lib/alpha-keywords';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
@@ -170,6 +172,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SiteFooter />
           <ChatWidgetLoader />
           <ConversionRail />
+          {/* P0.5 — the consent banner was written, wired to GA/Pixel, cited by
+              the privacy page and the footer button… and never mounted. So no
+              consent was ever collected and analytics never loaded on any
+              visit. It renders here, once, site-wide. TelClickTracker is the
+              delegated tel_click listener (renders nothing). */}
+          <CookieConsentBanner />
+          <TelClickTracker />
         </Providers>
       </body>
     </html>

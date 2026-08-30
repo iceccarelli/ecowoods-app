@@ -404,6 +404,12 @@ export default function Header() {
               </svg>
               <span className="phone-pill-label">{PHONE_DISPLAY}</span>
             </a>
+            {/* P0.4 secondary CTA — the photo-triage track. Same visibility
+                rule as topbar-quote: hidden <=768px, the mobile sticky bar
+                carries its own. */}
+            <a className="btn btn-ghost btn-sm topbar-quote topbar-photos" href={`${baseUrl}#photo-triage`}>
+              Send photos
+            </a>
             {/* topbar-quote: hidden <=768px — .sticky-cta-mobile already carries it. */}
             <a className="btn btn-copper btn-sm topbar-quote" href={`${baseUrl}#quote`}>
               Free Quote
@@ -575,6 +581,9 @@ export default function Header() {
             />
           </svg>
           Call
+        </a>
+        <a className="btn btn-ghost btn-sm" href={`${baseUrl}#photo-triage`} style={{ flex: 1 }}>
+          Send photos
         </a>
         <a className="btn btn-copper btn-sm" href={`${baseUrl}#quote`} style={{ flex: 2 }}>
           Get Free Quote

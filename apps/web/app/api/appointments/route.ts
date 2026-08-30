@@ -6,6 +6,7 @@ import { sendAdminNewQuoteEmail, sendAppointmentConfirmationEmail } from '@/lib/
 import {
   isBookableSlot, localDateKey, SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
+import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const runtime = 'nodejs';
@@ -28,6 +29,20 @@ function whenLabel(d: Date): string {
 }
 
 export async function POST(request: Request) {
+  // P0.7 — this was the ONE public POST with no rate limit, and it is the most
+  // expensive one: every call writes DB rows and sends two emails. Same
+  // contract as /api/leads now: origin check first, token bucket 10/min/IP.
+  if (!isTrustedBrowserOrigin(request)) {
+    return NextResponse.json({ error: 'Origin not allowed.' }, { status: 403 });
+  }
+  const rl = checkRateLimit(getClientIp(request), LEAD_POST_LIMIT);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Please wait a moment before trying again.' },
+      { status: 429, headers: { 'Retry-After': '60' } },
+    );
+  }
+
   let body: unknown;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }); }

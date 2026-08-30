@@ -85,10 +85,38 @@ export interface Service extends SchemaBase {
 
 export interface Offer extends SchemaBase {
   '@type': 'Offer';
+  /** Customer-facing name of the priced band (e.g. the band label). */
+  name?: string;
   priceCurrency: string; // "CAD"
   priceRange?: string; // shape only, e.g. "$2,500–$8,000"  pricing-allow
+  /** Per-unit band. Built ONLY by priceSpecification() in content/constants/pricing.ts. */
+  priceSpecification?: UnitPriceSpecification;
+  /** Reference (by @id) to the Service node the offer prices — never a copy. */
+  itemOffered?: { '@id': string } | Service;
+  areaServed?: AreaServed;
   availability?: string; // "PT10M" (ISO 8601)
   url?: string;
+}
+
+/** Shape produced by priceSpecification() — min/max per UN/CEFACT unit code. */
+export interface UnitPriceSpecification {
+  '@type': 'UnitPriceSpecification';
+  priceCurrency: string;
+  minPrice: number;
+  maxPrice: number;
+  unitCode: string; // "FTK" = square foot
+  unitText: string;
+}
+
+/**
+ * OfferCatalog — the published price bands, attached to the root organization
+ * via `hasOfferCatalog`. Prices reach this ONLY through
+ * content/constants/pricing.ts.
+ */
+export interface OfferCatalog {
+  '@type': 'OfferCatalog';
+  name: string;
+  itemListElement: Offer[];
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -116,6 +144,8 @@ export interface Organization extends SchemaBase {
   areaServed: AreaServed;
   openingHoursSpecification: OpeningHoursSpecification[];
   service?: Service[];
+  /** The three published bands as priced Offers. See OfferCatalog. */
+  hasOfferCatalog?: OfferCatalog;
   contactPoint?: ContactPoint[];
   sameAs?: string[];
 }
