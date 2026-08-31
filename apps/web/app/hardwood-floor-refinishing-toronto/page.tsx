@@ -339,7 +339,7 @@ export default function RefinishingTorontoPage() {
           </div>
         </div>
       </section>
-      <FeedbackBand topic="this page" />
+      <FeedbackBand topic="this page" estimateHref="#estimate" />
     </div>
   );
 }

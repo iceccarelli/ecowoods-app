@@ -21,7 +21,7 @@
 
 import { EW_MARK } from '@/lib/brand';
 import { CITIES, SERVICES } from '@/lib/seo-data';
-import { BUSINESS_NAP, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PROFILE_LINKS, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { useIsMobile } from './SwipeDeck';
@@ -38,14 +38,34 @@ import { useIsMobile } from './SwipeDeck';
 const HOMESTARS_URL = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
 
 /**
+ * Every profile URL in this footer comes from PROFILE_LINKS, and none is typed
+ * here.
+ *
+ * The comment above this block already stated the policy — "never invent a
+ * handle", "an icon renders ONLY when a real profile URL is set" — while the
+ * Instagram and Facebook entries below it carried the URL as a hardcoded
+ * string. So the two links on every page of the site sat outside the one file
+ * that records which profiles have been opened and confirmed, and outside the
+ * array that feeds `sameAs`. If somebody corrects a handle in PROFILE_LINKS,
+ * the schema changes and the footer does not: the site would then be telling
+ * Google one thing and a visitor another about the same profile.
+ *
+ * PROFILE_LINKS is the verified-profiles file. It is the only place a profile
+ * URL is allowed to exist. verify-destinations.mjs derives its external-host
+ * allowlist from it, so a host that is not in it cannot be linked from anywhere
+ * in the app without failing the build.
+ */
+const profileHref = (label: string) => PROFILE_LINKS.find((p) => p.label === label)?.href;
+
+/**
  * An entry without an href is not rendered (see the .filter below). Seven
  * icons lost their href here because they pointed at platform home pages, not
  * at Ecowoods. Restore one by pasting the real profile URL — after opening it.
  */
 const SOCIAL_LINKS: { label: string; href?: string; icon: ReactNode }[] = [
-  { label: 'Instagram', href: "https://www.instagram.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
+  { label: 'Instagram', href: profileHref('Instagram'), icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
   { label: 'HomeStars', href: HOMESTARS_URL, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" strokeLinejoin="round"/><path d="m12 10 1.2 2.5 2.8.4-2 2 .5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-2 2.8-.4Z" fill="currentColor" stroke="none"/></svg>) },
-  { label: 'Facebook', href: "https://www.facebook.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
+  { label: 'Facebook', href: profileHref('Facebook'), icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
   { label: 'Houzz', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>) },
   { label: 'Google Reviews', icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>) },
   { label: 'Pinterest', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>) },

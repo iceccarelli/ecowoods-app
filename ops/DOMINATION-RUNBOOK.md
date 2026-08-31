@@ -210,6 +210,55 @@ then they stay where they are.
 
 ---
 
+## 9 · Two profile URLs nobody has opened  ⏱ 5 min · do this before the next deploy
+
+`PROFILE_LINKS` in `packages/shared/constants/index.ts` carries two entries that
+the file's own policy — "no URL until someone has opened it and seen an Ecowoods
+page" — does not cover, because they were added under a heading that only says
+the handle *matches the old domain*:
+
+    https://www.instagram.com/ecowoodshardwood
+    https://www.facebook.com/ecowoodshardwood
+
+Everything else in that array records the date it was opened and what was seen
+on it. These two record neither, and they carry the retired brand's handle.
+They are now in two places that matter: `sameAs`, where a wrong URL tells Google
+this business is a different entity, and the footer of every page, where a dead
+one is a broken link on 289 pages.
+
+Open both. Then one of:
+
+- **They are ours and live** → add the read date to the comment above them, the
+  same shape as the YellowPages entry.
+- **They are dead, or they are somebody else's** → delete the two lines. The
+  icons disappear on their own; the footer renders only entries that have an
+  `href`, and `verify-destinations.mjs` will then reject any attempt to link
+  those hosts from anywhere in the app.
+
+Nothing in the code can settle this. It needs one person and two browser tabs.
+
+---
+
+## 10 · Run the rendered audit after each deploy  ⏱ 3 min
+
+    pnpm audit:rendered                       # production
+    pnpm audit:rendered --base http://localhost:3000
+
+Every other check in this repository reads source. This one opens the site in a
+real browser at 320, 390, 768 and 1280 px and measures what source cannot say:
+whether anything scrolls sideways on a phone, whether a tap target is under
+44×44, whether a horizontal rail can be scrolled by keyboard, whether an anchor
+lands behind the sticky header, whether a tab widget can be reached at all.
+
+It writes `audit/rendered.md`. It has the same control probe as
+`crawl-site.mjs`: if the environment cannot reach the site, or has no browser,
+it says so and reports nothing rather than inventing a broken site. It is
+deliberately **not** in `pnpm verify` — it needs the network and a browser, and
+a build guard that depends on either is a build that fails for reasons that have
+nothing to do with the commit.
+
+---
+
 ## Do not do these
 
 - Do not put HomeStars or Google stars into `aggregateRating`. Google's policy
