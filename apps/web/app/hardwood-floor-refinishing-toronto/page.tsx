@@ -11,6 +11,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
+import { ProcessVideo } from '../components/ProcessVideo';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -217,6 +218,12 @@ export default function RefinishingTorontoPage() {
             addresses what settled, not what was breathed. Containment is a system, not a vacuum.
           </p>
           <Illustration id="term-hepa-containment" />
+          {/* The film slot. Renders the poster and the two-sentence
+              explanation until NEXT_PUBLIC_YOUTUBE_PROCESS_ID is set — see
+              ProcessVideo. This is the page where "will my house be full of
+              dust" is the whole objection, so it is the page the film belongs
+              on. */}
+          <ProcessVideo />
         </div>
       </section>
 

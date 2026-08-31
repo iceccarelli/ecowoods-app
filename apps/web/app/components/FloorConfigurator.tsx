@@ -311,6 +311,12 @@ export default function FloorConfigurator() {
               <button type="button" className="fc-secondary" onClick={bookMeasure}>
                 Book my free measure
               </button>
+              <a
+                className="fc-secondary"
+                href={`/design/spec?species=${encodeURIComponent(speciesId)}&finish=${encodeURIComponent(finishId)}&pattern=${encodeURIComponent(patternId)}&sqft=${sqft}`}
+              >
+                Open the spec sheet
+              </a>
               <button type="button" className="fc-secondary" onClick={askEcowoodsGuide}>
 <EcowoodsLeaf size={17} strokeWidth={1.7} fillOpacity={0.22} />
                 Ask EcowoodsGuide about this floor

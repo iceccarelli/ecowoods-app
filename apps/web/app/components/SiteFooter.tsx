@@ -176,6 +176,7 @@ export default function SiteFooter() {
                   verify-links no matter how good it is. */}
               <a href="/commercial">Commercial &amp; Property Managers</a>
               <a href="/realtors">For Realtors — Pre-List Recoat</a>
+              <a href="/refer">Refer Someone</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}

@@ -180,68 +180,91 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           /**
-           * CSP, in two headers, deliberately.
+           * CSP, in two headers — now the other way round.
            *
-           * A first draft shipped one enforcing policy whose script-src was
-           *   'self' 'unsafe-inline' 'unsafe-eval' + two vercel origins
-           * and that policy would have broken the site quietly. CookieConsentBanner
-           * injects https://www.googletagmanager.com/gtag/js and
-           * https://connect.facebook.net/en_US/fbevents.js after a visitor opts
-           * in. Neither origin was listed, so both script loads would have been
-           * blocked — for consented users only, which is the hardest possible
-           * failure to notice and the exact instrumentation we need to measure
-           * whether any of this work produces business.
+           * P0 shipped a minimal ENFORCED policy and the full policy in
+           * REPORT-ONLY, with the instruction: when the console is silent, move
+           * the directives across. That has happened, with one change.
            *
-           * It also would not have bought much. A script-src carrying both
-           * 'unsafe-inline' and 'unsafe-eval' stops almost no XSS: those two
-           * directives are what the attack needs. Real breakage risk, near-zero
-           * security gain, is a bad trade at any speed.
+           * WHAT MOVED, AND THE ONE THING THAT DID NOT
            *
-           * So it ships as two headers, which is how CSP is meant to be rolled
-           * out on a site that takes money:
+           * 'unsafe-eval' is GONE and is not coming back. Nothing in this app
+           * needs it: there is no eval, no `new Function`, and no library here
+           * that compiles templates at runtime. It was inherited from a
+           * default. Removing it is most of the value in this header, because
+           * eval is the primitive most injected payloads actually want.
            *
-           *   ENFORCED — the directives that cannot break a working page and do
-           *   carry real value. object-src 'none' kills legacy plugin vectors.
-           *   base-uri 'self' stops an injected <base> rewriting every relative
-           *   URL on the page, which is a genuine and under-appreciated attack.
-           *   form-action 'self' stops an injected form posting the lead form's
-           *   contents to someone else. frame-ancestors 'self' is clickjacking
-           *   defence and supersedes X-Frame-Options.
+           * 'unsafe-inline' STAYS in script-src, and that is a deliberate
+           * trade rather than an oversight. Removing it requires a nonce on
+           * every inline script, a nonce requires a per-request value, and a
+           * per-request value requires rendering every page dynamically. This
+           * site prerenders 287 pages and serves them from the CDN with
+           * s-maxage; converting all of them to dynamic rendering to tighten
+           * one directive would cost the performance work in P2.5 and the
+           * caching work in P0.1, in exchange for a policy that Next's own
+           * inline bootstrap would then need an exception from anyway.
            *
-           *   REPORT-ONLY — the full policy, including script-src and the
-           *   origins actually in use. Browsers evaluate it and report
-           *   violations to the console without blocking anything. Load the site,
-           *   accept cookies, submit the form, open the console: whatever appears
-           *   is what enforcing this would have broken. When it is silent, move
-           *   these directives into the enforced header.
+           * So: enforce everything that is real, keep the one directive whose
+           * removal costs more than it buys, and keep a STRICTER report-only
+           * header below that omits 'unsafe-inline' — so the console tells us
+           * what a future nonce migration would have to cover, measured rather
+           * than guessed.
+           *
+           * The two Meta origins are gone with the pixel (P2.4). connect-src
+           * carries only what the code actually calls: GA, the Bank of Canada
+           * series behind /market, and IndexNow.
            */
           {
             key: 'Content-Security-Policy',
             value: [
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'self'",
-            ].join('; '),
-          },
-          {
-            key: 'Content-Security-Policy-Report-Only',
-            value: [
               "default-src 'self'",
-              // 'unsafe-inline' and 'unsafe-eval' are required by Next's runtime
-              // today. They are the reason this half is not enforced yet: a
-              // policy that permits them is not buying much, and tightening it
-              // means a nonce pass through the app first.
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com https://connect.facebook.net",
+              // No 'unsafe-eval'. See the note above for why 'unsafe-inline' stays.
+              "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://www.bankofcanada.ca https://api.indexnow.org",
-              "frame-src 'self' https://www.googletagmanager.com",
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://www.bankofcanada.ca https://api.indexnow.org",
+              // youtube-nocookie is the ProcessVideo facade's iframe (P2.1). It
+              // is listed whether or not NEXT_PUBLIC_YOUTUBE_PROCESS_ID is set,
+              // because a CSP is static config and a header that has to change
+              // when an env var changes is a header somebody will forget.
+              "frame-src 'self' https://www.googletagmanager.com https://www.youtube-nocookie.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'self'",
+              'report-uri /api/csp-report',
+              "report-to csp",
+            ].join('; '),
+          },
+          {
+            // Where `report-to csp` above sends violations. Without this the
+            // report-uri directive is the only thing working, and it is
+            // deprecated — both are sent because browser support is split.
+            key: 'Reporting-Endpoints',
+            value: 'csp="/api/csp-report"',
+          },
+          {
+            /* The NEXT rung of the ladder, not a duplicate of the one above.
+               This policy is what the enforced header would be after a nonce
+               migration: no 'unsafe-inline' anywhere. Violations reported here
+               are the exact inventory of inline scripts and styles that
+               migration would have to cover. Read the console before starting
+               that work rather than estimating it. */
+            key: 'Content-Security-Policy-Report-Only',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com",
+              "style-src 'self' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://www.bankofcanada.ca https://api.indexnow.org",
+              "frame-src 'self' https://www.googletagmanager.com https://www.youtube-nocookie.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+              'report-uri /api/csp-report',
             ].join('; '),
           },
         ],

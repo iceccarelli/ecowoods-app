@@ -9936,3 +9936,152 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .rl-page .tlx-section { break-inside: avoid; }
 }
 /* === EW:P1-INTENT END ===================================================== */
+
+/* === EW:P2-VIDEO START ====================================================
+   P2.1 — the film slot and its no-film fallback. */
+.pv { margin: 1.75rem 0 0; }
+.pv-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  /* --surface-deep, not the --walnut-950 primitive: a video frame sits behind
+     a poster in both themes and a primitive does not flip. */
+  background: var(--surface-deep);
+  border: 1px solid var(--line);
+}
+.pv-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.pv-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: rgba(26, 15, 8, 0.28);
+  cursor: pointer;
+}
+.pv-play:hover { background: rgba(26, 15, 8, 0.4); }
+.pv-play:focus-visible { outline: 3px solid var(--copper-bright); outline-offset: -3px; }
+.pv-play-glyph {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--copper);
+  color: #fff;
+  font-size: 22px;
+  padding-left: 4px;
+}
+.pv-badge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  /* A filled dark chip in both themes, so it takes the on-dark pair. */
+  background: rgba(26, 15, 8, 0.78);
+  color: var(--on-dark);
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pv-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.pv-fallback { color: var(--muted); line-height: 1.6; }
+/* === EW:P2-VIDEO END ====================================================== */
+
+/* === EW:P2-SPEC START =====================================================
+   P2.2 — the /design/spec sheet. Screen styling first, then the print rules
+   that make the browser's own "Save as PDF" produce the document. */
+.ds-sheet {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.75rem;
+  background: var(--bg);
+  max-width: 46rem;
+}
+.ds-sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1rem;
+}
+.ds-sheet-kicker {
+  margin: 0;
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-sheet-title { margin: 0.2rem 0 0; }
+.ds-sheet-org {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.6;
+}
+.ds-spec {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1.25rem 0;
+}
+.ds-spec dt {
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+.ds-spec dd { margin: 0; font-size: var(--fs-base); color: var(--ink); }
+.ds-sheet-note {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--copper);
+  padding-left: 0.9rem;
+  margin: 1.25rem 0;
+}
+.ds-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+.ds-sheet-foot {
+  margin: 1.5rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+@media print {
+  .ds-page .topbar,
+  .ds-page .site-footer,
+  .ds-page .sticky-cta-mobile,
+  .ds-noprint { display: none !important; }
+  .ds-sheet { border: 0; padding: 0; max-width: none; }
+  .ds-page .tlx-section { padding: 0; }
+}
+/* === EW:P2-SPEC END ======================================================= */
+
+/* === EW:P2-REFER START ==================================================== */
+.ref-fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; margin: 0 0 1rem; }
+.ref-fieldset legend {
+  padding: 0 0.4rem;
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ref-form { max-width: 44rem; }
+.ref-legal { font-size: var(--fs-xs); color: var(--muted); max-width: 46rem; }
+/* === EW:P2-REFER END ====================================================== */

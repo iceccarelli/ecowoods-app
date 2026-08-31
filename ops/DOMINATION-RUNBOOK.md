@@ -71,6 +71,38 @@ Vercel → Project → Settings → Environment Variables:
 it appears under Project → Cron Jobs after the deploy, and that `CRON_SECRET` is
 set — the route refuses every unauthenticated request by design.
 
+## 3b · P2 environment variables (all optional — nothing breaks unset)
+
+| Variable | What it turns on |
+| --- | --- |
+| `NEXT_PUBLIC_YOUTUBE_PROCESS_ID` | The process film on the homepage and the refinishing page. Unset, both render the poster, the "Film coming" badge and a two-sentence explanation of HEPA containment — which is a page that still works. Set it only to a video **we filmed**. |
+| `NEXT_PUBLIC_BOOKING_URL` | A Cal.com/Calendly calendar as the primary booking path (P1.7). |
+| `CRON_SECRET` | The abandoned-quote reminder (P1.8). Without it the cron route 401s. |
+
+**Removed in P2.4: `NEXT_PUBLIC_META_PIXEL_ID`.** It was never set, so the pixel
+never loaded — while `/privacy` told every reader that Meta received their
+browsing data, and the CSP carried two Meta origins to permit a script that
+never ran. Over-declaring a data processor is a false statement about where
+personal data goes, so the loader, the consent toggle, the CSP entries and the
+legal declaration were removed together. Re-adding it means restoring all four
+deliberately; `lib/legal.ts` carries the note.
+
+## 3c · Watch the CSP for a week  ⏱ 10 min, then 5 min a week later
+
+P2.4 promoted the Content-Security-Policy from report-only to **enforced**,
+minus `unsafe-eval`. Violations now post to `/api/csp-report` and appear in the
+Vercel log as `event: csp.violation`.
+
+After the first deploy, search the logs for that string. Expect silence. If
+something appears, it names the exact directive and blocked URL — fix or
+allowlist that one origin rather than reverting the header.
+
+A second, **stricter** report-only policy ships alongside it, with no
+`unsafe-inline`. Its violations are the inventory of work a future nonce
+migration would need. Do not act on those yet; they are a measurement, and the
+migration would require rendering all 287 pages dynamically, which costs the
+caching and LCP work in P0.1 and P2.5.
+
 ## 4 · Google Business Profile  ⏱ 45 min
 
 Exact values (copy, do not retype):
@@ -131,7 +163,13 @@ card is currently typographic. Photographs of the five published jobs — or any
 new job — turn the strongest module on the site visual. Put the file in the case
 study's frontmatter and set `imageSlot` in `apps/web/content/job-cards.ts`.
 
-**b) Testimonial consent.** The case studies carry testimonial attributions with
+**b) The process film.** `ProcessVideo` renders the moment
+`NEXT_PUBLIC_YOUTUBE_PROCESS_ID` is set. One take of a real HEPA-contained sand
+in an occupied house answers the objection that costs the most jobs — "will my
+house be full of dust" — better than any paragraph on the site. Phone footage
+is fine; it must be ours.
+
+**c) Testimonial consent.** The case studies carry testimonial attributions with
 full customer names. This repository has no record of who collected them or
 whether the customers consented to publication, so **P1 deliberately did not
 amplify them** into the JobCard component or into `Review` schema. Get written
