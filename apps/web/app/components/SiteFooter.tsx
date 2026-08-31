@@ -170,6 +170,12 @@ export default function SiteFooter() {
               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
               <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
               <a href="/hardwood-floor-problems-toronto">Floor Problems &amp; Repairs</a>
+              {/* P1 — the two buyers who are not homeowners. In the Services
+                  column rather than Learn because that is what they are buying,
+                  and because a page with no inbound chrome link fails
+                  verify-links no matter how good it is. */}
+              <a href="/commercial">Commercial &amp; Property Managers</a>
+              <a href="/realtors">For Realtors — Pre-List Recoat</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}

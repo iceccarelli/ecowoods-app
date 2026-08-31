@@ -126,6 +126,56 @@ export const SINGLE_WORD_CORES = [
 
 export const CLUSTERS: QueryCluster[] = [
   {
+    id: 'commercial-property',
+    intent: 'commercial',
+    canonical: '/commercial',
+    summary:
+      'Not a homeowner. A condo board, a property manager or a commercial tenant, whose questions are scheduling, insurance and a price a board can approve.',
+    queries: [
+      'commercial hardwood flooring Toronto',
+      'condo corridor floor refinishing Toronto',
+      'property manager flooring contractor Toronto',
+      'condo board hardwood flooring',
+      'commercial floor refinishing GTA',
+      'after hours floor sanding Toronto',
+      'hardwood flooring certificate of insurance Toronto',
+      'unit turnover floor recoat Toronto',
+      'lobby floor refinishing Toronto',
+      'amenity room hardwood Toronto',
+      'HOA flooring contractor Ontario',
+      'commercial flooring contractor near me',
+    ],
+    supporting: [
+      '/services/floor-refinishing',
+      '/services/dust-free-sanding',
+      '/framework',
+      '/case-studies',
+    ],
+  },
+  {
+    id: 'realtor-prelist',
+    intent: 'commercial',
+    canonical: '/realtors',
+    summary:
+      'An agent or a seller with a listing date. Wants the floor to photograph well, on a schedule, for a price known in advance.',
+    queries: [
+      'floor refinishing before selling house Toronto',
+      'pre list floor recoat Toronto',
+      'should I refinish floors before selling',
+      'realtor flooring contractor Toronto',
+      'screen and recoat before listing',
+      'quick floor refresh before sale Toronto',
+      'do hardwood floors increase home value Toronto',
+      'floor recoat three days Toronto',
+      'staging hardwood floors Toronto',
+    ],
+    supporting: [
+      '/services/floor-refinishing',
+      '/guides/hardwood-flooring-cost-toronto',
+      '/case-studies',
+    ],
+  },
+  {
     id: 'hardwood-flooring-toronto',
     intent: 'commercial',
     canonical: '/hardwood-flooring-toronto',

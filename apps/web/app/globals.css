@@ -9763,3 +9763,176 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 /* Hero secondary CTA sits beside the primary, wraps under it on phones */
 .hr-secondary { white-space: nowrap; }
 /* === EW:P0-CONVERSION END ================================================= */
+
+/* === EW:P1-PROOF START ====================================================
+   P1.1 JobCard proof module, P1.4 area-page NAP block. Tokens only. */
+
+.jc-rail-intro { max-width: 46rem; }
+.jc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.jc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.jc-head { display: flex; flex-direction: column; gap: 0.15rem; }
+.jc-place {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.jc-dot { margin: 0 0.4rem; }
+.jc-service { font-size: var(--fs-base); margin: 0; }
+.jc-img { width: 100%; border-radius: 8px; display: block; }
+.jc-spec {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  margin: 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.jc-spec dt {
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.15rem;
+}
+.jc-spec dd { margin: 0; font-size: var(--fs-sm); color: var(--ink); }
+.jc-outcome { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--ink-soft); }
+.jc-measure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  background: var(--tint, rgba(200, 126, 79, 0.08));
+}
+.jc-measure-label {
+  font-size: var(--fs-3xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.jc-measure-value {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--fs-base);
+  color: var(--ink);
+}
+.jc-measure-value em { font-style: normal; font-size: var(--fs-xs); color: var(--muted); margin-left: 0.4rem; }
+.jc-link {
+  margin-top: auto;
+  font-size: var(--fs-sm);
+  color: var(--copper-text, var(--copper));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.jc-link:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 3px; }
+
+/* Area-page NAP block */
+.area-nap {
+  border-left: 3px solid var(--copper);
+  padding: 0.25rem 0 0.25rem 1rem;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.area-nap p { margin: 0; }
+.area-nap-name { font-weight: 600; color: var(--ink); }
+.area-nap-hours, .area-nap-note { color: var(--muted); }
+.area-nap a { color: var(--copper-text, var(--copper)); }
+.area-lede { font-size: var(--fs-lg); }
+/* === EW:P1-PROOF END ====================================================== */
+
+/* === EW:P1-QUOTE-IMPACT START ============================================
+   P1.3 — the commercial box under a technical paper. Visually distinct from
+   .wp-callout (which is part of the paper's argument); this one is clearly
+   the site talking, not the document. */
+.qi-box {
+  margin: 2.5rem 0 0;
+  padding: 1.5rem;
+  border: 1px solid var(--copper);
+  border-radius: 12px;
+  background: var(--tint, rgba(200, 126, 79, 0.06));
+}
+.qi-kicker {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--copper-text, var(--copper));
+}
+.qi-body { margin: 0 0 1.25rem; line-height: 1.7; color: var(--ink); }
+.qi-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; }
+.qi-sign { margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.qi-sign a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* === EW:P1-QUOTE-IMPACT END =============================================== */
+
+/* === EW:P1-INTENT START ==================================================
+   P1.5 most-searched rail · P1.7 external booking CTA · P1.8 consent row. */
+.most-searched { border-bottom: 1px solid var(--line); }
+.ms-kicker {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ms-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+.ms-list a {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.ms-list a:hover { border-color: var(--copper); color: var(--copper-text, var(--copper)); }
+.ms-list a:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }
+
+.booking-external { margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.booking-external-note { font-size: var(--fs-xs); color: var(--muted); }
+
+.ef-consent {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0.25rem 0 0.5rem;
+}
+.ef-consent input { margin-top: 0.2rem; flex: 0 0 auto; }
+.ef--onDark .ef-consent { color: rgba(245, 239, 230, 0.72); }
+
+/* /realtors prints as the seller one-pager: drop the chrome, keep the sheet. */
+@media print {
+  .rl-page .tlx-crumbs,
+  .rl-page .fw-actions,
+  .rl-page .rl-print-cta,
+  .rl-page .ef-form,
+  .rl-page .jc-rail { display: none !important; }
+  .rl-page .tlx-section { break-inside: avoid; }
+}
+/* === EW:P1-INTENT END ===================================================== */

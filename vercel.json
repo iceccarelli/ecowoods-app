@@ -71,6 +71,10 @@
     { "source": "/api/knowledge", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] }
   ],
 
+  "crons": [
+    { "path": "/api/cron/quote-recovery", "schedule": "0 * * * *" }
+  ],
+
   "cleanUrls": true,
   "trailingSlash": false
 }

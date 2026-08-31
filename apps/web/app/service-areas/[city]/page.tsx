@@ -5,6 +5,9 @@ import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cit
 import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
 import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
+import { JobCardRail } from '../../components/JobCard';
+import { jobCardsForArea } from '@/content/job-cards';
+import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 
 export function generateStaticParams() {
   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
@@ -15,8 +18,16 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city: slug } = await params;
   const city = cityBySlug(slug);
   if (!city) return {};
-  const title = `Hardwood floor installation & refinishing in ${city.name}`;
-  const description = `Custom hardwood floor installation, dust-free refinishing and restoration in ${city.name} and the GTA. Fixed written estimates, manufacturer warranties in writing. Call ${BUSINESS.phoneDisplay}.`;
+  const title = `Hardwood floor refinishing & installation in ${city.name}`;
+  /* The description leads with what is TRUE OF THIS AREA rather than what is
+     true of all 32. `cityContent` is the only per-area copy on the page, so the
+     first clause of the snippet is the first thing that differs between them. */
+  const cc = cityContent(city.slug);
+  const localClause = cc ? cc.intro.split(/(?<=\.)\s/)[0] : '';
+  const description = (
+    `${localClause} Dust-free refinishing and hardwood installation in ${city.name}. ` +
+    `Fixed written estimates. Call ${BUSINESS.phoneDisplay}.`
+  ).slice(0, 158);
   return {
     title,
     description,
@@ -38,8 +49,44 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       { name: city.name, url },
     ]),
     faqPageSchema(),
+    /* An area-scoped Service node. It carries its OWN @id — the page's URL, not
+       the global /services/<slug>#service id — because those global nodes are
+       emitted site-wide with `areaServed` covering the whole GTA. Re-emitting
+       one of them here with a narrower areaServed would publish two different
+       descriptions of the same entity and let a consumer pick either. This is a
+       different node: the delivery of these services in this one place. */
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      '@id': `${url}#service`,
+      name: `Hardwood floor refinishing & installation in ${city.name}`,
+      serviceType: 'Hardwood flooring',
+      provider: { '@id': `${SITE_URL}/#organization` },
+      areaServed: { '@type': 'City', name: city.name },
+      url,
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: `Services delivered in ${city.name}`,
+        itemListElement: SERVICES.map((svc) => ({
+          '@type': 'Offer',
+          itemOffered: { '@id': `${SITE_URL}/services/${svc.slug}#service` },
+          areaServed: { '@type': 'City', name: city.name },
+        })),
+      },
+    },
   ];
   const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
+
+  /* The per-area copy, read once. `intro` and `housingNote` are promoted into
+     the hero (see the note there); the block further down renders what is left
+     so nothing is published twice on one page. */
+  const cc = cityContent(city.slug);
+  const localIntro = cc?.intro;
+  const localHousing = cc?.housingNote;
+
+  /* Published jobs done in THIS area. Four of the thirty-two areas have one
+     today; the rest render nothing rather than a card invented to fill a grid. */
+  const localJobs = jobCardsForArea(city.name);
 
   return (
     <div>
@@ -54,12 +101,36 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </nav>
           <span className="eyebrow">Hardwood Flooring · {city.name}</span>
           <h1 style={{ marginTop: '0.5rem' }}>
-            Hardwood floor installation &amp; refinishing in{' '}
+            Hardwood floor refinishing &amp; installation in{' '}
             <span className="serif-italic">{city.name}.</span>
           </h1>
+
+          {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
+              This paragraph used to be one shared sentence pair with the city
+              name substituted — the same 48 words on 32 URLs, sitting above the
+              only genuinely local block on the page. Thirty-two pages whose
+              opening is identical are thirty-two pages a crawler deduplicates
+              before it ranks any of them, and an answer engine collapses to one
+              weak citation target. The local content already existed in
+              CITY_CONTENT; nothing here is newly written and nothing is
+              invented. It has simply been promoted above the boilerplate,
+              which is where a reader deciding whether we know their street
+              needs it. `scripts/verify-cities.mjs` already guarantees every
+              area has this content. */}
+          {localIntro && (
+            <p className="area-lede" style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>
+              {localIntro}
+            </p>
+          )}
+          {localHousing && (
+            <p style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>{localHousing}</p>
+          )}
+
+          {/* The shared promise still belongs on the page — it is what the
+              business guarantees everywhere — but it is now the SECOND thing
+              read, after the reason to believe we work here. */}
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
-            Ecowoods installs, sands and refinishes solid and engineered hardwood across {city.name} and the
-            wider GTA. Dust-free sanding that keeps you living at home, fixed written estimates with no
+            Dust-free sanding that keeps you living at home, fixed written estimates with no
             &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
           </p>
           <p style={{ marginTop: '1.5rem' }}>
@@ -69,19 +140,17 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       </section>
 
       {(() => {
-        const cc = cityContent(city.slug);
         if (!cc) return null;
         return (
           <section className="section">
             <div className="shell">
               <span className="eyebrow">Hardwood flooring in {city.name}</span>
               <h2>What we see in {city.name} homes.</h2>
-              <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.intro}</p>
+              {/* `intro` and `housingNote` are rendered in the hero now. Publishing
+                  them twice on one page would be the duplication this change exists
+                  to remove, so this block carries only what the hero did not. */}
               {cc.neighbourhoods.length > 0 && (
                 <p style={{ marginTop: '1rem' }}><strong>Areas we work:</strong> {cc.neighbourhoods.join(' · ')}</p>
-              )}
-              {cc.housingNote && (
-                <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.housingNote}</p>
               )}
               {cc.signatureProject && (
                 <blockquote style={{ margin: '1.5rem 0', padding: '1rem 1.25rem', borderLeft: '3px solid var(--copper-bright, #b87333)', opacity: 0.9 }}>{cc.signatureProject}</blockquote>
@@ -93,6 +162,18 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           </section>
         );
       })()}
+
+      {/* A job actually done in THIS area, with its readings. Four areas have
+          one; the component renders nothing for the rest. A proof rail that is
+          empty is honest; a proof rail filled with a job from another
+          neighbourhood is not. */}
+      <JobCardRail
+        kicker={`Finished in ${city.name}`}
+        heading={`Work we have published in ${city.name}`}
+        intro="A real job, its substrate, its species and the measurement it turned on."
+        jobs={localJobs}
+        from={`service-area-${city.slug}`}
+      />
 
       <section className="section">
         <div className="shell">
@@ -162,6 +243,29 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
                 <p style={{ marginTop: '0.6rem', opacity: 0.85 }}>{f.a}</p>
               </details>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The NAP block, byte-identical to every other surface because every
+          field is interpolated from BUSINESS_NAP. A local landing page that
+          states the address differently from the homepage, the footer and the
+          Google Business Profile is the single most common reason a local
+          entity fails to resolve. */}
+      <section className="section-tight" aria-label="Contact">
+        <div className="shell">
+          <div className="area-nap">
+            <p className="area-nap-name">{BUSINESS_NAP.legalName}</p>
+            <p>{BUSINESS_ADDRESS_LINE}</p>
+            <p>
+              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>
+              {' · '}
+              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
+            </p>
+            <p className="area-nap-hours">{HOURS_LINE}</p>
+            <p className="area-nap-note">
+              Serving {city.name} from the Etobicoke shop — we come to you.
+            </p>
           </div>
         </div>
       </section>

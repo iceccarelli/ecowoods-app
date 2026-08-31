@@ -16,6 +16,19 @@
  * inline in page.tsx. This is the conversion section — the calendar is a second
  * path to booking, so it can live one tap away, but the primary path never
  * should.
+ *
+ * EXTERNAL CALENDAR HOOK (P1.7)
+ *
+ * The scheduler here writes an Appointment row and emails; it is not connected
+ * to anybody's actual calendar, so a slot booked at 9am and a slot blocked in
+ * an estimator's Google Calendar do not know about each other. That is a real
+ * double-booking risk the moment volume rises.
+ *
+ * Set NEXT_PUBLIC_BOOKING_URL to a Cal.com or Calendly link and this panel
+ * offers it as the primary path, with the built-in scheduler kept underneath as
+ * the fallback that still works if the third party is down. Unset — which is
+ * the state today — nothing changes and no half-wired integration ships.
+ * Documented in apps/web/.env.example and ops/DOMINATION-RUNBOOK.md.
  */
 
 import { HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
@@ -24,6 +37,23 @@ import { BookingScheduler } from './BookingScheduler';
 import MobileSheet from './MobileSheet';
 import { useIsMobile } from './SwipeDeck';
 import type { ReactNode } from 'react';
+
+/** Set to a Cal.com / Calendly URL to make a real calendar the primary path. */
+const EXTERNAL_BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL;
+
+function ExternalBookingCta() {
+  if (!EXTERNAL_BOOKING_URL) return null;
+  return (
+    <p className="booking-external">
+      <a className="btn btn-copper" href={EXTERNAL_BOOKING_URL} target="_blank" rel="noopener noreferrer">
+        Book a 45-minute measure on the calendar
+      </a>
+      <span className="booking-external-note">
+        Opens our live calendar. The form below still works if you prefer it.
+      </span>
+    </p>
+  );
+}
 
 export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
   const { mounted, isMobile } = useIsMobile();
@@ -37,6 +67,7 @@ export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
         <div className="booking-step-label">
           <span>{clockIcon}</span> Bookings
         </div>
+        <ExternalBookingCta />
         <BookingScheduler />
       </div>
     );

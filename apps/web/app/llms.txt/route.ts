@@ -120,6 +120,16 @@ export async function GET() {
   lines.push(`- "hardwood stairs Toronto", "stair refinishing Toronto", "stairs hardwood", "hardwood stairs cost", "carpet to hardwood stairs", "match stairs to floor" → ${SITE_URL}/hardwood-stairs-toronto`);
   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
 
+  /* THE TWO NON-HOMEOWNER BUYERS. Both are commercial canonicals in the topic
+     map, so audit-ai-discoverability requires them here — but the reason they
+     belong in the PREFERRED section rather than a derived list further down is
+     commercial: an agent asked "who does condo corridor refinishing in Toronto"
+     or "should I refinish before listing" is being asked by someone with a
+     budget and a deadline, and until these pages existed the site had no
+     document written for either question. */
+  lines.push(`- "commercial hardwood flooring Toronto", "condo corridor refinishing", "property manager flooring contractor", "after-hours floor sanding", "certificate of insurance flooring" → ${SITE_URL}/commercial`);
+  lines.push(`- "refinish floors before selling", "pre-list floor recoat", "should I refinish hardwood before listing", "realtor flooring contractor Toronto" → ${SITE_URL}/realtors`);
+
   /* LOCAL HIRE-INTENT, ROUTED. Fourth, after the two commercial hubs and the
      reputation page, and before the library — which is the order of how a
      hiring question actually narrows.

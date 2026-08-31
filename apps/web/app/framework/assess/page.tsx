@@ -9,7 +9,7 @@ import { SchemaScript } from '@/lib/schema/components';
 export const metadata: Metadata = {
   title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}`,
   description:
-    'Score any hardwood flooring quote against 27 published criteria across six pillars. Runs entirely in your browser — nothing is sent anywhere. Works on any contractor, including us.',
+    `Score any hardwood flooring quote against ${criterionCount()} published criteria across six pillars. Runs entirely in your browser — your answers are never sent anywhere. Works on any contractor, including us.`,
   alternates: { canonical: '/framework/assess' },
   openGraph: {
     title: 'Score a hardwood flooring quote',
@@ -45,9 +45,13 @@ export default function AssessPage() {
             the result tells you which questions to go back and ask in writing.
           </p>
           <p className="fw-privacy">
-            Nothing here is sent anywhere. No submission, no account, no stored answers, no tracking
-            of what you enter. The result is printed by your browser. That is deliberate: a tool for
-            scoring someone else&rsquo;s quote is only worth using if it is not also a lead form.
+            Your answers are never sent anywhere. No submission, no account, no stored answers, no
+            tracking of what you enter — the scoring runs in your browser and the result is printed
+            by it. That is deliberate: a tool for scoring someone else&rsquo;s quote is only worth
+            using if it is not also a lead form. Once you have your result you can copy its link and
+            send it to whoever wrote the quote; and if you want a person to read the actual
+            document, there is a separate, optional upload underneath the result. Neither one is a
+            condition of seeing your score.
           </p>
         </div>
       </header>
