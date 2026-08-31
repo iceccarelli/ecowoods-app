@@ -67,6 +67,34 @@ export const photoTriageSchema = z.object({
 
 export type PhotoTriageData = z.infer<typeof photoTriageSchema>;
 
+/**
+ * Referral — two people, one of whom has not agreed to anything yet.
+ *
+ * The referred person's details are supplied by SOMEBODY ELSE. That is the
+ * whole legal weight of this form: under CASL, a referral is a narrow,
+ * single-message exemption and it depends on the referrer being real, being
+ * named, and having an actual relationship with the person referred. So
+ * `referrerConsent` is required — the referrer confirms they know this person
+ * and that we may mention who sent us — and the route records it. No blind
+ * address harvesting, and exactly one contact.
+ */
+export const referralSchema = z.object({
+  referrerName: z.string().min(2, 'Please enter your full name'),
+  referrerEmail: z.string().email('Please enter a valid email'),
+  referrerPhone: z.string().min(7, 'Please enter a valid phone number'),
+  friendName: z.string().min(2, "Please enter your friend's name"),
+  friendContact: z.string().min(7, 'An email or phone number for your friend'),
+  friendArea: z.string().optional(),
+  note: z.string().max(1000).optional(),
+  company: z.string().optional(), // honeypot
+  /** The referrer confirms the relationship. Required — see the note above. */
+  referrerConsent: z.literal('on', {
+    errorMap: () => ({ message: 'Please confirm you know this person and are happy for us to say who referred them' }),
+  }),
+});
+
+export type ReferralData = z.infer<typeof referralSchema>;
+
 export type LeadFormData = z.infer<typeof leadSchema>;
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateBidInput = z.infer<typeof createBidSchema>;

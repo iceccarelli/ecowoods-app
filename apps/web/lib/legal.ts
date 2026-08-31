@@ -38,7 +38,7 @@
  */
 
 /** ISO date the descriptions below were last checked against the code. */
-export const LEGAL_LAST_REVIEWED = '2026-08-24';
+export const LEGAL_LAST_REVIEWED = '2026-08-31';
 
 /**
  * Owner/legal sign-off status. Rendered on both pages, because a policy whose
@@ -126,13 +126,14 @@ export const PROCESSORS: Processor[] = [
     evidence: 'apps/web/app/components/CookieConsentBanner.tsx — loadGoogleAnalytics().',
     consentGated: true,
   },
-  {
-    name: 'Meta (Facebook) pixel',
-    purpose: 'Measures whether an advertisement led to an enquiry.',
-    data: 'Pages viewed and a cookie identifying the browser.',
-    evidence: 'apps/web/app/components/CookieConsentBanner.tsx — loadMetaPixel().',
-    consentGated: true,
-  },
+  /* REMOVED 2026-08-31 (P2.4): the Meta (Facebook) pixel.
+     NEXT_PUBLIC_META_PIXEL_ID was never set, so the loader never ran and no
+     data ever reached Meta — while this page told every reader that it did.
+     A privacy notice that over-declares is not the safe direction to be wrong
+     in: it is a false statement about where personal data goes, and it forced
+     two Meta origins into the Content-Security-Policy for nothing. The loader,
+     the consent toggle and the CSP entries went with it. Re-adding it means
+     re-adding all four, deliberately. */
 ];
 
 /** The exact fields the public enquiry form sends. Kept in step with leadSchema. */

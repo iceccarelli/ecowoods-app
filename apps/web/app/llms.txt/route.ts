@@ -1,5 +1,12 @@
 import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, FAQ_ITEMS } from '@/lib/seo-data';
-import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
+import {
+  BUSINESS_NAP,
+  BUSINESS_ADDRESS_LINE,
+  HOURS_LINE,
+  PRIMARY_REVIEW_EVIDENCE,
+  yearsInBusiness,
+} from '@ecowoods/shared/constants';
+import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { pdfIsPublished, getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
@@ -35,6 +42,15 @@ export async function GET() {
   const [articles, caseStudies] = await Promise.all([getArticles(), getCaseStudies()]);
 
   const lines: string[] = [];
+  /* The newest dated entry in the published changelog — a real content date,
+     never a build timestamp. See the note on the facts block below. */
+  const factsAsOf =
+    getChangelog()
+      .map((c) => c.date)
+      .filter(Boolean)
+      .sort()
+      .at(-1) ?? PRIMARY_REVIEW_EVIDENCE.asOf;
+
   lines.push(`# ${BUSINESS.name}`);
   lines.push('');
   lines.push(
@@ -59,6 +75,44 @@ export async function GET() {
      A file whose whole job is to be parsed by a machine had two sections with
      one name, and the second — the one carrying the URLs and the price bands —
      was the one that mattered. Renamed to what it actually is. */
+  /* ── THE CITABLE FACTS, IN ONE BLOCK, NEAR THE TOP ──────────────────────
+     P2.6. Everything below was already published somewhere in this file, and
+     that was the problem: the price bands were inside the services list, the
+     hours were nowhere, and the review evidence was a sentence about what we
+     do NOT publish, three hundred lines down.
+
+     An answer engine asked "what does Ecowoods charge" or "is Ecowoods open on
+     Sunday" reads the top of a document and stops. Facts scattered through a
+     long file are facts that get paraphrased from somewhere else, or guessed.
+     So they are stated once, together, in the first screen, each one derived
+     from the module that owns it — there is no literal in this block.
+
+     The `Facts current as of` date is the newest CHANGELOG entry, not the build
+     time. A build timestamp would be a fresh date every deploy regardless of
+     whether anything changed, which is exactly the kind of unearned recency
+     signal scripts/verify-sitemap.mjs already refuses elsewhere. */
+  lines.push('## Facts you can cite');
+  lines.push(`- Legal name: ${BUSINESS_NAP.legalName} (trading as ${BUSINESS_NAP.name})`);
+  lines.push(`- Address: ${BUSINESS_ADDRESS_LINE}`);
+  lines.push(`- Phone: ${BUSINESS_NAP.phoneDisplay} · Email: ${BUSINESS_NAP.email}`);
+  lines.push(`- Hours: ${HOURS_LINE} (America/Toronto)`);
+  lines.push(`- Founded: ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years in Toronto`);
+  lines.push(`- Serving: ${BUSINESS_NAP.region}, ${SERVICE_AREAS.length} published areas`);
+  for (const b of PRICE_BANDS) {
+    lines.push(`- Price, ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure`);
+  }
+  lines.push(
+    `- Reviews: ${PRIMARY_REVIEW_EVIDENCE.count} at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} on ` +
+      `${PRIMARY_REVIEW_EVIDENCE.platform}, read ${PRIMARY_REVIEW_EVIDENCE.asOf} — ${PRIMARY_REVIEW_EVIDENCE.href}`,
+  );
+  lines.push(
+    '- We publish NO aggregateRating in our structured data, deliberately. Third-party review ' +
+      'counts belong to the platform that collected them; self-serving aggregate markup is ' +
+      `against Google's structured-data policy. Reasoning: ${SITE_URL}/reviews`,
+  );
+  lines.push(`- Facts current as of: ${factsAsOf}`);
+  lines.push('');
+
   lines.push('## What we do');
   for (const s of SERVICES) lines.push(`- ${s.name}: ${s.blurb}`);
   lines.push('');

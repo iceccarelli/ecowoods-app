@@ -192,6 +192,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        /realtors is an agent with a listing date. Both are commercial canonicals
        in content/search/topic-map.ts, so audit-ai-discoverability requires them
        here and in llms.txt; neither is a variant of an existing page. */
+    /* The referral page. Not a commercial canonical — nobody searches for it —
+       but it is a real page a customer is sent to by name, so it is indexable
+       and listed. /design/spec is deliberately NOT here: it is one visitor's
+       working document, noindex, and a different page per querystring. */
+    entry('/refer', 'monthly', 0.6),
     entry('/commercial', 'monthly', 0.95),
     entry('/realtors', 'monthly', 0.9),
     entry('/hardwood-flooring-toronto', 'monthly', 0.95),

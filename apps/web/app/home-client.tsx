@@ -13,14 +13,13 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { RotatingBackground } from './components/RotatingBackground';
+import { HeroBackdrop } from './components/HeroBackdrop';
+import { ProcessVideo } from './components/ProcessVideo';
 import PricingSection from './components/PricingSection';
-import { FigureRotator } from './components/FigureRotator';
 import { HOME_ROTATION } from './data/rotator-slides';
 import HeroRotator from './components/HeroRotator';
 import { HERO_VARIANTS } from './data/hero-variants';
 import SpecsCoverage from './components/SpecsCoverage';
-import FloorCatalog from './components/FloorCatalog';
-import MachineCatalog from './components/MachineCatalog';
 import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
@@ -42,6 +41,31 @@ const BookingPanel = dynamic(() => import('./components/BookingPanel'), {
   ssr: false,
   loading: () => <div aria-hidden="true" style={{ minHeight: 420 }} />,
 });
+
+/**
+ * P2.5 — THE LIBRARY IS DEFERRED, NOT DELETED.
+ *
+ * Three of the heaviest client islands on this page sit below the fold, after
+ * the price, the proof and the form: a twelve-floor gallery with a lightbox, a
+ * machine catalogue, and an eight-slide figure rotator. Statically imported,
+ * every byte of all three was in the initial chunk a phone had to download
+ * before the hero could become interactive — paid for by every visitor,
+ * including the one who called the number and never scrolled.
+ *
+ * `ssr: true` is the whole point and is NOT the default people reach for. The
+ * markup still renders on the server, so every caption, alt attribute and
+ * figure label is in the HTML a crawler and an answer engine read. Only the
+ * JavaScript is split into its own chunk and fetched after the critical path.
+ * Deferring the content instead of the code would trade a performance win for
+ * the indexable corpus this whole site is built on, which is not a trade worth
+ * making at any speed.
+ */
+const FloorCatalog = dynamic(() => import('./components/FloorCatalog'), { ssr: true });
+const MachineCatalog = dynamic(() => import('./components/MachineCatalog'), { ssr: true });
+const FigureRotator = dynamic(
+  () => import('./components/FigureRotator').then((m) => m.FigureRotator),
+  { ssr: true },
+);
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel
@@ -443,7 +467,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           exposed text in the accessibility tree. */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />
-        <RotatingBackground rotate={false} />
+        <HeroBackdrop />
         <div className="shell hero-content">
           <HeroRotator
             variants={[HERO_VARIANTS[0]!]}
@@ -726,6 +750,8 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               one does. Tap any tool to see it in use.
             </p>
           </div>
+
+          <ProcessVideo />
 
           <MachineCatalog />
         </div>

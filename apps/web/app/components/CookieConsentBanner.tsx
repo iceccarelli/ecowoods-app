@@ -8,12 +8,18 @@ import { useEffect, useState } from 'react';
  * only load their scripts after the visitor opts in.
  */
 const CONSENT_STORAGE_KEY = 'cookie_consent';
-const CONSENT_VERSION = 1;
+/**
+ * Bumped to 2 when the Meta Pixel was removed (P2.4). A stored consent records
+ * a decision about a NAMED set of processors; when that set changes, the old
+ * decision no longer describes anything and re-asking is the honest move — a
+ * v1 record saying "marketing: true" is consent to a processor that no longer
+ * exists.
+ */
+const CONSENT_VERSION = 2;
 const OPEN_PREFERENCES_EVENT = 'open-cookie-preferences';
 
 type OptionalConsent = {
   analytics: boolean;
-  marketing: boolean;
 };
 
 type StoredConsent = OptionalConsent & {
@@ -28,9 +34,6 @@ declare global {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     gaLoaded?: boolean;
-    fbq?: ((...args: unknown[]) => void) & { callMethod?: unknown; queue?: unknown[] };
-    _fbq?: unknown;
-    metaPixelLoaded?: boolean;
   }
 }
 
@@ -50,7 +53,6 @@ function writeConsent(consent: OptionalConsent): StoredConsent {
   const full: StoredConsent = {
     essential: true,
     analytics: consent.analytics,
-    marketing: consent.marketing,
     acceptedAt: new Date().toISOString(),
     country: 'CA',
     version: CONSENT_VERSION,
@@ -75,38 +77,9 @@ function loadGoogleAnalytics() {
   window.gtag('config', measurementId, { anonymize_ip: true });
 }
 
-function loadMetaPixel() {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  if (!pixelId || window.metaPixelLoaded) return;
-  window.metaPixelLoaded = true;
-
-  (function (f: Window, b: Document, e: string, v: string) {
-    if (f.fbq) return;
-    const n: NonNullable<Window['fbq']> = function (...args: unknown[]) {
-      if (n.callMethod) {
-        (n.callMethod as (...a: unknown[]) => void).apply(n, args);
-      } else {
-        n.queue!.push(args);
-      }
-    };
-    n.callMethod = undefined;
-    n.queue = [];
-    f.fbq = n;
-    f._fbq = n;
-    const t = b.createElement(e) as HTMLScriptElement;
-    t.async = true;
-    t.src = v;
-    const s = b.getElementsByTagName(e)[0];
-    s.parentNode?.insertBefore(t, s);
-  })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-
-  window.fbq?.('init', pixelId);
-  window.fbq?.('track', 'PageView');
-}
 
 function applyConsent(consent: StoredConsent) {
   if (consent.analytics) loadGoogleAnalytics();
-  if (consent.marketing) loadMetaPixel();
 }
 
 /** Lets other components (e.g. the footer) reopen the preferences panel. */
@@ -119,7 +92,7 @@ export function openCookiePreferences() {
 export default function CookieConsentBanner() {
   const [showBanner, setShowBanner] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [draft, setDraft] = useState<OptionalConsent>({ analytics: false, marketing: false });
+  const [draft, setDraft] = useState<OptionalConsent>({ analytics: false });
 
   useEffect(() => {
     const consent = readConsent();
@@ -131,10 +104,7 @@ export default function CookieConsentBanner() {
 
     const handleOpenPreferences = () => {
       const existing = readConsent();
-      setDraft({
-        analytics: existing?.analytics ?? false,
-        marketing: existing?.marketing ?? false,
-      });
+      setDraft({ analytics: existing?.analytics ?? false });
       setModalOpen(true);
     };
 
@@ -143,23 +113,20 @@ export default function CookieConsentBanner() {
   }, []);
 
   const acceptAll = () => {
-    applyConsent(writeConsent({ analytics: true, marketing: true }));
+    applyConsent(writeConsent({ analytics: true }));
     setShowBanner(false);
     setModalOpen(false);
   };
 
   const rejectOptional = () => {
-    applyConsent(writeConsent({ analytics: false, marketing: false }));
+    applyConsent(writeConsent({ analytics: false }));
     setShowBanner(false);
     setModalOpen(false);
   };
 
   const openSettings = () => {
     const existing = readConsent();
-    setDraft({
-      analytics: existing?.analytics ?? false,
-      marketing: existing?.marketing ?? false,
-    });
+    setDraft({ analytics: existing?.analytics ?? false });
     setModalOpen(true);
   };
 
@@ -185,8 +152,8 @@ export default function CookieConsentBanner() {
         >
           <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-relaxed" style={{ color: 'var(--on-dark)' }}>
-              We use cookies to run this site and, only with your permission, to understand
-              traffic and measure marketing performance. Essential cookies are always on.{' '}
+              We use cookies to run this site and, only with your permission, to understand which
+              pages are useful. We run no advertising trackers. Essential cookies are always on.{' '}
               <a
                 href="/privacy"
                 className="underline underline-offset-2"
@@ -256,12 +223,6 @@ export default function CookieConsentBanner() {
                 description="Helps us see which pages are useful (Google Analytics)."
                 checked={draft.analytics}
                 onChange={(checked) => setDraft((d) => ({ ...d, analytics: checked }))}
-              />
-              <ConsentRow
-                label="Marketing"
-                description="Personalized ads and campaign tracking (Meta Pixel)."
-                checked={draft.marketing}
-                onChange={(checked) => setDraft((d) => ({ ...d, marketing: checked }))}
               />
             </div>
 
