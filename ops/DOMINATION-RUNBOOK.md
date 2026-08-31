@@ -30,53 +30,60 @@ Then: Google Search Console → old property → **Change of Address** → `http
 Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
 property for 180 days.
 
-## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
+## 2 · The `Access-Control-Allow-Origin: *` — FIXED IN CODE, nothing to click
 
-**RESOLVED, half of it.** The permissions-policy that looked wrong
-(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
-before P0 landed. It now reads exactly what `vercel.json` says:
-`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
-mystery.
+**This item twice told you to go and find a Vercel dashboard header rule. That
+was wrong**, and it cost you two trips into settings looking for a switch that
+does not exist. The reasoning was an inference from one true fact — the header
+appears in no file in this repository — to a conclusion that was never tested.
+Recorded rather than quietly deleted, because a runbook that hides its own
+corrections is one you cannot trust the rest of.
 
-**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
-measured after the P2 deploy:
+**What is actually happening:** Vercel attaches `Access-Control-Allow-Origin: *`
+to everything it serves out of static/prerendered storage. It is platform
+behaviour, not configuration. The discriminating measurement is WHICH routes
+carry it — every path that showed it here (`/`, `/refer`, `/commercial`,
+`/robots.txt`) is `○` static or `●` prerendered in the build output, while
+function-rendered routes that do not set CORS themselves carry nothing.
+
+Two things follow, both non-obvious and both worth remembering:
+
+- **Middleware could never have removed it.** The CDN adds the header after
+  middleware has already run, so a delete there is a no-op.
+- **A local test cannot prove the fix.** `next start` never sets the header at
+  all, so any local check passes vacuously. This is verified in production or
+  it is not verified.
+
+**The fix, shipped:** `next.config.js` declares
+`Access-Control-Allow-Origin: <canonical origin>` on every path EXCEPT the agent
+surfaces. `headers()` cannot unset a header, but a declared header becomes part
+of the build output routing config and overrides the platform default —
+publishing the canonical origin instead of `*` has the same practical effect: a
+page on another origin can no longer read the response body.
+
+The machine editions keep their wildcard on purpose (`/llms.txt`,
+`/llms-full.txt`, `/ai.txt`, the `.md` mirrors, `/api/knowledge`): an agent
+fetching them from a browser context needs it, and
+`scripts/verify-vercel-config.mjs` fails the build if they lose it. The
+exclusion pattern was tested against Next's own path-to-regexp before shipping.
+
+**Verify after the next production deploy** — and only there:
 
 ```
-/                access-control-allow-origin: *
-/refer           access-control-allow-origin: *
-/commercial      access-control-allow-origin: *
-/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
-/robots.txt      access-control-allow-origin: *
-/api/health      access-control-allow-origin: *     ← this one IS ours, by design
+curl -sI https://ecowoods.ca/         | grep -i access-control   # → https://ecowoods.ca
+curl -sI https://ecowoods.ca/refer    | grep -i access-control   # → https://ecowoods.ca
+curl -sI https://ecowoods.ca/llms.txt | grep -i access-control   # → *  (still, deliberately)
 ```
 
-`vercel.json` sets that header on exactly four sources — `/(.*).md`,
-`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
-route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
-this was verified by compiling every `source` in the file against those paths
-with the same path-to-regexp Next uses. So the blanket header is configured
-outside this repository.
+If `/` still shows `*` after that deploy, the override did not win over the
+platform default. The remaining lever would be serving the HTML through a
+function instead of from static storage — which costs the prerendering, the
+`s-maxage` caching and the LCP work, and is almost certainly not worth it for a
+public marketing page. Say so in the record and leave it.
 
-Where to look, in order:
-
-1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
-   under **Firewall**. A catch-all header rule added in the dashboard overrides
-   nothing in `vercel.json` — it is simply added on top.
-2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
-   THIS project and is not proxied through another one.
-3. Whatever DNS the domain resolves through, if anything sits in front of
-   Vercel.
-
-Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
-document lets any website on the internet read the full response body of your
-pages from a visitor's browser. For public marketing pages the direct harm is
-small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
-too, and those are behind a login. Anything that ever renders customer data
-server-side becomes cross-origin readable.
-
-Once found, the intended state is: the header appears ONLY on the machine
-surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
-enforces that those four keep it.
+**Also resolved:** the odd `permissions-policy` (`autoplay=*, camera=(*)`) that
+appeared alongside it was a stale pre-P0 deployment. It now reads exactly what
+`vercel.json` says.
 
 ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
 

@@ -1,3 +1,11 @@
+/**
+ * The canonical origin, derived from the same environment variable every other
+ * surface reads (lib/seo-data.ts, the schema graph, the machine editions). It
+ * is used for the Access-Control-Allow-Origin override below; a second copy of
+ * the site's own address is exactly the drift `pnpm seo:claims` exists to stop.
+ */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -169,6 +177,61 @@ const nextConfig = {
 
   async headers() {
     return [
+      /**
+       * ACCESS-CONTROL-ALLOW-ORIGIN — OVERRIDING A HEADER WE NEVER SET.
+       *
+       * THE MISATTRIBUTION THIS CORRECTS
+       *
+       * Every HTML page on this site is served with
+       * `Access-Control-Allow-Origin: *`, and it was recorded — in
+       * ops/DOMINATION-RUNBOOK.md and in the analysis that produced it — as a
+       * Vercel dashboard header rule somebody had to go and remove. That was an
+       * inference from one true fact (the header appears in no file in this
+       * repository) to a conclusion that was never tested, and it sent the
+       * owner looking twice for a switch that does not exist.
+       *
+       * WHAT IS ACTUALLY HAPPENING
+       *
+       * Vercel attaches the wildcard to everything it serves out of
+       * static/prerendered storage. It is platform behaviour, not
+       * configuration. The discriminating measurement is WHICH routes carry it:
+       * `/`, `/refer`, `/commercial`, `/robots.txt` — every one of them `○`
+       * static or `●` prerendered in the build output — carry it, while
+       * function-rendered routes that do not set CORS themselves do not.
+       *
+       * TWO CONSEQUENCES WORTH WRITING DOWN
+       *
+       *   · Middleware cannot remove it. The CDN adds the header after
+       *     middleware has already run, so a delete there is a no-op.
+       *   · A local check cannot prove this fix. `next start` never sets the
+       *     header in the first place, so any local test passes vacuously.
+       *     This one is verified in production or it is not verified.
+       *
+       * THE FIX
+       *
+       * `headers()` cannot UNSET a header, but a declared header becomes part
+       * of the build output routing config and overrides the platform default.
+       * Publishing the canonical origin instead of `*` has the same practical
+       * effect: a page on another origin can no longer read the response body.
+       *
+       * THE NEGATIVE LOOKAHEAD IS THE WHOLE POINT. /llms.txt, /llms-full.txt,
+       * /ai.txt and the `.md` mirrors are DELIBERATELY wildcard-open — an agent
+       * fetching them from a browser context needs it, and
+       * scripts/verify-vercel-config.mjs fails the build if they lose it. They
+       * are excluded here so vercel.json keeps owning them and no route emits
+       * two different values. `/api/` is excluded because those routes are
+       * function-rendered, so Vercel adds nothing to them, and the public ones
+       * set their own CORS deliberately.
+       *
+       * The pattern was tested against Next's own path-to-regexp before it
+       * shipped: it matches /, /refer, /commercial, /robots.txt, /sitemap.xml
+       * and every prerendered page, and does not match /llms.txt, /ai.txt,
+       * /api/knowledge or anything ending in .md.
+       */
+      {
+        source: '/((?!llms\\.txt|llms-full\\.txt|ai\\.txt|api/|_next/)(?!.*\\.md$).*)',
+        headers: [{ key: 'Access-Control-Allow-Origin', value: SITE_URL }],
+      },
       {
         source: '/(.*)',
         headers: [
