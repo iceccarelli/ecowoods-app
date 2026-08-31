@@ -1,0 +1,4075 @@
+From 1646ba22f9ad8ba709d3fdadfdcc3a3462435e90 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 31 Aug 2026 04:57:40 +0000
+Subject: [PATCH] p1-recommend-and-capture
+
+P1 (days 8-21): recommendability assets and intent surfaces, on top of P0.
+
+P1.1 First-party proof. content/job-cards.ts publishes five finished jobs -
+neighbourhood, size, substrate, species, year and ONE measured result each -
+and scripts/verify-job-cards.mjs fails the build the moment any figure stops
+matching its case-study .mdx. Deliberately carries no photograph (none of the
+five studies sets an image) and no customer name: the testimonial attributions
+in the studies have no consent record in this repo, and the guard structurally
+bans a name/quote field so nobody adds one quietly. JobCard/JobCardRail render
+on the homepage, /case-studies, service pages, area pages and both new pages.
+
+P1.2 The quote scorer becomes a weapon, without becoming a lead form. Answers
+still never leave the browser; they now mirror into the URL (one char per
+criterion) so a score can be reloaded, sent to a spouse, or sent back to the
+contractor who wrote the quote. A separate, optional upload under the result
+sends us the actual document (/api/quote-review to the estimating desk, never
+stored, never filed as a lead). The page privacy copy was rewritten to match
+rather than left contradicting itself.
+
+P1.3 Papers become sales assets. content/quote-impact.ts adds one <=120-word
+box per paper - what the reader should now require of their quote - signed by
+the Ecowoods estimating desk, never an invented person. verify-quote-impact.mjs
+enforces the word limit, that every paper has one, and that each box anchors to
+a section that really exists. The papers themselves are untouched.
+
+P1.4 32 area pages de-duplicated. The first paragraph was one shared 48-word
+template with the city name substituted, sitting ABOVE the only unique block on
+the page. CITY_CONTENT is now the lede; H1 leads with refinishing; each page
+gains an area-scoped Service node with its own @id, a NAP block derived from
+BUSINESS_NAP, and a local JobCard where a published job exists (4 of 32).
+
+P1.5 Most-searched rail on the homepage, reaching the 8 commercial canonicals.
+
+P1.6 Two new demand surfaces. /commercial (condo boards, property managers:
+after-hours protocol, COI on request - not a fake PDF, bands itemised by area)
+and /realtors (three-day pre-list screen and recoat on the published band, with
+an explicit section on when we will say not to do it; prints as the seller
+one-pager rather than advertising a download that does not exist). Both wired
+into topic map, sitemap, llms.txt, chrome, and both guard allowlists.
+
+P1.7 After-hours capture. lib/business-hours.ts derives opening hours from
+BUSINESS_HOURS and knows the office clock; the chat widget now hands an
+after-hours visitor an SMS/photo-triage path and says when a person is back.
+Fixed a single-source violation while there: the booking engine carried its own
+hardcoded hours table. Documented NEXT_PUBLIC_BOOKING_URL as the Cal.com hook.
+
+P1.8 Consented abandoned-quote recovery. QuoteRecovery model + migration, a
+checkbox required by the schema (z.literal(true)), capture on pagehide, one
+email after 2h via a CRON_SECRET-protected Vercel cron, sentAt stamped before
+the send, and cancellation the moment the same address converts. No consent, no
+send - CASL is not a style preference.
+
+Also fixed: tsconfig.base.json was missing entirely (packages/shared extended a
+file that did not exist; nothing read it until a test imported shared), and the
+booking availability suite now passes with hours derived rather than typed.
+
+ops/DOMINATION-RUNBOOK.md and ops/GA4-events.md added.
+
+Verified: all 41 guards pass (39 existing + 2 new, both in the verify chain);
+tsc error count identical to main (107, all sandbox-blocked Prisma engine, zero
+in P1 files); 11/11 booking tests pass.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/.env.example                         |  18 +
+ apps/web/app/api/cron/quote-recovery/route.ts | 113 ++++++
+ apps/web/app/api/leads/route.ts               |  23 ++
+ apps/web/app/api/quote-recovery/route.ts      | 104 +++++
+ apps/web/app/api/quote-review/route.ts        | 179 +++++++++
+ apps/web/app/case-studies/page.tsx            |  15 +
+ apps/web/app/commercial/page.tsx              | 367 ++++++++++++++++++
+ apps/web/app/components/BookingPanel.tsx      |  31 ++
+ apps/web/app/components/ChatWidget.tsx        |  59 ++-
+ apps/web/app/components/EstimateForm.tsx      |  66 ++++
+ apps/web/app/components/Header.tsx            |   9 +
+ apps/web/app/components/JobCard.tsx           | 129 ++++++
+ apps/web/app/components/QuoteReviewForm.tsx   | 185 +++++++++
+ apps/web/app/components/SiteFooter.tsx        |   6 +
+ .../web/app/framework/assess/AssessClient.tsx | 134 ++++++-
+ apps/web/app/framework/assess/page.tsx        |  12 +-
+ apps/web/app/globals.css                      | 173 +++++++++
+ apps/web/app/home-client.tsx                  |  52 ++-
+ apps/web/app/llms.txt/route.ts                |  10 +
+ apps/web/app/papers/[slug]/page.tsx           |  29 ++
+ apps/web/app/realtors/page.tsx                | 313 +++++++++++++++
+ apps/web/app/service-areas/[city]/page.tsx    | 124 +++++-
+ apps/web/app/services/[slug]/page.tsx         |  13 +
+ apps/web/app/sitemap.ts                       |   8 +
+ apps/web/content/job-cards.ts                 | 181 +++++++++
+ apps/web/content/quote-impact.ts              |  90 +++++
+ apps/web/content/search/topic-map.ts          |  50 +++
+ apps/web/lib/analytics.ts                     |  14 +-
+ apps/web/lib/booking/availability.ts          |  34 +-
+ apps/web/lib/business-hours.ts                | 113 ++++++
+ .../migration.sql                             |  26 ++
+ apps/web/prisma/schema.prisma                 |  46 +++
+ ops/DOMINATION-RUNBOOK.md                     | 152 ++++++++
+ ops/GA4-events.md                             |  43 ++
+ package.json                                  |   4 +-
+ packages/shared/constants/index.ts            |  11 +
+ scripts/verify-conversion.mjs                 |   5 +
+ scripts/verify-job-cards.mjs                  | 227 +++++++++++
+ scripts/verify-quote-impact.mjs               | 127 ++++++
+ scripts/verify-schema.mjs                     |  10 +
+ tsconfig.base.json                            |  37 ++
+ vercel.json                                   |   4 +
+ 42 files changed, 3296 insertions(+), 50 deletions(-)
+ create mode 100644 apps/web/app/api/cron/quote-recovery/route.ts
+ create mode 100644 apps/web/app/api/quote-recovery/route.ts
+ create mode 100644 apps/web/app/api/quote-review/route.ts
+ create mode 100644 apps/web/app/commercial/page.tsx
+ create mode 100644 apps/web/app/components/JobCard.tsx
+ create mode 100644 apps/web/app/components/QuoteReviewForm.tsx
+ create mode 100644 apps/web/app/realtors/page.tsx
+ create mode 100644 apps/web/content/job-cards.ts
+ create mode 100644 apps/web/content/quote-impact.ts
+ create mode 100644 apps/web/lib/business-hours.ts
+ create mode 100644 apps/web/prisma/migrations/20260831000000_add_quote_recovery/migration.sql
+ create mode 100644 ops/DOMINATION-RUNBOOK.md
+ create mode 100644 ops/GA4-events.md
+ create mode 100644 scripts/verify-job-cards.mjs
+ create mode 100644 scripts/verify-quote-impact.mjs
+ create mode 100644 tsconfig.base.json
+
+diff --git a/apps/web/.env.example b/apps/web/.env.example
+index a4196a6..bc1239f 100644
+--- a/apps/web/.env.example
++++ b/apps/web/.env.example
+@@ -173,6 +173,24 @@ LEADS_WEBHOOK_URL=""
+ # in the consent banner (see app/components/CookieConsentBanner.tsx).
+ # Leave blank to disable either script entirely.
+ NEXT_PUBLIC_GA_MEASUREMENT_ID=""   # e.g. G-XXXXXXXXXX
++
++# ── Booking (P1.7) ────────────────────────────────────────────────────────────
++# A Cal.com or Calendly link. When set, the booking panel offers it as the
++# primary path and keeps the built-in scheduler underneath as a fallback.
++# Unset (the default) nothing changes — the built-in scheduler is the only path,
++# and it writes an Appointment row rather than touching anyone's real calendar.
++# The double-booking risk that closes is real once volume rises: a slot taken
++# here and a slot blocked in an estimator's own calendar currently do not know
++# about each other.
++NEXT_PUBLIC_BOOKING_URL=""         # e.g. https://cal.com/ecowoods/measure
++
++# ── Abandoned-quote recovery (P1.8) ──────────────────────────────────────────
++# Secret for the Vercel Cron job at /api/cron/quote-recovery. The route refuses
++# every request that does not present it, because an unauthenticated endpoint
++# that sends email to addresses in your database is a spam cannon with your
++# domain on it. Generate with: openssl rand -hex 32
++CRON_SECRET=""
++
+ NEXT_PUBLIC_META_PIXEL_ID=""       # Meta (Facebook) Pixel ID
+ 
+ # ──────────────────────────────────────────────────────────────
+diff --git a/apps/web/app/api/cron/quote-recovery/route.ts b/apps/web/app/api/cron/quote-recovery/route.ts
+new file mode 100644
+index 0000000..dc26153
+--- /dev/null
++++ b/apps/web/app/api/cron/quote-recovery/route.ts
+@@ -0,0 +1,113 @@
++import { NextResponse } from 'next/server';
++import { db } from '@/lib/db';
++import { sendEmail } from '@/lib/email';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++
++/**
++ * GET /api/cron/quote-recovery — send the one reminder, once.
++ *
++ * Run by Vercel Cron (see the `crons` block in vercel.json). Every row it
++ * touches carries a consent timestamp put there by a person ticking a box; the
++ * check is repeated here rather than trusted from upstream, because the cost of
++ * being wrong is a CASL violation rather than a bad metric.
++ *
++ * THE RULES, IN THE ORDER THEY ARE ENFORCED
++ *
++ *   · The caller presents CRON_SECRET, or gets a 401. An unauthenticated route
++ *     that emails addresses out of your database is a spam cannon with your
++ *     domain's reputation attached to it.
++ *   · consentedAt is set        — no consent, no send. Ever.
++ *   · sentAt is null            — exactly one email per person, forever.
++ *   · convertedAt is null       — somebody who finished is never asked to.
++ *   · The row is at least 2h old and at most 7 days old. A reminder about a
++ *     form somebody abandoned last month is not a reminder, it is a cold email.
++ *   · sentAt is stamped BEFORE the send. A crash after the send would otherwise
++ *     re-queue the same person on the next run, and sending twice is worse than
++ *     not sending at all.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const MIN_AGE_MS = 2 * 60 * 60 * 1000; // the brief's two hours
++const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
++const BATCH = 50;
++
++export async function GET(request: Request) {
++  const secret = process.env.CRON_SECRET;
++  const auth = request.headers.get('authorization');
++  if (!secret || auth !== `Bearer ${secret}`) {
++    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
++  }
++
++  const now = Date.now();
++  let due: Array<{ id: string; email: string; name: string | null }> = [];
++  try {
++    due = await db.quoteRecovery.findMany({
++      where: {
++        sentAt: null,
++        convertedAt: null,
++        createdAt: { lte: new Date(now - MIN_AGE_MS), gte: new Date(now - MAX_AGE_MS) },
++      },
++      select: { id: true, email: true, name: true },
++      take: BATCH,
++    });
++  } catch (err) {
++    console.error(
++      JSON.stringify({
++        event: 'quote_recovery.cron_query_failed',
++        error: err instanceof Error ? err.message : 'unknown',
++      }),
++    );
++    return NextResponse.json({ ok: false, error: 'query_failed' }, { status: 500 });
++  }
++
++  let sent = 0;
++  for (const row of due) {
++    // Stamp FIRST. A crash mid-send loses one email; a crash after an unstamped
++    // send emails the same person on every run until somebody notices.
++    try {
++      await db.quoteRecovery.update({ where: { id: row.id }, data: { sentAt: new Date() } });
++    } catch {
++      continue;
++    }
++
++    const first = (row.name ?? '').trim().split(/\s+/)[0];
++    const greeting = first ? `${first},` : 'Hello,';
++
++    try {
++      await sendEmail({
++        to: row.email,
++        subject: 'Your floor is still unmeasured',
++        text:
++          `${greeting}\n\n` +
++          `You started an estimate with us and did not finish it — no problem, and this is the ` +
++          `only time we will mention it.\n\n` +
++          `If it is easier, reply to this email with three photos of the floor and we will tell ` +
++          `you what it needs. Or call ${BUSINESS_NAP.phoneDisplay} and we will book the measure ` +
++          `in about a minute.\n\n` +
++          `The measurement is free and the written price does not move afterwards.\n\n` +
++          `— ${BUSINESS_NAP.legalName}\n${BUSINESS_NAP.phoneDisplay}\n`,
++        html:
++          `<p>${greeting}</p>` +
++          `<p>You started an estimate with us and did not finish it — no problem, and this is the only time we will mention it.</p>` +
++          `<p>If it is easier, <strong>reply to this email with three photos of the floor</strong> and we will tell you what it needs. ` +
++          `Or call <a href="${BUSINESS_NAP.phoneHref}">${BUSINESS_NAP.phoneDisplay}</a> and we will book the measure in about a minute.</p>` +
++          `<p>The measurement is free and the written price does not move afterwards.</p>` +
++          `<p style="color:#6b5d4f;font-size:13px;">— ${BUSINESS_NAP.legalName} · ${BUSINESS_NAP.phoneDisplay}<br>` +
++          `You are receiving this once because you asked to be reminded if you left the form unfinished.</p>`,
++      });
++      sent += 1;
++    } catch (err) {
++      console.error(
++        JSON.stringify({
++          event: 'quote_recovery.send_failed',
++          id: row.id,
++          error: err instanceof Error ? err.message : 'unknown',
++        }),
++      );
++    }
++  }
++
++  console.log(JSON.stringify({ event: 'quote_recovery.cron_run', due: due.length, sent }));
++  return NextResponse.json({ ok: true, due: due.length, sent });
++}
+diff --git a/apps/web/app/api/leads/route.ts b/apps/web/app/api/leads/route.ts
+index fdf501f..804d24b 100644
+--- a/apps/web/app/api/leads/route.ts
++++ b/apps/web/app/api/leads/route.ts
+@@ -191,6 +191,29 @@ export async function POST(request: Request) {
+     }));
+   }
+ 
++  /* 2b. CANCEL ANY PENDING RECOVERY REMINDER (P1.8).
++     This person just finished. Asking them two hours later to finish is the
++     fastest way to make a helpful reminder feel like a mailing list, so the
++     conversion is recorded here — server-side and authoritative — rather than
++     trusted to a client that may have already navigated away. Best-effort like
++     everything else after the durable log. */
++  if (lead.email) {
++    db.quoteRecovery
++      .updateMany({
++        where: { email: String(lead.email), sentAt: null, convertedAt: null },
++        data: { convertedAt: new Date() },
++      })
++      .catch((err: unknown) =>
++        console.error(
++          JSON.stringify({
++            event: 'lead.recovery_cancel_failed',
++            leadId,
++            error: err instanceof Error ? err.message : 'unknown',
++          }),
++        ),
++      );
++  }
++
+   // 3. BEST-EFFORT admin email. Never blocks, never fails the request.
+   sendAdminNewQuoteEmail({
+     quoteId: quoteId ?? leadId,
+diff --git a/apps/web/app/api/quote-recovery/route.ts b/apps/web/app/api/quote-recovery/route.ts
+new file mode 100644
+index 0000000..6d3adc8
+--- /dev/null
++++ b/apps/web/app/api/quote-recovery/route.ts
+@@ -0,0 +1,104 @@
++import { NextResponse } from 'next/server';
++import { z } from 'zod';
++import { db } from '@/lib/db';
++import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
++
++/**
++ * POST /api/quote-recovery — record a CONSENTED reminder for an unfinished form.
++ *
++ * Fired by the estimate form when someone has typed an email AND ticked the
++ * reminder box, but has not submitted. Two hours later, if they still have not,
++ * /api/cron/quote-recovery sends exactly one email.
++ *
++ * THE CONSENT IS THE PRODUCT. Canada's anti-spam law does not care that the
++ * address was typed into our own form — an unsolicited commercial email is an
++ * offence with penalties measured in tens of thousands of dollars, and "they
++ * were clearly interested" is not a defence. So the checkbox is required by the
++ * schema, the timestamp is stored on the row, and the sender re-checks it. A
++ * recovery programme that cannot prove consent per-message is not a growth
++ * channel, it is a liability with a nice conversion rate.
++ *
++ * DEDUPED BY EMAIL. A person who tabs between two pages, or reloads, must not
++ * accumulate reminders. One pending row per address; a repeat call refreshes
++ * it rather than adding to it.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const recoverySchema = z.object({
++  email: z.string().email(),
++  name: z.string().max(120).optional(),
++  phone: z.string().max(40).optional(),
++  source: z.string().max(120).optional(),
++  service: z.string().max(60).optional(),
++  city: z.string().max(80).optional(),
++  /** Must be literally true. The box, ticked, by a person. */
++  consent: z.literal(true),
++});
++
++export async function POST(request: Request) {
++  if (!isTrustedBrowserOrigin(request)) {
++    return NextResponse.json({ ok: false }, { status: 403 });
++  }
++  const rl = checkRateLimit(getClientIp(request), LEAD_POST_LIMIT);
++  if (!rl.allowed) return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
++
++  let body: unknown;
++  try {
++    body = await request.json();
++  } catch {
++    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
++  }
++
++  const parsed = recoverySchema.safeParse(body);
++  if (!parsed.success) {
++    // Deliberately terse: this endpoint is fired in the background by the form
++    // and its failures must never surface to a visitor mid-typing.
++    return NextResponse.json({ ok: false }, { status: 400 });
++  }
++  const d = parsed.data;
++
++  try {
++    const pending = await db.quoteRecovery.findFirst({
++      where: { email: d.email, sentAt: null, convertedAt: null },
++      orderBy: { createdAt: 'desc' },
++    });
++
++    if (pending) {
++      await db.quoteRecovery.update({
++        where: { id: pending.id },
++        data: {
++          name: d.name ?? pending.name,
++          phone: d.phone ?? pending.phone,
++          source: d.source ?? pending.source,
++          service: d.service ?? pending.service,
++          city: d.city ?? pending.city,
++          consentedAt: new Date(),
++        },
++      });
++    } else {
++      await db.quoteRecovery.create({
++        data: {
++          email: d.email,
++          name: d.name ?? null,
++          phone: d.phone ?? null,
++          source: d.source ?? null,
++          service: d.service ?? null,
++          city: d.city ?? null,
++          consentedAt: new Date(),
++        },
++      });
++    }
++  } catch (err) {
++    console.error(
++      JSON.stringify({
++        event: 'quote_recovery.persist_failed',
++        error: err instanceof Error ? err.message : 'unknown',
++      }),
++    );
++    // Never an error to the visitor: this is a background nicety, not the lead.
++    return NextResponse.json({ ok: true }, { status: 202 });
++  }
++
++  return NextResponse.json({ ok: true }, { status: 201 });
++}
+diff --git a/apps/web/app/api/quote-review/route.ts b/apps/web/app/api/quote-review/route.ts
+new file mode 100644
+index 0000000..87870d4
+--- /dev/null
++++ b/apps/web/app/api/quote-review/route.ts
+@@ -0,0 +1,179 @@
++import { NextResponse } from 'next/server';
++import { z } from 'zod';
++import { sendEmail, type EmailAttachment } from '@/lib/email';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
++
++/**
++ * POST /api/quote-review — "read the quote I already have".
++ *
++ * The MOFU surface. Someone holding a competitor's quote sends us the
++ * document; a senior estimator replies with what is wrong, what is missing and
++ * what is fine. It is the play against competitors with more Google reviews:
++ * review volume does not tell a homeowner which of three quotes is correct.
++ *
++ * WHAT THIS ROUTE DELIBERATELY DOES NOT DO
++ *
++ * It does not write to the leads table. A person asking for a second opinion
++ * has not asked us to quote their job, and filing them as a lead is how a
++ * useful service turns into the thing nobody wants to use. It emails the
++ * estimating desk, and a human decides whether there is a conversation to have.
++ *
++ * It does not store the document. The file is attached to one internal email
++ * and never written to disk or blob storage — somebody else's commercial
++ * document is not ours to retain, and the form says so.
++ *
++ * Same capture invariant as the other lead routes: the durable log line runs
++ * before the rate limiter, so a false-positive throttle can never silently
++ * erase a request. Document BYTES are never logged — names and sizes only.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const MAX_FILES = 3;
++const MAX_PDF_BYTES = 8 * 1024 * 1024;
++const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
++const ACCEPTED = new Set([
++  'application/pdf',
++  'image/jpeg',
++  'image/png',
++  'image/webp',
++  'image/heic',
++  'image/heif',
++]);
++
++const reviewSchema = z.object({
++  name: z.string().min(2, 'Please enter your name'),
++  email: z.string().email('Please enter a valid email'),
++  message: z.string().max(2000).optional(),
++  context: z.string().max(300).optional(),
++  source: z.string().max(120).optional(),
++  company: z.string().optional(), // honeypot
++});
++
++function reviewId(): string {
++  return `qreview_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
++}
++
++export async function POST(request: Request) {
++  if (!isTrustedBrowserOrigin(request)) {
++    return NextResponse.json({ success: false, message: 'Origin not allowed.' }, { status: 403 });
++  }
++
++  let form: FormData;
++  try {
++    form = await request.formData();
++  } catch {
++    return NextResponse.json(
++      { success: false, message: 'Send this as multipart/form-data with the quote attached.' },
++      { status: 400 },
++    );
++  }
++
++  const fields: Record<string, string> = {};
++  const files: File[] = [];
++  for (const [key, value] of form.entries()) {
++    if (typeof value === 'string') {
++      if (value !== '') fields[key] = value;
++    } else if (key === 'documents' && value.size > 0) {
++      files.push(value);
++    }
++  }
++
++  if (fields.company?.trim()) {
++    console.log(JSON.stringify({ event: 'quote_review.honeypot', at: new Date().toISOString() }));
++    return NextResponse.json({ success: true, message: 'Received.' }, { status: 201 });
++  }
++
++  const parsed = reviewSchema.safeParse(fields);
++  const fileErrors: string[] = [];
++  if (files.length === 0) fileErrors.push('Attach the quote — a PDF, or photos of it.');
++  if (files.length > MAX_FILES) fileErrors.push(`At most ${MAX_FILES} files.`);
++  for (const f of files.slice(0, MAX_FILES)) {
++    if (f.type && !ACCEPTED.has(f.type)) fileErrors.push(`${f.name}: send a PDF or an image.`);
++    else if (f.type === 'application/pdf' && f.size > MAX_PDF_BYTES) fileErrors.push(`${f.name} is over 8 MB.`);
++    else if (f.type !== 'application/pdf' && f.size > MAX_IMAGE_BYTES) fileErrors.push(`${f.name} is too large.`);
++  }
++
++  if (!parsed.success || fileErrors.length) {
++    const fieldErrors: Record<string, string> = {};
++    if (!parsed.success) {
++      for (const issue of parsed.error.issues) {
++        const key = issue.path[0];
++        if (typeof key === 'string' && !(key in fieldErrors)) fieldErrors[key] = issue.message;
++      }
++    }
++    if (fileErrors.length) fieldErrors.documents = fileErrors.join(' ');
++    return NextResponse.json(
++      { success: false, message: 'Please check the highlighted fields.', fieldErrors },
++      { status: 400 },
++    );
++  }
++
++  const data = parsed.data;
++  const id = reviewId();
++
++  // Durable capture first — before the limiter, before the email.
++  console.log(
++    JSON.stringify({
++      event: 'quote_review.captured',
++      id,
++      receivedAt: new Date().toISOString(),
++      name: data.name,
++      email: data.email,
++      source: data.source,
++      context: data.context,
++      documents: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
++    }),
++  );
++
++  const rl = checkRateLimit(getClientIp(request), LEAD_POST_LIMIT);
++  if (!rl.allowed) {
++    console.warn(JSON.stringify({ event: 'quote_review.rate_limited', id, note: 'Captured above.' }));
++    return NextResponse.json(
++      { success: false, message: 'Please wait a moment before sending another.' },
++      { status: 429, headers: { 'Retry-After': '60' } },
++    );
++  }
++
++  try {
++    const attachments: EmailAttachment[] = [];
++    for (const f of files.slice(0, MAX_FILES)) {
++      attachments.push({ filename: f.name || 'quote.pdf', content: Buffer.from(await f.arrayBuffer()) });
++    }
++    const rows = [
++      ['Name', data.name],
++      ['Email', data.email],
++      ['Came from', data.source ?? '—'],
++      ['Framework result', data.context ?? '—'],
++      ['They suspect', data.message ?? '—'],
++      ['Reference', id],
++    ]
++      .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`)
++      .join('');
++
++    await sendEmail({
++      to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,
++      subject: `Quote review request — ${data.name}`,
++      html:
++        `<h2 style="margin:0 0 8px;">Somebody sent us a quote to read</h2>` +
++        `<p style="margin:0 0 16px;">${attachments.length} document(s) attached. Reply with what is wrong, what is missing, and what is fine — including when the answer is that it is a good quote.</p>` +
++        `<table style="border-collapse:collapse;">${rows}</table>`,
++      text: `Quote review from ${data.name} (${data.email}). ${attachments.length} document(s). Context: ${data.context ?? 'none'}`,
++      attachments,
++    });
++  } catch (err) {
++    console.error(
++      JSON.stringify({ event: 'quote_review.email_failed', id, error: err instanceof Error ? err.message : 'unknown' }),
++    );
++  }
++
++  return NextResponse.json(
++    { success: true, id, message: 'Received. A senior estimator will read it and reply.' },
++    { status: 201 },
++  );
++}
++
++export async function GET() {
++  return NextResponse.json({ success: false, message: 'Use POST (multipart/form-data).' }, { status: 405 });
++}
+diff --git a/apps/web/app/case-studies/page.tsx b/apps/web/app/case-studies/page.tsx
+index 9119023..d15c97d 100644
+--- a/apps/web/app/case-studies/page.tsx
++++ b/apps/web/app/case-studies/page.tsx
+@@ -1,4 +1,6 @@
+ import type { Metadata } from 'next';
++import { JobCardRail } from '@/app/components/JobCard';
++import { JOB_CARDS } from '@/content/job-cards';
+ import Link from 'next/link';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { formatDate } from '@/lib/content/utils';
+@@ -37,6 +39,18 @@ export default async function CaseStudiesPage() {
+           {caseStudies.length === 0 ? (
+             <p className="tlx-note">No case studies published yet. Check back soon.</p>
+           ) : (
++            <>
++              {/* At a glance, in the units the jobs were measured in. The cards
++                  below carry the prose; this carries the numbers, and every one
++                  of them is checked against the .mdx by verify-job-cards. */}
++              <JobCardRail
++                kicker="At a glance"
++                heading="Every published job, with its readings"
++                intro="Neighbourhood, size, substrate, species, and the measurement each job turned on."
++                jobs={JOB_CARDS}
++                from="case-studies-index"
++              />
++
+             <div className="tlx-grid">
+               {caseStudies.map((caseStudy) => {
+                 const species = Array.isArray(caseStudy.woodSpecies)
+@@ -65,6 +79,7 @@ export default async function CaseStudiesPage() {
+                 );
+               })}
+             </div>
++            </>
+           )}
+         </div>
+       </div>
+diff --git a/apps/web/app/commercial/page.tsx b/apps/web/app/commercial/page.tsx
+new file mode 100644
+index 0000000..cdfde3c
+--- /dev/null
++++ b/apps/web/app/commercial/page.tsx
+@@ -0,0 +1,367 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { FeedbackBand } from '../components/FeedbackBand';
++import { EstimateForm } from '../components/EstimateForm';
++import { JobCardRail } from '../components/JobCard';
++import { jobCardsBySlug } from '@/content/job-cards';
++import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
++import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
++import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
++import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
++import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
++import { SchemaScript } from '@/lib/schema/components';
++
++const money = (n: number) => `$${n.toFixed(2)}`;
++const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
++
++export const metadata: Metadata = {
++  title: 'Commercial Hardwood Flooring Toronto — Condo Boards, Property Managers, HOAs',
++  description: `Hardwood installation and refinishing for condo corporations, property managers and commercial spaces across Toronto and the GTA. After-hours work, certificate of insurance on request, ${band('fullSandAndFinish')} per square foot for a full sand and finish. Fixed written price.`,
++  alternates: { canonical: '/commercial' },
++  openGraph: {
++    title: 'Commercial Hardwood Flooring Toronto — Ecowoods',
++    description: `Corridors, lobbies, amenity rooms and unit turnovers. Salaried crews, after-hours scheduling, COI on request. Serving ${SERVICE_AREAS.length} areas.`,
++    type: 'website',
++    url: `${SITE_URL}/commercial`,
++  },
++};
++
++/**
++ * /commercial — the buyer who is not a homeowner.
++ *
++ * WHY THIS PAGE EXISTS AS ITS OWN URL
++ *
++ * A property manager and a homeowner are not the same customer having the same
++ * conversation at different volumes. The homeowner is spending their own money
++ * once and is afraid of dust and of being lied to. The manager is spending
++ * somebody else's money repeatedly, is answerable to a board, and is afraid of
++ * three completely different things: a corridor that cannot be closed during
++ * the day, an insurance certificate that does not name the corporation, and a
++ * price that moves after a budget was approved at a meeting.
++ *
++ * None of the existing pages answer any of those. Every one of them is a
++ * documented, published commitment this business already makes — after-hours
++ * scheduling, salaried crews rather than subcontractors, and a fixed written
++ * price — so the page is a rearrangement of true things for a reader nobody had
++ * arranged them for, not a new claim.
++ *
++ * The commercial buyer is also the highest-value one in this market: one condo
++ * corporation is a decade of unit turnovers, and they are won by being the
++ * company whose paperwork is already in order.
++ *
++ * NOTHING HERE INVENTS A CREDENTIAL. There is no WSIB number, no COI PDF and
++ * no client logo on this page, because none of those exist in this repository.
++ * The certificate is offered on request — which is how it actually works — and
++ * `verify-conversion` fails the build if a page advertises a PDF that is not
++ * there.
++ */
++
++const FAQS = [
++  {
++    question: 'Can the work be done outside business hours?',
++    answer:
++      'Yes. Corridors, lobbies and amenity rooms are routinely sanded and finished on an evening ' +
++      'or weekend schedule so the space is usable during the day. Because the crews are salaried ' +
++      'Ecowoods employees rather than subcontractors, an after-hours schedule is a rota decision ' +
++      'rather than a subcontractor negotiation, and it does not change the written price.',
++  },
++  {
++    question: 'Will you provide a certificate of insurance naming the corporation?',
++    answer:
++      'Yes — request it with your estimate and it is issued naming the condominium corporation or ' +
++      'property owner as required. It is provided on request rather than published here, because ' +
++      'a certificate is issued to a named party for a named project and a generic copy on a ' +
++      'website is not the document your board needs on file.',
++  },
++  {
++    question: 'How is a commercial hardwood job priced?',
++    answer:
++      `The same published bands apply: ${band('screenAndRecoat')} per square foot for a screen and ` +
++      `recoat, ${band('fullSandAndFinish')} for a full sand and finish, and ${band('newInstall')} ` +
++      `for new hardwood supplied and installed. ${PRICE_PROMISE} For a multi-unit or phased ` +
++      'programme the estimate itemises each area so a board can approve it line by line.',
++  },
++  {
++    question: 'Do you work on occupied buildings?',
++    answer:
++      'Yes. Extraction runs at the machine and containment is built at the room, which is what ' +
++      'makes it possible to refinish a corridor in a building nobody has moved out of. Residents ' +
++      'keep using the space on either side of the work zone, and the containment is rebuilt at the ' +
++      'end of each shift rather than left standing across a weekend.',
++  },
++  {
++    question: 'Can you handle unit turnovers on a recurring basis?',
++    answer:
++      'Yes, and it is the work this business is structured for: salaried crews mean the same people ' +
++      'return to a building they already know, and a screen and recoat between tenancies at ' +
++      `${band('screenAndRecoat')} per square foot is a fraction of the cost of a full sand and ` +
++      'finish deferred until the floor is past saving.',
++  },
++];
++
++export default function CommercialPage() {
++  const url = `${SITE_URL}/commercial`;
++  return (
++    <div className="tlx-page">
++      <SchemaScript schema={buildFAQPage(FAQS.map((f) => ({ question: f.question, answer: f.answer })))} />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Commercial', url },
++        ])}
++      />
++      <SchemaScript
++        schema={buildCommercialLandingSchema({
++          url,
++          serviceSlugs: ['floor-refinishing', 'dust-free-sanding', 'hardwood-installation', 'floor-restoration'],
++          description:
++            'Hardwood flooring for condominium corporations, property managers and commercial spaces in Toronto and the GTA.',
++        })}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Commercial</span>
++          </nav>
++          <h1 className="tlx-title">Hardwood for buildings, not just houses</h1>
++          <p className="tlx-lede">
++            Corridors, lobbies, amenity rooms and unit turnovers, for condominium corporations,
++            property managers and commercial tenants across Toronto and the GTA. Work scheduled
++            around the people who use the space, a certificate of insurance naming your corporation,
++            and one written price that a board can approve and hold us to.
++          </p>
++          <p className="fw-meta">
++            Salaried crews, never subcontractors · HEPA-sealed containment · Fixed price in writing
++          </p>
++          <div className="fw-actions">
++            <a className="fw-cta" href="#estimate">
++              Request a commercial estimate
++            </a>
++            <a className="fw-cta fw-cta--ghost" href={BUSINESS_NAP.phoneHref}>
++              Call {BUSINESS_NAP.phoneDisplay}
++            </a>
++          </div>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="After-hours protocol">
++        <div className="shell">
++          <p className="tlx-kicker">Scheduling</p>
++          <h2 className="tlx-h2">The after-hours protocol</h2>
++          <p className="tlx-note" style={{ maxWidth: '48rem' }}>
++            A corridor cannot be closed for a week, and a lobby cannot be closed at all. The
++            sequence below is how the work happens around a building that stays in use — it is the
++            same four-machine sequence published in{' '}
++            <Link href="/papers/hardwood-refinishing-machines-and-sequence">the refinishing paper</Link>,
++            scheduled differently.
++          </p>
++          <ol className="fw-criteria">
++            <li>
++              <strong>Walk and measure with the manager, not just the floor.</strong> Access routes,
++              elevator protection, waste path, power, and where residents will actually walk while a
++              section is closed.
++            </li>
++            <li>
++              <strong>One written price, itemised by area.</strong> Each corridor, floor or unit is
++              its own line so a board can approve a phase rather than a total.
++            </li>
++            <li>
++              <strong>Certificate of insurance issued to the corporation.</strong> Named party,
++              named project, on file before the first machine arrives.
++            </li>
++            <li>
++              <strong>Containment built and struck each shift.</strong> Extraction at the machine,
++              a sealed barrier at the work zone, and the space handed back usable at the end of
++              every session rather than at the end of the job.
++            </li>
++            <li>
++              <strong>Notice you can post.</strong> Dates, hours and which section is affected, in
++              writing, in a form that can go on a noticeboard or into a resident email.
++            </li>
++          </ol>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Certificate of insurance">
++        <div className="shell">
++          <div className="tlx-cta">
++            <h2>Certificate of insurance</h2>
++            <p>
++              Issued naming your condominium corporation or property owner, for the specific
++              project, and provided with the estimate on request. It is not published as a download
++              here on purpose: a certificate names a party and a project, and a generic copy is not
++              the document your board needs on file.
++            </p>
++            <a className="btn btn-copper" href="#estimate">
++              Request the certificate with your estimate
++            </a>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="What it costs">
++        <div className="shell">
++          <p className="tlx-kicker">Price</p>
++          <h2 className="tlx-h2">The same published bands, itemised by area</h2>
++          <p className="tlx-note">{PRICE_PROMISE}</p>
++          <div className="wp-table-wrap">
++            <table className="wp-table">
++              <caption>Published bands, Canadian dollars per square foot</caption>
++              <thead>
++                <tr>
++                  <th scope="col">Work</th>
++                  <th scope="col">Band</th>
++                  <th scope="col">Where it fits in a building</th>
++                </tr>
++              </thead>
++              <tbody>
++                <tr>
++                  <th scope="row">{PRICING.screenAndRecoat.label}</th>
++                  <td>{band('screenAndRecoat')}</td>
++                  <td>Unit turnovers and corridors where the finish is worn but the wood is sound</td>
++                </tr>
++                <tr>
++                  <th scope="row">{PRICING.fullSandAndFinish.label}</th>
++                  <td>{band('fullSandAndFinish')}</td>
++                  <td>Lobbies and amenity floors that have gone past a recoat</td>
++                </tr>
++                <tr>
++                  <th scope="row">{PRICING.newInstall.label}</th>
++                  <td>{band('newInstall')}</td>
++                  <td>New hardwood supplied and installed in a renovation or conversion</td>
++                </tr>
++              </tbody>
++            </table>
++          </div>
++          <p className="tlx-note">
++            What moves the number in a building rather than a house: elevator and access time,
++            after-hours scheduling, subfloor condition across a whole floorplate, and how much of
++            the work has to be phased. Subfloor is the one that most often breaks a budget approved
++            at a meeting —{' '}
++            <Link href="/case-studies/distillery-district-victorian-condo">
++              the Distillery District condo
++            </Link>{' '}
++            is a published example of what a slab reading changes before a single board is ordered.
++            Every one of those is walked with you before the price is written — see{' '}
++            <Link href="/guides/hardwood-flooring-cost-toronto">what a hardwood floor costs in Toronto</Link>{' '}
++            and{' '}
++            <Link href="/guides/how-to-evaluate-a-hardwood-quote">how to evaluate a hardwood quote</Link>.
++          </p>
++        </div>
++      </section>
++
++      <JobCardRail
++        kicker="Finished work"
++        heading="Jobs at building scale"
++        intro="Published in full, with the readings taken before anything started."
++        jobs={jobCardsBySlug(
++          'midtown-townhouse-three-level-transition',
++          'rosedale-estate-stairs-radiant-heat',
++          'distillery-district-victorian-condo',
++        )}
++        from="commercial"
++      />
++
++      <section className="tlx-section" aria-label="How this work is judged">
++        <div className="shell">
++          <p className="tlx-kicker">Accountability</p>
++          <h2 className="tlx-h2">Score us the way you would score anyone</h2>
++          <p className="tlx-note" style={{ maxWidth: '48rem' }}>
++            Boards ask for three quotes and then have no method for comparing them. The{' '}
++            <Link href="/framework">Well-Installed Framework</Link> is twenty-seven criteria across
++            six pillars, every one sourced to a paper published on this site, and it is designed to
++            be run against any contractor — including this one. Take it into the meeting.
++          </p>
++          <div className="fw-actions">
++            <Link className="fw-cta" href="/framework/assess">
++              Score a quote you already have
++            </Link>
++            <Link className="fw-cta fw-cta--ghost" href="/case-studies/yorkville-loft-basement-conversion-moisture-mitigation">
++              Read a job with its readings
++            </Link>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Services">
++        <div className="shell">
++          <p className="tlx-kicker">Services</p>
++          <h2 className="tlx-h2">What gets specified in a building</h2>
++          <div className="tlx-grid">
++            <Link className="tlx-card" href="/services/floor-refinishing">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Hardwood floor refinishing</h3>
++              <p>Corridors and lobbies taken back to bare wood and rebuilt, in phases if required.</p>
++            </Link>
++            <Link className="tlx-card" href="/services/dust-free-sanding">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Dust-free sanding</h3>
++              <p>Extraction at the machine and containment at the room — what makes an occupied building possible.</p>
++            </Link>
++            <Link className="tlx-card" href="/services/hardwood-installation">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Hardwood installation</h3>
++              <p>New floors in conversions, amenity rooms and renovated units.</p>
++            </Link>
++            <Link className="tlx-card" href="/services/floor-restoration">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Floor restoration</h3>
++              <p>Water damage, board replacement and heritage repair where replacement is not the answer.</p>
++            </Link>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" id="estimate-block" aria-label="Request a commercial estimate">
++        <div className="shell">
++          <p className="tlx-kicker">Next step</p>
++          <h2 className="tlx-h2">Request a commercial estimate</h2>
++          <p className="tlx-note" style={{ maxWidth: '46rem' }}>
++            Tell us the building and what needs doing. A senior estimator walks it with you, and the
++            written price that follows is itemised by area so it can be taken to a board. Ask for the
++            certificate of insurance in the notes and it comes with the estimate.
++          </p>
++          <EstimateForm
++            source="commercial"
++            service="commercial"
++            heading="Commercial estimate request"
++            intro="Corridors, lobbies, amenity rooms, unit turnovers. Itemised by area, fixed in writing."
++          />
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Questions">
++        <div className="shell">
++          <p className="tlx-kicker">Questions</p>
++          <h2 className="tlx-h2">What managers and boards ask first</h2>
++          <dl className="gd-spec">
++            {FAQS.map((f) => (
++              <div className="gd-spec-row" key={f.question}>
++                <dt>{f.question}</dt>
++                <dd>{f.answer}</dd>
++              </div>
++            ))}
++          </dl>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Contact">
++        <div className="shell">
++          <div className="area-nap">
++            <p className="area-nap-name">{BUSINESS_NAP.legalName}</p>
++            <p>{BUSINESS_ADDRESS_LINE}</p>
++            <p>
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>
++              {' · '}
++              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
++            </p>
++            <p className="area-nap-hours">{HOURS_LINE}</p>
++          </div>
++        </div>
++      </section>
++
++      <FeedbackBand topic="commercial work" />
++    </div>
++  );
++}
+diff --git a/apps/web/app/components/BookingPanel.tsx b/apps/web/app/components/BookingPanel.tsx
+index 0105777..d4a21bb 100644
+--- a/apps/web/app/components/BookingPanel.tsx
++++ b/apps/web/app/components/BookingPanel.tsx
+@@ -16,6 +16,19 @@
+  * inline in page.tsx. This is the conversion section — the calendar is a second
+  * path to booking, so it can live one tap away, but the primary path never
+  * should.
++ *
++ * EXTERNAL CALENDAR HOOK (P1.7)
++ *
++ * The scheduler here writes an Appointment row and emails; it is not connected
++ * to anybody's actual calendar, so a slot booked at 9am and a slot blocked in
++ * an estimator's Google Calendar do not know about each other. That is a real
++ * double-booking risk the moment volume rises.
++ *
++ * Set NEXT_PUBLIC_BOOKING_URL to a Cal.com or Calendly link and this panel
++ * offers it as the primary path, with the built-in scheduler kept underneath as
++ * the fallback that still works if the third party is down. Unset — which is
++ * the state today — nothing changes and no half-wired integration ships.
++ * Documented in apps/web/.env.example and ops/DOMINATION-RUNBOOK.md.
+  */
+ 
+ import { HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
+@@ -25,6 +38,23 @@ import MobileSheet from './MobileSheet';
+ import { useIsMobile } from './SwipeDeck';
+ import type { ReactNode } from 'react';
+ 
++/** Set to a Cal.com / Calendly URL to make a real calendar the primary path. */
++const EXTERNAL_BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL;
++
++function ExternalBookingCta() {
++  if (!EXTERNAL_BOOKING_URL) return null;
++  return (
++    <p className="booking-external">
++      <a className="btn btn-copper" href={EXTERNAL_BOOKING_URL} target="_blank" rel="noopener noreferrer">
++        Book a 45-minute measure on the calendar
++      </a>
++      <span className="booking-external-note">
++        Opens our live calendar. The form below still works if you prefer it.
++      </span>
++    </p>
++  );
++}
++
+ export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
+   const { mounted, isMobile } = useIsMobile();
+   const [open, setOpen] = useState(false);
+@@ -37,6 +67,7 @@ export default function BookingPanel({ clockIcon }: { clockIcon: ReactNode }) {
+         <div className="booking-step-label">
+           <span>{clockIcon}</span> Bookings
+         </div>
++        <ExternalBookingCta />
+         <BookingScheduler />
+       </div>
+     );
+diff --git a/apps/web/app/components/ChatWidget.tsx b/apps/web/app/components/ChatWidget.tsx
+index 00bb98b..d3ca70d 100644
+--- a/apps/web/app/components/ChatWidget.tsx
++++ b/apps/web/app/components/ChatWidget.tsx
+@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
+ import { EW_MARK } from '@/lib/brand';
+ import { onAssistantOpen } from '@/lib/assistant';
+ import { ASSISTANT, ASSISTANT_GREETING, ASSISTANT_CHIPS } from '@/lib/assistant-identity';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { isOpenNow, nextOpeningLabel } from '@/lib/business-hours';
+ 
+ // Theme-aware by construction: these are CSS custom properties, resolved by
+ // the browser on every paint. Flipping data-theme on <html> restyles the whole
+@@ -43,6 +45,28 @@ export default function ChatWidget() {
+   }, []);
+   const [input, setInput] = useState('');
+   const [showNudge, setShowNudge] = useState(false);
++
++  /* AFTER HOURS, THE ANSWER IS A DIFFERENT ANSWER.
++     The widget used to behave identically at 3am on a Sunday: same nudge, same
++     invitation to start a conversation, with nobody on the other end and no
++     acknowledgement that the reply would arrive the next morning. The most
++     valuable minute in this business is the one where someone is ready to act
++     and nobody is available — that minute is captured asynchronously or it is
++     lost. Computed in an effect, never during render, so the server HTML and
++     the first client pass agree (the office clock is not the visitor's). */
++  const [closed, setClosed] = useState(false);
++  const [reopensAt, setReopensAt] = useState('');
++  useEffect(() => {
++    const tick = () => {
++      setClosed(!isOpenNow());
++      setReopensAt(nextOpeningLabel());
++    };
++    tick();
++    // Re-check every five minutes so a visitor reading at 6:58 PM sees the
++    // handover happen rather than a stale "we're open".
++    const t = setInterval(tick, 5 * 60 * 1000);
++    return () => clearInterval(t);
++  }, []);
+   const [messages, setMessages] = useState<Msg[]>([]);
+   const [busy, setBusy] = useState(false);
+   const [errored, setErrored] = useState(false);
+@@ -133,7 +157,17 @@ export default function ChatWidget() {
+       <div className="rg-dock" data-hero={overHero} style={{ position: 'fixed', bottom: 'var(--fab-inset)', right: 'var(--fab-inset-x)', zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+         {!open && showNudge && (
+           <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px var(--rg-shadow)', position: 'relative' }}>
+-            Planning a hardwood project? Get a ballpark in about a minute.
++            {closed ? (
++              <>
++                We are closed right now — back {reopensAt}. Text photos of the floor to{' '}
++                <a href={`sms:${BUSINESS_NAP.phoneE164}`} style={{ color: C.bronzeDark, fontWeight: 600 }}>
++                  {BUSINESS_NAP.phoneDisplay}
++                </a>{' '}
++                and it is triaged first thing.
++              </>
++            ) : (
++              'Planning a hardwood project? Get a ballpark in about a minute.'
++            )}
+             <button onClick={() => setShowNudge(false)} aria-label="Dismiss" style={{ position: 'absolute', top: 4, right: 6, border: 'none', background: 'none', color: C.muted, cursor: 'pointer', fontSize: 14 }}>×</button>
+           </div>
+         )}
+@@ -163,6 +197,29 @@ export default function ChatWidget() {
+           </div>
+ 
+           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', background: C.cream }}>
++            {/* After-hours handover, INSIDE the panel. The assistant still
++                answers questions at 3am — it is a language model, it does not
++                sleep — but it cannot book anyone or measure anything, and
++                pretending otherwise is how a keen visitor at midnight becomes a
++                disappointed one at 9am. This says who is here, who is not, and
++                the one action that works right now. */}
++            {closed && (
++              <div
++                role="note"
++                style={{ background: C.paper, border: `1px dashed ${C.bronze}`, borderRadius: 12, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.5, color: C.brown, marginBottom: 12 }}
++              >
++                <strong>We are closed right now.</strong> Ask anything and you will get an answer —
++                a person is back {reopensAt}. To get a job triaged tonight,{' '}
++                <a href={`sms:${BUSINESS_NAP.phoneE164}`} style={{ color: C.bronzeDark, fontWeight: 600 }}>
++                  text photos to {BUSINESS_NAP.phoneDisplay}
++                </a>{' '}
++                or{' '}
++                <a href="/#photo-triage" style={{ color: C.bronzeDark, fontWeight: 600 }}>
++                  send three photos here
++                </a>
++                .
++              </div>
++            )}
+             {messages.length === 0 && (
+               <div style={{ animation: 'rg-pop .3s ease' }}>
+                 <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px var(--rg-bubble-shadow)' }}>
+diff --git a/apps/web/app/components/EstimateForm.tsx b/apps/web/app/components/EstimateForm.tsx
+index 539ca1f..a00bc02 100644
+--- a/apps/web/app/components/EstimateForm.tsx
++++ b/apps/web/app/components/EstimateForm.tsx
+@@ -94,6 +94,8 @@ export function EstimateForm({
+   const [photos, setPhotos] = useState<File[]>([]);
+   const [photoNote, setPhotoNote] = useState<string | null>(null);
+   const [design, setDesign] = useState<DesignConfig | null>(null);
++  const [recoverConsent, setRecoverConsent] = useState(false);
++  const recoverySent = useRef(false);
+   const sectionRef = useRef<HTMLElement | null>(null);
+   const startedRef = useRef(false);
+   const viewedRef = useRef(false);
+@@ -131,6 +133,66 @@ export function EstimateForm({
+     return () => obs.disconnect();
+   }, [source]);
+ 
++  /* P1.8 — THE UNFINISHED FORM, RECOVERED ONLY IF ASKED FOR.
++     Someone types an email, is interrupted, and never submits: today they are
++     simply gone, because nothing is written until the whole form validates.
++     This records the address ONLY when the reminder box is ticked, so the
++     later email is a thing the visitor asked for rather than a thing we
++     decided they would not mind. Under CASL that distinction is the whole
++     legal difference between a recovery programme and a fine.
++
++     Fires on unload and on tab-hide, once per mount. `keepalive` because a
++     normal fetch is cancelled when the document goes away — which is exactly
++     the moment this needs to survive. */
++  useEffect(() => {
++    if (!recoverConsent) return;
++    const flush = () => {
++      if (recoverySent.current || state === 'sent') return;
++      const form = sectionRef.current?.querySelector('form');
++      const email = (form?.querySelector('input[name="email"]') as HTMLInputElement | null)?.value?.trim();
++      if (!email || !email.includes('@')) return;
++      recoverySent.current = true;
++      const name = (form?.querySelector('input[name="name"]') as HTMLInputElement | null)?.value?.trim();
++      const phone = (form?.querySelector('input[name="phone"]') as HTMLInputElement | null)?.value?.trim();
++      const city = (form?.querySelector('select[name="city"], select[name="area"]') as HTMLSelectElement | null)?.value;
++      // Named `pickedService` so it cannot be confused with the `service` prop,
++      // which is the page's preselection rather than what the visitor chose.
++      const pickedService = (form?.querySelector('select[name="service"]') as HTMLSelectElement | null)?.value;
++      void fetch('/api/quote-recovery', {
++        method: 'POST',
++        headers: { 'content-type': 'application/json' },
++        keepalive: true,
++        body: JSON.stringify({ email, name, phone, city, service: pickedService, source, consent: true }),
++      }).catch(() => {});
++    };
++    const onHide = () => {
++      if (document.visibilityState === 'hidden') flush();
++    };
++    window.addEventListener('pagehide', flush);
++    document.addEventListener('visibilitychange', onHide);
++    return () => {
++      window.removeEventListener('pagehide', flush);
++      document.removeEventListener('visibilitychange', onHide);
++    };
++  }, [recoverConsent, source, state]);
++
++  const consentRow = (
++    <label className="ef-consent">
++      <input
++        type="checkbox"
++        name="recoverConsent"
++        checked={recoverConsent}
++        onChange={(e) => {
++          setRecoverConsent(e.currentTarget.checked);
++          if (e.currentTarget.checked) track('recovery_opt_in', { source });
++        }}
++      />
++      <span>
++        Email me if I leave this unfinished. One reminder, two hours later, and never again.
++      </span>
++    </label>
++  );
++
+   const onFirstInteraction = () => {
+     if (startedRef.current) return;
+     startedRef.current = true;
+@@ -382,6 +444,8 @@ export function EstimateForm({
+             <input id={`ef-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
+           </div>
+ 
++          {consentRow}
++
+           <div className="ef-actions">
+             <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>
+               {state === 'sending' ? 'Sending…' : 'Request a free estimate'}
+@@ -491,6 +555,8 @@ export function EstimateForm({
+             <input id={`ef-pt-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
+           </div>
+ 
++          {consentRow}
++
+           <div className="ef-actions">
+             <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>
+               {state === 'sending' ? 'Sending…' : 'Send the photos'}
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 1200172..9b319a8 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -65,6 +65,15 @@ const SERVICES_MENU: MegaColumn[] = [
+       { label: 'Custom inlays', href: '/services/custom-inlays' },
+     ],
+   },
++  {
++    title: 'By who you are',
++    href: '/commercial',
++    items: [
++      { label: 'Condo boards & property managers', href: '/commercial', note: 'After-hours, COI, priced by area' },
++      { label: 'Realtors & sellers', href: '/realtors', note: 'Three-day pre-list recoat' },
++      { label: 'Score a quote you already have', href: '/framework/assess', note: 'Any contractor, including us' },
++    ],
++  },
+   {
+     title: 'By the problem',
+     href: '/hardwood-floor-problems-toronto',
+diff --git a/apps/web/app/components/JobCard.tsx b/apps/web/app/components/JobCard.tsx
+new file mode 100644
+index 0000000..8f0dd6b
+--- /dev/null
++++ b/apps/web/app/components/JobCard.tsx
+@@ -0,0 +1,129 @@
++'use client';
++
++import Link from 'next/link';
++import type { JobCard as JobCardData } from '@/content/job-cards';
++import { track } from '@/lib/analytics';
++
++/**
++ * JobCard — one finished job, stated in the units it was measured in.
++ *
++ * This is the site's answer to "have you actually done this, near me, at my
++ * size?" — the question that decides a hardwood contractor, and the one a
++ * gallery of beautiful floors does not answer. Every field is copied from a
++ * published case study and held there by scripts/verify-job-cards.mjs.
++ *
++ * WHAT IT SHOWS AND WHY THAT IS THE LIST
++ *
++ *   neighbourhood · square feet · year · service   — the four facts a buyer
++ *   uses to decide whether this job resembles theirs.
++ *
++ *   substrate + species                            — the two facts that decide
++ *   whether it resembles it in the way that costs money.
++ *
++ *   one measurement, with its unit                 — the reason to believe the
++ *   rest. "MVTR 9.8 lbs/1000 sqft/24h" is not a marketing sentence; nobody
++ *   writes it who did not take the reading.
++ *
++ * NO PHOTOGRAPH, NO CUSTOMER NAME. See the header of content/job-cards.ts:
++ * none of the case studies publishes an image, and the testimonial
++ * attributions they carry have no consent record in this repository. A card
++ * whose every element is checkable is worth more than a card with a face on
++ * it, and it is the only kind this site is entitled to publish today. When
++ * real job photography exists, `imageSlot` renders it and nothing else here
++ * changes.
++ */
++
++export function JobCard({ job, from }: { job: JobCardData; from: string }) {
++  const href = `/case-studies/${job.slug}`;
++  return (
++    <article className="jc">
++      <header className="jc-head">
++        <p className="jc-place">
++          {job.area}
++          <span className="jc-dot" aria-hidden="true">
++            ·
++          </span>
++          {job.city}
++        </p>
++        <h3 className="jc-service">{job.service}</h3>
++      </header>
++
++      {job.imageSlot && (
++        // eslint-disable-next-line @next/next/no-img-element
++        <img className="jc-img" src={job.imageSlot} alt="" loading="lazy" decoding="async" />
++      )}
++
++      <dl className="jc-spec">
++        <div>
++          <dt>Size</dt>
++          <dd>{job.squareFeet.toLocaleString('en-CA')} sq ft</dd>
++        </div>
++        <div>
++          <dt>Year</dt>
++          <dd>{job.year}</dd>
++        </div>
++        <div>
++          <dt>Substrate</dt>
++          <dd>{job.substrate}</dd>
++        </div>
++        <div>
++          <dt>Species</dt>
++          <dd>{job.species}</dd>
++        </div>
++      </dl>
++
++      <p className="jc-outcome">{job.outcome}</p>
++
++      <p className="jc-measure">
++        <span className="jc-measure-label">{job.measurement.metric}</span>
++        <span className="jc-measure-value">
++          {job.measurement.value}
++          <em>{job.measurement.unit}</em>
++        </span>
++      </p>
++
++      <Link className="jc-link" href={href} onClick={() => track('jobcard_click', { slug: job.slug, from })}>
++        Read what was measured <span aria-hidden="true">→</span>
++      </Link>
++    </article>
++  );
++}
++
++/**
++ * A row of job cards with a heading. The `intro` says what the reader is
++ * looking at; it never restates a figure from the cards themselves.
++ */
++export function JobCardRail({
++  kicker = 'Finished work',
++  heading,
++  intro,
++  jobs,
++  from,
++}: {
++  kicker?: string;
++  heading: string;
++  intro?: string;
++  jobs: readonly JobCardData[];
++  /** Where this rail is rendered — recorded on the click event. */
++  from: string;
++}) {
++  if (!jobs.length) return null;
++  return (
++    <section className="section-tight jc-rail" aria-label="Finished work">
++      <div className="shell">
++        <p className="tlx-kicker">{kicker}</p>
++        <h2 className="tlx-h2">{heading}</h2>
++        {intro && <p className="tlx-note jc-rail-intro">{intro}</p>}
++        <div className="jc-grid">
++          {jobs.map((j) => (
++            <JobCard key={j.slug} job={j} from={from} />
++          ))}
++        </div>
++        <p className="tlx-note">
++          Every one of these is a published case study with its readings, its protocol and its
++          failures in it — <Link href="/case-studies">all of them are here</Link>.
++        </p>
++      </div>
++    </section>
++  );
++}
+diff --git a/apps/web/app/components/QuoteReviewForm.tsx b/apps/web/app/components/QuoteReviewForm.tsx
+new file mode 100644
+index 0000000..f603e4b
+--- /dev/null
++++ b/apps/web/app/components/QuoteReviewForm.tsx
+@@ -0,0 +1,185 @@
++'use client';
++
++import { useState, type FormEvent } from 'react';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { track } from '@/lib/analytics';
++import { compressPhoto } from '@/lib/image-compress';
++
++/**
++ * QuoteReviewForm — "send us the quote you already have".
++ *
++ * THE STRATEGIC POINT
++ *
++ * Competitors in this market win on Google review volume. This does not fight
++ * that; it goes around it. A homeowner holding three quotes has a problem no
++ * review count solves — they cannot tell which one is right — and the business
++ * that reads the document for them is the one in the room when they decide.
++ *
++ * It only works if the answer is honest, including when the honest answer is
++ * "that quote is good, take it". Saying so costs one job and earns the referral
++ * from someone who will tell the story for years. The copy on the page commits
++ * to that out loud, which is the only way it means anything.
++ *
++ * MECHANICS
++ *
++ * Accepts a PDF (what a quote usually is) or up to three images (what a quote
++ * usually is when photographed on a phone). Images are compressed client-side
++ * by the same path the photo-triage track uses; PDFs are passed through with a
++ * size cap because re-encoding somebody's contract is not our business.
++ *
++ * `context` is the assess result, if it came from there — a text summary only.
++ * The criterion-by-criterion answers are NOT sent: see AssessClient's header.
++ */
++
++const MAX_FILES = 3;
++
++export function QuoteReviewForm({
++  source,
++  /** One-line summary of where this came from, e.g. an assess verdict. */
++  context,
++}: {
++  source: string;
++  context?: string;
++}) {
++  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
++  const [errors, setErrors] = useState<Record<string, string>>({});
++  const [files, setFiles] = useState<File[]>([]);
++  const [note, setNote] = useState<string | null>(null);
++
++  async function onPick(list: FileList | null) {
++    if (!list) return;
++    const picked = Array.from(list).slice(0, MAX_FILES);
++    const out: File[] = [];
++    const problems: string[] = [];
++    for (const f of picked) {
++      if (f.type === 'application/pdf') {
++        // A contract is not ours to re-encode. Pass it through, cap the size.
++        if (f.size > 8 * 1024 * 1024) problems.push(`${f.name} is over 8 MB — send the pages that carry the scope and the price.`);
++        else out.push(f);
++        continue;
++      }
++      const r = await compressPhoto(f);
++      if (r.ok) out.push(r.file);
++      else problems.push(r.reason);
++    }
++    setFiles(out);
++    setNote(problems.length ? problems.join(' ') : null);
++  }
++
++  async function onSubmit(e: FormEvent<HTMLFormElement>) {
++    e.preventDefault();
++    const form = e.currentTarget;
++    const fd = new FormData(form);
++    fd.delete('documents');
++    for (const f of files) fd.append('documents', f, f.name);
++
++    setState('sending');
++    setErrors({});
++    try {
++      const res = await fetch('/api/quote-review', {
++        method: 'POST',
++        headers: { 'x-requested-with': 'fetch', accept: 'application/json' },
++        body: fd,
++      });
++      const json = await res.json().catch(() => ({}));
++      if (res.ok) {
++        track('quote_review_submit', { source, documents: files.length });
++        setState('sent');
++        form.reset();
++        setFiles([]);
++        return;
++      }
++      if (res.status === 400 && json.fieldErrors) {
++        setErrors(json.fieldErrors);
++        setState('idle');
++        return;
++      }
++      setState('error');
++    } catch {
++      setState('error');
++    }
++  }
++
++  if (state === 'sent') {
++    return (
++      <div className="ef ef--done qr-done" aria-live="polite">
++        <h3 className="ef-h">We have it.</h3>
++        <p className="ef-intro">
++          A senior estimator will read the quote and reply with what is genuinely wrong with it,
++          what is only missing from it, and what is fine. If it is a good quote we will tell you
++          that. Urgent? Call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
++        </p>
++      </div>
++    );
++  }
++
++  return (
++    <form className="ef-form qr-form" method="post" action="/api/quote-review" encType="multipart/form-data" onSubmit={onSubmit} noValidate>
++      <input type="hidden" name="source" value={source} />
++      {context && <input type="hidden" name="context" value={context} />}
++
++      <label className="ef-field">
++        <span>The quote — a PDF, or up to 3 photos of it</span>
++        <input
++          name="documents"
++          type="file"
++          accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
++          multiple
++          onChange={(e) => void onPick(e.currentTarget.files)}
++        />
++        {files.length > 0 && (
++          <em className="ef-photo-list">
++            {files.map((f) => `${f.name} (${Math.max(1, Math.round(f.size / 1024))} KB)`).join(' · ')}
++          </em>
++        )}
++        {note && <em className="ef-err">{note}</em>}
++        {errors.documents && <em className="ef-err">{errors.documents}</em>}
++      </label>
++
++      <div className="ef-row">
++        <label className="ef-field">
++          <span>Name</span>
++          <input name="name" type="text" autoComplete="name" required placeholder="Jane Doe" />
++          {errors.name && <em className="ef-err">{errors.name}</em>}
++        </label>
++        <label className="ef-field">
++          <span>Email</span>
++          <input name="email" type="email" autoComplete="email" required placeholder="jane@example.com" />
++          {errors.email && <em className="ef-err">{errors.email}</em>}
++        </label>
++      </div>
++
++      <label className="ef-field">
++        <span>
++          Anything you already suspect <em>optional</em>
++        </span>
++        <textarea name="message" rows={2} placeholder="They quoted a screen and recoat but the finish is worn through in the hallway." />
++      </label>
++
++      <div className="ef-hp" aria-hidden="true">
++        <label htmlFor={`qr-company-${source}`}>Company</label>
++        <input id={`qr-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
++      </div>
++
++      <div className="ef-actions">
++        <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>
++          {state === 'sending' ? 'Sending…' : 'Send the quote for review'}
++        </button>
++        <a className="ef-call" href={BUSINESS_NAP.phoneHref}>
++          or call {BUSINESS_NAP.phoneDisplay}
++        </a>
++      </div>
++
++      {state === 'error' && (
++        <p className="ef-err ef-err--block" role="alert">
++          Something went wrong sending that. Please call {BUSINESS_NAP.phoneDisplay}.
++        </p>
++      )}
++
++      <p className="ef-fine">
++        We read it and reply. We do not contact the company that wrote it, and we do not publish
++        anything you send. Your score above is still not transmitted — only the file you attach here.
++      </p>
++    </form>
++  );
++}
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 3209969..497b365 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -170,6 +170,12 @@ export default function SiteFooter() {
+               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
+               <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
+               <a href="/hardwood-floor-problems-toronto">Floor Problems &amp; Repairs</a>
++              {/* P1 — the two buyers who are not homeowners. In the Services
++                  column rather than Learn because that is what they are buying,
++                  and because a page with no inbound chrome link fails
++                  verify-links no matter how good it is. */}
++              <a href="/commercial">Commercial &amp; Property Managers</a>
++              <a href="/realtors">For Realtors — Pre-List Recoat</a>
+               {SERVICES.map((s) => (
+                 <a key={s.slug} href={`/services/${s.slug}`}>
+                   {s.name}
+diff --git a/apps/web/app/framework/assess/AssessClient.tsx b/apps/web/app/framework/assess/AssessClient.tsx
+index 64a53a1..313b374 100644
+--- a/apps/web/app/framework/assess/AssessClient.tsx
++++ b/apps/web/app/framework/assess/AssessClient.tsx
+@@ -1,6 +1,6 @@
+ 'use client';
+ 
+-import { useMemo, useState } from 'react';
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import Link from 'next/link';
+ import {
+   PILLARS,
+@@ -8,24 +8,70 @@ import {
+   score,
+   pillarScore,
+   criterionCount,
++  allCriteria,
+   type Answer,
+ } from '@/lib/framework';
++import { track } from '@/lib/analytics';
++import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
+ 
+ /**
+  * The self-assessment.
+  *
+- * DESIGN DECISION — NOTHING IS SENT ANYWHERE.
++ * DESIGN DECISION — THE SCORING IS NEVER SENT ANYWHERE.
+  *
+  * This scores a quote the visitor received, very often from a competitor. The
+- * moment it posts anywhere it becomes a lead-capture form wearing a tool's
+- * clothes, and the honest answer to "should I trust this scoring?" becomes no.
+- * So the whole thing runs in component state: no fetch, no analytics event, no
+- * localStorage, no hidden field. The result is printed by the browser.
++ * moment the ANSWERS post anywhere it becomes a lead-capture form wearing a
++ * tool's clothes, and the honest reply to "should I trust this scoring?"
++ * becomes no. So the scoring runs entirely in the browser: no fetch, no
++ * server, no account, no email wall between a person and their result.
+  *
+- * That constraint is also what makes it credible enough to be linked to by
+- * someone who is not a customer, which is the entire distribution strategy.
++ * TWO THINGS CHANGED IN P1, AND NEITHER WEAKENS THAT.
++ *
++ * 1. THE RESULT NOW HAS A URL. The answers are mirrored into the querystring
++ *    as one character per criterion, so a person can reload without losing an
++ *    afternoon's work, send the scored quote to a partner, or send it back to
++ *    the contractor who wrote it. That last one is the point: a tool that
++ *    travels between a homeowner and their contractor is worth more than a
++ *    tool that converts the homeowner who found it. The string is written with
++ *    history.replaceState — it never leaves the browser unless the person
++ *    chooses to paste it somewhere.
++ *
++ * 2. THERE IS AN OFFER UNDERNEATH THE RESULT. Not a gate: the score renders in
++ *    full, forever, to someone who never touches it. It is a separate,
++ *    explicitly-labelled second action for the reader who has just discovered
++ *    four unmet criteria and wants somebody to look at the actual document.
++ *    Sending the quote is a deliberate upload, on its own form, with its own
++ *    consent — not a side effect of scoring.
++ *
++ * The distinction that matters: the tool does not charge for its answer. It
++ * makes an offer after giving it. Those are different businesses.
+  */
+ 
++/** One character per criterion, in PILLARS order. `-` is unanswered. */
++const CODE: Record<Answer, string> = { yes: 'y', unsure: 'u', no: 'n' };
++const DECODE: Record<string, Answer> = { y: 'yes', u: 'unsure', n: 'no' };
++
++function encodeAnswers(answers: Record<string, Answer>): string {
++  return allCriteria()
++    .map((c) => (answers[c.id] ? CODE[answers[c.id]!] : '-'))
++    .join('');
++}
++
++function decodeAnswers(code: string): Record<string, Answer> {
++  const criteria = allCriteria();
++  /* Length is the version check. If the framework gains or loses a criterion,
++     an old link no longer describes this instrument and is ignored outright —
++     a partially-applied old answer set would silently mis-score a quote, which
++     is worse than starting clean. */
++  if (code.length !== criteria.length) return {};
++  const out: Record<string, Answer> = {};
++  criteria.forEach((c, i) => {
++    const a = DECODE[code[i]!];
++    if (a) out[c.id] = a;
++  });
++  return out;
++}
++
+ const VERDICT: Record<
+   string,
+   { label: string; tone: 'bad' | 'warn' | 'ok' | 'good' | 'neutral'; text: string }
+@@ -59,9 +105,52 @@ const VERDICT: Record<
+ 
+ export default function AssessClient() {
+   const [answers, setAnswers] = useState<Record<string, Answer>>({});
++  const [copied, setCopied] = useState(false);
+   const result = useMemo(() => score(answers), [answers]);
+   const answered = Object.keys(answers).length;
+   const verdict = VERDICT[result.verdict];
++  const completeFired = useRef(false);
++
++  /* Restore from the URL on mount only — never during render, so the server
++     and the first client pass agree and hydration stays silent. */
++  useEffect(() => {
++    const code = new URLSearchParams(window.location.search).get('a');
++    if (code) setAnswers(decodeAnswers(code));
++  }, []);
++
++  /* Mirror into the URL. replaceState, so the back button still means "the
++     page before this one" rather than "one criterion ago". */
++  useEffect(() => {
++    if (typeof window === 'undefined') return;
++    const code = encodeAnswers(answers);
++    const url = new URL(window.location.href);
++    if (answered === 0) url.searchParams.delete('a');
++    else url.searchParams.set('a', code);
++    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
++    setCopied(false);
++  }, [answers, answered]);
++
++  /* One event, once, when the instrument has actually been completed. The
++     ANSWERS are never sent — this records that a scoring finished and what the
++     verdict was, which is what tells us whether the tool is doing its job. */
++  useEffect(() => {
++    if (completeFired.current) return;
++    if (answered < criterionCount()) return;
++    completeFired.current = true;
++    track('framework_assess_complete', { verdict: result.verdict, pct: result.pct });
++  }, [answered, result.verdict, result.pct]);
++
++  const copyLink = useCallback(async () => {
++    try {
++      await navigator.clipboard.writeText(window.location.href);
++      setCopied(true);
++    } catch {
++      /* Clipboard blocked (permissions, insecure context). The URL is in the
++         address bar either way — say nothing rather than claim a copy that
++         did not happen. */
++      setCopied(false);
++    }
++  }, []);
+ 
+   const set = (id: string, a: Answer) =>
+     setAnswers((prev) => (prev[id] === a ? (({ [id]: _drop, ...rest }) => rest)(prev) : { ...prev, [id]: a }));
+@@ -87,6 +176,9 @@ export default function AssessClient() {
+             <button type="button" className="fw-btn" onClick={() => window.print()}>
+               Print / save as PDF
+             </button>
++            <button type="button" className="fw-btn fw-btn--ghost" onClick={copyLink} disabled={answered === 0}>
++              {copied ? 'Link copied' : 'Copy link to this score'}
++            </button>
+             <button type="button" className="fw-btn fw-btn--ghost" onClick={() => setAnswers({})}>
+               Reset
+             </button>
+@@ -185,8 +277,32 @@ export default function AssessClient() {
+             <p className="tlx-note">
+               Scored against{' '}
+               <Link href="/framework">Well-Installed Framework v{FRAMEWORK_VERSION}</Link>. Every
+-              criterion above is sourced to a paper published on this site.
++              criterion above is sourced to a paper published on this site. The link in your address
++              bar carries this score — send it to whoever wrote the quote.
++            </p>
++          </div>
++        </section>
++      )}
++
++      {/* The offer, AFTER the answer. It renders only once there is a result to
++          react to, it is a separate deliberate upload, and nothing above it is
++          withheld from anyone who ignores it. */}
++      {answered >= 5 && (
++        <section className="tlx-section" id="second-opinion" aria-label="Send us the quote">
++          <div className="shell">
++            <p className="tlx-kicker">Optional</p>
++            <h2 className="tlx-h2">Want us to read the actual quote?</h2>
++            <p className="tlx-note" style={{ maxWidth: '46rem' }}>
++              The scoring above never leaves your browser. This is a different thing, and it is
++              your choice: send us the document and a senior estimator will tell you which of the
++              unmet criteria are real problems and which are just missing paperwork. We will say so
++              when a competitor&rsquo;s quote is good — that answer is worth more to you than a
++              sales pitch, and it is the only reason you would ask us.
+             </p>
++            <QuoteReviewForm
++              source="framework-assess"
++              context={`Framework v${FRAMEWORK_VERSION} · ${result.pct}% · ${verdict.label} · ${unmet.length} unmet, ${unsure.length} unanswered`}
++            />
+           </div>
+         </section>
+       )}
+diff --git a/apps/web/app/framework/assess/page.tsx b/apps/web/app/framework/assess/page.tsx
+index 4a8ce88..521002a 100644
+--- a/apps/web/app/framework/assess/page.tsx
++++ b/apps/web/app/framework/assess/page.tsx
+@@ -9,7 +9,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ export const metadata: Metadata = {
+   title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}`,
+   description:
+-    'Score any hardwood flooring quote against 27 published criteria across six pillars. Runs entirely in your browser — nothing is sent anywhere. Works on any contractor, including us.',
++    `Score any hardwood flooring quote against ${criterionCount()} published criteria across six pillars. Runs entirely in your browser — your answers are never sent anywhere. Works on any contractor, including us.`,
+   alternates: { canonical: '/framework/assess' },
+   openGraph: {
+     title: 'Score a hardwood flooring quote',
+@@ -45,9 +45,13 @@ export default function AssessPage() {
+             the result tells you which questions to go back and ask in writing.
+           </p>
+           <p className="fw-privacy">
+-            Nothing here is sent anywhere. No submission, no account, no stored answers, no tracking
+-            of what you enter. The result is printed by your browser. That is deliberate: a tool for
+-            scoring someone else&rsquo;s quote is only worth using if it is not also a lead form.
++            Your answers are never sent anywhere. No submission, no account, no stored answers, no
++            tracking of what you enter — the scoring runs in your browser and the result is printed
++            by it. That is deliberate: a tool for scoring someone else&rsquo;s quote is only worth
++            using if it is not also a lead form. Once you have your result you can copy its link and
++            send it to whoever wrote the quote; and if you want a person to read the actual
++            document, there is a separate, optional upload underneath the result. Neither one is a
++            condition of seeing your score.
+           </p>
+         </div>
+       </header>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 0603927..6b694ea 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -9763,3 +9763,176 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ /* Hero secondary CTA sits beside the primary, wraps under it on phones */
+ .hr-secondary { white-space: nowrap; }
+ /* === EW:P0-CONVERSION END ================================================= */
++
++/* === EW:P1-PROOF START ====================================================
++   P1.1 JobCard proof module, P1.4 area-page NAP block. Tokens only. */
++
++.jc-rail-intro { max-width: 46rem; }
++.jc-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
++  gap: 1rem;
++  margin: 1.5rem 0;
++}
++.jc {
++  display: flex;
++  flex-direction: column;
++  gap: 0.75rem;
++  padding: 1.25rem;
++  border: 1px solid var(--line);
++  border-radius: 12px;
++  background: var(--bg);
++}
++.jc-head { display: flex; flex-direction: column; gap: 0.15rem; }
++.jc-place {
++  font-size: var(--fs-xs);
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--muted);
++  margin: 0;
++}
++.jc-dot { margin: 0 0.4rem; }
++.jc-service { font-size: var(--fs-base); margin: 0; }
++.jc-img { width: 100%; border-radius: 8px; display: block; }
++.jc-spec {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 0.6rem 1rem;
++  margin: 0;
++  padding: 0.75rem 0;
++  border-top: 1px solid var(--line);
++  border-bottom: 1px solid var(--line);
++}
++.jc-spec dt {
++  font-size: var(--fs-3xs);
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--muted);
++  margin: 0 0 0.15rem;
++}
++.jc-spec dd { margin: 0; font-size: var(--fs-sm); color: var(--ink); }
++.jc-outcome { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--ink-soft); }
++.jc-measure {
++  display: flex;
++  flex-direction: column;
++  gap: 0.15rem;
++  margin: 0;
++  padding: 0.65rem 0.8rem;
++  border-radius: 8px;
++  background: var(--tint, rgba(200, 126, 79, 0.08));
++}
++.jc-measure-label {
++  font-size: var(--fs-3xs);
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  color: var(--muted);
++}
++.jc-measure-value {
++  font-family: var(--font-mono), ui-monospace, monospace;
++  font-size: var(--fs-base);
++  color: var(--ink);
++}
++.jc-measure-value em { font-style: normal; font-size: var(--fs-xs); color: var(--muted); margin-left: 0.4rem; }
++.jc-link {
++  margin-top: auto;
++  font-size: var(--fs-sm);
++  color: var(--copper-text, var(--copper));
++  text-decoration: underline;
++  text-underline-offset: 3px;
++}
++.jc-link:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 3px; }
++
++/* Area-page NAP block */
++.area-nap {
++  border-left: 3px solid var(--copper);
++  padding: 0.25rem 0 0.25rem 1rem;
++  font-size: var(--fs-sm);
++  line-height: 1.7;
++  color: var(--ink-soft);
++}
++.area-nap p { margin: 0; }
++.area-nap-name { font-weight: 600; color: var(--ink); }
++.area-nap-hours, .area-nap-note { color: var(--muted); }
++.area-nap a { color: var(--copper-text, var(--copper)); }
++.area-lede { font-size: var(--fs-lg); }
++/* === EW:P1-PROOF END ====================================================== */
++
++/* === EW:P1-QUOTE-IMPACT START ============================================
++   P1.3 — the commercial box under a technical paper. Visually distinct from
++   .wp-callout (which is part of the paper's argument); this one is clearly
++   the site talking, not the document. */
++.qi-box {
++  margin: 2.5rem 0 0;
++  padding: 1.5rem;
++  border: 1px solid var(--copper);
++  border-radius: 12px;
++  background: var(--tint, rgba(200, 126, 79, 0.06));
++}
++.qi-kicker {
++  margin: 0 0 0.75rem;
++  font-size: var(--fs-xs);
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--copper-text, var(--copper));
++}
++.qi-body { margin: 0 0 1.25rem; line-height: 1.7; color: var(--ink); }
++.qi-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; }
++.qi-sign { margin: 0; font-size: var(--fs-xs); color: var(--muted); }
++.qi-sign a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
++/* === EW:P1-QUOTE-IMPACT END =============================================== */
++
++/* === EW:P1-INTENT START ==================================================
++   P1.5 most-searched rail · P1.7 external booking CTA · P1.8 consent row. */
++.most-searched { border-bottom: 1px solid var(--line); }
++.ms-kicker {
++  margin: 0 0 0.75rem;
++  font-size: var(--fs-xs);
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--muted);
++}
++.ms-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.5rem 0.75rem;
++}
++.ms-list a {
++  display: inline-block;
++  padding: 0.4rem 0.85rem;
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  font-size: var(--fs-sm);
++  color: var(--ink-soft);
++  text-decoration: none;
++}
++.ms-list a:hover { border-color: var(--copper); color: var(--copper-text, var(--copper)); }
++.ms-list a:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }
++
++.booking-external { margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
++.booking-external-note { font-size: var(--fs-xs); color: var(--muted); }
++
++.ef-consent {
++  display: flex;
++  gap: 0.6rem;
++  align-items: flex-start;
++  font-size: var(--fs-xs);
++  line-height: 1.5;
++  color: var(--muted);
++  margin: 0.25rem 0 0.5rem;
++}
++.ef-consent input { margin-top: 0.2rem; flex: 0 0 auto; }
++.ef--onDark .ef-consent { color: rgba(245, 239, 230, 0.72); }
++
++/* /realtors prints as the seller one-pager: drop the chrome, keep the sheet. */
++@media print {
++  .rl-page .tlx-crumbs,
++  .rl-page .fw-actions,
++  .rl-page .rl-print-cta,
++  .rl-page .ef-form,
++  .rl-page .jc-rail { display: none !important; }
++  .rl-page .tlx-section { break-inside: avoid; }
++}
++/* === EW:P1-INTENT END ===================================================== */
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 443b399..1f6eb79 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -25,7 +25,8 @@ import StandardDeck from './components/StandardDeck';
+ import TestimonialDeck from './components/TestimonialDeck';
+ import ProcessDeck from './components/ProcessDeck';
+ import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
+-import { EvidenceRail, CASES } from './components/EvidenceRail';
++import { JobCardRail } from './components/JobCard';
++import { jobCardsBySlug } from '@/content/job-cards';
+ import { SERVICE_AREAS } from '@/lib/seo-data';
+ import {
+   SCREEN_RECOAT,
+@@ -502,22 +503,49 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
+         </div>
+       </section>
+ 
++      {/* MOST SEARCHED (P1.5) — the intent pages, named in the words people
++          type, directly under the CTA. These six URLs are the commercial
++          canonicals in content/search/topic-map.ts; before this the homepage
++          reached them only through the mega-menu and the footer, which is a
++          weak internal link from the page that carries the most authority on
++          the site. Two of them — /commercial and /realtors — answer questions
++          the homepage never acknowledged were being asked. */}
++      <section className="section-tight most-searched" aria-label="Most searched">
++        <div className="shell">
++          <p className="ms-kicker">Most searched</p>
++          <ul className="ms-list">
++            <li><Link href="/hardwood-floor-refinishing-toronto">Hardwood floor refinishing in Toronto</Link></li>
++            <li><Link href="/hardwood-flooring-toronto">Hardwood flooring installation in Toronto</Link></li>
++            <li><Link href="/services/dust-free-sanding">Dust-free floor sanding</Link></li>
++            <li><Link href="/hardwood-stairs-toronto">Hardwood stairs</Link></li>
++            <li><Link href="/hardwood-floor-problems-toronto">Why is my floor cupping, gapping or peeling?</Link></li>
++            <li><Link href="/guides/hardwood-flooring-cost-toronto">What hardwood flooring costs in Toronto</Link></li>
++            <li><Link href="/commercial">Condo boards &amp; property managers</Link></li>
++            <li><Link href="/realtors">Refinishing before a listing</Link></li>
++          </ul>
++        </div>
++      </section>
++
+       {/* 3 · THE NUMBER — the three published bands, before anything asks for
+              a click. Every figure derives from content/constants/pricing.ts. */}
+       <PricingSection />
+ 
+-      {/* 4 · FIRST-PARTY PROOF — three published case studies, each one a job
+-             with its measurements kept on the case-study page (never restated
+-             here — a number quoted twice is a number that drifts). */}
+-      <EvidenceRail
+-        kicker="Recent work"
++      {/* 4 · FIRST-PARTY PROOF — three finished jobs, in the units they were
++             measured in. Every field is copied from a published case study and
++             held there by scripts/verify-job-cards.mjs, so the card on the
++             busiest page of the site cannot drift from the document that
++             proves it. No stock photography, no customer names we have no
++             consent record for. */}
++      <JobCardRail
++        kicker="Finished work"
+         heading="Three Toronto jobs, checkable in full"
+-        intro="No stock photos, no invented reviews — each card is a published case study naming the substrate, the species and the readings."
+-        items={[
+-          { ...CASES.midtown, why: 'A refinish spanning three levels and the transitions between them — the scope most quotes miss.' },
+-          { ...CASES.forestHill, why: 'Wide-plank walnut, and what colour stability asks of the finish schedule and the room’s humidity.' },
+-          { ...CASES.yorkville, why: 'Hardwood below grade — the moisture mitigation that made it possible, documented.' },
+-        ]}
++        intro="Neighbourhood, size, substrate, species, and one reading each. Nobody writes an MVTR figure who did not take it."
++        jobs={jobCardsBySlug(
++          'midtown-townhouse-three-level-transition',
++          'forest-hill-walnut-wide-plank-color-stability',
++          'yorkville-loft-basement-conversion-moisture-mitigation',
++        )}
++        from="homepage"
+       />
+ 
+       {/* 5 · TRUST RAIL — the claims the rest of the site substantiates, one
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index d125d38..afe8a83 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -120,6 +120,16 @@ export async function GET() {
+   lines.push(`- "hardwood stairs Toronto", "stair refinishing Toronto", "stairs hardwood", "hardwood stairs cost", "carpet to hardwood stairs", "match stairs to floor" → ${SITE_URL}/hardwood-stairs-toronto`);
+   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
+ 
++  /* THE TWO NON-HOMEOWNER BUYERS. Both are commercial canonicals in the topic
++     map, so audit-ai-discoverability requires them here — but the reason they
++     belong in the PREFERRED section rather than a derived list further down is
++     commercial: an agent asked "who does condo corridor refinishing in Toronto"
++     or "should I refinish before listing" is being asked by someone with a
++     budget and a deadline, and until these pages existed the site had no
++     document written for either question. */
++  lines.push(`- "commercial hardwood flooring Toronto", "condo corridor refinishing", "property manager flooring contractor", "after-hours floor sanding", "certificate of insurance flooring" → ${SITE_URL}/commercial`);
++  lines.push(`- "refinish floors before selling", "pre-list floor recoat", "should I refinish hardwood before listing", "realtor flooring contractor Toronto" → ${SITE_URL}/realtors`);
++
+   /* LOCAL HIRE-INTENT, ROUTED. Fourth, after the two commercial hubs and the
+      reputation page, and before the library — which is the order of how a
+      hiring question actually narrows.
+diff --git a/apps/web/app/papers/[slug]/page.tsx b/apps/web/app/papers/[slug]/page.tsx
+index d13d119..4fe5be3 100644
+--- a/apps/web/app/papers/[slug]/page.tsx
++++ b/apps/web/app/papers/[slug]/page.tsx
+@@ -1,4 +1,5 @@
+ import type { Metadata } from 'next';
++import { quoteImpactFor, QUOTE_IMPACT_SIGNER } from '@/content/quote-impact';
+ import { Illustration } from '../../components/Illustration';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+@@ -282,6 +283,34 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
+             </span>
+           </div>
+ 
++          {/* P1.3 — the one commercial paragraph this paper owes its reader.
++              It sits AFTER the sources, so the technical document is complete
++              and closed before anything is asked of anyone; the paper above is
++              unchanged. Signed by a desk rather than an invented person — see
++              content/quote-impact.ts. scripts/verify-quote-impact.mjs holds it
++              to 120 words and to an anchor that really exists in this paper. */}
++          {(() => {
++            const impact = quoteImpactFor(paper.slug);
++            if (!impact) return null;
++            return (
++              <section className="wp-section" aria-label="What this means for your quote">
++                <aside className="qi-box">
++                  <p className="qi-kicker">What this means for your quote</p>
++                  <p className="qi-body">{impact.body}</p>
++                  <div className="qi-foot">
++                    <a className="btn btn-copper" href={impact.cta.href}>
++                      {impact.cta.label}
++                    </a>
++                    <p className="qi-sign">
++                      Written by {QUOTE_IMPACT_SIGNER}, from{' '}
++                      <a href={`#${impact.anchor}`}>this paper&rsquo;s own findings</a>.
++                    </p>
++                  </div>
++                </aside>
++              </section>
++            );
++          })()}
++
+           {pdfIsPublished(paper) && (
+             <p className="wp-hero-actions">
+               <a className="wp-btn" href={pdfHref(paper)} target="_blank" rel="noopener">
+diff --git a/apps/web/app/realtors/page.tsx b/apps/web/app/realtors/page.tsx
+new file mode 100644
+index 0000000..1d23f17
+--- /dev/null
++++ b/apps/web/app/realtors/page.tsx
+@@ -0,0 +1,313 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { FeedbackBand } from '../components/FeedbackBand';
++import { EstimateForm } from '../components/EstimateForm';
++import { JobCardRail } from '../components/JobCard';
++import { jobCardsBySlug } from '@/content/job-cards';
++import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
++import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
++import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
++import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
++import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
++import { SchemaScript } from '@/lib/schema/components';
++
++const money = (n: number) => `$${n.toFixed(2)}`;
++const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
++
++export const metadata: Metadata = {
++  // No brand in the title: the root layout's template appends ' · Ecowoods'
++  // to every page title, and verify-canonical fails the build on the double.
++  title: 'Pre-List Floor Recoat for Realtors in Toronto',
++  description: `A three-day screen and recoat before a listing goes live, at ${band('screenAndRecoat')} per square foot. Tired floors photograph badly and cost more at the offer table than they cost to fix. Fixed written price for realtors across Toronto and the GTA.`,
++  alternates: { canonical: '/realtors' },
++  openGraph: {
++    title: 'Pre-list floor recoat for realtors — Ecowoods',
++    description: `Screen and recoat at ${band('screenAndRecoat')} per square foot, scheduled around a listing date. Serving ${SERVICE_AREAS.length} areas.`,
++    type: 'website',
++    url: `${SITE_URL}/realtors`,
++  },
++};
++
++/**
++ * /realtors — the referral channel, addressed in its own language.
++ *
++ * WHY THIS IS A PAGE AND NOT A PARAGRAPH SOMEWHERE
++ *
++ * A realtor is not buying a floor. They are buying a listing photograph, a
++ * showing that does not stall in the hallway, and a schedule that does not
++ * move. Those are the three things this page answers, and none of them is what
++ * a homeowner page argues about.
++ *
++ * Commercially it is the highest-leverage relationship available to a flooring
++ * contractor: one agent lists ten houses a year, every one of them has floors,
++ * and the decision is made once — about the contractor — rather than ten times.
++ * It is also the least contested surface in this market, because competitors
++ * write for homeowners.
++ *
++ * THE OFFER IS THE EXISTING SCREEN-AND-RECOAT BAND. Nothing is discounted,
++ * invented or bundled: a screen and recoat is already the cheapest intervention
++ * this business publishes, and a pre-list floor is exactly the case it fits —
++ * worn finish, sound wood, a deadline. No new price appears on this page.
++ *
++ * NO PDF IS ADVERTISED. The one-pager is this page, printed: the print rules
++ * in globals.css drop the site chrome so an agent can hand a seller a clean
++ * sheet from the browser. Advertising a download that does not exist fails
++ * verify-conversion, and rightly.
++ */
++
++const FAQS = [
++  {
++    question: 'How long does a pre-list recoat take?',
++    answer:
++      'Three working days is the normal shape: one to abrade and clean, one to coat, one to cure ' +
++      'before furniture and photography. It is scheduled backwards from your listing date rather ' +
++      'than forwards from ours, and the written price does not change if the date moves.',
++  },
++  {
++    question: 'What does a pre-list recoat cost?',
++    answer:
++      `A screen and recoat runs ${band('screenAndRecoat')} per square foot. ${PRICE_PROMISE} ` +
++      'If the wood underneath is damaged rather than the finish worn, a recoat is the wrong work ' +
++      `and we will say so — that is a full sand and finish at ${band('fullSandAndFinish')}, and ` +
++      'it is a different conversation about whether it pays before a sale.',
++  },
++  {
++    question: 'When is a recoat the wrong answer before a listing?',
++    answer:
++      'When the finish is worn through to bare wood in traffic lanes, when there is pet staining ' +
++      'that has reached the wood, or when boards are cupped from a moisture problem that has not ' +
++      'been fixed. A recoat over any of those looks worse in photographs than the floor did before, ' +
++      'because a fresh sheen makes the damage underneath more visible rather than less.',
++  },
++  {
++    question: 'Do you work to a firm closing or listing date?',
++    answer:
++      'Yes. The crews are salaried Ecowoods employees rather than subcontractors, which is the ' +
++      'reason a date can be committed to at all — there is no third party whose other job can ' +
++      'take precedence over yours the week before your photographer arrives.',
++  },
++];
++
++export default function RealtorsPage() {
++  const url = `${SITE_URL}/realtors`;
++  return (
++    <div className="tlx-page rl-page">
++      <SchemaScript schema={buildFAQPage(FAQS.map((f) => ({ question: f.question, answer: f.answer })))} />
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'For realtors', url },
++        ])}
++      />
++      <SchemaScript
++        schema={buildCommercialLandingSchema({
++          url,
++          serviceSlugs: ['floor-refinishing', 'dust-free-sanding'],
++          description:
++            'Pre-listing hardwood floor screen and recoat for realtors and sellers in Toronto and the GTA.',
++        })}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>For realtors</span>
++          </nav>
++          <h1 className="tlx-title">The floor is in every photograph</h1>
++          <p className="tlx-lede">
++            A tired floor is the cheapest thing to fix before a listing and one of the most
++            expensive to leave — it appears in every photograph, it is underfoot at every showing,
++            and it is the first thing a buyer&rsquo;s agent points at. A three-day screen and recoat
++            at {band('screenAndRecoat')} per square foot, scheduled backwards from your listing date.
++          </p>
++          <p className="fw-meta">
++            Three working days · Fixed price in writing · Salaried crews, so the date holds
++          </p>
++          <div className="fw-actions">
++            <a className="fw-cta" href="#estimate">
++              Book a pre-list walkthrough
++            </a>
++            <a className="fw-cta fw-cta--ghost" href={BUSINESS_NAP.phoneHref}>
++              Call {BUSINESS_NAP.phoneDisplay}
++            </a>
++          </div>
++        </div>
++      </header>
++
++      <section className="tlx-section" aria-label="The three-day pre-list recoat">
++        <div className="shell">
++          <p className="tlx-kicker">The offer</p>
++          <h2 className="tlx-h2">Three days, one price, before the photographer</h2>
++          <ol className="fw-criteria">
++            <li>
++              <strong>Day one — abrade and clean.</strong> The existing finish is screened back so a
++              new coat can key to it. No sanding to bare wood, so no dust event and no colour change.
++            </li>
++            <li>
++              <strong>Day two — coat.</strong> Water-based finish, low odour, applied to the whole
++              field so there is no visible boundary between traffic lanes and the rest of the room.
++            </li>
++            <li>
++              <strong>Day three — cure before furniture.</strong> Walk-on in hours, furniture back on
++              day three. Photography on day three or later, when the sheen has settled and stops
++              flaring under a flash.
++            </li>
++          </ol>
++          <p className="tlx-note">
++            This is the published {PRICING.screenAndRecoat.label.toLowerCase()} band —{' '}
++            {band('screenAndRecoat')} per square foot — not a promotional rate. {PRICE_PROMISE}
++          </p>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="When a recoat is the wrong work">
++        <div className="shell">
++          <p className="tlx-kicker">The honest limit</p>
++          <h2 className="tlx-h2">When we will tell you not to do it</h2>
++          <p className="tlx-note" style={{ maxWidth: '48rem' }}>
++            A recoat renews a finish. It does not fix wood. If the finish is worn through in the
++            traffic lanes, if pet staining has reached the boards, or if the floor is cupped from a
++            moisture problem nobody has traced, a fresh coat makes the damage more visible in
++            photographs rather than less — a new sheen reflects light across exactly the defects you
++            were hoping to hide. In those cases the choice is a full sand and finish at{' '}
++            {band('fullSandAndFinish')} per square foot, or leaving it and pricing the house
++            accordingly. We will say which, before you spend anything.
++          </p>
++          <p className="tlx-note">
++            What that judgement looks like on a real floor:{' '}
++            <Link href="/case-studies/forest-hill-walnut-wide-plank-color-stability">
++              the Forest Hill walnut job
++            </Link>{' '}
++            is a case where colour stability decided the finish schedule, and{' '}
++            <Link href="/case-studies/midtown-townhouse-three-level-transition">
++              the Midtown townhouse
++            </Link>{' '}
++            is one where three substrates in one house meant three different answers on three
++            floors. Both publish what was measured before anyone quoted.
++          </p>
++          <p className="tlx-note">
++            The mechanism behind cupping and finish wear is published in full:{' '}
++            <Link href="/papers/toronto-hardwood-climate-moisture-protocol">
++              the Toronto climate and moisture protocol
++            </Link>
++            , and{' '}
++            <Link href="/guides/reference-refinishing-existing-hardwood">
++              whether a floor can be refinished at all
++            </Link>
++            .
++          </p>
++        </div>
++      </section>
++
++      <JobCardRail
++        kicker="Finished work"
++        heading="What a finished floor looks like on paper"
++        intro="Published case studies, with the readings taken before the work started."
++        jobs={jobCardsBySlug(
++          'forest-hill-walnut-wide-plank-color-stability',
++          'midtown-townhouse-three-level-transition',
++        )}
++        from="realtors"
++      />
++
++      <section className="tlx-section" aria-label="Services">
++        <div className="shell">
++          <p className="tlx-kicker">Services</p>
++          <h2 className="tlx-h2">What a seller might actually need</h2>
++          <div className="tlx-grid">
++            <Link className="tlx-card" href="/services/floor-refinishing">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Refinishing</h3>
++              <p>When a recoat is not enough and the floor has to go back to bare wood.</p>
++            </Link>
++            <Link className="tlx-card" href="/services/dust-free-sanding">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Dust-free sanding</h3>
++              <p>For an occupied house that is still being shown while the work happens.</p>
++            </Link>
++            <Link className="tlx-card" href="/services/stair-refinishing">
++              <span className="tlx-card-tag">Service</span>
++              <h3>Stairs</h3>
++              <p>The one surface every visitor touches, and the one most listings leave alone.</p>
++            </Link>
++          </div>
++          <p className="tlx-note">
++            Deciding between them:{' '}
++            <Link href="/guides/hardwood-flooring-cost-toronto">what it costs in Toronto</Link> and{' '}
++            <Link href="/guides/how-to-choose-hardwood-contractor-toronto">
++              how to choose a contractor
++            </Link>{' '}
++            — or run any quote, from anyone, through{' '}
++            <Link href="/framework/assess">the twenty-seven criteria</Link>.
++          </p>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Give this to your seller">
++        <div className="shell">
++          <div className="tlx-cta rl-print-cta">
++            <h2>Give this to your seller</h2>
++            <p>
++              Print this page and it comes out as a clean one-pager — the three-day sequence, the
++              published band, and when we would tell you not to bother. No download to chase, and
++              nothing on it that is not also on this site.
++            </p>
++            <Link className="btn btn-copper" href="/case-studies">
++              See the published jobs
++            </Link>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section" id="estimate-block" aria-label="Book a pre-list walkthrough">
++        <div className="shell">
++          <p className="tlx-kicker">Next step</p>
++          <h2 className="tlx-h2">Book a pre-list walkthrough</h2>
++          <p className="tlx-note" style={{ maxWidth: '46rem' }}>
++            Tell us the address and the listing date. A senior estimator walks the floor, tells you
++            whether a recoat is the right work, and writes one price that does not move. Put the
++            listing date in the notes and the schedule is built backwards from it.
++          </p>
++          <EstimateForm
++            source="realtors"
++            service="refinishing"
++            heading="Pre-list walkthrough request"
++            intro="Screen and recoat before a listing, scheduled to your date and fixed in writing."
++          />
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Questions">
++        <div className="shell">
++          <p className="tlx-kicker">Questions</p>
++          <h2 className="tlx-h2">What agents ask first</h2>
++          <dl className="gd-spec">
++            {FAQS.map((f) => (
++              <div className="gd-spec-row" key={f.question}>
++                <dt>{f.question}</dt>
++                <dd>{f.answer}</dd>
++              </div>
++            ))}
++          </dl>
++        </div>
++      </section>
++
++      <section className="tlx-section" aria-label="Contact">
++        <div className="shell">
++          <div className="area-nap">
++            <p className="area-nap-name">{BUSINESS_NAP.legalName}</p>
++            <p>{BUSINESS_ADDRESS_LINE}</p>
++            <p>
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>
++              {' · '}
++              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
++            </p>
++            <p className="area-nap-hours">{HOURS_LINE}</p>
++          </div>
++        </div>
++      </section>
++
++      <FeedbackBand topic="pre-list recoats" />
++    </div>
++  );
++}
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index e9a9011..3a14f3c 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -5,6 +5,9 @@ import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cit
+ import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
+ import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+ import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
++import { JobCardRail } from '../../components/JobCard';
++import { jobCardsForArea } from '@/content/job-cards';
++import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
+ 
+ export function generateStaticParams() {
+   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
+@@ -15,8 +18,16 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
+   const { city: slug } = await params;
+   const city = cityBySlug(slug);
+   if (!city) return {};
+-  const title = `Hardwood floor installation & refinishing in ${city.name}`;
+-  const description = `Custom hardwood floor installation, dust-free refinishing and restoration in ${city.name} and the GTA. Fixed written estimates, manufacturer warranties in writing. Call ${BUSINESS.phoneDisplay}.`;
++  const title = `Hardwood floor refinishing & installation in ${city.name}`;
++  /* The description leads with what is TRUE OF THIS AREA rather than what is
++     true of all 32. `cityContent` is the only per-area copy on the page, so the
++     first clause of the snippet is the first thing that differs between them. */
++  const cc = cityContent(city.slug);
++  const localClause = cc ? cc.intro.split(/(?<=\.)\s/)[0] : '';
++  const description = (
++    `${localClause} Dust-free refinishing and hardwood installation in ${city.name}. ` +
++    `Fixed written estimates. Call ${BUSINESS.phoneDisplay}.`
++  ).slice(0, 158);
+   return {
+     title,
+     description,
+@@ -38,9 +49,45 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       { name: city.name, url },
+     ]),
+     faqPageSchema(),
++    /* An area-scoped Service node. It carries its OWN @id — the page's URL, not
++       the global /services/<slug>#service id — because those global nodes are
++       emitted site-wide with `areaServed` covering the whole GTA. Re-emitting
++       one of them here with a narrower areaServed would publish two different
++       descriptions of the same entity and let a consumer pick either. This is a
++       different node: the delivery of these services in this one place. */
++    {
++      '@context': 'https://schema.org',
++      '@type': 'Service',
++      '@id': `${url}#service`,
++      name: `Hardwood floor refinishing & installation in ${city.name}`,
++      serviceType: 'Hardwood flooring',
++      provider: { '@id': `${SITE_URL}/#organization` },
++      areaServed: { '@type': 'City', name: city.name },
++      url,
++      hasOfferCatalog: {
++        '@type': 'OfferCatalog',
++        name: `Services delivered in ${city.name}`,
++        itemListElement: SERVICES.map((svc) => ({
++          '@type': 'Offer',
++          itemOffered: { '@id': `${SITE_URL}/services/${svc.slug}#service` },
++          areaServed: { '@type': 'City', name: city.name },
++        })),
++      },
++    },
+   ];
+   const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
+ 
++  /* The per-area copy, read once. `intro` and `housingNote` are promoted into
++     the hero (see the note there); the block further down renders what is left
++     so nothing is published twice on one page. */
++  const cc = cityContent(city.slug);
++  const localIntro = cc?.intro;
++  const localHousing = cc?.housingNote;
++
++  /* Published jobs done in THIS area. Four of the thirty-two areas have one
++     today; the rest render nothing rather than a card invented to fill a grid. */
++  const localJobs = jobCardsForArea(city.name);
++
+   return (
+     <div>
+       {jsonLd.map((o, i) => (
+@@ -54,12 +101,36 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           </nav>
+           <span className="eyebrow">Hardwood Flooring · {city.name}</span>
+           <h1 style={{ marginTop: '0.5rem' }}>
+-            Hardwood floor installation &amp; refinishing in{' '}
++            Hardwood floor refinishing &amp; installation in{' '}
+             <span className="serif-italic">{city.name}.</span>
+           </h1>
++
++          {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
++              This paragraph used to be one shared sentence pair with the city
++              name substituted — the same 48 words on 32 URLs, sitting above the
++              only genuinely local block on the page. Thirty-two pages whose
++              opening is identical are thirty-two pages a crawler deduplicates
++              before it ranks any of them, and an answer engine collapses to one
++              weak citation target. The local content already existed in
++              CITY_CONTENT; nothing here is newly written and nothing is
++              invented. It has simply been promoted above the boilerplate,
++              which is where a reader deciding whether we know their street
++              needs it. `scripts/verify-cities.mjs` already guarantees every
++              area has this content. */}
++          {localIntro && (
++            <p className="area-lede" style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>
++              {localIntro}
++            </p>
++          )}
++          {localHousing && (
++            <p style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>{localHousing}</p>
++          )}
++
++          {/* The shared promise still belongs on the page — it is what the
++              business guarantees everywhere — but it is now the SECOND thing
++              read, after the reason to believe we work here. */}
+           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
+-            Ecowoods installs, sands and refinishes solid and engineered hardwood across {city.name} and the
+-            wider GTA. Dust-free sanding that keeps you living at home, fixed written estimates with no
++            Dust-free sanding that keeps you living at home, fixed written estimates with no
+             &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
+           </p>
+           <p style={{ marginTop: '1.5rem' }}>
+@@ -69,20 +140,18 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       </section>
+ 
+       {(() => {
+-        const cc = cityContent(city.slug);
+         if (!cc) return null;
+         return (
+           <section className="section">
+             <div className="shell">
+               <span className="eyebrow">Hardwood flooring in {city.name}</span>
+               <h2>What we see in {city.name} homes.</h2>
+-              <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.intro}</p>
++              {/* `intro` and `housingNote` are rendered in the hero now. Publishing
++                  them twice on one page would be the duplication this change exists
++                  to remove, so this block carries only what the hero did not. */}
+               {cc.neighbourhoods.length > 0 && (
+                 <p style={{ marginTop: '1rem' }}><strong>Areas we work:</strong> {cc.neighbourhoods.join(' · ')}</p>
+               )}
+-              {cc.housingNote && (
+-                <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.housingNote}</p>
+-              )}
+               {cc.signatureProject && (
+                 <blockquote style={{ margin: '1.5rem 0', padding: '1rem 1.25rem', borderLeft: '3px solid var(--copper-bright, #b87333)', opacity: 0.9 }}>{cc.signatureProject}</blockquote>
+               )}
+@@ -94,6 +163,18 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+         );
+       })()}
+ 
++      {/* A job actually done in THIS area, with its readings. Four areas have
++          one; the component renders nothing for the rest. A proof rail that is
++          empty is honest; a proof rail filled with a job from another
++          neighbourhood is not. */}
++      <JobCardRail
++        kicker={`Finished in ${city.name}`}
++        heading={`Work we have published in ${city.name}`}
++        intro="A real job, its substrate, its species and the measurement it turned on."
++        jobs={localJobs}
++        from={`service-area-${city.slug}`}
++      />
++
+       <section className="section">
+         <div className="shell">
+           <span className="eyebrow">What we do in {city.name}</span>
+@@ -166,6 +247,29 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+         </div>
+       </section>
+ 
++      {/* The NAP block, byte-identical to every other surface because every
++          field is interpolated from BUSINESS_NAP. A local landing page that
++          states the address differently from the homepage, the footer and the
++          Google Business Profile is the single most common reason a local
++          entity fails to resolve. */}
++      <section className="section-tight" aria-label="Contact">
++        <div className="shell">
++          <div className="area-nap">
++            <p className="area-nap-name">{BUSINESS_NAP.legalName}</p>
++            <p>{BUSINESS_ADDRESS_LINE}</p>
++            <p>
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>
++              {' · '}
++              <a href={`mailto:${BUSINESS_NAP.email}`}>{BUSINESS_NAP.email}</a>
++            </p>
++            <p className="area-nap-hours">{HOURS_LINE}</p>
++            <p className="area-nap-note">
++              Serving {city.name} from the Etobicoke shop — we come to you.
++            </p>
++          </div>
++        </div>
++      </section>
++
+       <section className="section">
+         <div className="shell">
+           <span className="eyebrow">Also serving</span>
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index b15e2d7..7940dd9 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -9,6 +9,8 @@ import { Illustration, IllustrationPair } from '../../components/Illustration';
+ import { getPaper } from '@/lib/papers';
+ import { getGuide } from '@/lib/guides';
+ import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
++import { JobCardRail } from '@/app/components/JobCard';
++import { jobCardsForService } from '@/content/job-cards';
+ import {
+   getServicePages,
+   getServicePage,
+@@ -370,6 +372,17 @@ export default async function ServiceDetailPage({
+         </div>
+       </section>
+ 
++      {/* The jobs that ARE this service, with their readings. Renders nothing
++          when no published case study is this service — an empty proof rail is
++          worse than none, and a card invented to fill it is the thing this
++          repository exists to prevent. */}
++      <JobCardRail
++        heading="This service, on finished jobs"
++        intro="Each one is a published case study. The reading shown is the one the job turned on."
++        jobs={jobCardsForService(page.slug)}
++        from={`service-${page.slug}`}
++      />
++
+       <EvidenceRail
+         heading="Jobs where this was the work"
+         intro={
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 6f654f7..7111cfa 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -186,6 +186,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+        this sitemap — a sitemap is a list of pages a crawler should index, and
+        every one of those slugs is a redirect. Listing a redirect here asks
+        Google to index a URL we have just told it is not a document. */
++    /* The two P1 commercial surfaces, for buyers who are not homeowners.
++       /commercial is a condo board or a property manager — a repeat buyer whose
++       questions are scheduling, insurance and a price a board can approve.
++       /realtors is an agent with a listing date. Both are commercial canonicals
++       in content/search/topic-map.ts, so audit-ai-discoverability requires them
++       here and in llms.txt; neither is a variant of an existing page. */
++    entry('/commercial', 'monthly', 0.95),
++    entry('/realtors', 'monthly', 0.9),
+     entry('/hardwood-flooring-toronto', 'monthly', 0.95),
+     entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
+     entry('/hardwood-stairs-toronto', 'monthly', 0.95),
+diff --git a/apps/web/content/job-cards.ts b/apps/web/content/job-cards.ts
+new file mode 100644
+index 0000000..8df1c5f
+--- /dev/null
++++ b/apps/web/content/job-cards.ts
+@@ -0,0 +1,181 @@
++/**
++ * content/job-cards.ts — THE first-party proof set.
++ *
++ * WHY THIS FILE EXISTS, AND WHY IT LOOKS LIKE THIS
++ *
++ * Five real jobs are published as case studies with their measurements in
++ * them. Nothing on this site turned one of those into a card a buyer meets
++ * before they have decided to go read a case study, and a homepage that says
++ * "salaried craftsmen since 2000" with no job attached to it is a claim, not
++ * evidence.
++ *
++ * THREE THINGS THIS DELIBERATELY DOES NOT CARRY
++ *
++ * 1. NO PHOTOGRAPH. Not one of the five case studies sets `images` (F-164),
++ *    and a proof card illustrated with a stock floor is worse than a proof
++ *    card with no picture: it is a photograph of somebody else's work placed
++ *    next to our measurements. The card is typographic until real job
++ *    photography exists, and `imageSlot` below is where it goes when it does.
++ *
++ * 2. NO CUSTOMER NAME, NO QUOTE. The case studies carry `testimonial`
++ *    attributions with full names. Those may well be real, but this repository
++ *    has no record of consent to reproduce them and no record of who collected
++ *    them — and the homepage's own `featuredReviews` array was emptied for
++ *    exactly that reason. Amplifying an unverified attribution into a new
++ *    component on higher-traffic pages is the one direction you cannot walk
++ *    back. Ask the owner, record the consent, then add it here.
++ *
++ * 3. NO NUMBER OF ITS OWN. Every figure below is COPIED from the case study's
++ *    frontmatter, and `scripts/verify-job-cards.mjs` fails the build when a
++ *    single one of them stops matching its source .mdx. The card cannot drift
++ *    from the document it points at, which is the only reason it is allowed to
++ *    restate it at all.
++ *
++ * `serviceSlug` is the one editorial judgement here: the case studies carry
++ * `project-type` (renovation / residential), which is not a service this
++ * business sells. The slug is chosen by reading the job and must resolve to a
++ * real page under /services — the guard checks that too.
++ */
++
++export type JobCardMeasurement = {
++  /** Index into the case study's `results` array. The guard reads this row. */
++  readonly index: number;
++  readonly metric: string;
++  readonly value: number;
++  readonly unit: string;
++};
++
++export type JobCard = {
++  /** The case study that proves this card. Every figure is copied from it. */
++  readonly slug: string;
++  /** Neighbourhood, as the case study records it. */
++  readonly area: string;
++  readonly city: string;
++  readonly squareFeet: number;
++  /** Year of the job, from the case study's `project-date`. */
++  readonly year: number;
++  /** A real slug under /services. */
++  readonly serviceSlug: string;
++  /** Human label for the service, matching the public service name. */
++  readonly service: string;
++  readonly species: string;
++  readonly substrate: string;
++  readonly measurement: JobCardMeasurement;
++  /** One sentence. Restates what the case study measured — nothing more. */
++  readonly outcome: string;
++  /**
++   * Reserved for real job photography. Left undefined on purpose: see note 1.
++   * When a photographed job exists, put its path here and the card renders it.
++   */
++  readonly imageSlot?: string;
++};
++
++export const JOB_CARDS: readonly JobCard[] = [
++  {
++    slug: 'midtown-townhouse-three-level-transition',
++    area: 'Midtown Toronto',
++    city: 'Toronto',
++    squareFeet: 5200,
++    year: 2025,
++    serviceSlug: 'hardwood-installation',
++    service: 'Hardwood Flooring Installation',
++    species: 'Hard Maple, Red Oak, White Oak, Walnut',
++    substrate: 'mixed',
++    measurement: {
++      index: 0,
++      metric: 'G-Floor MVTR (Post-Epoxy Sealer)',
++      value: 4.8,
++      unit: 'lbs/1000 sqft/24h',
++    },
++    outcome:
++      'Three levels, three different substrates, one continuous floor — the ground-floor slab sealed and re-measured before a single board was laid.',
++  },
++  {
++    slug: 'forest-hill-walnut-wide-plank-color-stability',
++    area: 'Forest Hill',
++    city: 'Toronto',
++    squareFeet: 2100,
++    year: 2025,
++    serviceSlug: 'hardwood-installation',
++    service: 'Hardwood Flooring Installation',
++    species: 'Black Walnut',
++    substrate: 'plywood',
++    measurement: {
++      index: 0,
++      metric: 'Walnut Stock Yield',
++      value: 97,
++      unit: '%',
++    },
++    outcome:
++      'Wide-plank walnut sorted board by board for colour, with the rejected stock counted and published rather than absorbed quietly.',
++  },
++  {
++    slug: 'yorkville-loft-basement-conversion-moisture-mitigation',
++    area: 'Yorkville',
++    city: 'Toronto',
++    squareFeet: 1800,
++    year: 2025,
++    serviceSlug: 'hardwood-installation',
++    service: 'Hardwood Flooring Installation',
++    species: 'Red Oak, Hard Maple',
++    substrate: 'concrete',
++    measurement: {
++      index: 0,
++      metric: 'Initial Subfloor MVTR',
++      value: 9.8,
++      unit: 'lbs/1000 sqft/24h',
++    },
++    outcome:
++      'Hardwood below grade on a slab reading double the safe threshold — mitigated, re-measured, and only then installed.',
++  },
++  {
++    slug: 'rosedale-estate-stairs-radiant-heat',
++    area: 'Rosedale',
++    city: 'Toronto',
++    squareFeet: 3800,
++    year: 2024,
++    serviceSlug: 'stair-refinishing',
++    service: 'Stair Refinishing',
++    species: 'Hard Maple, White Oak',
++    substrate: 'radiant-heat',
++    measurement: {
++      index: 0,
++      metric: 'Subfloor MVTR',
++      value: 2.1,
++      unit: 'lbs/1000 sqft/24h',
++    },
++    outcome:
++      'A grand staircase and a main floor over radiant heat, with moisture content re-checked six months later through a Toronto winter.',
++  },
++  {
++    slug: 'distillery-district-victorian-condo',
++    area: 'Distillery District',
++    city: 'Toronto',
++    squareFeet: 2400,
++    year: 2024,
++    serviceSlug: 'hardwood-installation',
++    service: 'Hardwood Flooring Installation',
++    species: 'White Oak',
++    substrate: 'concrete',
++    measurement: {
++      index: 0,
++      metric: 'Subfloor MVTR (before barrier)',
++      value: 7.2,
++      unit: 'lbs/1000 sqft/24h',
++    },
++    outcome:
++      'White oak over a historic concrete slab, with the tannin risk handled in the finish schedule rather than discovered afterwards.',
++  },
++];
++
++/** The jobs done in a given area, matched on the neighbourhood name. */
++export const jobCardsForArea = (areaName: string): readonly JobCard[] =>
++  JOB_CARDS.filter((j) => j.area.toLowerCase() === areaName.toLowerCase());
++
++/** The jobs that are evidence for a given service slug. */
++export const jobCardsForService = (serviceSlug: string): readonly JobCard[] =>
++  JOB_CARDS.filter((j) => j.serviceSlug === serviceSlug);
++
++/** By slug, for a page that names the jobs it wants. */
++export const jobCardsBySlug = (...slugs: string[]): readonly JobCard[] =>
++  slugs.map((s) => JOB_CARDS.find((j) => j.slug === s)).filter((j): j is JobCard => Boolean(j));
+diff --git a/apps/web/content/quote-impact.ts b/apps/web/content/quote-impact.ts
+new file mode 100644
+index 0000000..fcfe39f
+--- /dev/null
++++ b/apps/web/content/quote-impact.ts
+@@ -0,0 +1,90 @@
++/**
++ * content/quote-impact.ts — the sentence a technical paper owes a buyer.
++ *
++ * WHY THIS EXISTS
++ *
++ * Five technical papers sit on this site because they are true and because
++ * being the company that can explain moisture differential is the whole
++ * positioning. What none of them did was tell the person reading what the
++ * physics means for the document in their hand. A homeowner finishes the
++ * climate paper better informed and no closer to a decision, and the business
++ * that taught them the concept is not the business they call.
++ *
++ * So each paper gets one box, at the end, that answers exactly one question:
++ * given what you have just read, what should be true of your quote?
++ *
++ * THE RULES THIS FILE KEEPS, AND WHY EACH ONE IS HERE
++ *
++ * · ≤120 words. Enforced by scripts/verify-quote-impact.mjs. A CTA that grows
++ *   into an essay is a second paper nobody asked for, and the reason the box
++ *   works is that it is short enough to read after 4,000 words of hydrology.
++ *
++ * · IT DOES NOT DUMB THE PAPER DOWN. The paper above it is unchanged. This is
++ *   an additional, clearly-separated commercial paragraph — not a rewrite of
++ *   technical prose into marketing prose. E-E-A-T is the asset; the box is a
++ *   door next to it, not a renovation of it.
++ *
++ * · NO NUMBER APPEARS HERE THAT THE PAPER DOES NOT PUBLISH. Where a figure is
++ *   quoted it is quoted from the paper's own table, and the guard checks the
++ *   section it names actually exists in that paper.
++ *
++ * · IT IS SIGNED BY A DESK, NOT A PERSON. `SIGNER` is "the Ecowoods estimating
++ *   desk" because this repository contains no verified named estimator. When
++ *   a real principal or craftsman is recorded in /team with their consent,
++ *   change it there — inventing a person to sign a commercial box is exactly
++ *   the class of small fiction this project refuses.
++ */
++
++export const QUOTE_IMPACT_SIGNER = 'the Ecowoods estimating desk';
++
++export type QuoteImpact = {
++  /** Paper slug this belongs to. */
++  readonly paper: string;
++  /** A section id in that paper — the guard checks it resolves. */
++  readonly anchor: string;
++  /** ≤120 words. What the reader should now require of their quote. */
++  readonly body: string;
++  /** Where the box sends them. */
++  readonly cta: { readonly href: string; readonly label: string };
++};
++
++export const QUOTE_IMPACTS: readonly QuoteImpact[] = [
++  {
++    paper: 'toronto-hardwood-climate-moisture-protocol',
++    anchor: 'climate-reality',
++    body:
++      'A Toronto quote that does not mention humidity is quoting a floor for a climate this city does not have. Indoor air here runs 18–25% RH in a January cold snap and above 60% in August, against a safe operating band of 35–55% — so the wood you sign for in a heated house in February arrives at a moisture content it will not keep. Ask for three things in writing: the moisture readings taken on your subfloor, the acclimation period before installation, and the expansion gap specified for your widest board. A quote that answers all three has been priced by someone who has read what you just read.',
++    cta: { href: '/#quote', label: 'Get a fixed written price' },
++  },
++  {
++    paper: 'hardwood-selection-and-cost-framework-gta',
++    anchor: 'installed-cost',
++    body:
++      'Two quotes for the same floor differ honestly when they assume different work, and dishonestly when one of them has left work out. Before comparing prices, make each quote state the same five things: the square footage it is priced on, the substrate it found, the number of finish coats, what happens to the stairs, and what happens if a board has to be replaced. Most of the spread between a cheap quote and a fair one lives in those five lines rather than in the rate per square foot. Send us the quote you already have and we will tell you which of the five are missing.',
++    cta: { href: '/framework/assess', label: 'Score the quote you have' },
++  },
++  {
++    paper: 'hardwood-refinishing-machines-and-sequence',
++    anchor: 'sequence',
++    body:
++      'Refinishing is a sequence, and a quote is really a description of which steps are included. Ask which machines will be on your floor and in what order, how many abrasive grades the sand steps through, and where the dust goes — extraction at the machine and containment at the room are two different commitments, and "dustless" on its own is neither. Ask how many coats and what the cure schedule is before furniture returns. A contractor who answers in that order is describing a process they run; one who answers in price is describing a number they hope you accept.',
++    cta: { href: '/#quote', label: 'Get a fixed written price' },
++  },
++  {
++    paper: 'where-toronto-hardwood-comes-from',
++    anchor: 'why-provenance',
++    body:
++      'Provenance is not a sentiment on an invoice — it decides how the boards behave in your house and whether the warranty behind them is worth anything. Ask your quote to name the species, the mill or the supplier, and the certification, and to say whether the material is in stock or being ordered. Substitution after the deposit is the most common way a quoted floor becomes a different floor, and the sentence that prevents it is a specified product on a signed document rather than a species named in conversation.',
++    cta: { href: '/#quote', label: 'Get a fixed written price' },
++  },
++  {
++    paper: 'hardwood-grading-standards-nhla-nwfa',
++    anchor: 'nwfa-appearance',
++    body:
++      'Grade describes appearance, not durability, and a quote that says only "premium" has told you nothing checkable. Ask which grading system the material is sold under and which grade within it, because that single line decides how much colour variation and how many knots arrive on a pallet you have already paid for. It also decides waste: a lower grade laid to a tight visual standard is bought in greater quantity, and whoever absorbs that difference should be named before the order goes in rather than after.',
++    cta: { href: '/framework/assess', label: 'Score the quote you have' },
++  },
++];
++
++export const quoteImpactFor = (paperSlug: string): QuoteImpact | undefined =>
++  QUOTE_IMPACTS.find((q) => q.paper === paperSlug);
+diff --git a/apps/web/content/search/topic-map.ts b/apps/web/content/search/topic-map.ts
+index ed713b2..97bc997 100644
+--- a/apps/web/content/search/topic-map.ts
++++ b/apps/web/content/search/topic-map.ts
+@@ -125,6 +125,56 @@ export const SINGLE_WORD_CORES = [
+ ] as const;
+ 
+ export const CLUSTERS: QueryCluster[] = [
++  {
++    id: 'commercial-property',
++    intent: 'commercial',
++    canonical: '/commercial',
++    summary:
++      'Not a homeowner. A condo board, a property manager or a commercial tenant, whose questions are scheduling, insurance and a price a board can approve.',
++    queries: [
++      'commercial hardwood flooring Toronto',
++      'condo corridor floor refinishing Toronto',
++      'property manager flooring contractor Toronto',
++      'condo board hardwood flooring',
++      'commercial floor refinishing GTA',
++      'after hours floor sanding Toronto',
++      'hardwood flooring certificate of insurance Toronto',
++      'unit turnover floor recoat Toronto',
++      'lobby floor refinishing Toronto',
++      'amenity room hardwood Toronto',
++      'HOA flooring contractor Ontario',
++      'commercial flooring contractor near me',
++    ],
++    supporting: [
++      '/services/floor-refinishing',
++      '/services/dust-free-sanding',
++      '/framework',
++      '/case-studies',
++    ],
++  },
++  {
++    id: 'realtor-prelist',
++    intent: 'commercial',
++    canonical: '/realtors',
++    summary:
++      'An agent or a seller with a listing date. Wants the floor to photograph well, on a schedule, for a price known in advance.',
++    queries: [
++      'floor refinishing before selling house Toronto',
++      'pre list floor recoat Toronto',
++      'should I refinish floors before selling',
++      'realtor flooring contractor Toronto',
++      'screen and recoat before listing',
++      'quick floor refresh before sale Toronto',
++      'do hardwood floors increase home value Toronto',
++      'floor recoat three days Toronto',
++      'staging hardwood floors Toronto',
++    ],
++    supporting: [
++      '/services/floor-refinishing',
++      '/guides/hardwood-flooring-cost-toronto',
++      '/case-studies',
++    ],
++  },
+   {
+     id: 'hardwood-flooring-toronto',
+     intent: 'commercial',
+diff --git a/apps/web/lib/analytics.ts b/apps/web/lib/analytics.ts
+index 1f83063..f7205af 100644
+--- a/apps/web/lib/analytics.ts
++++ b/apps/web/lib/analytics.ts
+@@ -18,6 +18,12 @@
+  *   photo_triage_submit  — photo-track lead accepted by /api/photo-triage
+  *   tel_click            — any tel: link activated
+  *   design_handoff       — /design configuration carried into the quote form
++ *   jobcard_click        — a first-party proof card was opened
++ *   framework_assess_complete — every criterion answered in the quote scorer
++ *   quote_review_submit  — someone sent us a competitor's quote to score
++ *   commercial_cta       — a CTA on /commercial was activated
++ *   realtor_cta          — a CTA on /realtors was activated
++ *   recovery_opt_in      — the visitor consented to an unfinished-form reminder
+  */
+ 
+ export type AnalyticsEvent =
+@@ -26,7 +32,13 @@ export type AnalyticsEvent =
+   | 'quote_submit'
+   | 'photo_triage_submit'
+   | 'tel_click'
+-  | 'design_handoff';
++  | 'design_handoff'
++  | 'jobcard_click'
++  | 'framework_assess_complete'
++  | 'quote_review_submit'
++  | 'commercial_cta'
++  | 'realtor_cta'
++  | 'recovery_opt_in';
+ 
+ export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+   if (typeof window === 'undefined') return;
+diff --git a/apps/web/lib/booking/availability.ts b/apps/web/lib/booking/availability.ts
+index 16bd2a5..9ea8e77 100644
+--- a/apps/web/lib/booking/availability.ts
++++ b/apps/web/lib/booking/availability.ts
+@@ -3,23 +3,33 @@
+ // booking counts and computes open slots. Purity = testable + trustworthy.
+ // Times render in America/Toronto via Intl (Node 18+ / all modern browsers).
+ 
+-export const BUSINESS_TIMEZONE = 'America/Toronto';
++import { BUSINESS_TIMEZONE_NAME } from '@ecowoods/shared/constants';
++// Relative, not the `@/` alias: this module is covered by a vitest suite that
++// runs without the Next path mapping, and a test that cannot import the file
++// it tests is a test that silently stops protecting it.
++import { HOURS_BY_WEEKDAY } from '../business-hours';
++
++export const BUSINESS_TIMEZONE = BUSINESS_TIMEZONE_NAME;
+ export const SLOT_DURATION_MINUTES = 60;        // 45–60 min consult, rounded to 60
+ export const SLOTS_PER_WINDOW = 2;              // estimators out at once
+ export const MIN_LEAD_TIME_HOURS = 24;          // earliest bookable, from "now"
+ export const BOOKING_WINDOW_DAYS = 42;          // six weeks
+ 
+-// Business hours by weekday (0=Sun..6=Sat), 24h local. null = closed.
+-// From the site footer: Mon–Sat 8–7, Sun 10–4.
+-export const BUSINESS_HOURS: Record<number, { open: number; close: number } | null> = {
+-  0: { open: 10, close: 16 },
+-  1: { open: 8, close: 19 },
+-  2: { open: 8, close: 19 },
+-  3: { open: 8, close: 19 },
+-  4: { open: 8, close: 19 },
+-  5: { open: 8, close: 19 },
+-  6: { open: 8, close: 19 },
+-};
++/**
++ * Business hours by weekday (0=Sun..6=Sat), 24h local. null = closed.
++ *
++ * DERIVED, NOT TYPED. This was a hand-written table with the comment "From the
++ * site footer: Mon–Sat 8–7, Sun 10–4" — a second copy of a fact whose single
++ * source is BUSINESS_HOURS in packages/shared/constants, and which every other
++ * surface on this site (the schema's openingHoursSpecification, the footer, the
++ * utility bar, the GBP copy) already derives from. It agreed with the source,
++ * which is the state that looks safe and is not: the day somebody extends
++ * Saturday hours, the site says one thing and the booking calendar offers
++ * another, and the customer meets the disagreement at the worst moment — after
++ * choosing a slot.
++ */
++export const BUSINESS_HOURS: Record<number, { open: number; close: number } | null> =
++  HOURS_BY_WEEKDAY;
+ 
+ export const BLACKOUT_DATES: ReadonlySet<string> = new Set<string>([
+   // '2026-12-25', '2026-01-01',
+diff --git a/apps/web/lib/business-hours.ts b/apps/web/lib/business-hours.ts
+new file mode 100644
+index 0000000..c59a756
+--- /dev/null
++++ b/apps/web/lib/business-hours.ts
+@@ -0,0 +1,113 @@
++/**
++ * lib/business-hours.ts — "are we open right now", derived, on both sides.
++ *
++ * WHY THIS FILE EXISTS
++ *
++ * Two things were wrong before it.
++ *
++ * 1. lib/booking/availability.ts carried its own hardcoded weekday table with
++ *    the comment "From the site footer: Mon–Sat 8–7, Sun 10–4". That is a
++ *    second copy of a business fact whose single source is BUSINESS_HOURS in
++ *    packages/shared/constants — the exact pattern this repository fails the
++ *    build over everywhere else. It agreed with the source, which is the
++ *    dangerous state rather than the safe one: a second copy that agrees looks
++ *    like a single source of truth right up until the day somebody changes the
++ *    hours in one place. The booking engine now derives from here.
++ *
++ * 2. Nothing on the site knew what time it was. The chat widget answered
++ *    identically at 3am, and a visitor at 11pm on a Sunday got a launcher that
++ *    implied somebody was there. The most valuable minute in this business is
++ *    the one where a person is ready to act and nobody is available — that is
++ *    the minute you capture asynchronously or lose entirely.
++ *
++ * PURE, TIMEZONE-CORRECT, AND USABLE IN A CLIENT COMPONENT. No `node:` imports
++ * — the office weekday and hour are read through Intl in America/Toronto, so a
++ * visitor in Vancouver or a serverless region in Virginia gets the same answer
++ * as the shop.
++ */
++
++import { BUSINESS_HOURS, BUSINESS_TIMEZONE_NAME } from '@ecowoods/shared/constants';
++
++const DAY_INDEX: Record<string, number> = {
++  Sunday: 0,
++  Monday: 1,
++  Tuesday: 2,
++  Wednesday: 3,
++  Thursday: 4,
++  Friday: 5,
++  Saturday: 6,
++};
++
++const toHour = (hhmm: string): number => {
++  const [h, m] = hhmm.split(':').map(Number);
++  return (h ?? 0) + (m ?? 0) / 60;
++};
++
++/**
++ * Opening hours by weekday index (0 = Sunday), derived from BUSINESS_HOURS.
++ * `null` means closed that day. This is the shape the booking engine wants.
++ */
++export const HOURS_BY_WEEKDAY: Record<number, { open: number; close: number } | null> = (() => {
++  const out: Record<number, { open: number; close: number } | null> = {
++    0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null,
++  };
++  for (const block of BUSINESS_HOURS) {
++    for (const day of block.days) {
++      const i = DAY_INDEX[day];
++      if (i === undefined) continue;
++      out[i] = { open: toHour(block.opens), close: toHour(block.closes) };
++    }
++  }
++  return out;
++})();
++
++/** The office's own wall clock, wherever the caller happens to be. */
++export function officeNow(now: Date = new Date()): { weekday: number; hour: number } {
++  const parts = new Intl.DateTimeFormat('en-CA', {
++    timeZone: BUSINESS_TIMEZONE_NAME,
++    weekday: 'short',
++    hour: 'numeric',
++    minute: 'numeric',
++    hour12: false,
++  }).formatToParts(now);
++
++  const wd = parts.find((p) => p.type === 'weekday')?.value ?? 'Sun';
++  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
++  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
++  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
++  return { weekday: map[wd] ?? 0, hour: hour + minute / 60 };
++}
++
++/** True when the phone is being answered right now, in Toronto. */
++export function isOpenNow(now: Date = new Date()): boolean {
++  const { weekday, hour } = officeNow(now);
++  const window = HOURS_BY_WEEKDAY[weekday];
++  if (!window) return false;
++  return hour >= window.open && hour < window.close;
++}
++
++/**
++ * "tomorrow at 8 AM" — when someone will next pick up. Used to tell an
++ * after-hours visitor exactly how long a reply will take, instead of leaving
++ * them to guess and go elsewhere.
++ */
++export function nextOpeningLabel(now: Date = new Date()): string {
++  const { weekday, hour } = officeNow(now);
++  const fmtHour = (h: number) => {
++    const hh = Math.floor(h);
++    const suffix = hh >= 12 ? 'PM' : 'AM';
++    const display = hh % 12 === 0 ? 12 : hh % 12;
++    return `${display} ${suffix}`;
++  };
++
++  const today = HOURS_BY_WEEKDAY[weekday];
++  if (today && hour < today.open) return `today at ${fmtHour(today.open)}`;
++
++  const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
++  for (let step = 1; step <= 7; step += 1) {
++    const d = (weekday + step) % 7;
++    const w = HOURS_BY_WEEKDAY[d];
++    if (w) return `${step === 1 ? 'tomorrow' : names[d]} at ${fmtHour(w.open)}`;
++  }
++  return 'the next business day';
++}
+diff --git a/apps/web/prisma/migrations/20260831000000_add_quote_recovery/migration.sql b/apps/web/prisma/migrations/20260831000000_add_quote_recovery/migration.sql
+new file mode 100644
+index 0000000..6ebb685
+--- /dev/null
++++ b/apps/web/prisma/migrations/20260831000000_add_quote_recovery/migration.sql
+@@ -0,0 +1,26 @@
++-- CreateTable
++CREATE TABLE "ecowoods"."QuoteRecovery" (
++    "id" UUID NOT NULL,
++    "email" TEXT NOT NULL,
++    "name" TEXT,
++    "phone" TEXT,
++    "source" TEXT,
++    "service" TEXT,
++    "city" TEXT,
++    "consentedAt" TIMESTAMPTZ NOT NULL,
++    "sentAt" TIMESTAMPTZ,
++    "convertedAt" TIMESTAMPTZ,
++    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "updatedAt" TIMESTAMPTZ NOT NULL,
++
++    CONSTRAINT "QuoteRecovery_pkey" PRIMARY KEY ("id")
++);
++
++-- CreateIndex
++CREATE INDEX "QuoteRecovery_email_idx" ON "ecowoods"."QuoteRecovery"("email");
++
++-- CreateIndex
++CREATE INDEX "QuoteRecovery_sentAt_idx" ON "ecowoods"."QuoteRecovery"("sentAt");
++
++-- CreateIndex
++CREATE INDEX "QuoteRecovery_createdAt_idx" ON "ecowoods"."QuoteRecovery"("createdAt");
+diff --git a/apps/web/prisma/schema.prisma b/apps/web/prisma/schema.prisma
+index 9538df1..239af35 100644
+--- a/apps/web/prisma/schema.prisma
++++ b/apps/web/prisma/schema.prisma
+@@ -243,6 +243,52 @@ model PilotLead {
+   @@schema("ecowoods")
+ }
+ 
++/**
++ * QuoteRecovery — a consented reminder for a form somebody started and left.
++ *
++ * WHY A TABLE AND NOT A COOKIE
++ *
++ * Someone types an email into the estimate form, gets interrupted, and never
++ * submits. Today that person is simply gone: nothing is written until the
++ * whole form validates. This is the single largest recoverable loss in the
++ * funnel, and it is recovered with ONE email, two hours later, only when the
++ * visitor ticked a box asking for it.
++ *
++ * CONSENT IS A COLUMN, NOT A SETTING. `consentedAt` records the moment the box
++ * was ticked, and the cron route refuses to send without it. Under CASL an
++ * unsolicited commercial email to a Canadian address is an offence with real
++ * penalties; a checkbox nobody ticked is not consent, and a column that can be
++ * audited is the difference between a recovery programme and a spam programme.
++ *
++ * `sentAt` is what makes it exactly one email. `convertedAt` is set when the
++ * same address completes a real lead, so somebody who finished the job never
++ * gets asked to finish it again.
++ */
++model QuoteRecovery {
++  id        String   @id @default(uuid()) @db.Uuid
++  email     String
++  name      String?
++  phone     String?
++  source    String?  // which page the form was on
++  service   String?
++  city      String?
++
++  /** When the visitor ticked the reminder box. No consent, no send. Ever. */
++  consentedAt DateTime @db.Timestamptz
++  /** Set once, when the single reminder goes out. */
++  sentAt      DateTime? @db.Timestamptz
++  /** Set when this address submitted a real lead — cancels the reminder. */
++  convertedAt DateTime? @db.Timestamptz
++
++  createdAt DateTime @default(now()) @db.Timestamptz
++  updatedAt DateTime @updatedAt @db.Timestamptz
++
++  @@index([email])
++  @@index([sentAt])
++  @@index([createdAt])
++  @@schema("ecowoods")
++}
++
+ // ─────────────────────────────────────────────
+ // QUOTE REQUEST
+ // ─────────────────────────────────────────────
+diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+new file mode 100644
+index 0000000..02f615a
+--- /dev/null
++++ b/ops/DOMINATION-RUNBOOK.md
+@@ -0,0 +1,152 @@
++# DOMINATION RUNBOOK — the work the code cannot do
++
++The repository ships the software. This file is the parallel track a human
++executes. Nothing in P0 or P1 reaches its full value until these are done, and
++several of them are worth more than any further code.
++
++Order matters. 1–3 are worth more than everything below them combined.
++
++---
++
++## 1 · Kill the old domain as a content host  ⏱ 30 min · 🔥 highest value
++
++`ecowoodshardwood.com` is still serving pages and splitting the domain equity
++that should be compounding on `ecowoods.ca`.
++
++Every redirect file is already generated in `old-domain/` — pick the one that
++matches the host (measured 2026-08-23 as **Apache**, so `.htaccess`) and follow
++`old-domain/EXECUTE.md`.
++
++**Verify:**
++
++```
++curl -sI https://www.ecowoodshardwood.com/ | grep -i location
++# → location: https://ecowoods.ca/     (301, not 302)
++curl -sI https://www.ecowoodshardwood.com/pages/flooring-services-toronto-etobicoke-hamilton | grep -i location
++# → location: https://ecowoods.ca/services
++```
++
++Then: Google Search Console → old property → **Change of Address** → `https://ecowoods.ca`.
++Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
++property for 180 days.
++
++## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
++
++Measured on the live site after the P0 deploy:
++
++```
++cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
++access-control-allow-origin: *                                      ← NOT ours
++permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
++```
++
++The cache header proves the deploy is from this repository. The other two are
++**not produced by any rule in `vercel.json`** — this was verified by compiling
++every header `source` pattern against `/` with the same path-to-regexp Next
++uses; none of them match the homepage.
++
++So something in front of or above the project is adding them: a Vercel
++project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
++remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
++read the page cross-origin, and that permissions-policy re-enables camera,
++microphone and payment for embedded content that the repo's own policy denies.
++
++Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
++whatever DNS the domain actually resolves through.
++
++## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
++
++Vercel → Project → Settings → Environment Variables:
++
++| Variable | Without it |
++| --- | --- |
++| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Consent is collected and **no analytics load at all**. Every event in `ops/GA4-events.md` goes nowhere. |
++| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ADMIN_EMAIL=services@ecowoods.ca` | Leads, photo triage and quote reviews are captured in the Vercel logs but **nobody is emailed**. |
++| `CRON_SECRET` | The abandoned-quote reminder returns 401 and never sends. Generate: `openssl rand -hex 32`. |
++| `ANTHROPIC_API_KEY` | The chat assistant returns 503. |
++| `INDEXNOW_KEY` (GitHub secret) | Post-deploy IndexNow submission fails loudly in Actions. |
++| `NEXT_PUBLIC_BOOKING_URL` *(optional)* | Booking writes a DB row and emails, but touches nobody's real calendar. Set a Cal.com/Calendly URL to make a live calendar the primary path. |
++
++**Vercel Cron:** `vercel.json` registers `/api/cron/quote-recovery` hourly. Confirm
++it appears under Project → Cron Jobs after the deploy, and that `CRON_SECRET` is
++set — the route refuses every unauthenticated request by design.
++
++## 4 · Google Business Profile  ⏱ 45 min
++
++Exact values (copy, do not retype):
++
++- Name: `Ecowoods Hardwood Flooring Inc.`
++- Address: `32 Norfield Crescent, Toronto, ON M9W 1X6`
++- Phone: `(647) 244-5156`
++- Website: `https://ecowoods.ca` — check this field, the old domain is the common leftover
++- Hours: Mon–Sat `8:00 AM – 7:00 PM`, Sun `10:00 AM – 4:00 PM`
++- Categories: primary `Flooring contractor`; secondary `Wood floor installation service`, `Wood floor refinishing service`
++- Services with the published bands: Screen & Recoat $2.50–$4.00/sq ft · Full Sand & Finish $4.75–$7.50/sq ft · New Hardwood Install $11.00–$18.00/sq ft
++- Photos: 50 job photos. **These are also the missing asset in the codebase** — see §8.
++- Q&A: paste the FAQ from `/commercial` and `/hardwood-floor-refinishing-toronto`.
++
++When the public GBP URL is confirmed, add it to `PROFILE_LINKS` in
++`packages/shared/constants/index.ts` and redeploy. `sameAs` derives from that
++file — do not add the URL anywhere else.
++
++## 5 · Directories — same NAP everywhere  ⏱ 1 h
++
++YellowPages (listing already verified in `PROFILE_LINKS` — fix the **website**
++field), Bing Places, Apple Business Connect, Yelp, BBB, Houzz. Identical name,
++address, phone, hours, and `https://ecowoods.ca`.
++
++Only add a profile to `PROFILE_LINKS` once its URL has been opened and
++confirmed. A wrong `sameAs` asks Google to resolve this business to a page that
++is not it.
++
++## 6 · Speed to lead  ⏱ ongoing · the highest-ROI operational habit
++
++- Missed-call text-back within 60 seconds.
++- Reply to every form lead in under 5 minutes during open hours.
++- ⚠️ **NAP warning:** do not replace the site's visible number with a raw
++  tracking number. Use dynamic number insertion (paid traffic only), and add the
++  script's domain to the CSP in `apps/web/next.config.js` first.
++
++## 7 · Reviews — Google first, never gated  ⏱ ongoing
++
++Job closed → Day+1 SMS with the Google review link → Day+7 email. Never gate on
++sentiment (`scripts/verify-outreach.mjs` fails the build if `/r` grows a
++gating step). Never pay for a review. Target 80 Google reviews before
++diversifying.
++
++The site cites **HomeStars 177 at 5.0, read 2026-08-22** and publishes no
++`aggregateRating` — that is deliberate and correct. When the HomeStars figures
++are re-read, update `REVIEW_EVIDENCE` in `packages/shared/constants/index.ts`
++with the new count and a new `asOf` date. Nothing else needs touching.
++
++---
++
++## 8 · The two content assets that unlock code already written
++
++These are the only places where the software is finished and the input is not.
++
++**a) Job photography.** `JobCard` has an `imageSlot` that renders a photo the
++moment one exists; none of the five case studies sets an image, so every proof
++card is currently typographic. Photographs of the five published jobs — or any
++new job — turn the strongest module on the site visual. Put the file in the case
++study's frontmatter and set `imageSlot` in `apps/web/content/job-cards.ts`.
++
++**b) Testimonial consent.** The case studies carry testimonial attributions with
++full customer names. This repository has no record of who collected them or
++whether the customers consented to publication, so **P1 deliberately did not
++amplify them** into the JobCard component or into `Review` schema. Get written
++consent for two or three, record it, and they can be published properly — with
++first name and neighbourhood — and become first-party `Review` markup. Until
++then they stay where they are.
++
++---
++
++## Do not do these
++
++- Do not put HomeStars or Google stars into `aggregateRating`. Google's policy
++  prohibits self-serving aggregate markup, and `verify-reviews.mjs` fails the
++  build on it.
++- Do not add a profile to `sameAs` before its URL is confirmed.
++- Do not change a published price band anywhere except
++  `apps/web/content/constants/pricing.ts`.
++- Do not buy links.
+diff --git a/ops/GA4-events.md b/ops/GA4-events.md
+new file mode 100644
+index 0000000..8c40d62
+--- /dev/null
++++ b/ops/GA4-events.md
+@@ -0,0 +1,43 @@
++# GA4 events — what to mark as a conversion
++
++Every event below is fired by `apps/web/lib/analytics.ts`. Nothing fires until a
++visitor accepts analytics in the consent banner AND
++`NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel — see `ops/HUMAN-P0.md` §6.
++
++## Mark these as conversions (GA4 → Admin → Events → "Mark as key event")
++
++| Event | Fires when | Why it is a conversion |
++| --- | --- | --- |
++| `quote_submit` | A measure-track lead is accepted by `/api/leads` | The job request. This is the number the business runs on. |
++| `photo_triage_submit` | Photos accepted by `/api/photo-triage` | Same intent, lower friction. Track separately — if this outruns `quote_submit`, the form is too long. |
++| `tel_click` | Any `tel:` link is activated | On mobile this is often the whole conversion. Reconcile against the phone log, not against form fills. |
++| `quote_review_submit` | Somebody sends a competitor's quote for review | The MOFU weapon. A person who sends you a rival's quote has put you in the decision. |
++
++## Track, do not mark as conversions
++
++| Event | Fires when | What it tells you |
++| --- | --- | --- |
++| `quote_view` | The `#quote` section enters the viewport | Denominator for form conversion rate. |
++| `quote_start` | First focus into either track | `quote_start` minus `quote_submit` is the abandonment P1.8 recovers. |
++| `design_handoff` | A `/design` configuration is carried into the quote form | Whether the configurator earns its place. |
++| `jobcard_click` | A first-party proof card is opened | Which jobs persuade. Params carry `slug` and `from`. |
++| `framework_assess_complete` | All 27 criteria answered | Params carry `verdict` and `pct` — never the answers themselves. |
++| `commercial_cta` / `realtor_cta` | A CTA on `/commercial` or `/realtors` | Whether the two new buyer surfaces are working. |
++| `recovery_opt_in` | The unfinished-form reminder box is ticked | Consent rate. If it is high, the reminder is wanted; if near zero, remove the feature rather than "improving" it. |
++
++## Two numbers worth building a report around
++
++1. **`quote_view` → `quote_start` → `quote_submit`.** A funnel exploration on
++   these three tells you whether the problem is reach, the form, or the offer.
++   They are different problems with different fixes and they are routinely
++   confused.
++2. **`framework_assess_complete` → `quote_review_submit`.** This is the
++   competitive play working or not working: people scoring somebody else's
++   quote and then asking us to read it.
++
++## What is deliberately NOT tracked
++
++- The assess tool's individual answers. They never leave the browser. Only the
++  fact of completion and the verdict are recorded — see the header of
++  `AssessClient.tsx`.
++- Any content of a photo, a document, or a message body.
+diff --git a/package.json b/package.json
+index 756d980..5557019 100644
+--- a/package.json
++++ b/package.json
+@@ -38,6 +38,8 @@
+     "verify:assets": "node scripts/verify-assets.mjs",
+     "verify:entity": "node scripts/verify-entity.mjs",
+     "verify:reviews": "node scripts/verify-reviews.mjs",
++    "verify:jobcards": "node scripts/verify-job-cards.mjs",
++    "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
+     "verify:outreach": "node scripts/verify-outreach.mjs",
+     "verify:live-images": "node scripts/verify-live-images.mjs",
+     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+@@ -69,7 +71,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/packages/shared/constants/index.ts b/packages/shared/constants/index.ts
+index f2f21c4..3cf1b4a 100644
+--- a/packages/shared/constants/index.ts
++++ b/packages/shared/constants/index.ts
+@@ -84,6 +84,17 @@ export const BUSINESS_HOURS = [
+   },
+ ] as const;
+ 
++/**
++ * The IANA zone the hours above are stated in.
++ *
++ * Named here rather than in the booking engine because "8 AM" is meaningless
++ * without it: a visitor in Vancouver, a crawler in Ireland and a serverless
++ * function in Virginia must all resolve the same instant, and the schema's
++ * openingHoursSpecification is read by machines that assume a zone if you do
++ * not give them one.
++ */
++export const BUSINESS_TIMEZONE_NAME = 'America/Toronto';
++
+ /** One human-readable line, for chrome and copy. Derives nothing — states the
+  *  same fact as BUSINESS_HOURS in the format the UI already uses. */
+ export const HOURS_LINE = 'Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM';
+diff --git a/scripts/verify-conversion.mjs b/scripts/verify-conversion.mjs
+index 2408a39..fc8de62 100755
+--- a/scripts/verify-conversion.mjs
++++ b/scripts/verify-conversion.mjs
+@@ -66,6 +66,11 @@ const COMMERCIAL = [
+   'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
+   'apps/web/app/hardwood-stairs-toronto/page.tsx',
+   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
++  /* P1. A commercial page without a form on it is a page that asks a property
++     manager or an agent to go and find one. Both render EstimateForm, so both
++     are held to the same no-JavaScript standard as the head terms. */
++  'apps/web/app/commercial/page.tsx',
++  'apps/web/app/realtors/page.tsx',
+   'apps/web/app/services/[slug]/page.tsx',
+   /* The homepage kept a <button> that opened a modal long after the five
+      commercial pages had a real form, so the busiest url on the site still
+diff --git a/scripts/verify-job-cards.mjs b/scripts/verify-job-cards.mjs
+new file mode 100644
+index 0000000..9edde18
+--- /dev/null
++++ b/scripts/verify-job-cards.mjs
+@@ -0,0 +1,227 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-job-cards.mjs — the guard that lets a proof card restate a
++ * measurement it does not own.
++ *
++ * THE PROBLEM IT SOLVES
++ *
++ * apps/web/content/job-cards.ts publishes five jobs — neighbourhood, size,
++ * species, substrate, year, and one measured result each — on the homepage,
++ * the service pages and the area pages. Every one of those figures already
++ * exists in a case study .mdx, which is the document that actually proves it.
++ *
++ * A second copy of a number is a number that can drift, and this one drifts in
++ * the worst direction available: the card is on the high-traffic page and the
++ * case study is the page nobody re-reads, so the WRONG figure is the one most
++ * people see and the RIGHT one sits three clicks away contradicting it. The
++ * repository already refuses this pattern for prices (verify-pricing-source)
++ * and for NAP (verify-claims). Proof is not a lesser category.
++ *
++ * So the rule is the same one: the card may restate the case study, and the
++ * moment it stops agreeing with it, the build fails.
++ *
++ * WHAT IT CHECKS
++ *
++ *   1. Every card's `slug` is a published case study.
++ *   2. area / city / squareFeet / year / substrate match that file's
++ *      frontmatter exactly (year is derived from `project-date`).
++ *   3. Every species named on the card appears in the file's `wood-species`.
++ *   4. `measurement` matches `results[index]` — metric, value AND unit.
++ *   5. `serviceSlug` resolves to a real page in lib/service-pages.ts.
++ *   6. NO CARD CARRIES A PERSON. A `name`, `quote`, `testimonial`, `author` or
++ *      `attribution` key is a build failure, not a review comment — see the
++ *      note at the head of content/job-cards.ts. The case studies carry
++ *      attributions this repository has no consent record for, and the whole
++ *      point of the card is that everything on it is checkable.
++ *
++ *   node scripts/verify-job-cards.mjs
++ *   node scripts/verify-job-cards.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const CARDS = path.join(ROOT, 'apps/web/content/job-cards.ts');
++const STUDIES = path.join(ROOT, 'apps/web/content/case-studies');
++const SERVICE_PAGES = path.join(ROOT, 'apps/web/lib/service-pages.ts');
++const LIST = process.argv.includes('--list');
++
++if (!fs.existsSync(CARDS)) {
++  console.error('✗ apps/web/content/job-cards.ts not found — run from the repo root.');
++  process.exit(2);
++}
++
++const src = fs.readFileSync(CARDS, 'utf8');
++const problems = [];
++
++/* ── 6. no person on a card ───────────────────────────────────────────────── */
++const body = src.slice(src.indexOf('export const JOB_CARDS'));
++for (const banned of ['name:', 'quote:', 'testimonial:', 'author:', 'attribution:']) {
++  // `serviceSlug`/`metric` etc. are fine; we look for the bare key at field depth.
++  const re = new RegExp(`^\\s{4}${banned.replace(':', '')}\\s*:`, 'm');
++  if (re.test(body)) {
++    problems.push(
++      `content/job-cards.ts carries a "${banned}" field.\n` +
++        `      A proof card publishes measurements, not people. The case-study attributions\n` +
++        `      have no consent record in this repository; putting one on the homepage is the\n` +
++        `      one move you cannot walk back. Record the consent first.`,
++    );
++  }
++}
++
++/* ── parse the cards ──────────────────────────────────────────────────────── */
++const arrayStart = src.indexOf('export const JOB_CARDS');
++const arrayEnd = src.indexOf('\n];', arrayStart);
++const arraySrc = src.slice(arrayStart, arrayEnd);
++const chunks = arraySrc.split(/\n {2}\{\n/).slice(1);
++
++const str = (chunk, key) => (chunk.match(new RegExp(`${key}:\\s*'([^']*)'`)) ?? [])[1];
++const num = (chunk, key) => {
++  const m = chunk.match(new RegExp(`${key}:\\s*([0-9.]+)`));
++  return m ? Number(m[1]) : undefined;
++};
++
++const cards = chunks.map((c) => ({
++  slug: str(c, 'slug'),
++  area: str(c, 'area'),
++  city: str(c, 'city'),
++  squareFeet: num(c, 'squareFeet'),
++  year: num(c, 'year'),
++  serviceSlug: str(c, 'serviceSlug'),
++  species: str(c, 'species'),
++  substrate: str(c, 'substrate'),
++  measurement: {
++    index: num(c, 'index'),
++    metric: str(c, 'metric'),
++    value: num(c, 'value'),
++    unit: str(c, 'unit'),
++  },
++}));
++
++if (cards.length === 0) {
++  console.error('✗ verify-job-cards: parsed zero cards — the JOB_CARDS literal shape changed.');
++  process.exit(1);
++}
++
++/* ── the service slugs that exist ─────────────────────────────────────────── */
++const servicePagesSrc = fs.existsSync(SERVICE_PAGES) ? fs.readFileSync(SERVICE_PAGES, 'utf8') : '';
++const serviceSlugs = new Set([...servicePagesSrc.matchAll(/slug:\s*'([a-z0-9-]+)'/g)].map((m) => m[1]));
++
++/* ── frontmatter reader ───────────────────────────────────────────────────── */
++function frontmatter(file) {
++  const text = fs.readFileSync(file, 'utf8');
++  const m = text.match(/^---\n([\s\S]*?)\n---/);
++  return m ? m[1] : '';
++}
++const scalar = (fm, key) => {
++  const m = fm.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
++  return m ? m[1].trim().replace(/^["']|["']$/g, '') : undefined;
++};
++const nested = (fm, parent, key) => {
++  const block = fm.match(new RegExp(`^${parent}:\\n((?:\\s{2}.+\\n?)+)`, 'm'));
++  if (!block) return undefined;
++  const m = block[1].match(new RegExp(`^\\s{2}${key}:\\s*(.+)$`, 'm'));
++  return m ? m[1].trim().replace(/^["']|["']$/g, '') : undefined;
++};
++/** The `results:` list, as [{metric, value, unit}] in file order. */
++function results(fm) {
++  const block = fm.match(/^results:\n((?:\s{2}.*\n?)+)/m);
++  if (!block) return [];
++  const out = [];
++  // The block's first row has no leading newline; add one so every row splits alike.
++  for (const item of `\n${block[1]}`.split(/\n\s{2}- /).slice(1)) {
++    const metric = (item.match(/metric:\s*(.+)/) ?? [])[1]?.trim().replace(/^["']|["']$/g, '');
++    const value = (item.match(/\n?\s*value:\s*([0-9.]+)/) ?? [])[1];
++    const unit = (item.match(/\n?\s*unit:\s*(.+)/) ?? [])[1]?.trim().replace(/^["']|["']$/g, '');
++    out.push({ metric, value: value === undefined ? undefined : Number(value), unit });
++  }
++  return out;
++}
++const speciesBlock = (fm) => {
++  // `[ \t]` not `\s`: \s eats the newline and turns a YAML list into its first item.
++  const single = fm.match(/^wood-species:[ \t]+(\S.*)$/m);
++  if (single) return single[1];
++  const list = fm.match(/^wood-species:\n((?:\s{2}- .+\n?)+)/m);
++  return list ? list[1] : '';
++};
++
++/* ── check every card against its case study ──────────────────────────────── */
++const rows = [];
++for (const card of cards) {
++  const where = `job-cards.ts "${card.slug}"`;
++  const file = path.join(STUDIES, `${card.slug}.mdx`);
++  if (!fs.existsSync(file)) {
++    problems.push(`${where}\n      names a case study that does not exist: content/case-studies/${card.slug}.mdx`);
++    continue;
++  }
++  const fm = frontmatter(file);
++
++  const expect = (label, cardValue, fileValue) => {
++    if (String(cardValue) !== String(fileValue)) {
++      problems.push(
++        `${where}\n      ${label}: card says "${cardValue}", the case study says "${fileValue}".\n` +
++          `      The case study is the source. Change it there, or fix the card.`,
++      );
++    }
++  };
++
++  expect('area', card.area, nested(fm, 'location', 'neighbourhood'));
++  expect('city', card.city, nested(fm, 'location', 'city'));
++  expect('squareFeet', card.squareFeet, scalar(fm, 'square-footage'));
++  expect('substrate', card.substrate, scalar(fm, 'substrate-type'));
++
++  const projectDate = scalar(fm, 'project-date');
++  const fileYear = projectDate ? new Date(projectDate).getUTCFullYear() : undefined;
++  expect('year', card.year, fileYear);
++
++  const species = speciesBlock(fm).toLowerCase();
++  for (const s of (card.species ?? '').split(',').map((x) => x.trim()).filter(Boolean)) {
++    if (!species.includes(s.toLowerCase())) {
++      problems.push(
++        `${where}\n      species "${s}" does not appear in the case study's wood-species.`,
++      );
++    }
++  }
++
++  const rs = results(fm);
++  const row = rs[card.measurement.index];
++  if (!row) {
++    problems.push(
++      `${where}\n      measurement.index ${card.measurement.index} — the case study publishes ${rs.length} result row(s).`,
++    );
++  } else {
++    expect(`measurement.metric`, card.measurement.metric, row.metric);
++    expect(`measurement.value`, card.measurement.value, row.value);
++    expect(`measurement.unit`, card.measurement.unit, row.unit);
++  }
++
++  if (!serviceSlugs.has(card.serviceSlug)) {
++    problems.push(
++      `${where}\n      serviceSlug "${card.serviceSlug}" has no page in lib/service-pages.ts.`,
++    );
++  }
++
++  rows.push(card);
++}
++
++if (LIST) {
++  for (const c of rows) {
++    console.log(
++      `  ${c.area.padEnd(20)} ${String(c.squareFeet).padStart(5)} sqft  ${String(c.year)}  ` +
++        `${c.serviceSlug.padEnd(22)} ${c.measurement.metric} = ${c.measurement.value} ${c.measurement.unit}`,
++    );
++  }
++  console.log('');
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} problem(s) in the job-card proof set:\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ job cards verified — ${rows.length} card(s), every figure matching its case study; ` +
++    `no card publishes a person`,
++);
+diff --git a/scripts/verify-quote-impact.mjs b/scripts/verify-quote-impact.mjs
+new file mode 100644
+index 0000000..f1e919e
+--- /dev/null
++++ b/scripts/verify-quote-impact.mjs
+@@ -0,0 +1,127 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-quote-impact.mjs — the guard on the commercial box that sits
++ * under a technical paper.
++ *
++ * WHAT IT PROTECTS
++ *
++ * content/quote-impact.ts adds one short commercial paragraph to the end of
++ * each technical paper. That paragraph is the highest-risk copy on the site:
++ * it is the one place where a sales sentence sits directly beneath 4,000 words
++ * of sourced technical writing, and it borrows that writing's credibility. If
++ * it grows, drifts off the paper it follows, or starts quoting figures the
++ * paper does not publish, it does not merely fail on its own terms — it
++ * discredits the document above it.
++ *
++ * So:
++ *   1. Every entry names a paper that exists in lib/papers.ts.
++ *   2. Every entry's `anchor` is a real section id inside THAT paper, so
++ *      "given what you have just read" points at something that was read.
++ *   3. Every `body` is ≤ 120 words. The limit is the brief's and it is the
++ *      reason the box works.
++ *   4. Every published paper HAS one. A paper without the box is a page that
++ *      informs a buyer and then lets them leave, which is the condition this
++ *      whole module exists to end.
++ *   5. The signer is a desk, not a name. Inventing an author to sign
++ *      commercial copy is the small fiction this project refuses; if a real
++ *      person is ever recorded in /team, this check is what you update.
++ *
++ *   node scripts/verify-quote-impact.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const FILE = path.join(ROOT, 'apps/web/content/quote-impact.ts');
++const PAPERS = path.join(ROOT, 'apps/web/lib/papers.ts');
++const WORD_LIMIT = 120;
++
++if (!fs.existsSync(FILE)) {
++  console.error('✗ apps/web/content/quote-impact.ts not found — run from the repo root.');
++  process.exit(2);
++}
++
++const src = fs.readFileSync(FILE, 'utf8');
++const papersSrc = fs.readFileSync(PAPERS, 'utf8');
++const problems = [];
++
++/* ── the papers, and the section ids inside each ──────────────────────────── */
++const paperSections = new Map();
++for (const block of papersSrc.split(/\n {2}\{\n {4}slug: '/).slice(1)) {
++  const slug = block.slice(0, block.indexOf("'"));
++  const ids = new Set([...block.matchAll(/id: '([a-z0-9-]+)'/g)].map((m) => m[1]));
++  paperSections.set(slug, ids);
++}
++
++/* ── the entries ──────────────────────────────────────────────────────────── */
++const arr = src.slice(src.indexOf('export const QUOTE_IMPACTS'));
++const chunks = arr.split(/\n {2}\{\n/).slice(1);
++const entries = chunks.map((c) => ({
++  paper: (c.match(/paper:\s*'([^']+)'/) ?? [])[1],
++  anchor: (c.match(/anchor:\s*'([^']+)'/) ?? [])[1],
++  body: (c.match(/body:\s*\n?\s*'([\s\S]*?)',\n\s*cta:/) ?? [])[1],
++  href: (c.match(/href:\s*'([^']+)'/) ?? [])[1],
++}));
++
++if (entries.length === 0) {
++  console.error('✗ verify-quote-impact: parsed zero entries — the literal shape changed.');
++  process.exit(1);
++}
++
++const covered = new Set();
++for (const e of entries) {
++  const where = `quote-impact.ts "${e.paper}"`;
++  if (!paperSections.has(e.paper)) {
++    problems.push(`${where}\n      names a paper that does not exist in lib/papers.ts.`);
++    continue;
++  }
++  covered.add(e.paper);
++
++  if (!paperSections.get(e.paper).has(e.anchor)) {
++    problems.push(
++      `${where}\n      anchor "#${e.anchor}" is not a section in that paper.\n` +
++        `      The box says "what you have just read" — it must point at something that was.`,
++    );
++  }
++
++  const words = (e.body ?? '').trim().split(/\s+/).filter(Boolean).length;
++  if (!e.body) {
++    problems.push(`${where}\n      has no body, or the literal could not be parsed.`);
++  } else if (words > WORD_LIMIT) {
++    problems.push(
++      `${where}\n      body is ${words} words; the limit is ${WORD_LIMIT}.\n` +
++        `      A commercial box that grows into an essay stops being read at all.`,
++    );
++  }
++
++  if (!e.href || !e.href.startsWith('/')) {
++    problems.push(`${where}\n      cta.href "${e.href}" is not a site-relative path.`);
++  }
++}
++
++for (const slug of paperSections.keys()) {
++  if (!covered.has(slug)) {
++    problems.push(
++      `lib/papers.ts "${slug}"\n      is published with no quote-impact box.\n` +
++        `      A paper that informs a buyer and then lets them leave is the gap this module closes.`,
++    );
++  }
++}
++
++if (!/QUOTE_IMPACT_SIGNER\s*=\s*'the Ecowoods estimating desk'/.test(src)) {
++  problems.push(
++    `quote-impact.ts\n      QUOTE_IMPACT_SIGNER is not the estimating desk.\n` +
++      `      Only a person recorded in /team, with consent, may sign commercial copy here.`,
++  );
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} problem(s) in the quote-impact boxes:\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ quote impact verified — ${entries.length} box(es), one per paper, each ≤${WORD_LIMIT} words and anchored to a real section`,
++);
+diff --git a/scripts/verify-schema.mjs b/scripts/verify-schema.mjs
+index 5430346..7e0a142 100644
+--- a/scripts/verify-schema.mjs
++++ b/scripts/verify-schema.mjs
+@@ -160,6 +160,16 @@ const FAQPAGE_ALLOWED = new Set([
+   // section above it, and two of the answers say the correct action is to do
+   // nothing — which is not a shape anyone writes for a rich result.
+   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
++  // The two P1 commercial surfaces. Both pass F-27 on the same test as the
++  // head-term pages: every question is rendered visibly in the page's own <dl>,
++  // and every answer is either interpolated from PRICING or states a commitment
++  // the page makes in its body copy (after-hours scheduling, a certificate
++  // issued to a named party, the cases where we say a recoat is the wrong
++  // work). None of them was written for the schema block — the /realtors FAQ in
++  // particular tells the reader when NOT to buy, which is not a shape anyone
++  // writes for a rich result.
++  'apps/web/app/commercial/page.tsx',
++  'apps/web/app/realtors/page.tsx',
+   // The guides. Qualifies under F-27 on the same test: the first pair is the
+   // guide's own question and its published recommendation — the two strings
+   // the page has always led with — and the rest are rendered visibly in the
+diff --git a/tsconfig.base.json b/tsconfig.base.json
+new file mode 100644
+index 0000000..e3ad276
+--- /dev/null
++++ b/tsconfig.base.json
+@@ -0,0 +1,37 @@
++{
++  "$schema": "https://json.schemastore.org/tsconfig",
++  "//": [
++    "The base config packages/shared/tsconfig.json has extended since it was",
++    "written, and which did not exist in this repository.",
++    "",
++    "HOW A MISSING FILE SURVIVED: nothing read it. `pnpm typecheck` and",
++    "`next build` compile apps/web with apps/web/tsconfig.json, which maps",
++    "@ecowoods/shared through `paths` and never consults the package's own",
++    "tsconfig. So the app built, every guard passed, and the broken extends sat",
++    "there invisibly — until a file inside apps/web imported @ecowoods/shared",
++    "into a graph that vite/esbuild transforms (the booking availability test),",
++    "at which point tsconfig resolution walked into packages/shared and threw",
++    "`Cannot find module '../../tsconfig.base.json'`.",
++    "",
++    "The options below are the intersection of what the workspace already uses",
++    "(apps/web and packages/ui agree on all of them), so adopting the base",
++    "changes no compilation semantics for anything that compiles today.",
++    "`composite` and the output paths stay in the package config that sets them."
++  ],
++  "compilerOptions": {
++    "target": "ES2022",
++    "lib": ["ES2022", "DOM", "DOM.Iterable"],
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "jsx": "react-jsx",
++    "strict": true,
++    "esModuleInterop": true,
++    "allowSyntheticDefaultImports": true,
++    "skipLibCheck": true,
++    "forceConsistentCasingInFileNames": true,
++    "resolveJsonModule": true,
++    "isolatedModules": true,
++    "declaration": true
++  },
++  "exclude": ["node_modules", "dist"]
++}
+diff --git a/vercel.json b/vercel.json
+index a213551..14e8084 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -71,6 +71,10 @@
+     { "source": "/api/knowledge", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] }
+   ],
+ 
++  "crons": [
++    { "path": "/api/cron/quote-recovery", "schedule": "0 * * * *" }
++  ],
++
+   "cleanUrls": true,
+   "trailingSlash": false
+ }
+-- 
+2.43.0
+
