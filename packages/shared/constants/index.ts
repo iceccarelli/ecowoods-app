@@ -84,6 +84,17 @@ export const BUSINESS_HOURS = [
   },
 ] as const;
 
+/**
+ * The IANA zone the hours above are stated in.
+ *
+ * Named here rather than in the booking engine because "8 AM" is meaningless
+ * without it: a visitor in Vancouver, a crawler in Ireland and a serverless
+ * function in Virginia must all resolve the same instant, and the schema's
+ * openingHoursSpecification is read by machines that assume a zone if you do
+ * not give them one.
+ */
+export const BUSINESS_TIMEZONE_NAME = 'America/Toronto';
+
 /** One human-readable line, for chrome and copy. Derives nothing — states the
  *  same fact as BUSINESS_HOURS in the format the UI already uses. */
 export const HOURS_LINE = 'Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM';

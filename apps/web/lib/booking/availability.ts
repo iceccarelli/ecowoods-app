@@ -3,23 +3,33 @@
 // booking counts and computes open slots. Purity = testable + trustworthy.
 // Times render in America/Toronto via Intl (Node 18+ / all modern browsers).
 
-export const BUSINESS_TIMEZONE = 'America/Toronto';
+import { BUSINESS_TIMEZONE_NAME } from '@ecowoods/shared/constants';
+// Relative, not the `@/` alias: this module is covered by a vitest suite that
+// runs without the Next path mapping, and a test that cannot import the file
+// it tests is a test that silently stops protecting it.
+import { HOURS_BY_WEEKDAY } from '../business-hours';
+
+export const BUSINESS_TIMEZONE = BUSINESS_TIMEZONE_NAME;
 export const SLOT_DURATION_MINUTES = 60;        // 45–60 min consult, rounded to 60
 export const SLOTS_PER_WINDOW = 2;              // estimators out at once
 export const MIN_LEAD_TIME_HOURS = 24;          // earliest bookable, from "now"
 export const BOOKING_WINDOW_DAYS = 42;          // six weeks
 
-// Business hours by weekday (0=Sun..6=Sat), 24h local. null = closed.
-// From the site footer: Mon–Sat 8–7, Sun 10–4.
-export const BUSINESS_HOURS: Record<number, { open: number; close: number } | null> = {
-  0: { open: 10, close: 16 },
-  1: { open: 8, close: 19 },
-  2: { open: 8, close: 19 },
-  3: { open: 8, close: 19 },
-  4: { open: 8, close: 19 },
-  5: { open: 8, close: 19 },
-  6: { open: 8, close: 19 },
-};
+/**
+ * Business hours by weekday (0=Sun..6=Sat), 24h local. null = closed.
+ *
+ * DERIVED, NOT TYPED. This was a hand-written table with the comment "From the
+ * site footer: Mon–Sat 8–7, Sun 10–4" — a second copy of a fact whose single
+ * source is BUSINESS_HOURS in packages/shared/constants, and which every other
+ * surface on this site (the schema's openingHoursSpecification, the footer, the
+ * utility bar, the GBP copy) already derives from. It agreed with the source,
+ * which is the state that looks safe and is not: the day somebody extends
+ * Saturday hours, the site says one thing and the booking calendar offers
+ * another, and the customer meets the disagreement at the worst moment — after
+ * choosing a slot.
+ */
+export const BUSINESS_HOURS: Record<number, { open: number; close: number } | null> =
+  HOURS_BY_WEEKDAY;
 
 export const BLACKOUT_DATES: ReadonlySet<string> = new Set<string>([
   // '2026-12-25', '2026-01-01',

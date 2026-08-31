@@ -94,6 +94,8 @@ export function EstimateForm({
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [design, setDesign] = useState<DesignConfig | null>(null);
+  const [recoverConsent, setRecoverConsent] = useState(false);
+  const recoverySent = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const startedRef = useRef(false);
   const viewedRef = useRef(false);
@@ -130,6 +132,66 @@ export function EstimateForm({
     obs.observe(node);
     return () => obs.disconnect();
   }, [source]);
+
+  /* P1.8 — THE UNFINISHED FORM, RECOVERED ONLY IF ASKED FOR.
+     Someone types an email, is interrupted, and never submits: today they are
+     simply gone, because nothing is written until the whole form validates.
+     This records the address ONLY when the reminder box is ticked, so the
+     later email is a thing the visitor asked for rather than a thing we
+     decided they would not mind. Under CASL that distinction is the whole
+     legal difference between a recovery programme and a fine.
+
+     Fires on unload and on tab-hide, once per mount. `keepalive` because a
+     normal fetch is cancelled when the document goes away — which is exactly
+     the moment this needs to survive. */
+  useEffect(() => {
+    if (!recoverConsent) return;
+    const flush = () => {
+      if (recoverySent.current || state === 'sent') return;
+      const form = sectionRef.current?.querySelector('form');
+      const email = (form?.querySelector('input[name="email"]') as HTMLInputElement | null)?.value?.trim();
+      if (!email || !email.includes('@')) return;
+      recoverySent.current = true;
+      const name = (form?.querySelector('input[name="name"]') as HTMLInputElement | null)?.value?.trim();
+      const phone = (form?.querySelector('input[name="phone"]') as HTMLInputElement | null)?.value?.trim();
+      const city = (form?.querySelector('select[name="city"], select[name="area"]') as HTMLSelectElement | null)?.value;
+      // Named `pickedService` so it cannot be confused with the `service` prop,
+      // which is the page's preselection rather than what the visitor chose.
+      const pickedService = (form?.querySelector('select[name="service"]') as HTMLSelectElement | null)?.value;
+      void fetch('/api/quote-recovery', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ email, name, phone, city, service: pickedService, source, consent: true }),
+      }).catch(() => {});
+    };
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [recoverConsent, source, state]);
+
+  const consentRow = (
+    <label className="ef-consent">
+      <input
+        type="checkbox"
+        name="recoverConsent"
+        checked={recoverConsent}
+        onChange={(e) => {
+          setRecoverConsent(e.currentTarget.checked);
+          if (e.currentTarget.checked) track('recovery_opt_in', { source });
+        }}
+      />
+      <span>
+        Email me if I leave this unfinished. One reminder, two hours later, and never again.
+      </span>
+    </label>
+  );
 
   const onFirstInteraction = () => {
     if (startedRef.current) return;
@@ -382,6 +444,8 @@ export function EstimateForm({
             <input id={`ef-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
           </div>
 
+          {consentRow}
+
           <div className="ef-actions">
             <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>
               {state === 'sending' ? 'Sending…' : 'Request a free estimate'}
@@ -490,6 +554,8 @@ export function EstimateForm({
             <label htmlFor={`ef-pt-company-${source}`}>Company</label>
             <input id={`ef-pt-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
           </div>
+
+          {consentRow}
 
           <div className="ef-actions">
             <button type="submit" className="btn btn-copper" disabled={state === 'sending'}>

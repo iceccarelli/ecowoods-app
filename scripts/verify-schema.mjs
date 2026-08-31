@@ -160,6 +160,16 @@ const FAQPAGE_ALLOWED = new Set([
   // section above it, and two of the answers say the correct action is to do
   // nothing — which is not a shape anyone writes for a rich result.
   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
+  // The two P1 commercial surfaces. Both pass F-27 on the same test as the
+  // head-term pages: every question is rendered visibly in the page's own <dl>,
+  // and every answer is either interpolated from PRICING or states a commitment
+  // the page makes in its body copy (after-hours scheduling, a certificate
+  // issued to a named party, the cases where we say a recoat is the wrong
+  // work). None of them was written for the schema block — the /realtors FAQ in
+  // particular tells the reader when NOT to buy, which is not a shape anyone
+  // writes for a rich result.
+  'apps/web/app/commercial/page.tsx',
+  'apps/web/app/realtors/page.tsx',
   // The guides. Qualifies under F-27 on the same test: the first pair is the
   // guide's own question and its published recommendation — the two strings
   // the page has always led with — and the rest are rendered visibly in the

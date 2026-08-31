@@ -243,6 +243,54 @@ model PilotLead {
   @@schema("ecowoods")
 }
 
+/// QuoteRecovery — a consented reminder for a form somebody started and left.
+///
+/// WHY A TABLE AND NOT A COOKIE
+///
+/// Someone types an email into the estimate form, gets interrupted, and never
+/// submits. Today that person is simply gone: nothing is written until the
+/// whole form validates. This is the single largest recoverable loss in the
+/// funnel, and it is recovered with ONE email, two hours later, only when the
+/// visitor ticked a box asking for it.
+///
+/// CONSENT IS A COLUMN, NOT A SETTING. `consentedAt` records the moment the box
+/// was ticked, and the cron route refuses to send without it. Under CASL an
+/// unsolicited commercial email to a Canadian address is an offence with real
+/// penalties; a checkbox nobody ticked is not consent, and a column that can be
+/// audited is the difference between a recovery programme and a spam programme.
+///
+/// `sentAt` is what makes it exactly one email. `convertedAt` is set when the
+/// same address completes a real lead, so somebody who finished the job never
+/// gets asked to finish it again.
+///
+/// NOTE: comments here are `///` or `//` only. Prisma's schema language has no
+/// JSDoc-style block comment; one fails `prisma generate` with P1012 on every
+/// line of it, which is exactly how this model first shipped broken.
+model QuoteRecovery {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  name      String?
+  phone     String?
+  source    String?  // which page the form was on
+  service   String?
+  city      String?
+
+  /// When the visitor ticked the reminder box. No consent, no send. Ever.
+  consentedAt DateTime @db.Timestamptz
+  /// Set once, when the single reminder goes out.
+  sentAt      DateTime? @db.Timestamptz
+  /// Set when this address submitted a real lead — cancels the reminder.
+  convertedAt DateTime? @db.Timestamptz
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([email])
+  @@index([sentAt])
+  @@index([createdAt])
+  @@schema("ecowoods")
+}
+
 // ─────────────────────────────────────────────
 // QUOTE REQUEST
 // ─────────────────────────────────────────────

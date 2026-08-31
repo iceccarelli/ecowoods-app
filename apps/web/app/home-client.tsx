@@ -25,7 +25,8 @@ import StandardDeck from './components/StandardDeck';
 import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
-import { EvidenceRail, CASES } from './components/EvidenceRail';
+import { JobCardRail } from './components/JobCard';
+import { jobCardsBySlug } from '@/content/job-cards';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import {
   SCREEN_RECOAT,
@@ -502,22 +503,49 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
         </div>
       </section>
 
+      {/* MOST SEARCHED (P1.5) — the intent pages, named in the words people
+          type, directly under the CTA. These six URLs are the commercial
+          canonicals in content/search/topic-map.ts; before this the homepage
+          reached them only through the mega-menu and the footer, which is a
+          weak internal link from the page that carries the most authority on
+          the site. Two of them — /commercial and /realtors — answer questions
+          the homepage never acknowledged were being asked. */}
+      <section className="section-tight most-searched" aria-label="Most searched">
+        <div className="shell">
+          <p className="ms-kicker">Most searched</p>
+          <ul className="ms-list">
+            <li><Link href="/hardwood-floor-refinishing-toronto">Hardwood floor refinishing in Toronto</Link></li>
+            <li><Link href="/hardwood-flooring-toronto">Hardwood flooring installation in Toronto</Link></li>
+            <li><Link href="/services/dust-free-sanding">Dust-free floor sanding</Link></li>
+            <li><Link href="/hardwood-stairs-toronto">Hardwood stairs</Link></li>
+            <li><Link href="/hardwood-floor-problems-toronto">Why is my floor cupping, gapping or peeling?</Link></li>
+            <li><Link href="/guides/hardwood-flooring-cost-toronto">What hardwood flooring costs in Toronto</Link></li>
+            <li><Link href="/commercial">Condo boards &amp; property managers</Link></li>
+            <li><Link href="/realtors">Refinishing before a listing</Link></li>
+          </ul>
+        </div>
+      </section>
+
       {/* 3 · THE NUMBER — the three published bands, before anything asks for
              a click. Every figure derives from content/constants/pricing.ts. */}
       <PricingSection />
 
-      {/* 4 · FIRST-PARTY PROOF — three published case studies, each one a job
-             with its measurements kept on the case-study page (never restated
-             here — a number quoted twice is a number that drifts). */}
-      <EvidenceRail
-        kicker="Recent work"
+      {/* 4 · FIRST-PARTY PROOF — three finished jobs, in the units they were
+             measured in. Every field is copied from a published case study and
+             held there by scripts/verify-job-cards.mjs, so the card on the
+             busiest page of the site cannot drift from the document that
+             proves it. No stock photography, no customer names we have no
+             consent record for. */}
+      <JobCardRail
+        kicker="Finished work"
         heading="Three Toronto jobs, checkable in full"
-        intro="No stock photos, no invented reviews — each card is a published case study naming the substrate, the species and the readings."
-        items={[
-          { ...CASES.midtown, why: 'A refinish spanning three levels and the transitions between them — the scope most quotes miss.' },
-          { ...CASES.forestHill, why: 'Wide-plank walnut, and what colour stability asks of the finish schedule and the room’s humidity.' },
-          { ...CASES.yorkville, why: 'Hardwood below grade — the moisture mitigation that made it possible, documented.' },
-        ]}
+        intro="Neighbourhood, size, substrate, species, and one reading each. Nobody writes an MVTR figure who did not take it."
+        jobs={jobCardsBySlug(
+          'midtown-townhouse-three-level-transition',
+          'forest-hill-walnut-wide-plank-color-stability',
+          'yorkville-loft-basement-conversion-moisture-mitigation',
+        )}
+        from="homepage"
       />
 
       {/* 5 · TRUST RAIL — the claims the rest of the site substantiates, one

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { EW_MARK } from '@/lib/brand';
 import { onAssistantOpen } from '@/lib/assistant';
 import { ASSISTANT, ASSISTANT_GREETING, ASSISTANT_CHIPS } from '@/lib/assistant-identity';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { isOpenNow, nextOpeningLabel } from '@/lib/business-hours';
 
 // Theme-aware by construction: these are CSS custom properties, resolved by
 // the browser on every paint. Flipping data-theme on <html> restyles the whole
@@ -43,6 +45,28 @@ export default function ChatWidget() {
   }, []);
   const [input, setInput] = useState('');
   const [showNudge, setShowNudge] = useState(false);
+
+  /* AFTER HOURS, THE ANSWER IS A DIFFERENT ANSWER.
+     The widget used to behave identically at 3am on a Sunday: same nudge, same
+     invitation to start a conversation, with nobody on the other end and no
+     acknowledgement that the reply would arrive the next morning. The most
+     valuable minute in this business is the one where someone is ready to act
+     and nobody is available — that minute is captured asynchronously or it is
+     lost. Computed in an effect, never during render, so the server HTML and
+     the first client pass agree (the office clock is not the visitor's). */
+  const [closed, setClosed] = useState(false);
+  const [reopensAt, setReopensAt] = useState('');
+  useEffect(() => {
+    const tick = () => {
+      setClosed(!isOpenNow());
+      setReopensAt(nextOpeningLabel());
+    };
+    tick();
+    // Re-check every five minutes so a visitor reading at 6:58 PM sees the
+    // handover happen rather than a stale "we're open".
+    const t = setInterval(tick, 5 * 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [busy, setBusy] = useState(false);
   const [errored, setErrored] = useState(false);
@@ -133,7 +157,17 @@ export default function ChatWidget() {
       <div className="rg-dock" data-hero={overHero} style={{ position: 'fixed', bottom: 'var(--fab-inset)', right: 'var(--fab-inset-x)', zIndex: 130, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
         {!open && showNudge && (
           <div role="status" style={{ animation: 'rg-pop .3s ease', maxWidth: 220, background: C.paper, color: C.brown, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.35, boxShadow: '0 10px 30px var(--rg-shadow)', position: 'relative' }}>
-            Planning a hardwood project? Get a ballpark in about a minute.
+            {closed ? (
+              <>
+                We are closed right now — back {reopensAt}. Text photos of the floor to{' '}
+                <a href={`sms:${BUSINESS_NAP.phoneE164}`} style={{ color: C.bronzeDark, fontWeight: 600 }}>
+                  {BUSINESS_NAP.phoneDisplay}
+                </a>{' '}
+                and it is triaged first thing.
+              </>
+            ) : (
+              'Planning a hardwood project? Get a ballpark in about a minute.'
+            )}
             <button onClick={() => setShowNudge(false)} aria-label="Dismiss" style={{ position: 'absolute', top: 4, right: 6, border: 'none', background: 'none', color: C.muted, cursor: 'pointer', fontSize: 14 }}>×</button>
           </div>
         )}
@@ -163,6 +197,29 @@ export default function ChatWidget() {
           </div>
 
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', background: C.cream }}>
+            {/* After-hours handover, INSIDE the panel. The assistant still
+                answers questions at 3am — it is a language model, it does not
+                sleep — but it cannot book anyone or measure anything, and
+                pretending otherwise is how a keen visitor at midnight becomes a
+                disappointed one at 9am. This says who is here, who is not, and
+                the one action that works right now. */}
+            {closed && (
+              <div
+                role="note"
+                style={{ background: C.paper, border: `1px dashed ${C.bronze}`, borderRadius: 12, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.5, color: C.brown, marginBottom: 12 }}
+              >
+                <strong>We are closed right now.</strong> Ask anything and you will get an answer —
+                a person is back {reopensAt}. To get a job triaged tonight,{' '}
+                <a href={`sms:${BUSINESS_NAP.phoneE164}`} style={{ color: C.bronzeDark, fontWeight: 600 }}>
+                  text photos to {BUSINESS_NAP.phoneDisplay}
+                </a>{' '}
+                or{' '}
+                <a href="/#photo-triage" style={{ color: C.bronzeDark, fontWeight: 600 }}>
+                  send three photos here
+                </a>
+                .
+              </div>
+            )}
             {messages.length === 0 && (
               <div style={{ animation: 'rg-pop .3s ease' }}>
                 <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: '4px 16px 16px 16px', padding: '12px 14px', fontSize: 14.5, color: C.brown, lineHeight: 1.5, boxShadow: '0 4px 14px var(--rg-bubble-shadow)' }}>

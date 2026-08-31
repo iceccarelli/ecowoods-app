@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { JobCardRail } from '@/app/components/JobCard';
+import { JOB_CARDS } from '@/content/job-cards';
 import Link from 'next/link';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { formatDate } from '@/lib/content/utils';
@@ -37,6 +39,18 @@ export default async function CaseStudiesPage() {
           {caseStudies.length === 0 ? (
             <p className="tlx-note">No case studies published yet. Check back soon.</p>
           ) : (
+            <>
+              {/* At a glance, in the units the jobs were measured in. The cards
+                  below carry the prose; this carries the numbers, and every one
+                  of them is checked against the .mdx by verify-job-cards. */}
+              <JobCardRail
+                kicker="At a glance"
+                heading="Every published job, with its readings"
+                intro="Neighbourhood, size, substrate, species, and the measurement each job turned on."
+                jobs={JOB_CARDS}
+                from="case-studies-index"
+              />
+
             <div className="tlx-grid">
               {caseStudies.map((caseStudy) => {
                 const species = Array.isArray(caseStudy.woodSpecies)
@@ -65,6 +79,7 @@ export default async function CaseStudiesPage() {
                 );
               })}
             </div>
+            </>
           )}
         </div>
       </div>

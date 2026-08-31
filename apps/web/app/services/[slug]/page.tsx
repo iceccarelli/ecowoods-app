@@ -9,6 +9,8 @@ import { Illustration, IllustrationPair } from '../../components/Illustration';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+import { JobCardRail } from '@/app/components/JobCard';
+import { jobCardsForService } from '@/content/job-cards';
 import {
   getServicePages,
   getServicePage,
@@ -369,6 +371,17 @@ export default async function ServiceDetailPage({
           </p>
         </div>
       </section>
+
+      {/* The jobs that ARE this service, with their readings. Renders nothing
+          when no published case study is this service — an empty proof rail is
+          worse than none, and a card invented to fill it is the thing this
+          repository exists to prevent. */}
+      <JobCardRail
+        heading="This service, on finished jobs"
+        intro="Each one is a published case study. The reading shown is the one the job turned on."
+        jobs={jobCardsForService(page.slug)}
+        from={`service-${page.slug}`}
+      />
 
       <EvidenceRail
         heading="Jobs where this was the work"

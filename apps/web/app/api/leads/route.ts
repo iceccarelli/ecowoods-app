@@ -191,6 +191,29 @@ export async function POST(request: Request) {
     }));
   }
 
+  /* 2b. CANCEL ANY PENDING RECOVERY REMINDER (P1.8).
+     This person just finished. Asking them two hours later to finish is the
+     fastest way to make a helpful reminder feel like a mailing list, so the
+     conversion is recorded here — server-side and authoritative — rather than
+     trusted to a client that may have already navigated away. Best-effort like
+     everything else after the durable log. */
+  if (lead.email) {
+    db.quoteRecovery
+      .updateMany({
+        where: { email: String(lead.email), sentAt: null, convertedAt: null },
+        data: { convertedAt: new Date() },
+      })
+      .catch((err: unknown) =>
+        console.error(
+          JSON.stringify({
+            event: 'lead.recovery_cancel_failed',
+            leadId,
+            error: err instanceof Error ? err.message : 'unknown',
+          }),
+        ),
+      );
+  }
+
   // 3. BEST-EFFORT admin email. Never blocks, never fails the request.
   sendAdminNewQuoteEmail({
     quoteId: quoteId ?? leadId,

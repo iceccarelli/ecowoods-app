@@ -18,6 +18,12 @@
  *   photo_triage_submit  — photo-track lead accepted by /api/photo-triage
  *   tel_click            — any tel: link activated
  *   design_handoff       — /design configuration carried into the quote form
+ *   jobcard_click        — a first-party proof card was opened
+ *   framework_assess_complete — every criterion answered in the quote scorer
+ *   quote_review_submit  — someone sent us a competitor's quote to score
+ *   commercial_cta       — a CTA on /commercial was activated
+ *   realtor_cta          — a CTA on /realtors was activated
+ *   recovery_opt_in      — the visitor consented to an unfinished-form reminder
  */
 
 export type AnalyticsEvent =
@@ -26,7 +32,13 @@ export type AnalyticsEvent =
   | 'quote_submit'
   | 'photo_triage_submit'
   | 'tel_click'
-  | 'design_handoff';
+  | 'design_handoff'
+  | 'jobcard_click'
+  | 'framework_assess_complete'
+  | 'quote_review_submit'
+  | 'commercial_cta'
+  | 'realtor_cta'
+  | 'recovery_opt_in';
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
   if (typeof window === 'undefined') return;

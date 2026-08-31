@@ -66,6 +66,11 @@ const COMMERCIAL = [
   'apps/web/app/hardwood-floor-refinishing-toronto/page.tsx',
   'apps/web/app/hardwood-stairs-toronto/page.tsx',
   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
+  /* P1. A commercial page without a form on it is a page that asks a property
+     manager or an agent to go and find one. Both render EstimateForm, so both
+     are held to the same no-JavaScript standard as the head terms. */
+  'apps/web/app/commercial/page.tsx',
+  'apps/web/app/realtors/page.tsx',
   'apps/web/app/services/[slug]/page.tsx',
   /* The homepage kept a <button> that opened a modal long after the five
      commercial pages had a real form, so the busiest url on the site still

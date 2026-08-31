@@ -186,6 +186,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        this sitemap — a sitemap is a list of pages a crawler should index, and
        every one of those slugs is a redirect. Listing a redirect here asks
        Google to index a URL we have just told it is not a document. */
+    /* The two P1 commercial surfaces, for buyers who are not homeowners.
+       /commercial is a condo board or a property manager — a repeat buyer whose
+       questions are scheduling, insurance and a price a board can approve.
+       /realtors is an agent with a listing date. Both are commercial canonicals
+       in content/search/topic-map.ts, so audit-ai-discoverability requires them
+       here and in llms.txt; neither is a variant of an existing page. */
+    entry('/commercial', 'monthly', 0.95),
+    entry('/realtors', 'monthly', 0.9),
     entry('/hardwood-flooring-toronto', 'monthly', 0.95),
     entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
     entry('/hardwood-stairs-toronto', 'monthly', 0.95),

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { quoteImpactFor, QUOTE_IMPACT_SIGNER } from '@/content/quote-impact';
 import { Illustration } from '../../components/Illustration';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -281,6 +282,34 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
               For <strong>{paper.audience}</strong>
             </span>
           </div>
+
+          {/* P1.3 — the one commercial paragraph this paper owes its reader.
+              It sits AFTER the sources, so the technical document is complete
+              and closed before anything is asked of anyone; the paper above is
+              unchanged. Signed by a desk rather than an invented person — see
+              content/quote-impact.ts. scripts/verify-quote-impact.mjs holds it
+              to 120 words and to an anchor that really exists in this paper. */}
+          {(() => {
+            const impact = quoteImpactFor(paper.slug);
+            if (!impact) return null;
+            return (
+              <section className="wp-section" aria-label="What this means for your quote">
+                <aside className="qi-box">
+                  <p className="qi-kicker">What this means for your quote</p>
+                  <p className="qi-body">{impact.body}</p>
+                  <div className="qi-foot">
+                    <a className="btn btn-copper" href={impact.cta.href}>
+                      {impact.cta.label}
+                    </a>
+                    <p className="qi-sign">
+                      Written by {QUOTE_IMPACT_SIGNER}, from{' '}
+                      <a href={`#${impact.anchor}`}>this paper&rsquo;s own findings</a>.
+                    </p>
+                  </div>
+                </aside>
+              </section>
+            );
+          })()}
 
           {pdfIsPublished(paper) && (
             <p className="wp-hero-actions">

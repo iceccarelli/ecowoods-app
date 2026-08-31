@@ -66,6 +66,15 @@ const SERVICES_MENU: MegaColumn[] = [
     ],
   },
   {
+    title: 'By who you are',
+    href: '/commercial',
+    items: [
+      { label: 'Condo boards & property managers', href: '/commercial', note: 'After-hours, COI, priced by area' },
+      { label: 'Realtors & sellers', href: '/realtors', note: 'Three-day pre-list recoat' },
+      { label: 'Score a quote you already have', href: '/framework/assess', note: 'Any contractor, including us' },
+    ],
+  },
+  {
     title: 'By the problem',
     href: '/hardwood-floor-problems-toronto',
     items: [
