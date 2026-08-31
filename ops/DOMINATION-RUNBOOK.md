@@ -30,29 +30,53 @@ Then: Google Search Console → old property → **Change of Address** → `http
 Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
 property for 180 days.
 
-## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
+## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
 
-Measured on the live site after the P0 deploy:
+**RESOLVED, half of it.** The permissions-policy that looked wrong
+(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
+before P0 landed. It now reads exactly what `vercel.json` says:
+`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
+mystery.
+
+**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
+measured after the P2 deploy:
 
 ```
-cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
-access-control-allow-origin: *                                      ← NOT ours
-permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
+/                access-control-allow-origin: *
+/refer           access-control-allow-origin: *
+/commercial      access-control-allow-origin: *
+/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
+/robots.txt      access-control-allow-origin: *
+/api/health      access-control-allow-origin: *     ← this one IS ours, by design
 ```
 
-The cache header proves the deploy is from this repository. The other two are
-**not produced by any rule in `vercel.json`** — this was verified by compiling
-every header `source` pattern against `/` with the same path-to-regexp Next
-uses; none of them match the homepage.
+`vercel.json` sets that header on exactly four sources — `/(.*).md`,
+`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
+route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
+this was verified by compiling every `source` in the file against those paths
+with the same path-to-regexp Next uses. So the blanket header is configured
+outside this repository.
 
-So something in front of or above the project is adding them: a Vercel
-project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
-remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
-read the page cross-origin, and that permissions-policy re-enables camera,
-microphone and payment for embedded content that the repo's own policy denies.
+Where to look, in order:
 
-Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
-whatever DNS the domain actually resolves through.
+1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
+   under **Firewall**. A catch-all header rule added in the dashboard overrides
+   nothing in `vercel.json` — it is simply added on top.
+2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
+   THIS project and is not proxied through another one.
+3. Whatever DNS the domain resolves through, if anything sits in front of
+   Vercel.
+
+Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
+document lets any website on the internet read the full response body of your
+pages from a visitor's browser. For public marketing pages the direct harm is
+small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
+too, and those are behind a login. Anything that ever renders customer data
+server-side becomes cross-origin readable.
+
+Once found, the intended state is: the header appears ONLY on the machine
+surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
+enforces that those four keep it.
 
 ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
 
