@@ -10143,3 +10143,121 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 .ref-form { max-width: 44rem; }
 .ref-legal { font-size: var(--fs-xs); color: var(--muted); max-width: 46rem; }
 /* === EW:P2-REFER END ====================================================== */
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE WORK MAP  —  /where-we-work
+   Inline SVG, no tile vendor, no third-party request, no CSP change. See the
+   note at the top of app/components/WorkMap.tsx for why that is not a
+   compromise: a basemap is a stream of requests that hands a visitor's IP and
+   viewport to somebody else, which makes it a declarable data processor.
+   ═══════════════════════════════════════════════════════════════════════ */
+.wm { margin: var(--space-2xl) 0; }
+
+.wm-figure { margin: 0 0 var(--space-2xl); }
+
+.wm-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.wm-grid line { stroke: var(--line); stroke-width: 1; opacity: 0.55; }
+
+.wm-halo { fill: var(--copper); opacity: 0.13; }
+.wm-dot  { fill: var(--copper); }
+.wm-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  fill: var(--ink);
+}
+
+.wm-caption {
+  margin-top: 0.9rem;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.6;
+}
+
+.wm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.wm-item { background: var(--surface-1); padding: 1.25rem 1.35rem; }
+
+.wm-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* 24px, the WCAG 2.5.8 AA floor — the same rule the a11y pass applied to every
+   other link on the site. New components do not get to reintroduce it. */
+.wm-place {
+  display: inline-flex; align-items: center; min-height: 24px;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+.wm-place:hover, .wm-place:focus-visible { color: var(--copper-text); }
+
+.wm-meta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.wm-summary { margin: 0.5rem 0 0.75rem; color: var(--muted); max-width: 60ch; }
+
+.wm-read {
+  display: inline-flex; align-items: center; min-height: 24px;
+  font-size: var(--fs-sm);
+  color: var(--copper-text, var(--copper));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.wm-read:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 3px; }
+
+.wm-privacy {
+  margin: var(--space-2xl) 0;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--copper);
+  border-radius: 12px;
+  background: var(--surface-2, var(--surface-1));
+}
+.wm-privacy-h {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.wm-privacy p { margin: 0 0 0.7rem; color: var(--muted); max-width: 66ch; }
+.wm-privacy p:last-child { margin-bottom: 0; }
+
+@media (max-width: 560px) {
+  /* The neighbourhood labels are the first thing to become unreadable when the
+     drawing is scaled down; the list underneath carries every one of them, so
+     the picture drops to being a picture. */
+  .wm-label { font-size: 17px; }
+  .wm-item-head { flex-direction: column; }
+}

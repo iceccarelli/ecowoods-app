@@ -160,6 +160,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        the tool printed on the card handed to a finished customer, it is noindex,
        and it must never compete with /reviews for the query that matters. */
     entry('/press', 'monthly', 0.8),
+    /* /where-we-work is the highest-intent non-commercial page on the site: it
+       answers "do you work near me" with dated, measured jobs rather than with
+       a claim. Priority sits with the money pages rather than above them, and
+       there is no date because the pins carry their own years — a lastModified
+       here would be the build date wearing a disguise, which verify-sitemap
+       exists to prevent. */
+    entry('/where-we-work', 'monthly', 0.9),
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
