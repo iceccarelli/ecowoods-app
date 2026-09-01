@@ -91,8 +91,22 @@ const VIEWPORTS = [
   { name: 'laptop-1280', width: 1280, height: 800, mobile: false },
 ];
 
-/** Apple's and Google's floor for a touch target, and the WCAG 2.5.8 minimum. */
-const MIN_TAP = 44;
+/**
+ * TWO THRESHOLDS, AND ONLY ONE OF THEM IS A FINDING.
+ *
+ * The first run of this script reported 565 tap targets on 20 pages, because it
+ * used 44×44 — Apple's HIG number and WCAG 2.5.5, which is AAA — as a failure
+ * line. At that threshold a 42px button fails, and so does every link in a
+ * footer list. A report with 565 entries is not a report; it is a wall, and the
+ * three real problems in it are invisible.
+ *
+ * WCAG 2.5.8 (AA, the level this site is held to) is 24×24. Below that is a
+ * defect: a person with an ordinary thumb cannot reliably hit it. Between 24
+ * and 44 is worth knowing and is not worth interrupting anyone about, so it is
+ * counted per page and never itemised.
+ */
+const TAP_FAIL = 24;      // WCAG 2.5.8 AA — below this is a defect
+const TAP_ADVISORY = 44;  // WCAG 2.5.5 AAA / Apple HIG — counted, not itemised
 
 let chromium;
 try {
@@ -113,6 +127,7 @@ try {
 const VIEWPORT_INDEPENDENT = new Set(['dead-anchor', 'widget-not-focusable', 'aria-controls-dangling', 'anchor-under-header']);
 
 const findings = [];
+const advisory = [];          // 24–43px targets: counted, never itemised
 const seenFinding = new Set();
 const add = (route, viewport, kind, detail) => {
   const key = VIEWPORT_INDEPENDENT.has(kind) ? `${route}|${kind}|${detail}` : `${route}|${viewport}|${kind}|${detail}`;
@@ -130,9 +145,13 @@ const add = (route, viewport, kind, detail) => {
  */
 let browser;
 try {
-  browser = await chromium.launch(
-    process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {},
-  );
+  browser = await chromium.launch({
+    // /dev/shm is 64 MB in most containers, and Chromium puts its renderer
+    // shared memory there. Overrunning it kills the tab with "Target crashed",
+    // which is what a Codespace does on the first run of this script.
+    args: ['--disable-dev-shm-usage', '--no-sandbox'],
+    ...(process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {}),
+  });
 } catch (e) {
   console.log('audit-rendered: no usable browser here — skipping (this is not a failure).');
   console.log(`  ${String(e.message).split('\n')[0]}`);
@@ -162,7 +181,14 @@ const ctx = await browser.newContext();
 
 /* ── the measurements ────────────────────────────────────────────────────── */
 for (const vp of VIEWPORTS) {
-  const page = await ctx.newPage();
+  let page;
+  try {
+    page = await ctx.newPage();
+  } catch {
+    // One retry: a crashed tab is a memory blip, not a fact about the site.
+    await new Promise((r) => setTimeout(r, 2000));
+    page = await ctx.newPage();
+  }
   await page.setViewportSize({ width: vp.width, height: vp.height });
 
   for (const route of ROUTES) {
@@ -170,56 +196,90 @@ for (const vp of VIEWPORTS) {
     try {
       res = await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45_000 });
     } catch (e) {
-      add(route, vp.name, 'unreachable', String(e.message).split('\n')[0]);
+      add(route, vp.name, 'unreachable', `${String(e.message).split('\n')[0]} (this may be a login redirect, not a broken page — check the status by hand)`);
       continue;
     }
     if (!res || res.status() >= 400) {
-      add(route, vp.name, 'status', `HTTP ${res ? res.status() : 'none'}`);
+      add(route, vp.name, 'status', `HTTP ${res ? res.status() : 'none'} at ${res ? res.url() : BASE + route}`);
       continue;
     }
 
     const report = await page.evaluate(
-      ({ minTap, isMobile, width }) => {
-        const out = { overflow: [], tap: [], scrollers: [], anchors: [], tabs: [] };
+      ({ TAP_FAIL, TAP_ADVISORY, isMobile }) => {
+        const out = { overflow: [], overflowPx: 0, tap: [], tapAdvisory: 0, scrollers: [], anchors: [], tabs: [] };
 
-        /* 1. sideways scroll, and WHAT is causing it */
+        /* 1. sideways scroll, and WHAT is actually causing it
+         *
+         * THE MISTAKE THIS CORRECTS. The first version walked every element and
+         * blamed anything whose box stuck out past the viewport. On this site
+         * that reported three culprits per page, and two of them were not
+         * culprits at all:
+         *
+         *   .mobile-sheet   the nav drawer. position:fixed, translateX(100%),
+         *                   visibility:hidden — parked off-canvas until it is
+         *                   opened. It is supposed to be at x=320.
+         *   .svt-track      a marquee, sitting inside .svt-viewport, which is
+         *                   overflow:hidden. Wider than the screen by design
+         *                   and clipped by its own parent.
+         *
+         * An element can only widen the DOCUMENT if nothing between it and the
+         * root clips it. Any ancestor with overflow-x other than `visible`
+         * establishes a clipping or scrolling container and stops the
+         * propagation right there — hidden, clip, auto and scroll all do it.
+         * So: measure the real overflow first, then attribute it only to
+         * elements that survive that walk, and say so honestly when nothing
+         * does rather than naming the nearest wide thing. */
         const doc = document.documentElement;
-        if (doc.scrollWidth > doc.clientWidth + 1) {
+        const overflowPx = doc.scrollWidth - doc.clientWidth;
+        if (overflowPx > 1) {
+          out.overflowPx = overflowPx;
           const limit = doc.clientWidth;
-          const seen = new Set();
+          const blamed = new Set();
           for (const el of document.querySelectorAll('body *')) {
             const r = el.getBoundingClientRect();
             if (r.width === 0 || r.height === 0) continue;
             if (r.right <= limit + 1 && r.left >= -1) continue;
-            // Blame the outermost offender, not its children.
-            let p = el.parentElement, covered = false;
-            while (p && p !== document.body) {
-              if (seen.has(p)) { covered = true; break; }
-              p = p.parentElement;
+
+            const cs = getComputedStyle(el);
+            if (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0') continue;
+
+            let clipped = false, hiddenAncestor = false, alreadyBlamed = false;
+            for (let a = el.parentElement; a && a !== doc; a = a.parentElement) {
+              if (blamed.has(a)) { alreadyBlamed = true; break; }
+              const acs = getComputedStyle(a);
+              if (acs.visibility === 'hidden' || acs.display === 'none') { hiddenAncestor = true; break; }
+              if (acs.overflowX !== 'visible') { clipped = true; break; }
             }
-            if (covered) continue;
-            // An element inside a deliberate horizontal scroller is not a bug.
-            let q = el.parentElement, inScroller = false;
-            while (q && q !== document.body) {
-              const ov = getComputedStyle(q).overflowX;
-              if (ov === 'auto' || ov === 'scroll') { inScroller = true; break; }
-              q = q.parentElement;
+            if (alreadyBlamed || clipped || hiddenAncestor) continue;
+
+            blamed.add(el);
+            /* One cause, one line. A nowrap row pushes every one of its
+             * children past the edge; listing four spans that share a parent
+             * describes one bug four times, and the parent is the thing anyone
+             * would actually edit. So the row is named, with how many of its
+             * children overran and how far the worst one got. */
+            const parent = el.parentElement;
+            const existing = out.overflow.find((o) => o._p === parent);
+            if (existing) {
+              existing.children++;
+              existing.right = Math.max(existing.right, Math.round(r.right));
+              continue;
             }
-            if (inScroller) continue;
-            seen.add(el);
+            const host = parent && parent !== document.body ? parent : el;
             out.overflow.push({
-              tag: el.tagName.toLowerCase(),
-              cls: (el.className && String(el.className).slice(0, 60)) || '',
-              left: Math.round(r.left),
+              _p: parent,
+              tag: host.tagName.toLowerCase(),
+              cls: (host.className && String(host.className).trim().slice(0, 50)) || '',
               right: Math.round(r.right),
               viewport: limit,
-              text: (el.textContent || '').trim().slice(0, 60),
+              children: 1,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 48),
             });
-            if (out.overflow.length >= 8) break;
+            if (out.overflow.length >= 6) break;
           }
         }
 
-        /* 2. tap targets, phones only */
+        /* 2. tap targets, phones only, at the AA line */
         if (isMobile) {
           const seen = new Set();
           for (const el of document.querySelectorAll('a[href], button, [role="button"], input:not([type=hidden]), select')) {
@@ -227,19 +287,21 @@ for (const vp of VIEWPORTS) {
             if (r.width === 0 || r.height === 0) continue;
             const cs = getComputedStyle(el);
             if (cs.visibility === 'hidden' || cs.display === 'none') continue;
-            // A link inside a paragraph is text, and text is not a tap target.
+            // A link inside running text is text, and text is not a tap target.
             if (el.tagName === 'A' && cs.display === 'inline') continue;
-            if (r.width >= minTap && r.height >= minTap) continue;
-            const key = `${el.tagName}:${(el.textContent || '').trim().slice(0, 24)}:${Math.round(r.width)}x${Math.round(r.height)}`;
+            const min = Math.min(r.width, r.height);
+            if (min >= TAP_ADVISORY) continue;
+            if (min >= TAP_FAIL) { out.tapAdvisory++; continue; }
+            const key = `${el.tagName}:${(el.textContent || '').trim().slice(0, 24)}`;
             if (seen.has(key)) continue;
             seen.add(key);
             out.tap.push({
               tag: el.tagName.toLowerCase(),
-              label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40),
+              label: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
               w: Math.round(r.width),
               h: Math.round(r.height),
             });
-            if (out.tap.length >= 12) break;
+            if (out.tap.length >= 10) break;
           }
         }
 
@@ -295,18 +357,30 @@ for (const vp of VIEWPORTS) {
           const t = document.getElementById(id);
           out.anchors.push({ id, exists: !!t, headerH, scrollPaddingTop: padTop });
         }
+        for (const o of out.overflow) delete o._p;   // not serialisable
         return out;
       },
-      { minTap: MIN_TAP, isMobile: vp.mobile, width: vp.width },
+      { TAP_FAIL, TAP_ADVISORY, isMobile: vp.mobile },
     );
 
-    for (const o of report.overflow) {
-      add(route, vp.name, 'horizontal-overflow',
-        `<${o.tag} class="${o.cls}"> spans ${o.left}→${o.right}px in a ${o.viewport}px viewport — "${o.text}"`);
+    if (report.overflowPx > 1) {
+      if (report.overflow.length) {
+        for (const o of report.overflow) {
+          add(route, vp.name, 'horizontal-overflow',
+            `page scrolls ${report.overflowPx}px sideways — <${o.tag} class="${o.cls}"> pushes ${o.children} child element(s) out to ${o.right}px in a ${o.viewport}px viewport (first: "${o.text}")`);
+        }
+      } else {
+        // Honest about the limit of the instrument: the page does overflow and
+        // nothing survived the clipping walk. Naming a clipped element to have
+        // something to name is how the first version produced 62 findings.
+        add(route, vp.name, 'horizontal-overflow-unattributed',
+          `page scrolls ${report.overflowPx}px sideways and no unclipped element accounts for it — open devtools at ${vp.width}px`);
+      }
     }
     for (const t of report.tap) {
-      add(route, vp.name, 'tap-target', `<${t.tag}> "${t.label}" is ${t.w}×${t.h}px (minimum ${MIN_TAP}×${MIN_TAP})`);
+      add(route, vp.name, 'tap-target', `<${t.tag}> "${t.label}" is ${t.w}×${t.h}px — below the WCAG 2.5.8 AA floor of ${TAP_FAIL}×${TAP_FAIL}`);
     }
+    if (report.tapAdvisory) advisory.push({ route, viewport: vp.name, n: report.tapAdvisory });
     for (const s of report.scrollers) {
       if (!s.keyboardReachable) {
         add(route, vp.name, 'scroller-not-keyboardable',
@@ -333,7 +407,7 @@ await browser.close();
 /* ── report ──────────────────────────────────────────────────────────────── */
 fs.mkdirSync(OUT, { recursive: true });
 const byKind = findings.reduce((a, f) => ((a[f.kind] = (a[f.kind] ?? 0) + 1), a), {});
-fs.writeFileSync(path.join(OUT, 'rendered.json'), JSON.stringify({ base: BASE, at: new Date().toISOString(), routes: ROUTES.length, viewports: VIEWPORTS.map((v) => v.name), byKind, findings }, null, 2));
+fs.writeFileSync(path.join(OUT, 'rendered.json'), JSON.stringify({ base: BASE, at: new Date().toISOString(), routes: ROUTES.length, viewports: VIEWPORTS.map((v) => v.name), byKind, advisoryTotal: advisory.reduce((a, x) => a + x.n, 0), advisory, findings }, null, 2));
 
 const md = [
   `# Rendered audit — ${BASE}`,
@@ -351,9 +425,15 @@ fs.writeFileSync(path.join(OUT, 'rendered.md'), md);
 
 console.log(`\naudit-rendered — ${BASE}`);
 console.log(`  ${ROUTES.length} route(s) × ${VIEWPORTS.length} viewport(s)`);
+const advisoryTotal = advisory.reduce((a, x) => a + x.n, 0);
+if (advisoryTotal) {
+  const worst = [...advisory].sort((a, b) => b.n - a.n)[0];
+  console.log(`  ${String(advisoryTotal).padStart(4)}  tap targets between ${TAP_FAIL}px and ${TAP_ADVISORY}px (advisory — WCAG AAA, not AA)`);
+  console.log(`        worst page: ${worst.route} @ ${worst.viewport} with ${worst.n}`);
+}
 if (!findings.length) {
-  console.log('  ✓ no horizontal overflow, no undersized tap target, no unreachable scroller,');
-  console.log('    no dead anchor, no anchor landing behind the header.');
+  console.log('  ✓ no horizontal overflow, no tap target under the AA floor, no unreachable');
+  console.log('    scroller, no dead anchor, no anchor landing behind the header.');
 } else {
   for (const [k, n] of Object.entries(byKind)) console.log(`  ${String(n).padStart(4)}  ${k}`);
   console.log('\n  Detail: audit/rendered.md');
