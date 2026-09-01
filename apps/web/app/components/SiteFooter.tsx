@@ -229,6 +229,10 @@ export default function SiteFooter() {
               <a href="/technical-library">Technical Library</a>
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>
+              {/* The map has to be reachable from the chrome or verify-links.mjs
+                  is right to call it an orphan: a page in the sitemap with no way
+                  in reads as unimportant no matter what the sitemap says. */}
+              <a href="/where-we-work">Where We Work</a>
               <a href="/design">Floor Designer</a>
               {/* F-163 moved FloorForge out of the primary nav, where it spent a
                   tenth of the header on a product name a homeowner comparing three

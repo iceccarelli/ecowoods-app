@@ -259,6 +259,66 @@ nothing to do with the commit.
 
 ---
 
+## 11 · Verify the map centroids  ⏱ 20 min · unlocks Place schema
+
+`apps/web/content/work-map.ts` carries approximate neighbourhood centroids and
+`COORDS_VERIFIED = false`. The drawn map is fine — being 300 m out is invisible
+in a 29 km frame. Structured data is not fine: a `GeoCoordinates` node is a
+claim a machine repeats without ever re-checking it, so
+`verify-work-map.mjs` fails the build if one is emitted while that flag is false.
+
+For each of the five entries: open a map, read the neighbourhood centroid, round
+to **three** decimal places, paste. Four decimals is ~11 m — one house — and the
+guard rejects it. Then set `COORDS_VERIFIED = true` and record the source and
+the date in `COORDS_SOURCE`, the same shape as the YellowPages entry in
+PROFILE_LINKS.
+
+**Adding more pins is not a data-entry job.** A pin may only exist if it points
+at a case study `.mdx`, and the guard re-reads that file and compares the
+neighbourhood, the year and the square footage. To put a sixth dot on the map,
+publish the sixth job. That is the constraint that makes the map worth looking
+at.
+
+The addresses stay out. Permanently. Not a policy — a build failure.
+
+---
+
+## 12 · Before you spend a dollar on Meta  ⏱ read this first
+
+The Meta pixel was removed in P2.4, and re-adding it is not a script tag:
+
+- Meta becomes a declared data processor again on `/privacy`. `pnpm seo:legal`
+  fails the build until it is in the register.
+- Its origins go back into the CSP in `next.config.js`.
+- The consent banner needs its toggle back and the consent version bumps to 3,
+  which **re-prompts every returning visitor**. That is a real, measurable cost
+  to conversion for a week or two.
+
+None of that is an argument against advertising. It is an argument about
+sequencing, and about which dollar goes first:
+
+**Search captures intent; Meta interrupts.** Someone typing "hardwood floor
+refinishing Toronto cost" has a floor, a budget and a deadline. Someone
+scrolling Instagram has none of those. For a considered, need-driven, four-to-
+five-figure purchase, the first paid dollar belongs on Google Search and
+Local Services Ads, and the second on retargeting people who already read a
+case study. Meta cold traffic is the third dollar, not the first.
+
+**And the tracking matters more than the channel.** A browser pixel loses
+roughly a third of conversions to ITP, ad blockers and consent refusals, and it
+attributes what is left badly. This site already writes every accepted lead to
+Postgres with a source field. Sending conversions **server-side** — Meta CAPI,
+Google Enhanced Conversions, or both, from `/api/leads` at the moment the lead
+is accepted — is more accurate than any pixel, survives cookie loss, and is
+channel-agnostic. Build that first; it makes every subsequent ad dollar
+measurable instead of merely spent.
+
+Order: GBP and the old-domain 301 (§1, §4, still open) → Google Search + LSA →
+server-side conversions → retargeting → Meta cold. Steps 1 and 2 are free and
+still unfinished.
+
+---
+
 ## Do not do these
 
 - Do not put HomeStars or Google stars into `aggregateRating`. Google's policy
