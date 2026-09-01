@@ -1,0 +1,2760 @@
+From b2af4a9b1e9266e2b5e58f29be5cdfcdb886c855 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 31 Aug 2026 07:29:01 +0000
+Subject: [PATCH 1/4] fix(perf): a second image preload was racing the hero for
+ LCP
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MEASURED ON THE LIVE SITE, NOT INFERRED. The homepage head carried three
+<link rel="preload" as="image"> tags after P2 deployed:
+
+  1. /brand/ew-mark-192.png          the header mark, 10.8 KB, above the fold — fine
+  2. white-oak-wideplank-01-room     the hero, fetchPriority="high" — correct, this is P2.5 working
+  3. concept-mc-differential         a 1600x1074 figure, NO high priority
+
+The third is FigureRotator, which hard-coded `priority` on its first slide.
+On the homepage that component renders seven sections down, AFTER the quote
+form. So the browser's preload scanner was told to fetch a below-fold figure in
+the same first round as the LCP image, and on a slow connection the LCP image
+is the one that loses. `priority` is not a hint — it writes a real preload into
+the head before the body is parsed.
+
+Hard-coding it was defensible when that rotator was the most important image on
+its pages. It stopped being defensible the moment P2.5 gave the hero a preload
+of its own, and nothing in home-client.tsx said `priority` — the tag was
+invisible from the page that caused it.
+
+`priority` is now an opt-in prop defaulting to false. Neither of the two call
+sites passes it: the rotator is below the fold on the homepage and on
+/resources. Every other page has exactly one priority image, its own hero
+illustration, which is correct and unchanged.
+
+scripts/verify-preload.mjs prevents the recurrence, and was tested against the
+original defect before being committed - reverting the one-line fix makes it
+fail with the right message. It enforces two rules:
+
+  1. No shared component hard-codes `priority`. It must arrive as a prop, so
+     the PAGE decides - the only place the above-the-fold question can actually
+     be answered. HeroBackdrop is allowlisted by name with its reason.
+  2. No page passes `priority` more than once. One preloaded image per page:
+     the LCP element.
+
+Also: ops/DOMINATION-RUNBOOK.md §2 rewritten against measurement. The odd
+permissions-policy was a stale pre-P0 deployment and is now correct; the
+Access-Control-Allow-Origin: * is real, is on every path including /robots.txt
+and /admin, and is configured outside this repository - every header source in
+vercel.json was compiled against those paths to confirm none of them matches.
+The runbook now says exactly where to look and why it is worth finding.
+
+44 guards pass. tsc unchanged from main.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/app/components/FigureRotator.tsx |  25 +++-
+ ops/DOMINATION-RUNBOOK.md                 |  60 +++++++---
+ package.json                              |   3 +-
+ scripts/verify-preload.mjs                | 137 ++++++++++++++++++++++
+ 4 files changed, 202 insertions(+), 23 deletions(-)
+ create mode 100644 scripts/verify-preload.mjs
+
+diff --git a/apps/web/app/components/FigureRotator.tsx b/apps/web/app/components/FigureRotator.tsx
+index 91a020d..73e78ef 100644
+--- a/apps/web/app/components/FigureRotator.tsx
++++ b/apps/web/app/components/FigureRotator.tsx
+@@ -34,9 +34,23 @@ export type RotatorSlide = {
+  *
+  * WHAT IT DOES NOT COST
+  *
+- * The first slide is rendered server-side and is the only one marked priority,
+- * so a crawler and a cold visitor both get a real figure immediately and the
+- * layout is reserved from the manifest's own dimensions. The rest lazy-load.
++ * The first slide is rendered server-side, so a crawler and a cold visitor both
++ * get a real figure immediately and the layout is reserved from the manifest's
++ * own dimensions. The rest lazy-load.
++ *
++ * `priority` IS OPT-IN, AND DEFAULTS OFF. It used to be hard-coded true on the
++ * first slide, which emitted a <link rel=preload as=image> for a 1600px figure
++ * in the document head. That was defensible when this was the most important
++ * image on the page. It stopped being defensible the moment the homepage hero
++ * got a real preload of its own (P2.5): the browser then had two large images
++ * competing for the same first-round bandwidth, and the one that lost was the
++ * LCP element. Measured on the live site — three `as="image"` preloads in the
++ * head, only one of them the hero.
++ *
++ * Both current call sites render this rotator well below the fold — on the
++ * homepage it sits after the quote form, seven sections down — so neither
++ * passes it. Pass `priority` only where this component IS the largest element
++ * in the viewport on load, and never on a page that already preloads a hero.
+  * Auto-advance stops on hover, on keyboard focus, when the tab is hidden, and
+  * entirely under prefers-reduced-motion — where it becomes a plain manual
+  * control, which is also what it is for anyone using a keyboard.
+@@ -47,10 +61,13 @@ export type RotatorSlide = {
+ export function FigureRotator({
+   slides,
+   interval = 6500,
++  priority = false,
+   label = 'What we can explain',
+ }: {
+   slides: RotatorSlide[];
+   interval?: number;
++  /** Preload the first slide. Only when this rotator is the LCP element. */
++  priority?: boolean;
+   label?: string;
+ }) {
+   const [i, setI] = useState(0);
+@@ -102,7 +119,7 @@ export function FigureRotator({
+               alt={s.alt}
+               sizes="(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px"
+               className="figrot-img"
+-              priority={n === 0}
++              priority={priority && n === 0}
+               loading={n === 0 ? undefined : 'lazy'}
+             />
+           </figure>
+diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+index 9b13cd8..106cac8 100644
+--- a/ops/DOMINATION-RUNBOOK.md
++++ b/ops/DOMINATION-RUNBOOK.md
+@@ -30,29 +30,53 @@ Then: Google Search Console → old property → **Change of Address** → `http
+ Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
+ property for 180 days.
+ 
+-## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
++## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
+ 
+-Measured on the live site after the P0 deploy:
++**RESOLVED, half of it.** The permissions-policy that looked wrong
++(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
++before P0 landed. It now reads exactly what `vercel.json` says:
++`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
++mystery.
++
++**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
++measured after the P2 deploy:
+ 
+ ```
+-cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
+-access-control-allow-origin: *                                      ← NOT ours
+-permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
++/                access-control-allow-origin: *
++/refer           access-control-allow-origin: *
++/commercial      access-control-allow-origin: *
++/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
++/robots.txt      access-control-allow-origin: *
++/api/health      access-control-allow-origin: *     ← this one IS ours, by design
+ ```
+ 
+-The cache header proves the deploy is from this repository. The other two are
+-**not produced by any rule in `vercel.json`** — this was verified by compiling
+-every header `source` pattern against `/` with the same path-to-regexp Next
+-uses; none of them match the homepage.
+-
+-So something in front of or above the project is adding them: a Vercel
+-project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
+-remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
+-read the page cross-origin, and that permissions-policy re-enables camera,
+-microphone and payment for embedded content that the repo's own policy denies.
+-
+-Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
+-whatever DNS the domain actually resolves through.
++`vercel.json` sets that header on exactly four sources — `/(.*).md`,
++`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
++route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
++this was verified by compiling every `source` in the file against those paths
++with the same path-to-regexp Next uses. So the blanket header is configured
++outside this repository.
++
++Where to look, in order:
++
++1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
++   under **Firewall**. A catch-all header rule added in the dashboard overrides
++   nothing in `vercel.json` — it is simply added on top.
++2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
++   THIS project and is not proxied through another one.
++3. Whatever DNS the domain resolves through, if anything sits in front of
++   Vercel.
++
++Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
++document lets any website on the internet read the full response body of your
++pages from a visitor's browser. For public marketing pages the direct harm is
++small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
++too, and those are behind a login. Anything that ever renders customer data
++server-side becomes cross-origin readable.
++
++Once found, the intended state is: the header appears ONLY on the machine
++surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
++enforces that those four keep it.
+ 
+ ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
+ 
+diff --git a/package.json b/package.json
+index f7a33bf..e51fc37 100644
+--- a/package.json
++++ b/package.json
+@@ -42,6 +42,7 @@
+     "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
+     "verify:referral": "node scripts/verify-referral.mjs",
+     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",
++    "verify:preload": "node scripts/verify-preload.mjs",
+     "verify:outreach": "node scripts/verify-outreach.mjs",
+     "verify:live-images": "node scripts/verify-live-images.mjs",
+     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+@@ -73,7 +74,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+diff --git a/scripts/verify-preload.mjs b/scripts/verify-preload.mjs
+new file mode 100644
+index 0000000..b61b5cf
+--- /dev/null
++++ b/scripts/verify-preload.mjs
+@@ -0,0 +1,137 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-preload.mjs — one preloaded image per page.
++ *
++ * THE BUG THIS EXISTS BECAUSE OF
++ *
++ * `priority` on a next/image is not a hint. It writes a real
++ * <link rel="preload" as="image"> into the document head, which the browser's
++ * preload scanner acts on before it has parsed the body. That is exactly what
++ * you want for the LCP element and exactly what you do not want for anything
++ * else: a second preloaded image competes with the first for the same
++ * first-round bandwidth, and on a slow connection the one that loses is the
++ * one the page is judged on.
++ *
++ * P2.5 gave the homepage hero a real preload. It then had TWO — because
++ * FigureRotator hard-coded `priority` on its first slide, and that component is
++ * rendered seven sections down, after the quote form. Nothing in
++ * home-client.tsx said `priority`; the preload was invisible from the page that
++ * caused it. Measured on the live site: three `as="image"` preloads in the
++ * head, one of them the hero.
++ *
++ * WHAT IT CHECKS
++ *
++ *   1. NO SHARED COMPONENT HARD-CODES `priority`. It must arrive as a prop, so
++ *      the page that renders the component decides — which is the only place
++ *      the above-the-fold question can actually be answered. Components that
++ *      genuinely are always the LCP element are allowlisted here, by name, with
++ *      a reason.
++ *   2. NO PAGE PASSES `priority` MORE THAN ONCE. Two preloads on one page is
++ *      the defect above, written explicitly.
++ *
++ *   node scripts/verify-preload.mjs
++ *   node scripts/verify-preload.mjs --list
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const APP = path.join(ROOT, 'apps/web/app');
++const LIST = process.argv.includes('--list');
++
++/**
++ * Components allowed to hard-code `priority`, each with the reason it is
++ * always the largest element in the viewport when it renders.
++ */
++const ALWAYS_LCP = new Map([
++  [
++    'apps/web/app/components/HeroBackdrop.tsx',
++    'It IS the hero. Full-bleed, first element, one per page, and the whole point of P2.5.',
++  ],
++]);
++
++if (!fs.existsSync(APP)) {
++  console.error('verify-preload: apps/web/app not found — run from the repo root.');
++  process.exit(2);
++}
++
++const files = [];
++const walk = (dir) => {
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) {
++      if (e.name === 'node_modules' || e.name === '.next') continue;
++      walk(p);
++    } else if (e.name.endsWith('.tsx')) files.push(p);
++  }
++};
++walk(APP);
++
++const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
++/* Comments explain; they do not render. verify-tokens shipped without this and
++   a comment quoting a forbidden declaration read as a violation (F-58). */
++const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
++
++/** A JSX attribute that turns preloading ON: `priority` or `priority={true}`. */
++const PRIORITY_ON = /(?:^|\s)priority(?:=\{true\}|=\{[^}]*&&[^}]*\}|(?=[\s/>]))/g;
++/** The same attribute, but sourced from a prop — the safe form. */
++const FROM_PROP = /priority=\{\s*priority/;
++
++const problems = [];
++const rows = [];
++
++for (const f of files) {
++  const r = rel(f);
++  const raw = fs.readFileSync(f, 'utf8');
++  const text = strip(raw);
++  const hits = [...text.matchAll(PRIORITY_ON)];
++  if (hits.length === 0) continue;
++
++  const isComponent = r.includes('/components/');
++  const declaresProp = /priority\?:\s*boolean/.test(text) || /priority\s*=\s*false/.test(text);
++  const forwardsProp = FROM_PROP.test(text);
++
++  rows.push({ r, count: hits.length, isComponent, declaresProp, forwardsProp });
++
++  if (isComponent && !ALWAYS_LCP.has(r)) {
++    /* A shared component may MENTION priority all it likes — it just has to be
++       forwarding a prop rather than deciding for every page that renders it. */
++    if (!(declaresProp && forwardsProp)) {
++      problems.push(
++        `${r}\n      hard-codes \`priority\` on an image inside a shared component.\n` +
++          `      That writes <link rel=preload as=image> into the head of EVERY page that\n` +
++          `      renders it, including pages where this component is far below the fold.\n` +
++          `      Take it as a prop defaulting to false and let the page decide, or add this\n` +
++          `      file to ALWAYS_LCP in this script with the reason it is always the hero.`,
++      );
++    }
++  }
++
++  if (!isComponent && hits.length > 1) {
++    problems.push(
++      `${r}\n      passes \`priority\` ${hits.length} times. A page gets ONE preloaded image:\n` +
++        `      the LCP element. The second one competes with it for the same bandwidth.`,
++    );
++  }
++}
++
++if (LIST) {
++  for (const row of rows.sort((a, b) => a.r.localeCompare(b.r))) {
++    console.log(
++      `  ${row.r.padEnd(52)} ${String(row.count).padStart(2)}  ` +
++        `${row.isComponent ? (row.forwardsProp ? 'forwards prop' : ALWAYS_LCP.has(row.r) ? 'always-LCP (allowed)' : 'HARD-CODED') : 'page'}`,
++    );
++  }
++  console.log('');
++}
++
++if (problems.length) {
++  console.error(`\n✗ ${problems.length} image-preload problem(s):\n`);
++  for (const p of problems) console.error(`  · ${p}`);
++  console.error('');
++  process.exit(1);
++}
++
++console.log(
++  `✓ preload verified — ${rows.length} file(s) use priority; no shared component preloads for pages that did not ask, no page preloads twice`,
++);
+-- 
+2.43.0
+
+
+From 71364f43c29c364a6709840dc4da86de4360a49d Mon Sep 17 00:00:00 2001
+From: Vincenzo Ceccarelli Grimaldi
+ <59419763+iceccarelli@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 07:32:57 +0000
+Subject: [PATCH 2/4] chore: remove applied patch artifact (verify:hygiene)
+
+---
+ p2-hotfix-preload.patch | 358 ----------------------------------------
+ p2hotfixpreload.patch   | 358 ----------------------------------------
+ 2 files changed, 716 deletions(-)
+ delete mode 100644 p2-hotfix-preload.patch
+ delete mode 100644 p2hotfixpreload.patch
+
+diff --git a/p2-hotfix-preload.patch b/p2-hotfix-preload.patch
+deleted file mode 100644
+index f00be80..0000000
+--- a/p2-hotfix-preload.patch
++++ /dev/null
+@@ -1,358 +0,0 @@
+-From ff9451796100f1cd45cb262d41d0de14af3ca7d5 Mon Sep 17 00:00:00 2001
+-From: Claude <noreply@anthropic.com>
+-Date: Mon, 31 Aug 2026 07:29:01 +0000
+-Subject: [PATCH] fix(perf): a second image preload was racing the hero for LCP
+-MIME-Version: 1.0
+-Content-Type: text/plain; charset=UTF-8
+-Content-Transfer-Encoding: 8bit
+-
+-MEASURED ON THE LIVE SITE, NOT INFERRED. The homepage head carried three
+-<link rel="preload" as="image"> tags after P2 deployed:
+-
+-  1. /brand/ew-mark-192.png          the header mark, 10.8 KB, above the fold — fine
+-  2. white-oak-wideplank-01-room     the hero, fetchPriority="high" — correct, this is P2.5 working
+-  3. concept-mc-differential         a 1600x1074 figure, NO high priority
+-
+-The third is FigureRotator, which hard-coded `priority` on its first slide.
+-On the homepage that component renders seven sections down, AFTER the quote
+-form. So the browser's preload scanner was told to fetch a below-fold figure in
+-the same first round as the LCP image, and on a slow connection the LCP image
+-is the one that loses. `priority` is not a hint — it writes a real preload into
+-the head before the body is parsed.
+-
+-Hard-coding it was defensible when that rotator was the most important image on
+-its pages. It stopped being defensible the moment P2.5 gave the hero a preload
+-of its own, and nothing in home-client.tsx said `priority` — the tag was
+-invisible from the page that caused it.
+-
+-`priority` is now an opt-in prop defaulting to false. Neither of the two call
+-sites passes it: the rotator is below the fold on the homepage and on
+-/resources. Every other page has exactly one priority image, its own hero
+-illustration, which is correct and unchanged.
+-
+-scripts/verify-preload.mjs prevents the recurrence, and was tested against the
+-original defect before being committed - reverting the one-line fix makes it
+-fail with the right message. It enforces two rules:
+-
+-  1. No shared component hard-codes `priority`. It must arrive as a prop, so
+-     the PAGE decides - the only place the above-the-fold question can actually
+-     be answered. HeroBackdrop is allowlisted by name with its reason.
+-  2. No page passes `priority` more than once. One preloaded image per page:
+-     the LCP element.
+-
+-Also: ops/DOMINATION-RUNBOOK.md §2 rewritten against measurement. The odd
+-permissions-policy was a stale pre-P0 deployment and is now correct; the
+-Access-Control-Allow-Origin: * is real, is on every path including /robots.txt
+-and /admin, and is configured outside this repository - every header source in
+-vercel.json was compiled against those paths to confirm none of them matches.
+-The runbook now says exactly where to look and why it is worth finding.
+-
+-44 guards pass. tsc unchanged from main.
+-
+-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+-Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+----
+- apps/web/app/components/FigureRotator.tsx |  25 +++-
+- ops/DOMINATION-RUNBOOK.md                 |  60 +++++++---
+- package.json                              |   3 +-
+- scripts/verify-preload.mjs                | 137 ++++++++++++++++++++++
+- 4 files changed, 202 insertions(+), 23 deletions(-)
+- create mode 100644 scripts/verify-preload.mjs
+-
+-diff --git a/apps/web/app/components/FigureRotator.tsx b/apps/web/app/components/FigureRotator.tsx
+-index 91a020d..73e78ef 100644
+---- a/apps/web/app/components/FigureRotator.tsx
+-+++ b/apps/web/app/components/FigureRotator.tsx
+-@@ -34,9 +34,23 @@ export type RotatorSlide = {
+-  *
+-  * WHAT IT DOES NOT COST
+-  *
+-- * The first slide is rendered server-side and is the only one marked priority,
+-- * so a crawler and a cold visitor both get a real figure immediately and the
+-- * layout is reserved from the manifest's own dimensions. The rest lazy-load.
+-+ * The first slide is rendered server-side, so a crawler and a cold visitor both
+-+ * get a real figure immediately and the layout is reserved from the manifest's
+-+ * own dimensions. The rest lazy-load.
+-+ *
+-+ * `priority` IS OPT-IN, AND DEFAULTS OFF. It used to be hard-coded true on the
+-+ * first slide, which emitted a <link rel=preload as=image> for a 1600px figure
+-+ * in the document head. That was defensible when this was the most important
+-+ * image on the page. It stopped being defensible the moment the homepage hero
+-+ * got a real preload of its own (P2.5): the browser then had two large images
+-+ * competing for the same first-round bandwidth, and the one that lost was the
+-+ * LCP element. Measured on the live site — three `as="image"` preloads in the
+-+ * head, only one of them the hero.
+-+ *
+-+ * Both current call sites render this rotator well below the fold — on the
+-+ * homepage it sits after the quote form, seven sections down — so neither
+-+ * passes it. Pass `priority` only where this component IS the largest element
+-+ * in the viewport on load, and never on a page that already preloads a hero.
+-  * Auto-advance stops on hover, on keyboard focus, when the tab is hidden, and
+-  * entirely under prefers-reduced-motion — where it becomes a plain manual
+-  * control, which is also what it is for anyone using a keyboard.
+-@@ -47,10 +61,13 @@ export type RotatorSlide = {
+- export function FigureRotator({
+-   slides,
+-   interval = 6500,
+-+  priority = false,
+-   label = 'What we can explain',
+- }: {
+-   slides: RotatorSlide[];
+-   interval?: number;
+-+  /** Preload the first slide. Only when this rotator is the LCP element. */
+-+  priority?: boolean;
+-   label?: string;
+- }) {
+-   const [i, setI] = useState(0);
+-@@ -102,7 +119,7 @@ export function FigureRotator({
+-               alt={s.alt}
+-               sizes="(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px"
+-               className="figrot-img"
+--              priority={n === 0}
+-+              priority={priority && n === 0}
+-               loading={n === 0 ? undefined : 'lazy'}
+-             />
+-           </figure>
+-diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+-index 9b13cd8..106cac8 100644
+---- a/ops/DOMINATION-RUNBOOK.md
+-+++ b/ops/DOMINATION-RUNBOOK.md
+-@@ -30,29 +30,53 @@ Then: Google Search Console → old property → **Change of Address** → `http
+- Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
+- property for 180 days.
+- 
+--## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
+-+## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
+- 
+--Measured on the live site after the P0 deploy:
+-+**RESOLVED, half of it.** The permissions-policy that looked wrong
+-+(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
+-+before P0 landed. It now reads exactly what `vercel.json` says:
+-+`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
+-+mystery.
+-+
+-+**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
+-+measured after the P2 deploy:
+- 
+- ```
+--cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
+--access-control-allow-origin: *                                      ← NOT ours
+--permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
+-+/                access-control-allow-origin: *
+-+/refer           access-control-allow-origin: *
+-+/commercial      access-control-allow-origin: *
+-+/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
+-+/robots.txt      access-control-allow-origin: *
+-+/api/health      access-control-allow-origin: *     ← this one IS ours, by design
+- ```
+- 
+--The cache header proves the deploy is from this repository. The other two are
+--**not produced by any rule in `vercel.json`** — this was verified by compiling
+--every header `source` pattern against `/` with the same path-to-regexp Next
+--uses; none of them match the homepage.
+--
+--So something in front of or above the project is adding them: a Vercel
+--project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
+--remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
+--read the page cross-origin, and that permissions-policy re-enables camera,
+--microphone and payment for embedded content that the repo's own policy denies.
+--
+--Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
+--whatever DNS the domain actually resolves through.
+-+`vercel.json` sets that header on exactly four sources — `/(.*).md`,
+-+`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
+-+route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
+-+this was verified by compiling every `source` in the file against those paths
+-+with the same path-to-regexp Next uses. So the blanket header is configured
+-+outside this repository.
+-+
+-+Where to look, in order:
+-+
+-+1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
+-+   under **Firewall**. A catch-all header rule added in the dashboard overrides
+-+   nothing in `vercel.json` — it is simply added on top.
+-+2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
+-+   THIS project and is not proxied through another one.
+-+3. Whatever DNS the domain resolves through, if anything sits in front of
+-+   Vercel.
+-+
+-+Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
+-+document lets any website on the internet read the full response body of your
+-+pages from a visitor's browser. For public marketing pages the direct harm is
+-+small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
+-+too, and those are behind a login. Anything that ever renders customer data
+-+server-side becomes cross-origin readable.
+-+
+-+Once found, the intended state is: the header appears ONLY on the machine
+-+surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
+-+enforces that those four keep it.
+- 
+- ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
+- 
+-diff --git a/package.json b/package.json
+-index f7a33bf..e51fc37 100644
+---- a/package.json
+-+++ b/package.json
+-@@ -42,6 +42,7 @@
+-     "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
+-     "verify:referral": "node scripts/verify-referral.mjs",
+-     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",
+-+    "verify:preload": "node scripts/verify-preload.mjs",
+-     "verify:outreach": "node scripts/verify-outreach.mjs",
+-     "verify:live-images": "node scripts/verify-live-images.mjs",
+-     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+-@@ -73,7 +74,7 @@
+-     "images:brief": "node scripts/verify-images.mjs --prompts",
+-     "papers:tex": "node scripts/gen-paper-tex.mjs",
+-     "images:provenance": "node scripts/add-provenance-slots.mjs",
+--    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+-+    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+-     "audit": "bash scripts/audit-all.sh",
+-     "audit:full": "bash scripts/audit-all.sh --full",
+-     "audit:quick": "bash scripts/audit-all.sh --quick",
+-diff --git a/scripts/verify-preload.mjs b/scripts/verify-preload.mjs
+-new file mode 100644
+-index 0000000..b61b5cf
+---- /dev/null
+-+++ b/scripts/verify-preload.mjs
+-@@ -0,0 +1,137 @@
+-+#!/usr/bin/env node
+-+/**
+-+ * scripts/verify-preload.mjs — one preloaded image per page.
+-+ *
+-+ * THE BUG THIS EXISTS BECAUSE OF
+-+ *
+-+ * `priority` on a next/image is not a hint. It writes a real
+-+ * <link rel="preload" as="image"> into the document head, which the browser's
+-+ * preload scanner acts on before it has parsed the body. That is exactly what
+-+ * you want for the LCP element and exactly what you do not want for anything
+-+ * else: a second preloaded image competes with the first for the same
+-+ * first-round bandwidth, and on a slow connection the one that loses is the
+-+ * one the page is judged on.
+-+ *
+-+ * P2.5 gave the homepage hero a real preload. It then had TWO — because
+-+ * FigureRotator hard-coded `priority` on its first slide, and that component is
+-+ * rendered seven sections down, after the quote form. Nothing in
+-+ * home-client.tsx said `priority`; the preload was invisible from the page that
+-+ * caused it. Measured on the live site: three `as="image"` preloads in the
+-+ * head, one of them the hero.
+-+ *
+-+ * WHAT IT CHECKS
+-+ *
+-+ *   1. NO SHARED COMPONENT HARD-CODES `priority`. It must arrive as a prop, so
+-+ *      the page that renders the component decides — which is the only place
+-+ *      the above-the-fold question can actually be answered. Components that
+-+ *      genuinely are always the LCP element are allowlisted here, by name, with
+-+ *      a reason.
+-+ *   2. NO PAGE PASSES `priority` MORE THAN ONCE. Two preloads on one page is
+-+ *      the defect above, written explicitly.
+-+ *
+-+ *   node scripts/verify-preload.mjs
+-+ *   node scripts/verify-preload.mjs --list
+-+ */
+-+import fs from 'node:fs';
+-+import path from 'node:path';
+-+
+-+const ROOT = process.cwd();
+-+const APP = path.join(ROOT, 'apps/web/app');
+-+const LIST = process.argv.includes('--list');
+-+
+-+/**
+-+ * Components allowed to hard-code `priority`, each with the reason it is
+-+ * always the largest element in the viewport when it renders.
+-+ */
+-+const ALWAYS_LCP = new Map([
+-+  [
+-+    'apps/web/app/components/HeroBackdrop.tsx',
+-+    'It IS the hero. Full-bleed, first element, one per page, and the whole point of P2.5.',
+-+  ],
+-+]);
+-+
+-+if (!fs.existsSync(APP)) {
+-+  console.error('verify-preload: apps/web/app not found — run from the repo root.');
+-+  process.exit(2);
+-+}
+-+
+-+const files = [];
+-+const walk = (dir) => {
+-+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+-+    const p = path.join(dir, e.name);
+-+    if (e.isDirectory()) {
+-+      if (e.name === 'node_modules' || e.name === '.next') continue;
+-+      walk(p);
+-+    } else if (e.name.endsWith('.tsx')) files.push(p);
+-+  }
+-+};
+-+walk(APP);
+-+
+-+const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
+-+/* Comments explain; they do not render. verify-tokens shipped without this and
+-+   a comment quoting a forbidden declaration read as a violation (F-58). */
+-+const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+-+
+-+/** A JSX attribute that turns preloading ON: `priority` or `priority={true}`. */
+-+const PRIORITY_ON = /(?:^|\s)priority(?:=\{true\}|=\{[^}]*&&[^}]*\}|(?=[\s/>]))/g;
+-+/** The same attribute, but sourced from a prop — the safe form. */
+-+const FROM_PROP = /priority=\{\s*priority/;
+-+
+-+const problems = [];
+-+const rows = [];
+-+
+-+for (const f of files) {
+-+  const r = rel(f);
+-+  const raw = fs.readFileSync(f, 'utf8');
+-+  const text = strip(raw);
+-+  const hits = [...text.matchAll(PRIORITY_ON)];
+-+  if (hits.length === 0) continue;
+-+
+-+  const isComponent = r.includes('/components/');
+-+  const declaresProp = /priority\?:\s*boolean/.test(text) || /priority\s*=\s*false/.test(text);
+-+  const forwardsProp = FROM_PROP.test(text);
+-+
+-+  rows.push({ r, count: hits.length, isComponent, declaresProp, forwardsProp });
+-+
+-+  if (isComponent && !ALWAYS_LCP.has(r)) {
+-+    /* A shared component may MENTION priority all it likes — it just has to be
+-+       forwarding a prop rather than deciding for every page that renders it. */
+-+    if (!(declaresProp && forwardsProp)) {
+-+      problems.push(
+-+        `${r}\n      hard-codes \`priority\` on an image inside a shared component.\n` +
+-+          `      That writes <link rel=preload as=image> into the head of EVERY page that\n` +
+-+          `      renders it, including pages where this component is far below the fold.\n` +
+-+          `      Take it as a prop defaulting to false and let the page decide, or add this\n` +
+-+          `      file to ALWAYS_LCP in this script with the reason it is always the hero.`,
+-+      );
+-+    }
+-+  }
+-+
+-+  if (!isComponent && hits.length > 1) {
+-+    problems.push(
+-+      `${r}\n      passes \`priority\` ${hits.length} times. A page gets ONE preloaded image:\n` +
+-+        `      the LCP element. The second one competes with it for the same bandwidth.`,
+-+    );
+-+  }
+-+}
+-+
+-+if (LIST) {
+-+  for (const row of rows.sort((a, b) => a.r.localeCompare(b.r))) {
+-+    console.log(
+-+      `  ${row.r.padEnd(52)} ${String(row.count).padStart(2)}  ` +
+-+        `${row.isComponent ? (row.forwardsProp ? 'forwards prop' : ALWAYS_LCP.has(row.r) ? 'always-LCP (allowed)' : 'HARD-CODED') : 'page'}`,
+-+    );
+-+  }
+-+  console.log('');
+-+}
+-+
+-+if (problems.length) {
+-+  console.error(`\n✗ ${problems.length} image-preload problem(s):\n`);
+-+  for (const p of problems) console.error(`  · ${p}`);
+-+  console.error('');
+-+  process.exit(1);
+-+}
+-+
+-+console.log(
+-+  `✓ preload verified — ${rows.length} file(s) use priority; no shared component preloads for pages that did not ask, no page preloads twice`,
+-+);
+--- 
+-2.43.0
+-
+diff --git a/p2hotfixpreload.patch b/p2hotfixpreload.patch
+deleted file mode 100644
+index f00be80..0000000
+--- a/p2hotfixpreload.patch
++++ /dev/null
+@@ -1,358 +0,0 @@
+-From ff9451796100f1cd45cb262d41d0de14af3ca7d5 Mon Sep 17 00:00:00 2001
+-From: Claude <noreply@anthropic.com>
+-Date: Mon, 31 Aug 2026 07:29:01 +0000
+-Subject: [PATCH] fix(perf): a second image preload was racing the hero for LCP
+-MIME-Version: 1.0
+-Content-Type: text/plain; charset=UTF-8
+-Content-Transfer-Encoding: 8bit
+-
+-MEASURED ON THE LIVE SITE, NOT INFERRED. The homepage head carried three
+-<link rel="preload" as="image"> tags after P2 deployed:
+-
+-  1. /brand/ew-mark-192.png          the header mark, 10.8 KB, above the fold — fine
+-  2. white-oak-wideplank-01-room     the hero, fetchPriority="high" — correct, this is P2.5 working
+-  3. concept-mc-differential         a 1600x1074 figure, NO high priority
+-
+-The third is FigureRotator, which hard-coded `priority` on its first slide.
+-On the homepage that component renders seven sections down, AFTER the quote
+-form. So the browser's preload scanner was told to fetch a below-fold figure in
+-the same first round as the LCP image, and on a slow connection the LCP image
+-is the one that loses. `priority` is not a hint — it writes a real preload into
+-the head before the body is parsed.
+-
+-Hard-coding it was defensible when that rotator was the most important image on
+-its pages. It stopped being defensible the moment P2.5 gave the hero a preload
+-of its own, and nothing in home-client.tsx said `priority` — the tag was
+-invisible from the page that caused it.
+-
+-`priority` is now an opt-in prop defaulting to false. Neither of the two call
+-sites passes it: the rotator is below the fold on the homepage and on
+-/resources. Every other page has exactly one priority image, its own hero
+-illustration, which is correct and unchanged.
+-
+-scripts/verify-preload.mjs prevents the recurrence, and was tested against the
+-original defect before being committed - reverting the one-line fix makes it
+-fail with the right message. It enforces two rules:
+-
+-  1. No shared component hard-codes `priority`. It must arrive as a prop, so
+-     the PAGE decides - the only place the above-the-fold question can actually
+-     be answered. HeroBackdrop is allowlisted by name with its reason.
+-  2. No page passes `priority` more than once. One preloaded image per page:
+-     the LCP element.
+-
+-Also: ops/DOMINATION-RUNBOOK.md §2 rewritten against measurement. The odd
+-permissions-policy was a stale pre-P0 deployment and is now correct; the
+-Access-Control-Allow-Origin: * is real, is on every path including /robots.txt
+-and /admin, and is configured outside this repository - every header source in
+-vercel.json was compiled against those paths to confirm none of them matches.
+-The runbook now says exactly where to look and why it is worth finding.
+-
+-44 guards pass. tsc unchanged from main.
+-
+-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+-Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+----
+- apps/web/app/components/FigureRotator.tsx |  25 +++-
+- ops/DOMINATION-RUNBOOK.md                 |  60 +++++++---
+- package.json                              |   3 +-
+- scripts/verify-preload.mjs                | 137 ++++++++++++++++++++++
+- 4 files changed, 202 insertions(+), 23 deletions(-)
+- create mode 100644 scripts/verify-preload.mjs
+-
+-diff --git a/apps/web/app/components/FigureRotator.tsx b/apps/web/app/components/FigureRotator.tsx
+-index 91a020d..73e78ef 100644
+---- a/apps/web/app/components/FigureRotator.tsx
+-+++ b/apps/web/app/components/FigureRotator.tsx
+-@@ -34,9 +34,23 @@ export type RotatorSlide = {
+-  *
+-  * WHAT IT DOES NOT COST
+-  *
+-- * The first slide is rendered server-side and is the only one marked priority,
+-- * so a crawler and a cold visitor both get a real figure immediately and the
+-- * layout is reserved from the manifest's own dimensions. The rest lazy-load.
+-+ * The first slide is rendered server-side, so a crawler and a cold visitor both
+-+ * get a real figure immediately and the layout is reserved from the manifest's
+-+ * own dimensions. The rest lazy-load.
+-+ *
+-+ * `priority` IS OPT-IN, AND DEFAULTS OFF. It used to be hard-coded true on the
+-+ * first slide, which emitted a <link rel=preload as=image> for a 1600px figure
+-+ * in the document head. That was defensible when this was the most important
+-+ * image on the page. It stopped being defensible the moment the homepage hero
+-+ * got a real preload of its own (P2.5): the browser then had two large images
+-+ * competing for the same first-round bandwidth, and the one that lost was the
+-+ * LCP element. Measured on the live site — three `as="image"` preloads in the
+-+ * head, only one of them the hero.
+-+ *
+-+ * Both current call sites render this rotator well below the fold — on the
+-+ * homepage it sits after the quote form, seven sections down — so neither
+-+ * passes it. Pass `priority` only where this component IS the largest element
+-+ * in the viewport on load, and never on a page that already preloads a hero.
+-  * Auto-advance stops on hover, on keyboard focus, when the tab is hidden, and
+-  * entirely under prefers-reduced-motion — where it becomes a plain manual
+-  * control, which is also what it is for anyone using a keyboard.
+-@@ -47,10 +61,13 @@ export type RotatorSlide = {
+- export function FigureRotator({
+-   slides,
+-   interval = 6500,
+-+  priority = false,
+-   label = 'What we can explain',
+- }: {
+-   slides: RotatorSlide[];
+-   interval?: number;
+-+  /** Preload the first slide. Only when this rotator is the LCP element. */
+-+  priority?: boolean;
+-   label?: string;
+- }) {
+-   const [i, setI] = useState(0);
+-@@ -102,7 +119,7 @@ export function FigureRotator({
+-               alt={s.alt}
+-               sizes="(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px"
+-               className="figrot-img"
+--              priority={n === 0}
+-+              priority={priority && n === 0}
+-               loading={n === 0 ? undefined : 'lazy'}
+-             />
+-           </figure>
+-diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+-index 9b13cd8..106cac8 100644
+---- a/ops/DOMINATION-RUNBOOK.md
+-+++ b/ops/DOMINATION-RUNBOOK.md
+-@@ -30,29 +30,53 @@ Then: Google Search Console → old property → **Change of Address** → `http
+- Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
+- property for 180 days.
+- 
+--## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
+-+## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
+- 
+--Measured on the live site after the P0 deploy:
+-+**RESOLVED, half of it.** The permissions-policy that looked wrong
+-+(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
+-+before P0 landed. It now reads exactly what `vercel.json` says:
+-+`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
+-+mystery.
+-+
+-+**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
+-+measured after the P2 deploy:
+- 
+- ```
+--cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
+--access-control-allow-origin: *                                      ← NOT ours
+--permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
+-+/                access-control-allow-origin: *
+-+/refer           access-control-allow-origin: *
+-+/commercial      access-control-allow-origin: *
+-+/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
+-+/robots.txt      access-control-allow-origin: *
+-+/api/health      access-control-allow-origin: *     ← this one IS ours, by design
+- ```
+- 
+--The cache header proves the deploy is from this repository. The other two are
+--**not produced by any rule in `vercel.json`** — this was verified by compiling
+--every header `source` pattern against `/` with the same path-to-regexp Next
+--uses; none of them match the homepage.
+--
+--So something in front of or above the project is adding them: a Vercel
+--project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
+--remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
+--read the page cross-origin, and that permissions-policy re-enables camera,
+--microphone and payment for embedded content that the repo's own policy denies.
+--
+--Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
+--whatever DNS the domain actually resolves through.
+-+`vercel.json` sets that header on exactly four sources — `/(.*).md`,
+-+`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
+-+route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
+-+this was verified by compiling every `source` in the file against those paths
+-+with the same path-to-regexp Next uses. So the blanket header is configured
+-+outside this repository.
+-+
+-+Where to look, in order:
+-+
+-+1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
+-+   under **Firewall**. A catch-all header rule added in the dashboard overrides
+-+   nothing in `vercel.json` — it is simply added on top.
+-+2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
+-+   THIS project and is not proxied through another one.
+-+3. Whatever DNS the domain resolves through, if anything sits in front of
+-+   Vercel.
+-+
+-+Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
+-+document lets any website on the internet read the full response body of your
+-+pages from a visitor's browser. For public marketing pages the direct harm is
+-+small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
+-+too, and those are behind a login. Anything that ever renders customer data
+-+server-side becomes cross-origin readable.
+-+
+-+Once found, the intended state is: the header appears ONLY on the machine
+-+surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
+-+enforces that those four keep it.
+- 
+- ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
+- 
+-diff --git a/package.json b/package.json
+-index f7a33bf..e51fc37 100644
+---- a/package.json
+-+++ b/package.json
+-@@ -42,6 +42,7 @@
+-     "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
+-     "verify:referral": "node scripts/verify-referral.mjs",
+-     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",
+-+    "verify:preload": "node scripts/verify-preload.mjs",
+-     "verify:outreach": "node scripts/verify-outreach.mjs",
+-     "verify:live-images": "node scripts/verify-live-images.mjs",
+-     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+-@@ -73,7 +74,7 @@
+-     "images:brief": "node scripts/verify-images.mjs --prompts",
+-     "papers:tex": "node scripts/gen-paper-tex.mjs",
+-     "images:provenance": "node scripts/add-provenance-slots.mjs",
+--    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+-+    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+-     "audit": "bash scripts/audit-all.sh",
+-     "audit:full": "bash scripts/audit-all.sh --full",
+-     "audit:quick": "bash scripts/audit-all.sh --quick",
+-diff --git a/scripts/verify-preload.mjs b/scripts/verify-preload.mjs
+-new file mode 100644
+-index 0000000..b61b5cf
+---- /dev/null
+-+++ b/scripts/verify-preload.mjs
+-@@ -0,0 +1,137 @@
+-+#!/usr/bin/env node
+-+/**
+-+ * scripts/verify-preload.mjs — one preloaded image per page.
+-+ *
+-+ * THE BUG THIS EXISTS BECAUSE OF
+-+ *
+-+ * `priority` on a next/image is not a hint. It writes a real
+-+ * <link rel="preload" as="image"> into the document head, which the browser's
+-+ * preload scanner acts on before it has parsed the body. That is exactly what
+-+ * you want for the LCP element and exactly what you do not want for anything
+-+ * else: a second preloaded image competes with the first for the same
+-+ * first-round bandwidth, and on a slow connection the one that loses is the
+-+ * one the page is judged on.
+-+ *
+-+ * P2.5 gave the homepage hero a real preload. It then had TWO — because
+-+ * FigureRotator hard-coded `priority` on its first slide, and that component is
+-+ * rendered seven sections down, after the quote form. Nothing in
+-+ * home-client.tsx said `priority`; the preload was invisible from the page that
+-+ * caused it. Measured on the live site: three `as="image"` preloads in the
+-+ * head, one of them the hero.
+-+ *
+-+ * WHAT IT CHECKS
+-+ *
+-+ *   1. NO SHARED COMPONENT HARD-CODES `priority`. It must arrive as a prop, so
+-+ *      the page that renders the component decides — which is the only place
+-+ *      the above-the-fold question can actually be answered. Components that
+-+ *      genuinely are always the LCP element are allowlisted here, by name, with
+-+ *      a reason.
+-+ *   2. NO PAGE PASSES `priority` MORE THAN ONCE. Two preloads on one page is
+-+ *      the defect above, written explicitly.
+-+ *
+-+ *   node scripts/verify-preload.mjs
+-+ *   node scripts/verify-preload.mjs --list
+-+ */
+-+import fs from 'node:fs';
+-+import path from 'node:path';
+-+
+-+const ROOT = process.cwd();
+-+const APP = path.join(ROOT, 'apps/web/app');
+-+const LIST = process.argv.includes('--list');
+-+
+-+/**
+-+ * Components allowed to hard-code `priority`, each with the reason it is
+-+ * always the largest element in the viewport when it renders.
+-+ */
+-+const ALWAYS_LCP = new Map([
+-+  [
+-+    'apps/web/app/components/HeroBackdrop.tsx',
+-+    'It IS the hero. Full-bleed, first element, one per page, and the whole point of P2.5.',
+-+  ],
+-+]);
+-+
+-+if (!fs.existsSync(APP)) {
+-+  console.error('verify-preload: apps/web/app not found — run from the repo root.');
+-+  process.exit(2);
+-+}
+-+
+-+const files = [];
+-+const walk = (dir) => {
+-+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+-+    const p = path.join(dir, e.name);
+-+    if (e.isDirectory()) {
+-+      if (e.name === 'node_modules' || e.name === '.next') continue;
+-+      walk(p);
+-+    } else if (e.name.endsWith('.tsx')) files.push(p);
+-+  }
+-+};
+-+walk(APP);
+-+
+-+const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
+-+/* Comments explain; they do not render. verify-tokens shipped without this and
+-+   a comment quoting a forbidden declaration read as a violation (F-58). */
+-+const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+-+
+-+/** A JSX attribute that turns preloading ON: `priority` or `priority={true}`. */
+-+const PRIORITY_ON = /(?:^|\s)priority(?:=\{true\}|=\{[^}]*&&[^}]*\}|(?=[\s/>]))/g;
+-+/** The same attribute, but sourced from a prop — the safe form. */
+-+const FROM_PROP = /priority=\{\s*priority/;
+-+
+-+const problems = [];
+-+const rows = [];
+-+
+-+for (const f of files) {
+-+  const r = rel(f);
+-+  const raw = fs.readFileSync(f, 'utf8');
+-+  const text = strip(raw);
+-+  const hits = [...text.matchAll(PRIORITY_ON)];
+-+  if (hits.length === 0) continue;
+-+
+-+  const isComponent = r.includes('/components/');
+-+  const declaresProp = /priority\?:\s*boolean/.test(text) || /priority\s*=\s*false/.test(text);
+-+  const forwardsProp = FROM_PROP.test(text);
+-+
+-+  rows.push({ r, count: hits.length, isComponent, declaresProp, forwardsProp });
+-+
+-+  if (isComponent && !ALWAYS_LCP.has(r)) {
+-+    /* A shared component may MENTION priority all it likes — it just has to be
+-+       forwarding a prop rather than deciding for every page that renders it. */
+-+    if (!(declaresProp && forwardsProp)) {
+-+      problems.push(
+-+        `${r}\n      hard-codes \`priority\` on an image inside a shared component.\n` +
+-+          `      That writes <link rel=preload as=image> into the head of EVERY page that\n` +
+-+          `      renders it, including pages where this component is far below the fold.\n` +
+-+          `      Take it as a prop defaulting to false and let the page decide, or add this\n` +
+-+          `      file to ALWAYS_LCP in this script with the reason it is always the hero.`,
+-+      );
+-+    }
+-+  }
+-+
+-+  if (!isComponent && hits.length > 1) {
+-+    problems.push(
+-+      `${r}\n      passes \`priority\` ${hits.length} times. A page gets ONE preloaded image:\n` +
+-+        `      the LCP element. The second one competes with it for the same bandwidth.`,
+-+    );
+-+  }
+-+}
+-+
+-+if (LIST) {
+-+  for (const row of rows.sort((a, b) => a.r.localeCompare(b.r))) {
+-+    console.log(
+-+      `  ${row.r.padEnd(52)} ${String(row.count).padStart(2)}  ` +
+-+        `${row.isComponent ? (row.forwardsProp ? 'forwards prop' : ALWAYS_LCP.has(row.r) ? 'always-LCP (allowed)' : 'HARD-CODED') : 'page'}`,
+-+    );
+-+  }
+-+  console.log('');
+-+}
+-+
+-+if (problems.length) {
+-+  console.error(`\n✗ ${problems.length} image-preload problem(s):\n`);
+-+  for (const p of problems) console.error(`  · ${p}`);
+-+  console.error('');
+-+  process.exit(1);
+-+}
+-+
+-+console.log(
+-+  `✓ preload verified — ${rows.length} file(s) use priority; no shared component preloads for pages that did not ask, no page preloads twice`,
+-+);
+--- 
+-2.43.0
+-
+-- 
+2.43.0
+
+
+From 5ef2d5d360c31952b75806428cf4f50aa2d8a31e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 31 Aug 2026 07:49:36 +0000
+Subject: [PATCH 3/4] fix(cors): override Vercel's static-storage wildcard;
+ correct a false attribution
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE MISATTRIBUTION
+
+Every HTML page on this site is served with `Access-Control-Allow-Origin: *`.
+ops/DOMINATION-RUNBOOK.md recorded that, twice, as a Vercel dashboard header
+rule the owner had to go and remove. That was an inference from one true fact —
+the header appears in no file in this repository — to a conclusion that was
+never tested, and it sent them looking for a switch that does not exist.
+
+WHAT IS ACTUALLY HAPPENING
+
+Vercel attaches the wildcard to everything it serves out of static/prerendered
+storage. Platform behaviour, not configuration. The discriminating measurement
+is WHICH routes carry it: `/`, `/refer`, `/commercial` and `/robots.txt` all do,
+and every one of them is `○` static or `●` prerendered in the build output;
+function-rendered routes that do not set CORS themselves carry nothing.
+
+Two consequences, both non-obvious:
+
+  · Middleware could never have removed it. The CDN adds the header after
+    middleware has run, so a delete there is a no-op.
+  · A local check cannot prove the fix. `next start` never sets the header at
+    all, so any local test passes vacuously. Production or nothing.
+
+THE FIX
+
+`headers()` cannot unset a header, but a declared header becomes part of the
+build output routing config and overrides the platform default. Publishing the
+canonical origin instead of `*` has the same practical effect: a page on another
+origin can no longer read the response body.
+
+Scoped by negative lookahead so the machine editions keep their wildcard —
+/llms.txt, /llms-full.txt, /ai.txt, the .md mirrors and /api/knowledge are
+deliberately cross-origin readable, an agent fetching them from a browser
+context needs it, and verify-vercel-config fails the build if they lose it.
+/api/ is excluded because those routes are function-rendered and the public ones
+set their own CORS. vercel.json keeps owning those paths, so no route emits two
+values.
+
+The exclusion pattern was tested against Next's own path-to-regexp before
+shipping: it matches /, /refer, /commercial, /robots.txt, /sitemap.xml and every
+prerendered page, and does not match /llms.txt, /ai.txt, /api/knowledge or
+anything ending in .md. SITE_URL derives from NEXT_PUBLIC_SITE_URL rather than
+being a second copy of the site's own address.
+
+Runbook §2 rewritten to say what was wrong and why, rather than quietly deleting
+it — including what to do if the override does not win, and the fact that the
+odd permissions-policy alongside it was only a stale pre-P0 deployment.
+
+44 guards pass. tsc unchanged from main. Verified in production or not at all:
+
+  curl -sI https://ecowoods.ca/         | grep -i access-control   → https://ecowoods.ca
+  curl -sI https://ecowoods.ca/llms.txt | grep -i access-control   → *
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/next.config.js   | 63 ++++++++++++++++++++++++++
+ ops/DOMINATION-RUNBOOK.md | 93 +++++++++++++++++++++------------------
+ 2 files changed, 113 insertions(+), 43 deletions(-)
+
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index d055e30..408172f 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -1,3 +1,11 @@
++/**
++ * The canonical origin, derived from the same environment variable every other
++ * surface reads (lib/seo-data.ts, the schema graph, the machine editions). It
++ * is used for the Access-Control-Allow-Origin override below; a second copy of
++ * the site's own address is exactly the drift `pnpm seo:claims` exists to stop.
++ */
++const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
++
+ /** @type {import('next').NextConfig} */
+ const nextConfig = {
+   reactStrictMode: true,
+@@ -169,6 +177,61 @@ const nextConfig = {
+ 
+   async headers() {
+     return [
++      /**
++       * ACCESS-CONTROL-ALLOW-ORIGIN — OVERRIDING A HEADER WE NEVER SET.
++       *
++       * THE MISATTRIBUTION THIS CORRECTS
++       *
++       * Every HTML page on this site is served with
++       * `Access-Control-Allow-Origin: *`, and it was recorded — in
++       * ops/DOMINATION-RUNBOOK.md and in the analysis that produced it — as a
++       * Vercel dashboard header rule somebody had to go and remove. That was an
++       * inference from one true fact (the header appears in no file in this
++       * repository) to a conclusion that was never tested, and it sent the
++       * owner looking twice for a switch that does not exist.
++       *
++       * WHAT IS ACTUALLY HAPPENING
++       *
++       * Vercel attaches the wildcard to everything it serves out of
++       * static/prerendered storage. It is platform behaviour, not
++       * configuration. The discriminating measurement is WHICH routes carry it:
++       * `/`, `/refer`, `/commercial`, `/robots.txt` — every one of them `○`
++       * static or `●` prerendered in the build output — carry it, while
++       * function-rendered routes that do not set CORS themselves do not.
++       *
++       * TWO CONSEQUENCES WORTH WRITING DOWN
++       *
++       *   · Middleware cannot remove it. The CDN adds the header after
++       *     middleware has already run, so a delete there is a no-op.
++       *   · A local check cannot prove this fix. `next start` never sets the
++       *     header in the first place, so any local test passes vacuously.
++       *     This one is verified in production or it is not verified.
++       *
++       * THE FIX
++       *
++       * `headers()` cannot UNSET a header, but a declared header becomes part
++       * of the build output routing config and overrides the platform default.
++       * Publishing the canonical origin instead of `*` has the same practical
++       * effect: a page on another origin can no longer read the response body.
++       *
++       * THE NEGATIVE LOOKAHEAD IS THE WHOLE POINT. /llms.txt, /llms-full.txt,
++       * /ai.txt and the `.md` mirrors are DELIBERATELY wildcard-open — an agent
++       * fetching them from a browser context needs it, and
++       * scripts/verify-vercel-config.mjs fails the build if they lose it. They
++       * are excluded here so vercel.json keeps owning them and no route emits
++       * two different values. `/api/` is excluded because those routes are
++       * function-rendered, so Vercel adds nothing to them, and the public ones
++       * set their own CORS deliberately.
++       *
++       * The pattern was tested against Next's own path-to-regexp before it
++       * shipped: it matches /, /refer, /commercial, /robots.txt, /sitemap.xml
++       * and every prerendered page, and does not match /llms.txt, /ai.txt,
++       * /api/knowledge or anything ending in .md.
++       */
++      {
++        source: '/((?!llms\\.txt|llms-full\\.txt|ai\\.txt|api/|_next/)(?!.*\\.md$).*)',
++        headers: [{ key: 'Access-Control-Allow-Origin', value: SITE_URL }],
++      },
+       {
+         source: '/(.*)',
+         headers: [
+diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+index 106cac8..48f267f 100644
+--- a/ops/DOMINATION-RUNBOOK.md
++++ b/ops/DOMINATION-RUNBOOK.md
+@@ -30,53 +30,60 @@ Then: Google Search Console → old property → **Change of Address** → `http
+ Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
+ property for 180 days.
+ 
+-## 2 · Find the `Access-Control-Allow-Origin: *` nobody in this repo asked for  ⏱ 20 min
+-
+-**RESOLVED, half of it.** The permissions-policy that looked wrong
+-(`autoplay=*, camera=(*), microphone=(*)`) was simply a stale deployment from
+-before P0 landed. It now reads exactly what `vercel.json` says:
+-`camera=(), microphone=(), geolocation=(), browsing-topics=()`. No proxy, no
+-mystery.
+-
+-**STILL OPEN:** `access-control-allow-origin: *` is served on *every* path,
+-measured after the P2 deploy:
++## 2 · The `Access-Control-Allow-Origin: *` — FIXED IN CODE, nothing to click
++
++**This item twice told you to go and find a Vercel dashboard header rule. That
++was wrong**, and it cost you two trips into settings looking for a switch that
++does not exist. The reasoning was an inference from one true fact — the header
++appears in no file in this repository — to a conclusion that was never tested.
++Recorded rather than quietly deleted, because a runbook that hides its own
++corrections is one you cannot trust the rest of.
++
++**What is actually happening:** Vercel attaches `Access-Control-Allow-Origin: *`
++to everything it serves out of static/prerendered storage. It is platform
++behaviour, not configuration. The discriminating measurement is WHICH routes
++carry it — every path that showed it here (`/`, `/refer`, `/commercial`,
++`/robots.txt`) is `○` static or `●` prerendered in the build output, while
++function-rendered routes that do not set CORS themselves carry nothing.
++
++Two things follow, both non-obvious and both worth remembering:
++
++- **Middleware could never have removed it.** The CDN adds the header after
++  middleware has already run, so a delete there is a no-op.
++- **A local test cannot prove the fix.** `next start` never sets the header at
++  all, so any local check passes vacuously. This is verified in production or
++  it is not verified.
++
++**The fix, shipped:** `next.config.js` declares
++`Access-Control-Allow-Origin: <canonical origin>` on every path EXCEPT the agent
++surfaces. `headers()` cannot unset a header, but a declared header becomes part
++of the build output routing config and overrides the platform default —
++publishing the canonical origin instead of `*` has the same practical effect: a
++page on another origin can no longer read the response body.
++
++The machine editions keep their wildcard on purpose (`/llms.txt`,
++`/llms-full.txt`, `/ai.txt`, the `.md` mirrors, `/api/knowledge`): an agent
++fetching them from a browser context needs it, and
++`scripts/verify-vercel-config.mjs` fails the build if they lose it. The
++exclusion pattern was tested against Next's own path-to-regexp before shipping.
++
++**Verify after the next production deploy** — and only there:
+ 
+ ```
+-/                access-control-allow-origin: *
+-/refer           access-control-allow-origin: *
+-/commercial      access-control-allow-origin: *
+-/llms.txt        access-control-allow-origin: *     ← this one IS ours, by design
+-/robots.txt      access-control-allow-origin: *
+-/api/health      access-control-allow-origin: *     ← this one IS ours, by design
++curl -sI https://ecowoods.ca/         | grep -i access-control   # → https://ecowoods.ca
++curl -sI https://ecowoods.ca/refer    | grep -i access-control   # → https://ecowoods.ca
++curl -sI https://ecowoods.ca/llms.txt | grep -i access-control   # → *  (still, deliberately)
+ ```
+ 
+-`vercel.json` sets that header on exactly four sources — `/(.*).md`,
+-`/llms.txt`, `/llms-full.txt`, `/ai.txt` — plus `/api/knowledge`, and the health
+-route sets its own. **None of those patterns matches `/` or `/robots.txt`**;
+-this was verified by compiling every `source` in the file against those paths
+-with the same path-to-regexp Next uses. So the blanket header is configured
+-outside this repository.
+-
+-Where to look, in order:
+-
+-1. **Vercel → Project → Settings → Functions / Headers**, and any custom rule
+-   under **Firewall**. A catch-all header rule added in the dashboard overrides
+-   nothing in `vercel.json` — it is simply added on top.
+-2. **Vercel → Project → Settings → Domains** — confirm `ecowoods.ca` points at
+-   THIS project and is not proxied through another one.
+-3. Whatever DNS the domain resolves through, if anything sits in front of
+-   Vercel.
+-
+-Why it is worth twenty minutes: `Access-Control-Allow-Origin: *` on an HTML
+-document lets any website on the internet read the full response body of your
+-pages from a visitor's browser. For public marketing pages the direct harm is
+-small — but it is a header nobody chose, it applies to `/mypage` and `/admin`
+-too, and those are behind a login. Anything that ever renders customer data
+-server-side becomes cross-origin readable.
+-
+-Once found, the intended state is: the header appears ONLY on the machine
+-surfaces `vercel.json` names. `scripts/verify-vercel-config.mjs` already
+-enforces that those four keep it.
++If `/` still shows `*` after that deploy, the override did not win over the
++platform default. The remaining lever would be serving the HTML through a
++function instead of from static storage — which costs the prerendering, the
++`s-maxage` caching and the LCP work, and is almost certainly not worth it for a
++public marketing page. Say so in the record and leave it.
++
++**Also resolved:** the odd `permissions-policy` (`autoplay=*, camera=(*)`) that
++appeared alongside it was a stale pre-P0 deployment. It now reads exactly what
++`vercel.json` says.
+ 
+ ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
+ 
+-- 
+2.43.0
+
+
+From 4452d9cec93c71f58900d8a73a0d3d04719d8cd0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 31 Aug 2026 10:03:16 +0000
+Subject: [PATCH 4/4] fix(links): every link now has to prove it lands
+ somewhere
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three defects, one new guard, and one instrument the repo did not have.
+
+WHAT WAS WRONG
+
+1. /admin/projects/new returned a 404, and it was a primary button.
+   The "+ New Project" action on /admin/projects pointed at a route that does
+   not exist. It fell through to /admin/projects/[id], looked up a project with
+   the id "new", found none and called notFound(). Projects are not created
+   that way at all — they are created by converting an accepted quote
+   (admin/quotes/[id]/ConvertToProjectForm). The button now goes there.
+
+2. FeedbackBand offered an estimate link that did nothing on two pages.
+   The band asks "did you find what you were looking for?", and on "no" it
+   offers the estimate form via href="#estimate". Six of the eight pages that
+   render it also render <EstimateForm>. /refer and /resources do not. On those
+   two, a visitor who had just said "no, I did not find it" clicked "Request
+   one" and the page did not move.
+
+   estimateHref is now a required prop with no default. A component cannot know
+   which page it is on, so it stops guessing: each caller states where its
+   estimate lives, and the guard resolves that string against the page that
+   passed it. A default would put the guess back AND hide it from the check.
+
+3. Two profile URLs were hardcoded in the footer, outside the verified list.
+   SiteFooter's own header comment states the policy — "never invent a handle",
+   "an icon renders ONLY when a real profile URL is set" — directly above two
+   entries that carried instagram.com/ecowoodshardwood and
+   facebook.com/ecowoodshardwood as string literals. PROFILE_LINKS, the file
+   that records which profiles have been opened and confirmed and the array that
+   feeds sameAs, holds the same two URLs. So the same fact lived in two files
+   and could drift: correct a handle in the constants and the schema changes
+   while the footer does not, and the site tells Google one thing and a visitor
+   another about the same profile. The footer now reads PROFILE_LINKS.
+
+   Neither URL has a read date, and both carry the retired brand's handle.
+   That is not something code can settle — runbook §9.
+
+scripts/verify-destinations.mjs — THE OUTBOUND QUESTION
+
+verify-links.mjs asks whether every route has a way IN; it found /papers and
+/authority in the sitemap with no path to them. Nothing asked whether the links
+we publish resolve. Six checks, one pass, 486 links:
+
+  · every internal href reaches a page.tsx, a route.ts or a file in public/
+  · every dynamic slug is IN ITS MANIFEST, not merely shaped like one.
+    /guides/white-oak-flooring passes any regex and 404s in production; only
+    lib/guides.ts knows the difference
+  · every #fragment is an id rendered on the destination — resolved per page,
+    including the layouts, so a fragment in shared chrome is checked against
+    every page that renders it
+  · no internal link points at one of our own alias redirects
+  · nothing links to ecowoodshardwood.com
+  · every external host comes from PROFILE_LINKS or the short infrastructure
+    list, so a profile cannot be linked without also being claimed in sameAs
+
+Four things it had to learn, each of which had made it silently blind:
+
+  comments      SiteFooter explains in prose that its city links "used to be
+                href='#areas'". Read as a live link, that is a bug report about
+                a fix from a year ago.
+  object form   { label: 'Stairs', href: '/hardwood-stairs-toronto' } is not an
+                edge case: it is how the whole navigation is written. Header.tsx
+                declares 62 destinations that way. Before this the guard
+                verified 383 links while having read neither the header nor the
+                footer — the links on every page.
+  dynamic()     home-client.tsx loads FloorCatalog and MachineCatalog via
+                dynamic(() => import(...)). A scanner reading only static
+                imports concludes no page renders them, then passes their
+                anchors because it has nothing to check them against.
+  layouts       Header and SiteFooter are mounted in app/layout.tsx, not in any
+                page. A map built from page.tsx alone contains neither.
+
+Each of those is a false PASS, which is the failure mode that matters: nobody
+investigates a green check. Six negative tests are recorded in the PR body.
+
+The redirect list is obtained by calling next.config.js's redirects(), not by
+reading it. The commercial aliases are generated from an object, so a regex over
+`source:` sees six rewrites, none of the redirects, and reports "no self-
+inflicted hops" with total confidence about the one thing it was asked.
+
+scripts/audit-rendered.mjs — WHAT A BROWSER CAN SEE AND SOURCE CANNOT
+
+playwright and @axe-core/playwright have been devDependencies for some time and
+nothing used them. A page whose source is impeccable can still, at 390px, scroll
+sideways, put a 28px tap target under a thumb, scroll an anchor to a heading
+that then sits behind the sticky header, or carry a horizontal rail no keyboard
+can move (WCAG 2.1.1). Those are measurements, and a browser is the only
+instrument that takes them.
+
+  pnpm audit:rendered                    → 20 routes × 4 viewports → audit/rendered.md
+
+Validated both directions against fixtures before shipping: a page built with
+one of each defect produced exactly one finding per defect; a clean page
+produced none. Same control probe as crawl-site.mjs — an environment that
+cannot reach the site, or has no browser binary, says so and reports nothing.
+Deliberately NOT in `pnpm verify`: a build guard that needs the network is a
+build that fails for reasons unrelated to the commit.
+
+VERIFY: 45 guards green (44 + destinations). tsc 107 errors, byte-identical to
+the main baseline, all downstream of the Prisma client not generating in a
+sandbox. tsc caught one real mistake of mine during this work — a call site I
+reverted while negative-testing — which is the argument for running it.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/app/admin/projects/page.tsx          |  11 +-
+ apps/web/app/commercial/page.tsx              |   2 +-
+ apps/web/app/components/FeedbackBand.tsx      |  28 +-
+ apps/web/app/components/SiteFooter.tsx        |  26 +-
+ .../hardwood-floor-problems-toronto/page.tsx  |   2 +-
+ .../page.tsx                                  |   2 +-
+ .../app/hardwood-flooring-toronto/page.tsx    |   2 +-
+ apps/web/app/hardwood-stairs-toronto/page.tsx |   2 +-
+ apps/web/app/realtors/page.tsx                |   2 +-
+ apps/web/app/refer/page.tsx                   |   2 +-
+ apps/web/app/resources/page.tsx               |   2 +-
+ ops/DOMINATION-RUNBOOK.md                     |  49 ++
+ package.json                                  |   4 +-
+ scripts/audit-rendered.mjs                    | 364 +++++++++++
+ scripts/verify-destinations.mjs               | 569 ++++++++++++++++++
+ 15 files changed, 1051 insertions(+), 16 deletions(-)
+ create mode 100644 scripts/audit-rendered.mjs
+ create mode 100644 scripts/verify-destinations.mjs
+
+diff --git a/apps/web/app/admin/projects/page.tsx b/apps/web/app/admin/projects/page.tsx
+index eca8434..bed536b 100644
+--- a/apps/web/app/admin/projects/page.tsx
++++ b/apps/web/app/admin/projects/page.tsx
+@@ -49,7 +49,16 @@ export default async function AdminProjectsPage({
+           <h1 className="portal-title">Projects</h1>
+           <p className="portal-subtitle">{projects.length} projects</p>
+         </div>
+-        <Link href="/admin/projects/new" className="btn btn-copper btn-sm">+ New Project</Link>
++        {/* There is no /admin/projects/new route, and there was never meant to be:
++            a project is created by converting an accepted quote
++            (admin/quotes/[id]/ConvertToProjectForm). This button used to point at
++            /admin/projects/new, which fell through to /admin/projects/[id], looked
++            up a project with the id "new", found none and rendered a 404 — a
++            primary action in the admin that only ever produced an error page.
++            It now points at the place projects actually come from. */}
++        <Link href="/admin/quotes" className="btn btn-copper btn-sm">
++          + New project from a quote
++        </Link>
+       </div>
+ 
+       {/* Status filters */}
+diff --git a/apps/web/app/commercial/page.tsx b/apps/web/app/commercial/page.tsx
+index cdfde3c..6f7d39f 100644
+--- a/apps/web/app/commercial/page.tsx
++++ b/apps/web/app/commercial/page.tsx
+@@ -361,7 +361,7 @@ export default function CommercialPage() {
+         </div>
+       </section>
+ 
+-      <FeedbackBand topic="commercial work" />
++      <FeedbackBand topic="commercial work" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/components/FeedbackBand.tsx b/apps/web/app/components/FeedbackBand.tsx
+index 9873c07..136bc2a 100644
+--- a/apps/web/app/components/FeedbackBand.tsx
++++ b/apps/web/app/components/FeedbackBand.tsx
+@@ -26,8 +26,30 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+  * to decide what to render next. It sets no cookie, calls no endpoint and names
+  * no third party — which is why it needs no entry in the processor register
+  * that seo:legal enforces.
++ *
++ * WHY estimateHref IS REQUIRED AND HAS NO DEFAULT
++ *
++ * This band used to hardcode a fragment link to the estimate form. That is
++ * correct on the six money pages that render EstimateForm below it, and it is
++ * a link to nowhere on /refer and /resources, which do not — the page simply
++ * did not move, and a visitor who has just told us "no, I did not find it" got
++ * a dead click as the reply. A component cannot know which page it is on. So
++ * it stops guessing: every caller states where its estimate lives, and
++ * verify-destinations.mjs resolves each of those strings against the page that
++ * passed it. A default would put the guess back and make the guard blind to
++ * it, which is worse than the original bug.
+  */
+-export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
++export function FeedbackBand({
++  topic = 'this page',
++  estimateHref,
++}: {
++  topic?: string;
++  /**
++   * Where "request an estimate" goes FROM THIS PAGE. '#estimate' when the page
++   * renders the form itself; '/#quote' when it does not. No default — see above.
++   */
++  estimateHref: string;
++}) {
+   const [answer, setAnswer] = useState<null | 'yes' | 'no'>(null);
+ 
+   return (
+@@ -57,7 +79,7 @@ export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
+             <h2 className="fb-h">Good.</h2>
+             <p className="fb-sub">
+               When you want the number in writing, the estimate is free and the price does not move
+-              after we measure. <a href="#estimate">Request one</a>, or call{' '}
++              after we measure. <a href={estimateHref}>Request one</a>, or call{' '}
+               <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
+             </p>
+           </div>
+@@ -69,7 +91,7 @@ export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
+             <p className="fb-sub">
+               A senior estimator answers the phone during working hours, and there is no script.
+               Call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>, or{' '}
+-              <a href="#estimate">send the question with your postcode</a> and we will answer in
++              <a href={estimateHref}>send the question with your postcode</a> and we will answer in
+               writing within one business day.
+             </p>
+           </div>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index eff56d6..f60e46c 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -21,7 +21,7 @@
+ 
+ import { EW_MARK } from '@/lib/brand';
+ import { CITIES, SERVICES } from '@/lib/seo-data';
+-import { BUSINESS_NAP, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
++import { BUSINESS_NAP, PROFILE_LINKS, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+ import type { ReactNode } from 'react';
+ import CookiePreferencesButton from './CookiePreferencesButton';
+ import { useIsMobile } from './SwipeDeck';
+@@ -37,15 +37,35 @@ import { useIsMobile } from './SwipeDeck';
+ /** Verified HomeStars profile — see PROFILE_LINKS in @ecowoods/shared/constants. */
+ const HOMESTARS_URL = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
+ 
++/**
++ * Every profile URL in this footer comes from PROFILE_LINKS, and none is typed
++ * here.
++ *
++ * The comment above this block already stated the policy — "never invent a
++ * handle", "an icon renders ONLY when a real profile URL is set" — while the
++ * Instagram and Facebook entries below it carried the URL as a hardcoded
++ * string. So the two links on every page of the site sat outside the one file
++ * that records which profiles have been opened and confirmed, and outside the
++ * array that feeds `sameAs`. If somebody corrects a handle in PROFILE_LINKS,
++ * the schema changes and the footer does not: the site would then be telling
++ * Google one thing and a visitor another about the same profile.
++ *
++ * PROFILE_LINKS is the verified-profiles file. It is the only place a profile
++ * URL is allowed to exist. verify-destinations.mjs derives its external-host
++ * allowlist from it, so a host that is not in it cannot be linked from anywhere
++ * in the app without failing the build.
++ */
++const profileHref = (label: string) => PROFILE_LINKS.find((p) => p.label === label)?.href;
++
+ /**
+  * An entry without an href is not rendered (see the .filter below). Seven
+  * icons lost their href here because they pointed at platform home pages, not
+  * at Ecowoods. Restore one by pasting the real profile URL — after opening it.
+  */
+ const SOCIAL_LINKS: { label: string; href?: string; icon: ReactNode }[] = [
+-  { label: 'Instagram', href: "https://www.instagram.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
++  { label: 'Instagram', href: profileHref('Instagram'), icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>) },
+   { label: 'HomeStars', href: HOMESTARS_URL, icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" strokeLinejoin="round"/><path d="m12 10 1.2 2.5 2.8.4-2 2 .5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-2 2.8-.4Z" fill="currentColor" stroke="none"/></svg>) },
+-  { label: 'Facebook', href: "https://www.facebook.com/ecowoodshardwood", icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
++  { label: 'Facebook', href: profileHref('Facebook'), icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.1h-3.1V8.9c0-.9.3-1.5 1.6-1.5h1.7V4.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10.9H7.7V14h2.7v8h3.1Z"/></svg>) },
+   { label: 'Houzz', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12v9h-3v-5h-3v5h-3V3l9 5.4V12Z"/></svg>) },
+   { label: 'Google Reviews', icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-7-7-12a7 7 0 1 1 14 0c0 5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>) },
+   { label: 'Pinterest', icon: (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8l1.1-4.7s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2-.8 3.2-.2 1 .5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.2.1.1.1.2 0 .3l-.3 1.2c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.2 2.4-6.2 6.8-6.2 3.6 0 6.3 2.6 6.3 6 0 3.6-2.2 6.4-5.4 6.4-1 0-2-.5-2.4-1.2l-.6 2.5c-.2.9-.8 2-1.3 2.6 1 .3 2 .5 3.1.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>) },
+diff --git a/apps/web/app/hardwood-floor-problems-toronto/page.tsx b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+index e0b18fc..49faa1d 100644
+--- a/apps/web/app/hardwood-floor-problems-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+@@ -566,7 +566,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
+       </section>
+ 
+       <CommercialHeadTermRail />
+-      <FeedbackBand topic="this page" />
++      <FeedbackBand topic="this page" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+index 784cd01..369c4d4 100644
+--- a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+@@ -339,7 +339,7 @@ export default function RefinishingTorontoPage() {
+           </div>
+         </div>
+       </section>
+-      <FeedbackBand topic="this page" />
++      <FeedbackBand topic="this page" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index 1830071..0047110 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -382,7 +382,7 @@ export default function HardwoodFlooringTorontoPage() {
+           </div>
+         </div>
+       </section>
+-      <FeedbackBand topic="this page" />
++      <FeedbackBand topic="this page" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/hardwood-stairs-toronto/page.tsx b/apps/web/app/hardwood-stairs-toronto/page.tsx
+index 7173656..cb9b7f7 100644
+--- a/apps/web/app/hardwood-stairs-toronto/page.tsx
++++ b/apps/web/app/hardwood-stairs-toronto/page.tsx
+@@ -427,7 +427,7 @@ export default function HardwoodStairsTorontoPage() {
+           </div>
+         </div>
+       </section>
+-      <FeedbackBand topic="this page" />
++      <FeedbackBand topic="this page" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/realtors/page.tsx b/apps/web/app/realtors/page.tsx
+index 1d23f17..b43aed6 100644
+--- a/apps/web/app/realtors/page.tsx
++++ b/apps/web/app/realtors/page.tsx
+@@ -307,7 +307,7 @@ export default function RealtorsPage() {
+         </div>
+       </section>
+ 
+-      <FeedbackBand topic="pre-list recoats" />
++      <FeedbackBand topic="pre-list recoats" estimateHref="#estimate" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/refer/page.tsx b/apps/web/app/refer/page.tsx
+index f5421b6..e0f86ed 100644
+--- a/apps/web/app/refer/page.tsx
++++ b/apps/web/app/refer/page.tsx
+@@ -207,7 +207,7 @@ export default function ReferPage() {
+         </div>
+       </section>
+ 
+-      <FeedbackBand topic="referrals" />
++      <FeedbackBand topic="referrals" estimateHref="/#quote" />
+     </div>
+   );
+ }
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index e76082e..907a8e7 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -358,7 +358,7 @@ export default async function ResourcesPage() {
+           </div>
+         </div>
+       </section>
+-      <FeedbackBand topic="the library" />
++      <FeedbackBand topic="the library" estimateHref="/#quote" />
+     </div>
+   );
+ }
+diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+index 48f267f..2e21a64 100644
+--- a/ops/DOMINATION-RUNBOOK.md
++++ b/ops/DOMINATION-RUNBOOK.md
+@@ -210,6 +210,55 @@ then they stay where they are.
+ 
+ ---
+ 
++## 9 · Two profile URLs nobody has opened  ⏱ 5 min · do this before the next deploy
++
++`PROFILE_LINKS` in `packages/shared/constants/index.ts` carries two entries that
++the file's own policy — "no URL until someone has opened it and seen an Ecowoods
++page" — does not cover, because they were added under a heading that only says
++the handle *matches the old domain*:
++
++    https://www.instagram.com/ecowoodshardwood
++    https://www.facebook.com/ecowoodshardwood
++
++Everything else in that array records the date it was opened and what was seen
++on it. These two record neither, and they carry the retired brand's handle.
++They are now in two places that matter: `sameAs`, where a wrong URL tells Google
++this business is a different entity, and the footer of every page, where a dead
++one is a broken link on 289 pages.
++
++Open both. Then one of:
++
++- **They are ours and live** → add the read date to the comment above them, the
++  same shape as the YellowPages entry.
++- **They are dead, or they are somebody else's** → delete the two lines. The
++  icons disappear on their own; the footer renders only entries that have an
++  `href`, and `verify-destinations.mjs` will then reject any attempt to link
++  those hosts from anywhere in the app.
++
++Nothing in the code can settle this. It needs one person and two browser tabs.
++
++---
++
++## 10 · Run the rendered audit after each deploy  ⏱ 3 min
++
++    pnpm audit:rendered                       # production
++    pnpm audit:rendered --base http://localhost:3000
++
++Every other check in this repository reads source. This one opens the site in a
++real browser at 320, 390, 768 and 1280 px and measures what source cannot say:
++whether anything scrolls sideways on a phone, whether a tap target is under
++44×44, whether a horizontal rail can be scrolled by keyboard, whether an anchor
++lands behind the sticky header, whether a tab widget can be reached at all.
++
++It writes `audit/rendered.md`. It has the same control probe as
++`crawl-site.mjs`: if the environment cannot reach the site, or has no browser,
++it says so and reports nothing rather than inventing a broken site. It is
++deliberately **not** in `pnpm verify` — it needs the network and a browser, and
++a build guard that depends on either is a build that fails for reasons that have
++nothing to do with the commit.
++
++---
++
+ ## Do not do these
+ 
+ - Do not put HomeStars or Google stars into `aggregateRating`. Google's policy
+diff --git a/package.json b/package.json
+index e51fc37..c02d701 100644
+--- a/package.json
++++ b/package.json
+@@ -20,6 +20,7 @@
+     "verify:schema": "node scripts/verify-schema.mjs",
+     "verify:papers": "node scripts/verify-papers.mjs",
+     "verify:links": "node scripts/verify-links.mjs",
++    "verify:destinations": "node scripts/verify-destinations.mjs",
+     "verify:framework": "node scripts/verify-framework.mjs",
+     "verify:client": "node scripts/verify-client-boundary.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+@@ -74,8 +75,9 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
++    "audit:rendered": "node scripts/audit-rendered.mjs",
+     "audit:full": "bash scripts/audit-all.sh --full",
+     "audit:quick": "bash scripts/audit-all.sh --quick",
+     "hooks:install": "git config core.hooksPath scripts/hooks",
+diff --git a/scripts/audit-rendered.mjs b/scripts/audit-rendered.mjs
+new file mode 100644
+index 0000000..be7dc2f
+--- /dev/null
++++ b/scripts/audit-rendered.mjs
+@@ -0,0 +1,364 @@
++#!/usr/bin/env node
++/**
++ * scripts/audit-rendered.mjs — what the site does in a browser, at phone width.
++ *
++ *   node scripts/audit-rendered.mjs
++ *   node scripts/audit-rendered.mjs --base http://localhost:3000
++ *   node scripts/audit-rendered.mjs --strict     (findings exit non-zero)
++ *   node scripts/audit-rendered.mjs --routes /,/commercial,/refer
++ *
++ * WRITES: audit/rendered.json and audit/rendered.md
++ *
++ * WHY THIS EXISTS
++ *
++ * Every other guard in this repository reads source. Source is where most of
++ * the bugs are, and it is not where THESE bugs are. A page whose source is
++ * impeccable can still, in a 390px-wide browser:
++ *
++ *   · scroll sideways, because one table or one long word is wider than the
++ *     phone. The visitor sees a page that "jumps" and cannot read a line of it
++ *     without dragging. Nothing in the source says "I am 412 pixels wide".
++ *   · put a 28px tap target next to a thumb. It is a link that works when a
++ *     mouse points at it and misses one press in four on a phone.
++ *   · scroll an anchor to a heading that then sits UNDER the sticky header.
++ *     The link "works" — verify-destinations proves the id exists — and the
++ *     visitor still lands looking at the wrong paragraph.
++ *   · put a horizontally-scrolling rail on the page that a keyboard cannot
++ *     scroll, because the container has no tabindex. WCAG 2.1.1. Real people
++ *     with real hands hit this, and no static check can see it.
++ *
++ * These are measurements, not opinions, and a browser is the only instrument
++ * that can take them.
++ *
++ * THE CONTROL PROBE, AND WHY IT IS NOT OPTIONAL
++ *
++ * The same rule as crawl-site.mjs, for the same reason. A sandboxed CI box
++ * answers every non-allowlisted host with a connection error, so this script
++ * run in one reports a completely broken site with total confidence — and the
++ * natural response is to go and "fix" a site that was never broken. A false
++ * FAIL on a migration is worse than no check at all. So the first request is
++ * to a URL that MUST work. If it does not, this script says the environment is
++ * blind and exits 0 without reporting a single finding.
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const args = process.argv.slice(2);
++const arg = (name, fallback) => {
++  const i = args.indexOf(name);
++  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
++};
++const BASE = (arg('--base', process.env.AUDIT_BASE_URL ?? 'https://ecowoods.ca')).replace(/\/+$/, '');
++const STRICT = args.includes('--strict');
++const OUT = path.join(process.cwd(), 'audit');
++
++/**
++ * The routes that carry the money and the ones with the most layout risk.
++ * Not all 289 — this is a browser, each page costs seconds, and a rail that
++ * overflows overflows on the first city page as surely as on the thirty-second.
++ */
++const DEFAULT_ROUTES = [
++  '/',
++  '/commercial',
++  '/realtors',
++  '/refer',
++  '/resources',
++  '/services',
++  '/services/dust-free-sanding',
++  '/hardwood-flooring-toronto',
++  '/hardwood-floor-refinishing-toronto',
++  '/hardwood-stairs-toronto',
++  '/hardwood-floor-problems-toronto',
++  '/guides/hardwood-flooring-cost-toronto',
++  '/papers/hardwood-selection-and-cost-framework-gta',
++  '/case-studies',
++  '/service-areas',
++  '/service-areas/rosedale',
++  '/framework',
++  '/reviews',
++  '/about',
++  '/market',
++];
++const ROUTES = arg('--routes', '').trim()
++  ? arg('--routes', '').split(',').map((r) => r.trim()).filter(Boolean)
++  : DEFAULT_ROUTES;
++
++/** Phone, small phone, tablet, laptop. 320 is the narrowest width still in use. */
++const VIEWPORTS = [
++  { name: 'phone-320', width: 320, height: 720, mobile: true },
++  { name: 'phone-390', width: 390, height: 844, mobile: true },
++  { name: 'tablet-768', width: 768, height: 1024, mobile: true },
++  { name: 'laptop-1280', width: 1280, height: 800, mobile: false },
++];
++
++/** Apple's and Google's floor for a touch target, and the WCAG 2.5.8 minimum. */
++const MIN_TAP = 44;
++
++let chromium;
++try {
++  ({ chromium } = await import('playwright'));
++} catch {
++  console.log('audit-rendered: playwright is not installed here — skipping (this is not a failure).');
++  console.log('  pnpm install, then re-run.');
++  process.exit(0);
++}
++
++/**
++ * Some defects belong to the page, not to the viewport: a dead anchor is dead
++ * at every width, and reporting it four times turns a five-line report into a
++ * twenty-line one that nobody finishes reading. Width-dependent findings —
++ * overflow, tap targets, whether a rail actually scrolls — are reported per
++ * viewport, because that is the only place the answer can differ.
++ */
++const VIEWPORT_INDEPENDENT = new Set(['dead-anchor', 'widget-not-focusable', 'aria-controls-dangling', 'anchor-under-header']);
++
++const findings = [];
++const seenFinding = new Set();
++const add = (route, viewport, kind, detail) => {
++  const key = VIEWPORT_INDEPENDENT.has(kind) ? `${route}|${kind}|${detail}` : `${route}|${viewport}|${kind}|${detail}`;
++  if (seenFinding.has(key)) return;
++  seenFinding.add(key);
++  findings.push({ route, viewport: VIEWPORT_INDEPENDENT.has(kind) ? 'all' : viewport, kind, detail });
++};
++
++/**
++ * A missing browser binary is the same class of fact as an unreachable site:
++ * this environment cannot take the measurement. It is not a finding about the
++ * site, so it must not be reported as one, and it must not fail a build.
++ * PLAYWRIGHT_CHROMIUM_PATH covers the case where a chromium is present but not
++ * the exact build this playwright version pins.
++ */
++let browser;
++try {
++  browser = await chromium.launch(
++    process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {},
++  );
++} catch (e) {
++  console.log('audit-rendered: no usable browser here — skipping (this is not a failure).');
++  console.log(`  ${String(e.message).split('\n')[0]}`);
++  console.log('  Fix with: npx playwright install chromium');
++  console.log('  Or point at an existing binary: PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome');
++  process.exit(0);
++}
++const ctx = await browser.newContext();
++
++/* ── control probe ───────────────────────────────────────────────────────── */
++{
++  const page = await ctx.newPage();
++  let ok = false;
++  try {
++    const r = await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
++    ok = !!r && r.status() < 400;
++  } catch { /* handled below */ }
++  await page.close();
++  if (!ok) {
++    await browser.close();
++    console.log(`audit-rendered: ${BASE}/ did not answer.`);
++    console.log('  This environment cannot reach the site, so every finding below would be an');
++    console.log('  artefact of the sandbox rather than a fact about the site. Reporting nothing.');
++    process.exit(0);
++  }
++}
++
++/* ── the measurements ────────────────────────────────────────────────────── */
++for (const vp of VIEWPORTS) {
++  const page = await ctx.newPage();
++  await page.setViewportSize({ width: vp.width, height: vp.height });
++
++  for (const route of ROUTES) {
++    let res;
++    try {
++      res = await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45_000 });
++    } catch (e) {
++      add(route, vp.name, 'unreachable', String(e.message).split('\n')[0]);
++      continue;
++    }
++    if (!res || res.status() >= 400) {
++      add(route, vp.name, 'status', `HTTP ${res ? res.status() : 'none'}`);
++      continue;
++    }
++
++    const report = await page.evaluate(
++      ({ minTap, isMobile, width }) => {
++        const out = { overflow: [], tap: [], scrollers: [], anchors: [], tabs: [] };
++
++        /* 1. sideways scroll, and WHAT is causing it */
++        const doc = document.documentElement;
++        if (doc.scrollWidth > doc.clientWidth + 1) {
++          const limit = doc.clientWidth;
++          const seen = new Set();
++          for (const el of document.querySelectorAll('body *')) {
++            const r = el.getBoundingClientRect();
++            if (r.width === 0 || r.height === 0) continue;
++            if (r.right <= limit + 1 && r.left >= -1) continue;
++            // Blame the outermost offender, not its children.
++            let p = el.parentElement, covered = false;
++            while (p && p !== document.body) {
++              if (seen.has(p)) { covered = true; break; }
++              p = p.parentElement;
++            }
++            if (covered) continue;
++            // An element inside a deliberate horizontal scroller is not a bug.
++            let q = el.parentElement, inScroller = false;
++            while (q && q !== document.body) {
++              const ov = getComputedStyle(q).overflowX;
++              if (ov === 'auto' || ov === 'scroll') { inScroller = true; break; }
++              q = q.parentElement;
++            }
++            if (inScroller) continue;
++            seen.add(el);
++            out.overflow.push({
++              tag: el.tagName.toLowerCase(),
++              cls: (el.className && String(el.className).slice(0, 60)) || '',
++              left: Math.round(r.left),
++              right: Math.round(r.right),
++              viewport: limit,
++              text: (el.textContent || '').trim().slice(0, 60),
++            });
++            if (out.overflow.length >= 8) break;
++          }
++        }
++
++        /* 2. tap targets, phones only */
++        if (isMobile) {
++          const seen = new Set();
++          for (const el of document.querySelectorAll('a[href], button, [role="button"], input:not([type=hidden]), select')) {
++            const r = el.getBoundingClientRect();
++            if (r.width === 0 || r.height === 0) continue;
++            const cs = getComputedStyle(el);
++            if (cs.visibility === 'hidden' || cs.display === 'none') continue;
++            // A link inside a paragraph is text, and text is not a tap target.
++            if (el.tagName === 'A' && cs.display === 'inline') continue;
++            if (r.width >= minTap && r.height >= minTap) continue;
++            const key = `${el.tagName}:${(el.textContent || '').trim().slice(0, 24)}:${Math.round(r.width)}x${Math.round(r.height)}`;
++            if (seen.has(key)) continue;
++            seen.add(key);
++            out.tap.push({
++              tag: el.tagName.toLowerCase(),
++              label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40),
++              w: Math.round(r.width),
++              h: Math.round(r.height),
++            });
++            if (out.tap.length >= 12) break;
++          }
++        }
++
++        /* 3. horizontal scrollers a keyboard cannot move (WCAG 2.1.1) */
++        for (const el of document.querySelectorAll('*')) {
++          const cs = getComputedStyle(el);
++          if (cs.overflowX !== 'auto' && cs.overflowX !== 'scroll') continue;
++          if (el.scrollWidth <= el.clientWidth + 1) continue;   // nothing to scroll
++          const focusable =
++            el.hasAttribute('tabindex') ||
++            el.matches('a[href], button, input, select, textarea') ||
++            !!el.querySelector('a[href], button, input, select, textarea');
++          out.scrollers.push({
++            tag: el.tagName.toLowerCase(),
++            cls: (el.className && String(el.className).slice(0, 60)) || '',
++            scrollWidth: el.scrollWidth,
++            clientWidth: el.clientWidth,
++            keyboardReachable: focusable,
++          });
++          if (out.scrollers.length >= 10) break;
++        }
++
++        /* 4. tab and disclosure widgets: operable, and labelled */
++        for (const el of document.querySelectorAll('[role="tab"], [aria-expanded], [role="tablist"]')) {
++          const r = el.getBoundingClientRect();
++          if (r.width === 0 || r.height === 0) continue;
++          const native = el.matches('a[href], button, input, select, textarea, summary');
++          const ti = el.getAttribute('tabindex');
++          out.tabs.push({
++            tag: el.tagName.toLowerCase(),
++            role: el.getAttribute('role') || '',
++            label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40),
++            focusable: native || (ti !== null && ti !== '-1'),
++            controls: el.getAttribute('aria-controls') || null,
++            controlsExists: el.getAttribute('aria-controls')
++              ? !!document.getElementById(el.getAttribute('aria-controls'))
++              : null,
++          });
++          if (out.tabs.length >= 20) break;
++        }
++
++        /* 5. every in-page anchor target, and where it would land */
++        const headerH = (() => {
++          const v = getComputedStyle(document.documentElement).getPropertyValue('--header-h').trim();
++          const n = parseFloat(v);
++          return Number.isFinite(n) ? n : 0;
++        })();
++        const padTop = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
++        const ids = new Set(
++          [...document.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute('href').slice(1)).filter(Boolean),
++        );
++        for (const id of ids) {
++          const t = document.getElementById(id);
++          out.anchors.push({ id, exists: !!t, headerH, scrollPaddingTop: padTop });
++        }
++        return out;
++      },
++      { minTap: MIN_TAP, isMobile: vp.mobile, width: vp.width },
++    );
++
++    for (const o of report.overflow) {
++      add(route, vp.name, 'horizontal-overflow',
++        `<${o.tag} class="${o.cls}"> spans ${o.left}→${o.right}px in a ${o.viewport}px viewport — "${o.text}"`);
++    }
++    for (const t of report.tap) {
++      add(route, vp.name, 'tap-target', `<${t.tag}> "${t.label}" is ${t.w}×${t.h}px (minimum ${MIN_TAP}×${MIN_TAP})`);
++    }
++    for (const s of report.scrollers) {
++      if (!s.keyboardReachable) {
++        add(route, vp.name, 'scroller-not-keyboardable',
++          `<${s.tag} class="${s.cls}"> scrolls ${s.clientWidth}→${s.scrollWidth}px and holds nothing focusable — give it tabindex="0" and an accessible name`);
++      }
++    }
++    for (const t of report.tabs) {
++      if (!t.focusable) add(route, vp.name, 'widget-not-focusable', `<${t.tag} role="${t.role}"> "${t.label}" cannot be reached by keyboard`);
++      if (t.controlsExists === false) add(route, vp.name, 'aria-controls-dangling', `<${t.tag}> aria-controls="${t.controls}" points at no element`);
++    }
++    for (const a of report.anchors) {
++      if (!a.exists) add(route, vp.name, 'dead-anchor', `#${a.id} is linked on this page and no element has that id`);
++      else if (a.scrollPaddingTop < a.headerH) {
++        add(route, vp.name, 'anchor-under-header',
++          `scroll-padding-top is ${a.scrollPaddingTop}px but the sticky header is ${a.headerH}px — #${a.id} lands behind it`);
++      }
++    }
++  }
++  await page.close();
++}
++
++await browser.close();
++
++/* ── report ──────────────────────────────────────────────────────────────── */
++fs.mkdirSync(OUT, { recursive: true });
++const byKind = findings.reduce((a, f) => ((a[f.kind] = (a[f.kind] ?? 0) + 1), a), {});
++fs.writeFileSync(path.join(OUT, 'rendered.json'), JSON.stringify({ base: BASE, at: new Date().toISOString(), routes: ROUTES.length, viewports: VIEWPORTS.map((v) => v.name), byKind, findings }, null, 2));
++
++const md = [
++  `# Rendered audit — ${BASE}`,
++  '',
++  `${new Date().toISOString()} · ${ROUTES.length} route(s) × ${VIEWPORTS.length} viewport(s)`,
++  '',
++  findings.length ? `## ${findings.length} finding(s)` : '## No findings',
++  '',
++  ...Object.entries(byKind).map(([k, n]) => `- **${k}** — ${n}`),
++  '',
++  ...findings.map((f) => `- \`${f.route}\` @ ${f.viewport} — **${f.kind}** — ${f.detail}`),
++  '',
++].join('\n');
++fs.writeFileSync(path.join(OUT, 'rendered.md'), md);
++
++console.log(`\naudit-rendered — ${BASE}`);
++console.log(`  ${ROUTES.length} route(s) × ${VIEWPORTS.length} viewport(s)`);
++if (!findings.length) {
++  console.log('  ✓ no horizontal overflow, no undersized tap target, no unreachable scroller,');
++  console.log('    no dead anchor, no anchor landing behind the header.');
++} else {
++  for (const [k, n] of Object.entries(byKind)) console.log(`  ${String(n).padStart(4)}  ${k}`);
++  console.log('\n  Detail: audit/rendered.md');
++  for (const f of findings.slice(0, 25)) console.log(`    ${f.route} @ ${f.viewport} — ${f.kind}: ${f.detail}`);
++  if (findings.length > 25) console.log(`    … +${findings.length - 25} more`);
++}
++console.log('');
++if (STRICT && findings.length) process.exit(1);
+diff --git a/scripts/verify-destinations.mjs b/scripts/verify-destinations.mjs
+new file mode 100644
+index 0000000..e1fff1c
+--- /dev/null
++++ b/scripts/verify-destinations.mjs
+@@ -0,0 +1,569 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-destinations.mjs
++ *
++ * Fails the build when a link does not land where it says it lands.
++ *
++ * WHY THIS EXISTS, AND WHY IT IS NOT verify-links.mjs
++ *
++ * verify-links.mjs asks the INBOUND question: does every public route have a
++ * way in? It found /papers and /authority sitting in the sitemap with no path
++ * to them from the chrome.
++ *
++ * Nothing asked the OUTBOUND question: does every link we publish resolve?
++ * Those are different failures with different shapes:
++ *
++ *   /guides/white-oak-flooring-toronto     → resolves; the slug is in GUIDES
++ *   /guides/white-oak-flooring             → matches the [slug] route pattern,
++ *                                            passes any regex check, and 404s
++ *                                            in production because that slug
++ *                                            is in no manifest
++ *
++ * A path-shape check cannot tell those apart. A crawler can, but only after
++ * the thing is deployed and only for pages it happens to reach. This guard
++ * resolves every internal link against the manifest that actually generates
++ * the page, at build time, before anyone can click it.
++ *
++ * SIX QUESTIONS, ONE PASS
++ *
++ *  1. STATIC ROUTES   every internal href resolves to a page.tsx, a route.ts,
++ *                     or a file in public/.
++ *  2. DYNAMIC SLUGS   every /services/:slug, /guides/:slug, /papers/:slug,
++ *                     /glossary/:slug, /service-areas/:city, /blog/:slug and
++ *                     /case-studies/:slug names a slug that exists in the
++ *                     manifest its generateStaticParams reads. This is the
++ *                     check nothing else in the repo performs.
++ *  3. ANCHORS         every '#fragment' we link to is an id that is actually
++ *                     rendered on the destination route. A fragment that does
++ *                     not exist is a link that silently lands at the top of
++ *                     the page — the visitor reads it as "the site is broken",
++ *                     and it is the single hardest link failure to notice,
++ *                     because the page still renders.
++ *  4. NO SELF-REDIRECT  no internal href points at a path that next.config.js
++ *                     redirects. The alias redirects (/stairs, /toronto-
++ *                     hardwood, …) exist to catch inbound traffic from
++ *                     elsewhere. Linking to one from our own pages spends a
++ *                     round trip and dilutes the internal link graph for no
++ *                     reason: link to the canonical.
++ *  5. RETIRED DOMAIN  no link anywhere points at ecowoodshardwood.com. That
++ *                     host is being killed as a content host; a link from the
++ *                     new site to the old one re-teaches Google the thing the
++ *                     301s are trying to un-teach it.
++ *  6. EXTERNAL HOSTS  every external host is in ALLOWED_EXTERNAL below. An
++ *                     outbound link is an endorsement and a PageRank leak;
++ *                     adding one is a deliberate act, not a side effect.
++ *
++ * Usage:
++ *   node scripts/verify-destinations.mjs
++ *   node scripts/verify-destinations.mjs --list    every link and its verdict
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++import { createRequire } from 'node:module';
++
++const ROOT = process.cwd();
++const WEB = path.join(ROOT, 'apps/web');
++const APP = path.join(WEB, 'app');
++const LIST = process.argv.includes('--list');
++
++if (!fs.existsSync(APP)) {
++  console.error('verify-destinations: apps/web/app not found — run from the repo root.');
++  process.exit(2);
++}
++
++/**
++ * Hosts we are willing to point a visitor at.
++ *
++ * Two sources, and only two.
++ *
++ * PROFILE_LINKS in packages/shared/constants is the verified-profiles file the
++ * engineering rules require: a URL goes in it only after somebody opened it and
++ * saw an Ecowoods page, and it is what feeds `sameAs`. Deriving the allowlist
++ * from it means a profile cannot be linked from the site without also being
++ * claimed as this entity in schema — the two can no longer disagree, which is
++ * exactly how the footer ended up with two hardcoded handles that no verified
++ * file had ever seen.
++ *
++ * INFRASTRUCTURE below is the short list of hosts that are not profiles: our
++ * own domain, the vocabulary JSON-LD points at, the CDN our licensed imagery is
++ * served from and the licence it is served under. Adding to it is a deliberate
++ * act — an outbound link is an endorsement and it leaks authority.
++ */
++const INFRASTRUCTURE = [
++  'ecowoods.ca',
++  'www.ecowoods.ca',
++  'schema.org',
++  'www.schema.org',
++  'images.unsplash.com',
++  'creativecommons.org',
++];
++
++const ALLOWED_EXTERNAL = new Set(INFRASTRUCTURE);
++{
++  const file = path.join(ROOT, 'packages/shared/constants/index.ts');
++  if (!fs.existsSync(file)) {
++    console.error('verify-destinations: packages/shared/constants/index.ts not found — cannot read the verified-profiles list.');
++    process.exit(2);
++  }
++  const src = fs.readFileSync(file, 'utf8');
++  let found = 0;
++  for (const m of src.matchAll(/href:\s*['"`](https?:\/\/[^'"`]+)['"`]/g)) {
++    try { ALLOWED_EXTERNAL.add(new URL(m[1]).hostname); found++; } catch { /* not a URL */ }
++  }
++  if (!found) {
++    console.error('verify-destinations: read no profile URL out of packages/shared/constants/index.ts.');
++    console.error('  The allowlist would then be infrastructure-only and this guard would fail every');
++    console.error('  legitimate profile link. Fix the reader rather than pasting hosts in here.');
++    process.exit(2);
++  }
++}
++
++/** Hosts that must never appear. */
++const FORBIDDEN_HOST = /(^|\.)ecowoodshardwood\.com$/i;
++
++/* ── 1. the route table ──────────────────────────────────────────────────── */
++const staticRoutes = new Set();
++const dynamicRoutes = [];
++(function walk(dir, seg) {
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) {
++      if (e.name === 'components' || e.name === 'api' || e.name.startsWith('_')) continue;
++      // (group) folders do not appear in the URL
++      walk(p, e.name.startsWith('(') ? seg : `${seg}/${e.name}`);
++    } else if (/^(page|route)\.(tsx|ts)$/.test(e.name)) {
++      const route = seg || '/';
++      if (route.includes('[')) dynamicRoutes.push(route);
++      else staticRoutes.add(route);
++    }
++  }
++})(APP, '');
++
++// Next's file-convention metadata routes: real URLs with no page.tsx.
++for (const [file, route] of [
++  ['sitemap.ts', '/sitemap.xml'],
++  ['robots.ts', '/robots.txt'],
++  ['manifest.ts', '/manifest.webmanifest'],
++]) {
++  if (fs.existsSync(path.join(APP, file))) staticRoutes.add(route);
++}
++
++/* ── 2. public/ ──────────────────────────────────────────────────────────── */
++const publicFiles = new Set();
++const PUBLIC_DIRS = [path.join(WEB, 'public'), path.join(ROOT, 'public')];
++for (const base of PUBLIC_DIRS) {
++  if (!fs.existsSync(base)) continue;
++  (function walk(dir, prefix) {
++    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++      if (e.isDirectory()) walk(path.join(dir, e.name), `${prefix}/${e.name}`);
++      else publicFiles.add(`${prefix}/${e.name}`);
++    }
++  })(base, '');
++}
++
++/* ── 3. the slug manifests ───────────────────────────────────────────────── */
++/**
++ * Read the slugs out of the same file generateStaticParams reads. A regex over
++ * `slug: '...'` is deliberate: importing the module would need a TS runtime and
++ * a database client, and the failure mode of the regex (missing a slug that is
++ * computed rather than written) is a FALSE FAIL, which someone notices, rather
++ * than a false pass, which nobody does.
++ */
++function slugsFromSource(rel) {
++  const file = path.join(WEB, rel);
++  if (!fs.existsSync(file)) return null;
++  const src = fs.readFileSync(file, 'utf8');
++  const out = new Set();
++  for (const m of src.matchAll(/\bslug:\s*['"`]([a-z0-9-]+)['"`]/g)) out.add(m[1]);
++  return out.size ? out : null;
++}
++function slugsFromContentDir(rel) {
++  const dir = path.join(WEB, rel);
++  if (!fs.existsSync(dir)) return null;
++  const out = new Set(
++    fs.readdirSync(dir).filter((f) => /\.mdx?$/.test(f)).map((f) => f.replace(/\.mdx?$/, '')),
++  );
++  return out.size ? out : null;
++}
++
++const MANIFESTS = {
++  '/services': { source: 'lib/service-pages.ts', slugs: slugsFromSource('lib/service-pages.ts') },
++  '/guides': { source: 'lib/guides.ts', slugs: slugsFromSource('lib/guides.ts') },
++  '/papers': { source: 'lib/papers.ts', slugs: slugsFromSource('lib/papers.ts') },
++  '/glossary': { source: 'lib/glossary.ts', slugs: slugsFromSource('lib/glossary.ts') },
++  '/service-areas': { source: 'lib/seo-data.ts', slugs: slugsFromSource('lib/seo-data.ts') },
++  '/blog': { source: 'content/articles/', slugs: slugsFromContentDir('content/articles') },
++  '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
++};
++for (const [prefix, m] of Object.entries(MANIFESTS)) {
++  if (!m.slugs) {
++    console.error(`verify-destinations: could not read any slug from ${m.source} for ${prefix}.`);
++    console.error('  Either the manifest moved or its shape changed. This guard is now blind —');
++    console.error('  fix the reader rather than deleting the entry.');
++    process.exit(2);
++  }
++}
++// The .md mirrors are the same slugs under /md/*.
++for (const p of ['/services', '/guides', '/papers', '/glossary', '/service-areas']) {
++  MANIFESTS[`/md${p}`] = MANIFESTS[p];
++}
++
++/* ── 4. every source file, and every link in it ──────────────────────────── */
++/**
++ * Comments are not links. This repo comments heavily and several of those
++ * comments quote the very hrefs they replaced — SiteFooter explains, in prose,
++ * that its city links "used to be href='#areas'". A scanner that reads that as
++ * a live link reports a bug that was fixed a year ago, and a guard that cries
++ * wolf gets switched off. Strings survive; comments do not.
++ */
++function stripComments(src) {
++  let out = '';
++  let i = 0;
++  const n = src.length;
++  let quote = null;      // ' " ` when inside a string
++  while (i < n) {
++    const c = src[i];
++    const d = src[i + 1];
++    if (quote) {
++      if (c === '\\') { out += src.slice(i, i + 2); i += 2; continue; }
++      if (c === quote) quote = null;
++      out += c; i++; continue;
++    }
++    if (c === '"' || c === "'" || c === '`') { quote = c; out += c; i++; continue; }
++    if (c === '/' && d === '/') { while (i < n && src[i] !== '\n') i++; continue; }
++    if (c === '/' && d === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++; i += 2; continue; }
++    out += c; i++;
++  }
++  return out;
++}
++
++const sources = [];
++(function walk(dir) {
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) {
++      if (['node_modules', '.next', '.turbo', 'public'].includes(e.name)) continue;
++      walk(p);
++    } else if (/\.(tsx|ts|mdx)$/.test(e.name)) {
++      sources.push([path.relative(ROOT, p), stripComments(fs.readFileSync(p, 'utf8'))]);
++    }
++  }
++})(WEB);
++
++/** file → Set(id) rendered by that file */
++const idsByFile = new Map();
++for (const [rel, src] of sources) {
++  const ids = new Set();
++  for (const m of src.matchAll(/\bid=["'`]([A-Za-z][\w-]*)["'`]/g)) ids.add(m[1]);
++  // MDX headings get an id from their slugified text.
++  for (const m of src.matchAll(/^#{2,6}\s+(.+)$/gm)) {
++    ids.add(
++      m[1].trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
++    );
++  }
++  idsByFile.set(rel, ids);
++}
++
++/** Local imports, so a page's ids include the ids of the components it renders. */
++const importsByFile = new Map();
++for (const [rel, src] of sources) {
++  const out = new Set();
++  // `import X from 'y'` AND `dynamic(() => import('y'))`. Missing the second
++  // form is not a cosmetic gap: home-client.tsx loads FloorCatalog and
++  // MachineCatalog that way, and a scanner that only reads static imports
++  // concludes no page renders them — then passes their broken anchors, because
++  // it has nothing to check them against. An unseen edge is a false PASS.
++  const specs = [
++    ...[...src.matchAll(/from\s+["'](@\/[^"']+|\.[^"']+)["']/g)].map((m) => m[1]),
++    ...[...src.matchAll(/import\(\s*["'](@\/[^"']+|\.[^"']+)["']\s*\)/g)].map((m) => m[1]),
++  ];
++  for (const spec of specs) {
++    let base;
++    if (spec.startsWith('@/')) base = path.join(WEB, spec.slice(2));
++    else base = path.resolve(path.dirname(path.join(ROOT, rel)), spec);
++    for (const cand of [`${base}.tsx`, `${base}.ts`, path.join(base, 'index.tsx'), path.join(base, 'index.ts')]) {
++      if (fs.existsSync(cand)) { out.add(path.relative(ROOT, cand)); break; }
++    }
++  }
++  importsByFile.set(rel, out);
++}
++
++/** Ids reachable from a page file, following local imports (depth-limited). */
++function reachableIds(entry, depth = 4, seen = new Set()) {
++  if (depth < 0 || seen.has(entry)) return new Set();
++  seen.add(entry);
++  const out = new Set(idsByFile.get(entry) ?? []);
++  for (const dep of importsByFile.get(entry) ?? []) {
++    for (const id of reachableIds(dep, depth - 1, seen)) out.add(id);
++  }
++  return out;
++}
++
++/** Every local file a page pulls in, transitively — the page's render tree. */
++function reachableFiles(entry, depth = 6, seen = new Set()) {
++  if (depth < 0 || seen.has(entry)) return seen;
++  seen.add(entry);
++  for (const dep of importsByFile.get(entry) ?? []) reachableFiles(dep, depth - 1, seen);
++  return seen;
++}
++
++/**
++ * route → the files that render it: its page, and every layout that wraps it.
++ *
++ * The layouts are not a detail. Header and SiteFooter are mounted in
++ * app/layout.tsx, not in any page — so a map built from page.tsx alone contains
++ * neither, and a fragment link in the site navigation resolves against nothing
++ * at all. The guard would then report "no page renders this file" for the two
++ * components that render on every page of the site, which is both wrong and the
++ * exact shape of error that teaches people to ignore a guard.
++ *
++ * Symmetrically, the ids CONTRIBUTED by the layouts belong to every page under
++ * them: a link to a footer anchor is valid everywhere the footer is.
++ */
++const pageFileForRoute = new Map();
++const layoutsForRoute = new Map();
++(function walk(dir, seg, layouts) {
++  const here = path.join(dir, 'layout.tsx');
++  const chain = fs.existsSync(here) ? [...layouts, path.relative(ROOT, here)] : layouts;
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) {
++      if (e.name === 'components' || e.name === 'api' || e.name.startsWith('_')) continue;
++      walk(p, e.name.startsWith('(') ? seg : `${seg}/${e.name}`, chain);
++    } else if (/^page\.tsx$/.test(e.name)) {
++      const route = seg || '/';
++      pageFileForRoute.set(route, path.relative(ROOT, p));
++      layoutsForRoute.set(route, chain);
++    }
++  }
++})(APP, '', []);
++
++/** Every id a visitor can actually reach on this route — page tree plus chrome. */
++function idsOnRoute(route) {
++  const out = new Set();
++  const pf = pageFileForRoute.get(route);
++  if (pf) for (const id of reachableIds(pf)) out.add(id);
++  for (const l of layoutsForRoute.get(route) ?? []) for (const id of reachableIds(l)) out.add(id);
++  return out;
++}
++
++/**
++ * Which pages actually render a given component.
++ *
++ * This is the whole point of the anchor check. A fragment link inside a shared
++ * component is not right or wrong on its own — <PricingSection href="#quote">
++ * is correct on the homepage, where id="quote" is a few hundred lines below it,
++ * and it is a link to nowhere on any other page that renders the same section.
++ * The component cannot know. Only the page can, and only by being asked.
++ *
++ * So: for every page, the set of files it renders; then a fragment inside a
++ * component is checked once per page that renders it, and the error names the
++ * page, which is the thing a human has to go and look at.
++ */
++const pagesRenderingFile = new Map();   // component file → [route, ...]
++for (const [route, pageFile] of pageFileForRoute) {
++  const rendered = new Set(reachableFiles(pageFile));
++  for (const l of layoutsForRoute.get(route) ?? []) for (const f of reachableFiles(l)) rendered.add(f);
++  for (const f of rendered) {
++    if (!pagesRenderingFile.has(f)) pagesRenderingFile.set(f, []);
++    pagesRenderingFile.get(f).push(route);
++  }
++}
++
++/* ── 5. redirect sources, from the real config ───────────────────────────── */
++/**
++ * Ask next.config.js, do not read it.
++ *
++ * The commercial aliases — /stairs, /toronto-hardwood, /flooring-toronto and
++ * three dozen more — are generated from an object at the top of that file, not
++ * written out as literals. A regex over `source:` sees six rewrites and none of
++ * the redirects, reports "no self-inflicted hops" with total confidence, and is
++ * wrong about the only thing it was asked. So the config is required and its
++ * redirects() is called: whatever Next will actually do is what gets checked.
++ */
++const redirectSources = new Set();
++{
++  const require_ = createRequire(path.join(WEB, 'next.config.js'));
++  const cfg = require_(path.join(WEB, 'next.config.js'));
++  const list = typeof cfg.redirects === 'function' ? await cfg.redirects() : [];
++  if (!list.length) {
++    console.error('verify-destinations: next.config.js returned no redirects — the guard is blind. Fix the reader.');
++    process.exit(2);
++  }
++  for (const r of list) {
++    // Host-conditioned rules only fire on the retired domain; they are not a
++    // hop for anyone arriving on ecowoods.ca.
++    if (Array.isArray(r.has) && r.has.some((h) => h.type === 'host')) continue;
++    if (typeof r.source === 'string' && !r.source.includes(':') && !r.source.includes('(')) {
++      redirectSources.add(r.source.replace(/\/+$/, '') || '/');
++    }
++  }
++}
++
++/* ── 6. collect and judge every link ─────────────────────────────────────── */
++const LINK_PATTERNS = [
++  // `href`, and any prop whose name ends in Href. A page that tells a shared
++  // component where to send people — estimateHref="#estimate" — is making
++  // exactly the same promise as an <a href>, on exactly the same page, and it
++  // is checked the same way. Without this, moving a destination into a prop
++  // would be a way to hide it from this guard.
++  /\b[A-Za-z]*[Hh]ref=["'`]([^"'`{}\s]+)["'`]/g,   // JSX and HTML
++  // The object-literal form: `{ label: 'Stairs', href: '/hardwood-stairs-toronto' }`.
++  // This is not an edge case — it is how the entire site navigation is written.
++  // Header.tsx alone declares 62 destinations this way and there are 130 in the
++  // app. A scanner that only reads `href=` reads none of the chrome: it can
++  // report several hundred links verified while never having looked at the
++  // header or the footer, which are the links on every single page.
++  /\b[A-Za-z]*[Hh]ref:\s*["'`]([^"'`]+)["'`]/g,
++  /\]\(([^)\s]+)\)/g,                     // markdown
++  /router\.(?:push|replace)\(\s*['"`]([^'"`]+)['"`]/g,
++  /\bredirect\(\s*['"`](\/[^'"`]+)['"`]/g,
++];
++
++const failures = [];
++const rows = [];
++let checked = 0;
++
++for (const [rel, src] of sources) {
++  const seen = new Set();
++  for (const re of LINK_PATTERNS) {
++    for (const m of src.matchAll(re)) {
++      const raw = m[1];
++      if (seen.has(raw)) continue;
++      seen.add(raw);
++      if (!raw || raw.startsWith('mailto:') || raw.startsWith('tel:') || raw.startsWith('data:')) continue;
++      // A template literal is not a link until it is interpolated; its shape is
++      // checked by TypeScript, not by us.
++      if (raw.includes('${')) continue;
++
++      /* external */
++      if (/^https?:\/\//i.test(raw)) {
++        let host;
++        try { host = new URL(raw).hostname; } catch { continue; }
++        checked++;
++        if (FORBIDDEN_HOST.test(host)) {
++          failures.push([rel, raw, 'links to the retired domain — that host is being removed as a content host']);
++          rows.push(['RETIRED', raw, rel]);
++        } else if (!ALLOWED_EXTERNAL.has(host)) {
++          failures.push([rel, raw, `external host "${host}" is not in ALLOWED_EXTERNAL`]);
++          rows.push(['UNLISTED', raw, rel]);
++        } else {
++          rows.push(['ext ok', raw, rel]);
++        }
++        continue;
++      }
++
++      /* fragment-only: resolved per page that renders this file */
++      if (raw.startsWith('#')) {
++        checked++;
++        const id = raw.slice(1);
++        if (reachableIds(rel).has(id)) { rows.push(['frag ok', raw, rel]); continue; }
++        const hosts = pagesRenderingFile.get(rel) ?? [];
++        if (!hosts.length) {
++          // Rendered by no page we can see — a layout partial, or dead code.
++          // Fall back to the file's own tree, which we already know fails.
++          failures.push([rel, raw, `no element with id="${id}" is rendered by this file, and no page renders this file`]);
++          rows.push(['NO ANCHOR', raw, rel]);
++          continue;
++        }
++        const broken = hosts.filter((route) => !idsOnRoute(route).has(id));
++        if (broken.length) {
++          failures.push([
++            rel,
++            raw,
++            `renders no id="${id}" on ${broken.length} of the ${hosts.length} page(s) that use this component: ` +
++              broken.slice(0, 6).join(', ') + (broken.length > 6 ? ` … +${broken.length - 6}` : '') +
++              ' — on those pages the link scrolls nowhere',
++          ]);
++          rows.push(['NO ANCHOR', raw, rel]);
++        } else rows.push(['frag ok', raw, rel]);
++        continue;
++      }
++
++      if (!raw.startsWith('/')) continue;   // relative or template — out of scope
++      checked++;
++
++      const [rawPath, fragment] = raw.split('#');
++      const p = (rawPath || '/').replace(/\/+$/, '') || '/';
++
++      /* api and public assets */
++      if (p.startsWith('/api/')) { rows.push(['api', raw, rel]); continue; }
++      if (publicFiles.has(p)) { rows.push(['asset', raw, rel]); continue; }
++
++      /* a link to one of our own alias redirects */
++      if (redirectSources.has(p) && !staticRoutes.has(p)) {
++        failures.push([rel, raw, `points at a redirect source — link to the canonical destination instead`]);
++        rows.push(['REDIRECT', raw, rel]);
++        continue;
++      }
++
++      let resolved = staticRoutes.has(p);
++      let targetRoute = p;
++
++      /* dynamic: the slug must be in the manifest, not merely match the shape */
++      if (!resolved) {
++        const seg = p.split('/');
++        const prefix = seg.length >= 3 ? `/${seg[1]}` : null;
++        const prefixMd = seg.length >= 4 && seg[1] === 'md' ? `/md/${seg[2]}` : null;
++        const key = prefixMd ?? prefix;
++        const slug = prefixMd ? seg[3] : seg[2];
++        const man = key && MANIFESTS[key];
++        if (man && seg.length === (prefixMd ? 4 : 3)) {
++          if (man.slugs.has(slug)) {
++            resolved = true;
++            targetRoute = null;   // dynamic page — ids are per-slug, checked below
++          } else {
++            failures.push([rel, raw, `"${slug}" is in no manifest — ${man.source} does not generate this page, so it 404s`]);
++            rows.push(['NO SLUG', raw, rel]);
++            continue;
++          }
++        }
++      }
++
++      if (!resolved) {
++        failures.push([rel, raw, 'no route, no public file, no manifest entry']);
++        rows.push(['NO ROUTE', raw, rel]);
++        continue;
++      }
++
++      /* cross-page fragment */
++      if (fragment && targetRoute) {
++        if (pageFileForRoute.has(targetRoute)) {
++          const ids = idsOnRoute(targetRoute);
++          if (!ids.has(fragment)) {
++            failures.push([rel, raw, `${targetRoute} renders no id="${fragment}" — this lands at the top of the page`]);
++            rows.push(['NO ANCHOR', raw, rel]);
++            continue;
++          }
++        }
++      }
++      rows.push(['ok', raw, rel]);
++    }
++  }
++}
++
++if (LIST) {
++  for (const [verdict, link, file] of rows.sort((a, b) => a[1].localeCompare(b[1]))) {
++    console.log(`  ${verdict.padEnd(10)} ${link.padEnd(64)} ${file}`);
++  }
++  console.log('');
++}
++
++if (failures.length) {
++  console.error(`✗ destinations: ${failures.length} link(s) do not land where they claim\n`);
++  for (const [file, link, why] of failures) {
++    console.error(`  ${link}`);
++    console.error(`      in ${file}`);
++    console.error(`      ${why}\n`);
++  }
++  process.exit(1);
++}
++
++const counts = rows.reduce((a, [v]) => ((a[v] = (a[v] ?? 0) + 1), a), {});
++console.log(
++  `✓ destinations verified — ${checked} link(s) resolved: ` +
++    `${staticRoutes.size} static route(s), ` +
++    `${Object.values(MANIFESTS).length} manifest(s), ` +
++    `${counts['frag ok'] ?? 0} same-page anchor(s), ` +
++    `${counts['ext ok'] ?? 0} external link(s); no 404, no redirect hop, no retired domain`,
++);
+-- 
+2.43.0
+
