@@ -1,0 +1,194 @@
+From 78ef6ba19437f1878c1bc0314fff727e21368a3f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 1 Sep 2026 18:22:58 +0000
+Subject: [PATCH] fix(css): a stray brace broke production while 47 guards said
+ green
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The build failed on:
+
+    Syntax error: apps/web/app/globals.css Unexpected } (10408:1)
+
+An earlier edit unwrapped a media query — it removed the rule inside and left
+the query's own closing brace behind. One character.
+
+WHY NOTHING CAUGHT IT
+
+Every guard in this repository reads globals.css as TEXT. verify-ui greps for
+colour tokens, verify-chrome regexes selectors and declarations, verify-tokens
+counts primitives. Text with an extra brace in it reads exactly like text
+without one. Not one check had ever asked whether the CSS was valid CSS.
+
+The only thing that would have caught it was `next build` — and I had removed
+`next build` from the local command two turns earlier, because it kept being
+killed for memory on the Codespace. I took out the one check that covered this
+and put nothing in its place. That is the actual mistake; the brace was just
+the thing that fell through the hole.
+
+scripts/verify-css.mjs
+
+postcss — the same parser Next uses to compile this file, already a dependency —
+is asked to parse every stylesheet under apps/web. It is the parser that failed
+in production, it runs in about fifty milliseconds, and it needs no memory to
+speak of. It runs FIRST in the chain, because a stylesheet that does not parse
+makes every later check meaningless.
+
+It also reports brace depth on the way out. "Unexpected }" is what an unclosed
+block looks like several hundred lines later, and knowing whether the file ends
+open or closed tells you which end to read.
+
+Two negative tests: the exact orphan brace reproduces the production message and
+line number, `Unexpected } (line 10408:1)`; an unclosed block reports
+`Unclosed block (line 10403:1)`.
+
+If postcss cannot be resolved the guard exits 2 rather than passing — a check
+that cannot run has not checked anything.
+
+48 guards green. tsc unchanged.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/app/globals.css |  1 -
+ package.json             |  3 +-
+ scripts/verify-css.mjs   | 93 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 95 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/verify-css.mjs
+
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index a11bbf6..44837c3 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -10405,7 +10405,6 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ .cmdk-trigger kbd { display: none; }
+ /* An icon-only control still has to clear the WCAG 2.5.8 AA target floor. */
+ .cmdk-trigger { min-width: 38px; justify-content: center; }
+-}
+ 
+ /* The panel is a sheet under the bar; on a short laptop screen it must scroll
+    rather than run off the bottom of the viewport with no way to reach the end. */
+diff --git a/package.json b/package.json
+index 1b796cb..19653e5 100644
+--- a/package.json
++++ b/package.json
+@@ -23,6 +23,7 @@
+     "verify:destinations": "node scripts/verify-destinations.mjs",
+     "verify:workmap": "node scripts/verify-work-map.mjs",
+     "verify:chrome": "node scripts/verify-chrome.mjs",
++    "verify:css": "node scripts/verify-css.mjs",
+     "verify:framework": "node scripts/verify-framework.mjs",
+     "verify:client": "node scripts/verify-client-boundary.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+@@ -77,7 +78,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:rendered": "node scripts/audit-rendered.mjs",
+     "audit:full": "bash scripts/audit-all.sh --full",
+diff --git a/scripts/verify-css.mjs b/scripts/verify-css.mjs
+new file mode 100644
+index 0000000..671492d
+--- /dev/null
++++ b/scripts/verify-css.mjs
+@@ -0,0 +1,93 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-css.mjs — does the stylesheet actually parse?
++ *
++ * WHY THIS EXISTS
++ *
++ * A stray `}` was left behind when a media query was unwrapped: the edit
++ * removed the rule inside it and the query's own closing brace survived. All
++ * 47 guards passed. `tsc` passed. `pnpm verify` was green. The production
++ * build then failed with
++ *
++ *     Syntax error: globals.css Unexpected } (10408:1)
++ *
++ * because not one check in this repository had ever asked whether the CSS was
++ * valid CSS. Every guard here reads globals.css as TEXT — regexes over selectors
++ * and declarations — and text with an extra brace in it reads exactly like text
++ * without one. The only thing that would have caught it was `next build`, which
++ * takes minutes, needs several gigabytes, and had been dropped from the local
++ * command precisely because it kept being killed for memory.
++ *
++ * So: postcss, which Next already uses to compile this file, is asked to parse
++ * it. It is the same parser that failed in production, it runs in about fifty
++ * milliseconds, and it needs no memory to speak of. A syntax error is now a
++ * failed guard on a laptop instead of a failed deployment.
++ *
++ * It also reports the brace depth, because "unexpected }" is what an unclosed
++ * block LOOKS like hundreds of lines later, and knowing whether the file ends
++ * open or closed says which end to look at.
++ *
++ *   node scripts/verify-css.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++import { createRequire } from 'node:module';
++
++const ROOT = process.cwd();
++const require_ = createRequire(path.join(ROOT, 'apps/web/package.json'));
++
++let postcss;
++try {
++  postcss = require_('postcss');
++} catch {
++  console.error('verify-css: postcss is not resolvable. It is a Next dependency — run pnpm install.');
++  console.error('  Refusing to report a pass, because a guard that cannot run has not checked anything.');
++  process.exit(2);
++}
++
++/** Every stylesheet the app actually ships. */
++const FILES = [];
++(function walk(dir) {
++  if (!fs.existsSync(dir)) return;
++  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
++    const p = path.join(dir, e.name);
++    if (e.isDirectory()) {
++      if (['node_modules', '.next', '.turbo'].includes(e.name)) continue;
++      walk(p);
++    } else if (/\.css$/.test(e.name)) FILES.push(p);
++  }
++})(path.join(ROOT, 'apps/web'));
++
++if (!FILES.length) {
++  console.error('verify-css: found no .css under apps/web — the walker is blind, fix it rather than deleting the check.');
++  process.exit(2);
++}
++
++const fail = [];
++for (const file of FILES) {
++  const css = fs.readFileSync(file, 'utf8');
++  const rel = path.relative(ROOT, file);
++  try {
++    postcss.parse(css, { from: file });
++  } catch (e) {
++    fail.push(`${rel}: ${e.reason ?? e.message} (line ${e.line}:${e.column})`);
++    continue;
++  }
++  /* Depth is not a syntax check — postcss above is. It is a hint about WHICH
++     end of the file to read when one does go wrong. */
++  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '');
++  let depth = 0;
++  for (const ch of stripped) {
++    if (ch === '{') depth++;
++    else if (ch === '}') depth--;
++  }
++  if (depth !== 0) fail.push(`${rel}: ends at brace depth ${depth} — ${depth > 0 ? 'a block is never closed' : 'there is an extra closing brace'}`);
++}
++
++if (fail.length) {
++  console.error(`✗ css: ${fail.length} stylesheet problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}`);
++  console.error('\n  This is what breaks the production build while every text-based guard stays green.\n');
++  process.exit(1);
++}
++console.log(`✓ css verified — ${FILES.length} stylesheet(s) parse with the same postcss that compiles them, braces balanced`);
+-- 
+2.43.0
+
