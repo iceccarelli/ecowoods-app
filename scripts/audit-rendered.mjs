@@ -89,6 +89,12 @@ const VIEWPORTS = [
   { name: 'phone-390', width: 390, height: 844, mobile: true },
   { name: 'tablet-768', width: 768, height: 1024, mobile: true },
   { name: 'laptop-1280', width: 1280, height: 800, mobile: false },
+  /* 1600 is not vanity. The header bug that printed the brand over "Services"
+     and "Problems" over the search field appeared only ABOVE 1439px, because
+     --shell-max caps the header at 1280 however wide the window gets, so the
+     widest windows are where the least is shed and the most is crammed in. An
+     audit whose largest viewport is 1280 cannot see any of it, and did not. */
+  { name: 'desktop-1600', width: 1600, height: 900, mobile: false },
 ];
 
 /**
@@ -223,7 +229,7 @@ for (const vp of VIEWPORTS) {
 
     const report = await page.evaluate(
       ({ TAP_FAIL, TAP_ADVISORY, isMobile }) => {
-        const out = { overflow: [], overflowPx: 0, tap: [], tapAdvisory: 0, scrollers: [], anchors: [], tabs: [] };
+        const out = { overflow: [], overflowPx: 0, tap: [], tapAdvisory: 0, scrollers: [], anchors: [], tabs: [], collisions: [] };
 
         /* 1. sideways scroll, and WHAT is actually causing it
          *
@@ -348,6 +354,59 @@ for (const vp of VIEWPORTS) {
           }
         }
 
+        /* 2b. THINGS PRINTED ON TOP OF EACH OTHER
+         *
+         * A flex row whose items cannot shrink overflows, and is caught by the
+         * overflow check above. A flex row whose CONTAINER can shrink but whose
+         * CONTENT cannot does something worse and quieter: the box reports no
+         * overflow, because the shrunken item fits the line — and its contents
+         * spill out and print over the neighbours. Measured on this site's
+         * header at 1474px, the brand overlapped "Services" by 69px and
+         * "Problems" overlapped the search field by 70px, while every overflow
+         * measurement on the row read zero. It is unreadable and invisible to
+         * every check that asks about overflow.
+         *
+         * So this asks a different question: do the boxes of two things that
+         * are supposed to sit side by side actually intersect? Scoped to the
+         * chrome and to sibling groups, because overlap is normal and correct
+         * almost everywhere else — a badge on an avatar, a caption over an
+         * image, any deliberate stack. */
+        /* SIBLINGS ARE NOT THE RIGHT UNIT. The first version of this compared
+         * each element with its own siblings, and found nothing — because the
+         * real collision was .brand-lockup against a child of .topbar-nav, and
+         * "Problems" inside the nav against the search field inside .topbar-cta.
+         * Those pairs are cousins, not siblings. A row is laid out from leaves
+         * across several containers, so the leaves are what must not intersect. */
+        const ROWS = [
+          { name: 'the header row', sel: '.brand-lockup, .topbar-nav > *, .topbar-cta > *' },
+          { name: 'the utility strip', sel: '.ub-inner > *' },
+        ];
+        for (const row of ROWS) {
+          const shown = (e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed';
+          const kids = [...document.querySelectorAll(row.sel)].filter((e) => {
+            const cs = getComputedStyle(e);
+            const r = e.getBoundingClientRect();
+            return shown(e) && cs.visibility !== 'hidden' && cs.position !== 'absolute' &&
+                   cs.position !== 'fixed' && r.width > 0 && r.height > 0;
+          });
+          for (let i = 0; i < kids.length && out.collisions.length < 8; i++) {
+            for (let j = i + 1; j < kids.length && out.collisions.length < 8; j++) {
+              const a = kids[i].getBoundingClientRect();
+              const c = kids[j].getBoundingClientRect();
+              const ox = Math.min(a.right, c.right) - Math.max(a.left, c.left);
+              const oy = Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top);
+              if (ox > 1 && oy > 1) {
+                out.collisions.push({
+                  group: row.name,
+                  a: (kids[i].textContent || kids[i].tagName).trim().replace(/\s+/g, ' ').slice(0, 26),
+                  b: (kids[j].textContent || kids[j].tagName).trim().replace(/\s+/g, ' ').slice(0, 26),
+                  px: Math.round(ox),
+                });
+              }
+            }
+          }
+        }
+
         /* 3. horizontal scrollers a keyboard cannot move (WCAG 2.1.1) */
         for (const el of document.querySelectorAll('*')) {
           const cs = getComputedStyle(el);
@@ -420,6 +479,10 @@ for (const vp of VIEWPORTS) {
           `page scrolls ${report.overflowPx}px sideways and no unclipped element accounts for it — open devtools at ${vp.width}px`);
       }
     }
+    for (const c of report.collisions) {
+      add(route, vp.name, 'overlapping-text',
+        `in ${c.group}, "${c.a}" is printed over "${c.b}" — they overlap by ${c.px}px`);
+    }
     for (const t of report.tap) {
       add(route, vp.name, 'tap-target', `<${t.tag}> "${t.label}" is ${t.w}×${t.h}px — below the WCAG 2.5.8 AA floor of ${TAP_FAIL}×${TAP_FAIL}`);
     }
@@ -475,8 +538,9 @@ if (advisoryTotal) {
   console.log(`        worst page: ${worst.route} @ ${worst.viewport} with ${worst.n}`);
 }
 if (!findings.length) {
-  console.log('  ✓ no horizontal overflow, no tap target under the AA floor, no unreachable');
-  console.log('    scroller, no dead anchor, no anchor landing behind the header.');
+  console.log('  ✓ no horizontal overflow, nothing printed over anything else, no tap target');
+  console.log('    under the AA floor, no unreachable scroller, no dead anchor, no anchor');
+  console.log('    landing behind the header.');
 } else {
   for (const [k, n] of Object.entries(byKind)) console.log(`  ${String(n).padStart(4)}  ${k}`);
   console.log('\n  Detail: audit/rendered.md');

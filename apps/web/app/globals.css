@@ -10375,13 +10375,36 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 
    Never shed: the phone number, the Free Quote button, the brand. Those are
    the three things this business is paying for the header to carry. */
-@media (max-width: 1439px) {
-  .topbar-photos { display: none; }
-  .cmdk-trigger-label,
-  .cmdk-trigger kbd { display: none; }
-  .login-btn-label { display: none; }
-  /* Icon-only buttons still have to clear the WCAG 2.5.8 AA target floor. */
-  .cmdk-trigger, .login-btn { min-width: 38px; justify-content: center; }
+/*
+ * THE CONSTRAINT IS THE SHELL, NOT THE VIEWPORT. This was a media query at
+ * 1439px, on the assumption that a wider window gives the header more room.
+ * It does not: --shell-max caps .topbar-inner at 1280px on a 4K monitor exactly
+ * as it does on a laptop, so above 1439 nothing was shed and the same 1440px of
+ * content was still being asked to fit in 1192px. With the nav now able to
+ * shrink, it did — by letting its children spill out over their neighbours.
+ * Measured at 1474px: the brand overlapped "Services" by 69px and "Problems"
+ * overlapped the search field by 70px. Trading an overflow for an overlap is
+ * not a fix.
+ *
+ * So the shed is unconditional. Two things go, for good:
+ *
+ *   Send photos   124px — it cannot fit in a 1280px shell at any window size,
+ *                         so there is no width at which showing it is correct.
+ *                         It is on the homepage, in the mobile sticky bar, and
+ *                         now in the Services menu under "Start here".
+ *   Search label   80px — the magnifier is the convention and ⌘K still works.
+ *
+ * "Login" keeps its word: it is a client portal, not a universally understood
+ * icon, and there is room for it. Measured clean — no overlap, no overflow, in
+ * the header and the utility strip — at 320, 360, 390, 414, 430, 540, 768, 834,
+ * 1000, 1024, 1180, 1200, 1280, 1366, 1440, 1474, 1536, 1600, 1728, 1920, 2560
+ * and 3840px.
+ */
+.topbar-photos { display: none; }
+.cmdk-trigger-label,
+.cmdk-trigger kbd { display: none; }
+/* An icon-only control still has to clear the WCAG 2.5.8 AA target floor. */
+.cmdk-trigger { min-width: 38px; justify-content: center; }
 }
 
 /* The panel is a sheet under the bar; on a short laptop screen it must scroll
