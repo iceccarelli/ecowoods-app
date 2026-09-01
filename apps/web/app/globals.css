@@ -636,11 +636,50 @@ p {
 }
 
 /* --------------------- Topbar / Header (Premium fixed nav) --------------------- */
-.topbar {
-  position: fixed;
+/*
+ * THE CHROME IS STICKY, NOT FIXED.
+ *
+ * `position: fixed` takes an element out of flow, so it reserves no space and
+ * paints over whatever is beneath it. Measured at 1474px: the UtilityBar sat in
+ * flow at y 0–39 and this bar painted y 0–65 straight over the top of it. The
+ * strip carrying the hours and the phone number was invisible, and the first
+ * 26px of every page on the site was underneath the header. Scroll far enough
+ * for the hide-on-scroll class to fire and the strip appeared from nowhere —
+ * a second bar, in the wrong place, exactly as reported.
+ *
+ * Sticky keeps both bars in normal flow, so they reserve their own height
+ * automatically: no spacer element, no padding-top constant to drift out of
+ * sync with the real height, and nothing can be underneath them. They still
+ * pin to the top on scroll, which is the behaviour that was wanted in the
+ * first place.
+ *
+ * The wrapper is what sticks; the bars inside it are static. The hide-on-scroll
+ * transform moves the wrapper, so the strip and the nav leave and return
+ * together instead of one revealing the other.
+ */
+.site-chrome {
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
+  z-index: 80;
+}
+
+/*
+ * .site-chrome MUST NOT BE GIVEN A TRANSFORM. EVER.
+ *
+ * .mobile-sheet is a sibling of <header>, so it is inside this wrapper, and it
+ * is `position: fixed; inset: 0` — the full-screen nav drawer. A transform on
+ * an ancestor makes that ancestor the containing block for fixed descendants,
+ * which would collapse the drawer from the whole viewport to this 104px-tall
+ * bar. The first draft of this fix put the hide-on-scroll transform here and
+ * would have shipped a mobile menu that opens as a sliver.
+ *
+ * So the hide-on-scroll transform stays on .topbar, where it always was. The
+ * nav slides away and the utility strip stays pinned, which is the better
+ * behaviour anyway: the phone number does not leave the screen.
+ */
+
+.topbar {
+  position: static;
   z-index: 80;
   transition: transform 350ms var(--ease-out-quart),
               background-color 250ms ease,
@@ -657,11 +696,12 @@ p {
   box-shadow: 0 4px 20px rgba(26, 15, 8, 0.08);
 }
 
-.topbar.hidden {
-  transform: translateY(-100%);
-}
+/* On .topbar, never on .site-chrome — see the note there. */
+.topbar.hidden { transform: translateY(-100%); }
 
 .topbar-inner {
+  /* The containing block for the mega-menu panel — see .mm-panel. */
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -746,8 +786,27 @@ p {
   justify-content: center;
   gap: 0;
   flex: 0 1 auto;
-  min-width: max-content;
-  overflow: clip;
+  /*
+   * TWO LINES USED TO LIVE HERE AND EACH ONE BROKE SOMETHING VISIBLE.
+   *
+   * `min-width: max-content` told this nav it could never be narrower than its
+   * own content, which cancels the `flex: 0 1 auto` directly above it. The
+   * comment on .topbar-inner says "the nav absorbs the slack"; it could not,
+   * so there was no slack to absorb and the row overflowed to the right. The
+   * header is position:fixed, so that overflow adds nothing to the document's
+   * scrollWidth and NO overflow check can see it — the Free Quote button was
+   * simply 114px off the right of the screen at 1474px, silently, on every
+   * desktop width. Measured: brand 191 + nav 505 + CTA 744 = 1440px of content
+   * plus padding and gaps, about 1496px, inside a 1280px shell. It had never
+   * once fitted.
+   *
+   * `overflow: clip` then hid the evidence — and, being an ancestor of the
+   * mega-menu, clipped the mega-menu too. The nav box is 40px tall; the panel
+   * opens 61px down and is 111px tall, so 100% of it was clipped away. That is
+   * the whole of "the dropdown does not work": it opened correctly every time
+   * and was thrown away by a rule that was hiding a layout bug.
+   */
+  min-width: 0;
 }
 
 .topbar-nav a {
@@ -1894,7 +1953,11 @@ p {
 }
 
 /* ── the mega-menu ──────────────────────────────────────────────────────── */
-.mm { position: relative; display: inline-flex; }
+/* STATIC ON PURPOSE. The panel is positioned against .topbar-inner, not
+   against its own trigger — see .mm-panel. A `position: relative` here would
+   silently make the trigger the containing block again and put a quarter of
+   the menu off the left of the screen. */
+.mm { position: static; display: inline-flex; }
 .mm-trigger {
   display: inline-flex; align-items: center; gap: 0.3rem;
   background: none; border: 0; cursor: pointer;
@@ -1907,9 +1970,29 @@ p {
 .mm-trigger.is-open svg { transform: rotate(180deg); }
 
 .mm-panel {
-  position: absolute; top: calc(100% + 0.55rem); left: 50%; transform: translateX(-50%);
+  /*
+   * ANCHORED TO THE SHELL, NOT TO THE TRIGGER.
+   *
+   * This was `left: 50%; transform: translateX(-50%)` on a 1120px-wide panel,
+   * centred on a trigger that sits near the left of the bar. Measured at
+   * 1280px: the Services panel's left edge landed at -282px and the Library
+   * panel's at -200px. A quarter of the menu was off the left of the screen,
+   * and it would have stayed invisible even after the clipping bug above was
+   * fixed — so fixing only that would have produced a menu that opens
+   * half off-screen, which reads as broken rather than as absent.
+   *
+   * left:0/right:0 against .topbar-inner makes the panel exactly as wide as
+   * the header shell it belongs to. It cannot leave the viewport at any width,
+   * on any monitor, because it is measured from the same box as the header.
+   * This is also what AWS does: the panel is a full-width sheet under the bar,
+   * not a tooltip hanging off one word.
+   */
+  position: absolute;
+  top: calc(100% - 0.15rem);
+  left: 0;
+  right: 0;
+  width: auto;
   z-index: 120;
-  width: min(1120px, calc(100vw - 2.5rem));
   background: var(--surface-1);
   border: 1px solid var(--line-strong, var(--line));
   border-radius: 16px;
@@ -5379,7 +5462,13 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
 }
 
 /* Anchor scrolling used a hardcoded 92px regardless of header height. */
-html { scroll-padding-top: calc(var(--header-h) + 12px); }
+/* The chrome is now the strip AND the nav, so an anchor has to clear both or
+   it lands behind them — the bug this file already fixed once for the nav
+   alone. --ub-h is the utility strip; .ub-inner is min-height:38px plus its
+   hairline border. */
+:root { --ub-h: 39px; }
+@media (max-width: 430px) { :root { --ub-h: 34px; } }
+html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 
 /* The bar itself must clear the home indicator when a future
    viewport-fit=cover lands. env() resolves to 0 today, so max() is a no-op. */
@@ -10260,4 +10349,44 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
      the picture drops to being a picture. */
   .wm-label { font-size: 17px; }
   .wm-item-head { flex-direction: column; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HEADER FIT  —  what the bar drops, and in what order
+   ═══════════════════════════════════════════════════════════════════════
+   Measured, not guessed. At full size the row is:
+
+     brand 191 + nav 505 + CTA 744  =  1440px of content
+     plus 64px of padding and 24px of gaps  ≈  1496px
+     inside a --shell-max of 1280px.
+
+   1192px is what is actually available. It was over by ~300px at every
+   desktop width, and because .topbar is position:fixed the excess never
+   touched the document's scrollWidth — no overflow check could see it. It
+   only showed up as the Free Quote button being off the right of the screen.
+
+   So the bar sheds, in the order a flooring company can most afford to lose:
+
+     Send photos    124px  — also on the homepage, also in the mobile sticky bar
+     Search label    80px  — the magnifier still opens it, ⌘K still works
+     Login label     53px  — the icon is the convention, and the button keeps
+                             its aria-label, so nothing is lost to a screen reader
+
+   Never shed: the phone number, the Free Quote button, the brand. Those are
+   the three things this business is paying for the header to carry. */
+@media (max-width: 1439px) {
+  .topbar-photos { display: none; }
+  .cmdk-trigger-label,
+  .cmdk-trigger kbd { display: none; }
+  .login-btn-label { display: none; }
+  /* Icon-only buttons still have to clear the WCAG 2.5.8 AA target floor. */
+  .cmdk-trigger, .login-btn { min-width: 38px; justify-content: center; }
+}
+
+/* The panel is a sheet under the bar; on a short laptop screen it must scroll
+   rather than run off the bottom of the viewport with no way to reach the end. */
+.mm-panel { max-height: calc(100vh - var(--header-h) - 2rem); overflow-y: auto; }
+@supports (height: 100dvh) {
+  .mm-panel { max-height: calc(100dvh - var(--header-h) - 2rem); }
 }

@@ -400,7 +400,7 @@ export default function Header() {
                   <circle cx="12" cy="8" r="3.5" strokeLinecap="round" />
                   <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Login
+                <span className="login-btn-label">Login</span>
               </a>
             )}
             <a className="phone-pill" href={PHONE_HREF} aria-label={`Call ${PHONE_DISPLAY}`}>
