@@ -1,0 +1,266 @@
+From e94832ec5c8f4273e0cfd16ed14968ee041317d0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 1 Sep 2026 18:15:06 +0000
+Subject: [PATCH] fix(header): my last fix traded an overflow for an overlap
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The header no longer runs off the right. It printed the brand on top of
+"Services" and "Problems" on top of the search field instead. That is worse:
+overflow loses something off the edge, overlap makes what is left unreadable.
+
+WHAT I GOT WRONG
+
+The shed rules were written behind `@media (max-width: 1439px)`, on the
+assumption that a wider window gives the header more room. It does not.
+`--shell-max` caps `.topbar-inner` at 1280px on a 4K monitor exactly as it does
+on a laptop, so above 1439 nothing was shed and the same 1440px of content was
+still being asked into 1192px. Below 1439 the shed made it fit, which is why
+the first round measured clean and the bug only appeared on a big screen.
+
+Then `min-width: 0` — correct, and necessary for the dropdown — let the nav
+shrink, and its children spilled out over their neighbours instead of pushing
+the row wide.
+
+AND WHY MY OWN MEASUREMENT SAID IT WAS FINE
+
+I measured `.topbar-inner`, and asked it for scrollWidth − width. A flex
+container whose item has shrunk reports ZERO overflow: the item fits the line.
+The item's contents do not fit the item, and that is a different box. Measured
+at 1474px: brand over "Services" by 69px, "Problems" over the search field by
+70px, and every overflow number on the row reading 0.
+
+THE FIX
+
+The shed is unconditional now, because the constraint is the shell and the
+shell never grows. Two things go for good:
+
+  Send photos   124px — it cannot fit a 1280px shell at ANY window size, so
+                        there is no width at which showing it is correct.
+  Search label   80px — the magnifier is the convention and ⌘K still works.
+
+"Login" keeps its word: it is a client portal, not a universally understood
+icon, and there is room for it.
+
+Send photos does not simply vanish. It is the fastest route a visitor has to a
+real answer, so it now leads the Services menu under "Start here", alongside
+the free estimate — one click from every page, next to the six services rather
+than competing with them for 124px of bar.
+
+Verified with no overlap, no nav or strip overflow, chrome never covering
+content, CTA on screen, both panels on screen and zero document overflow at:
+320, 360, 390, 414, 430, 540, 768, 834, 1000, 1024, 1180, 1200, 1280, 1366,
+1440, 1474, 1536, 1600, 1728, 1920, 2560 and 3840px.
+
+audit-rendered.mjs LEARNS THE CHECK IT DID NOT HAVE
+
+verify-chrome.mjs reads CSS and cannot see this: no declaration is wrong on its
+own. Only a browser can say whether two boxes intersect, so the browser audit
+now asks.
+
+Two things had to be right for it to work:
+
+  · LEAVES, NOT SIBLINGS. The first version compared each element with its own
+    siblings and found nothing — the real collisions were .brand-lockup against
+    a child of .topbar-nav, and "Problems" inside the nav against the search
+    field inside .topbar-cta. Cousins, not siblings. A row is laid out from
+    leaves across several containers, so leaves are what must not intersect.
+  · A WIDE VIEWPORT. The audit's largest was 1280, and this bug only exists
+    above 1439 — the widest windows shed the least and cram the most. Added
+    desktop-1600. Without it the detector was correct and blind.
+
+Validated both directions: with the defect reintroduced it names all three
+collisions and their pixel counts; with the fix in place it reports none.
+
+47 guards green. tsc unchanged.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/app/components/Header.tsx | 10 +++++
+ apps/web/app/globals.css           | 37 +++++++++++++---
+ scripts/audit-rendered.mjs         | 70 ++++++++++++++++++++++++++++--
+ 3 files changed, 107 insertions(+), 10 deletions(-)
+
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index f46aa53..2b669a1 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -53,6 +53,16 @@ function useScrollState() {
+  * to a page is a page that dies the day the menu breaks.
+  */
+ const SERVICES_MENU: MegaColumn[] = [
++  /* "Send photos" no longer fits in the header — see the note on .topbar-photos
++     in globals.css. It is the fastest route a visitor has to a real answer, so
++     it does not simply disappear: it leads this menu, one click from every page. */
++  {
++    title: 'Start here',
++    items: [
++      { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
++      { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
++    ],
++  },
+   {
+     title: 'By the job',
+     href: '/services',
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 63f4392..a11bbf6 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -10375,13 +10375,36 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ 
+    Never shed: the phone number, the Free Quote button, the brand. Those are
+    the three things this business is paying for the header to carry. */
+-@media (max-width: 1439px) {
+-  .topbar-photos { display: none; }
+-  .cmdk-trigger-label,
+-  .cmdk-trigger kbd { display: none; }
+-  .login-btn-label { display: none; }
+-  /* Icon-only buttons still have to clear the WCAG 2.5.8 AA target floor. */
+-  .cmdk-trigger, .login-btn { min-width: 38px; justify-content: center; }
++/*
++ * THE CONSTRAINT IS THE SHELL, NOT THE VIEWPORT. This was a media query at
++ * 1439px, on the assumption that a wider window gives the header more room.
++ * It does not: --shell-max caps .topbar-inner at 1280px on a 4K monitor exactly
++ * as it does on a laptop, so above 1439 nothing was shed and the same 1440px of
++ * content was still being asked to fit in 1192px. With the nav now able to
++ * shrink, it did — by letting its children spill out over their neighbours.
++ * Measured at 1474px: the brand overlapped "Services" by 69px and "Problems"
++ * overlapped the search field by 70px. Trading an overflow for an overlap is
++ * not a fix.
++ *
++ * So the shed is unconditional. Two things go, for good:
++ *
++ *   Send photos   124px — it cannot fit in a 1280px shell at any window size,
++ *                         so there is no width at which showing it is correct.
++ *                         It is on the homepage, in the mobile sticky bar, and
++ *                         now in the Services menu under "Start here".
++ *   Search label   80px — the magnifier is the convention and ⌘K still works.
++ *
++ * "Login" keeps its word: it is a client portal, not a universally understood
++ * icon, and there is room for it. Measured clean — no overlap, no overflow, in
++ * the header and the utility strip — at 320, 360, 390, 414, 430, 540, 768, 834,
++ * 1000, 1024, 1180, 1200, 1280, 1366, 1440, 1474, 1536, 1600, 1728, 1920, 2560
++ * and 3840px.
++ */
++.topbar-photos { display: none; }
++.cmdk-trigger-label,
++.cmdk-trigger kbd { display: none; }
++/* An icon-only control still has to clear the WCAG 2.5.8 AA target floor. */
++.cmdk-trigger { min-width: 38px; justify-content: center; }
+ }
+ 
+ /* The panel is a sheet under the bar; on a short laptop screen it must scroll
+diff --git a/scripts/audit-rendered.mjs b/scripts/audit-rendered.mjs
+index 402d289..db9fb74 100644
+--- a/scripts/audit-rendered.mjs
++++ b/scripts/audit-rendered.mjs
+@@ -89,6 +89,12 @@ const VIEWPORTS = [
+   { name: 'phone-390', width: 390, height: 844, mobile: true },
+   { name: 'tablet-768', width: 768, height: 1024, mobile: true },
+   { name: 'laptop-1280', width: 1280, height: 800, mobile: false },
++  /* 1600 is not vanity. The header bug that printed the brand over "Services"
++     and "Problems" over the search field appeared only ABOVE 1439px, because
++     --shell-max caps the header at 1280 however wide the window gets, so the
++     widest windows are where the least is shed and the most is crammed in. An
++     audit whose largest viewport is 1280 cannot see any of it, and did not. */
++  { name: 'desktop-1600', width: 1600, height: 900, mobile: false },
+ ];
+ 
+ /**
+@@ -223,7 +229,7 @@ for (const vp of VIEWPORTS) {
+ 
+     const report = await page.evaluate(
+       ({ TAP_FAIL, TAP_ADVISORY, isMobile }) => {
+-        const out = { overflow: [], overflowPx: 0, tap: [], tapAdvisory: 0, scrollers: [], anchors: [], tabs: [] };
++        const out = { overflow: [], overflowPx: 0, tap: [], tapAdvisory: 0, scrollers: [], anchors: [], tabs: [], collisions: [] };
+ 
+         /* 1. sideways scroll, and WHAT is actually causing it
+          *
+@@ -348,6 +354,59 @@ for (const vp of VIEWPORTS) {
+           }
+         }
+ 
++        /* 2b. THINGS PRINTED ON TOP OF EACH OTHER
++         *
++         * A flex row whose items cannot shrink overflows, and is caught by the
++         * overflow check above. A flex row whose CONTAINER can shrink but whose
++         * CONTENT cannot does something worse and quieter: the box reports no
++         * overflow, because the shrunken item fits the line — and its contents
++         * spill out and print over the neighbours. Measured on this site's
++         * header at 1474px, the brand overlapped "Services" by 69px and
++         * "Problems" overlapped the search field by 70px, while every overflow
++         * measurement on the row read zero. It is unreadable and invisible to
++         * every check that asks about overflow.
++         *
++         * So this asks a different question: do the boxes of two things that
++         * are supposed to sit side by side actually intersect? Scoped to the
++         * chrome and to sibling groups, because overlap is normal and correct
++         * almost everywhere else — a badge on an avatar, a caption over an
++         * image, any deliberate stack. */
++        /* SIBLINGS ARE NOT THE RIGHT UNIT. The first version of this compared
++         * each element with its own siblings, and found nothing — because the
++         * real collision was .brand-lockup against a child of .topbar-nav, and
++         * "Problems" inside the nav against the search field inside .topbar-cta.
++         * Those pairs are cousins, not siblings. A row is laid out from leaves
++         * across several containers, so the leaves are what must not intersect. */
++        const ROWS = [
++          { name: 'the header row', sel: '.brand-lockup, .topbar-nav > *, .topbar-cta > *' },
++          { name: 'the utility strip', sel: '.ub-inner > *' },
++        ];
++        for (const row of ROWS) {
++          const shown = (e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed';
++          const kids = [...document.querySelectorAll(row.sel)].filter((e) => {
++            const cs = getComputedStyle(e);
++            const r = e.getBoundingClientRect();
++            return shown(e) && cs.visibility !== 'hidden' && cs.position !== 'absolute' &&
++                   cs.position !== 'fixed' && r.width > 0 && r.height > 0;
++          });
++          for (let i = 0; i < kids.length && out.collisions.length < 8; i++) {
++            for (let j = i + 1; j < kids.length && out.collisions.length < 8; j++) {
++              const a = kids[i].getBoundingClientRect();
++              const c = kids[j].getBoundingClientRect();
++              const ox = Math.min(a.right, c.right) - Math.max(a.left, c.left);
++              const oy = Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top);
++              if (ox > 1 && oy > 1) {
++                out.collisions.push({
++                  group: row.name,
++                  a: (kids[i].textContent || kids[i].tagName).trim().replace(/\s+/g, ' ').slice(0, 26),
++                  b: (kids[j].textContent || kids[j].tagName).trim().replace(/\s+/g, ' ').slice(0, 26),
++                  px: Math.round(ox),
++                });
++              }
++            }
++          }
++        }
++
+         /* 3. horizontal scrollers a keyboard cannot move (WCAG 2.1.1) */
+         for (const el of document.querySelectorAll('*')) {
+           const cs = getComputedStyle(el);
+@@ -420,6 +479,10 @@ for (const vp of VIEWPORTS) {
+           `page scrolls ${report.overflowPx}px sideways and no unclipped element accounts for it — open devtools at ${vp.width}px`);
+       }
+     }
++    for (const c of report.collisions) {
++      add(route, vp.name, 'overlapping-text',
++        `in ${c.group}, "${c.a}" is printed over "${c.b}" — they overlap by ${c.px}px`);
++    }
+     for (const t of report.tap) {
+       add(route, vp.name, 'tap-target', `<${t.tag}> "${t.label}" is ${t.w}×${t.h}px — below the WCAG 2.5.8 AA floor of ${TAP_FAIL}×${TAP_FAIL}`);
+     }
+@@ -475,8 +538,9 @@ if (advisoryTotal) {
+   console.log(`        worst page: ${worst.route} @ ${worst.viewport} with ${worst.n}`);
+ }
+ if (!findings.length) {
+-  console.log('  ✓ no horizontal overflow, no tap target under the AA floor, no unreachable');
+-  console.log('    scroller, no dead anchor, no anchor landing behind the header.');
++  console.log('  ✓ no horizontal overflow, nothing printed over anything else, no tap target');
++  console.log('    under the AA floor, no unreachable scroller, no dead anchor, no anchor');
++  console.log('    landing behind the header.');
+ } else {
+   for (const [k, n] of Object.entries(byKind)) console.log(`  ${String(n).padStart(4)}  ${k}`);
+   console.log('\n  Detail: audit/rendered.md');
+-- 
+2.43.0
+
