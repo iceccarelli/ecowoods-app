@@ -88,7 +88,12 @@ export function RotatingBackground({
           <div style={{ position: 'absolute', inset: 0, background: scrim }} />
         </div>
         <a href={`${first.creditUrl}?utm_source=ecowoods&utm_medium=referral`} target="_blank" rel="noopener noreferrer"
-          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
+          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em',
+            /* The photographer credit is a real outbound link and it was 18px
+               tall — under the WCAG 2.5.8 AA floor. It is also an obligation
+               under the Unsplash licence, so it has to be reachable, not just
+               present. */
+            display: 'inline-flex', alignItems: 'center', minHeight: 24 }}>
           Photo: {first.credit} / Unsplash
         </a>
       </>
@@ -113,7 +118,12 @@ export function RotatingBackground({
       </div>
       {current && (
         <a href={`${current.creditUrl}?utm_source=ecowoods&utm_medium=referral`} target="_blank" rel="noopener noreferrer"
-          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em' }}>
+          style={{ position: 'absolute', bottom: 10, right: 14, zIndex: 3, fontSize: 'var(--fs-3xs)', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', letterSpacing: '0.02em',
+            /* The photographer credit is a real outbound link and it was 18px
+               tall — under the WCAG 2.5.8 AA floor. It is also an obligation
+               under the Unsplash licence, so it has to be reachable, not just
+               present. */
+            display: 'inline-flex', alignItems: 'center', minHeight: 24 }}>
           Photo: {current.credit} / Unsplash
         </a>
       )}

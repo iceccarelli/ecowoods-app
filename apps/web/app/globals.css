@@ -7618,7 +7618,14 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .tlx-crumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
   font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem; }
-.tlx-crumbs a { color: inherit; text-decoration: none; }
+/* 24px, because WCAG 2.5.8 AA says so and this was 18. Measured, on production,
+   by pnpm audit:rendered. inline-flex rather than a padding guess: the link keeps
+   its own text metrics and simply claims the height a thumb needs. The crumb row
+   is already 1.5rem clear of the title, so nothing moves. */
+.tlx-crumbs a {
+  color: inherit; text-decoration: none;
+  display: inline-flex; align-items: center; min-height: 24px;
+}
 .tlx-crumbs a:hover, .tlx-crumbs a:focus-visible { color: var(--copper-text); }
 .tlx-crumbs span[aria-hidden] { color: var(--muted-soft); }
 .tlx-title { font-family: var(--font-display); font-weight: 600; line-height: 1.12;
@@ -9208,7 +9215,9 @@ a:hover .ill-thumb-img, a:focus-visible .ill-thumb-img { transform: scale(1.03);
   gap: 0.4rem 1rem; }
 .ill-full { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--copper-text); text-decoration: none;
-  white-space: nowrap; border-bottom: 1px solid transparent; }
+  white-space: nowrap; border-bottom: 1px solid transparent;
+  /* 19px before. Same reason as .tlx-crumbs a. */
+  display: inline-flex; align-items: center; min-height: 24px; }
 .ill-full:hover { border-bottom-color: var(--copper); }
 .ill-full:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
 
@@ -9881,6 +9890,9 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 .jc-measure-value em { font-style: normal; font-size: var(--fs-xs); color: var(--muted); margin-left: 0.4rem; }
 .jc-link {
   margin-top: auto;
+  /* Was 22px tall — the call-to-action on a proof card, two pixels under the
+     floor. See the note on .tlx-crumbs a. */
+  display: inline-flex; align-items: center; min-height: 24px;
   font-size: var(--fs-sm);
   color: var(--copper-text, var(--copper));
   text-decoration: underline;

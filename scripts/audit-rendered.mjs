@@ -192,12 +192,29 @@ for (const vp of VIEWPORTS) {
   await page.setViewportSize({ width: vp.width, height: vp.height });
 
   for (const route of ROUTES) {
+    /* NOT networkidle.
+     *
+     * The first production run reported 12 routes unreachable; the second, 59
+     * — on a site that answers every one of them with a 200 to curl. That is
+     * the instrument, not the site. `networkidle` waits for 500ms with no more
+     * than two open connections, and this site has a chat widget, an analytics
+     * beacon and a CSS marquee; on a cold deployment it simply never goes
+     * quiet, so every page "fails" after 45 seconds. `load` is the event that
+     * actually means the page is there, and the settle below is for anything
+     * that lays out late. One retry, because a single timeout on a cold Vercel
+     * function is not a fact about the page. */
     let res;
     try {
-      res = await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45_000 });
-    } catch (e) {
-      add(route, vp.name, 'unreachable', `${String(e.message).split('\n')[0]} (this may be a login redirect, not a broken page — check the status by hand)`);
-      continue;
+      res = await page.goto(BASE + route, { waitUntil: 'load', timeout: 30_000 });
+      await page.waitForTimeout(600);
+    } catch (first) {
+      try {
+        res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        await page.waitForTimeout(1200);
+      } catch (e) {
+        add(route, vp.name, 'unreachable', `two attempts failed — ${String(e.message).split('\n')[0]}`);
+        continue;
+      }
     }
     if (!res || res.status() >= 400) {
       add(route, vp.name, 'status', `HTTP ${res ? res.status() : 'none'} at ${res ? res.url() : BASE + route}`);
@@ -289,7 +306,33 @@ for (const vp of VIEWPORTS) {
             if (cs.visibility === 'hidden' || cs.display === 'none') continue;
             // A link inside running text is text, and text is not a tap target.
             if (el.tagName === 'A' && cs.display === 'inline') continue;
-            const min = Math.min(r.width, r.height);
+            /* THE TARGET IS NOT ALWAYS THE ELEMENT.
+             *
+             * The consent checkboxes measured 13×13 and were reported as the
+             * worst targets on the site. They are 13×13 — and every one of them
+             * sits inside <label class="ef-consent">, so the thing a thumb
+             * actually hits is the label, which is the full width of the form
+             * and three lines tall. WCAG 2.5.8 measures the target, and for a
+             * labelled control the label is part of it. Measuring the input
+             * alone reports a defect that does not exist and, worse, hides the
+             * ones that do underneath it. */
+            let box = r;
+            if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
+              const lab = el.closest('label') ||
+                (el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null);
+              if (lab) {
+                const lr = lab.getBoundingClientRect();
+                if (lr.width > 0 && lr.height > 0) box = lr;
+              }
+            }
+
+            /* Round BEFORE comparing, not after. getBoundingClientRect returns
+             * fractions: a target laid out at exactly 24px comes back as
+             * 23.98…, fails a `>= 24` test, and is then printed as "24×24 —
+             * below the floor of 24×24", which is the kind of output that makes
+             * a person stop believing the tool. Six link styles on this site
+             * land on exactly 24. */
+            const min = Math.min(Math.round(box.width), Math.round(box.height));
             if (min >= TAP_ADVISORY) continue;
             if (min >= TAP_FAIL) { out.tapAdvisory++; continue; }
             const key = `${el.tagName}:${(el.textContent || '').trim().slice(0, 24)}`;
@@ -298,8 +341,8 @@ for (const vp of VIEWPORTS) {
             out.tap.push({
               tag: el.tagName.toLowerCase(),
               label: (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
-              w: Math.round(r.width),
-              h: Math.round(r.height),
+              w: Math.round(box.width),
+              h: Math.round(box.height),
             });
             if (out.tap.length >= 10) break;
           }
