@@ -85,3 +85,9 @@ package-lock.json
 # of the raw repository now carries forever. Deliver a patch as a file; apply it;
 # delete it.
 *.patch
+
+# audit-rendered writes a report per run, against whatever host it was pointed
+# at. Committing it means the repo carries one person's measurement of one
+# deployment as if it were a fact about the code.
+audit/rendered.json
+audit/rendered.md

@@ -205,7 +205,12 @@ export default function CommercialPage() {
           <p className="tlx-kicker">Price</p>
           <h2 className="tlx-h2">The same published bands, itemised by area</h2>
           <p className="tlx-note">{PRICE_PROMISE}</p>
-          <div className="wp-table-wrap">
+          {/* role + tabIndex + a name, like every other wp-table-wrap in the app.
+              Measured by pnpm audit:rendered: this one scrolls 278→307px on a phone
+              and held nothing focusable, so the only way to read the right-hand
+              columns was to drag it with a finger. Eight of the nine wrappers had
+              this; this one did not. */}
+          <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Published bands by area">
             <table className="wp-table">
               <caption>Published bands, Canadian dollars per square foot</caption>
               <thead>
