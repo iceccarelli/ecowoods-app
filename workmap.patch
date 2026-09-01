@@ -1,0 +1,1005 @@
+From e35a7dd32d34fc752881c22b2ca7c8823d319aa4 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 1 Sep 2026 16:41:51 +0000
+Subject: [PATCH] feat(proof): a map of where the work was done, that cannot
+ publish an address
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+"Do you work in my area?" is the second question every visitor has, and until
+now this site answered it only with claims. There are 32 service-area pages, and
+a service-area page is an assertion: we say we work in Leaside because we wrote
+a page saying so. /where-we-work is the other kind of statement — here is a job,
+here is the year, here is the square footage, here is the document with the
+moisture readings in it.
+
+THE ADDRESSES ARE NOT ON IT, AND THAT IS THE DESIGN
+
+The owner has them. The instinct — "show them the houses" — is a good instinct
+pointed at the wrong object, and publishing them would be the one mistake on
+this site that cannot be walked back:
+
+  · A map of private homes, each labelled with what was installed and roughly
+    what it cost, is a shopping list. "3,800 sq ft of maple and a custom inlay
+    staircase, at this pin" is worth more to a burglar than to a customer.
+  · Those addresses are personal information of the homeowners under PIPEDA.
+    Consent to have a floor done is not consent to be mapped.
+  · Scrapers, Street View cross-referencing and the Internet Archive make a
+    published address permanent within hours of the first crawl.
+
+And it buys nothing. Nobody picks a contractor because a pin sits on a specific
+driveway; they pick one because the work is demonstrably nearby and demonstrably
+real. Neighbourhood precision delivers all of the persuasion and none of the
+exposure — and it is what local search actually rewards, because relevance is
+computed over areas and entities, not over street numbers.
+
+scripts/verify-work-map.mjs MAKES THAT STRUCTURAL
+
+Six checks, so it is not a matter of anyone remembering:
+
+  1. NO ADDRESS, BY SHAPE. No Canadian postal code, no street address, no unit
+     number, and no field whose NAME contains address/street/postal/unit/suite/
+     civic — matched as a case-insensitive substring, so `streetAddress:` and
+     `civicNumber:` are the same mistake wearing camelCase.
+  2. THREE DECIMALS, NOT FOUR. 3 dp is ~110 m: a neighbourhood. 4 dp is ~11 m:
+     a house. One keystroke apart, so the keystroke is banned rather than
+     trusted.
+  3. INSIDE THE FRAME. Catches transposed lat/lng — the failure mode where wrong
+     data still looks plausible, because it is only a dot slightly elsewhere.
+  4. EVERY PIN IS EVIDENCE. Each entry names a case study, and the guard re-reads
+     that .mdx and compares neighbourhood, year and square footage. A pin cannot
+     be typed in; it is earned by publishing the job. Same contract as
+     verify-job-cards.mjs, and it means the map can never be padded.
+  5. THE AREA AND SERVICE ARE REAL PAGES, so every pin links somewhere.
+  6. UNVERIFIED COORDINATES DO NOT REACH SCHEMA. COORDS_VERIFIED is false, so no
+     GeoCoordinates node may be emitted. A 29 km-wide drawing tolerates a 300 m
+     error; a machine-readable claim does not, because nothing downstream will
+     ever re-check it. Runbook §11 is the 20-minute task that flips it.
+
+Six negative tests. The FIRST one failed: I put "18 Chestnut Park Road" in a
+`streetAddress` field and the guard passed it — the field pattern demanded an
+exact token, and the street pattern allowed only one word before "Road", which
+misses most streets in this city. Both fixed, both re-tested. A privacy guard
+that passes the thing it exists to stop is worse than none, because it is
+trusted.
+
+THE PICTURE
+
+Inline SVG. No tile vendor — a basemap is not a picture, it is a stream of
+requests handing every visitor's IP and viewport to a third party, which makes
+that vendor a declarable data processor on /privacy and a new CSP origin. P2.4
+was spent REMOVING a third party that was declared and never even fired; adding
+one back to draw five dots would be the same mistake with a nicer view. Two
+kilobytes, zero requests, renders with JavaScript off.
+
+Equirectangular with the longitude axis scaled by cos(latitude): at 43.7°N a
+degree of longitude is 80 km against 111, so without it the city comes out ~40%
+too wide and Etobicoke lands further from downtown than Newmarket. Two lines,
+and the difference between a map and a diagram.
+
+The frame fits the pins, with a FLOOR of ~13 km on how far it may zoom. Fitting
+alone would have zoomed five clustered downtown jobs until the frame was a few
+hundred metres across and the dots started to look like addresses — undoing the
+privacy design in a rendering detail. The list underneath is the accessible
+representation and carries the facts; the SVG is aria-hidden, because a scatter
+of circles read aloud is noise.
+
+Five pins today, because five jobs are published with their measurements. The
+map gets denser the way everything else here does: by publishing the next job.
+
+Also: runbook §12 on advertising sequencing — why the Meta pixel is a legal-
+surface change and not a script tag, and why the first paid dollar belongs on
+search intent with server-side conversions, not on cold social.
+
+VERIFY: 46 guards green. 36 public routes, 0 orphans. tsc adds nothing.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JnM1SffeC3zX5W7tcVWUJ3
+---
+ apps/web/app/components/SiteFooter.tsx |   4 +
+ apps/web/app/components/WorkMap.tsx    | 155 ++++++++++++++++++++
+ apps/web/app/globals.css               | 118 +++++++++++++++
+ apps/web/app/sitemap.ts                |   7 +
+ apps/web/app/where-we-work/page.tsx    | 114 +++++++++++++++
+ apps/web/content/work-map.ts           | 151 +++++++++++++++++++
+ ops/DOMINATION-RUNBOOK.md              |  60 ++++++++
+ package.json                           |   3 +-
+ scripts/verify-work-map.mjs            | 193 +++++++++++++++++++++++++
+ 9 files changed, 804 insertions(+), 1 deletion(-)
+ create mode 100644 apps/web/app/components/WorkMap.tsx
+ create mode 100644 apps/web/app/where-we-work/page.tsx
+ create mode 100644 apps/web/content/work-map.ts
+ create mode 100644 scripts/verify-work-map.mjs
+
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index f60e46c..7eb2fae 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -229,6 +229,10 @@ export default function SiteFooter() {
+               <a href="/technical-library">Technical Library</a>
+               <a href="/blog">Articles</a>
+               <a href="/case-studies">Case Studies</a>
++              {/* The map has to be reachable from the chrome or verify-links.mjs
++                  is right to call it an orphan: a page in the sitemap with no way
++                  in reads as unimportant no matter what the sitemap says. */}
++              <a href="/where-we-work">Where We Work</a>
+               <a href="/design">Floor Designer</a>
+               {/* F-163 moved FloorForge out of the primary nav, where it spent a
+                   tenth of the header on a product name a homeowner comparing three
+diff --git a/apps/web/app/components/WorkMap.tsx b/apps/web/app/components/WorkMap.tsx
+new file mode 100644
+index 0000000..fe99aea
+--- /dev/null
++++ b/apps/web/app/components/WorkMap.tsx
+@@ -0,0 +1,155 @@
++import Link from 'next/link';
++import { WORK_PLACES, GTA_BOUNDS, COORDS_VERIFIED } from '@/content/work-map';
++
++/**
++ * WorkMap — the completed work, plotted.
++ *
++ * WHY IT IS AN INLINE SVG AND NOT A MAP LIBRARY
++ *
++ * A Mapbox, Google or OpenStreetMap basemap is not a picture; it is a stream of
++ * tile requests, and every one of them hands a visitor's IP address and exactly
++ * which part of the city they are looking at to a third party. That makes the
++ * tile vendor a data processor: it belongs in the register on /privacy, which
++ * `pnpm seo:legal` enforces, and its origin belongs in the CSP. This site spent
++ * P2.4 REMOVING a third party that was declared and never even fired. Adding
++ * one back to draw thirty-odd dots would be the same mistake with a nicer view.
++ *
++ * The dots are the content. An inline SVG has no requests, no processor, no CSP
++ * change, renders with JavaScript off, and costs about two kilobytes.
++ *
++ * THE PROJECTION
++ *
++ * Equirectangular, with the longitude axis multiplied by cos(mean latitude).
++ * Without that correction a degree of longitude is drawn the same width as a
++ * degree of latitude, and at 43.7°N a degree of longitude is 80 km against 111 —
++ * the city comes out stretched about 40% too wide and Etobicoke ends up further
++ * from downtown than Newmarket is. It is a two-line fix and it is the difference
++ * between a map and a diagram.
++ *
++ * WHAT THE PICTURE IS ALLOWED TO SAY
++ *
++ * Neighbourhood centroids. Never an address — see the note at the top of
++ * content/work-map.ts and the guard that enforces it. The list underneath is
++ * the accessible representation and the one that carries the facts; the SVG is
++ * aria-hidden, because a scatter of circles read aloud is noise.
++ */
++
++const W = 720;
++
++/**
++ * THE FRAME IS FITTED TO THE WORK, WITH A FLOOR ON HOW FAR IT MAY ZOOM.
++ *
++ * Drawing the whole GTA when every published job is within five kilometres of
++ * downtown gives a blank 60 km rectangle with a smudge in the middle. Fitting
++ * the frame to the pins fixes that — and introduces a worse problem, because
++ * five clustered pins would zoom until the frame is a few hundred metres across
++ * and the dots start to look like addresses. That would quietly undo the whole
++ * privacy design in a rendering detail.
++ *
++ * So MIN_SPAN_LAT is a floor: roughly 13 km, a district. The map can never zoom
++ * closer than that no matter how tightly the work clusters, and it opens out as
++ * jobs are published further afield.
++ */
++const MIN_SPAN_LAT = 0.12;
++const PAD = 0.22;             // of the fitted span, so labels are not clipped
++
++const FRAME = (() => {
++  const lats = WORK_PLACES.map((p) => p.lat);
++  const lngs = WORK_PLACES.map((p) => p.lng);
++  const cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
++  const cLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
++  const scale = Math.cos((cLat * Math.PI) / 180);
++
++  let spanLat = Math.max(Math.max(...lats) - Math.min(...lats), MIN_SPAN_LAT) * (1 + PAD * 2);
++  // Keep the drawing close to 3:2 by deriving the longitude span from it.
++  let spanLng = (spanLat * 1.5) / scale;
++
++  const minLat = Math.max(GTA_BOUNDS.minLat, cLat - spanLat / 2);
++  const maxLat = Math.min(GTA_BOUNDS.maxLat, cLat + spanLat / 2);
++  const minLng = Math.max(GTA_BOUNDS.minLng, cLng - spanLng / 2);
++  const maxLng = Math.min(GTA_BOUNDS.maxLng, cLng + spanLng / 2);
++  return { minLat, maxLat, minLng, maxLng, scale };
++})();
++
++const SPAN_LNG = (FRAME.maxLng - FRAME.minLng) * FRAME.scale;
++const SPAN_LAT = FRAME.maxLat - FRAME.minLat;
++const H = Math.round((W * SPAN_LAT) / SPAN_LNG);
++
++const px = (lng: number) => ((lng - FRAME.minLng) * FRAME.scale * W) / SPAN_LNG;
++const py = (lat: number) => ((FRAME.maxLat - lat) * H) / SPAN_LAT;
++
++/** Graticule lines that actually fall inside the fitted frame. */
++const ticks = (min: number, max: number, step: number) => {
++  const out: number[] = [];
++  for (let v = Math.ceil(min / step) * step; v < max; v += step) out.push(Number(v.toFixed(3)));
++  return out;
++};
++
++export function WorkMap() {
++  const places = [...WORK_PLACES].sort((a, b) => b.year - a.year || b.sqft - a.sqft);
++  const totalSqft = places.reduce((s, p) => s + p.sqft, 0);
++  const years = places.map((p) => p.year);
++
++  return (
++    <div className="wm">
++      <figure className="wm-figure">
++        <svg
++          className="wm-svg"
++          viewBox={`0 0 ${W} ${H}`}
++          preserveAspectRatio="xMidYMid meet"
++          aria-hidden="true"
++          focusable="false"
++        >
++          {/* A quarter-degree graticule, so the eye has a scale to read distance
++              against. Roughly 28 km east–west, 28 km north–south at this latitude. */}
++          <g className="wm-grid">
++            {ticks(FRAME.minLat, FRAME.maxLat, 0.05).map((lat) => (
++              <line key={`h${lat}`} x1={0} x2={W} y1={py(lat)} y2={py(lat)} />
++            ))}
++            {ticks(FRAME.minLng, FRAME.maxLng, 0.05).map((lng) => (
++              <line key={`v${lng}`} y1={0} y2={H} x1={px(lng)} x2={px(lng)} />
++            ))}
++          </g>
++
++          {places.map((p) => (
++            <g key={p.caseStudySlug} className="wm-pin">
++              <circle cx={px(p.lng)} cy={py(p.lat)} r={13} className="wm-halo" />
++              <circle cx={px(p.lng)} cy={py(p.lat)} r={5} className="wm-dot" />
++              <text x={px(p.lng) + 18} y={py(p.lat) + 4} className="wm-label">
++                {p.label}
++              </text>
++            </g>
++          ))}
++        </svg>
++
++        <figcaption className="wm-caption">
++          {places.length} published jobs, {Math.min(...years)}&ndash;{Math.max(...years)},{' '}
++          {totalSqft.toLocaleString('en-CA')} sq ft. Each dot is a{' '}
++          <strong>neighbourhood centroid, not an address</strong> — these were people&rsquo;s homes,
++          and where someone lives is theirs, not ours to publish.
++          {!COORDS_VERIFIED && ' Centroids are approximate and are deliberately not published as structured data.'}
++        </figcaption>
++      </figure>
++
++      {/* The list is the content. The picture is the index. */}
++      <ol className="wm-list">
++        {places.map((p) => (
++          <li key={p.caseStudySlug} className="wm-item">
++            <div className="wm-item-head">
++              <Link href={`/service-areas/${p.areaSlug}`} className="wm-place">
++                {p.label}
++              </Link>
++              <span className="wm-meta">
++                {p.year} · {p.sqft.toLocaleString('en-CA')} sq ft
++              </span>
++            </div>
++            <p className="wm-summary">{p.summary}</p>
++            <Link href={`/case-studies/${p.caseStudySlug}`} className="wm-read">
++              What was measured <span aria-hidden="true">→</span>
++            </Link>
++          </li>
++        ))}
++      </ol>
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index bb80548..2c83b94 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -10143,3 +10143,121 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ .ref-form { max-width: 44rem; }
+ .ref-legal { font-size: var(--fs-xs); color: var(--muted); max-width: 46rem; }
+ /* === EW:P2-REFER END ====================================================== */
++
++
++/* ═══════════════════════════════════════════════════════════════════════
++   THE WORK MAP  —  /where-we-work
++   Inline SVG, no tile vendor, no third-party request, no CSP change. See the
++   note at the top of app/components/WorkMap.tsx for why that is not a
++   compromise: a basemap is a stream of requests that hands a visitor's IP and
++   viewport to somebody else, which makes it a declarable data processor.
++   ═══════════════════════════════════════════════════════════════════════ */
++.wm { margin: var(--space-2xl) 0; }
++
++.wm-figure { margin: 0 0 var(--space-2xl); }
++
++.wm-svg {
++  display: block;
++  width: 100%;
++  height: auto;
++  background: var(--surface-1);
++  border: 1px solid var(--line);
++  border-radius: 14px;
++}
++
++.wm-grid line { stroke: var(--line); stroke-width: 1; opacity: 0.55; }
++
++.wm-halo { fill: var(--copper); opacity: 0.13; }
++.wm-dot  { fill: var(--copper); }
++.wm-label {
++  font-family: var(--font-mono);
++  font-size: 13px;
++  letter-spacing: 0.04em;
++  fill: var(--ink);
++}
++
++.wm-caption {
++  margin-top: 0.9rem;
++  font-size: var(--fs-sm);
++  color: var(--muted);
++  max-width: 62ch;
++  line-height: 1.6;
++}
++
++.wm-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 1px;
++  background: var(--line);
++  border: 1px solid var(--line);
++  border-radius: 14px;
++  overflow: hidden;
++}
++
++.wm-item { background: var(--surface-1); padding: 1.25rem 1.35rem; }
++
++.wm-item-head {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: baseline;
++  justify-content: space-between;
++  gap: 0.5rem 1rem;
++}
++
++/* 24px, the WCAG 2.5.8 AA floor — the same rule the a11y pass applied to every
++   other link on the site. New components do not get to reintroduce it. */
++.wm-place {
++  display: inline-flex; align-items: center; min-height: 24px;
++  font-family: var(--font-display);
++  font-size: var(--fs-lg);
++  font-weight: 600;
++  color: var(--ink);
++  text-decoration: none;
++}
++.wm-place:hover, .wm-place:focus-visible { color: var(--copper-text); }
++
++.wm-meta {
++  font-family: var(--font-mono);
++  font-size: var(--fs-xs);
++  letter-spacing: 0.06em;
++  color: var(--muted);
++  white-space: nowrap;
++}
++
++.wm-summary { margin: 0.5rem 0 0.75rem; color: var(--muted); max-width: 60ch; }
++
++.wm-read {
++  display: inline-flex; align-items: center; min-height: 24px;
++  font-size: var(--fs-sm);
++  color: var(--copper-text, var(--copper));
++  text-decoration: underline;
++  text-underline-offset: 3px;
++}
++.wm-read:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 3px; }
++
++.wm-privacy {
++  margin: var(--space-2xl) 0;
++  padding: 1.4rem 1.5rem;
++  border: 1px solid var(--line);
++  border-left: 3px solid var(--copper);
++  border-radius: 12px;
++  background: var(--surface-2, var(--surface-1));
++}
++.wm-privacy-h {
++  margin: 0 0 0.6rem;
++  font-family: var(--font-display);
++  font-size: var(--fs-lg);
++  font-weight: 600;
++}
++.wm-privacy p { margin: 0 0 0.7rem; color: var(--muted); max-width: 66ch; }
++.wm-privacy p:last-child { margin-bottom: 0; }
++
++@media (max-width: 560px) {
++  /* The neighbourhood labels are the first thing to become unreadable when the
++     drawing is scaled down; the list underneath carries every one of them, so
++     the picture drops to being a picture. */
++  .wm-label { font-size: 17px; }
++  .wm-item-head { flex-direction: column; }
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index b0313ae..f9d642f 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -160,6 +160,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+        the tool printed on the card handed to a finished customer, it is noindex,
+        and it must never compete with /reviews for the query that matters. */
+     entry('/press', 'monthly', 0.8),
++    /* /where-we-work is the highest-intent non-commercial page on the site: it
++       answers "do you work near me" with dated, measured jobs rather than with
++       a claim. Priority sits with the money pages rather than above them, and
++       there is no date because the pins carry their own years — a lastModified
++       here would be the build date wearing a disguise, which verify-sitemap
++       exists to prevent. */
++    entry('/where-we-work', 'monthly', 0.9),
+     entry('/authority', 'monthly', 0.7),                           // no date
+     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
+     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
+diff --git a/apps/web/app/where-we-work/page.tsx b/apps/web/app/where-we-work/page.tsx
+new file mode 100644
+index 0000000..d24b781
+--- /dev/null
++++ b/apps/web/app/where-we-work/page.tsx
+@@ -0,0 +1,114 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { SITE_URL } from '@/lib/seo-data';
++import { WorkMap } from '../components/WorkMap';
++import { WORK_PLACES } from '@/content/work-map';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++const years = WORK_PLACES.map((p) => p.year);
++const SPAN = `${Math.min(...years)}–${Math.max(...years)}`;
++
++export const metadata: Metadata = {
++  title: 'Where the work has been done',
++  description:
++    `Completed hardwood work across ${BUSINESS_NAP.region}, plotted by neighbourhood and linked to the ` +
++    `measurements taken on each job. Neighbourhood precision only — no customer address is published.`,
++  alternates: { canonical: '/where-we-work' },
++  openGraph: {
++    title: `Where ${BUSINESS_NAP.shortName} has worked`,
++    description: `Published jobs across ${BUSINESS_NAP.region}, ${SPAN}, each one linked to what was measured.`,
++    type: 'website',
++    url: `${SITE_URL}/where-we-work`,
++  },
++};
++
++/**
++ * /where-we-work — proof of presence, without publishing anyone's home.
++ *
++ * WHAT THIS PAGE IS FOR
++ *
++ * "Do you work in my area?" is the second question every visitor has, and the
++ * first one this site could not answer with evidence. There are 32 service-area
++ * pages, and a service-area page is a CLAIM: we say we work in Leaside because
++ * we wrote a page saying so. This page is the other kind of statement — here is
++ * a job, here is the year, here is the square footage, here is the document
++ * with the moisture readings in it.
++ *
++ * It is also the strongest local-search asset a trade business can build, for
++ * an unglamorous reason: relevance for "hardwood flooring near me" is computed
++ * over areas and entities, and a page tying named neighbourhoods to dated,
++ * measured, first-party work is the densest honest signal available.
++ *
++ * WHY THERE ARE NO ADDRESSES ON IT
++ *
++ * The owner has the addresses. They belong to the people who live there. See
++ * the note at the top of content/work-map.ts; scripts/verify-work-map.mjs makes
++ * that structural rather than a matter of remembering.
++ *
++ * WHY IT IS THIN TODAY, AND WHAT MAKES IT THICK
++ *
++ * Five pins, because five jobs are published as case studies with their
++ * measurements in them, and a pin may only exist if it points at one. That is
++ * the whole design: the map cannot be padded. It gets denser the way everything
++ * else here gets denser — by publishing the next job.
++ */
++export default function WhereWeWorkPage() {
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: `${SITE_URL}/` },
++          { name: 'Where we work', url: `${SITE_URL}/where-we-work` },
++        ])}
++      />
++
++      <section className="tlx-section">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link>
++            <span aria-hidden="true">/</span>
++            <span>Where we work</span>
++          </nav>
++
++          <p className="tlx-kicker">Evidence</p>
++          <h1 className="tlx-title">Where the work has been done</h1>
++          <p className="tlx-lede">
++            Every dot is a job published in full — the substrate, the moisture readings, the days it
++            took and what it cost to get right. Not a gallery: a set of documents you can check.{' '}
++            {BUSINESS_NAP.shortName} has worked across {BUSINESS_NAP.region} since{' '}
++            {BUSINESS_NAP.foundedYear}, and this is the part of it that is written down.
++          </p>
++
++          <WorkMap />
++
++          <div className="wm-privacy">
++            <h2 className="wm-privacy-h">Why there are no addresses on this map</h2>
++            <p>
++              These were people&rsquo;s homes. An address, next to what was installed and roughly
++              what it cost, is information a burglar values more than a customer does — and the
++              homeowners gave it to a contractor to do a floor, not to be published. So the map
++              draws neighbourhoods, and a build guard rejects a postal code, a street number or a
++              coordinate with a fourth decimal place before it can reach the site.
++            </p>
++            <p>
++              If you want to see the work itself, the case studies carry the measurements, and we
++              bring references to the estimate. Ask on the{' '}
++              <Link href="/#quote">estimate form</Link>, or call{' '}
++              <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
++            </p>
++          </div>
++
++          <p className="tlx-note">
++            Looking for your neighbourhood specifically? Every area we serve has its own page, with
++            the housing stock and the substrates you actually meet there:{' '}
++            <Link href="/service-areas">all service areas</Link>. Or start with{' '}
++            <Link href="/case-studies">the case studies</Link>, or read{' '}
++            <Link href="/framework">how to judge a contractor</Link> before you call anyone.
++          </p>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/content/work-map.ts b/apps/web/content/work-map.ts
+new file mode 100644
+index 0000000..1f0ce5d
+--- /dev/null
++++ b/apps/web/content/work-map.ts
+@@ -0,0 +1,151 @@
++/**
++ * content/work-map.ts — where the work has actually been done.
++ *
++ * WHY THIS FILE IS NOT A LIST OF ADDRESSES
++ *
++ * The owner has the addresses. Publishing them is out of the question, and it
++ * is worth being precise about why, because the instinct — "show them the
++ * houses" — is a good instinct pointed at the wrong object.
++ *
++ *  1. A map of private homes, each labelled with what was installed and
++ *     roughly what it cost, is a shopping list. "3,800 sq ft of maple and a
++ *     custom inlay staircase, at this pin" is information a burglar values more
++ *     than a customer does.
++ *  2. Those addresses are personal information of the homeowners under PIPEDA.
++ *     They were given to a contractor to do work, not to be published. Consent
++ *     to do a floor is not consent to be mapped.
++ *  3. It would be the one mistake on this site that cannot be walked back.
++ *     Scrapers, Street View cross-referencing and the Internet Archive make a
++ *     published address permanent within hours.
++ *
++ * And it buys nothing. Nobody chooses a contractor because a pin sits on a
++ * specific driveway; they choose one because the work is demonstrably nearby
++ * and demonstrably real. Neighbourhood precision delivers all of the persuasion
++ * and none of the exposure — and it is what local search actually rewards,
++ * because relevance is computed over areas, not over street numbers.
++ *
++ * THE RULE, ENFORCED BY scripts/verify-work-map.mjs
++ *
++ *   Neighbourhood centroid, three decimal places, and nothing finer. Ever.
++ *
++ * Three decimals is about 110 m. A fourth decimal is about 11 m, which is one
++ * house, so the guard rejects a fourth decimal outright rather than trusting
++ * anyone to remember. It also rejects a Canadian postal code, a street number,
++ * and any field named address, street, postal or unit — structurally, so the
++ * mistake cannot be made by editing this file.
++ *
++ * WHAT MAKES A PIN LEGITIMATE
++ *
++ * Every entry here is derived from a case study already published on this site,
++ * whose neighbourhood, year and square footage live in its .mdx frontmatter.
++ * The guard re-reads that frontmatter and fails the build if a single figure
++ * here stops matching it — the same contract as content/job-cards.ts. A pin
++ * cannot be added by typing one; it is added by publishing the job.
++ */
++
++/** Coordinate precision. Only `neighbourhood` is permitted — see the note above. */
++export type Precision = 'neighbourhood';
++
++export type WorkPlace = {
++  /** Must resolve to a real /service-areas/<slug> page, or be listed in the guard's exceptions. */
++  areaSlug: string;
++  /** As written in the case study frontmatter. */
++  label: string;
++  lat: number;
++  lng: number;
++  precision: Precision;
++  /** Year the work was done, from the case study's project-date. */
++  year: number;
++  /** Square feet, from the case study's square-footage. */
++  sqft: number;
++  /** Must resolve to a real /services/<slug> page. */
++  serviceSlug: string;
++  /** The published document this pin is evidence for. */
++  caseStudySlug: string;
++  /** One line, in the language of the job. No adjectives that are not measurements. */
++  summary: string;
++};
++
++/**
++ * WHERE THE COORDINATES CAME FROM, AND WHY THEY DO NOT REACH SCHEMA YET.
++ *
++ * These are approximate neighbourhood centroids. They are good enough to draw a
++ * map at the zoom this site draws one — being 300 m out is invisible when the
++ * frame is 60 km wide — and they are NOT good enough to assert as fact in
++ * structured data, where a `GeoCoordinates` node is a claim a machine will
++ * repeat without checking.
++ *
++ * So `COORDS_VERIFIED` is false, and the Place/GeoCoordinates JSON-LD stays
++ * unemitted until somebody opens a map, reads off each centroid and flips it.
++ * Same rule as PROFILE_LINKS: the site renders what it has, and asserts only
++ * what somebody has checked. Runbook §11 is the 20-minute task.
++ */
++export const COORDS_SOURCE =
++  'Approximate neighbourhood centroids, 3 dp (~110 m). NOT yet verified against a mapping source — see ops/DOMINATION-RUNBOOK.md §11.';
++export const COORDS_VERIFIED = false;
++
++/** The frame the map is drawn in. Every pin must fall inside it. */
++export const GTA_BOUNDS = { minLat: 43.40, maxLat: 44.10, minLng: -79.90, maxLng: -78.95 };
++
++export const WORK_PLACES: WorkPlace[] = [
++  {
++    areaSlug: 'rosedale',
++    label: 'Rosedale',
++    lat: 43.679,
++    lng: -79.383,
++    precision: 'neighbourhood',
++    year: 2024,
++    sqft: 3800,
++    serviceSlug: 'hardwood-installation',
++    caseStudySlug: 'rosedale-estate-stairs-radiant-heat',
++    summary: 'Maple and white oak over radiant heat, with a custom inlay staircase.',
++  },
++  {
++    areaSlug: 'forest-hill',
++    label: 'Forest Hill',
++    lat: 43.696,
++    lng: -79.414,
++    precision: 'neighbourhood',
++    year: 2025,
++    sqft: 2100,
++    serviceSlug: 'hardwood-installation',
++    caseStudySlug: 'forest-hill-walnut-wide-plank-color-stability',
++    summary: 'Wide-plank walnut, specified for colour stability under daylight.',
++  },
++  {
++    areaSlug: 'yorkville',
++    label: 'Yorkville',
++    lat: 43.671,
++    lng: -79.393,
++    precision: 'neighbourhood',
++    year: 2025,
++    sqft: 1800,
++    serviceSlug: 'floor-restoration',
++    caseStudySlug: 'yorkville-loft-basement-conversion-moisture-mitigation',
++    summary: 'Basement conversion with moisture mitigation before a board was opened.',
++  },
++  {
++    areaSlug: 'midtown-toronto',
++    label: 'Midtown Toronto',
++    lat: 43.704,
++    lng: -79.398,
++    precision: 'neighbourhood',
++    year: 2025,
++    sqft: 5200,
++    serviceSlug: 'hardwood-installation',
++    caseStudySlug: 'midtown-townhouse-three-level-transition',
++    summary: 'Three levels, three substrates, one continuous floor line.',
++  },
++  {
++    areaSlug: 'downtown-toronto',
++    label: 'Distillery District',
++    lat: 43.650,
++    lng: -79.359,
++    precision: 'neighbourhood',
++    year: 2024,
++    sqft: 2400,
++    serviceSlug: 'floor-refinishing',
++    caseStudySlug: 'distillery-district-victorian-condo',
++    summary: 'Victorian conversion: original strip hardwood assessed, then refinished.',
++  },
++];
+diff --git a/ops/DOMINATION-RUNBOOK.md b/ops/DOMINATION-RUNBOOK.md
+index 2e21a64..607b23f 100644
+--- a/ops/DOMINATION-RUNBOOK.md
++++ b/ops/DOMINATION-RUNBOOK.md
+@@ -259,6 +259,66 @@ nothing to do with the commit.
+ 
+ ---
+ 
++## 11 · Verify the map centroids  ⏱ 20 min · unlocks Place schema
++
++`apps/web/content/work-map.ts` carries approximate neighbourhood centroids and
++`COORDS_VERIFIED = false`. The drawn map is fine — being 300 m out is invisible
++in a 29 km frame. Structured data is not fine: a `GeoCoordinates` node is a
++claim a machine repeats without ever re-checking it, so
++`verify-work-map.mjs` fails the build if one is emitted while that flag is false.
++
++For each of the five entries: open a map, read the neighbourhood centroid, round
++to **three** decimal places, paste. Four decimals is ~11 m — one house — and the
++guard rejects it. Then set `COORDS_VERIFIED = true` and record the source and
++the date in `COORDS_SOURCE`, the same shape as the YellowPages entry in
++PROFILE_LINKS.
++
++**Adding more pins is not a data-entry job.** A pin may only exist if it points
++at a case study `.mdx`, and the guard re-reads that file and compares the
++neighbourhood, the year and the square footage. To put a sixth dot on the map,
++publish the sixth job. That is the constraint that makes the map worth looking
++at.
++
++The addresses stay out. Permanently. Not a policy — a build failure.
++
++---
++
++## 12 · Before you spend a dollar on Meta  ⏱ read this first
++
++The Meta pixel was removed in P2.4, and re-adding it is not a script tag:
++
++- Meta becomes a declared data processor again on `/privacy`. `pnpm seo:legal`
++  fails the build until it is in the register.
++- Its origins go back into the CSP in `next.config.js`.
++- The consent banner needs its toggle back and the consent version bumps to 3,
++  which **re-prompts every returning visitor**. That is a real, measurable cost
++  to conversion for a week or two.
++
++None of that is an argument against advertising. It is an argument about
++sequencing, and about which dollar goes first:
++
++**Search captures intent; Meta interrupts.** Someone typing "hardwood floor
++refinishing Toronto cost" has a floor, a budget and a deadline. Someone
++scrolling Instagram has none of those. For a considered, need-driven, four-to-
++five-figure purchase, the first paid dollar belongs on Google Search and
++Local Services Ads, and the second on retargeting people who already read a
++case study. Meta cold traffic is the third dollar, not the first.
++
++**And the tracking matters more than the channel.** A browser pixel loses
++roughly a third of conversions to ITP, ad blockers and consent refusals, and it
++attributes what is left badly. This site already writes every accepted lead to
++Postgres with a source field. Sending conversions **server-side** — Meta CAPI,
++Google Enhanced Conversions, or both, from `/api/leads` at the moment the lead
++is accepted — is more accurate than any pixel, survives cookie loss, and is
++channel-agnostic. Build that first; it makes every subsequent ad dollar
++measurable instead of merely spent.
++
++Order: GBP and the old-domain 301 (§1, §4, still open) → Google Search + LSA →
++server-side conversions → retargeting → Meta cold. Steps 1 and 2 are free and
++still unfinished.
++
++---
++
+ ## Do not do these
+ 
+ - Do not put HomeStars or Google stars into `aggregateRating`. Google's policy
+diff --git a/package.json b/package.json
+index c02d701..12b3c40 100644
+--- a/package.json
++++ b/package.json
+@@ -21,6 +21,7 @@
+     "verify:papers": "node scripts/verify-papers.mjs",
+     "verify:links": "node scripts/verify-links.mjs",
+     "verify:destinations": "node scripts/verify-destinations.mjs",
++    "verify:workmap": "node scripts/verify-work-map.mjs",
+     "verify:framework": "node scripts/verify-framework.mjs",
+     "verify:client": "node scripts/verify-client-boundary.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+@@ -75,7 +76,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
++    "verify": "pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:rendered": "node scripts/audit-rendered.mjs",
+     "audit:full": "bash scripts/audit-all.sh --full",
+diff --git a/scripts/verify-work-map.mjs b/scripts/verify-work-map.mjs
+new file mode 100644
+index 0000000..a41cb26
+--- /dev/null
++++ b/scripts/verify-work-map.mjs
+@@ -0,0 +1,193 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-work-map.mjs
++ *
++ * The map of completed work is the one feature on this site that could publish
++ * somebody's home address. This guard exists so that it structurally cannot.
++ *
++ * SIX CHECKS
++ *
++ *  1. NO ADDRESS, STRUCTURALLY. No Canadian postal code, no "123 Something
++ *     Street", no unit or apartment number, and no field named address, street,
++ *     postal, unit, suite or civic — anywhere in the file. Not a lint: the
++ *     shapes are rejected by pattern, so the mistake cannot be typed in.
++ *
++ *  2. THREE DECIMAL PLACES, NOT FOUR. 3 dp is ~110 m: a neighbourhood. 4 dp is
++ *     ~11 m: a house. The difference between "we work in Rosedale" and "we
++ *     worked at this address" is one keystroke, so the keystroke is banned
++ *     rather than trusted to memory.
++ *
++ *  3. INSIDE THE FRAME. Every pin falls within the GTA bounding box. This
++ *     catches the classic transposition — lat and lng swapped puts Rosedale in
++ *     Antarctica, and a map is the one component where wrong data still looks
++ *     plausible because it is just a dot in a slightly different place.
++ *
++ *  4. EVERY PIN IS EVIDENCE. Each entry names a case study that exists, and its
++ *     year, square footage and neighbourhood are re-read from that .mdx and
++ *     compared. A pin cannot be added by typing one; it is added by publishing
++ *     the job. Same contract as verify-job-cards.mjs.
++ *
++ *  5. THE AREA IS A REAL PAGE. areaSlug resolves to a served
++ *     /service-areas/<slug>, so every pin can link somewhere a visitor can go,
++ *     and serviceSlug resolves to a real /services/<slug>.
++ *
++ *  6. UNVERIFIED COORDINATES DO NOT REACH SCHEMA. While COORDS_VERIFIED is
++ *     false, no GeoCoordinates node may be emitted. A drawn map at 60 km wide
++ *     tolerates a 300 m error; a machine-readable claim does not, because
++ *     nothing downstream will ever re-check it.
++ *
++ *   node scripts/verify-work-map.mjs
++ */
++import fs from 'node:fs';
++import path from 'node:path';
++
++const ROOT = process.cwd();
++const FILE = path.join(ROOT, 'apps/web/content/work-map.ts');
++const CASE_DIR = path.join(ROOT, 'apps/web/content/case-studies');
++const SEO = path.join(ROOT, 'apps/web/lib/seo-data.ts');
++const SERVICE_PAGES = path.join(ROOT, 'apps/web/lib/service-pages.ts');
++
++if (!fs.existsSync(FILE)) {
++  console.error('verify-work-map: apps/web/content/work-map.ts not found.');
++  process.exit(2);
++}
++const src = fs.readFileSync(FILE, 'utf8');
++const fail = [];
++
++/* ── 1. nothing that could be an address ─────────────────────────────────── */
++const BANNED = [
++  [/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/, 'a Canadian postal code'],
++  // 1–3 capitalised words before the thoroughfare type: "18 Chestnut Park Road",
++  // "4 Rosedale Heights Drive". An earlier version allowed exactly one word and
++  // therefore missed every two-word street in the city, which is most of them.
++  [/\b\d{1,5}\s+(?:[A-Z][a-zA-Z'-]+\s+){1,3}(?:Street|St|Avenue|Ave|Road|Rd|Crescent|Cres|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Crt|Place|Pl|Way|Terrace|Trail|Gardens|Gate|Park)\b/, 'a street address'],
++  [/\b(?:unit|apt|apartment|suite)\s*#?\s*\d+/i, 'a unit or suite number'],
++  // The key is matched as a SUBSTRING and case-insensitively. `streetAddress:`,
++  // `civicNumber:`, `postalCode:` are all the same mistake wearing camelCase,
++  // and an exact-token match caught none of them — the first negative test of
++  // this guard put a real Rosedale address in the file and it passed.
++  [/^[ \t]*\w*(?:address|street|postal|postcode|unit|suite|civic|housenumber)\w*[ \t]*[?!]?:/mi, 'a field that holds an address'],
++];
++for (const [re, what] of BANNED) {
++  const m = src.match(re);
++  if (m) fail.push(`work-map.ts contains ${what}: "${m[0].trim()}". This file publishes neighbourhoods, never locations.`);
++}
++
++/* ── parse the entries ───────────────────────────────────────────────────── */
++const entries = [];
++for (const block of src.split(/\n\s*\{\s*\n/).slice(1)) {
++  const body = block.split(/\n\s*\},?\s*\n/)[0];
++  const get = (k) => {
++    const m = body.match(new RegExp(`\\b${k}:\\s*'([^']*)'`)) || body.match(new RegExp(`\\b${k}:\\s*(-?[\\d.]+)`));
++    return m ? m[1] : null;
++  };
++  if (!get('areaSlug')) continue;
++  entries.push({
++    areaSlug: get('areaSlug'),
++    label: get('label'),
++    lat: get('lat'),
++    lng: get('lng'),
++    year: get('year'),
++    sqft: get('sqft'),
++    serviceSlug: get('serviceSlug'),
++    caseStudySlug: get('caseStudySlug'),
++  });
++}
++if (!entries.length) {
++  console.error('verify-work-map: read no entries out of work-map.ts — the parser is blind. Fix the reader.');
++  process.exit(2);
++}
++
++/* ── 2 + 3. precision and frame ──────────────────────────────────────────── */
++const bounds = (() => {
++  const m = src.match(/GTA_BOUNDS\s*=\s*\{([^}]*)\}/);
++  const n = (k) => Number((m[1].match(new RegExp(`${k}:\\s*(-?[\\d.]+)`)) || [])[1]);
++  return { minLat: n('minLat'), maxLat: n('maxLat'), minLng: n('minLng'), maxLng: n('maxLng') };
++})();
++
++for (const e of entries) {
++  for (const axis of ['lat', 'lng']) {
++    const raw = e[axis];
++    const dp = (raw.split('.')[1] ?? '').length;
++    if (dp > 3) {
++      fail.push(`${e.label}: ${axis} ${raw} has ${dp} decimal places. Three is a neighbourhood (~110 m); four is a house (~11 m). Round it.`);
++    }
++  }
++  const lat = Number(e.lat), lng = Number(e.lng);
++  if (lat < bounds.minLat || lat > bounds.maxLat || lng < bounds.minLng || lng > bounds.maxLng) {
++    fail.push(`${e.label}: ${lat}, ${lng} is outside the GTA frame. Check for transposed lat/lng.`);
++  }
++}
++
++/* ── 4. every pin is evidence ────────────────────────────────────────────── */
++for (const e of entries) {
++  const mdx = path.join(CASE_DIR, `${e.caseStudySlug}.mdx`);
++  if (!fs.existsSync(mdx)) {
++    fail.push(`${e.label}: caseStudySlug "${e.caseStudySlug}" has no .mdx. A pin must point at a published job.`);
++    continue;
++  }
++  const doc = fs.readFileSync(mdx, 'utf8');
++  const hood = (doc.match(/^\s*neighbourhood:\s*(.+)$/m) || [])[1]?.trim();
++  const date = (doc.match(/^project-date:\s*(\d{4})-/m) || [])[1];
++  const sqft = (doc.match(/^square-footage:\s*(\d+)/m) || [])[1];
++  if (hood && hood !== e.label) fail.push(`${e.label}: the case study says the neighbourhood is "${hood}".`);
++  if (date && date !== e.year) fail.push(`${e.label}: year ${e.year} but project-date is ${date}.`);
++  if (sqft && sqft !== e.sqft) fail.push(`${e.label}: sqft ${e.sqft} but square-footage is ${sqft}.`);
++}
++
++/* ── 5. areas and services are real pages ────────────────────────────────── */
++const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
++const seo = fs.readFileSync(SEO, 'utf8');
++const areaSlugs = new Set();
++for (const list of ['AREAS', 'NEIGHBOURHOODS']) {
++  const m = seo.match(new RegExp(`const ${list}\\s*=\\s*\\[([\\s\\S]*?)\\]`));
++  if (m) for (const s of m[1].matchAll(/'([^']+)'/g)) areaSlugs.add(slugify(s[1]));
++}
++const serviceSlugs = new Set(
++  [...fs.readFileSync(SERVICE_PAGES, 'utf8').matchAll(/slug:\s*'([a-z0-9-]+)'/g)].map((m) => m[1]),
++);
++if (!areaSlugs.size || !serviceSlugs.size) {
++  console.error('verify-work-map: could not read the area or service manifests — fix the reader, do not delete the check.');
++  process.exit(2);
++}
++for (const e of entries) {
++  if (!areaSlugs.has(e.areaSlug)) fail.push(`${e.label}: areaSlug "${e.areaSlug}" is in no service area, so the pin links nowhere.`);
++  if (!serviceSlugs.has(e.serviceSlug)) fail.push(`${e.label}: serviceSlug "${e.serviceSlug}" is not a service we sell.`);
++}
++
++/* ── 6. unverified coordinates stay out of schema ────────────────────────── */
++const verified = /COORDS_VERIFIED\s*=\s*true/.test(src);
++if (!verified) {
++  const schemaDirs = ['apps/web/lib/schema', 'apps/web/lib/graph', 'apps/web/lib/structured-data.ts'];
++  for (const rel of schemaDirs) {
++    const p = path.join(ROOT, rel);
++    if (!fs.existsSync(p)) continue;
++    const files = fs.statSync(p).isDirectory()
++      ? fs.readdirSync(p).map((f) => path.join(p, f)).filter((f) => /\.tsx?$/.test(f))
++      : [p];
++    for (const f of files) {
++      const s = fs.readFileSync(f, 'utf8');
++      if (/work-map|WORK_PLACES/.test(s) && /GeoCoordinates/.test(s)) {
++        fail.push(
++          `${path.relative(ROOT, f)} emits GeoCoordinates from the work map while COORDS_VERIFIED is false. ` +
++            'A drawn map tolerates a 300 m error; a machine-readable claim does not. Verify the centroids first — runbook §11.',
++        );
++      }
++    }
++  }
++}
++
++if (fail.length) {
++  console.error(`✗ work map: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}`);
++  console.error('');
++  process.exit(1);
++}
++
++const years = entries.map((e) => Number(e.year));
++console.log(
++  `✓ work map verified — ${entries.length} pin(s), ${new Set(entries.map((e) => e.areaSlug)).size} area(s), ` +
++    `${Math.min(...years)}–${Math.max(...years)}; every figure matches its case study; ` +
++    `neighbourhood precision only, no address in the file; ` +
++    `coordinates ${verified ? 'verified — schema permitted' : 'UNVERIFIED — held out of schema'}`,
++);
+-- 
+2.43.0
+
