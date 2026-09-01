@@ -10405,7 +10405,6 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 .cmdk-trigger kbd { display: none; }
 /* An icon-only control still has to clear the WCAG 2.5.8 AA target floor. */
 .cmdk-trigger { min-width: 38px; justify-content: center; }
-}
 
 /* The panel is a sheet under the bar; on a short laptop screen it must scroll
    rather than run off the bottom of the viewport with no way to reach the end. */
