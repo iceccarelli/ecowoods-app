@@ -49,7 +49,16 @@ export default async function AdminProjectsPage({
           <h1 className="portal-title">Projects</h1>
           <p className="portal-subtitle">{projects.length} projects</p>
         </div>
-        <Link href="/admin/projects/new" className="btn btn-copper btn-sm">+ New Project</Link>
+        {/* There is no /admin/projects/new route, and there was never meant to be:
+            a project is created by converting an accepted quote
+            (admin/quotes/[id]/ConvertToProjectForm). This button used to point at
+            /admin/projects/new, which fell through to /admin/projects/[id], looked
+            up a project with the id "new", found none and rendered a 404 — a
+            primary action in the admin that only ever produced an error page.
+            It now points at the place projects actually come from. */}
+        <Link href="/admin/quotes" className="btn btn-copper btn-sm">
+          + New project from a quote
+        </Link>
       </div>
 
       {/* Status filters */}

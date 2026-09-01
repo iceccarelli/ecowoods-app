@@ -566,7 +566,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
       </section>
 
       <CommercialHeadTermRail />
-      <FeedbackBand topic="this page" />
+      <FeedbackBand topic="this page" estimateHref="#estimate" />
     </div>
   );
 }

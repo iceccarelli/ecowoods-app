@@ -34,9 +34,23 @@ export type RotatorSlide = {
  *
  * WHAT IT DOES NOT COST
  *
- * The first slide is rendered server-side and is the only one marked priority,
- * so a crawler and a cold visitor both get a real figure immediately and the
- * layout is reserved from the manifest's own dimensions. The rest lazy-load.
+ * The first slide is rendered server-side, so a crawler and a cold visitor both
+ * get a real figure immediately and the layout is reserved from the manifest's
+ * own dimensions. The rest lazy-load.
+ *
+ * `priority` IS OPT-IN, AND DEFAULTS OFF. It used to be hard-coded true on the
+ * first slide, which emitted a <link rel=preload as=image> for a 1600px figure
+ * in the document head. That was defensible when this was the most important
+ * image on the page. It stopped being defensible the moment the homepage hero
+ * got a real preload of its own (P2.5): the browser then had two large images
+ * competing for the same first-round bandwidth, and the one that lost was the
+ * LCP element. Measured on the live site — three `as="image"` preloads in the
+ * head, only one of them the hero.
+ *
+ * Both current call sites render this rotator well below the fold — on the
+ * homepage it sits after the quote form, seven sections down — so neither
+ * passes it. Pass `priority` only where this component IS the largest element
+ * in the viewport on load, and never on a page that already preloads a hero.
  * Auto-advance stops on hover, on keyboard focus, when the tab is hidden, and
  * entirely under prefers-reduced-motion — where it becomes a plain manual
  * control, which is also what it is for anyone using a keyboard.
@@ -47,10 +61,13 @@ export type RotatorSlide = {
 export function FigureRotator({
   slides,
   interval = 6500,
+  priority = false,
   label = 'What we can explain',
 }: {
   slides: RotatorSlide[];
   interval?: number;
+  /** Preload the first slide. Only when this rotator is the LCP element. */
+  priority?: boolean;
   label?: string;
 }) {
   const [i, setI] = useState(0);
@@ -102,7 +119,7 @@ export function FigureRotator({
               alt={s.alt}
               sizes="(max-width: 767px) 100vw, (max-width: 1200px) 90vw, 1000px"
               className="figrot-img"
-              priority={n === 0}
+              priority={priority && n === 0}
               loading={n === 0 ? undefined : 'lazy'}
             />
           </figure>

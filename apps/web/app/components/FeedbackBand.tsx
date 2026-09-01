@@ -26,8 +26,30 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
  * to decide what to render next. It sets no cookie, calls no endpoint and names
  * no third party — which is why it needs no entry in the processor register
  * that seo:legal enforces.
+ *
+ * WHY estimateHref IS REQUIRED AND HAS NO DEFAULT
+ *
+ * This band used to hardcode a fragment link to the estimate form. That is
+ * correct on the six money pages that render EstimateForm below it, and it is
+ * a link to nowhere on /refer and /resources, which do not — the page simply
+ * did not move, and a visitor who has just told us "no, I did not find it" got
+ * a dead click as the reply. A component cannot know which page it is on. So
+ * it stops guessing: every caller states where its estimate lives, and
+ * verify-destinations.mjs resolves each of those strings against the page that
+ * passed it. A default would put the guess back and make the guard blind to
+ * it, which is worse than the original bug.
  */
-export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
+export function FeedbackBand({
+  topic = 'this page',
+  estimateHref,
+}: {
+  topic?: string;
+  /**
+   * Where "request an estimate" goes FROM THIS PAGE. '#estimate' when the page
+   * renders the form itself; '/#quote' when it does not. No default — see above.
+   */
+  estimateHref: string;
+}) {
   const [answer, setAnswer] = useState<null | 'yes' | 'no'>(null);
 
   return (
@@ -57,7 +79,7 @@ export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
             <h2 className="fb-h">Good.</h2>
             <p className="fb-sub">
               When you want the number in writing, the estimate is free and the price does not move
-              after we measure. <a href="#estimate">Request one</a>, or call{' '}
+              after we measure. <a href={estimateHref}>Request one</a>, or call{' '}
               <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
             </p>
           </div>
@@ -69,7 +91,7 @@ export function FeedbackBand({ topic = 'this page' }: { topic?: string }) {
             <p className="fb-sub">
               A senior estimator answers the phone during working hours, and there is no script.
               Call <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>, or{' '}
-              <a href="#estimate">send the question with your postcode</a> and we will answer in
+              <a href={estimateHref}>send the question with your postcode</a> and we will answer in
               writing within one business day.
             </p>
           </div>

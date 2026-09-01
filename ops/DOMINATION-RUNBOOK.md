@@ -30,29 +30,60 @@ Then: Google Search Console → old property → **Change of Address** → `http
 Resubmit `https://ecowoods.ca/sitemap.xml` on the new property. Keep the old
 property for 180 days.
 
-## 2 · Fix the headers being injected in front of the site  ⏱ 20 min
+## 2 · The `Access-Control-Allow-Origin: *` — FIXED IN CODE, nothing to click
 
-Measured on the live site after the P0 deploy:
+**This item twice told you to go and find a Vercel dashboard header rule. That
+was wrong**, and it cost you two trips into settings looking for a switch that
+does not exist. The reasoning was an inference from one true fact — the header
+appears in no file in this repository — to a conclusion that was never tested.
+Recorded rather than quietly deleted, because a runbook that hides its own
+corrections is one you cannot trust the rest of.
+
+**What is actually happening:** Vercel attaches `Access-Control-Allow-Origin: *`
+to everything it serves out of static/prerendered storage. It is platform
+behaviour, not configuration. The discriminating measurement is WHICH routes
+carry it — every path that showed it here (`/`, `/refer`, `/commercial`,
+`/robots.txt`) is `○` static or `●` prerendered in the build output, while
+function-rendered routes that do not set CORS themselves carry nothing.
+
+Two things follow, both non-obvious and both worth remembering:
+
+- **Middleware could never have removed it.** The CDN adds the header after
+  middleware has already run, so a delete there is a no-op.
+- **A local test cannot prove the fix.** `next start` never sets the header at
+  all, so any local check passes vacuously. This is verified in production or
+  it is not verified.
+
+**The fix, shipped:** `next.config.js` declares
+`Access-Control-Allow-Origin: <canonical origin>` on every path EXCEPT the agent
+surfaces. `headers()` cannot unset a header, but a declared header becomes part
+of the build output routing config and overrides the platform default —
+publishing the canonical origin instead of `*` has the same practical effect: a
+page on another origin can no longer read the response body.
+
+The machine editions keep their wildcard on purpose (`/llms.txt`,
+`/llms-full.txt`, `/ai.txt`, the `.md` mirrors, `/api/knowledge`): an agent
+fetching them from a browser context needs it, and
+`scripts/verify-vercel-config.mjs` fails the build if they lose it. The
+exclusion pattern was tested against Next's own path-to-regexp before shipping.
+
+**Verify after the next production deploy** — and only there:
 
 ```
-cache-control: public, s-maxage=300, stale-while-revalidate=86400   ← ours, correct
-access-control-allow-origin: *                                      ← NOT ours
-permissions-policy: autoplay=*, camera=(*), microphone=(*), sync-xhr=*, payment=*   ← NOT ours
+curl -sI https://ecowoods.ca/         | grep -i access-control   # → https://ecowoods.ca
+curl -sI https://ecowoods.ca/refer    | grep -i access-control   # → https://ecowoods.ca
+curl -sI https://ecowoods.ca/llms.txt | grep -i access-control   # → *  (still, deliberately)
 ```
 
-The cache header proves the deploy is from this repository. The other two are
-**not produced by any rule in `vercel.json`** — this was verified by compiling
-every header `source` pattern against `/` with the same path-to-regexp Next
-uses; none of them match the homepage.
+If `/` still shows `*` after that deploy, the override did not win over the
+platform default. The remaining lever would be serving the HTML through a
+function instead of from static storage — which costs the prerendering, the
+`s-maxage` caching and the LCP work, and is almost certainly not worth it for a
+public marketing page. Say so in the record and leave it.
 
-So something in front of or above the project is adding them: a Vercel
-project-level header configuration, or a proxy/CDN ahead of Vercel. Find it and
-remove it — `Access-Control-Allow-Origin: *` on an HTML document lets any site
-read the page cross-origin, and that permissions-policy re-enables camera,
-microphone and payment for embedded content that the repo's own policy denies.
-
-Check: Vercel → Project → Settings → (Headers / Firewall / Edge Config), and
-whatever DNS the domain actually resolves through.
+**Also resolved:** the odd `permissions-policy` (`autoplay=*, camera=(*)`) that
+appeared alongside it was a stale pre-P0 deployment. It now reads exactly what
+`vercel.json` says.
 
 ## 3 · Environment variables — features that are built and dormant  ⏱ 15 min
 
@@ -176,6 +207,55 @@ amplify them** into the JobCard component or into `Review` schema. Get written
 consent for two or three, record it, and they can be published properly — with
 first name and neighbourhood — and become first-party `Review` markup. Until
 then they stay where they are.
+
+---
+
+## 9 · Two profile URLs nobody has opened  ⏱ 5 min · do this before the next deploy
+
+`PROFILE_LINKS` in `packages/shared/constants/index.ts` carries two entries that
+the file's own policy — "no URL until someone has opened it and seen an Ecowoods
+page" — does not cover, because they were added under a heading that only says
+the handle *matches the old domain*:
+
+    https://www.instagram.com/ecowoodshardwood
+    https://www.facebook.com/ecowoodshardwood
+
+Everything else in that array records the date it was opened and what was seen
+on it. These two record neither, and they carry the retired brand's handle.
+They are now in two places that matter: `sameAs`, where a wrong URL tells Google
+this business is a different entity, and the footer of every page, where a dead
+one is a broken link on 289 pages.
+
+Open both. Then one of:
+
+- **They are ours and live** → add the read date to the comment above them, the
+  same shape as the YellowPages entry.
+- **They are dead, or they are somebody else's** → delete the two lines. The
+  icons disappear on their own; the footer renders only entries that have an
+  `href`, and `verify-destinations.mjs` will then reject any attempt to link
+  those hosts from anywhere in the app.
+
+Nothing in the code can settle this. It needs one person and two browser tabs.
+
+---
+
+## 10 · Run the rendered audit after each deploy  ⏱ 3 min
+
+    pnpm audit:rendered                       # production
+    pnpm audit:rendered --base http://localhost:3000
+
+Every other check in this repository reads source. This one opens the site in a
+real browser at 320, 390, 768 and 1280 px and measures what source cannot say:
+whether anything scrolls sideways on a phone, whether a tap target is under
+44×44, whether a horizontal rail can be scrolled by keyboard, whether an anchor
+lands behind the sticky header, whether a tab widget can be reached at all.
+
+It writes `audit/rendered.md`. It has the same control probe as
+`crawl-site.mjs`: if the environment cannot reach the site, or has no browser,
+it says so and reports nothing rather than inventing a broken site. It is
+deliberately **not** in `pnpm verify` — it needs the network and a browser, and
+a build guard that depends on either is a build that fails for reasons that have
+nothing to do with the commit.
 
 ---
 

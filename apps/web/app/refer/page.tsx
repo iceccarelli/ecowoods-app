@@ -207,7 +207,7 @@ export default function ReferPage() {
         </div>
       </section>
 
-      <FeedbackBand topic="referrals" />
+      <FeedbackBand topic="referrals" estimateHref="/#quote" />
     </div>
   );
 }

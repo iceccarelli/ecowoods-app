@@ -358,7 +358,7 @@ export default async function ResourcesPage() {
           </div>
         </div>
       </section>
-      <FeedbackBand topic="the library" />
+      <FeedbackBand topic="the library" estimateHref="/#quote" />
     </div>
   );
 }
