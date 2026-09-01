@@ -53,6 +53,16 @@ function useScrollState() {
  * to a page is a page that dies the day the menu breaks.
  */
 const SERVICES_MENU: MegaColumn[] = [
+  /* "Send photos" no longer fits in the header — see the note on .topbar-photos
+     in globals.css. It is the fastest route a visitor has to a real answer, so
+     it does not simply disappear: it leads this menu, one click from every page. */
+  {
+    title: 'Start here',
+    items: [
+      { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
+      { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
+    ],
+  },
   {
     title: 'By the job',
     href: '/services',
