@@ -166,8 +166,20 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a href="#main" className="skip-link">Skip to content</a>
         <Providers>
           <ReadingProgress />
-          <UtilityBar />
-          <Header />
+          {/* ONE CHROME BLOCK, IN FLOW.
+              .topbar was position:fixed at top:0, so it painted directly over
+              the UtilityBar sitting in flow underneath it — measured: the ub
+              occupied y 0–39 and the fixed header y 0–65, so the utility strip
+              was invisible and the first 26px of every page was under the
+              header. When the header hid on scroll, the strip appeared from
+              nowhere, which is the "double header in the wrong place".
+              Sticky keeps the pair in flow, so they reserve their own height —
+              no spacer, no height arithmetic to drift — and still pin on
+              scroll. See .site-chrome in globals.css. */}
+          <div className="site-chrome">
+            <UtilityBar />
+            <Header />
+          </div>
           <main id="main">{children}</main>
           <SiteFooter />
           <ChatWidgetLoader />
