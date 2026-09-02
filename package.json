@@ -26,6 +26,7 @@
     "verify:css": "node scripts/verify-css.mjs",
     "verify:sliders": "node scripts/verify-sliders.mjs",
     "gen:sliders": "node scripts/gen-slider-imports.mjs",
+    "fix:sliderframes": "node scripts/normalise-slider-frames.mjs",
     "verify:framework": "node scripts/verify-framework.mjs",
     "verify:client": "node scripts/verify-client-boundary.mjs",
     "verify:glossary": "node scripts/verify-glossary.mjs",

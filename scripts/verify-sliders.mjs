@@ -112,7 +112,7 @@ for (const p of plates) {
   if (a[0] !== b[0] || a[1] !== b[1]) {
     fail.push(
       `${p.id}: the two frames are ${a[0]}x${a[1]} and ${b[0]}x${b[1]}. A comparison handle ` +
-        'cannot track across two different pixel grids — resize one to the other.',
+        'cannot track across two different pixel grids. Fix: pnpm fix:sliderframes',
     );
   }
 }
