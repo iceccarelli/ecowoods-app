@@ -3,6 +3,7 @@
  */
 
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
 import { getCaseStudy, getAllCaseStudySlugs, getCaseStudies } from '@/lib/content/case-study-loader';
 import { getArticles } from '@/lib/content/loader';
@@ -138,6 +139,7 @@ export default async function CaseStudyPage({ params }: Props) {
 
   return (
     <>
+      <ProofSliderForRoute route={`/case-studies/${slug}`} />
       {/* Inject CaseStudy JSON-LD schema */}
       <SchemaScript schema={caseStudySchema} />
 

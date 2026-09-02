@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
 import { IllustrationThumb } from '../components/IllustrationThumb';
 import { getGuides } from '@/lib/guides';
@@ -41,6 +42,7 @@ export default function GuidesPage() {
 
   return (
     <div className="tlx-page">
+      <ProofSliderForRoute route="/guides" />
       <SchemaScript
         schema={buildWebPageSchema({
           title: 'Decision Guides & Reference Installations — Ecowoods',

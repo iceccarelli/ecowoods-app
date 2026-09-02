@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { EstimateForm } from '../../components/EstimateForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -138,6 +139,7 @@ export default async function ServiceDetailPage({
 
   return (
     <div className="tlx-page">
+      <ProofSliderForRoute route={`/services/${slug}`} />
       <SchemaScript schema={serviceSchema} />
       <SchemaScript
         schema={buildBreadcrumbList([
