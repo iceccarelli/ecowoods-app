@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
@@ -90,6 +91,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
 
   return (
     <div>
+      <ProofSliderForRoute route={`/service-areas/${slug}`} />
       {jsonLd.map((o, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(o) }} />
       ))}

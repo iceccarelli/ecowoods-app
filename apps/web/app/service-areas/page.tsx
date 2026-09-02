@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { breadcrumbSchema } from '@/lib/structured-data';
@@ -18,6 +19,7 @@ export default function ServiceAreasIndex() {
   ]);
   return (
     <div>
+      <ProofSliderForRoute route="/service-areas" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <section className="section">
         <div className="shell">

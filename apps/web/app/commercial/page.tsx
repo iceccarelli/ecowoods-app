@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
@@ -103,6 +104,7 @@ export default function CommercialPage() {
   const url = `${SITE_URL}/commercial`;
   return (
     <div className="tlx-page">
+      <ProofSliderForRoute route="/commercial" />
       <SchemaScript schema={buildFAQPage(FAQS.map((f) => ({ question: f.question, answer: f.answer })))} />
       <SchemaScript
         schema={buildBreadcrumbList([

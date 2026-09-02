@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
@@ -33,6 +34,7 @@ export default function ServicesPage() {
 
   return (
     <div className="tlx-page">
+      <ProofSliderForRoute route="/services" />
       {/*
         Written here rather than through buildWebPageSchema, whose item type is
         TechArticle | CaseStudy. Widening that union so a Service fits would let

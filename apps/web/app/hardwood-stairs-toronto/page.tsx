@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
@@ -144,6 +145,7 @@ const FAQS = [
 export default function HardwoodStairsTorontoPage() {
   return (
     <div className="tlx-page">
+      <ProofSliderForRoute route="/hardwood-stairs-toronto" />
       <SchemaScript schema={buildFAQPage(FAQS.map((f) => ({ question: f.question, answer: f.answer })))} />
       <SchemaScript
         schema={buildBreadcrumbList([
