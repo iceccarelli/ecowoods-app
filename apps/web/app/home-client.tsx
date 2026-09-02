@@ -60,6 +60,9 @@ const BookingPanel = dynamic(() => import('./components/BookingPanel'), {
  * the indexable corpus this whole site is built on, which is not a trade worth
  * making at any speed.
  */
+import { ProofSlider } from './components/ProofSlider';
+import { PROOF_PLATES, HOMEPAGE_PLATE } from '@/content/proof-sliders';
+
 const FloorCatalog = dynamic(() => import('./components/FloorCatalog'), { ssr: true });
 const MachineCatalog = dynamic(() => import('./components/MachineCatalog'), { ssr: true });
 const FigureRotator = dynamic(
@@ -553,6 +556,20 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
       {/* 3 · THE NUMBER — the three published bands, before anything asks for
              a click. Every figure derives from content/constants/pricing.ts. */}
       <PricingSection />
+
+      {/* 4a · THE FLOOR ITSELF, BEFORE AND AFTER.
+             The JobCardRail below is typographic on purpose — no stock
+             photography, no customer names without a consent record. This does
+             not weaken that: the frames are generated illustrations of the KIND
+             of work, registered as such, and the caption names a job type
+             rather than an address. It sits above the cards because a buyer
+             asks "what does it look like" before "what did you measure", and
+             until now this page answered the second question first. */}
+      <section className="section-tight" aria-label="Before and after">
+        <div className="shell">
+          <ProofSlider plate={PROOF_PLATES[HOMEPAGE_PLATE]} />
+        </div>
+      </section>
 
       {/* 4 · FIRST-PARTY PROOF — three finished jobs, in the units they were
              measured in. Every field is copied from a published case study and
