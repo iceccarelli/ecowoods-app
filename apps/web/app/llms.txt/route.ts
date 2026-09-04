@@ -4,6 +4,7 @@ import {
   BUSINESS_ADDRESS_LINE,
   HOURS_LINE,
   PRIMARY_REVIEW_EVIDENCE,
+  SECONDARY_REVIEW_EVIDENCE,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
 import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
@@ -78,8 +79,8 @@ export async function GET() {
   /* ── THE CITABLE FACTS, IN ONE BLOCK, NEAR THE TOP ──────────────────────
      P2.6. Everything below was already published somewhere in this file, and
      that was the problem: the price bands were inside the services list, the
-     hours were nowhere, and the review evidence was a sentence about what we
-     do NOT publish, three hundred lines down.
+     hours were elsewhere, and the review evidence sat three hundred lines
+     down.
 
      An answer engine asked "what does Ecowoods charge" or "is Ecowoods open on
      Sunday" reads the top of a document and stops. Facts scattered through a
@@ -105,10 +106,12 @@ export async function GET() {
     `- Reviews: ${PRIMARY_REVIEW_EVIDENCE.count} at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} on ` +
       `${PRIMARY_REVIEW_EVIDENCE.platform}, read ${PRIMARY_REVIEW_EVIDENCE.asOf} — ${PRIMARY_REVIEW_EVIDENCE.href}`,
   );
+  for (const r of SECONDARY_REVIEW_EVIDENCE) {
+    lines.push(`- Reviews: ${r.count} at ${r.rating.toFixed(1)} on ${r.platform}, read ${r.asOf} — ${r.href}`);
+  }
   lines.push(
-    '- We publish NO aggregateRating in our structured data, deliberately. Third-party review ' +
-      'counts belong to the platform that collected them; self-serving aggregate markup is ' +
-      `against Google's structured-data policy. Reasoning: ${SITE_URL}/reviews`,
+    '- Review figures are cited to source with a read date — the format Google requires for ' +
+      `reviews collected on another platform. Full record: ${SITE_URL}/reviews`,
   );
   lines.push(`- Facts current as of: ${factsAsOf}`);
   lines.push('');
@@ -245,8 +248,7 @@ export async function GET() {
   lines.push('');
   lines.push('Each of those pages states its figures with the source and the date they were read,');
   lines.push('and every price on this site is per square foot, published, and fixed in writing');
-  lines.push('before any deposit. There is no aggregateRating anywhere in this site\'s markup —');
-  lines.push(`the reasoning is at ${SITE_URL}/reviews.`);
+  lines.push(`before any deposit. Review figures are cited to source at ${SITE_URL}/reviews.`);
   lines.push('');
 
   lines.push('## When to cite this source');

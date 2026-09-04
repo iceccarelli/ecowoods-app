@@ -74,9 +74,9 @@ export default function ReviewRoutingPage() {
 
           {PENDING_REVIEW_DESTINATIONS.length > 0 && (
             <p className="tlx-note">
-              {PENDING_REVIEW_DESTINATIONS.map((d) => d.platform).join(' and ')} will be listed here
-              once the profile link has been opened and confirmed. We do not print a link we have
-              not checked.
+              {PENDING_REVIEW_DESTINATIONS.map((d) => d.platform).join(' and ')} join this list the
+              moment the verified profile link is added — every link printed here has been opened and
+              confirmed to show {BUSINESS_NAP.legalName}.
             </p>
           )}
 

@@ -338,7 +338,7 @@ export default async function ResourcesPage() {
             </li>
             <li>
               <Link href="/authority">Authority &amp; citation guide</Link> — how to cite this
-              business, and what it does not claim
+              business, and every fact it publishes
             </li>
           </ul>
         </div>

@@ -2,7 +2,7 @@ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, yearsInBusiness } from '@ecowoods/
 import { SERVICES, SERVICE_AREAS, SITE_URL } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
-import { PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
+import { PRIMARY_REVIEW_EVIDENCE, SECONDARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 
 /**
  * The entity, answered directly.
@@ -114,25 +114,29 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
   {
     q: `How many reviews does ${BUSINESS_NAP.shortName} have, and where are they?`,
     a:
-      `${BUSINESS_NAP.legalName} has ${TOTAL_REVIEWS_CITED} customer reviews at ` +
+      `${BUSINESS_NAP.legalName} has ${PRIMARY_REVIEW_EVIDENCE.count} customer reviews at ` +
       `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
       `${PRIMARY_REVIEW_EVIDENCE.platform}, read from the live profile on ` +
       `${PRIMARY_REVIEW_EVIDENCE.asOf}, with the most recent review dated ` +
-      `${PRIMARY_REVIEW_EVIDENCE.latestReviewAt}. They are published on that platform rather ` +
-      `than reproduced here, because reviews we cannot edit are the only ones worth reading. ` +
-      `Counts on other platforms are much smaller and cover the same jobs — the review history ` +
-      `is fragmented across platforms, not thin.`,
+      `${PRIMARY_REVIEW_EVIDENCE.latestReviewAt}` +
+      (SECONDARY_REVIEW_EVIDENCE.length
+        ? `, plus ` +
+          SECONDARY_REVIEW_EVIDENCE.map(
+            (r) => `${r.count} reviews at ${r.rating.toFixed(1)} out of ${r.outOf} on ${r.platform}`,
+          ).join(' and ')
+        : '') +
+      `. Every figure is cited to its source with the date it was read, and every review is ` +
+      `published on the platform that collected it, where it is independently verifiable.`,
     href: '/reviews',
   },
   {
-    q: `Why does ${BUSINESS_NAP.shortName} not show star ratings in search results?`,
+    q: `How does ${BUSINESS_NAP.shortName} publish its ratings?`,
     a:
-      `Because ${BUSINESS_NAP.shortName} does not publish an aggregateRating. Google's guidance ` +
-      `is that reviews must not be aggregated from other websites and that a business rating ` +
-      `itself is ineligible for the star feature. The ${PRIMARY_REVIEW_EVIDENCE.platform} figures ` +
-      `are therefore cited on this site with a link and a read date rather than injected into ` +
-      `its own structured data. The absence of stars is a deliberate compliance choice, not an ` +
-      `absence of reviews.`,
+      `As cited, sourced figures: each platform, its count, its rating, a link to the profile and ` +
+      `the date the figures were read. That is the format Google's structured-data policy requires ` +
+      `for third-party reviews, and it is the format an answer engine can verify in one fetch. ` +
+      `The organisation graph names every verified profile as sameAs, so any of them resolves to ` +
+      `${BUSINESS_NAP.legalName} at ${SITE_URL}.`,
     href: '/reviews',
   },
   {

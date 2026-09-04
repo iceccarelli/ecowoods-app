@@ -1,11 +1,11 @@
 /**
- * EcoWoods Hardwood Flooring App — v4.0 Production Architecture
+ * Ecowoods Hardwood Flooring App — v4.0 Production Architecture
  * ─────────────────────────────────────────────────────────────────
  * • Bottom Tab Navigator + nested Stack per tab (Instagram pattern)
  * • Each tab keeps its own back-stack history (zero lost context)
  * • Realtime sync via Socket.io (job:updated, bid:created/updated)
  * • Push notifications via expo-notifications (badge counts + banners)
- * • Deep linking (ecowoods:// + https://ecowoodshardwood.com)
+ * • Deep linking (ecowoods:// + https://ecowoods.ca)
  * • TanStack Query for server cache + AppState foreground refresh
  * • Haptic feedback on every tab press (selection feedback)
  * • SafeArea + GestureHandler at the root for new architecture
@@ -98,14 +98,14 @@ const NavTheme = {
 };
 
 /* ==========================================================================
-   DEEP LINKING — ecowoods://bids/42, https://ecowoodshardwood.com/jobs/7, etc.
+   DEEP LINKING — ecowoods://bids/42, https://ecowoods.ca/jobs/7, etc.
    ========================================================================== */
 const linking = {
   prefixes: [
     Linking.createURL('/'),
     'ecowoods://',
-    'https://ecowoodshardwood.com',
-    'https://www.ecowoodshardwood.com',
+    'https://ecowoods.ca',
+    'https://www.ecowoods.ca',
   ],
   config: {
     screens: {

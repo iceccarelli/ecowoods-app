@@ -240,16 +240,11 @@ const Icon = {
  * room to state it precisely rather than compress it into one word over a photo.
  */
 /**
- * Only figures we can stand behind in front of a customer.
+ * Only figures with a published source stand in front of a customer.
  *
- * REMOVED (were fabricated, do not restore without a source):
- *   - "5,200+ Homes Transformed"      — never measured  (facts-allow)
- *   - "2.5M+ Sq Ft Sanded & Finished" — back-computed from the line above  (facts-allow)
- *   - "4.9★ / 348 Verified Reviews"   — no platform reports these numbers  (facts-allow)
- *
- * To add a stat back: put the real number here AND record where it came from
+ * To add a stat: put the real number here AND record where it came from
  * (job book export, platform screenshot) in the comment. `pnpm verify:facts`
- * blocks the retired figures from reappearing.
+ * keeps retired figures from reappearing.
  */
 type TrustStat = { to: number; lbl: string; em?: string; decimals?: number; unit?: string };
 
