@@ -137,7 +137,7 @@ export interface Organization extends SchemaBase {
   email: string;
   description: string;
   slogan?: string;
-  foundingDate?: string; // "1998"
+  foundingDate?: string; // "2000"
   priceRange?: string;
   address: PostalAddress;
   geo: GeoCoordinates;
@@ -148,6 +148,10 @@ export interface Organization extends SchemaBase {
   hasOfferCatalog?: OfferCatalog;
   contactPoint?: ContactPoint[];
   sameAs?: string[];
+  /** The Google Maps place for this business — the map every local result opens. */
+  hasMap?: string;
+  /** Topics this organisation is an authority on — derived from its published services. */
+  knowsAbout?: string[];
 }
 
 export interface ContactPoint {

@@ -1,381 +1,183 @@
-<div align="center">
+# Ecowoods
 
-# 🌳 EcoWoods
+**Ecowoods Hardwood Flooring Inc. → https://ecowoods.ca**
 
-### Toronto Hardwood Flooring — Production Lead Engine + Full-Stack Marketplace Platform (Turborepo)
+The web platform behind Toronto's hardwood flooring authority: installation, refinishing, dust-free sanding, restoration, custom inlays and stair refinishing across Toronto and the Greater Toronto Area since 2000. This repository is the single source of the facts every search engine, map service, directory and AI system resolves for this business.
 
-**The single source of truth.**  
-This document is the canonical contract between the live system, the ready-but-hidden surfaces, the scaffolded futures, the completed strategic planning layer, the commercial domination surfaces, and every human or agent that touches the monorepo.  
-It encodes the exact state of production as of **24 August 2026**, the activation matrix, the non-negotiable invariants, the completed domination infrastructure, and the ranked execution path that turns EcoWoods into the dominant force in GTA hardwood flooring and the reference operating system for Canadian trades.
+This file is the only status document in the repository. It describes the current state of the live site, as verified on the date below. Everything else that describes the business is generated from code.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Web%20live%20on-Vercel-000000?logo=vercel)](https://ecowoods.ca)
-[![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?logo=next.js)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![Turborepo](https://img.shields.io/badge/Monorepo-Turborepo-EF4444?logo=turborepo)](https://turborepo.com)
-[![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220?logo=pnpm)](https://pnpm.io)
-[![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?logo=prisma)](https://prisma.io)
-[![FastAPI](https://img.shields.io/badge/Backend%20(undeployed)-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Backend-Docker-2496ED?logo=docker)](https://docker.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-**Live production →** [https://ecowoods.ca](https://ecowoods.ca)
-
-</div>
+_State verified live: 2026-09-04._
 
 ---
 
-> ### ⚠️ READ THIS FIRST — Absolute System State (24 August 2026)
->
-> **EcoWoods is a production-grade lead-generation + authority engine** for a Toronto hardwood flooring company operating since 2000.
->
-> The **one fully live, revenue-generating path** remains immutable:
-> ```
-> Landing page / commercial pages → Quote form (react-hook-form + shared Zod) → POST /api/leads
-> → re-validation → durable log capture (ALWAYS FIRST)
-> → best-effort Prisma → best-effort Resend/SMTP admin email
-> → optional LEADS_WEBHOOK_URL forward
-> ```
->
-> **What is now live and verified (August 2026):**
-> - Two high-intent commercial head-term pages: `/hardwood-flooring-toronto` and `/hardwood-floor-refinishing-toronto`
-> - Page-level schema (FAQPage + WebPage + BreadcrumbList + nested Service) on those pages
-> - Root LocalBusiness + HomeAndConstructionBusiness schema (clean — no invented prices, no aggregateRating)
-> - Aggressive `llms.txt` that forces the two commercial pages as primary citation targets for the head terms
-> - 32 unique service-area pages, full technical library, decision guides, framework, case studies, knowledge API
-> - IndexNow + sitemap + robots that explicitly welcome AI crawlers
-> - Full strategic planning layer, schema system, verification suite (facts, schema, reviews, cities, outreach, etc.)
->
-> **What is still incomplete (must be closed without mercy):**
-> - Old domain (`ecowoodshardwood.com`) still returns 200 / 404 instead of pure 301 → https://ecowoods.ca
-> - Google Business Profile not fully optimized (highest remaining map-pack + AI lever)
-> - Review volume automation (Day +1 / Day +7) not yet wired into closed-job flow
-> - Directory consistency (Apple, Bing, Yelp, Houzz, BBB) incomplete
-> - Advanced surfaces (RenoGuide chat, booking calendar, Stripe deposits) still hidden
->
-> This README is the single source of truth.  
-> **Any architectural change that alters what is live / ready / scaffolded / DONE MUST update this file in the same PR.**  
-> Agents and engineers: treat every statement below as a hard constraint until this document is revised.
+## One identity
+
+| Field | Value |
+| --- | --- |
+| Legal name | Ecowoods Hardwood Flooring Inc. |
+| Public name | Ecowoods (one word, capital E) |
+| Website | https://ecowoods.ca |
+| Email | services@ecowoods.ca |
+| Phone | (647) 244-5156 |
+| Address | 32 Norfield Crescent, Toronto, ON M9W 1X6, Canada |
+| Founded | 2000 (year count is derived, never hardcoded) |
+| Hours | Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM (America/Toronto) |
+| Market | Toronto and the Greater Toronto Area |
+| Organisation `@id` | `https://ecowoods.ca/#organization` |
+
+Source of truth: `packages/shared/constants/index.ts` (`BUSINESS_NAP`, `BUSINESS_HOURS`, `PROFILE_LINKS`, `REVIEW_EVIDENCE`). Press, about, footer, JSON-LD, `/llms.txt`, `/ai.txt`, `/api/knowledge` and every `.md` edition render from these constants, so the NAP string is identical on every surface. `pnpm verify` fails the build if a retired literal reappears.
+
+**Services (published):** Hardwood Flooring Installation · Hardwood Floor Refinishing · Dust-Free Floor Sanding · Hardwood Floor Restoration · Custom Inlays & Borders · Stair Refinishing.
+
+**Price bands (CAD, fixed in writing after a free in-home measure):** Screen & Recoat $2.50–$4.00 /sq ft · Full Sand & Finish $4.75–$7.50 /sq ft · New Hardwood Install $11.00–$18.00 /sq ft. Source: `apps/web/content/constants/pricing.ts`.
+
+**Reviews (cited to source, read live):**
+
+| Platform | Rating | Reviews | Most recent | Read on |
+| --- | --- | --- | --- | --- |
+| [HomeStars](https://www.homestars.com/profile/2776939-ecowoods/reviews) | 5.0 / 5 | 177 | 2026-08-10 | 2026-08-22 |
+| [HomeStars (Ecowood profile)](https://www.homestars.com/profile/2897115-ecowood/reviews) — owner-confirmed same company | 4.9 / 5 | 59 | 2024-01-16 | 2026-09-04 |
+| [Google](https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4) | 4.8 / 5 | 19 | see profile | 2026-09-04 |
+
+Review figures are published as cited statistics — platform, count, rating, link, read date — the format Google's structured-data policy requires for reviews collected on another platform. `scripts/verify-reviews.mjs` enforces it.
+
+**Verified profiles (declared as `sameAs`):** Google Maps place (Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4, also `hasMap`), HomeStars (2776939-ecowoods), HomeStars (2897115-ecowood), Instagram `@ecowoodshardwood`, Facebook `/ecowoodshardwood`, YellowPages.ca listing 102363922.
+
+**Google Business Profile identifiers:** Business Profile ID `9189101272120311568` (dashboard / support) · Place ID `ChIJcZSiRZAwK4gRUz7OX0_K7U4` (write-review link) · CID `5687424346697383507` (Maps deep link) · knowledge-graph id `/g/11g02cm1tr`.
 
 ---
 
-## 📑 Table of Contents
+## Status — confirmed live 2026-09-04
 
-1. [Status at a Glance (The Only Table That Matters)](#-status-at-a-glance-the-only-table-that-matters)
-2. [Commercial Domination Surfaces (August 2026)](#-commercial-domination-surfaces-august-2026)
-3. [What the Live Site Does](#-what-the-live-site-does)
-4. [The Lead-Capture Flow (The One Real Revenue Path)](#-the-lead-capture-flow-the-one-real-revenue-path)
-5. [Architecture — What Actually Runs vs What Is Ready](#-architecture--what-actually-runs-vs-what-is-ready)
-6. [Real Tech Stack](#-real-tech-stack)
-7. [Repository Structure (Annotated & Accurate)](#-repository-structure-annotated--accurate)
-8. [Schema & AI Discoverability Invariants](#-schema--ai-discoverability-invariants)
-9. [Roadmap — Ranked by Business Impact (Execute This)](#-roadmap--ranked-by-business-impact-execute-this)
-10. [How Any AI Agent Should Continue This Work](#-how-any-ai-agent-should-continue-this-work)
-11. [Known Gaps & Tech Debt](#-known-gaps--tech-debt)
-12. [Environment Variables](#-environment-variables)
-13. [Deployment & Verification](#-deployment--verification)
-14. [Contributing](#-contributing)
-15. [License](#-license)
-
----
-
-## 🚦 Status at a Glance (The Only Table That Matters)
-
-| Surface / Feature                          | State          | Reality (24 Aug 2026)                                                              | Action Required                  |
-|--------------------------------------------|----------------|------------------------------------------------------------------------------------|----------------------------------|
-| **`apps/web` marketing site**              | 🟢 **Live**    | Next.js 15 App Router. Auto-deploys from `main`.                                   | Keep green                       |
-| **Commercial head-term pages**             | 🟢 **Live**    | `/hardwood-flooring-toronto` + `/hardwood-floor-refinishing-toronto` live, schema’d, in sitemap, IndexNow | Monitor rankings + AI citations |
-| **Root + page-level JSON-LD**              | 🟢 **Live**    | LocalBusiness + Services + FAQPage + BreadcrumbList. Zero invented prices / aggregateRating | Keep integrity guards green     |
-| **`llms.txt` + `/api/knowledge`**          | 🟢 **Live**    | Aggressive citation targets for head terms. Knowledge API live.                    | Keep current                     |
-| **`POST /api/leads`**                      | 🟢 **Live**    | Zod → durable log → best-effort Prisma → best-effort email                         | Set `DATABASE_URL` + `RESEND_API_KEY` |
-| **32 service-area pages**                  | 🟢 **Live**    | Unique local content per neighbourhood                                             | Keep                             |
-| **Technical library + framework**          | 🟢 **Live**    | 3 papers, 11 guides, 27-criterion framework, glossary, case studies                | Expand volume                    |
-| **Old domain 301s**                        | 🔴 **Broken**  | Measured 2026-08-26: apex AND www, http AND https, all serve a live 200 page titled “Portfolio \| Hardwood Floor Repair in Toronto, Vaughan, Markham”, with a 33-URL sitemap. It outranks ecowoods.ca on the company’s own branded query. Repo side is **ready**: `old-domain/` + `vercel.json` + `next.config.js` all now redirect from `old-domain/path-map.json`. Blocked on host access or a DNS/domain attach. | **Fix today** (see roadmap)      |
-| **Google Business Profile**                | 🟠 **Partial** | Exists but not fully optimized for map-pack                                        | Execute checklist this week      |
-| **Review volume automation**               | 🟠 **Process** | Docs exist; Day +1 / Day +7 not wired                                              | Wire into closed-job flow        |
-| **Directory consistency**                  | 🟠 **Partial** | HomeStars strong; Apple/Bing/Yelp/Houzz/BBB incomplete                             | Claim + exact NAP                |
-| **Prisma + Email**                         | 🟢 **Ready**   | Full schema + Resend/SMTP coded                                                    | Activate with env vars           |
-| **RenoGuide AI / Booking / Stripe / PDF**  | 🟠 **Ready**   | Fully coded, not surfaced                                                          | Surface after P0                 |
-| **FastAPI marketplace**                    | 🟠 **Real**    | Complete, undeployed                                                               | Deploy or archive                |
-| **Web CI**                                 | 🟢 **Live**    | `.github/workflows/web.yml` — 13 guards → `prisma generate` → `tsc --noEmit` → production build, on every push to `main` and every PR | Keep green                       |
-| **Rate limiting**                          | 🟢 **Live**    | `apps/web/lib/rate-limit.ts`, imported by `/api/leads`, `/api/pilot-leads`, `/api/estimate` | Move to a shared store before it matters |
-| **Analytics / error tracking**             | 🔴 **None**    | —                                                                                  | Add after revenue path safe      |
-| **`ecowoods-app.vercel.app`**              | 🔴 **Broken**  | Publicly serves a STALE build with different copy, different price bands, and the retired “4.9 · 348 verified reviews / aggregated across Google, HomeStars, Houzz, and BBB” claim. `vercel.json` now 301s that host, but only a fresh production deploy of THIS repo can put that rule in force. | Deploy, then confirm the alias 301s |
-
-**Legend**  
-🟢 Live / production-wired / DONE · 🟠 Fully coded or process-ready, not yet production-complete · 🔴 Blocking or missing
+| Surface | Status | Evidence |
+| --- | --- | --- |
+| Canonical domain `https://ecowoods.ca` | Confirmed | `/`, `/press`, `/about`, `/reviews`, `/llms.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml` all 200 on the canonical host; sitemap carries 126 URLs, every one on `ecowoods.ca`. |
+| NAP on press / about / footer / schema / llms / ai | Confirmed | Legal name, public name, phone, address, founded 2000 and hours identical on every surface (live read 2026-09-04). |
+| `robots.txt` | Confirmed | Allows all crawlers including Googlebot, Bingbot, OAI-SearchBot, GPTBot, PerplexityBot, ClaudeBot and Claude-User; sitemap and host declared. |
+| JSON-LD | Confirmed | One stable organisation node `https://ecowoods.ca/#organization`; `sameAs` and `alternateName` derived from constants. |
+| HomeStars 2776939-ecowoods | Confirmed | Live 2026-09-04: 177 reviews, 5.0/5, most recent 2026-08-10. |
+| HomeStars 2897115-ecowood | Confirmed, owner-attested | Live 2026-09-04: "Ecowood", 4.9/5, 59 reviews. Wired as `sameAs` and a second dated evidence row. |
+| Bing Places | Listed — owner alignment pending | Live 2026-09-04 (Bing Maps): name **"Ecowoods Inc."**, website `https://www.ecowoods.ca`, category Flooring contractors, address 32 Norfield Crescent, Etobicoke ON M9W 1X6, phone +1 647-244-5156, hours **Fri 08:00–22:00, Sat 08:00–16:00**. Name and hours are aligned by the owner in Bing Places for Business (see below). |
+| Google Business Profile | Confirmed — phone field is the one owner edit | Live 2026-09-04 (Maps + Search): "Ecowoods Hardwood Flooring" · Flooring contractor · 32 Norfield Crescent, Etobicoke, ON M9W 1X6 · website ecowoods.ca · Mon–Sat 8 am–7 pm, Sun 10 am–4 pm · 4.8 from 19 reviews · areas served Toronto and nearby. Website, address, hours and category match the locked set. The listing shows "Add place's phone number" — add (647) 244-5156 in the dashboard (§1). |
+| YellowPages.ca 102363922 | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 32 Norfield Cres, Etobicoke, 647-244-5156 — NAP match. Website field and hours are updated by the owner (see below). |
+| Retired host `ecowoodshardwood.com` | Redirect ready — owner deployment pending | Live 2026-09-04 (`pnpm seo:domain`): 35 legacy URLs answer 200 from `Apache/2.4.68 (Debian)`. Two ways to close it, either one is enough (§4). Every directory below still points its website field at this host, so this single change corrects all of them for crawlers at once. |
+| Stale alias `ecowoods-app.vercel.app` | Second live copy — owner deletion pending | Live 2026-09-04: answers 200 with a superseded build (no `/reviews`, no `/llms.txt` → 404; homepage carries retired figures). `vercel.json` has redirected this host for weeks, so the alias is served by a Vercel project this repository does not deploy. `pnpm seo:hosts` watches it (§5). |
+| 411.ca listing 7521278 | Listed — website field pending | Live 2026-09-04: "Ecowoods Hardwood", 32 Norfield Crescent, Toronto M9W 1X6, 647-244-5156 — NAP match; website `ecowoodshardwood.com`; hours Mon–Fri 7–21, Sat/Sun by appointment; email ecowoodshardwood@yahoo.com; states "National Wood Flooring Association Member #050884". |
+| TrustedPros `ecowoods-inc` | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 647-244-5156, 32 Norfield Crescent, Toronto ON M9W 1X6 — NAP match; website `ecowoodshardwood.com`; 0 reviews. |
+| n49 / canada247 | Unverified this session | Both answered 403 to every probe (CloudFront block); re-read from a Canadian IP. |
+| Review automation | Confirmed in code | `lib/review-request.ts`: one ungated email per COMPLETED project, stamped before it sends, triggered by `updateProjectStatus()` and swept hourly by `/api/cron/review-requests` (cron in `vercel.json`, guarded by `CRON_SECRET`). Same destinations as `/r`; `scripts/verify-outreach.mjs` enforces it. |
+| Error tracking | Confirmed in code | `instrumentation.ts` (`onRequestError`) + `app/error.tsx` + `app/global-error.tsx` + `/api/client-error` → `lib/error-reporting.ts`: structured stderr line on Vercel, forwarded to `ERROR_WEBHOOK_URL` when set. |
+| Geo coordinates | Confirmed | `BUSINESS_NAP.address` now carries Google's pin for the address (43.7197642, -79.546973), read live 2026-09-04. |
+| Analytics | Confirmed in code — env pending | `CookieConsentBanner` loads GA4 only after consent and only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel; `lib/analytics.ts` fires the conversion events. `pnpm env:check` shows what is set. |
+| Verify suite | Confirmed | `pnpm verify` — 50 guards — passes on this commit. |
 
 ---
 
-## 🎯 Commercial Domination Surfaces (August 2026)
+## Owner actions — the field sheet
 
-These two pages exist specifically to own the head terms that previously had no dedicated surface:
-
-| URL | Primary head terms | Schema | Status |
-|-----|--------------------|--------|--------|
-| `/hardwood-flooring-toronto` | hardwood flooring Toronto, hardwood floor installation Toronto, best hardwood contractor Toronto, hardwood flooring cost Toronto | FAQPage + WebPage + BreadcrumbList + Service | Live |
-| `/hardwood-floor-refinishing-toronto` | hardwood floor refinishing Toronto, dust-free sanding Toronto, floor sanding Toronto, cost to refinish hardwood Toronto | FAQPage + WebPage + BreadcrumbList + Service | Live |
-
-Both pages:
-- Publish exact price bands (sourced from the same constants used site-wide)
-- Link to the Well-Installed Framework and technical papers
-- Are listed first in `llms.txt` preferred citation targets
-- Are in the sitemap and have been IndexNow-submitted
-
-**Invariant:** No invented prices, no aggregateRating, no currency/percentage literals under `lib/schema` or `lib/graph`. The verification suite (`verify:schema-figures`, `verify:reviews`) enforces this.
-
----
-
-## 🧭 What the Live Site Does
-
-The marketing site is a high-conversion, high-authority system for EcoWoods (Toronto & GTA hardwood flooring).
-
-Core surfaces:
-- Homepage (craft + trust + quote form)
-- Two commercial head-term pages (above)
-- 6 service pages
-- 32 service-area pages with unique local content
-- Technical papers, decision guides, Well-Installed Framework (27 criteria)
-- Case studies, glossary, resources hub
-- `/authority`, `/llms.txt`, `/ai.txt`, `/api/knowledge`, markdown editions of every major document
-- Quote form → `POST /api/leads` (the only conversion surface that matters)
-
-Public narrative remains pure craftsmanship, fixed pricing, dust-free process, and salaried crews. All advanced operational surfaces stay deliberately unsurfaced until the remaining P0 items are closed.
-
----
-
-## 🎯 The Lead-Capture Flow (The One Real Revenue Path)
-
-**Guiding principle (enforced in code and in this contract):**
-> Once a lead validates, it is captured. Period. Downstream failures must never cost a lead.
+Every listing below carries exactly these values. Copy them verbatim.
 
 ```
-Visitor → Quote form (react-hook-form + shared Zod)
-       → POST /api/leads
-       → re-validate
-       → durable log (lead.captured) ← ALWAYS FIRST
-       → best-effort Prisma QuoteRequest
-       → best-effort admin email
-       → optional webhook
-       → 201 to client
+Business name:   Ecowoods Hardwood Flooring Inc.
+Website:         https://ecowoods.ca
+Phone:           (647) 244-5156
+Address:         32 Norfield Crescent, Toronto, ON M9W 1X6, Canada
+Primary category: Flooring contractor (secondary: Wood floor installation service, Wood floor refinishing service)
+Hours:           Monday–Saturday 08:00–19:00 · Sunday 10:00–16:00
+Opened:          2000
+Email:           services@ecowoods.ca
+Description:     Ecowoods Hardwood Flooring Inc. installs, sands, refinishes and restores hardwood floors across Toronto and the GTA, since 2000. Fixed written estimates after a free in-home measure. Dust-free HEPA sanding, custom inlays and stair refinishing. Salaried crews, workmanship warranty.
 ```
 
-**Source of truth:** `apps/web/app/api/leads/route.ts`  
-**Shared contract:** `@ecowoods/shared` → `leadSchema`  
-**Invariant:** The `lead.captured` console event is synchronous and unconditional. Any change that moves or conditions this line is a breaking change to the revenue path.
+1. **Google Business Profile** (ID 9189101272120311568) — business.google.com → Edit profile → Contact → add phone **(647) 244-5156**; set the business name to the legal name if Google accepts it (the current "Ecowoods Hardwood Flooring" is joined via `alternateName`); confirm the Facebook link points at facebook.com/ecowoodshardwood (Google currently shows a numeric page id); add the six services and the description from the sheet; upload real job photos. The Maps deep link and the write-review link are already wired in `packages/shared/constants/index.ts` and render on /reviews, /r, the schema (`sameAs` + `hasMap`), /llms.txt and /ai.txt.
+2. **Bing Places** — bingplaces.com → claim the existing listing (do not create a duplicate). Change name from "Ecowoods Inc." to the legal name, set hours to Mon–Sat 08:00–19:00 / Sun 10:00–16:00, website to `https://ecowoods.ca`.
+3. **Directories** — YellowPages.ca (102363922), 411.ca (7521278) and TrustedPros (`ecowoods-inc`): set website to `https://ecowoods.ca`, hours to the sheet, email to services@ecowoods.ca. 411.ca states NWFA member #050884 — if the certificate is on file, send it to the repo and the claim enters `content/claims.ts` and the schema; until then it stays off the site.
+4. **Retired host `ecowoodshardwood.com`** — pick one, both end in every legacy URL 301ing to the canonical page:
+   - **DNS (recommended, ~10 minutes, no server access):** at the registrar, point `ecowoodshardwood.com` and `www` at Vercel (`A 76.76.21.21` / `CNAME cname.vercel-dns.com`), then Vercel → this project → Settings → Domains → add both hosts. `vercel.json` already carries the 15 host-scoped 301s for them.
+   - **Apache:** upload `old-domain/.htaccess` to the document root, remove the old site files, keep the TLS certificate renewing.
+   Then `pnpm seo:domain` must report 0 failures, and only then file the change of address in Google Search Console.
+5. **Stale Vercel alias** — vercel.com → every team you own → find the project whose Domains tab lists `ecowoods-app.vercel.app` (it is not the project that serves ecowoods.ca) → delete it. `pnpm seo:hosts` turns green when the alias 404s or redirects.
+6. **Vercel environment** — set `CRON_SECRET` (both crons), `ERROR_WEBHOOK_URL` (a Slack/Discord incoming webhook, optional), `NEXT_PUBLIC_GA_MEASUREMENT_ID`, and confirm `RESEND_*`, `ADMIN_EMAIL`, `NEXTAUTH_URL=https://ecowoods.ca`. `vercel env pull apps/web/.env.local && pnpm env:check` prints what is still unset.
+7. **HomeStars** — ask HomeStars support to merge profile 2897115-ecowood into 2776939-ecowoods so one profile carries the whole record; until then both are cited.
+8. **Houzz** — once a Houzz `/pro/` profile exists, paste its URL into `PROFILE_LINKS` (`Houzz`).
+
+After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVIDENCE` where a figure changed.
 
 ---
 
-## 🏛 Architecture — What Actually Runs vs What Is Ready
+## What the site publishes
 
-- **Production (Vercel):** `apps/web` only. Next.js 15 App Router, all commercial pages, schema, llms, knowledge API, lead path.
-- **Ready (needs env + surface):** Prisma persistence, Resend email, RenoGuide chat, booking calendar, Stripe, PDF generation.
-- **Strategic layer (DONE):** Domination plan, GEO masterplan, case-study system, AI discoverability, schema guides, verification suite.
-- **Scaffold / parallel product:** FastAPI marketplace, dual Expo mobile apps, static admin.
-
-The live web app never calls the FastAPI backend. Coupling is forbidden unless the PR that introduces it also updates this README.
-
----
-
-## 🧱 Real Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Monorepo | Turborepo + pnpm 9.15 |
-| Web | Next.js 15 App Router, React 19, TypeScript 5.6, Tailwind, framer-motion, react-hook-form + Zod, TanStack Query |
-| ORM | Prisma 5 + PostgreSQL (multiSchema) |
-| Auth | NextAuth v5 (conditional) |
-| Email | Resend + nodemailer SMTP |
-| AI | Vercel AI SDK + Claude / OpenAI (RenoGuide) |
-| Payments | Stripe (routes ready) |
-| PDF | @react-pdf/renderer |
-| Shared | `@ecowoods/shared`, `@ecowoods/api-client`, `@ecowoods/ui`, `@ecowoods/types` |
-| Backend | FastAPI + SQLAlchemy 2 (undeployed) |
-| Mobile | Expo (demo) |
-| Hosting | Vercel (web) |
+- **Commercial pages**: `/`, `/services/*`, `/hardwood-flooring-toronto`, `/hardwood-floor-refinishing-toronto`, `/hardwood-stairs-toronto`, `/service-areas/*` (32 areas), `/commercial`, `/realtors`.
+- **Authority**: `/papers` (5 technical papers), `/framework` (Well-Installed Framework v1.0 — 6 pillars, 27 criteria), `/guides`, `/glossary` (44 terms), `/standards`, `/data`, `/library`, `/case-studies`, `/blog`.
+- **Entity**: `/about`, `/team`, `/press`, `/reviews`, `/authority`.
+- **Machine surfaces**: `/llms.txt`, `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, and a `.md` edition of every paper, guide, glossary term, service and service area.
+- **Lead path**: estimate form → `/api/estimate` → Resend email + database record; booking scheduler; `/r` (noindex) is the printed review card destination.
+- **Review flywheel**: admin marks a project COMPLETED → `lib/review-request.ts` stamps `Project.reviewRequestedAt` and sends the one review email (Google first, then HomeStars — the same links as `/r`, to every customer, no sentiment step); `/api/cron/review-requests` sweeps hourly for anything the trigger missed.
+- **Observability**: every uncaught server error (`instrumentation.ts`) and every client render failure (`app/error.tsx`, `app/global-error.tsx` → `/api/client-error`) becomes one structured JSON line in the Vercel log and, when `ERROR_WEBHOOK_URL` is set, one webhook post. GA4 loads after consent.
 
 ---
 
-## 🗂 Repository Structure (Annotated)
+## Repository
 
 ```text
-ecowoods-app/
-├── apps/web/                          🟢 LIVE PRODUCT
-│   ├── app/
-│   │   ├── hardwood-flooring-toronto/     🟢 commercial head term
-│   │   ├── hardwood-floor-refinishing-toronto/ 🟢 commercial head term
-│   │   ├── service-areas/                 🟢 32 unique pages
-│   │   ├── services/                      🟢 6 services
-│   │   ├── papers/ guides/ framework/ case-studies/ ...
-│   │   ├── api/leads/                     🟢 money path
-│   │   ├── llms.txt/route.ts              🟢 aggressive citation guide
-│   │   └── ...
-│   ├── lib/schema/                        🟢 root + commercial schema builders
-│   └── prisma/schema.prisma               🟢 full models
-├── packages/                              🟢 shared contracts
-├── docs/outreach/                         🟢 review flow + directory + domain docs
-├── scripts/                               🟢 verify-* suite + IndexNow + domain redirect verifier
-├── backend/                               🟠 FastAPI marketplace
-├── apps/mobile/                           🟠 Expo demos
-└── *.md                                   🟢 strategic layer (Domination Plan, Audit, GEO, etc.)
+apps/web                 Next.js 15 (App Router) — the live site
+apps/admin, apps/mobile  companion apps
+packages/shared          BUSINESS_NAP, hours, PROFILE_LINKS, REVIEW_EVIDENCE, AI prompt
+apps/web/lib/schema      JSON-LD builders (organisation, services, pages)
+apps/web/lib/entity-answers.ts   the entity, answered in quotable sentences
+apps/web/content         claims registry, pricing constants, topic map, articles, case studies
+scripts/verify-*.mjs     50 build guards (facts, schema, reviews, links, sitemap, canonicals …) + live checks (domain, hosts)
+apps/web/lib/review-request.ts, app/api/cron/review-requests   the post-job review flywheel
+apps/web/lib/error-reporting.ts, instrumentation.ts              error tracking
+old-domain/              generated redirect configs for the retired host
+docs/papers-pending, docs/visual, docs/illustrations   source material for papers and images
 ```
 
----
+### Commands
 
-## 🔒 Schema & AI Discoverability Invariants
+```bash
+pnpm install
+pnpm dev                 # turbo dev --filter=@ecowoods/web
+pnpm build
+pnpm verify              # every guard; must pass before push
+pnpm seo:consistency     # facts + claims + pricing + topics + entity + canonicals
+pnpm seo:live            # live: old-domain redirect + stale hosts + crawl of the deployed site
+pnpm seo:hosts           # live: ecowoods-app.vercel.app and www must redirect to the canonical
+pnpm domain:check        # old-domain redirect configs match path-map.json
+pnpm env:check           # which production integrations are configured (values never printed)
+pnpm notify:indexnow     # after every meaningful content change
+```
 
-These are non-negotiable and enforced by the verification suite:
+### Environment
 
-1. **No aggregateRating** in any schema (reviews are cited to HomeStars with read date).
-2. **No currency or percentage literals** under `apps/web/lib/schema` or `apps/web/lib/graph`.
-3. Every number that appears in schema or public claims must be derived from a published constant or live external source with date.
-4. `llms.txt` must list the two commercial pages as the first preferred citation targets for the head terms. Order below them is fixed: `/hardwood-stairs-toronto`, `/reviews`, then one routed row per `SERVICE_AREAS` entry for local hire-intent, then the library. Local rows are generated from `SERVICE_AREAS` — never hand-listed.
-5. Every major document must also be available as clean Markdown (`.md` suffix or `/llms-full.txt`).
-6. Robots.txt must explicitly allow all major AI crawlers.
-7. **`sameAs` comes from `PROFILE_LINKS` and nothing else.** A profile gets an `href` only after someone opened the URL and saw this company on it. Confirmed and linked: HomeStars (`2776939-ecowoods`), Instagram, Facebook, YellowPages.ca. Searched 2026-08-26 and confirmed ABSENT — leave unlinked, do not construct a URL: Google Business Profile, Houzz, Apple, Bing Places, Foursquare, Yelp, BBB, ThreeBestRated. HomeStars `2897115-ecowood` is a **different company**; never wire it.
-8. **The old domain redirects from one map.** `old-domain/path-map.json` is the source; `pnpm domain:build` generates `.htaccess`, `nginx.conf`, `_redirects` and `vercel-redirects.json`; `vercel.json` carries a verbatim copy and `apps/web/next.config.js` requires the generated file. `pnpm domain:check` fails the build on drift. **These redirects are deliberately NOT path-preserving** — the two sites share zero paths, so preserving them 404s every legacy URL.
-
-Breaking any of these fails the corresponding `verify:*` script and is a regression.
-
----
-
-## 🗺 Roadmap — Ranked by Business Impact (Execute This)
-
-### 🔴 P0 — Close the Remaining Structural Leaks (This Week)
-
-| # | Action | Success Metric |
-|---|--------|----------------|
-| 1 | **Fix old domain 301s** — upload the pure `.htaccess`, empty residual content, run `node scripts/verify-domain-redirect.mjs` until zero failures | Every path on ecowoodshardwood.com returns 301 → ecowoods.ca |
-| 2 | File Google Search Console Change of Address (old property → ecowoods.ca) | Confirmed |
-| 3 | Fully optimize Google Business Profile (categories, services with exact ranges, photos, weekly posts, Q&A seeded from commercial FAQs) | Map-pack ready |
-| 4 | Set `DATABASE_URL` + `RESEND_API_KEY` + `ADMIN_EMAIL` | Leads persist + owner email arrives |
-| 5 | ~~Rate-limit `/api/leads` + move Unsplash key to env~~ — **DONE.** `lib/rate-limit.ts` is wired into three routes; `api/backgrounds/route.ts` reads `UNSPLASH_ACCESS_KEY` from env with no fallback | Closed |
-| 6 | **Point `ecowoods-app.vercel.app` at the canonical host.** The rule is in `vercel.json`; it takes effect on the next production deploy of this repo. If that alias belongs to a different project, detach it. | The alias 301s to ecowoods.ca and stops serving the 348-review claim |
-| 7 | **Correct the YellowPages.ca listing’s website field** — it currently reads `ecowoodshardwood.com`. Real, NAP-matched listing; wrong canonical. | Website field reads `ecowoods.ca` |
-
-### 🟠 P1 — Convert + Compound (Next 2 Weeks)
-
-| # | Action |
-|---|--------|
-| 6 | Wire Day +1 / Day +7 review request SMS/email into closed-job path |
-| 7 | Claim Apple Business Connect, Bing Places, Yelp, Houzz, BBB with exact NAP |
-| 8 | Add verified profile URLs to `sameAs` in root schema |
-| 9 | Surface RenoGuide chat widget + “Book In-Home Estimate” CTA |
-| 10 | Publish additional high-density guides / case studies |
-
-### 🟡 P2 — Operational Excellence
-
-| # | Action |
-|---|--------|
-| 11 | Functional Next.js admin + customer portal |
-| 12 | Stripe deposit flow on accepted quotes |
-| 13 | Web CI (typecheck + build + Playwright) + PostHog + Sentry |
-| 14 | Scale case studies and knowledge graph |
-
-### 🟢 P3 — Scale
-
-| # | Action |
-|---|--------|
-| 15 | Deploy or archive FastAPI marketplace |
-| 16 | Ship one clean mobile app |
-| 17 | Referral system + full authority content layer |
-
----
-
-## 🤖 How Any AI Agent Should Continue This Work
-
-1. **Always read this README first.** It is the source of truth. If code and document diverge, the document wins until a PR reconciles them.
-2. **Never invent features that already exist.** Inspect `apps/web/lib/`, `lib/schema/`, `packages/shared`, the commercial pages, and the full suite of `*_SUMMARY.md` / `EXECUTION_REPORT_*.md` / Domination Plan first.
-3. **P0 is sacred.** Do not open new feature work until the old domain returns pure 301s and the revenue path has live DB + email.
-4. **Preserve the lead invariant:** capture first (log), notify second, never fail the customer.
-5. **Update this README in the same PR** as any change that alters the live / ready / scaffolded / DONE matrix.
-6. When adding UI for RenoGuide / booking / Stripe, reuse existing modules. Reimplementation is a defect.
-7. Treat the Domination Plan, GEO masterplan, schema guides, and all EXECUTION_REPORTs as binding. Execute them; do not re-plan what is already planned.
-8. Respect the schema integrity invariants (no aggregateRating, no invented figures under schema paths).
-9. Prefer extending the existing Prisma models and commercial schema builders over creating parallel systems.
-10. After any successful P0 item, the next highest-value action is always the next item on the ranked roadmap.
-
-Agents that follow this contract keep the system coherent and accelerate domination. Agents that ignore it introduce drift and are to be corrected by the next human or agent that reads this file.
-
----
-
-## 🧹 Known Gaps & Tech Debt (Current)
-
-| Area | Reality |
-|------|---------|
-| Old domain | Still 200 / 404 — **blocking** |
-| Google Business Profile | Exists, not fully optimized |
-| Review automation | Process docs only |
-| Directory consistency | Incomplete |
-| Persistence / Email | Ready, needs env activation |
-| Advanced surfaces | Coded, hidden |
-| Web CI / Analytics / Rate limit | Missing |
-| FastAPI / Mobile / Admin | Scaffold or parallel product |
-
----
-
-## 🔐 Environment Variables
-
-**P0 required for full lead path:**
 ```bash
 DATABASE_URL=postgresql://...
 DIRECT_URL=postgresql://...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=quotes@ecowoods.ca
 ADMIN_EMAIL=owner@ecowoods.ca
-NEXTAUTH_SECRET=...          # real secret, no fallback
+NEXTAUTH_SECRET=...
 NEXTAUTH_URL=https://ecowoods.ca
+NEXT_PUBLIC_SITE_URL=https://ecowoods.ca
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-...
+CRON_SECRET=...              # authorises /api/cron/quote-recovery and /api/cron/review-requests
+ERROR_WEBHOOK_URL=https://... # optional: Slack/Discord/any webhook that receives error reports
 ```
 
-**Highly recommended:**
-```bash
-UNSPLASH_ACCESS_KEY=...      # remove hardcoded fallback
-LEADS_WEBHOOK_URL=...
-STRIPE_* keys
-ANTHROPIC_API_KEY / OPENAI_API_KEY
-```
+Lead capture degrades gracefully: an unset optional variable never blocks a lead.
 
-Graceful degradation is intentional: missing env vars must never break lead capture to logs.
+### Rules that keep the entity whole
 
----
+1. Every customer-visible fact comes from a constant. Never type a phone number, year, price or review count at a call site.
+2. A profile URL enters `PROFILE_LINKS` only after it has been opened and shows this company.
+3. Public name is **Ecowoods**; legal name is **Ecowoods Hardwood Flooring Inc.**; canonical site is **https://ecowoods.ca**. Code identifiers keep their existing spelling.
+4. Public copy states facts and sources. Every surface communicates what Ecowoods publishes and where it is verified.
+5. `pnpm build` and `pnpm verify` must pass before any push. Branch from `main`; open a pull request.
 
-## 🚀 Deployment & Verification
+### Contributing and security
 
-- Every push to `main` deploys to Vercel → https://ecowoods.ca
-- Pre-push and post-deploy guards: `pnpm verify` (facts, schema, reviews, cities, outreach, schema-figures, IndexNow, etc.)
-- Live verification: `bash scripts/verify-live.sh` (must pass, including old-domain redirects once fixed)
-- IndexNow: `pnpm notify:indexnow` after every meaningful content change
-- Domain redirects: `node scripts/verify-domain-redirect.mjs` (must report zero failures)
+Open an issue or pull request on GitHub. Report a security concern privately to services@ecowoods.ca.
 
----
+## License
 
-## 🤝 Contributing
-
-1. Feature branch → PR against `main`.
-2. `pnpm build` + full `pnpm verify` must pass.
-3. Update this README in the same PR if you change what is live / ready / scaffolded / DONE.
-4. Never break the lead-capture invariant or the schema integrity rules.
-5. Prefer extending existing commercial schema builders and Prisma models.
-
----
-
-## 📜 License
-
-[MIT](LICENSE) © EcoWoods contributors
-
----
-
-<div align="center">
-
-### EcoWoods is no longer sleeping.
-
-The commercial head-term pages, schema system, AI citation surfaces, technical authority layer, and verification suite are live.  
-The remaining work is closing the old-domain leak, finishing Google Business Profile, wiring review volume, and activating the already-coded operational surfaces.
-
-**P0 is days of focused execution, not months of planning.**  
-After that, the system becomes the default recommendation for GTA hardwood flooring queries — both in search and in every major AI agent.
-
-*This README is the single source of truth. Keep it perfect.  
-Any agent or engineer who changes the system without updating this document has broken the contract.*
-
-</div>
+MIT — see `LICENSE`.

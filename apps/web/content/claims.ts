@@ -105,9 +105,7 @@ export const CLAIMS: Claim[] = [
     source: 'Owner-confirmed (Francisco). BUSINESS_NAP.foundedYear.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
-    note:
-      'The site previously published 1998 in some places and "27 years" / "over 25 years" ' + // facts-allow
-      'in others. verify-business-facts.mjs now bans all three literals.',
+    note: 'Every year count derives from this value; verify-business-facts.mjs bans stale literals.',
   },
   {
     id: 'business.yearsInBusiness',

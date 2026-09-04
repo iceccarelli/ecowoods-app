@@ -3,7 +3,7 @@
  * These functions are the source of truth for what Ecowoods emits to search engines and AI agents.
  */
 
-import { PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
+import { PROFILE_LINKS, BUSINESS_HOURS, GOOGLE_MAPS_URL } from '@ecowoods/shared/constants';
 import type {
   Organization,
   Service,
@@ -149,6 +149,10 @@ export function buildOrganization(config: OrganizationConfig): Organization {
      * also links the entity to real reviews.
      */
     sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
+    ...(GOOGLE_MAPS_URL ? { hasMap: GOOGLE_MAPS_URL } : {}),
+    /* knowsAbout: the published services, by name — the topics an answer
+       engine should associate with this entity. Derived, never typed. */
+    knowsAbout: config.services.map((svc) => svc.name),
   };
 }
 

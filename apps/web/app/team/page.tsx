@@ -215,15 +215,14 @@ export default function TeamPage() {
         </div>
       </section>
 
-      <section className="tlx-section" aria-label="What we do not publish">
+      <section className="tlx-section" aria-label="How this page is sourced">
         <div className="shell">
-          <p className="tlx-kicker">Straight about the gap</p>
-          <h2 className="tlx-h2">What this page does not claim</h2>
+          <p className="tlx-kicker">Verifiable by design</p>
+          <h2 className="tlx-h2">What this page states</h2>
           <p className="tlx-note">
-            There are no names, headcounts, tenure figures or crew photographs on this page. Every
-            other number on this site is derived from something published — the price bands, the
+            Every number on this site is derived from something published — the price bands, the
             criterion count, the review figures with the date they were read — and this page is held
-            to the same rule. Nothing goes here until it is real and verifiable.
+            to the same rule: everything here is real and verifiable.
           </p>
           <p className="tlx-note">
             What is stated above is: salaried employees rather than subcontractors, the same crew

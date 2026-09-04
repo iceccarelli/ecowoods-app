@@ -26,7 +26,7 @@
  */
 
 import { Resend } from 'resend';
-import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, LIVE_REVIEW_DESTINATIONS } from '@ecowoods/shared/constants';
 
 // ── Transport selection ────────────────────────────────────────────────────────
 
@@ -618,4 +618,83 @@ export async function sendAdminNewPilotLeadEmail(data: {
     `,
     text: `New pilot lead from ${data.name} (${data.role}) — ${adminUrl}`,
   });
+}
+
+// ─── Post-job review request ──────────────────────────────────────────────────
+/**
+ * The one email every completed job sends, identical for every customer.
+ *
+ * It lists every verified review destination (LIVE_REVIEW_DESTINATIONS — the
+ * same constant /r renders) with no ordering by sentiment, no "how did we do?"
+ * step and no incentive. Google's Maps UGC policy prohibits selectively
+ * soliciting positive reviews; this template cannot, because it has no branch.
+ * scripts/verify-outreach.mjs fails the build if one is added.
+ */
+export function reviewRequestEmail({ name, projectTitle }: { name: string; projectTitle: string }) {
+  const firstName = name.trim().split(/\s+/)[0] || 'there';
+  const site = (process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/$/, '');
+  const destinations = LIVE_REVIEW_DESTINATIONS;
+
+  const html = `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#1a0f08;">
+        <div style="background:#1a0f08;padding:24px 32px;text-align:center;">
+          <h1 style="color:#fdfbf6;margin:0;font-size:20px;font-weight:300;letter-spacing:2px;">ECOWOODS</h1>
+          <p style="color:#c87e4f;margin:4px 0 0;font-size:12px;">TORONTO HARDWOOD FLOORING</p>
+        </div>
+        <div style="padding:32px;">
+          <h2 style="color:#1a0f08;margin-top:0;">Thank you, ${firstName}.</h2>
+          <p>Your project — <strong>${projectTitle}</strong> — is complete. If you have two minutes, a review
+             on the platform you prefer helps the next homeowner choose with confidence.</p>
+          ${destinations
+            .map(
+              (d) => `
+          <div style="margin:20px 0;">
+            <a href="${d.href}"
+               style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
+              Write a review on ${d.platform}
+            </a>
+            <p style="color:#6b5d52;font-size:13px;margin:8px 0 0;">${d.note}</p>
+          </div>`,
+            )
+            .join('')}
+          <p>Write whatever is true. Reviews are published by the platform, where we cannot edit them,
+             and every customer receives this same note.</p>
+          <p style="color:#6b5d52;font-size:13px;">
+            Questions about the floor? Call ${BUSINESS_NAP.phoneDisplay} or reply to this email.
+            Prefer not to receive review requests? Reply with "stop" and we will note it.
+          </p>
+        </div>
+        <div style="background:#f5efe6;padding:16px 32px;text-align:center;font-size:12px;color:#6b5d52;">
+          ${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE} · <a href="${site}" style="color:#6b5d52;">${site.replace(/^https?:\/\//, '')}</a>
+        </div>
+      </div>
+    `;
+
+  const text = [
+    `Thank you, ${firstName}.`,
+    '',
+    `Your project — ${projectTitle} — is complete. If you have two minutes, a review on the platform you prefer helps the next homeowner choose with confidence.`,
+    '',
+    ...destinations.map((d) => `Write a review on ${d.platform}: ${d.href}`),
+    '',
+    'Write whatever is true. Every customer receives this same note.',
+    `Questions? Call ${BUSINESS_NAP.phoneDisplay} or reply to this email. Prefer not to receive review requests? Reply with "stop".`,
+    '',
+    `${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE} · ${site}`,
+  ].join('\n');
+
+  return { subject: `Your Ecowoods floor is done — would you leave a review?`, html, text };
+}
+
+export async function sendReviewRequestEmail({
+  to,
+  name,
+  projectTitle,
+}: {
+  to: string;
+  name: string;
+  projectTitle: string;
+}) {
+  const { subject, html, text } = reviewRequestEmail({ name, projectTitle });
+  await sendEmail({ to, subject, html, text });
 }

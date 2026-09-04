@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   BUSINESS_NAP,
   PRIMARY_REVIEW_EVIDENCE,
-  TOTAL_REVIEWS_CITED,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICES, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
@@ -113,7 +112,7 @@ const FAQS = [
   {
     question: 'What reviews does Ecowoods have?',
     answer:
-      `${TOTAL_REVIEWS_CITED} reviews at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ` +
+      `${PRIMARY_REVIEW_EVIDENCE.count} reviews at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ` +
       `${PRIMARY_REVIEW_EVIDENCE.outOf} on ${PRIMARY_REVIEW_EVIDENCE.platform}, read from the live ` +
       `profile on ${PRIMARY_REVIEW_EVIDENCE.asOf}. They are published there rather than reproduced ` +
       `here, because reviews we cannot edit are the only ones worth reading.`,

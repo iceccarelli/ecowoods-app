@@ -82,15 +82,10 @@ export const localBusinessSchema = {
       // itself. Shipping it is a documented cause of manual "Spammy structured
       // markup" actions, which cost the rich result AND the local pack.
       //
-      // The 4.9 / 348 figure this file used to name is not legitimate anywhere.  (facts-allow)
-      // No platform reports it; verify-business-facts.mjs bans the string; and
-      // the only place it still renders is a stale deployment on the
-      // ecowoods-app.vercel.app alias, which vercel.json now 301s to the
-      // canonical host. The real, citable figure is REVIEW_EVIDENCE in
-      // packages/shared/constants — HomeStars, with its URL and read date.
-      // If Ecowoods wants stars in the SERP, the supported route is
-      // third-party aggregators (Google Business Profile, HomeStars, Houzz)
-      // emitting it about Ecowoods — which they already do.
+      // The citable figures are REVIEW_EVIDENCE in packages/shared/constants —
+      // each platform with its URL and read date. Stars in the SERP come from
+      // the platforms (Google Business Profile, HomeStars) emitting them about
+      // Ecowoods.
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
         name: 'Hardwood Flooring Services',
@@ -108,6 +103,7 @@ export const localBusinessSchema = {
       },
       // Derived from PROFILE_LINKS — see the note in lib/schema/builders.ts.
       sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
+      ...(GOOGLE_MAPS_URL ? { hasMap: GOOGLE_MAPS_URL } : {}),
     },
   ],
 };
@@ -117,7 +113,7 @@ export const localBusinessSchema = {
  * The localBusinessSchema above is unchanged.
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
-import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS, GOOGLE_MAPS_URL } from '@ecowoods/shared/constants';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 
 /** WebSite entity — helps Google understand the site + name. */

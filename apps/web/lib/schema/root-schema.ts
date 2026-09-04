@@ -23,11 +23,10 @@ import {
   buildWebSite,
   buildBreadcrumbList,
   buildFAQPage,
-  buildAggregateRating,
   type OrganizationConfig,
   type FAQItem,
 } from './builders';
-import type { Organization, WebSite, BreadcrumbList, FAQPage, AggregateRating } from './types';
+import type { Organization, WebSite, BreadcrumbList, FAQPage } from './types';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -222,26 +221,14 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
 };
 
 /* ────────────────────────────────────────────────────────────────────────
- * REVIEW AGGREGATE
+ * REVIEWS
  * ────────────────────────────────────────────────────────────────────────
  *
- * 348 verified reviews @ 4.9/5 from Google, Houzz, HomeStars combined.  (facts-allow)
- * NOT embedded in LocalBusiness (see comment in original structured-data.ts).
- * Kept separate for schema.org compliance.
+ * Review figures are cited to source (REVIEW_EVIDENCE in
+ * packages/shared/constants) on /reviews, /llms.txt and /ai.txt with a link
+ * and a read date. The organisation node carries no self-serving
+ * aggregateRating, per Google's structured-data policy.
  */
-
-/**
- * ⚠️ DO NOT WIRE THIS INTO ANY EMITTED SCHEMA.
- *
- * The 4.9 / 348 figures it used to carry were not reported by any review
- * platform. Beyond that, Google's structured-data policy prohibits
- * self-serving aggregateRating markup on your own LocalBusiness — see the
- * standing note in lib/structured-data.ts.
- *
- * Kept only so the export does not break; it resolves to null and the value
- * is never rendered. Delete once nothing imports it.
- */
-export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
 
 /* ────────────────────────────────────────────────────────────────────────
  * HOMEPAGE FAQ
@@ -255,8 +242,7 @@ export const ROOT_AGGREGATE_RATING: AggregateRating | null = null;
  * comparison before it was removed, so this is a de-duplication and not a
  * content change. A third copy still lives in app/home-client.tsx as the
  * VISIBLE text, and its wording has already drifted from this one; reconciling
- * the two is a content decision and is recorded in audit/DEFERRED.md Q5.
- * See audit/FINDINGS.md F-28.
+ * the two is a content decision.
  */
 export const HOMEPAGE_FAQ_ITEMS: FAQItem[] = FAQ_ITEMS.map((f) => ({
   question: f.q,

@@ -11,10 +11,10 @@ import type { SVGProps } from 'react';
      B. 32×32, a different silhouette        ChatWidget, CommandPalette,
         with a thinner inner curve           FloorConfigurator
 
-   A homeowner who opens EcowoodsGuide saw a logo that did not match the one in the
-   header — on a site whose entire argument is "we are the same shop that has
-   been doing this since 1998." Consistency of the mark is not decoration; it  (facts-allow)
-   is the visual half of that claim.
+   A homeowner who opens EcowoodsGuide sees the same mark as the header — on a
+   site whose entire argument is "we are the same shop, since the founding year
+   in BUSINESS_NAP." Consistency of the mark is not decoration; it is the visual
+   half of that claim.
 
    This is drawing A, without the external stem, matching the brand asset.
    It inherits `currentColor`, so it works on copper, on cream, on espresso,
