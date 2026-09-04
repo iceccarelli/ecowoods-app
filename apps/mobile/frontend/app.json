@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "EcoWoods Hardwood",
+    "name": "Ecowoods Hardwood",
     "slug": "ecowoods-app",
     "version": "2.0.0",
     "orientation": "portrait",
@@ -20,15 +20,15 @@
       "buildNumber": "2.0.0",
       "infoPlist": {
         "UIBackgroundModes": ["fetch", "remote-notification"],
-        "NSCameraUsageDescription": "EcoWoods uses your camera so you can photograph your floors for accurate estimates.",
-        "NSPhotoLibraryUsageDescription": "EcoWoods accesses your photo library to attach floor photos to your job requests.",
-        "NSPhotoLibraryAddUsageDescription": "EcoWoods saves estimate documents to your photo library when you choose to export them.",
-        "NSLocationWhenInUseUsageDescription": "EcoWoods uses your location to match you with nearby installers and accurate scheduling.",
+        "NSCameraUsageDescription": "Ecowoods uses your camera so you can photograph your floors for accurate estimates.",
+        "NSPhotoLibraryUsageDescription": "Ecowoods accesses your photo library to attach floor photos to your job requests.",
+        "NSPhotoLibraryAddUsageDescription": "Ecowoods saves estimate documents to your photo library when you choose to export them.",
+        "NSLocationWhenInUseUsageDescription": "Ecowoods uses your location to match you with nearby installers and accurate scheduling.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:ecowoodshardwood.com",
-        "applinks:www.ecowoodshardwood.com"
+        "applinks:ecowoods.ca",
+        "applinks:www.ecowoods.ca"
       ]
     },
     "android": {
@@ -52,8 +52,8 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "ecowoodshardwood.com" },
-            { "scheme": "https", "host": "www.ecowoodshardwood.com" }
+            { "scheme": "https", "host": "ecowoods.ca" },
+            { "scheme": "https", "host": "www.ecowoods.ca" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
@@ -76,8 +76,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "EcoWoods accesses your photos so you can attach them to job requests.",
-          "cameraPermission": "EcoWoods uses your camera so you can capture floor photos for estimates."
+          "photosPermission": "Ecowoods accesses your photos so you can attach them to job requests.",
+          "cameraPermission": "Ecowoods uses your camera so you can capture floor photos for estimates."
         }
       ],
       [
@@ -89,8 +89,8 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://api.ecowoodshardwood.com",
-      "wsUrl": "wss://api.ecowoodshardwood.com",
+      "apiUrl": "https://api.ecowoods.ca",
+      "wsUrl": "wss://api.ecowoods.ca",
       "eas": {
         "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
       }

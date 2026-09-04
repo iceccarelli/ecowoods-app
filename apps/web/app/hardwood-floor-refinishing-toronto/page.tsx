@@ -3,7 +3,7 @@ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
-import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE, TOTAL_REVIEWS_CITED } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { getPaper } from '@/lib/papers';
@@ -89,7 +89,7 @@ const FAQS = [
   {
     question: 'What reviews does Ecowoods have?',
     answer:
-      `${TOTAL_REVIEWS_CITED} reviews at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ` +
+      `${PRIMARY_REVIEW_EVIDENCE.count} reviews at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ` +
       `${PRIMARY_REVIEW_EVIDENCE.outOf} on ${PRIMARY_REVIEW_EVIDENCE.platform}, read from the live ` +
       `profile on ${PRIMARY_REVIEW_EVIDENCE.asOf}.`,
   },

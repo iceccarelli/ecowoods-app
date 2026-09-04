@@ -450,7 +450,7 @@ export const CLUSTERS: QueryCluster[] = [
     id: 'entity',
     intent: 'entity',
     canonical: '/about',
-    summary: 'Who Ecowoods is, and what it does not claim.',
+    summary: 'Who Ecowoods is: legal name, NAP, founding year, services, price bands and sourced review figures.',
     queries: [
       'Ecowoods hardwood flooring',
       'Ecowoods Toronto reviews',

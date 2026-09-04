@@ -137,7 +137,7 @@ export interface Organization extends SchemaBase {
   email: string;
   description: string;
   slogan?: string;
-  foundingDate?: string; // "1998"
+  foundingDate?: string; // "2000"
   priceRange?: string;
   address: PostalAddress;
   geo: GeoCoordinates;

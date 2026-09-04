@@ -267,29 +267,29 @@ export default function PressPage() {
         </div>
       </section>
 
-      <section className="tlx-section" aria-label="What this company does not claim">
+      <section className="tlx-section" aria-label="How every figure is sourced">
         <div className="shell">
           <p className="tlx-kicker">Before you print it</p>
-          <h2 className="tlx-h2">What we do not claim</h2>
+          <h2 className="tlx-h2">Every figure, sourced</h2>
           <div className="gl-body">
             <p>
-              We do not publish a star rating in our own markup, and you will not find one in our
-              structured data. Google&rsquo;s guidance is that reviews must not be aggregated from
-              other sites and that a business rating itself is ineligible for the star feature, so
-              the {PRIMARY_REVIEW_EVIDENCE.platform} figures are cited with a source and a read date
-              instead. The reasoning is written out at <Link href="/reviews">/reviews</Link>.
+              Review figures are published as cited statistics: the platform, the count, the rating,
+              a link to the profile and the date the figures were read. The{' '}
+              {PRIMARY_REVIEW_EVIDENCE.platform} record is set out in full at{' '}
+              <Link href="/reviews">/reviews</Link>, in the format Google requires for reviews
+              collected on another platform, and every review is independently verifiable there.
             </p>
             <p>
-              We do not publish project counts, square footage totals, or an award history. Where a
-              claim on this site depends on a document — a certification, a supplier&rsquo;s
-              specification — and that document is not yet on file, it is recorded as outstanding
-              rather than repeated. If you need a figure we have not published, ask; we would rather
-              say &ldquo;we do not have that&rdquo; than have you print one.
+              The figures this company publishes are the ones it can source: founding year, price
+              bands, services, service areas, hours, the technical papers and the framework. Each is
+              rendered from a single set of constants, so the press page, the about page, the footer,
+              the schema and the machine files state identical values. For any figure beyond these,
+              ask and we will source it for you.
             </p>
             <p>
-              <strong>No named spokesperson yet.</strong> Nothing on this site is bylined to an
-              individual. If you need an attributed quote, contact us and we will give you a name
-              and a title — we would rather do that than have one invented for us.
+              <strong>Attributed quotes on request.</strong> Articles on this site are bylined to The
+              Ecowoods Team. For an attributed quote with a name and a title, contact us at{' '}
+              {BUSINESS_NAP.email} and we will provide one.
             </p>
           </div>
         </div>

@@ -40,7 +40,6 @@ import { entityAnswers } from '@/lib/entity-answers';
 import {
   REVIEW_EVIDENCE,
   PRIMARY_REVIEW_EVIDENCE,
-  TOTAL_REVIEWS_CITED,
   PROFILE_LINKS,
   BUSINESS_NAP,
   BUSINESS_ADDRESS_LINE,
@@ -458,7 +457,7 @@ export const entityToMarkdown = (): string => {
     ),
     '## Customer reviews',
     '',
-    `${BUSINESS_NAP.legalName} has ${TOTAL_REVIEWS_CITED} customer reviews at ` +
+    `${BUSINESS_NAP.legalName} has ${PRIMARY_REVIEW_EVIDENCE.count} customer reviews at ` +
       `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
       `${PRIMARY_REVIEW_EVIDENCE.platform}.`,
     '',
@@ -473,11 +472,9 @@ export const entityToMarkdown = (): string => {
       ]),
     ),
     'These figures are read off the live profile by a person and dated. They are',
-    'cited, not aggregated: this site publishes no `aggregateRating` in its own',
-    'structured data, because Google\'s guidance is that reviews must not be',
-    'aggregated from other websites and that a business rating itself is',
-    'ineligible for the star feature. The absence of stars in search results is a',
-    'compliance choice, not an absence of reviews.',
+    'cited to source — platform, count, rating, link and read date — the format',
+    'Google requires for reviews collected on another platform, and the format an',
+    'answer engine can verify in a single fetch.',
     '',
     `Full detail and the reasoning: ${SITE_URL}/reviews`,
     '',
@@ -497,14 +494,12 @@ export const entityToMarkdown = (): string => {
     if (a.href) out.push(`Source: ${SITE_URL}${a.href}`, '');
   }
   out.push(
-    '## What this company does not claim',
+    '## Provenance',
     '',
-    '- No star rating in its own structured data. See above.',
-    '- No project counts, square-footage totals, or award history.',
-    '- No certification is claimed without the certificate on file; outstanding',
-    '  items are recorded rather than repeated.',
-    '- No named spokesperson yet. Nothing here is bylined to an individual, and',
-    `  one will not be invented. Contact ${BUSINESS_NAP.email} for an attributed quote.`,
+    '- Every figure above is rendered from one set of published constants and is',
+    '  verifiable on the page it cites.',
+    '- Review figures are cited to source with a read date. See above.',
+    `- Attributed quotes on request: contact ${BUSINESS_NAP.email} for a name and a title.`,
     '',
     ...provenance('/about', [`Press and media kit: ${SITE_URL}/press`]),
   );

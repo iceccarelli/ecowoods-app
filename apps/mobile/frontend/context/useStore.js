@@ -1,5 +1,5 @@
 /**
- * EcoWoods Global State Store (Zustand) — v4.0 Production
+ * Ecowoods Global State Store (Zustand) — v4.0 Production
  * ─────────────────────────────────────────────────────────────────────
  * Single source of truth for the React Native app. Designed to stay
  * in lock-step with the Next.js website via the /shared folder
@@ -48,7 +48,7 @@ function resolveWsUrl() {
     if (fromExtra) return fromExtra;
   } catch (e) {}
   if (api?.baseUrl) return api.baseUrl;
-  return 'https://api.ecowoodshardwood.com';
+  return 'https://api.ecowoods.ca';
 }
 
 function getSocket(token) {
@@ -164,7 +164,7 @@ const useStore = create(
 
           if (Platform.OS === 'android') {
             await Notifications.setNotificationChannelAsync('default', {
-              name: 'EcoWoods',
+              name: 'Ecowoods',
               importance: Notifications.AndroidImportance.HIGH,
               vibrationPattern: [0, 250, 250, 250],
               lightColor: '#0A3D2E',
