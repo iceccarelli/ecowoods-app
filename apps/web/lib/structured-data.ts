@@ -103,6 +103,7 @@ export const localBusinessSchema = {
       },
       // Derived from PROFILE_LINKS — see the note in lib/schema/builders.ts.
       sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
+      ...(GOOGLE_MAPS_URL ? { hasMap: GOOGLE_MAPS_URL } : {}),
     },
   ],
 };
@@ -112,7 +113,7 @@ export const localBusinessSchema = {
  * The localBusinessSchema above is unchanged.
  * ──────────────────────────────────────────────────────────────────────── */
 import { SITE_URL, BUSINESS, SERVICES, FAQ_ITEMS, type City, type FaqItem } from './seo-data';
-import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, PROFILE_LINKS, BUSINESS_HOURS, GOOGLE_MAPS_URL } from '@ecowoods/shared/constants';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 
 /** WebSite entity — helps Google understand the site + name. */

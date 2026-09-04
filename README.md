@@ -37,10 +37,13 @@ Source of truth: `packages/shared/constants/index.ts` (`BUSINESS_NAP`, `BUSINESS
 | --- | --- | --- | --- | --- |
 | [HomeStars](https://www.homestars.com/profile/2776939-ecowoods/reviews) | 5.0 / 5 | 177 | 2026-08-10 | 2026-08-22 |
 | [HomeStars (Ecowood profile)](https://www.homestars.com/profile/2897115-ecowood/reviews) — owner-confirmed same company | 4.9 / 5 | 59 | 2024-01-16 | 2026-09-04 |
+| [Google](https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4) | 4.8 / 5 | 19 | see profile | 2026-09-04 |
 
 Review figures are published as cited statistics — platform, count, rating, link, read date — the format Google's structured-data policy requires for reviews collected on another platform. `scripts/verify-reviews.mjs` enforces it.
 
-**Verified profiles (declared as `sameAs`):** HomeStars (2776939-ecowoods), HomeStars (2897115-ecowood), Instagram `@ecowoodshardwood`, Facebook `/ecowoodshardwood`, YellowPages.ca listing 102363922.
+**Verified profiles (declared as `sameAs`):** Google Maps place (Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4, also `hasMap`), HomeStars (2776939-ecowoods), HomeStars (2897115-ecowood), Instagram `@ecowoodshardwood`, Facebook `/ecowoodshardwood`, YellowPages.ca listing 102363922.
+
+**Google Business Profile identifiers:** Business Profile ID `9189101272120311568` (dashboard / support) · Place ID `ChIJcZSiRZAwK4gRUz7OX0_K7U4` (write-review link) · CID `5687424346697383507` (Maps deep link) · knowledge-graph id `/g/11g02cm1tr`.
 
 ---
 
@@ -55,9 +58,10 @@ Review figures are published as cited statistics — platform, count, rating, li
 | HomeStars 2776939-ecowoods | Confirmed | Live 2026-09-04: 177 reviews, 5.0/5, most recent 2026-08-10. |
 | HomeStars 2897115-ecowood | Confirmed, owner-attested | Live 2026-09-04: "Ecowood", 4.9/5, 59 reviews. Wired as `sameAs` and a second dated evidence row. |
 | Bing Places | Listed — owner alignment pending | Live 2026-09-04 (Bing Maps): name **"Ecowoods Inc."**, website `https://www.ecowoods.ca`, category Flooring contractors, address 32 Norfield Crescent, Etobicoke ON M9W 1X6, phone +1 647-244-5156, hours **Fri 08:00–22:00, Sat 08:00–16:00**. Name and hours are aligned by the owner in Bing Places for Business (see below). |
-| Google Business Profile | Owner verification pending | The Google Maps listing sits behind an account-holder view; read and align it from the Business Profile dashboard using the field sheet below. |
+| Google Business Profile | Confirmed — phone field is the one owner edit | Live 2026-09-04 (Maps + Search): "Ecowoods Hardwood Flooring" · Flooring contractor · 32 Norfield Crescent, Etobicoke, ON M9W 1X6 · website ecowoods.ca · Mon–Sat 8 am–7 pm, Sun 10 am–4 pm · 4.8 from 19 reviews · areas served Toronto and nearby. Website, address, hours and category match the locked set. The listing shows "Add place's phone number" — add (647) 244-5156 in the dashboard (§1). |
 | YellowPages.ca 102363922 | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 32 Norfield Cres, Etobicoke, 647-244-5156 — NAP match. Website field and hours are updated by the owner (see below). |
 | Retired host `ecowoodshardwood.com` | Redirect ready — deployment pending | Live 2026-09-04: still serves its own page. `old-domain/.htaccess` (generated from `old-domain/path-map.json`, checked by `pnpm domain:check`) 301s every path to `https://ecowoods.ca`. |
+| Geo coordinates | Confirmed | `BUSINESS_NAP.address` now carries Google's pin for the address (43.7197642, -79.546973), read live 2026-09-04. |
 | Analytics | Confirmed | `apps/web/lib/analytics.ts` fires GA4 events after consent when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel. |
 | Verify suite | Confirmed | `pnpm verify` — 50 guards — passes on this commit. |
 
@@ -79,7 +83,7 @@ Email:           services@ecowoods.ca
 Description:     Ecowoods Hardwood Flooring Inc. installs, sands, refinishes and restores hardwood floors across Toronto and the GTA, since 2000. Fixed written estimates after a free in-home measure. Dust-free HEPA sanding, custom inlays and stair refinishing. Salaried crews, workmanship warranty.
 ```
 
-1. **Google Business Profile** — business.google.com → the Ecowoods listing (claim it if a listing exists at 32 Norfield Crescent; never create a second one). Set every field from the sheet. Then copy the Place ID (Info → Advanced) and paste the write-review URL `https://search.google.com/local/writereview?placeid=<PLACE_ID>` into `REVIEW_DESTINATIONS` and the Maps place URL into `PROFILE_LINKS` (`Google Reviews`) in `packages/shared/constants/index.ts`. `/reviews`, `/r`, the schema `sameAs`, `/llms.txt` and `/ai.txt` pick it up automatically.
+1. **Google Business Profile** (ID 9189101272120311568) — business.google.com → Edit profile → Contact → add phone **(647) 244-5156**; set the business name to the legal name if Google accepts it (the current "Ecowoods Hardwood Flooring" is joined via `alternateName`); confirm the Facebook link points at facebook.com/ecowoodshardwood (Google currently shows a numeric page id); add the six services and the description from the sheet; upload real job photos. The Maps deep link and the write-review link are already wired in `packages/shared/constants/index.ts` and render on /reviews, /r, the schema (`sameAs` + `hasMap`), /llms.txt and /ai.txt.
 2. **Bing Places** — bingplaces.com → claim the existing listing (do not create a duplicate). Change name from "Ecowoods Inc." to the legal name, set hours to Mon–Sat 08:00–19:00 / Sun 10:00–16:00, website to `https://ecowoods.ca`.
 3. **YellowPages.ca** — update the website field to `https://ecowoods.ca` and hours to the sheet.
 4. **Retired host** — upload `old-domain/.htaccess` to the document root of `ecowoodshardwood.com` (Apache), remove the old site files, keep the TLS certificate renewing. Verify with `pnpm seo:domain`.

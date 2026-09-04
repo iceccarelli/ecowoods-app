@@ -117,8 +117,10 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
       `${BUSINESS_NAP.legalName} has ${PRIMARY_REVIEW_EVIDENCE.count} customer reviews at ` +
       `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
       `${PRIMARY_REVIEW_EVIDENCE.platform}, read from the live profile on ` +
-      `${PRIMARY_REVIEW_EVIDENCE.asOf}, with the most recent review dated ` +
-      `${PRIMARY_REVIEW_EVIDENCE.latestReviewAt}` +
+      `${PRIMARY_REVIEW_EVIDENCE.asOf}` +
+      (PRIMARY_REVIEW_EVIDENCE.latestReviewAt
+        ? `, with the most recent review dated ${PRIMARY_REVIEW_EVIDENCE.latestReviewAt}`
+        : '') +
       (SECONDARY_REVIEW_EVIDENCE.length
         ? `, plus ` +
           SECONDARY_REVIEW_EVIDENCE.map(

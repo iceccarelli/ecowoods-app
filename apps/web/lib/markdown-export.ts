@@ -467,7 +467,7 @@ export const entityToMarkdown = (): string => {
         `[${r.platform}](${r.href})`,
         `${r.rating.toFixed(1)} / ${r.outOf}`,
         String(r.count),
-        r.latestReviewAt,
+        r.latestReviewAt ?? 'see profile',
         r.asOf,
       ]),
     ),

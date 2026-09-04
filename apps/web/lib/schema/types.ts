@@ -148,6 +148,8 @@ export interface Organization extends SchemaBase {
   hasOfferCatalog?: OfferCatalog;
   contactPoint?: ContactPoint[];
   sameAs?: string[];
+  /** The Google Maps place for this business — the map every local result opens. */
+  hasMap?: string;
 }
 
 export interface ContactPoint {

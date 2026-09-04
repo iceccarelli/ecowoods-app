@@ -44,8 +44,9 @@ export const BUSINESS_NAP = {
     addressRegion: 'ON',
     postalCode: 'M9W 1X6',
     addressCountry: 'CA',
-    latitude: 43.72085,
-    longitude: -79.57542,
+    /** Google Maps pin for this address, read live 2026-09-04 (CID 5687424346697383507). */
+    latitude: 43.7197642,
+    longitude: -79.546973,
   },
 
   /** OWNER-CONFIRMED VALUE. Ecowoods was founded in 2000; every surface
@@ -184,10 +185,23 @@ export const PROFILE_LINKS: ProfileLink[] = [
    * Ecowoods page. Google Reviews and Houzz stay `review: true` so /reviews
    * and /r pick them up automatically the moment an `href` lands. The Google
    * write-review link takes the form
-   * https://search.google.com/local/writereview?placeid=<PLACE_ID> — the Place
-   * ID is read off the Business Profile dashboard (README → Owner actions).
+   * https://search.google.com/local/writereview?placeid=<PLACE_ID> (wired
+   * below, in REVIEW_DESTINATIONS).
    */
-  { label: 'Google Reviews', review: true },
+  /* ── Google Business Profile, opened live 2026-09-04 ────────────────────
+   *
+   * Maps place "Ecowoods Hardwood Flooring", 32 Norfield Crescent, Etobicoke,
+   * ON M9W 1X6 · Flooring contractor · ecowoods.ca · Mon–Sat 8 am–7 pm,
+   * Sun 10 am–4 pm · 4.8 from 19 reviews. Place ID
+   * ChIJcZSiRZAwK4gRUz7OX0_K7U4; CID 5687424346697383507
+   * (0x4eedca4f5fce3e53); knowledge-graph id /g/11g02cm1tr. The place_id URL
+   * is the stable Maps deep link and is what `sameAs` and `hasMap` carry.
+   */
+  {
+    label: 'Google Reviews',
+    href: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+    review: true,
+  },
   { label: 'Houzz', review: true },
   { label: 'YouTube' },
   { label: 'LinkedIn' },
@@ -245,9 +259,11 @@ export type ReviewDestination = {
 export const REVIEW_DESTINATIONS: ReviewDestination[] = [
   {
     platform: 'Google',
+    /* Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4 — opened live 2026-09-04 and
+       confirmed to resolve to Ecowoods Hardwood Flooring, 32 Norfield Crescent. */
+    href: 'https://search.google.com/local/writereview?placeid=ChIJcZSiRZAwK4gRUz7OX0_K7U4',
     note: 'The one most people see first, in Maps and in search results.',
     rank: 1,
-    // href pending the Business Profile Place ID — see the note above.
   },
   {
     platform: 'HomeStars',
@@ -303,8 +319,9 @@ export type ReviewEvidence = {
   count: number;
   /** ISO date a person opened `href` and read these figures. */
   asOf: string;
-  /** ISO date of the most recent review visible at `asOf`. */
-  latestReviewAt: string;
+  /** ISO date of the most recent review visible at `asOf`. Omitted where the
+   *  platform shows only relative ages ("2 years ago") rather than a date. */
+  latestReviewAt?: string;
 };
 
 export const REVIEW_EVIDENCE: ReviewEvidence[] = [
@@ -327,6 +344,15 @@ export const REVIEW_EVIDENCE: ReviewEvidence[] = [
     asOf: '2026-09-04',
     latestReviewAt: '2024-01-16',
   },
+  {
+    /* Google Business Profile, read live 2026-09-04 on Maps (Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4). */
+    platform: 'Google',
+    href: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+    rating: 4.8,
+    outOf: 5,
+    count: 19,
+    asOf: '2026-09-04',
+  },
 ];
 
 /** The platform carrying the most reviews — what a reader should be sent to first. */
@@ -339,6 +365,9 @@ export const SECONDARY_REVIEW_EVIDENCE = REVIEW_EVIDENCE.filter((r) => r !== PRI
 
 /** Total reviews across every platform whose figures have been read and dated. */
 export const TOTAL_REVIEWS_CITED = REVIEW_EVIDENCE.reduce((n, r) => n + r.count, 0);
+
+/** The Google Maps place URL for this business (schema.org `hasMap`), once verified. */
+export const GOOGLE_MAPS_URL = PROFILE_LINKS.find((p) => p.label === 'Google Reviews')?.href;
 
 /** Review platforms with a confirmed URL — safe to cite as proof on the site. */
 export const REVIEW_PROFILES = PROFILE_LINKS.filter((p) => p.review && p.href);

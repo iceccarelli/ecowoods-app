@@ -62,7 +62,7 @@ if (!entries.length) fail('REVIEW_EVIDENCE is empty — nothing to verify.');
 const today = new Date().toISOString().slice(0, 10);
 for (const e of entries) {
   const who = e.platform ?? '(unnamed)';
-  for (const k of ['platform', 'href', 'asOf', 'latestReviewAt']) {
+  for (const k of ['platform', 'href', 'asOf']) {
     if (!e[k]) fail(`REVIEW_EVIDENCE "${who}" is missing ${k}.`);
   }
   for (const k of ['rating', 'outOf', 'count']) {

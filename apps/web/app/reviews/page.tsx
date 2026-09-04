@@ -123,8 +123,12 @@ export default function ReviewsPage() {
               {P.count} reviews · {P.rating.toFixed(1)}/{P.outOf}
             </span>
             <span aria-hidden="true">·</span>
-            <span>Most recent {fmt(P.latestReviewAt)}</span>
-            <span aria-hidden="true">·</span>
+            {P.latestReviewAt && (
+              <>
+                <span>Most recent {fmt(P.latestReviewAt)}</span>
+                <span aria-hidden="true">·</span>
+              </>
+            )}
             <span>Figures read {fmt(P.asOf)}</span>
           </p>
           <div className="fw-actions">
@@ -162,7 +166,7 @@ export default function ReviewsPage() {
                       {r.rating.toFixed(1)} / {r.outOf}
                     </td>
                     <td>{r.count}</td>
-                    <td>{fmt(r.latestReviewAt)}</td>
+                    <td>{r.latestReviewAt ? fmt(r.latestReviewAt) : 'See profile'}</td>
                     <td>{fmt(r.asOf)}</td>
                   </tr>
                 ))}
