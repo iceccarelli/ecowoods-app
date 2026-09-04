@@ -143,6 +143,54 @@ if (!fs.existsSync(cardPath)) {
   }
 }
 
+/* ── the post-job review request email ───────────────────────────────────
+ *
+ * lib/email reviewRequestEmail() is the automated twin of /r: sent once per
+ * COMPLETED project by lib/review-request.ts. It is held to the same three
+ * rules — every live destination, no sentiment gate, no filter — and to one
+ * more: the trigger stamps reviewRequestedAt BEFORE it sends, so a retry can
+ * never mean a second email.
+ */
+{
+  const EMAIL = 'apps/web/lib/email/index.ts';
+  const MODULE = 'apps/web/lib/review-request.ts';
+  const CRON = 'apps/web/app/api/cron/review-requests/route.ts';
+  const emailSrc = fs.existsSync(path.join(ROOT, EMAIL)) ? fs.readFileSync(path.join(ROOT, EMAIL), 'utf8') : '';
+  const tpl = emailSrc.match(/export function reviewRequestEmail\(([\s\S]*?)\n\}\n/);
+  if (!tpl) {
+    fail(`${EMAIL} does not export reviewRequestEmail() — the post-job review request has no template.`);
+  } else {
+    const code = tpl[0].replace(/\/\*[\s\S]*?\*\//g, '');
+    const GATE_WORDS =
+      /\b(how did we do|were you (happy|satisfied)|rate (your|us)|star rating|satisfied\?|thumbs ?(up|down)|feedback form|would you recommend)\b/i;
+    if (GATE_WORDS.test(code)) fail(`${EMAIL} reviewRequestEmail() contains sentiment-gating language.`);
+    if (!/LIVE_REVIEW_DESTINATIONS/.test(code)) fail(`${EMAIL} reviewRequestEmail() does not render LIVE_REVIEW_DESTINATIONS.`);
+    if (/\.filter\(|\.slice\(|\.find\(/.test(code.replace(/\.split\(\/\\s\+\/\)\[0\]/, ''))) {
+      fail(`${EMAIL} reviewRequestEmail() filters or slices the destination list.`);
+    }
+    if (!/stop/i.test(code)) fail(`${EMAIL} reviewRequestEmail() has no opt-out line (CASL).`);
+  }
+  if (!fs.existsSync(path.join(ROOT, MODULE))) {
+    fail(`${MODULE} is missing — nothing sends the review request.`);
+  } else {
+    const mod = fs.readFileSync(path.join(ROOT, MODULE), 'utf8');
+    const stampAt = mod.indexOf('reviewRequestedAt: new Date()');
+    const sendAt = mod.indexOf('sendReviewRequestEmail(');
+    if (stampAt < 0 || sendAt < 0 || stampAt > sendAt) {
+      fail(`${MODULE} must stamp reviewRequestedAt BEFORE calling sendReviewRequestEmail().`);
+    }
+    if (!/reviewRequestedAt: null/.test(mod)) fail(`${MODULE} does not guard on reviewRequestedAt being null.`);
+  }
+  if (!fs.existsSync(path.join(ROOT, CRON))) {
+    fail(`${CRON} is missing — completed projects the trigger misses are never asked.`);
+  } else {
+    const cron = fs.readFileSync(path.join(ROOT, CRON), 'utf8');
+    if (!/CRON_SECRET/.test(cron)) fail(`${CRON} does not check CRON_SECRET.`);
+    const vercel = fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8');
+    if (!/\/api\/cron\/review-requests/.test(vercel)) fail(`vercel.json has no cron entry for /api/cron/review-requests.`);
+  }
+}
+
 if (problems.length) {
   console.error(`\n✗ ${problems.length} outreach problem(s):\n`);
   for (const p of problems) console.error(`  · ${p}`);
@@ -151,5 +199,6 @@ if (problems.length) {
 }
 console.log(
   '✓ outreach verified — /r is noindex, ungated and renders every verified destination; ' +
-    'the printed card exists in a served location and documents what its QR encodes',
+    'the printed card exists in a served location and documents what its QR encodes; ' +
+    'the post-job review email is ungated, stamps before it sends, and is swept hourly',
 );

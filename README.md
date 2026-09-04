@@ -60,9 +60,15 @@ Review figures are published as cited statistics — platform, count, rating, li
 | Bing Places | Listed — owner alignment pending | Live 2026-09-04 (Bing Maps): name **"Ecowoods Inc."**, website `https://www.ecowoods.ca`, category Flooring contractors, address 32 Norfield Crescent, Etobicoke ON M9W 1X6, phone +1 647-244-5156, hours **Fri 08:00–22:00, Sat 08:00–16:00**. Name and hours are aligned by the owner in Bing Places for Business (see below). |
 | Google Business Profile | Confirmed — phone field is the one owner edit | Live 2026-09-04 (Maps + Search): "Ecowoods Hardwood Flooring" · Flooring contractor · 32 Norfield Crescent, Etobicoke, ON M9W 1X6 · website ecowoods.ca · Mon–Sat 8 am–7 pm, Sun 10 am–4 pm · 4.8 from 19 reviews · areas served Toronto and nearby. Website, address, hours and category match the locked set. The listing shows "Add place's phone number" — add (647) 244-5156 in the dashboard (§1). |
 | YellowPages.ca 102363922 | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 32 Norfield Cres, Etobicoke, 647-244-5156 — NAP match. Website field and hours are updated by the owner (see below). |
-| Retired host `ecowoodshardwood.com` | Redirect ready — deployment pending | Live 2026-09-04: still serves its own page. `old-domain/.htaccess` (generated from `old-domain/path-map.json`, checked by `pnpm domain:check`) 301s every path to `https://ecowoods.ca`. |
+| Retired host `ecowoodshardwood.com` | Redirect ready — owner deployment pending | Live 2026-09-04 (`pnpm seo:domain`): 35 legacy URLs answer 200 from `Apache/2.4.68 (Debian)`. Two ways to close it, either one is enough (§4). Every directory below still points its website field at this host, so this single change corrects all of them for crawlers at once. |
+| Stale alias `ecowoods-app.vercel.app` | Second live copy — owner deletion pending | Live 2026-09-04: answers 200 with a superseded build (no `/reviews`, no `/llms.txt` → 404; homepage carries retired figures). `vercel.json` has redirected this host for weeks, so the alias is served by a Vercel project this repository does not deploy. `pnpm seo:hosts` watches it (§5). |
+| 411.ca listing 7521278 | Listed — website field pending | Live 2026-09-04: "Ecowoods Hardwood", 32 Norfield Crescent, Toronto M9W 1X6, 647-244-5156 — NAP match; website `ecowoodshardwood.com`; hours Mon–Fri 7–21, Sat/Sun by appointment; email ecowoodshardwood@yahoo.com; states "National Wood Flooring Association Member #050884". |
+| TrustedPros `ecowoods-inc` | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 647-244-5156, 32 Norfield Crescent, Toronto ON M9W 1X6 — NAP match; website `ecowoodshardwood.com`; 0 reviews. |
+| n49 / canada247 | Unverified this session | Both answered 403 to every probe (CloudFront block); re-read from a Canadian IP. |
+| Review automation | Confirmed in code | `lib/review-request.ts`: one ungated email per COMPLETED project, stamped before it sends, triggered by `updateProjectStatus()` and swept hourly by `/api/cron/review-requests` (cron in `vercel.json`, guarded by `CRON_SECRET`). Same destinations as `/r`; `scripts/verify-outreach.mjs` enforces it. |
+| Error tracking | Confirmed in code | `instrumentation.ts` (`onRequestError`) + `app/error.tsx` + `app/global-error.tsx` + `/api/client-error` → `lib/error-reporting.ts`: structured stderr line on Vercel, forwarded to `ERROR_WEBHOOK_URL` when set. |
 | Geo coordinates | Confirmed | `BUSINESS_NAP.address` now carries Google's pin for the address (43.7197642, -79.546973), read live 2026-09-04. |
-| Analytics | Confirmed | `apps/web/lib/analytics.ts` fires GA4 events after consent when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel. |
+| Analytics | Confirmed in code — env pending | `CookieConsentBanner` loads GA4 only after consent and only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel; `lib/analytics.ts` fires the conversion events. `pnpm env:check` shows what is set. |
 | Verify suite | Confirmed | `pnpm verify` — 50 guards — passes on this commit. |
 
 ---
@@ -85,10 +91,15 @@ Description:     Ecowoods Hardwood Flooring Inc. installs, sands, refinishes and
 
 1. **Google Business Profile** (ID 9189101272120311568) — business.google.com → Edit profile → Contact → add phone **(647) 244-5156**; set the business name to the legal name if Google accepts it (the current "Ecowoods Hardwood Flooring" is joined via `alternateName`); confirm the Facebook link points at facebook.com/ecowoodshardwood (Google currently shows a numeric page id); add the six services and the description from the sheet; upload real job photos. The Maps deep link and the write-review link are already wired in `packages/shared/constants/index.ts` and render on /reviews, /r, the schema (`sameAs` + `hasMap`), /llms.txt and /ai.txt.
 2. **Bing Places** — bingplaces.com → claim the existing listing (do not create a duplicate). Change name from "Ecowoods Inc." to the legal name, set hours to Mon–Sat 08:00–19:00 / Sun 10:00–16:00, website to `https://ecowoods.ca`.
-3. **YellowPages.ca** — update the website field to `https://ecowoods.ca` and hours to the sheet.
-4. **Retired host** — upload `old-domain/.htaccess` to the document root of `ecowoodshardwood.com` (Apache), remove the old site files, keep the TLS certificate renewing. Verify with `pnpm seo:domain`.
-5. **HomeStars** — ask HomeStars support to merge profile 2897115-ecowood into 2776939-ecowoods so one profile carries the whole record; until then both are cited.
-6. **Houzz** — once a Houzz `/pro/` profile exists, paste its URL into `PROFILE_LINKS` (`Houzz`).
+3. **Directories** — YellowPages.ca (102363922), 411.ca (7521278) and TrustedPros (`ecowoods-inc`): set website to `https://ecowoods.ca`, hours to the sheet, email to services@ecowoods.ca. 411.ca states NWFA member #050884 — if the certificate is on file, send it to the repo and the claim enters `content/claims.ts` and the schema; until then it stays off the site.
+4. **Retired host `ecowoodshardwood.com`** — pick one, both end in every legacy URL 301ing to the canonical page:
+   - **DNS (recommended, ~10 minutes, no server access):** at the registrar, point `ecowoodshardwood.com` and `www` at Vercel (`A 76.76.21.21` / `CNAME cname.vercel-dns.com`), then Vercel → this project → Settings → Domains → add both hosts. `vercel.json` already carries the 15 host-scoped 301s for them.
+   - **Apache:** upload `old-domain/.htaccess` to the document root, remove the old site files, keep the TLS certificate renewing.
+   Then `pnpm seo:domain` must report 0 failures, and only then file the change of address in Google Search Console.
+5. **Stale Vercel alias** — vercel.com → every team you own → find the project whose Domains tab lists `ecowoods-app.vercel.app` (it is not the project that serves ecowoods.ca) → delete it. `pnpm seo:hosts` turns green when the alias 404s or redirects.
+6. **Vercel environment** — set `CRON_SECRET` (both crons), `ERROR_WEBHOOK_URL` (a Slack/Discord incoming webhook, optional), `NEXT_PUBLIC_GA_MEASUREMENT_ID`, and confirm `RESEND_*`, `ADMIN_EMAIL`, `NEXTAUTH_URL=https://ecowoods.ca`. `vercel env pull apps/web/.env.local && pnpm env:check` prints what is still unset.
+7. **HomeStars** — ask HomeStars support to merge profile 2897115-ecowood into 2776939-ecowoods so one profile carries the whole record; until then both are cited.
+8. **Houzz** — once a Houzz `/pro/` profile exists, paste its URL into `PROFILE_LINKS` (`Houzz`).
 
 After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVIDENCE` where a figure changed.
 
@@ -101,6 +112,8 @@ After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVI
 - **Entity**: `/about`, `/team`, `/press`, `/reviews`, `/authority`.
 - **Machine surfaces**: `/llms.txt`, `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, and a `.md` edition of every paper, guide, glossary term, service and service area.
 - **Lead path**: estimate form → `/api/estimate` → Resend email + database record; booking scheduler; `/r` (noindex) is the printed review card destination.
+- **Review flywheel**: admin marks a project COMPLETED → `lib/review-request.ts` stamps `Project.reviewRequestedAt` and sends the one review email (Google first, then HomeStars — the same links as `/r`, to every customer, no sentiment step); `/api/cron/review-requests` sweeps hourly for anything the trigger missed.
+- **Observability**: every uncaught server error (`instrumentation.ts`) and every client render failure (`app/error.tsx`, `app/global-error.tsx` → `/api/client-error`) becomes one structured JSON line in the Vercel log and, when `ERROR_WEBHOOK_URL` is set, one webhook post. GA4 loads after consent.
 
 ---
 
@@ -113,7 +126,9 @@ packages/shared          BUSINESS_NAP, hours, PROFILE_LINKS, REVIEW_EVIDENCE, AI
 apps/web/lib/schema      JSON-LD builders (organisation, services, pages)
 apps/web/lib/entity-answers.ts   the entity, answered in quotable sentences
 apps/web/content         claims registry, pricing constants, topic map, articles, case studies
-scripts/verify-*.mjs     50 build guards (facts, schema, reviews, links, sitemap, canonicals …)
+scripts/verify-*.mjs     50 build guards (facts, schema, reviews, links, sitemap, canonicals …) + live checks (domain, hosts)
+apps/web/lib/review-request.ts, app/api/cron/review-requests   the post-job review flywheel
+apps/web/lib/error-reporting.ts, instrumentation.ts              error tracking
 old-domain/              generated redirect configs for the retired host
 docs/papers-pending, docs/visual, docs/illustrations   source material for papers and images
 ```
@@ -126,8 +141,10 @@ pnpm dev                 # turbo dev --filter=@ecowoods/web
 pnpm build
 pnpm verify              # every guard; must pass before push
 pnpm seo:consistency     # facts + claims + pricing + topics + entity + canonicals
-pnpm seo:live            # live domain redirect + crawl of the deployed site
+pnpm seo:live            # live: old-domain redirect + stale hosts + crawl of the deployed site
+pnpm seo:hosts           # live: ecowoods-app.vercel.app and www must redirect to the canonical
 pnpm domain:check        # old-domain redirect configs match path-map.json
+pnpm env:check           # which production integrations are configured (values never printed)
 pnpm notify:indexnow     # after every meaningful content change
 ```
 
@@ -143,6 +160,8 @@ NEXTAUTH_SECRET=...
 NEXTAUTH_URL=https://ecowoods.ca
 NEXT_PUBLIC_SITE_URL=https://ecowoods.ca
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-...
+CRON_SECRET=...              # authorises /api/cron/quote-recovery and /api/cron/review-requests
+ERROR_WEBHOOK_URL=https://... # optional: Slack/Discord/any webhook that receives error reports
 ```
 
 Lead capture degrades gracefully: an unset optional variable never blocks a lead.

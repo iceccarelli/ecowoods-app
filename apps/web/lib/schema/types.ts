@@ -150,6 +150,8 @@ export interface Organization extends SchemaBase {
   sameAs?: string[];
   /** The Google Maps place for this business — the map every local result opens. */
   hasMap?: string;
+  /** Topics this organisation is an authority on — derived from its published services. */
+  knowsAbout?: string[];
 }
 
 export interface ContactPoint {

@@ -5,6 +5,7 @@ import {
   HOURS_LINE,
   PRIMARY_REVIEW_EVIDENCE,
   SECONDARY_REVIEW_EVIDENCE,
+  PROFILE_LINKS,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
 import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
@@ -150,6 +151,14 @@ export async function GET() {
   // The entity, answered directly. First, because "who is this" is the first
   // question any retrieval system has to settle before anything else it reads
   // here means something.
+  /* The verified profiles, in the short brief as well as the long one: an
+     entity resolver that reads only this file must still be able to join the
+     Google, HomeStars, Instagram, Facebook and YellowPages nodes to this one. */
+  lines.push('## Verified profiles (declared as sameAs)');
+  for (const p of PROFILE_LINKS.filter((x) => x.href)) lines.push(`- ${p.label}: ${p.href}`);
+  lines.push(`- Organisation @id: ${SITE_URL}/#organization`);
+  lines.push('');
+
   lines.push('## Who this is');
   for (const a of entityAnswers()) lines.push(`- ${a.q} ${a.a}`);
   lines.push('');

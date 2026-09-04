@@ -9,6 +9,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import type { ProjectStatus } from '@prisma/client';
+import { requestReviewForProject } from '@/lib/review-request';
 
 // ─── Create project ──────────────────────────────────────────────────────────
 export async function createProject(input: {
@@ -63,6 +64,23 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
   await db.project.update({ where: { id: projectId }, data: { status } });
+
+  /* A completed job sends its one review request immediately. A failure here
+     never blocks the status change — the hourly sweep retries it. */
+  if (status === 'COMPLETED') {
+    try {
+      await requestReviewForProject(projectId);
+    } catch (err) {
+      console.error(
+        JSON.stringify({
+          event: 'review_request.trigger_failed',
+          projectId,
+          error: err instanceof Error ? err.message : 'unknown',
+        }),
+      );
+    }
+  }
+
   revalidatePath('/admin/projects');
   revalidatePath(`/admin/projects/${projectId}`);
   revalidatePath('/mypage/projects');

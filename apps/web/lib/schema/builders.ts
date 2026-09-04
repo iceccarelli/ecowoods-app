@@ -150,6 +150,9 @@ export function buildOrganization(config: OrganizationConfig): Organization {
      */
     sameAs: PROFILE_LINKS.filter((p) => p.href).map((p) => p.href!),
     ...(GOOGLE_MAPS_URL ? { hasMap: GOOGLE_MAPS_URL } : {}),
+    /* knowsAbout: the published services, by name — the topics an answer
+       engine should associate with this entity. Derived, never typed. */
+    knowsAbout: config.services.map((svc) => svc.name),
   };
 }
 

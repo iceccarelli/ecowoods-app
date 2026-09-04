@@ -371,6 +371,10 @@ model Project {
   taxRate       Decimal? @default(13.00) @db.Decimal(5, 2)
   contractValue Decimal? @db.Decimal(12, 2)
 
+  /// Stamped once, before the post-job review request is sent. One request per
+  /// project, identical for every customer — see lib/review-request.ts.
+  reviewRequestedAt DateTime? @db.Timestamptz
+
   invoices Invoice[]
   notes    ProjectNote[]
 
@@ -379,6 +383,7 @@ model Project {
 
   @@index([userId])
   @@index([status])
+  @@index([reviewRequestedAt])
   @@schema("ecowoods")
 }
 
