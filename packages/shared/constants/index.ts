@@ -1,38 +1,34 @@
 /* ---------------------- Business Facts (SINGLE SOURCE OF TRUTH) ----------------------
  *
  * Every customer-visible phone number, address, and year-in-business claim on
- * this site MUST come from here. Nothing gets hardcoded at a call site again.
+ * this site is sourced here. Pages, schema, llms.txt, ai.txt, and directory
+ * copy all render these fields.
  *
- * One NAP string, rendered everywhere: press, about, footer, schema, llms.txt,
- * ai.txt, Google Business Profile and Bing Places all carry exactly this.
- *
- * `pnpm verify:facts` fails the build if a banned literal reappears anywhere.
+ * `pnpm verify:facts` fails the build if a banned literal reappears elsewhere.
  */
 export const BUSINESS_NAP = {
   legalName: 'Ecowoods Hardwood Flooring Inc.',
   /**
-   * PUBLIC NAME — P0-8. "Ecowoods", one word, capital E, nothing appended.
-   * This is what schema.org `name`, GBP, Bing Places and every heading carry.
-   * Directory listings that read "Ecowoods Inc." (YellowPages, Bing Places)
-   * are reconciled via `alternateNames` below, emitted as schema.org
-   * `alternateName`.
+   * Public name for schema.org `name`, headings, GBP, and Bing Places.
+   * One word. Capital E.
    */
   name: 'Ecowoods',
   shortName: 'Ecowoods',
-  /** Forms of the name that appear on third-party listings this business
-   *  controls or has verified. Emitted as `alternateName` so an entity
-   *  resolver joins "Ecowoods Inc." (YellowPages, Bing Places), "Ecowoods
-   *  Hardwood" (411.ca, social handles) and "Ecowood" (second HomeStars
-   *  profile, owner-confirmed 2026-09-04) to this organization. */
-  alternateNames: ['Ecowoods Inc.', 'Ecowoods Hardwood Flooring', 'Ecowoods Hardwood', 'Ecowood'],
+  /**
+   * Name variants that already appear on listings this business operates or
+   * has verified. Emitted as schema.org `alternateName` so resolvers join
+   * those strings to this organization.
+   */
+  alternateNames: [
+    'Ecowoods Inc.',
+    'Ecowoods Hardwood Flooring',
+    'Ecowoods Hardwood',
+    'Ecowood',
+  ],
 
-  /** E.164 — for schema.org, tel: hrefs and click-to-call. */
   phoneE164: '+16472445156',
-  /** schema.org / microdata format. */
   phoneSchema: '+1-647-244-5156',
-  /** Human-readable, for all customer-facing copy. */
   phoneDisplay: '(647) 244-5156',
-  /** Ready-made href. */
   phoneHref: 'tel:+16472445156',
 
   email: 'services@ecowoods.ca',
@@ -44,25 +40,24 @@ export const BUSINESS_NAP = {
     addressRegion: 'ON',
     postalCode: 'M9W 1X6',
     addressCountry: 'CA',
-    /** Google Maps pin for this address, read live 2026-09-04 (CID 5687424346697383507). */
+    /** Maps pin for this showroom, read live 2026-09-04. */
     latitude: 43.7197642,
     longitude: -79.546973,
   },
 
-  /** OWNER-CONFIRMED VALUE. Ecowoods was founded in 2000; every surface
-   *  derives its year count from this one number via yearsInBusiness(). */
+  /** Founding year. Year-count copy uses yearsInBusiness() only. */
   foundedYear: 2000,
 } as const;
 
-/** Whole years in business, derived. Never hardcode a year count in copy. */
+/** Whole years in business, derived. */
 export function yearsInBusiness(now: Date = new Date()): number {
   return now.getFullYear() - BUSINESS_NAP.foundedYear;
 }
 
 /* ---------------------- Business hours (SINGLE SOURCE OF TRUTH) --------
  *
- * Every surface — JSON-LD openingHoursSpecification, header, footer, GBP and
- * Bing Places copy — derives from here.
+ * JSON-LD openingHoursSpecification, header, footer, GBP, and Bing Places
+ * all derive from this list.
  */
 export const BUSINESS_HOURS = [
   {
@@ -77,24 +72,12 @@ export const BUSINESS_HOURS = [
   },
 ] as const;
 
-/**
- * The IANA zone the hours above are stated in.
- *
- * Named here rather than in the booking engine because "8 AM" is meaningless
- * without it: a visitor in Vancouver, a crawler in Ireland and a serverless
- * function in Virginia must all resolve the same instant, and the schema's
- * openingHoursSpecification is read by machines that assume a zone if you do
- * not give them one.
- */
+/** IANA zone for BUSINESS_HOURS. Required so schema and booking share one instant. */
 export const BUSINESS_TIMEZONE_NAME = 'America/Toronto';
 
-/** One human-readable line, for chrome and copy. Derives nothing — states the
- *  same fact as BUSINESS_HOURS in the format the UI already uses. */
 export const HOURS_LINE = 'Mon–Sat 8 AM – 7 PM · Sun 10 AM – 4 PM';
-/** Compact form for tight chrome (utility bar). */
 export const HOURS_LINE_SHORT = 'Mon–Sat 8–7 · Sun 10–4';
 
-/** One-line address, used in document footers. */
 export const BUSINESS_ADDRESS_LINE =
   `${BUSINESS_NAP.address.streetAddress}, ${BUSINESS_NAP.address.addressLocality}, ` +
   `${BUSINESS_NAP.address.addressRegion} ${BUSINESS_NAP.address.postalCode}`;
@@ -107,100 +90,93 @@ export const JOB_STATUSES = {
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
 } as const;
- 
+
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
- 
+
 export const ROUTES = {
   HOME: '/',
   JOBS: '/jobs',
   JOB_DETAIL: (id: string) => `/jobs/${id}`,
 } as const;
- 
+
+/* ---------------------- Google place (SINGLE SOURCE OF TRUTH) ---------
+ *
+ * Stable Maps identifiers. PROFILE_LINKS, REVIEW_DESTINATIONS, hasMap, and
+ * write-review URLs are built from these so the pin cannot drift from sameAs.
+ */
+export const GOOGLE_PLACE = {
+  placeId: 'ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+  cid: '5687424346697383507',
+  knowledgeGraphId: '/g/11g02cm1tr',
+  mapsUrl: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+  writeReviewUrl:
+    'https://search.google.com/local/writereview?placeid=ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+} as const;
+
+export const HOMESTARS_CANONICAL = {
+  profileId: '2776939-ecowoods',
+  profileUrl: 'https://www.homestars.com/profile/2776939-ecowoods',
+  reviewsUrl: 'https://www.homestars.com/profile/2776939-ecowoods/reviews',
+  writeReviewUrl: 'https://www.homestars.com/companies/2776939-ecowoods/reviews/new',
+} as const;
+
 /* ---------------------- Review & Social Profiles ----------------------
  *
- * SINGLE SOURCE OF TRUTH. An entry appears on the site only if `href` is set.
- * No href, no link — that is the whole mechanism.
+ * An entry appears on the site only when `href` is set.
  *
- * This replaces an exported SOCIAL_LINKS array that nothing imported and that
- * contained constructed handles (@ecowoods.ca, /pro/ecowoods, and a
- * "google.com/maps?cid=ecowoods" that is not a valid CID format at all).
- * Meanwhile the footer rendered its own separate list in which six of nine
- * icons pointed at platform HOME PAGES — clicking "Google Reviews" in the
- * footer landed you on Google Maps' front door. On a site whose reviews
- * section tells visitors to go read the reviews elsewhere, that is a dead end
- * at the exact moment a prospect is looking for proof.
+ * sameAs (entity graph): every row with an href.
+ * Review proof (cited counts): REVIEW_EVIDENCE only.
+ * Write-a-review flywheel: REVIEW_DESTINATIONS only.
  *
- * Rule going forward: paste a URL here only after opening it and seeing an
- * Ecowoods page. Leave href out until then.
+ * Paste an href only after opening the URL and confirming it shows Ecowoods.
  */
 export type ProfileLink = {
   label: string;
-  /** Omit until the URL has been opened and confirmed to show Ecowoods. */
   href?: string;
-  /** true = a review platform, eligible to be surfaced as proof on the site. */
+  /** Eligible to appear as a review-platform link in chrome. */
   review?: boolean;
+  /**
+   * Directory / alias identity for sameAs. Not hardwood review proof.
+   * Use for name-variant profiles that should resolve to this organization.
+   */
+  identity?: boolean;
 };
 
 export const PROFILE_LINKS: ProfileLink[] = [
-  // ── Verified ──────────────────────────────────────────────────────────
   {
     label: 'HomeStars',
-    href: 'https://www.homestars.com/profile/2776939-ecowoods',
+    href: HOMESTARS_CANONICAL.profileUrl,
     review: true,
   },
-
-  // ── Company-operated, handle matches the ecowoodshardwood.com domain ──
-  { label: 'Instagram', href: 'https://www.instagram.com/ecowoodshardwood' },
-  { label: 'Facebook', href: 'https://www.facebook.com/ecowoodshardwood' },
-
-  /* ── Directory citation, opened and NAP-matched (re-read 2026-09-04) ────
-   *
-   * YellowPages.ca carries a real listing for this company: "Ecowoods Inc." /
-   * "32 Norfield Cres, Etobicoke, ON M9W 1X6" / "647-244-5156" under
-   * "Floor Refinishing, Laying & Resurfacing" — a character match against
-   * BUSINESS_NAP on all three fields. It contributes to the entity graph as a
-   * `sameAs` citation. Its website field is an owner-side directory update to
-   * https://ecowoods.ca (see README → Owner actions), alongside deploying
-   * old-domain/.htaccess on the retired host so every legacy URL 301s here.
-   */
-  { label: 'YellowPages', href: 'https://www.yellowpages.ca/bus/Ontario/Etobicoke/Ecowoods-Inc/102363922.html' },
-
-  /* ── Second HomeStars profile, OWNER-CONFIRMED 2026-09-04 ────────────────
-   *
-   * HomeStars profile 2897115-ecowood ("Ecowood", Toronto) is this company —
-   * confirmed by the owner in the 2026-09-04 session and opened live the same
-   * day: 4.9/5 from 59 reviews. It is wired as a `sameAs` citation and as a
-   * second dated row in REVIEW_EVIDENCE. Consolidation of the two HomeStars
-   * profiles into 2776939-ecowoods is an owner action on HomeStars itself.
-   */
-  {
-    label: 'HomeStars (Ecowood profile)',
-    href: 'https://www.homestars.com/profile/2897115-ecowood',
-    review: true,
-  },
-
-  /* ── Linked the moment the real profile URL is opened and pasted here ─────
-   *
-   * Policy, unchanged: paste a URL only after opening it and seeing an
-   * Ecowoods page. Google Reviews and Houzz stay `review: true` so /reviews
-   * and /r pick them up automatically the moment an `href` lands. The Google
-   * write-review link takes the form
-   * https://search.google.com/local/writereview?placeid=<PLACE_ID> (wired
-   * below, in REVIEW_DESTINATIONS).
-   */
-  /* ── Google Business Profile, opened live 2026-09-04 ────────────────────
-   *
-   * Maps place "Ecowoods Hardwood Flooring", 32 Norfield Crescent, Etobicoke,
-   * ON M9W 1X6 · Flooring contractor · ecowoods.ca · Mon–Sat 8 am–7 pm,
-   * Sun 10 am–4 pm · 4.8 from 19 reviews. Place ID
-   * ChIJcZSiRZAwK4gRUz7OX0_K7U4; CID 5687424346697383507
-   * (0x4eedca4f5fce3e53); knowledge-graph id /g/11g02cm1tr. The place_id URL
-   * is the stable Maps deep link and is what `sameAs` and `hasMap` carry.
-   */
   {
     label: 'Google Reviews',
-    href: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+    href: GOOGLE_PLACE.mapsUrl,
     review: true,
+  },
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/ecowoodshardwood',
+  },
+  {
+    label: 'Facebook',
+    href: 'https://www.facebook.com/ecowoodshardwood',
+  },
+  {
+    label: 'YellowPages',
+    href: 'https://www.yellowpages.ca/bus/Ontario/Etobicoke/Ecowoods-Inc/102363922.html',
+  },
+  /**
+   * Additional HomeStars identity ("Ecowood"), owner-confirmed 2026-09-04.
+   * Included in sameAs so "Ecowood" resolves to this organization.
+   * Not marked `review` and not listed in REVIEW_EVIDENCE: the live hardwood
+   * review record is HOMESTARS_CANONICAL (177) plus Google (19).
+   * Merge into 2776939-ecowoods with HomeStars when ready; the graph stays
+   * joined either way.
+   */
+  {
+    label: 'HomeStars (Ecowood identity)',
+    href: 'https://www.homestars.com/profile/2897115-ecowood',
+    identity: true,
   },
   { label: 'Houzz', review: true },
   { label: 'YouTube' },
@@ -212,122 +188,67 @@ export const PROFILE_LINKS: ProfileLink[] = [
 
 /* ---------------------- Where a finished job sends a customer ---------
  *
- * REVIEW_EVIDENCE below records what reviews already exist. This records where
- * to send the next one, and it is the only lever that changes the numbers there.
+ * REVIEW_EVIDENCE records what has already been read on live profiles.
+ * REVIEW_DESTINATIONS records where the next review is invited.
  *
- * THE RULE THAT MATTERS MORE THAN THE CODE
+ * Every completed job and every visitor to /r sees the same destinations, in
+ * the same order. scripts/verify-outreach.mjs keeps that path unbranched.
  *
- * Every completed job gets the same card with the same links, and every visitor
- * to /r sees every destination. No "how did we do?" screen that routes happy
- * customers to Google and unhappy ones to a private form. That is review
- * gating, Google's Maps user-contributed-content policy prohibits it outright —
- *
- *   "Discourage or prohibit negative reviews, or selectively solicit positive
- *    reviews from customers"
- *
- * — and it is also the thing that makes a 5.0 look bought. A profile with a few
- * four-star reviews answered well reads as a real business. An unbroken wall of
- * fives reads as a wall. scripts/verify-outreach.mjs fails the build if /r ever
- * grows a branch that shows different destinations to different people.
- *
- * WHY GOOGLE IS FIRST WHEN IT HAS A URL
- *
- * Not because HomeStars is worth less — because they do different jobs and one
- * is already done. HomeStars is a destination someone already shopping goes to.
- * Google Business Profile ratings are the surface: they produce the stars in
- * local results and the map pack, they cannot be marked up on any website by
- * anyone, and they are what answer engines read back when asked for a
- * recommendation. A strong Google rating is the single highest-leverage
- * reputation signal this business can add.
- *
- * `href` follows the same rule as PROFILE_LINKS: no URL until someone has opened
- * it and seen an Ecowoods page. Google's write-review link needs the Business
- * Profile's Place ID and takes the form
- * https://search.google.com/local/writereview?placeid=<PLACE_ID> — see
- * docs/outreach/GOOGLE_BUSINESS_PROFILE.md for how to get it.
+ * Google is rank 1 because Maps and local pack are the surfaces a new
+ * customer opens first. HomeStars remains the established contractor record.
  */
 export type ReviewDestination = {
   platform: string;
-  /** Deep link straight to the write-a-review form. Omit until verified. */
   href?: string;
-  /** One line telling the customer what this platform is, in their terms. */
   note: string;
-  /** Lower sorts first. Google is 1 because it is the surface everything reads. */
   rank: number;
 };
 
 export const REVIEW_DESTINATIONS: ReviewDestination[] = [
   {
     platform: 'Google',
-    /* Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4 — opened live 2026-09-04 and
-       confirmed to resolve to Ecowoods Hardwood Flooring, 32 Norfield Crescent. */
-    href: 'https://search.google.com/local/writereview?placeid=ChIJcZSiRZAwK4gRUz7OX0_K7U4',
-    note: 'The one most people see first, in Maps and in search results.',
+    href: GOOGLE_PLACE.writeReviewUrl,
+    note: 'Maps and local search — the profile most new customers open first.',
     rank: 1,
   },
   {
     platform: 'HomeStars',
-    href: 'https://www.homestars.com/companies/2776939-ecowoods/reviews/new',
-    note: 'Where most of our reviews already live. Verified contractors only.',
+    href: HOMESTARS_CANONICAL.writeReviewUrl,
+    note: 'Verified-contractor record for homeowners already comparing specialists.',
     rank: 2,
   },
 ];
 
-/** Destinations with a confirmed URL — the only ones /r renders. */
 export const LIVE_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => d.href).sort(
   (a, b) => a.rank - b.rank,
 );
 
-/** Named but not yet linked, so the page can say so instead of pretending. */
 export const PENDING_REVIEW_DESTINATIONS = REVIEW_DESTINATIONS.filter((d) => !d.href);
 
 /* ---------------------- Third-party review evidence -------------------
  *
- * WHAT THIS IS
+ * Cited statistics: platform, count, rating, profile URL, date read.
+ * Not schema.org aggregateRating. scripts/verify-reviews.mjs enforces that
+ * these figures live here, that asOf is not in the future, and that schema
+ * builders do not emit aggregateRating.
  *
- * The review figures this site cites, each one read off the live profile by a
- * person and dated. PROFILE_LINKS puts the profiles in `sameAs`, which asserts
- * "same entity"; this block carries the numbers, so that an answer engine
- * reading any page here can retrieve the count, the rating, the source and the
- * date it was read — the shape a retrieval system lifts out and quotes.
- *
- * WHY THIS IS NOT AN aggregateRating
- *
- * Google is explicit: do not aggregate reviews or ratings from other websites,
- * and self-serving LocalBusiness/Organization reviews are ineligible for the
- * star feature. So this is NOT marked up as `aggregateRating` and must never be.
- * It is a cited third-party figure — a number, its source, a link to that
- * source, and the date a human read it off the platform. That is what a
- * publication does when it quotes a statistic, and it is allowed precisely
- * because it does not claim the rating as our own structured data.
- *
- * THE RULE
- *
- * Every field here is read off the live profile by a person and dated. Nothing
- * is estimated, rounded up, or carried forward. scripts/verify-reviews.mjs fails
- * the build on a future `asOf`, on any of these numbers typed as a literal
- * anywhere else in the codebase, and on any `aggregateRating` appearing in the
- * schema builders.
+ * Re-read the live profile and update the row when the numbers change.
+ * Do not type these counts as literals in pages.
  */
 export type ReviewEvidence = {
-  /** The platform, named as it names itself. */
   platform: string;
-  /** Direct link to the reviews, not the profile root. */
   href: string;
   rating: number;
   outOf: number;
   count: number;
-  /** ISO date a person opened `href` and read these figures. */
   asOf: string;
-  /** ISO date of the most recent review visible at `asOf`. Omitted where the
-   *  platform shows only relative ages ("2 years ago") rather than a date. */
   latestReviewAt?: string;
 };
 
 export const REVIEW_EVIDENCE: ReviewEvidence[] = [
   {
     platform: 'HomeStars',
-    href: 'https://www.homestars.com/profile/2776939-ecowoods/reviews',
+    href: HOMESTARS_CANONICAL.reviewsUrl,
     rating: 5.0,
     outOf: 5,
     count: 177,
@@ -335,19 +256,8 @@ export const REVIEW_EVIDENCE: ReviewEvidence[] = [
     latestReviewAt: '2026-08-10',
   },
   {
-    /* Owner-confirmed second HomeStars profile ("Ecowood"), read live 2026-09-04. */
-    platform: 'HomeStars (Ecowood profile)',
-    href: 'https://www.homestars.com/profile/2897115-ecowood/reviews',
-    rating: 4.9,
-    outOf: 5,
-    count: 59,
-    asOf: '2026-09-04',
-    latestReviewAt: '2024-01-16',
-  },
-  {
-    /* Google Business Profile, read live 2026-09-04 on Maps (Place ID ChIJcZSiRZAwK4gRUz7OX0_K7U4). */
     platform: 'Google',
-    href: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
+    href: GOOGLE_PLACE.mapsUrl,
     rating: 4.8,
     outOf: 5,
     count: 19,
@@ -355,20 +265,18 @@ export const REVIEW_EVIDENCE: ReviewEvidence[] = [
   },
 ];
 
-/** The platform carrying the most reviews — what a reader should be sent to first. */
+/** Platform with the largest verified hardwood review count. */
 export const PRIMARY_REVIEW_EVIDENCE = REVIEW_EVIDENCE.reduce((a, b) =>
   b.count > a.count ? b : a,
 );
 
-/** Every other dated profile — cited alongside the primary, never blended into it. */
+/** Other dated hardwood profiles, cited separately, never blended. */
 export const SECONDARY_REVIEW_EVIDENCE = REVIEW_EVIDENCE.filter((r) => r !== PRIMARY_REVIEW_EVIDENCE);
 
-/** Total reviews across every platform whose figures have been read and dated. */
+/** Sum of dated hardwood review rows only. */
 export const TOTAL_REVIEWS_CITED = REVIEW_EVIDENCE.reduce((n, r) => n + r.count, 0);
 
-/** The Google Maps place URL for this business (schema.org `hasMap`), once verified. */
-export const GOOGLE_MAPS_URL = PROFILE_LINKS.find((p) => p.label === 'Google Reviews')?.href;
+export const GOOGLE_MAPS_URL =
+  PROFILE_LINKS.find((p) => p.label === 'Google Reviews')?.href ?? GOOGLE_PLACE.mapsUrl;
 
-/** Review platforms with a confirmed URL — safe to cite as proof on the site. */
 export const REVIEW_PROFILES = PROFILE_LINKS.filter((p) => p.review && p.href);
- 
