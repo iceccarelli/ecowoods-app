@@ -55,6 +55,8 @@
     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
     "verify:domain": "node scripts/verify-domain-redirect.mjs",
     "verify:vercel": "node scripts/verify-vercel-config.mjs",
+    "verify:agentic": "node scripts/verify-agentic.mjs",
+    "test:web": "pnpm --filter @ecowoods/web test",
     "seo:audit": "node scripts/audit-current-state.mjs",
     "seo:pricing": "node scripts/verify-pricing-source.mjs",
     "seo:claims": "node scripts/verify-claims.mjs",
@@ -83,13 +85,13 @@
     "images:brief": "node scripts/verify-images.mjs --prompts",
     "papers:tex": "node scripts/gen-paper-tex.mjs",
     "images:provenance": "node scripts/add-provenance-slots.mjs",
-    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:sliders && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check",
+    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:sliders && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check && pnpm verify:agentic",
     "audit": "bash scripts/audit-all.sh",
     "audit:rendered": "node scripts/audit-rendered.mjs",
     "audit:full": "bash scripts/audit-all.sh --full",
     "audit:quick": "bash scripts/audit-all.sh --quick",
     "hooks:install": "git config core.hooksPath scripts/hooks",
-    "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm --filter @ecowoods/web build"
+    "ci:local": "pnpm verify && pnpm --filter @ecowoods/web exec prisma generate && pnpm --filter @ecowoods/web exec tsc --noEmit && pnpm test:web && pnpm --filter @ecowoods/web build"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

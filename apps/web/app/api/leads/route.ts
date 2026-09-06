@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -237,13 +238,13 @@ export async function POST(request: Request) {
   );
 
   // 5. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
-  const webhookUrl = process.env.LEADS_WEBHOOK_URL;
+  //    The URL is validated at use (https, public host, no bare IP, no
+  //    credentials) and the request never follows a redirect — see
+  //    lib/outbound-webhook.ts. A misconfigured value is logged once and skipped;
+  //    lead PII never leaves for an address nobody checked.
+  const webhookUrl = webhookFromEnv('LEADS_WEBHOOK_URL');
   if (webhookUrl) {
-    fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leadId, quoteId, ...lead }),
-    }).catch((err) =>
+    postWebhook(webhookUrl, { leadId, quoteId, ...lead }).catch((err) =>
       console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
     );
   }

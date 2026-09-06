@@ -24,7 +24,7 @@ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PR
 export const metadata: Metadata = {
   title: 'Hardwood Flooring Toronto — Installation & Refinishing, Fixed Written Price',
   description: `Hardwood flooring installation and refinishing across Toronto and the GTA. Price bands published up front (${band('newInstall')} per sq ft installed), the full installation standard published for anyone to hold us to, and salaried crews rather than subcontractors.`,
-  alternates: { canonical: '/hardwood-flooring-toronto' },
+  alternates: { canonical: '/hardwood-flooring-toronto', types: { 'text/markdown': '/hardwood-flooring-toronto.md' } },
   openGraph: {
     title: 'Hardwood Flooring Toronto — Ecowoods',
     description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across Toronto and the GTA.`,

@@ -10,7 +10,7 @@ import { CommercialHeadTermRail } from './components/CommercialHeadTermRail';
  * homepage nothing, and so verify-canonical.mjs can see it.
  */
 export const metadata: Metadata = {
-  alternates: { canonical: '/' },
+  alternates: { canonical: '/', types: { 'text/markdown': '/index.md' } },
 };
 
 

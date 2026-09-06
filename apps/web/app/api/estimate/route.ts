@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
   estimateInstalledRangeCad,
-  FLOORING_RATES_CAD_PER_SQFT,
   FINISH_OPTIONS,
   PATTERN_OPTIONS,
 } from '@ecowoods/shared/ai';
@@ -33,23 +32,42 @@ const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, OPTIONS',
   'access-control-allow-headers': 'content-type',
+  /* JSON for machines; the pages are what the index should carry. */
+  'x-robots-tag': 'noindex',
 };
 
 export function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
+/**
+ * THE PUBLIC CATALOGUE IS THE PUBLISHED BANDS, NOT THE COST MODEL.
+ *
+ * This payload used to return FLOORING_RATES_CAD_PER_SQFT and the finish and
+ * pattern option tables verbatim — including `multiplier` factors that
+ * packages/shared/ai/index.ts itself labels as placeholders awaiting the
+ * estimator's confirmation. Serving an internal model with unconfirmed factors
+ * as company data, CORS-open and robots-allowed, is the failure mode Protocol
+ * v2 Stage 5 names outright. What is public is what the owner has published:
+ * the three bands from content/constants/pricing.ts, the written-price rule,
+ * and the finish/pattern names (id, label, blurb — no factor).
+ *
+ * The species/finish/pattern computation below still runs for the
+ * configurator that has always used it; its output carries `is_quote: false`
+ * and the disclaimer, and the response links the published bands page.
+ */
 function bandPayload() {
   return {
     business: BUSINESS.name,
     url: SITE_URL,
     promise: PRICE_PROMISE,
+    pricingPage: `${SITE_URL}/pricing`,
     serviceBandsCadPerSqft: PRICING,
-    speciesRatesCadPerSqft: FLOORING_RATES_CAD_PER_SQFT,
-    finishes: FINISH_OPTIONS,
-    patterns: PATTERN_OPTIONS,
+    finishes: FINISH_OPTIONS.map(({ id, label, blurb }) => ({ id, label, blurb })),
+    patterns: PATTERN_OPTIONS.map(({ id, label, blurb }) => ({ id, label, blurb })),
     disclaimer:
       'Rough ranges only. Final price is fixed in writing after a free in-home measure.',
+    is_quote: false,
   };
 }
 
@@ -93,7 +111,7 @@ function handle(input: Record<string, unknown>, request: Request, headers: Recor
   }
 
   const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern });
-  return NextResponse.json({ ok: true, estimate: result, ...bandPayload() }, { headers });
+  return NextResponse.json({ ok: true, estimate: { ...result, is_quote: false }, ...bandPayload() }, { headers });
 }
 
 export async function GET(request: Request) {

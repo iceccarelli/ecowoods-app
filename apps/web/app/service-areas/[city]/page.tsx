@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent } from '@/lib/seo-data';
+import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent, type City } from '@/lib/seo-data';
 import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
-import { serviceAreaBusinessSchema, breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+import { breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+import { placeForArea } from '@/lib/schema/root-schema';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
 import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
@@ -15,11 +16,14 @@ export function generateStaticParams() {
 }
 export const dynamicParams = false;
 
+/** The <title>, the WebPage name and the Service name — one string, three uses. */
+const pageTitle = (city: City) => `Hardwood floor refinishing & installation in ${city.name}`;
+
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city: slug } = await params;
   const city = cityBySlug(slug);
   if (!city) return {};
-  const title = `Hardwood floor refinishing & installation in ${city.name}`;
+  const title = pageTitle(city);
   /* The description leads with what is TRUE OF THIS AREA rather than what is
      true of all 32. `cityContent` is the only per-area copy on the page, so the
      first clause of the snippet is the first thing that differs between them. */
@@ -32,7 +36,13 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   return {
     title,
     description,
-    alternates: { canonical: `/service-areas/${city.slug}` },
+    alternates: {
+      canonical: `/service-areas/${city.slug}`,
+      /* The machine edition. next.config.js rewrites /service-areas/:slug.md to
+         the route under app/md/service-areas; declaring it here is what lets
+         an agent discover it from the HTML rather than guess the convention. */
+      types: { 'text/markdown': `/service-areas/${city.slug}.md` },
+    },
     openGraph: { title: `${title} · Ecowoods`, description, url: `${SITE_URL}/service-areas/${city.slug}`, type: 'website' },
   };
 }
@@ -42,8 +52,34 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const city = cityBySlug(slug);
   if (!city) notFound();
   const url = `${SITE_URL}/service-areas/${city.slug}`;
+  /* What this page is about, typed as what it is: a City node for the sixteen
+     municipalities, a Place inside Toronto for the sixteen neighbourhoods.
+     Rosedale is not a city (F-157), and this page used to say it was — in the
+     Service node below and in every Offer under it. */
+  const place = placeForArea(city);
   const jsonLd = [
-    serviceAreaBusinessSchema(city),
+    /* ONE BUSINESS ENTITY.
+
+       This slot held serviceAreaBusinessSchema(city): a second
+       ['LocalBusiness', 'HomeAndConstructionBusiness'] node per page, with its
+       own @id, "Ecowoods — Rosedale" as its name, and a parentOrganization
+       pointing at `/#business` — an @id nothing on the site emits (the root is
+       `/#organization`). Thirty-two pages, each declaring a business that does
+       not exist, linked to the real one by a reference that resolved to
+       nothing. The root organisation is injected on every page by the layout.
+       What THIS page adds is that it is a page: about the business, part of
+       the site, covering this one place. */
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${url}#webpage`,
+      url,
+      name: pageTitle(city),
+      inLanguage: 'en-CA',
+      isPartOf: { '@id': `${SITE_URL}/#website` },
+      about: { '@id': `${SITE_URL}/#organization` },
+      spatialCoverage: place,
+    },
     breadcrumbSchema([
       { name: 'Home', url: SITE_URL },
       { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
@@ -60,10 +96,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       '@context': 'https://schema.org',
       '@type': 'Service',
       '@id': `${url}#service`,
-      name: `Hardwood floor refinishing & installation in ${city.name}`,
+      name: pageTitle(city),
       serviceType: 'Hardwood flooring',
       provider: { '@id': `${SITE_URL}/#organization` },
-      areaServed: { '@type': 'City', name: city.name },
+      areaServed: place,
       url,
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
@@ -71,7 +107,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         itemListElement: SERVICES.map((svc) => ({
           '@type': 'Offer',
           itemOffered: { '@id': `${SITE_URL}/services/${svc.slug}#service` },
-          areaServed: { '@type': 'City', name: city.name },
+          areaServed: place,
         })),
       },
     },

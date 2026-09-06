@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     'Hardwood stairs across Toronto and the GTA: refinishing, carpet removal, new treads and ' +
     'risers, matched to the floor they meet. Why stairs are quoted per tread rather than per ' +
     'square foot, what moves that number, and the standard the finished work is judged against.',
-  alternates: { canonical: '/hardwood-stairs-toronto' },
+  alternates: { canonical: '/hardwood-stairs-toronto', types: { 'text/markdown': '/hardwood-stairs-toronto.md' } },
   openGraph: {
     title: 'Hardwood Stairs Toronto — Ecowoods',
     description:

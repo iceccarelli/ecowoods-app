@@ -40,9 +40,32 @@ const src = fs.readFileSync(path.join(ROOT, CONST), 'utf8');
 const blockMatch = src.match(/export const REVIEW_EVIDENCE: ReviewEvidence\[\] = \[([\s\S]*?)\n\];/);
 if (!blockMatch) fail(`${CONST} does not export REVIEW_EVIDENCE in the expected shape.`);
 
+/**
+ * A field may be a string literal — `href: 'https://…'` — or a reference into
+ * another exported constant in the same file: `href: HOMESTARS_CANONICAL.reviewsUrl`,
+ * `href: GOOGLE_PLACE.mapsUrl`. The second form is the better one (one URL,
+ * one place) and it is what the constants module now uses; the first version
+ * of this parser only read literals, so it reported both platforms as having no
+ * href at all — a guard failing on the code it was written to approve.
+ *
+ * A reference is resolved by finding `export const IDENT = {` and reading
+ * `prop: '…'` inside that block. An unresolvable reference resolves to nothing,
+ * which fails rule 4 exactly as a missing literal would — the rule is not
+ * relaxed, the parser just reads the file as written.
+ */
+const constBlock = (ident) =>
+  (src.match(new RegExp(`export const ${ident}\\s*=\\s*\\{([\\s\\S]*?)\\n\\}`)) || [])[1];
+const resolveRef = (b, k) => {
+  const ref = b.match(new RegExp(`\\b${k}: ([A-Z][A-Z0-9_]*)\\.([A-Za-z_][A-Za-z0-9_]*)`));
+  if (!ref) return undefined;
+  const block = constBlock(ref[1]);
+  if (!block) return undefined;
+  return (block.match(new RegExp(`\\b${ref[2]}:\\s*'([^']*)'`)) || [])[1];
+};
+
 const entries = [];
 for (const b of (blockMatch?.[1] ?? '').split(/\n  \{/).slice(1)) {
-  const str = (k) => (b.match(new RegExp(`\\b${k}: '([^']*)'`)) || [])[1];
+  const str = (k) => (b.match(new RegExp(`\\b${k}: '([^']*)'`)) || [])[1] ?? resolveRef(b, k);
   const num = (k) => {
     const m = b.match(new RegExp(`\\b${k}: ([0-9.]+)`));
     return m ? Number(m[1]) : undefined;

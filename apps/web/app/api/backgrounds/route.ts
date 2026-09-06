@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const TTL_SECONDS = 60 * 30;
 export const revalidate = 1800;
@@ -17,8 +18,14 @@ export async function GET(request: Request) {
   if (!key || key === 'your_key_here' || key === 'your_new_key_here') {
     return NextResponse.json({ images: [] as Bg[], source: 'none' });
   }
-  const theme = new URL(request.url).searchParams.get('theme') || 'hero';
-  const queries = THEMES[theme] ?? THEMES.hero;
+  const rl = checkRateLimit(`backgrounds:${getClientIp(request)}`, { windowMs: 60_000, maxRequests: 30 });
+  if (!rl.allowed) return NextResponse.json({ images: [] as Bg[], source: 'rate_limited' }, { status: 429 });
+  /* Own keys only: `constructor` / `__proto__` resolved to a function on the
+     prototype, produced `query=undefined`, and every junk value was a fresh
+     cache key that burned the Unsplash quota. Unknown themes are `hero`. */
+  const requested = new URL(request.url).searchParams.get('theme') || 'hero';
+  const theme = Object.hasOwn(THEMES, requested) ? requested : 'hero';
+  const queries = THEMES[theme]!;
   try {
     const seed = Math.floor(Date.now() / (TTL_SECONDS * 1000));
     const q1 = queries[seed % queries.length];
@@ -36,7 +43,7 @@ export async function GET(request: Request) {
       seen.add(p.id);
       images.push({ url: p.urls.regular, alt: p.alt_description ?? 'Wood interior', credit: p.user?.name ?? 'Unsplash', creditUrl: p.user?.links?.html ?? 'https://unsplash.com' });
     }
-    return NextResponse.json({ images, source: 'unsplash', theme });
+    return NextResponse.json({ images, source: 'unsplash', theme }, { headers: { 'cache-control': `public, max-age=${TTL_SECONDS}, s-maxage=${TTL_SECONDS * 2}` } });
   } catch {
     return NextResponse.json({ images: [] as Bg[], source: 'error' });
   }

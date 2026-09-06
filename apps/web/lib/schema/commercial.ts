@@ -1,6 +1,8 @@
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { getServicePages, priceBand } from '@/lib/service-pages';
+import { OG_IMAGE_URL } from '@/lib/brand-assets';
+import { buildAdministrativeArea } from './builders';
+import { SERVICE_REGION, placeForArea } from './root-schema';
 
 /**
  * Service + Offer schema for the commercial head-term pages.
@@ -14,9 +16,21 @@ import { getServicePages, priceBand } from '@/lib/service-pages';
  * Service with an areaServed and an Offer — not an article about flooring.
  *
  * So this emits, per page: an `@graph` of Service nodes, each with the real
- * published price band as an Offer, each `providedBy` the organisation node the
+ * published price band as an Offer, each `provider` the organisation node the
  * rest of the site already hangs from, each `areaServed` every municipality and
  * neighbourhood actually covered.
+ *
+ * ONE BUSINESS ENTITY, NOT TWO
+ *
+ * This graph used to close with a `ProfessionalService` node — the legal name,
+ * a `#localbusiness` @id of its own, `parentOrganization` pointing at the root
+ * — on every commercial page. That is a second business entity per page,
+ * joined to the first only by a parent link, and a consumer that follows the
+ * link finds the same NAP on both ends and has to guess which is the business.
+ * The root `/#organization` node is injected on every page by the layout; the
+ * Service nodes already name it as `provider` and `seller`. The catalog that
+ * node carried listed the same Service @ids the graph already contains. Both
+ * are gone; the graph now has one business in it, and it is the root.
  *
  * PRICES ARE DERIVED, ALWAYS. `priceBand()` reads lib/pricing.ts — the same
  * band the service page renders and the same one the FAQ quotes. A service with
@@ -40,14 +54,18 @@ export function buildCommercialLandingSchema(
   config: CommercialLandingConfig,
 ): Record<string, unknown> {
   const pages = getServicePages();
-  const areas = SERVICE_AREAS.map((a) => ({
-    '@type': 'City' as const,
-    name: a.name,
-    containedInPlace: {
-      '@type': 'AdministrativeArea' as const,
-      name: 'Greater Toronto Area, Ontario, Canada',
-    },
-  }));
+
+  /**
+   * Every published area, typed as what it is. Municipalities are City nodes
+   * inside the same GTA → Ontario → Canada region the root organisation
+   * emits; Toronto neighbourhoods are Place nodes inside the City of Toronto
+   * (F-157 — a neighbourhood is not a city, and this file used to say it was).
+   */
+  const region = buildAdministrativeArea(SERVICE_REGION);
+  const areas = SERVICE_AREAS.map((a) => {
+    const place = placeForArea(a);
+    return place['@type'] === 'City' ? { ...place, containedInPlace: region } : place;
+  });
 
   type ServiceNode = Record<string, unknown> & { '@id': string };
   const services: ServiceNode[] = [];
@@ -96,27 +114,17 @@ export function buildCommercialLandingSchema(
         name: config.description,
         inLanguage: 'en-CA',
         isPartOf: { '@id': `${SITE_URL}/#website` },
+        /* The page is about the business and its main entity is the business —
+           the root node, by reference. Not a second business node. */
         about: { '@id': `${SITE_URL}/#organization` },
-        primaryImageOfPage: { '@id': `${SITE_URL}/#logo` },
+        mainEntity: { '@id': `${SITE_URL}/#organization` },
+        /* This was `{ '@id': '/#logo' }` — a reference to a node nothing on the
+           site emits, so every consumer resolved it to nothing. The image is
+           the one the organisation node already claims, given as a real
+           ImageObject. */
+        primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE_URL },
       },
       ...services,
-      {
-        '@type': 'ProfessionalService',
-        '@id': `${config.url}#localbusiness`,
-        name: BUSINESS_NAP.legalName,
-        url: config.url,
-        parentOrganization: { '@id': `${SITE_URL}/#organization` },
-        areaServed: areas,
-        hasOfferCatalog: {
-          '@type': 'OfferCatalog',
-          name: config.description,
-          itemListElement: services.map((s, i) => ({
-            '@type': 'ListItem',
-            position: i + 1,
-            item: { '@id': s['@id'] },
-          })),
-        },
-      },
     ],
   };
 }

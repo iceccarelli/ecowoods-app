@@ -21,7 +21,7 @@ const CRAFT = 'hardwood-refinishing-machines-and-sequence';
 export const metadata: Metadata = {
   title: 'Hardwood Floor Refinishing Toronto — Dust-Free Sanding, Fixed Written Price',
   description: `Hardwood floor refinishing and dust-free sanding across Toronto and the GTA. ${band('fullSandAndFinish')} per square foot for a full sand and finish, ${band('screenAndRecoat')} for a screen and recoat. The four-machine sequence is published in full.`,
-  alternates: { canonical: '/hardwood-floor-refinishing-toronto' },
+  alternates: { canonical: '/hardwood-floor-refinishing-toronto', types: { 'text/markdown': '/hardwood-floor-refinishing-toronto.md' } },
   openGraph: {
     title: 'Hardwood Floor Refinishing Toronto — Ecowoods',
     description: `Published prices, published machine sequence, HEPA containment so the house stays livable. Serving ${SERVICE_AREAS.length} areas.`,

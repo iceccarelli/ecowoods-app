@@ -42,7 +42,7 @@ export async function generateMetadata({
     // is the h2 on the page itself. See F-143.
     title: paper.title,
     description: paper.abstract,
-    alternates: { canonical: url },
+    alternates: { canonical: url, types: { 'text/markdown': `/papers/${paper.slug}.md` } },
     openGraph: {
       title: `${paper.title} — Ecowoods Technical Paper`,
       description: paper.abstract,

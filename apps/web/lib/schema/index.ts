@@ -28,6 +28,12 @@ export type {
   GeoCoordinates,
   OpeningHoursSpecification,
   AreaServedCity,
+  AreaServedRegion,
+  AreaServedPlace,
+  Country,
+  PropertyValue,
+  EntryPoint,
+  PotentialAction,
   Person,
   Thing,
   Series,
@@ -46,6 +52,7 @@ export type {
 // Builders
 export {
   buildOrganization,
+  buildAdministrativeArea,
   buildService,
   buildArticle,
   buildCaseStudy,
@@ -55,6 +62,7 @@ export {
   buildProduct,
   buildAggregateRating,
   type OrganizationConfig,
+  type RegionConfig,
   type ServiceConfig,
   type ServiceConfig2,
   type ArticleConfig,
@@ -67,6 +75,8 @@ export {
 // Root schemas (injected into every page)
 export {
   ROOT_ORG_CONFIG,
+  SERVICE_REGION,
+  placeForArea,
   ROOT_ORGANIZATION_SCHEMA,
   ROOT_WEBSITE_SCHEMA,
   HOMEPAGE_BREADCRUMB_SCHEMA,

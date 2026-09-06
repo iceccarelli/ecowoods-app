@@ -32,6 +32,36 @@ function resolveKey(): string {
   }
 }
 
+/**
+ * The only URLs this host may submit: absolute https URLs on the canonical
+ * host. Pure, so it is unit-testable without the filesystem. Returns the
+ * canonical, de-duplicated list and the first offending input, if any.
+ */
+export function filterIndexNowUrls(
+  input: unknown,
+  siteUrl: string = SITE_URL,
+): { ok: true; urls: string[] } | { ok: false; error: string; offending?: string } {
+  if (!Array.isArray(input) || input.length === 0) return { ok: false, error: 'urls[] required' };
+  if (input.length > 1000) return { ok: false, error: 'urls[] must contain 1000 URLs or fewer' };
+  const host = new URL(siteUrl).host;
+  const out = new Set<string>();
+  for (const raw of input) {
+    if (typeof raw !== 'string' || raw.length > 2048) return { ok: false, error: 'every url must be a string of 2048 characters or fewer', offending: String(raw).slice(0, 120) };
+    let u: URL;
+    try {
+      u = new URL(raw);
+    } catch {
+      return { ok: false, error: 'every url must be absolute', offending: raw.slice(0, 120) };
+    }
+    if (u.protocol !== 'https:' || u.host !== host) {
+      return { ok: false, error: `every url must be on https://${host}`, offending: raw.slice(0, 120) };
+    }
+    u.hash = '';
+    out.add(u.toString());
+  }
+  return { ok: true, urls: [...out] };
+}
+
 export async function submitToIndexNow(urls: string[]): Promise<boolean> {
   const key = resolveKey();
   if (!key || urls.length === 0) return false;

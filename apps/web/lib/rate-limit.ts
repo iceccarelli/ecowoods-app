@@ -15,7 +15,7 @@
  * Production default for lead POSTs: 10 requests / minute / IP (P0.7).
  */
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   windowMs: number; // refill period: maxRequests tokens per windowMs
   maxRequests: number; // bucket capacity
 }
@@ -79,13 +79,29 @@ export function checkRateLimit(
 
 /**
  * Extract IP from request headers.
- * Checks X-Forwarded-For (Vercel/proxy), X-Real-IP, then defaults to '127.0.0.1'.
- * NOTE: trustworthy only behind Vercel's proxy, which sets the first hop itself.
+ *
+ * Order: `x-vercel-forwarded-for` (set by Vercel's edge from the TCP peer and
+ * never forwarded from an external proxy, so it cannot be supplied by the
+ * caller), then the first hop of `x-forwarded-for` (which Vercel also
+ * overwrites, and which any other reverse proxy sets), then `x-real-ip`, then
+ * '127.0.0.1'.
+ *
+ * NOTE: trustworthy only behind a proxy that owns these headers. Off Vercel,
+ * a client can send any `x-forwarded-for` it likes — the limiter then keys on
+ * a value the attacker chose, which is a weaker limit, not a bypass of
+ * anything else.
  */
 export function getClientIp(request: Request): string {
+  const vercel = request.headers.get('x-vercel-forwarded-for');
+  if (vercel) {
+    const first = vercel.split(',')[0]!.trim();
+    if (first) return first;
+  }
+
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
-    return forwarded.split(',')[0]!.trim();
+    const first = forwarded.split(',')[0]!.trim();
+    if (first) return first;
   }
 
   const realIp = request.headers.get('x-real-ip');
@@ -98,6 +114,15 @@ export function getClientIp(request: Request): string {
 }
 
 /**
+ * Vercel preview hosts for THIS project only. Every Vercel deployment lives
+ * under `*.vercel.app`, so trusting the whole suffix trusted every Vercel
+ * customer's origin — a page on evil.vercel.app could post to the lead routes
+ * from a browser. Preview URLs are `<project>[-<hash>|-git-<branch>][-<team>]`,
+ * so the project name is the stable prefix.
+ */
+const PREVIEW_HOST = /^ecowoods[a-z0-9-]*\.vercel\.app$/;
+
+/**
  * Browser-origin check for POSTs that only the site's own pages should make.
  *
  * Browsers attach `Origin` to every cross-origin request AND to same-origin
@@ -108,17 +133,20 @@ export function getClientIp(request: Request): string {
  * client can forge any Origin it likes; this check is CSRF hygiene, not auth).
  *
  * Allowed: the canonical host (NEXT_PUBLIC_SITE_URL), localhost dev, and
- * Vercel preview deployments of this project.
+ * Vercel preview deployments of THIS project (PREVIEW_HOST) — not every
+ * `*.vercel.app`. `null` (opaque origin: sandboxed iframe, file://) is refused.
  */
 export function isTrustedBrowserOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin) return true;
   try {
-    const host = new URL(origin).host;
-    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca').host;
+    const url = new URL(origin);
+    const host = url.host.toLowerCase();
+    const hostname = url.hostname.toLowerCase();
+    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca').host.toLowerCase();
     if (host === site || host === `www.${site}`) return true;
-    if (host === 'localhost:3000' || host.startsWith('localhost:') || host.startsWith('127.0.0.1')) return true;
-    if (host.endsWith('.vercel.app')) return true;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]') return true;
+    if (url.protocol === 'https:' && PREVIEW_HOST.test(hostname)) return true;
     return false;
   } catch {
     return false;
