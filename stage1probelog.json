@@ -1,0 +1,1877 @@
+[
+ {
+  "p": "/",
+  "status": 200,
+  "redirected": false,
+  "final": "/",
+  "ms": 221,
+  "len": 191236,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"c93e32f785b951a6e22bcbd71f2f4fa1\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "8271",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "desc": "Fixed written price. HEPA dust containment. Salaried crews since 2000. Refinish $4.75\u2013$7.50/sq ft. Free in-home measure across the GTA. Call (647) 244-5156.",
+  "canonical": "https://ecowoods.ca",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Hardwood Flooring in Toronto,Done Once. Done Right."
+  ],
+  "h2": [
+   "Get a fixed price in writing \u2014 or send 3 photos today.",
+   "What it costs. Before you call.",
+   "Three Toronto jobs, checkable in full",
+   "Tell us aboutyour project.",
+   "Request a free estimate",
+   "Twelve floors, endless rooms.",
+   "One shop. One material. One standard.",
+   "What we can explain.",
+   "Four steps to certainty.",
+   "The machines behind the finish.",
+   "See it before we build it.",
+   "What clients say after move-in day.",
+   "The four questions everyone asks.",
+   "The science behind the price.",
+   "Across Toronto and the GTA."
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "FAQPage"
+  ],
+  "ldBlocks": 3,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [
+   "/api/leads#post"
+  ],
+  "linksInternal": 205,
+  "linksExternal": 5,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 20,
+  "imgsNoAlt": 7,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "{\"@context\":\"https://schema.org\",\"@type\":\"FAQPage\",\"mainEntity\":[{\"@type\":\"Question\",\"name\":\"Is the estimate really fixed? What about \\\"unforeseen conditions\\\"?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Yes \u2014 fixed, in writing, in your contract. Our senior e",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/robots.txt",
+  "status": 200,
+  "redirected": false,
+  "final": "/robots.txt",
+  "ms": 354,
+  "len": 1021,
+  "h": {
+   "content-type": "text/plain",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"db7ebe586eef669953a2877a922d64a3\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "8272",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/robots.txt"
+  },
+  "text": "User-Agent: * Allow: / Allow: /api/knowledge Allow: /api/market Allow: /api/estimate Allow: /api/health Allow: /llms.txt Allow: /llms-full.txt Allow: /md/ Disallow: /admin Disallow: /mypage Disallow: /api/ Disallow: /login Disallow: /register Disallow: /verify-email Disallow: /docs/ User-Agent: GPTB"
+ },
+ {
+  "p": "/sitemap.xml",
+  "status": 200,
+  "redirected": false,
+  "final": "/sitemap.xml",
+  "ms": 354,
+  "len": 56016,
+  "h": {
+   "content-type": "application/xml",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"e6c6032bd3fcc9a17c26f4379f2d68ee\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "PRERENDER",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/sitemap.xml"
+  },
+  "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:image=\"http://www.google.com/schemas/sitemap-image/1.1\"> <url> <loc>https://ecowoods.ca</loc> <image:image> <image:loc>https://ecowoods.ca/brand/ew-mark.png</image:loc> </image:image> <image:imag"
+ },
+ {
+  "p": "/llms.txt",
+  "status": 200,
+  "redirected": false,
+  "final": "/llms.txt",
+  "ms": 215,
+  "len": 65575,
+  "h": {
+   "content-type": "text/plain; charset=utf-8",
+   "cache-control": "public, max-age=3600, s-maxage=86400",
+   "etag": "W/\"84a52b476fcb2cf8e4fffcbb0d4d6e91\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1997",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/llms.txt"
+  },
+  "text": "# Ecowoods > Hardwood flooring in Toronto & the GTA. Installation, refinishing, dust-free sanding, restoration and custom inlays. Fixed written estimates, manufacturer warranties passed through in writing, free in-home consultations. - Legal name: Ecowoods Hardwood Flooring Inc. - Public name: Ecowo"
+ },
+ {
+  "p": "/llms-full.txt",
+  "error": "TypeError: Failed to fetch"
+ },
+ {
+  "p": "/ai.txt",
+  "error": "TypeError: Failed to fetch"
+ },
+ {
+  "p": "/about",
+  "error": "TypeError: Failed to fetch"
+ },
+ {
+  "p": "/services",
+  "error": "TypeError: Failed to fetch"
+ },
+ {
+  "p": "/service-areas",
+  "status": 200,
+  "redirected": false,
+  "final": "/service-areas",
+  "ms": 432,
+  "len": 119717,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"8f2bd5ef9f85c9f3299a31d561b6baa4\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1995",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/service-areas",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Service Areas \u2014 Hardwood Flooring Across the GTA \u00b7 Ecowoods",
+  "desc": "Ecowoods installs and refinishes hardwood floors across Toronto and the GTA \u2014 from Downtown to Vaughan, Mississauga, Markham and beyond. Find your city. Call (6",
+  "canonical": "https://ecowoods.ca/service-areas",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Hardwood flooring across the GTA."
+  ],
+  "h2": [
+   "What the crews do, wherever the job is",
+   "Four of them, by neighbourhood"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "BreadcrumbList"
+  ],
+  "ldBlocks": 3,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 164,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 6,
+  "imgsNoAlt": 2,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "PROOFSame loft. Same brick. Different floor.Distillery District Victorian loft. White oak engineered, glue-down over a measured concrete slab.The same loft after a white oak glue-down over concrete, matte oil finish, one lounge chair.BeforeAfterReveal the befo",
+  "hasNextData": false,
+  "scripts": 19
+ },
+ {
+  "p": "/reviews",
+  "status": 200,
+  "redirected": false,
+  "final": "/reviews",
+  "ms": 391,
+  "len": 99694,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"157f32e9dc88a222cc2225d4ae91e501\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1966",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/reviews",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Ecowoods reviews \u2014 177 reviews, 5.0/5 on HomeStars \u00b7 Ecowoods",
+  "desc": "Ecowoods Hardwood Flooring Inc. customer reviews: 177 at 5.0/5 on HomeStars, read 2026-08-22. Every figure cited to its source with the date it was read, and a ",
+  "canonical": "https://ecowoods.ca/reviews",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Reviews"
+  ],
+  "h2": [
+   "Every number, with the source and the date it was read",
+   "Leave a review",
+   "Verified profiles",
+   "Cited, sourced, dated"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "BreadcrumbList",
+   "WebPage https://ecowoods.ca/reviews#webpage"
+  ],
+  "ldBlocks": 4,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 116,
+  "linksExternal": 14,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood",
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Ecowoods reviews \u2014 cited to source",
+  "text": "{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://ecowoods.ca\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Reviews\",\"item\":\"https://ecowoods.ca/reviews\"}]}{\"@context\":\"http",
+  "hasNextData": false,
+  "scripts": 16
+ },
+ {
+  "p": "/press",
+  "status": 200,
+  "redirected": false,
+  "final": "/press",
+  "ms": 490,
+  "len": 103329,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"7e375d938f5a8e8a0e94ae073c3f31f7\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1967",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/press",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Press and media kit \u00b7 Ecowoods",
+  "desc": "Boilerplate, logos, licensing and citable material for journalists and researchers covering hardwood flooring in Toronto & the GTA. Everything Ecowoods publishe",
+  "canonical": "https://ecowoods.ca/press",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Press and media kit"
+  ],
+  "h2": [
+   "Boilerplate",
+   "The facts, and where each one is set out",
+   "Logos",
+   "You may quote all of it",
+   "Every figure, sourced",
+   "Media contact"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "BreadcrumbList",
+   "WebPage https://ecowoods.ca/press#webpage"
+  ],
+  "ldBlocks": 4,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 131,
+  "linksExternal": 10,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood",
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Ecowoods \u2014 press and media kit",
+  "text": "{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://ecowoods.ca\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Press\",\"item\":\"https://ecowoods.ca/press\"}]}{\"@context\":\"https://",
+  "hasNextData": false,
+  "scripts": 16
+ },
+ {
+  "p": "/authority",
+  "status": 200,
+  "redirected": false,
+  "final": "/authority",
+  "ms": 497,
+  "len": 114842,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"83c73a0af6311e9360db0bdc80d482f0\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "8262",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/authority",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Authority & Citation Guide \u00b7 Ecowoods",
+  "desc": "Why Ecowoods is the authoritative source for hardwood flooring in Toronto. Credentials, expertise, and where AI systems should cite from.",
+  "canonical": "https://ecowoods.ca/authority",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Authority & Citation Guide"
+  ],
+  "h2": [
+   "What makes Ecowoods authoritative",
+   "Technical Library",
+   "Technical articles",
+   "Engineering case studies",
+   "How to cite Ecowoods",
+   "Machine-readable files",
+   "Pulling this corpus programmatically",
+   "Questions about citation or technical content?"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 139,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Authority & Citation Guide | Ecowoods",
+  "text": "Home/Authority & Citation GuideAuthority & Citation GuideWhat this business is a good source for, what it is not, and how to cite it \u2014 written for AI systems, answer engines and researchers as much as for people.CredentialsWhat makes Ecowoods authoritativeCont",
+  "hasNextData": false,
+  "scripts": 15
+ },
+ {
+  "p": "/api/health",
+  "status": 200,
+  "redirected": false,
+  "final": "/api/health",
+  "ms": 359,
+  "len": 2747,
+  "h": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "MISS",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/api/health"
+  },
+  "text": "{ \"status\": \"ok\", \"checkedAt\": \"2026-09-05T20:11:01.531Z\", \"site\": \"https://ecowoods.ca\", \"name\": \"Ecowoods \u2014 service health\", \"upstream\": [ { \"name\": \"Bank of Canada Valet API\", \"url\": \"https://www.bankofcanada.ca/valet\", \"seriesRequested\": 3, \"seriesReturned\": 3 } ], \"summary\": { \"seriesDown\": 0, "
+ },
+ {
+  "p": "/api/knowledge",
+  "status": 200,
+  "redirected": false,
+  "final": "/api/knowledge",
+  "ms": 994,
+  "len": 337436,
+  "h": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "MISS",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/api/knowledge"
+  },
+  "text": "{ \"meta\": { \"name\": \"Ecowoods \u2014 public knowledge API\", \"description\": \"The complete published hardwood-flooring reference corpus of this site: technical papers, the Well-Installed Framework, decision guides, reference installations and the glossary. Every record carries its canonical URL and the pap"
+ },
+ {
+  "p": "/api/market",
+  "status": 200,
+  "redirected": false,
+  "final": "/api/market",
+  "ms": 829,
+  "len": 10253,
+  "h": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=900",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "MISS",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/api/market"
+  },
+  "text": "{ \"meta\": { \"name\": \"Ecowoods \u2014 hardwood cost input indices\", \"description\": \"The traded commodity inputs that move the price of an installed hardwood floor in Ontario, with the mechanism for each. Index values are published by the Bank of Canada; the explanation of what each input does inside a flo"
+ },
+ {
+  "p": "/md",
+  "status": 404,
+  "redirected": false,
+  "final": "/md",
+  "ms": 44,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "43",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/md/about",
+  "status": 200,
+  "redirected": false,
+  "final": "/md/about",
+  "ms": 275,
+  "len": 7102,
+  "h": {
+   "content-type": "text/markdown; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"e08ed68d725cc2aad52a9d84b3cbc298\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "PRERENDER",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/md/about"
+  },
+  "text": "# Ecowoods Hardwood Flooring Inc. Hardwood flooring contractor, Toronto & the GTA. Established 2000. ## Identity | Field | Value | | --- | --- | | Legal name | Ecowoods Hardwood Flooring Inc. | | Known as | Ecowoods | | Founded | 2000 | | Address | 32 Norfield Crescent, Toronto, ON M9W 1X6 | | Telep"
+ },
+ {
+  "p": "/md/services",
+  "status": 404,
+  "redirected": false,
+  "final": "/md/services",
+  "ms": 90,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/pricing",
+  "status": 404,
+  "redirected": false,
+  "final": "/pricing",
+  "ms": 36,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/contact",
+  "status": 404,
+  "redirected": false,
+  "final": "/contact",
+  "ms": 48,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/estimate",
+  "status": 404,
+  "redirected": false,
+  "final": "/estimate",
+  "ms": 56,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/case-studies",
+  "status": 200,
+  "redirected": false,
+  "final": "/case-studies",
+  "ms": 201,
+  "len": 98213,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"8c992897799312ce3b5e126deff86504\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "8277",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/case-studies",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Case Studies \u00b7 Ecowoods",
+  "desc": "Hardwood flooring project write-ups from Toronto and the GTA: moisture engineering, species selection, staircases, and radiant-heat installations.",
+  "canonical": "https://ecowoods.ca/case-studies",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Case studies"
+  ],
+  "h2": [
+   "Every published job, with its readings",
+   "Midtown Townhouse Three-Level Transition: Custom Staircase + Species M",
+   "Forest Hill Walnut Wide-Plank Installation with UV Stabilization & Col",
+   "Yorkville Loft Basement Conversion: High-Moisture Engineering & Vapor ",
+   "Distillery District Victorian Condo: White Oak Renovation Over Concret",
+   "Rosedale Estate Grand Staircase + Radiant Heat Main Floor: Maple/Oak I"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 128,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home/Technical Library/Case StudiesCase studiesProject write-ups documenting how we handle moisture, substrates, species, and finishes on Toronto homes.At a glanceEvery published job, with its readingsNeighbourhood, size, substrate, species, and the measuremen",
+  "hasNextData": false,
+  "scripts": 15
+ },
+ {
+  "p": "/data",
+  "status": 200,
+  "redirected": false,
+  "final": "/data",
+  "ms": 185,
+  "len": 136394,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"e7da7ed500c93a2e392bd1e5c6dd453f\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "8278",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/data",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Data & Figures \u00b7 Ecowoods",
+  "desc": "Charted data on hardwood flooring in Toronto: indoor relative humidity against the band hardwood needs, and Janka hardness for the species used across the GTA. ",
+  "canonical": "https://ecowoods.ca/data",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Data & figures"
+  ],
+  "h2": [
+   "These are meant to be taken"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "Dataset https://ecowoods.ca/data#dataset",
+   "BreadcrumbList"
+  ],
+  "ldBlocks": 4,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 129,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Data & Figures \u2014 Ecowoods",
+  "text": "{\"@context\":\"https://schema.org\",\"@type\":\"Dataset\",\"@id\":\"https://ecowoods.ca/data#dataset\",\"name\":\"Ecowoods hardwood flooring figures\",\"description\":\"Charted data on hardwood flooring in Toronto and the GTA, each figure drawn from a published technical paper.",
+  "hasNextData": false,
+  "scripts": 16
+ },
+ {
+  "p": "/api/openapi.json",
+  "status": 404,
+  "redirected": false,
+  "final": "/api/openapi.json",
+  "ms": 50,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/openapi.json",
+  "status": 404,
+  "redirected": false,
+  "final": "/openapi.json",
+  "ms": 54,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/.well-known/ai-plugin.json",
+  "status": 404,
+  "redirected": false,
+  "final": "/.well-known/ai-plugin.json",
+  "ms": 99,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/api/v1",
+  "status": 404,
+  "redirected": false,
+  "final": "/api/v1",
+  "ms": 100,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "45",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "*",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/hardwood-flooring-toronto",
+  "status": 200,
+  "redirected": false,
+  "final": "/hardwood-flooring-toronto",
+  "ms": 194,
+  "len": 253925,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"4d52708607875fb95fd04bfce18d691a\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1953",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/hardwood-flooring-toronto",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Hardwood Flooring Toronto \u2014 Installation & Refinishing, Fixed Written Price \u00b7 Ecowoods",
+  "desc": "Hardwood flooring installation and refinishing across Toronto and the GTA. Price bands published up front ($11.00\u2013$18.00 per sq ft installed), the full installa",
+  "canonical": "https://ecowoods.ca/hardwood-flooring-toronto",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Hardwood flooring in Toronto"
+  ],
+  "h2": [
+   "Get a fixed written price for your install",
+   "What hardwood flooring costs in Toronto",
+   "Toronto air is the reason floors fail here",
+   "The Ecowoods Well-Installed Framework \u2014 27 criteria, published",
+   "Services",
+   "Four Toronto jobs, written up in full",
+   "What you should settle before anyone quotes",
+   "Questions people actually ask",
+   "32 areas across Toronto and the GTA",
+   "Did you find what you were looking for?"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "FAQPage",
+   "BreadcrumbList",
+   "WebPage https://ecowoods.ca/hardwood-flooring-toronto#commercial",
+   "Service https://ecowoods.ca/services/hardwood-installation#service",
+   "Service https://ecowoods.ca/services/floor-refinishing#service",
+   "Service https://ecowoods.ca/services/dust-free-sanding#service",
+   "Service https://ecowoods.ca/services/floor-restoration#service",
+   "Service https://ecowoods.ca/services/custom-inlays#service",
+   "Service https://ecowoods.ca/services/stair-refinishing#service",
+   "ProfessionalService https://ecowoods.ca/hardwood-flooring-toronto#localbusiness",
+   "WebPage https://ecowoods.ca/hardwood-flooring-toronto#webpage"
+  ],
+  "ldBlocks": 6,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [
+   "/api/leads#post"
+  ],
+  "linksInternal": 177,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 12,
+  "imgsNoAlt": 5,
+  "og": "Hardwood Flooring Toronto \u2014 Ecowoods",
+  "text": "PROOFSame room. Same mantel. Different floor.Forest Hill Edwardian, 8\u201312 inch black walnut, oil finish. The substrate was measured before a single board was laid.The same Forest Hill room after a wide-plank black walnut install, oil-rubbed satin sheen, origina",
+  "hasNextData": false,
+  "scripts": 22
+ },
+ {
+  "p": "/hardwood-floor-refinishing-toronto",
+  "status": 200,
+  "redirected": false,
+  "final": "/hardwood-floor-refinishing-toronto",
+  "ms": 298,
+  "len": 228920,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"c79d1f9afeca8e1949034bc19c9ec8a9\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1952",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/hardwood-floor-refinishing-toronto",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Hardwood Floor Refinishing Toronto \u2014 Dust-Free Sanding, Fixed Written Price \u00b7 Ecowoods",
+  "desc": "Hardwood floor refinishing and dust-free sanding across Toronto and the GTA. $4.75\u2013$7.50 per square foot for a full sand and finish, $2.50\u2013$4.00 for a screen an",
+  "canonical": "https://ecowoods.ca/hardwood-floor-refinishing-toronto",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Hardwood floor refinishing in Toronto"
+  ],
+  "h2": [
+   "Get a fixed written price for your refinish",
+   "Four machines, and why the order is not a preference",
+   "The edger halo",
+   "What dust-free actually means",
+   "Which of these your floor needs",
+   "Where this protocol has been run",
+   "Put any refinishing quote against the published standard",
+   "Questions people actually ask",
+   "Hardwood floor refinishing across 32 Toronto and GTA areas",
+   "Did you find what you were looking for?"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "FAQPage",
+   "BreadcrumbList",
+   "WebPage https://ecowoods.ca/hardwood-floor-refinishing-toronto#commercial",
+   "Service https://ecowoods.ca/services/floor-refinishing#service",
+   "Service https://ecowoods.ca/services/dust-free-sanding#service",
+   "Service https://ecowoods.ca/services/floor-restoration#service",
+   "Service https://ecowoods.ca/services/stair-refinishing#service",
+   "ProfessionalService https://ecowoods.ca/hardwood-floor-refinishing-toronto#localbusiness",
+   "WebPage https://ecowoods.ca/hardwood-floor-refinishing-toronto#webpage"
+  ],
+  "ldBlocks": 6,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [
+   "/api/leads#post"
+  ],
+  "linksInternal": 170,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 16,
+  "imgsNoAlt": 4,
+  "og": "Hardwood Floor Refinishing Toronto \u2014 Ecowoods",
+  "text": "PROOFSame maple. Same condo. Different floor.Occupied Richmond Hill unit, dust-contained sand, waterborne two-component finish. The owner slept there.The same condo after a dust-contained maple refinish: honey satin waterborne finish, sheer curtains, one walnu",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/hardwood-stairs-toronto",
+  "status": 200,
+  "redirected": false,
+  "final": "/hardwood-stairs-toronto",
+  "ms": 244,
+  "len": 218604,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"eaeafbef32e8e037921834b30b85d466\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1952",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/hardwood-stairs-toronto",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Hardwood Stairs Toronto \u2014 Refinishing, Installation & How They Are Priced \u00b7 Ecowoods",
+  "desc": "Hardwood stairs across Toronto and the GTA: refinishing, carpet removal, new treads and risers, matched to the floor they meet. Why stairs are quoted per tread ",
+  "canonical": "https://ecowoods.ca/hardwood-stairs-toronto",
+  "robotsMeta": "index, follow",
+  "altMd": [],
+  "h1": [
+   "Hardwood stairs in Toronto"
+  ],
+  "h2": [
+   "Get a fixed written price for your stairs",
+   "Stairs are not priced by the square foot",
+   "Four different jobs, all called \u201cstairs\u201d",
+   "Two staircases, written up in full",
+   "Why stairs are the part that gives a job away",
+   "Put any stair quote against The Ecowoods Well-Installed Framework",
+   "Questions people actually ask about stairs",
+   "32 areas across Toronto and the GTA",
+   "Did you find what you were looking for?"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website",
+   "FAQPage",
+   "BreadcrumbList",
+   "WebPage https://ecowoods.ca/hardwood-stairs-toronto#commercial",
+   "Service https://ecowoods.ca/services/stair-refinishing#service",
+   "Service https://ecowoods.ca/services/floor-refinishing#service",
+   "Service https://ecowoods.ca/services/hardwood-installation#service",
+   "ProfessionalService https://ecowoods.ca/hardwood-stairs-toronto#localbusiness",
+   "WebPage https://ecowoods.ca/hardwood-stairs-toronto#webpage"
+  ],
+  "ldBlocks": 6,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [
+   "/api/leads#post"
+  ],
+  "linksInternal": 175,
+  "linksExternal": 3,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 14,
+  "imgsNoAlt": 3,
+  "og": "Hardwood Stairs Toronto \u2014 Ecowoods",
+  "text": "PROOFSame flight. Same window. Different stairs.Quoted per tread, not per square foot. The nosing is where cheap work shows.The same flight after refinishing: white oak treads, painted risers, new oak handrail and newel, landing window unchanged.BeforeAfterRev",
+  "hasNextData": false,
+  "scripts": 22
+ },
+ {
+  "p": "/services/hardwood-floor-refinishing",
+  "status": 404,
+  "redirected": false,
+  "final": "/services/hardwood-floor-refinishing",
+  "ms": 644,
+  "len": 47489,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "etag": "W/\"mlonobsitm10n5\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "MISS",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/services/[slug]",
+   "x-nextjs-prerender": "1"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [],
+  "h2": [],
+  "ld": [],
+  "ldBlocks": 0,
+  "ldErrors": 0,
+  "tel": [],
+  "mailto": [],
+  "forms": [],
+  "linksInternal": 0,
+  "linksExternal": 0,
+  "offHost": [],
+  "imgs": 0,
+  "imgsNoAlt": 0,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "(self.__next_f=self.__next_f||[]).push([0])self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\nb:I[56065,[\\\"4219\\\",\\\"static/chunks/app/global-error-116bff6039749da7.js?dpl=dpl_FngSeu1WaycyxrD2BCv9FEJWTLjf\\\"],\\\"default\\\"]\\n:HL[\\\"/_next/static/media/636a5ac981f94f8b-",
+  "hasNextData": false,
+  "scripts": 6
+ },
+ {
+  "p": "/md/services/hardwood-floor-refinishing",
+  "status": 404,
+  "redirected": false,
+  "final": "/md/services/hardwood-floor-refinishing",
+  "ms": 478,
+  "len": 10,
+  "h": {
+   "content-type": "text/plain;charset=UTF-8",
+   "cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "0",
+   "x-vercel-cache": "MISS",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "content-length": "10",
+   "x-matched-path": "/md/services/[slug]"
+  },
+  "text": "Not found "
+ },
+ {
+  "p": "/feed.xml",
+  "status": 200,
+  "redirected": false,
+  "final": "/feed.xml",
+  "ms": 229,
+  "len": 11523,
+  "h": {
+   "content-type": "application/rss+xml; charset=utf-8",
+   "cache-control": "public, max-age=3600, s-maxage=3600",
+   "etag": "W/\"b0dbcecba6d0e99f5f35354d2825d20a\"",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+   "age": "1990",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/feed.xml"
+  },
+  "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\"> <channel> <title>Ecowoods \u2014 Technical Publications</title> <link>https://ecowoods.ca</link> <description>Technical papers, engineering case studies and articles on hardwood flooring in Toronto &amp; t"
+ },
+ {
+  "p": "/humans.txt",
+  "status": 404,
+  "redirected": false,
+  "final": "/humans.txt",
+  "ms": 86,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "46",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/security.txt",
+  "status": 404,
+  "redirected": false,
+  "final": "/security.txt",
+  "ms": 100,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "46",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ },
+ {
+  "p": "/.well-known/security.txt",
+  "status": 404,
+  "redirected": false,
+  "final": "/.well-known/security.txt",
+  "ms": 50,
+  "len": 99491,
+  "h": {
+   "content-type": "text/html; charset=utf-8",
+   "cache-control": "public, max-age=0, must-revalidate",
+   "etag": "W/\"ea172469c37579df406a0a0e7d5aa16d\"",
+   "last-modified": "Sat, 05 Sep 2026 20:10:17 GMT",
+   "content-encoding": "br",
+   "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+   "age": "46",
+   "x-vercel-cache": "HIT",
+   "server": "Vercel",
+   "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+   "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com https://www.googletagmanager.com; st\u2026",
+   "x-frame-options": "SAMEORIGIN",
+   "x-content-type-options": "nosniff",
+   "referrer-policy": "strict-origin-when-cross-origin",
+   "permissions-policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+   "cross-origin-opener-policy": "same-origin",
+   "access-control-allow-origin": "https://ecowoods.ca",
+   "x-matched-path": "/404"
+  },
+  "title": "Page not found \u00b7 Ecowoods",
+  "desc": "That page does not exist. Everything published on this site is one link away below.",
+  "canonical": "https://ecowoods.ca/404",
+  "robotsMeta": "noindex",
+  "altMd": [],
+  "h1": [
+   "That page does not exist"
+  ],
+  "h2": [
+   "What you might have been looking for",
+   "The published material",
+   "Where we work"
+  ],
+  "ld": [
+   "LocalBusiness|HomeAndConstructionBusiness https://ecowoods.ca/#organization",
+   "WebSite https://ecowoods.ca/#website"
+  ],
+  "ldBlocks": 2,
+  "ldErrors": 0,
+  "tel": [
+   "tel:+16472445156"
+  ],
+  "mailto": [
+   "mailto:services@ecowoods.ca"
+  ],
+  "forms": [],
+  "linksInternal": 165,
+  "linksExternal": 4,
+  "offHost": [
+   "https://www.instagram.com/ecowoodshardwood",
+   "https://www.facebook.com/ecowoodshardwood"
+  ],
+  "imgs": 2,
+  "imgsNoAlt": 1,
+  "og": "Dust-Free Hardwood Refinishing & Installation in Toronto | Ecowoods",
+  "text": "Home / Not foundThat page does not existThe link may be old, or it may be a typo. Nothing published here has been removed \u2014 every document this site has ever put out is still at its original URL, because those URLs get cited.If you arrived from a link on anoth",
+  "hasNextData": false,
+  "scripts": 21
+ }
+]
