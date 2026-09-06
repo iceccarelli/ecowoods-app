@@ -23,13 +23,40 @@ import type {
   GeoCoordinates,
   OpeningHoursSpecification,
   AreaServedCity,
+  AreaServedRegion,
   Person,
   OfferCatalog,
+  PropertyValue,
+  PotentialAction,
 } from './types';
 
 /* ────────────────────────────────────────────────────────────────────────
  * ROOT ORGANIZATION (LocalBusiness)
  * ──────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The published service region, as three names. Turned into one nested
+ * AdministrativeArea → AdministrativeArea → Country node by
+ * buildAdministrativeArea() and prepended to areaServed. This is the region
+ * the business already publishes (BUSINESS_NAP.region); it adds no coverage.
+ */
+export interface RegionConfig {
+  name: string;
+  province: string;
+  country: string;
+}
+
+export function buildAdministrativeArea(region: RegionConfig): AreaServedRegion {
+  return {
+    '@type': 'AdministrativeArea',
+    name: region.name,
+    containedInPlace: {
+      '@type': 'AdministrativeArea',
+      name: region.province,
+      containedInPlace: { '@type': 'Country', name: region.country },
+    },
+  };
+}
 
 export interface OrganizationConfig {
   siteUrl: string;
@@ -40,9 +67,13 @@ export interface OrganizationConfig {
    *  can join those listings to this organization. */
   alternateName?: string[];
   phone: string;
+  /** The tel: link (BUSINESS_NAP.phoneHref) — the CommunicateAction target. */
+  phoneHref: string;
   email: string;
   address: PostalAddress;
   geo: GeoCoordinates;
+  /** The published region, emitted first in areaServed. See RegionConfig. */
+  region?: RegionConfig;
   areaServed: AreaServedCity[];
   services: ServiceConfig[];
   foundingYear: number;
@@ -50,6 +81,10 @@ export interface OrganizationConfig {
   description: string;
   logoUrl: string;
   ogImageUrl: string;
+  /** Absolute URL of the live estimate page — the QuoteAction target. */
+  estimateUrl: string;
+  /** External identifiers (Google place id, CID, HomeStars profile id). */
+  identifiers?: PropertyValue[];
   /**
    * The published price bands as an OfferCatalog. Built in root-schema.ts from
    * content/constants/pricing.ts — the only module allowed to originate a
@@ -68,6 +103,36 @@ export interface ServiceConfig {
 
 export function buildOrganization(config: OrganizationConfig): Organization {
   const baseUrl = config.siteUrl.replace(/\/$/, '');
+
+  /**
+   * What a consumer can do with this entity (§17). Two actions, because the
+   * site offers exactly two: request an estimate at the live estimate URL, or
+   * call. Both targets are passed in — the estimate URL from the site URL, the
+   * tel: link from BUSINESS_NAP — so no host or number is written here.
+   */
+  const potentialAction: PotentialAction[] = [
+    {
+      '@type': 'QuoteAction',
+      name: 'Request a free in-home estimate',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: config.estimateUrl,
+        actionPlatform: [
+          'http://schema.org/DesktopWebPlatform',
+          'http://schema.org/MobileWebPlatform',
+        ],
+      },
+    },
+    {
+      '@type': 'CommunicateAction',
+      name: `Call ${config.name}`,
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: config.phoneHref,
+        actionPlatform: ['http://schema.org/MobileWebPlatform'],
+      },
+    },
+  ];
 
   return {
     '@context': 'https://schema.org',
@@ -109,7 +174,17 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     // Location
     address: config.address,
     geo: config.geo,
-    areaServed: config.areaServed,
+    /**
+     * The region first, then the sixteen City nodes derived from CITIES. The
+     * region node structures the geography (GTA → Ontario → Canada) for a
+     * consumer that does not know the municipalities; it names the published
+     * region and adds nothing to it. The City list stays derived — see
+     * scripts/verify-cities.mjs, which fails on a hand-written one.
+     */
+    areaServed: [
+      ...(config.region ? [buildAdministrativeArea(config.region)] : []),
+      ...config.areaServed,
+    ],
 
     // P0-7: hours derive from the one BUSINESS_HOURS constant.
     openingHoursSpecification: BUSINESS_HOURS.map((h) => ({
@@ -153,6 +228,17 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     /* knowsAbout: the published services, by name — the topics an answer
        engine should associate with this entity. Derived, never typed. */
     knowsAbout: config.services.map((svc) => svc.name),
+
+    /* Keyed identifiers — the place id, CID and HomeStars profile id — so a
+       resolver joins this node to those records by key, not by name match.
+       Built in root-schema.ts from GOOGLE_PLACE and HOMESTARS_CANONICAL. */
+    ...(config.identifiers?.length ? { identifier: config.identifiers } : {}),
+
+    potentialAction,
+
+    /* No aggregateRating, and none will be added here. Google's policy treats a
+       business rating itself as self-serving; scripts/verify-reviews.mjs fails
+       the build on one. Review figures are cited with a source on /reviews. */
   };
 }
 

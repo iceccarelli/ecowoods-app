@@ -6,6 +6,38 @@
  */
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
+/**
+ * Every HTML page that has a markdown twin, and where the twin lives.
+ *
+ * ONE LIST, TWO PROJECTIONS. `headers()` below turns each pair into a
+ * `Link: <twin>; rel="alternate"; type="text/markdown"` header, and the page
+ * metadata (`alternates.types['text/markdown']`) declares the same twin in
+ * <head>. The rewrites in `rewrites()` are what make the twin URLs resolve.
+ *
+ * Dynamic sources constrain the slug to `[a-z0-9-]+` so the `.md` request
+ * itself (whose last segment contains a dot) never matches the page rule.
+ * Next substitutes `:slug` in header values the same way it does in rewrite
+ * destinations.
+ */
+const MARKDOWN_TWINS = [
+  ['/', '/index.md'],
+  ['/about', '/about.md'],
+  ['/services', '/services.md'],
+  ['/services/:slug([a-z0-9-]+)', '/services/:slug.md'],
+  ['/service-areas', '/service-areas.md'],
+  ['/service-areas/:slug([a-z0-9-]+)', '/service-areas/:slug.md'],
+  ['/pricing', '/pricing.md'],
+  ['/reviews', '/reviews.md'],
+  ['/estimate', '/estimate.md'],
+  ['/contact', '/contact.md'],
+  ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
+  ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],
+  ['/glossary/:slug([a-z0-9-]+)', '/glossary/:slug.md'],
+  ['/hardwood-flooring-toronto', '/hardwood-flooring-toronto.md'],
+  ['/hardwood-floor-refinishing-toronto', '/hardwood-floor-refinishing-toronto.md'],
+  ['/hardwood-stairs-toronto', '/hardwood-stairs-toronto.md'],
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -172,6 +204,27 @@ const nextConfig = {
       /* The entity's own machine edition. Every content collection has had one
          since F-153; the company itself did not until F-187. */
       { source: '/about.md', destination: '/md/about' },
+      /* THE COMMERCIAL SURFACES (Protocol v2, Stage 12). The corpus and the
+         company had twins; the pages an agent reads to decide whether to
+         recommend the business — home, the two hubs, pricing, reviews, the
+         estimate path, contact and the three head-term pages — did not. The
+         homepage twin is /index.md, the llmstxt.org convention for a root. */
+      { source: '/index.md', destination: '/md/home' },
+      { source: '/services.md', destination: '/md/services' },
+      { source: '/service-areas.md', destination: '/md/service-areas' },
+      { source: '/pricing.md', destination: '/md/pricing' },
+      { source: '/reviews.md', destination: '/md/reviews' },
+      { source: '/estimate.md', destination: '/md/estimate' },
+      { source: '/contact.md', destination: '/md/contact' },
+      /* The three head-term pages share one handler at /md/commercial/[slug].
+         The source names the three slugs explicitly, so no other root-level
+         `.md` request can reach the handler and 404 from it. Checked against
+         Next's own path-to-regexp: matches exactly the three, strips `.md`
+         from the captured slug, and matches nothing else. */
+      {
+        source: '/:slug(hardwood-flooring-toronto|hardwood-floor-refinishing-toronto|hardwood-stairs-toronto).md',
+        destination: '/md/commercial/:slug',
+      },
     ];
   },
 
@@ -232,6 +285,28 @@ const nextConfig = {
         source: '/((?!llms\\.txt|llms-full\\.txt|ai\\.txt|api/|_next/)(?!.*\\.md$).*)',
         headers: [{ key: 'Access-Control-Allow-Origin', value: SITE_URL }],
       },
+      /**
+       * CONTENT NEGOTIATION BY ADVERTISEMENT (Protocol v2, Stage 25).
+       *
+       * Every page with a markdown twin says so in an HTTP header as well as
+       * in its <head>: `Link: </about.md>; rel="alternate"; type="text/markdown"`.
+       * An agent that issues a HEAD request, or that never parses HTML, still
+       * learns that a clean edition exists and where. The <link rel="alternate">
+       * in the page metadata carries the same fact for anything that does read
+       * the document; the two are generated from the same list of twins so
+       * they cannot name different files.
+       *
+       * The dynamic sources use Next's path params in the header VALUE —
+       * `/services/:slug` → `</services/floor-refinishing.md>` — which Next
+       * compiles with the same compileNonPath it uses for rewrite
+       * destinations, and which Vercel's routing layer supports as `$slug`.
+       * The `([a-z0-9-]+)` constraint keeps the `.md` request itself, whose
+       * slug would contain a dot, from matching the page rule.
+       */
+      ...MARKDOWN_TWINS.map(([source, twin]) => ({
+        source,
+        headers: [{ key: 'Link', value: `<${twin}>; rel="alternate"; type="text/markdown"` }],
+      })),
       {
         source: '/(.*)',
         headers: [

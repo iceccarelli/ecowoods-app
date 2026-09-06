@@ -36,7 +36,7 @@ export async function generateMetadata({
   return {
     title: `${t.term} — hardwood flooring glossary`,
     description: t.short,
-    alternates: { canonical: `/glossary/${t.slug}` },
+    alternates: { canonical: `/glossary/${t.slug}`, types: { 'text/markdown': `/glossary/${t.slug}.md` } },
     openGraph: {
       title: `${t.term} — what it means`,
       description: t.short,

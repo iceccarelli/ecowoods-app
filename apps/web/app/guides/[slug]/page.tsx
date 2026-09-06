@@ -73,7 +73,7 @@ export async function generateMetadata({
        not, which is the one place a rename is worth more than a new page. */
     title: guide.seoTitle ?? guide.title,
     description: guide.summary,
-    alternates: { canonical: `/guides/${guide.slug}` },
+    alternates: { canonical: `/guides/${guide.slug}`, types: { 'text/markdown': `/guides/${guide.slug}.md` } },
     openGraph: {
       title: guide.question,
       description: guide.summary,

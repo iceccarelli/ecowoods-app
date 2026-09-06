@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { pilotLeadSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { sendAdminNewPilotLeadEmail } from '@/lib/email';
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 
 /**
  * POST /api/pilot-leads — Durable, production-safe pilot interest capture.
@@ -25,8 +26,14 @@ function generatePilotLeadId(): string {
 }
 
 export async function POST(request: Request) {
+  /* Same CSRF posture as /api/leads: a cross-site page cannot submit a lead
+     into this business's pipeline. Absent Origin (curl, native form) is fine;
+     a foreign Origin is not. */
+  if (!isTrustedBrowserOrigin(request)) {
+    return NextResponse.json({ success: false, message: 'Origin not allowed.' }, { status: 403 });
+  }
   const clientIp = getClientIp(request);
-  const rateLimitCheck = checkRateLimit(clientIp);
+  const rateLimitCheck = checkRateLimit(clientIp, LEAD_POST_LIMIT);
 
   // Check rate limit first
   if (!rateLimitCheck.allowed) {
@@ -79,7 +86,6 @@ export async function POST(request: Request) {
       event: 'pilot.lead.captured',
       pilotLeadId,
       receivedAt: new Date().toISOString(),
-      clientIp,
       lead,
     })
   );
@@ -136,15 +142,12 @@ export async function POST(request: Request) {
   );
 
   // 4. Optional CRM/webhook forward (set PILOT_LEADS_WEBHOOK_URL to enable).
-  const webhookUrl = process.env.PILOT_LEADS_WEBHOOK_URL;
+  //    Validated and redirect-free — see lib/outbound-webhook.ts.
+  const webhookUrl = webhookFromEnv('PILOT_LEADS_WEBHOOK_URL');
   if (webhookUrl) {
-    fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pilotLeadId: savedLeadId ?? pilotLeadId,
-        ...lead,
-      }),
+    postWebhook(webhookUrl, {
+      pilotLeadId: savedLeadId ?? pilotLeadId,
+      ...lead,
     }).catch((err) =>
       console.error(
         JSON.stringify({

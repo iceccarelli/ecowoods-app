@@ -1,4 +1,4 @@
-import { streamText, tool, stepCountIs } from 'ai';
+import { streamText, tool, stepCountIs, type ModelMessage } from 'ai';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
@@ -14,9 +14,69 @@ import {
   FINISH_OPTIONS,
   PATTERN_OPTIONS,
 } from '@ecowoods/shared/ai';
+import { chatRequestSchema, CHAT_MAX_BODY_BYTES } from '@ecowoods/shared/schemas';
+import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
+
+/**
+ * THE REQUEST BODY IS THE ATTACK SURFACE (Protocol v2, Stages 31–32).
+ *
+ * This route hands whatever it is sent to a model that can write quoteRequest
+ * and appointment rows and email an address the model chooses. So the body is
+ * treated as untrusted input, not as "the conversation":
+ *
+ *   · a browser Origin that is not ours is refused (403), like every other
+ *     public POST on this site — CSRF hygiene, not authentication;
+ *   · the raw body is capped at CHAT_MAX_BODY_BYTES before it is parsed;
+ *   · `messages` must match chatRequestSchema: 1..30 turns of role
+ *     'user' | 'assistant' with string (or text-part) content of at most
+ *     4 000 characters. `system` and `tool` roles from the client are rejected
+ *     outright — the system prompt is ours, and a client-supplied tool result
+ *     is a forged tool result;
+ *   · nothing the client sends is ever interpolated into the system prompt.
+ *     Species, square footage and the rest reach the model as the user turn
+ *     and as tool INPUT, which the prompt tells the model is data.
+ */
+async function readChatBody(req: Request): Promise<{ ok: true; messages: ModelMessage[] } | { ok: false; response: Response }> {
+  const declared = Number(req.headers.get('content-length') ?? '0');
+  if (declared > CHAT_MAX_BODY_BYTES) {
+    return { ok: false, response: new Response('Message too long.', { status: 413 }) };
+  }
+  let text: string;
+  try {
+    text = await req.text();
+  } catch {
+    return { ok: false, response: new Response('Bad request', { status: 400 }) };
+  }
+  if (text.length > CHAT_MAX_BODY_BYTES) {
+    return { ok: false, response: new Response('Message too long.', { status: 413 }) };
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return { ok: false, response: new Response('Bad request', { status: 400 }) };
+  }
+  const parsed = chatRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return { ok: false, response: new Response('Bad request', { status: 400 }) };
+  }
+  // An assistant turn that produced no text (tool calls only) comes back from
+  // the widget as an empty string; the provider rejects empty content blocks.
+  const messages: ModelMessage[] = parsed.data.messages
+    .map((m): ModelMessage => (
+      typeof m.content === 'string'
+        ? { role: m.role, content: m.content }
+        : { role: m.role, content: m.content.map((p) => ({ type: 'text' as const, text: p.text })) }
+    ))
+    .filter((m) => (typeof m.content === 'string' ? m.content.trim().length > 0 : m.content.some((p) => p.type === 'text' && p.text.trim().length > 0)));
+  if (messages.length === 0 || messages[messages.length - 1]!.role !== 'user') {
+    return { ok: false, response: new Response('Bad request', { status: 400 }) };
+  }
+  return { ok: true, messages };
+}
 
 // zod enums need a non-empty tuple; derive them from the shared catalogue so
 // adding a finish in one place makes it instantly callable by the agent.
@@ -60,12 +120,14 @@ async function liveCountsForDay(dayKey: string) {
 }
 
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!isTrustedBrowserOrigin(req)) return new Response('Origin not allowed.', { status: 403 });
+  const ip = getClientIp(req);
   if (limited(ip)) return new Response('Too many messages, give it a moment.', { status: 429 });
   if (!process.env.ANTHROPIC_API_KEY) return new Response('Chat is not configured.', { status: 503 });
 
-  let messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  try { ({ messages } = await req.json()); } catch { return new Response('Bad request', { status: 400 }); }
+  const body = await readChatBody(req);
+  if (!body.ok) return body.response;
+  const { messages } = body;
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
@@ -88,8 +150,8 @@ export async function POST(req: Request) {
           'Accepts the optional finish and pattern the homeowner picked in the on-site floor configurator — ' +
           'pass them through verbatim so the number you quote matches the number they just saw on screen.',
         inputSchema: z.object({
-          species: z.string(),
-          squareFeet: z.number().positive(),
+          species: z.string().max(60),
+          squareFeet: z.number().positive().max(1_000_000),
           finish: z.enum(FINISH_IDS).optional(),
           pattern: z.enum(PATTERN_IDS).optional(),
         }),
@@ -146,12 +208,13 @@ export async function POST(req: Request) {
       }),
 
       book_measure: tool({
-        description: 'Book a free in-home measure. Only call AFTER you have name, email, phone, and a startsAt the customer chose from get_availability.',
+        description: 'Book a free in-home measure. Only call AFTER you have name, email, phone, the postal code of the floor, and a startsAt the customer chose from get_availability.',
         inputSchema: z.object({
-          name: z.string().min(2), email: z.string().email(), phone: z.string().min(7),
-          startsAt: z.string().describe('Exact ISO timestamp from get_availability'),
-          service: z.string().optional(), species: z.string().optional(),
-          squareFeet: z.number().positive().optional(), postal: z.string().optional(), notes: z.string().optional(),
+          name: z.string().min(2).max(120), email: z.string().email().max(254), phone: z.string().min(7).max(40),
+          startsAt: z.string().max(40).describe('Exact ISO timestamp from get_availability'),
+          postal: z.string().min(3).max(20).describe('Postal code or address of the floor being measured'),
+          service: z.string().max(80).optional(), species: z.string().max(60).optional(),
+          squareFeet: z.number().positive().max(1_000_000).optional(), notes: z.string().max(2000).optional(),
         }),
         execute: async (b) => {
           try {

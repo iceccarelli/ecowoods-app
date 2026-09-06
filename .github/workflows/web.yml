@@ -89,6 +89,11 @@ jobs:
         run: node scripts/build-old-domain-redirects.mjs --check
       - name: AI discoverability (commercial material leads every machine surface)
         run: node scripts/audit-ai-discoverability.mjs
+      # The /api/v1 contract, checked as text: every declared endpoint has a
+      # route and every route is declared; no instruction-override language and
+      # no preview host in anything a machine reads; robots.txt lets agents in.
+      - name: Agentic primitives (OpenAPI ↔ routes, no injection, no preview hosts)
+        run: node scripts/verify-agentic.mjs
 
   build:
     name: Typecheck & Build
@@ -122,5 +127,11 @@ jobs:
         run: pnpm --filter @ecowoods/web exec prisma generate
       - name: Typecheck
         run: pnpm --filter @ecowoods/web exec tsc --noEmit
+      # In-process: the registry, the matcher and the /api/v1 handlers are
+      # exercised with real Request objects and no server. Contract, negative,
+      # invariant and drift suites — a fact that differs between two surfaces
+      # fails here before the build spends two minutes on it.
+      - name: Unit and contract tests
+        run: pnpm --filter @ecowoods/web test
       - name: Production build
         run: pnpm --filter @ecowoods/web build

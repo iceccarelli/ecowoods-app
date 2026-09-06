@@ -111,6 +111,11 @@ const ROUTES = [
   'guides/[slug]',
   'service-areas',
   'service-areas/[city]',
+  /* Protocol v2 §15 P0 pages: the bands, the conversion target, the NAP. */
+  'pricing',
+  'estimate',
+  'contact',
+  'reviews',
 ];
 
 /* ── strip comments so the prose above cannot be read as code ─────────────── */

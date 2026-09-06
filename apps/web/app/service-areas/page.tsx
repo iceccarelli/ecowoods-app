@@ -9,7 +9,7 @@ import { IllustrationPair } from '../components/Illustration';
 export const metadata: Metadata = {
   title: 'Service Areas — Hardwood Flooring Across the GTA',
   description: `Ecowoods installs and refinishes hardwood floors across Toronto and the GTA — from Downtown to Vaughan, Mississauga, Markham and beyond. Find your city. Call ${BUSINESS.phoneDisplay}.`,
-  alternates: { canonical: '/service-areas' },
+  alternates: { canonical: '/service-areas', types: { 'text/markdown': '/service-areas.md' } },
 };
 
 export default function ServiceAreasIndex() {

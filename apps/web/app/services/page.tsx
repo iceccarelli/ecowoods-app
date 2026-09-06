@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Custom hardwood installation, refinishing & dust-free sanding',
   description:
     'Custom hardwood floor installation, dust-free refinishing, restoration, stairs and inlays in Toronto and the GTA — each with a published price band and the paper behind the method.',
-  alternates: { canonical: '/services' },
+  alternates: { canonical: '/services', types: { 'text/markdown': '/services.md' } },
   openGraph: {
     title: 'Hardwood flooring services — Ecowoods',
     description:

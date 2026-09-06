@@ -182,6 +182,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),
     entry('/services', 'monthly', 0.95),                           // no date
+    /* Protocol v2 §15 P0 pages. /pricing is the canonical statement of the
+       three bands (every Price primitive's canonical_url points at a row on
+       it); /estimate is the URL every machine surface names as the
+       request_estimate action; /contact is the NAP on a page of its own.
+       No dates: nothing dated backs them — the bands carry their own
+       verifiedAt in content/claims.ts, and that is not a page date. */
+    entry('/pricing', 'monthly', 0.95),                            // no date
+    entry('/estimate', 'monthly', 0.9),                            // no date
+    entry('/contact', 'monthly', 0.8),                             // no date
     /* The commercial head terms. Priority 0.95 because these are the
        highest-intent queries in this market and the site had no page for any
        of them until F-193 — six service pages and thirty-two area pages, and

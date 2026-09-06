@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { submitToIndexNow } from '../../../lib/indexnow';
+import { submitToIndexNow, filterIndexNowUrls } from '../../../lib/indexnow';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/indexnow — submit URLs to Bing, Yandex, Seznam and Naver on demand.
@@ -50,25 +51,46 @@ function repoKey(): string | null {
   }
 }
 
+/**
+ * THE KEY IS PUBLIC BY DESIGN, SO THE URL LIST IS THE CONTROL.
+ *
+ * IndexNow verifies ownership by serving the key at /<key>.txt, which means
+ * anyone can read it. Requiring it here stops nothing on its own. What limits
+ * abuse is that this route will only ever submit URLs on the canonical host
+ * (filterIndexNowUrls), at most a thousand per call, at most ten calls a
+ * minute per client — so the worst a stranger can do is ask Bing to recrawl
+ * pages of this site that already exist. CRON_SECRET, when set, is accepted as
+ * a second credential so the deploy workflow does not need the public key.
+ */
 export async function POST(req: Request) {
+  const rl = checkRateLimit(`indexnow:${getClientIp(req)}`, { windowMs: 60_000, maxRequests: 10 });
+  if (!rl.allowed) {
+    return Response.json({ ok: false, error: 'rate_limited' }, { status: 429, headers: { 'retry-after': String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))) } });
+  }
+
   const expected = process.env.INDEXNOW_KEY || repoKey();
   const provided =
     req.headers.get('x-indexnow-key') ?? new URL(req.url).searchParams.get('key');
+  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null;
+  const cronSecret = process.env.CRON_SECRET;
+  const bearerOk = Boolean(cronSecret && bearer && bearer === cronSecret);
 
-  if (!expected) {
+  if (!expected && !bearerOk) {
     return Response.json(
       { ok: false, error: 'key_unavailable' },
       { status: 503 },
     );
   }
-  if (provided !== expected) {
+  if (!bearerOk && provided !== expected) {
     return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  const { urls } = (await req.json().catch(() => ({}))) as { urls?: string[] };
-  if (!Array.isArray(urls) || urls.length === 0)
-    return Response.json({ ok: false, error: 'urls[] required' }, { status: 400 });
+  const body = (await req.json().catch(() => ({}))) as { urls?: unknown };
+  const filtered = filterIndexNowUrls(body?.urls);
+  if (!filtered.ok) {
+    return Response.json({ ok: false, error: filtered.error, ...(filtered.offending ? { offending: filtered.offending } : {}) }, { status: 400 });
+  }
 
-  const ok = await submitToIndexNow(urls);
-  return Response.json({ ok, count: urls.length });
+  const ok = await submitToIndexNow(filtered.urls);
+  return Response.json({ ok, count: filtered.urls.length });
 }

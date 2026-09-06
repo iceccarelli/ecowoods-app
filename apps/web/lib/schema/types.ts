@@ -54,9 +54,40 @@ export interface AreaServedCity {
   '@type': 'City';
   name: string;
   geo?: GeoShape;
+  /** The region this city sits in, where a page structures its geography. */
+  containedInPlace?: AreaServedRegion;
 }
 
-export type AreaServed = AreaServedCity[];
+/**
+ * A named place inside a city that is not itself a city — a Toronto
+ * neighbourhood. F-157: Rosedale and King West get pages, never City nodes.
+ * Where a page must name one as an area, this is the node it uses.
+ */
+export interface AreaServedPlace {
+  '@type': 'Place';
+  name: string;
+  containedInPlace: AreaServedCity;
+}
+
+export interface Country {
+  '@type': 'Country';
+  name: string;
+}
+
+/**
+ * A region above the city level — the published service region, structured:
+ * Greater Toronto Area → Ontario → Canada. One node, prepended to the City
+ * list, so a consumer that does not know the sixteen municipalities still
+ * reads the geography correctly. It names the published region and adds no
+ * coverage (§9.6).
+ */
+export interface AreaServedRegion {
+  '@type': 'AdministrativeArea';
+  name: string;
+  containedInPlace?: AreaServedRegion | Country;
+}
+
+export type AreaServed = (AreaServedCity | AreaServedRegion)[];
 
 /* ────────────────────────────────────────────────────────────────────────
  * OpeningHours
@@ -152,12 +183,47 @@ export interface Organization extends SchemaBase {
   hasMap?: string;
   /** Topics this organisation is an authority on — derived from its published services. */
   knowsAbout?: string[];
+  /**
+   * External identifiers for this entity — the Google place id, the Google
+   * CID and the HomeStars profile id — so a resolver can join this node to
+   * those records by key rather than by name. Derived from constants.
+   */
+  identifier?: PropertyValue[];
+  /**
+   * What a consumer can DO with this entity: request an estimate at the live
+   * estimate URL, or call. §17. Both targets come from config/constants.
+   */
+  potentialAction?: PotentialAction[];
 }
 
 export interface ContactPoint {
   '@type': 'ContactPoint';
   telephone: string;
   contactType: string; // "customer service", "sales", etc.
+}
+
+/** A keyed external identifier (schema.org/PropertyValue). */
+export interface PropertyValue {
+  '@type': 'PropertyValue';
+  propertyID: string;
+  value: string;
+}
+
+/** Where an action is performed — a URL template plus the platforms it works on. */
+export interface EntryPoint {
+  '@type': 'EntryPoint';
+  urlTemplate: string;
+  actionPlatform?: string[];
+}
+
+/**
+ * An action the organisation invites. Only the two the site actually offers:
+ * a QuoteAction to the estimate page and a CommunicateAction to the phone.
+ */
+export interface PotentialAction {
+  '@type': 'QuoteAction' | 'CommunicateAction';
+  name: string;
+  target: EntryPoint;
 }
 
 /* ────────────────────────────────────────────────────────────────────────

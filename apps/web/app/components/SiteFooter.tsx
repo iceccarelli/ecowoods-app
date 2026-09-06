@@ -190,6 +190,13 @@ export default function SiteFooter() {
               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
               <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
               <a href="/hardwood-floor-problems-toronto">Floor Problems &amp; Repairs</a>
+              {/* Protocol v2 §15 — the three P0 conversion/fact pages. Pricing
+                  is the canonical statement of the bands; /estimate is the URL
+                  every machine surface names as the request_estimate action;
+                  /contact is the NAP on a page of its own. */}
+              <a href="/pricing">Pricing — the three published bands</a>
+              <a href="/estimate">Request a free estimate</a>
+              <a href="/contact">Contact &amp; hours</a>
               {/* P1 — the two buyers who are not homeowners. In the Services
                   column rather than Learn because that is what they are buying,
                   and because a page with no inbound chrome link fails

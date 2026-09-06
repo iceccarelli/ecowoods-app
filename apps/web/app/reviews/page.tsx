@@ -25,7 +25,7 @@ const fmt = (iso: string) =>
 export const metadata: Metadata = {
   title: `${BUSINESS_NAP.shortName} reviews — ${P.count} reviews, ${P.rating.toFixed(1)}/${P.outOf} on ${P.platform}`,
   description: `${BUSINESS_NAP.legalName} customer reviews: ${P.count} at ${P.rating.toFixed(1)}/${P.outOf} on ${P.platform}, read ${P.asOf}. Every figure cited to its source with the date it was read, and a direct link to leave your own.`,
-  alternates: { canonical: '/reviews' },
+  alternates: { canonical: '/reviews', types: { 'text/markdown': '/reviews.md' } },
   openGraph: {
     title: `${BUSINESS_NAP.shortName} reviews — cited to source`,
     description: `${P.count} reviews at ${P.rating.toFixed(1)}/${P.outOf} on ${P.platform}, read ${P.asOf}. Linked, dated, independently verifiable.`,

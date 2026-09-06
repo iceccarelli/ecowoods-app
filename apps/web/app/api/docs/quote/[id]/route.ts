@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAllowedDocumentUrl } from '@/lib/outbound-webhook';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
@@ -22,7 +23,8 @@ export async function GET(
 
   const pdfUrl = quote?.quotePdfUrl as string | null | undefined;
 
-  if (!pdfUrl || pdfUrl.startsWith('data:') || !pdfUrl.startsWith('http')) {
+  /* Stored URL, allow-listed host (blob store or the canonical host) — never a bare `http` prefix check. */
+  if (!pdfUrl || !isAllowedDocumentUrl(pdfUrl)) {
     return new NextResponse('Not found', { status: 404 });
   }
 

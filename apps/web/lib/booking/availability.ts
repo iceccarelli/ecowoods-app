@@ -130,3 +130,18 @@ export function isBookableSlot(startsAt: string, opts: ComputeOptions): boolean 
   const slot = day.slots.find((s) => s.start === startsAt);
   return Boolean(slot && slot.available);
 }
+
+/** The widest window the scheduler ever shows. A query cannot ask for more. */
+export const MAX_WINDOW_DAYS = 60;
+
+/**
+ * Pure: clamp a requested range to at most MAX_WINDOW_DAYS from `from`, and
+ * refuse an inverted range. Unit-tested without the database.
+ */
+export function clampWindow(from: string, to: string | undefined, maxDays: number = MAX_WINDOW_DAYS): { fromKey: string; toKey: string } | null {
+  const fromKey = from;
+  const cap = addDaysToKey(fromKey, maxDays);
+  const toKey = to ?? addDaysToKey(fromKey, 42);
+  if (toKey < fromKey) return null;
+  return { fromKey, toKey: toKey > cap ? cap : toKey };
+}

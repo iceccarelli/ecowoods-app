@@ -69,7 +69,7 @@ Review figures are published as cited statistics — platform, count, rating, li
 | Error tracking | Confirmed in code | `instrumentation.ts` (`onRequestError`) + `app/error.tsx` + `app/global-error.tsx` + `/api/client-error` → `lib/error-reporting.ts`: structured stderr line on Vercel, forwarded to `ERROR_WEBHOOK_URL` when set. |
 | Geo coordinates | Confirmed | `BUSINESS_NAP.address` now carries Google's pin for the address (43.7197642, -79.546973), read live 2026-09-04. |
 | Analytics | Confirmed in code — env pending | `CookieConsentBanner` loads GA4 only after consent and only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel; `lib/analytics.ts` fires the conversion events. `pnpm env:check` shows what is set. |
-| Verify suite | Confirmed | `pnpm verify` — 50 guards — passes on this commit. |
+| Verify suite | Confirmed | `pnpm verify` — 51 guards — passes on this commit (`verify:reviews` had been failing since the constants refactor; its parser now resolves identifier references). `pnpm test:web` — 158 vitest tests (golden queries, API contract, negative, invariants, drift, schema, security). |
 
 ---
 
@@ -110,7 +110,9 @@ After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVI
 - **Commercial pages**: `/`, `/services/*`, `/hardwood-flooring-toronto`, `/hardwood-floor-refinishing-toronto`, `/hardwood-stairs-toronto`, `/service-areas/*` (32 areas), `/commercial`, `/realtors`.
 - **Authority**: `/papers` (5 technical papers), `/framework` (Well-Installed Framework v1.0 — 6 pillars, 27 criteria), `/guides`, `/glossary` (44 terms), `/standards`, `/data`, `/library`, `/case-studies`, `/blog`.
 - **Entity**: `/about`, `/team`, `/press`, `/reviews`, `/authority`.
-- **Machine surfaces**: `/llms.txt`, `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, and a `.md` edition of every paper, guide, glossary term, service and service area.
+- **Machine surfaces**: `/llms.txt` (llmstxt.org shape, curated, `## Optional` long tail), `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, `/md` (index) and a `.md` edition of every paper, guide, glossary term, service, service area, plus `/index.md`, `/about.md`, `/services.md`, `/service-areas.md`, `/pricing.md`, `/reviews.md`, `/estimate.md`, `/contact.md` and the three head-term pages. Every page with a twin advertises it with `<link rel="alternate" type="text/markdown">` and a `Link` header.
+- **Agentic primitives (Protocol v2)**: `/api/v1` — entity, services, locations, pricing, reviews, evidence, sources, FAQ, pages, actions, graph, manifest, changefeed, citation packs, `service-match`, `recommendation-context`, OpenAPI 3.1 at `/api/v1/openapi.json`. Every primitive carries `canonical_url`, `source`, `provenance.verified_at` and `status`; ETag/304 on every response. Registry: `apps/web/lib/registry/` (a projection of the constants — it owns no fact). Docs: `docs/agentic/API.md`. Constitution: `ECOWOODS_AUTONOMOUS_EXECUTION_PROTOCOL.md`.
+- **P0 pages added**: `/pricing` (table first, stable row ids the registry cites), `/estimate` (the `request_estimate` action target; JSON-LD `potentialAction`), `/contact` (the NAP on one URL with citable fragment ids). Service pages carry "When this is the wrong service" and stable section ids.
 - **Lead path**: estimate form → `/api/estimate` → Resend email + database record; booking scheduler; `/r` (noindex) is the printed review card destination.
 - **Review flywheel**: admin marks a project COMPLETED → `lib/review-request.ts` stamps `Project.reviewRequestedAt` and sends the one review email (Google first, then HomeStars — the same links as `/r`, to every customer, no sentiment step); `/api/cron/review-requests` sweeps hourly for anything the trigger missed.
 - **Observability**: every uncaught server error (`instrumentation.ts`) and every client render failure (`app/error.tsx`, `app/global-error.tsx` → `/api/client-error`) becomes one structured JSON line in the Vercel log and, when `ERROR_WEBHOOK_URL` is set, one webhook post. GA4 loads after consent.
@@ -123,7 +125,12 @@ After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVI
 apps/web                 Next.js 15 (App Router) — the live site
 apps/admin, apps/mobile  companion apps
 packages/shared          BUSINESS_NAP, hours, PROFILE_LINKS, REVIEW_EVIDENCE, AI prompt
-apps/web/lib/schema      JSON-LD builders (organisation, services, pages)
+apps/web/lib/schema      JSON-LD builders (organisation, services, pages) — one business entity, potentialAction, identifiers
+apps/web/lib/registry    the entity truth system as primitives: registry, intents, locations, matcher, citations, changes, manifest, OpenAPI
+apps/web/app/api/v1      the agentic primitives API (23 route files, all declared in lib/registry/manifest.ts)
+apps/web/tests           vitest: golden queries, API contract, negative, invariants, drift, schema, security
+scripts/agentic          01_baseline … 07_verify-production — the reproducible command manifest
+scripts/gap-curator.mjs  the Web Gap Curator → audit/gaps.json (internal)
 apps/web/lib/entity-answers.ts   the entity, answered in quotable sentences
 apps/web/content         claims registry, pricing constants, topic map, articles, case studies
 scripts/verify-*.mjs     50 build guards (facts, schema, reviews, links, sitemap, canonicals …) + live checks (domain, hosts)
@@ -140,6 +147,9 @@ pnpm install
 pnpm dev                 # turbo dev --filter=@ecowoods/web
 pnpm build
 pnpm verify              # every guard; must pass before push
+pnpm test:web            # vitest: golden queries, contract, negative, invariants, drift, schema, security
+node scripts/verify-production-agentic.mjs   # live: machine files, markdown twins, P0 pages, /api/v1 vs the constants
+node scripts/gap-curator.mjs [--live]        # the gap register → audit/gaps.json
 pnpm seo:consistency     # facts + claims + pricing + topics + entity + canonicals
 pnpm seo:live            # live: old-domain redirect + stale hosts + crawl of the deployed site
 pnpm seo:hosts           # live: ecowoods-app.vercel.app and www must redirect to the canonical

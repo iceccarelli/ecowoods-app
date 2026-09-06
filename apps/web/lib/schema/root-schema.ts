@@ -13,20 +13,29 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
-import { FAQ_ITEMS, CITIES } from '@/lib/seo-data';
+import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, type City } from '@/lib/seo-data';
 import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { BUSINESS_NAP, GOOGLE_PLACE, HOMESTARS_CANONICAL } from '@ecowoods/shared/constants';
 import {
   buildOrganization,
   buildWebSite,
   buildBreadcrumbList,
   buildFAQPage,
   type OrganizationConfig,
+  type RegionConfig,
   type FAQItem,
 } from './builders';
-import type { Organization, WebSite, BreadcrumbList, FAQPage } from './types';
+import type {
+  Organization,
+  WebSite,
+  BreadcrumbList,
+  FAQPage,
+  PropertyValue,
+  AreaServedCity,
+  AreaServedPlace,
+} from './types';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -57,6 +66,68 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 const GTA = Array.from(
   new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
 );
+
+/**
+ * THE PUBLISHED REGION, STRUCTURED.
+ *
+ * BUSINESS_NAP.region is "Toronto & the GTA" — display copy, not a place name a
+ * graph can resolve. This is the same region as three schema.org places,
+ * nested: Greater Toronto Area, in Ontario, in Canada. buildOrganization()
+ * emits it as the FIRST areaServed node, ahead of the sixteen City nodes
+ * derived from CITIES, so a consumer that has never heard of Ajax still reads
+ * the geography correctly (§9.6). It names the region the site already
+ * publishes and adds no coverage — no municipality joins the list here.
+ *
+ * lib/schema/commercial.ts nests its City nodes under the same object, so the
+ * region is one value on every page. (Not an `areaServed:` array: the City
+ * list stays derived from CITIES, and scripts/verify-cities.mjs fails this
+ * file on a hand-written one.)
+ */
+export const SERVICE_REGION: RegionConfig = {
+  name: 'Greater Toronto Area',
+  province: 'Ontario',
+  country: 'Canada',
+};
+
+/**
+ * The one node a page emits for the area it is about.
+ *
+ * Sixteen municipalities are City nodes. Sixteen Toronto neighbourhoods are
+ * not — F-157 is the record of why — so a page about Rosedale gets a Place
+ * inside the City of Toronto, not a City called Rosedale. The service-area
+ * pages and the commercial graph both call this, so the distinction is made
+ * in one place and the containing city is written once. (It is not derived
+ * from the shop's addressLocality on purpose: that the shop is in Toronto and
+ * that Rosedale is in Toronto are two facts that happen to agree today.)
+ */
+const NEIGHBOURHOOD_CITY = 'Toronto';
+
+export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
+  const isNeighbourhood = NEIGHBOURHOOD_AREAS.some((n) => n.slug === city.slug);
+  return isNeighbourhood
+    ? {
+        '@type': 'Place',
+        name: city.name,
+        containedInPlace: { '@type': 'City', name: NEIGHBOURHOOD_CITY },
+      }
+    : { '@type': 'City', name: city.name };
+}
+
+/**
+ * KEYED IDENTIFIERS, FROM THE CONSTANTS.
+ *
+ * The place id, the CID and the HomeStars profile id are how Google and
+ * HomeStars themselves identify this business. Emitting them as PropertyValue
+ * identifiers lets a resolver join this node to those records by key rather
+ * than by matching a name string — which is the join `alternateName` exists
+ * to help with, done properly. Each value is read from the constant that the
+ * review flywheel and the GBP copy already read; none is typed here.
+ */
+const IDENTIFIERS: PropertyValue[] = [
+  { '@type': 'PropertyValue', propertyID: 'google_place_id', value: GOOGLE_PLACE.placeId },
+  { '@type': 'PropertyValue', propertyID: 'google_cid', value: GOOGLE_PLACE.cid },
+  { '@type': 'PropertyValue', propertyID: 'homestars_profile_id', value: HOMESTARS_CANONICAL.profileId },
+];
 
 
 /**
@@ -97,6 +168,12 @@ const servicePriceRange = (slug: string): string | undefined => {
  * pricing cards, and the service it prices is the same node the rest of the
  * graph points at. Screen & Recoat and Full Sand & Finish both price
  * floor-refinishing — two published intensities of the same service.
+ *
+ * lib/registry/registry.ts exports the same three-entry map. It is repeated
+ * here rather than imported because the registry is server-only — its module
+ * graph reaches the case-study loader and node:fs — and this schema layer is
+ * a set of synchronous constants with no Node builtin behind it, which is what
+ * lets scripts/verify-client-boundary.mjs keep it importable from anywhere.
  */
 const BAND_SERVICE_SLUG: Record<PriceBand['key'], string> = {
   screenAndRecoat: 'floor-refinishing',
@@ -139,7 +216,12 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   legalName: BUSINESS_NAP.legalName,
   alternateName: [...BUSINESS_NAP.alternateNames],
   phone: BUSINESS_NAP.phoneSchema,
+  phoneHref: BUSINESS_NAP.phoneHref,
   email: BUSINESS_NAP.email,
+  // The QuoteAction target (§17). Built from SITE_URL, never a typed host.
+  estimateUrl: `${SITE_URL}/estimate`,
+  identifiers: IDENTIFIERS,
+  region: SERVICE_REGION,
   address: {
     '@type': 'PostalAddress',
     streetAddress: BUSINESS_NAP.address.streetAddress,
@@ -157,56 +239,31 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   // hand-typed City nodes that happened to agree with CITIES today; the
   // per-service lists were four hand-typed nodes that did not. One source.
   areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
-  services: [
-    {
-      id: 'hardwood-installation',
-      name: 'Hardwood Flooring Installation',
-      description:
-        'Solid and engineered hardwood laid by salaried craftsmen — straight-lay, herringbone, chevron and custom patterns.',
-      priceRange: servicePriceRange('hardwood-installation'),
-      areaServed: GTA,
-    },
-    {
-      id: 'floor-refinishing',
-      name: 'Hardwood Floor Refinishing',
-      description:
- 'Bring tired floors back to life: sand to bare wood, re-stain and re-finish for a factory-fresh surface.',
-      priceRange: servicePriceRange('floor-refinishing'),
-      areaServed: GTA,
-    },
-    {
-      id: 'dust-free-sanding',
-      name: 'Dust-Free Floor Sanding',
-      description:
-        'HEPA-sealed containment captures dust at the source rather than after it settles, so most clients stay in the house during the work.',
-      priceRange: servicePriceRange('dust-free-sanding'),
-      areaServed: GTA,
-    },
-    {
-      id: 'floor-restoration',
-      name: 'Hardwood Floor Restoration',
-      description:
- 'Rescue and repair heritage and water-damaged floors — board replacement, feathering and colour matching.',
-      priceRange: servicePriceRange('floor-restoration'),
-      areaServed: GTA,
-    },
-    {
-      id: 'custom-inlays',
-      name: 'Custom Inlays & Borders',
-      description:
- 'Bespoke feature strips, medallions and borders routed and fitted by hand for a signature look.',
-      priceRange: servicePriceRange('custom-inlays'),
-      areaServed: GTA,
-    },
-    {
-      id: 'stair-refinishing',
-      name: 'Stair Refinishing',
-      description:
- 'Treads, risers and nosings refinished to match your floors for a seamless, hard-wearing finish.',
-      priceRange: servicePriceRange('stair-refinishing'),
-      areaServed: GTA,
-    },
-  ],
+  /**
+   * THE SERVICES, DERIVED FROM THE TEXT A VISITOR READS.
+   *
+   * This was six hand-typed objects — a second copy of SERVICES in
+   * lib/seo-data.ts, which is the array the service-area pages, /services and
+   * llms.txt render. The copies had already drifted: the dust-free-sanding
+   * description here said "HEPA-sealed containment captures dust at the source
+   * rather than after it settles, so most clients stay in the house", while the
+   * visible card said "HEPA-sealed extraction at the machine and containment at
+   * the room, so most clients stay home". Neither is wrong. Both being published
+   * is — JSON-LD that says something different from the page it sits on is the
+   * one class of schema error a validator cannot see and a crawler penalises.
+   *
+   * Now `description` IS `blurb`: the string a machine reads for a service is,
+   * byte for byte, the string a person reads on the card. The @id pattern
+   * (/services/<slug>#service) is unchanged and still checked by
+   * scripts/verify-services.mjs against the route tree.
+   */
+  services: SERVICES.map((s) => ({
+    id: s.slug,
+    name: s.name,
+    description: s.blurb,
+    priceRange: servicePriceRange(s.slug),
+    areaServed: GTA,
+  })),
   foundingYear: BUSINESS_NAP.foundedYear,
   offerCatalog: BAND_OFFER_CATALOG,
   slogan: "Toronto's master hardwood flooring artisans",

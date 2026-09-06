@@ -43,11 +43,25 @@ import {
   PROFILE_LINKS,
   BUSINESS_NAP,
   BUSINESS_ADDRESS_LINE,
+  BUSINESS_TIMEZONE_NAME,
+  HOURS_LINE,
+  GOOGLE_PLACE,
 } from '@ecowoods/shared/constants';
 import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
-import { SITE_URL, BUSINESS, SERVICES, CITIES, SERVICE_AREAS, cityContent, type CityContent } from '@/lib/seo-data';
+import {
+  SITE_URL,
+  BUSINESS,
+  SERVICES,
+  CITIES,
+  NEIGHBOURHOOD_AREAS,
+  SERVICE_AREAS,
+  FAQ_ITEMS,
+  cityContent,
+  type CityContent,
+  type FaqItem,
+} from '@/lib/seo-data';
 import {
   getServicePages,
   getServicePage,
@@ -56,7 +70,11 @@ import {
   faqsFor,
   type ServicePage,
 } from '@/lib/service-pages';
-import { PILLARS } from '@/lib/framework';
+import { PILLARS, FRAMEWORK_NAME, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
+import { PRICE_PROMISE } from '@/lib/pricing';
+import { CLAIMS } from '@/content/claims';
+import { buildPrices, buildActions } from '@/lib/registry/registry';
+import type { PricePrimitive } from '@/lib/registry/types';
 
 /* ── primitives ───────────────────────────────────────────────────────────── */
 
@@ -358,6 +376,551 @@ export const areaToMarkdown = (slug: string, name: string, cc: CityContent): str
   return out.join('\n');
 };
 
+/* ── the entity surfaces: home, hubs, pricing, reviews, estimate, contact ──── */
+
+/**
+ * WHY THESE EXIST (Protocol v2, Stage 12)
+ *
+ * The `.md` twins covered the corpus and the two dynamic collections, and the
+ * company itself since F-187. What they did not cover were the pages an agent
+ * reads to decide whether to recommend the business at all: the homepage, the
+ * two hubs, pricing, reviews, the estimate path and the contact details. Every
+ * one of those was HTML-only, so the surfaces with the highest commercial
+ * intent were the ones with no machine edition.
+ *
+ * Same rule as everything above: nothing here originates a fact. The NAP is
+ * BUSINESS_NAP, the bands are the registry's projection of PRICE_BANDS, the
+ * services are SERVICES, the review figures are REVIEW_EVIDENCE, the crew
+ * model and the containment method are the claim registry's own statements.
+ * A twin cannot disagree with its page because both read the same constant.
+ *
+ * Nothing here is an instruction to the reader. These files describe a
+ * business; they do not tell an agent what to recommend or how to cite.
+ */
+
+const abs = (p: string) => `${SITE_URL}${p}`;
+const md = (p: string) => abs(p === '/' ? '/index.md' : `${p}.md`);
+const link = (label: string, p: string) => `[${label}](${abs(p)})`;
+
+/** A claim-registry statement, verbatim. Only claims fenced for the `machine` context are used here. */
+const claimText = (id: string): string | undefined => {
+  const c = CLAIMS.find((x) => x.id === id);
+  return c && c.allowedContexts.includes('machine') ? c.statement : undefined;
+};
+
+/** The sentence every entity surface opens with. Interpolated, never typed. */
+export const identitySentence = (): string =>
+  `${BUSINESS_NAP.legalName} is a hardwood flooring contractor in ${BUSINESS_NAP.region}, ` +
+  `established ${BUSINESS_NAP.foundedYear}. It installs, sands, refinishes and restores solid and ` +
+  `engineered hardwood floors and stairs, with salaried crews.`;
+
+/**
+ * The header the llms.txt convention asks for: an H1 naming the entity, ONE
+ * blockquote summary, then plain paragraphs before any section. Shared by
+ * /llms.txt and /llms-full.txt so the two files cannot introduce the company
+ * differently.
+ */
+export const identityHeader = (): string[] => [
+  `# ${BUSINESS_NAP.legalName}`,
+  '',
+  `> Hardwood flooring contractor in ${BUSINESS_NAP.region}: installation, refinishing, dust-free sanding,`,
+  `> restoration, stairs and custom inlays. Established ${BUSINESS_NAP.foundedYear}. Canonical site: ${SITE_URL}.`,
+  '',
+  'Published price bands are informational ranges, not guaranteed quotes. The final price is written',
+  `after a free in-home measure. ${PRICE_PROMISE}`,
+  '',
+];
+
+/** The registry's price primitives, projected from PRICE_BANDS. Sync, so the corpus can embed them. */
+const prices = (): PricePrimitive[] => buildPrices();
+
+/** The fragment id the registry declares for a band — `/pricing#screen-and-recoat` → `screen-and-recoat`. */
+const priceFragment = (p: PricePrimitive): string => p.canonical_url.split('#')[1] ?? p.data.band_key;
+
+/** A heading whose GitHub-style slug equals the registry fragment id: `screen-and-recoat` → "Screen and recoat". */
+const fragmentHeading = (fragment: string): string => {
+  const words = fragment.split('-');
+  return words[0].charAt(0).toUpperCase() + words[0].slice(1) + (words.length > 1 ? ` ${words.slice(1).join(' ')}` : '');
+};
+
+/**
+ * The published bands as one table, then the caveat sentence. The caveat is
+ * not decoration: it is the sentence the registry says must travel with the
+ * number, and a table quoted without it is a quote this business never gave.
+ */
+const priceTable = (list: PricePrimitive[] = prices()): string[] => [
+  ...table(
+    ['Scope', 'Published band', 'Applies when'],
+    list.map((p) => [p.data.label, `${p.data.formatted} (${p.data.currency})`, p.data.conditions[0] ?? '']),
+  ),
+  `${PRICE_PROMISE} A band is an informational range, not a quote; the fixed price is written after the free in-home measure.`,
+  '',
+];
+
+/** Every service as a link with its blurb and its band, or the honest alternative to a band. */
+const serviceLines = (slugs: string[] = SERVICES.map((s) => s.slug)): string[] =>
+  slugs
+    .map((slug) => SERVICES.find((s) => s.slug === slug))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s))
+    .map((s) => {
+      const page = getServicePage(s.slug);
+      const band = page ? priceBand(page) : undefined;
+      return `- ${link(s.name, `/services/${s.slug}`)}: ${s.blurb} ${band ? `Published band: ${band}.` : 'Quoted per project after the in-home measure.'}`;
+    });
+
+/** The review record as a table, cited to source with a read date. */
+const reviewTable = (): string[] =>
+  table(
+    ['Platform', 'Rating', 'Reviews', 'Most recent', 'Figures read', 'Profile'],
+    REVIEW_EVIDENCE.map((r) => [
+      r.platform,
+      `${r.rating.toFixed(1)} / ${r.outOf}`,
+      String(r.count),
+      r.latestReviewAt ?? 'see profile',
+      r.asOf,
+      r.href,
+    ]),
+  );
+
+const REVIEW_RULE =
+  'These figures are cited statistics: platform, count, rating, profile link and the date a person read ' +
+  'them off the live profile. They are never blended into a rating of our own or emitted as a schema.org ' +
+  'aggregateRating, because ratings collected on another platform are that platform’s to publish.';
+
+/** The three ways to start a job, from the registry's action primitives. */
+const actionLines = (): string[] => {
+  const actions = buildActions();
+  const find = (name: string) => actions.find((a) => a.data.name === name);
+  const estimate = find('request_estimate');
+  const call = find('call');
+  const email = find('email');
+  return [
+    estimate ? `- ${link('Request an estimate', '/estimate')}: ${estimate.data.description} ${estimate.data.outcome}` : '',
+    call ? `- Call [${BUSINESS_NAP.phoneDisplay}](${call.data.target}): ${call.data.outcome} Hours: ${HOURS_LINE} (${BUSINESS_TIMEZONE_NAME}).` : '',
+    email ? `- Email [${BUSINESS_NAP.email}](${email.data.target}): ${email.data.outcome}` : '',
+  ].filter(Boolean);
+};
+
+/** Name, address, phone, email, hours — the NAP block every entity surface ends with. */
+const napTable = (): string[] =>
+  table(
+    ['Field', 'Value'],
+    [
+      ['Legal name', BUSINESS_NAP.legalName],
+      ['Known as', BUSINESS_NAP.shortName],
+      ['Address', BUSINESS_ADDRESS_LINE],
+      ['Telephone', `[${BUSINESS_NAP.phoneDisplay}](${BUSINESS_NAP.phoneHref})`],
+      ['Email', `[${BUSINESS_NAP.email}](mailto:${BUSINESS_NAP.email})`],
+      ['Hours', `${HOURS_LINE} (${BUSINESS_TIMEZONE_NAME})`],
+      ['Established', String(BUSINESS_NAP.foundedYear)],
+      ['Service region', BUSINESS_NAP.region],
+      ['Website', SITE_URL],
+    ],
+  );
+
+/* /index.md — the homepage twin. */
+export const homeToMarkdown = (): string => {
+  const canonical = SITE_URL;
+  const out: string[] = [
+    ...identityHeader(),
+    identitySentence(),
+    '',
+    '## Services',
+    '',
+    ...serviceLines(),
+    '',
+    `Hub: ${link('All services', '/services')} · markdown: ${md('/services')}`,
+    '',
+    '## Published price bands',
+    '',
+    ...priceTable(),
+    `Conditions and what moves a number inside a band: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    '',
+    '## Where the work is done',
+    '',
+    `${BUSINESS_NAP.region}. ${SERVICE_AREAS.length} published service areas — ${CITIES.length} municipalities and ` +
+      `districts and ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods — each with its own page: ` +
+      `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
+    '',
+    '## Evidence',
+    '',
+    `- ${link('Case studies', '/case-studies')}: measured jobs, each publishing the readings taken before the work.`,
+    `- ${link('Data and figures', '/data')}: charted data with its source table.`,
+    `- ${link('Reviews', '/reviews')}: ${PRIMARY_REVIEW_EVIDENCE.count} reviews at ` +
+      `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)}/${PRIMARY_REVIEW_EVIDENCE.outOf} on ${PRIMARY_REVIEW_EVIDENCE.platform}, ` +
+      `read ${PRIMARY_REVIEW_EVIDENCE.asOf}, cited to source.`,
+    '',
+    '## Get a fixed written price',
+    '',
+    ...actionLines(),
+    '',
+    '## Contact',
+    '',
+    ...napTable(),
+  ];
+  out.push(...provenance(canonical, [`- Markdown index of every page twin: ${abs('/md')}`]));
+  return out.join('\n');
+};
+
+/* /services.md — the hub. */
+export const servicesHubToMarkdown = (): string => {
+  const canonical = abs('/services');
+  const out: string[] = [
+    '# Hardwood flooring services',
+    '',
+    identitySentence(),
+    '',
+    `${SERVICES.length} services, each with its own page. Where a price band is published it is stated; ` +
+      'where it is not, the service is quoted per project after the free in-home measure.',
+    '',
+  ];
+  for (const s of SERVICES) {
+    const page = getServicePage(s.slug);
+    const band = page ? priceBand(page) : undefined;
+    out.push(`## ${s.name}`, '', s.blurb, '');
+    if (page && page.standfirst) out.push(page.standfirst, '');
+    out.push(
+      `- Price: ${band ? `${band}, fixed in writing after the in-home measure` : 'quoted per project after the in-home measure'}`,
+      `- Canonical URL: ${abs(`/services/${s.slug}`)}`,
+      `- Markdown: ${md(`/services/${s.slug}`)}`,
+      '',
+    );
+  }
+  out.push(...priceTable());
+  out.push(...provenance(canonical, [`- Pricing in full: ${abs('/pricing')}`]));
+  return out.join('\n');
+};
+
+/* /service-areas.md — the hub. */
+export const areasHubToMarkdown = (): string => {
+  const canonical = abs('/service-areas');
+  const crew = claimText('workforce.salaried');
+  const out: string[] = [
+    `# Hardwood flooring service areas — ${BUSINESS_NAP.region}`,
+    '',
+    identitySentence(),
+    '',
+    '## Who is served',
+    '',
+    `Homeowners, condominium owners and property managers across ${BUSINESS_NAP.region}: ` +
+      `${SERVICE_AREAS.length} published service areas, each with its own page.`,
+    '',
+    'Projects elsewhere in Southern Ontario are assessed per project through the estimate path. ' +
+      'They are not published service areas, and this page does not claim them as covered.',
+    '',
+    '## What does not change by area',
+    '',
+    `- The price bands. They are published once and do not change by postal code: ${link('Pricing', '/pricing')}.`,
+    ...(crew ? [`- The crew model. ${crew}`] : []),
+    `- The services: ${SERVICES.map((s) => link(s.name, `/services/${s.slug}`)).join(', ')}.`,
+    '',
+    '## What changes by area',
+    '',
+    'The housing stock and the substrate under it. A pre-war semi on a wood-joist subfloor, a post-war ' +
+      'bungalow and a concrete-slab condominium are different jobs with different moisture questions, and ' +
+      'each area page below says which it is.',
+    '',
+    '## Municipalities and districts',
+    '',
+    ...CITIES.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+    '',
+    '## Toronto neighbourhoods',
+    '',
+    ...NEIGHBOURHOOD_AREAS.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+    '',
+  ];
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
+/* /pricing.md — table first, conditions second, the written price third. */
+export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string => {
+  const canonical = abs('/pricing');
+  const promise = claimText('pricing.fixedInWriting') ?? PRICE_PROMISE;
+  const out: string[] = [
+    '# Hardwood flooring prices — published bands',
+    '',
+    identitySentence(),
+    '',
+    'The bands below are the only prices this business publishes. Every band is per square foot, in ' +
+      'Canadian dollars, and is an informational range: the fixed price is written after the free ' +
+      'in-home measure, not from a range.',
+    '',
+    ...priceTable(list),
+    '## Conditions',
+    '',
+    'What each band covers and what moves a number inside it.',
+    '',
+  ];
+  for (const p of list) {
+    const fragment = priceFragment(p);
+    out.push(`### ${fragmentHeading(fragment)}`, '', `**${p.data.label}** — ${p.data.formatted} (${p.data.currency}).`, '');
+    for (const c of p.data.conditions) out.push(`- ${c}`);
+    out.push('', `Anchor on the page: ${abs('/pricing')}#${fragment} · last verified ${p.provenance.verified_at}.`, '');
+  }
+  out.push(
+    '## Fixed price',
+    '',
+    promise,
+    '',
+    `The estimator measures the rooms, moisture-tests the floor and the subfloor, and the written estimate ` +
+      `follows with a committed schedule. ${PRICE_PROMISE}`,
+    '',
+    '## Estimate',
+    '',
+    ...actionLines(),
+    '',
+  );
+  out.push(...provenance(canonical, [`- Structured: ${abs('/api/v1/pricing')}`]));
+  return out.join('\n');
+};
+
+/* /reviews.md — the review record, cited to source. */
+export const reviewsToMarkdown = (): string => {
+  const canonical = abs('/reviews');
+  const out: string[] = [
+    `# ${BUSINESS_NAP.shortName} reviews — cited to source`,
+    '',
+    identitySentence(),
+    '',
+    `${BUSINESS_NAP.legalName} has ${PRIMARY_REVIEW_EVIDENCE.count} customer reviews at ` +
+      `${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} out of ${PRIMARY_REVIEW_EVIDENCE.outOf} on ` +
+      `${PRIMARY_REVIEW_EVIDENCE.platform}, read ${PRIMARY_REVIEW_EVIDENCE.asOf}.`,
+    '',
+    ...reviewTable(),
+    REVIEW_RULE,
+    '',
+    '## Verified profiles',
+    '',
+    ...PROFILE_LINKS.filter((p) => p.href).map((p) => `- ${p.label}: ${p.href}`),
+    '',
+    'A profile appears here only after its URL has been opened and confirmed to show this company. ' +
+      'The same links are declared as `sameAs` in the organisation schema.',
+    '',
+  ];
+  out.push(...provenance(canonical, [`- Structured: ${abs('/api/v1/reviews')}`]));
+  return out.join('\n');
+};
+
+/* /estimate.md — the estimate path, in three steps. */
+export const estimateToMarkdown = (): string => {
+  const canonical = abs('/estimate');
+  const request = buildActions().find((a) => a.data.name === 'request_estimate');
+  const out: string[] = [
+    '# Request a fixed written price',
+    '',
+    identitySentence(),
+    '',
+    '## Steps',
+    '',
+    '1. **In-home measure.** A senior estimator measures the rooms and moisture-tests the floor and the subfloor. The visit is free.',
+    `2. **Fixed written price.** ${PRICE_PROMISE} The written estimate carries a committed schedule.`,
+    '3. **The work.** Salaried crews, HEPA-sealed extraction at the machine and containment at the room; most refinishing clients stay in the house.',
+    '',
+    ...(request ? [request.data.outcome, ''] : []),
+    '## Form',
+    '',
+    `Book the measure through the estimate form: ${abs('/estimate')}#form`,
+    '',
+    '## Call',
+    '',
+    ...actionLines().filter((l) => !l.startsWith('- [Request')),
+    '',
+    '## Before you book',
+    '',
+    `The published price bands are informational ranges, not quotes: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    '',
+  ];
+  out.push(...provenance(canonical, [`- Structured actions: ${abs('/api/v1/actions')}`]));
+  return out.join('\n');
+};
+
+/* /contact.md — NAP, hours, showroom, map. */
+export const contactToMarkdown = (): string => {
+  const canonical = abs('/contact');
+  const out: string[] = [
+    `# Contact ${BUSINESS_NAP.legalName}`,
+    '',
+    identitySentence(),
+    '',
+    '## Phone',
+    '',
+    `[${BUSINESS_NAP.phoneDisplay}](${BUSINESS_NAP.phoneHref})`,
+    '',
+    '## Email',
+    '',
+    `[${BUSINESS_NAP.email}](mailto:${BUSINESS_NAP.email})`,
+    '',
+    '## Showroom',
+    '',
+    BUSINESS_ADDRESS_LINE,
+    '',
+    `Map: ${GOOGLE_PLACE.mapsUrl}`,
+    '',
+    '## Hours',
+    '',
+    `${HOURS_LINE} (${BUSINESS_TIMEZONE_NAME})`,
+    '',
+    '## Estimate',
+    '',
+    `A fixed written price follows a free in-home measure: ${link('Request an estimate', '/estimate')} (${md('/estimate')}).`,
+    '',
+    ...napTable(),
+  ];
+  out.push(...provenance(canonical, [`- Structured: ${abs('/api/v1/entity')}`]));
+  return out.join('\n');
+};
+
+/* ── the three commercial pages ───────────────────────────────────────────── */
+
+/**
+ * The commercial head-term pages, mirrored. The H1, the services each page
+ * covers and the price table are the page's own; the FAQ is FAQ_ITEMS, the
+ * published Q/A set the registry attaches to these pages, filtered to the
+ * questions each page is about. The pages' inline FAQ arrays are not exported,
+ * so nothing is retyped from them.
+ */
+export type CommercialMirror = {
+  slug: string;
+  h1: string;
+  /** One sentence saying what the page answers. No slogans. */
+  lede: string;
+  /** Service slugs the page's Service/Offer schema declares. */
+  services: string[];
+  /** Which of FAQ_ITEMS this page is about. */
+  faq: (f: FaqItem) => boolean;
+  /** Read in place of a per-tread band on the stairs page. */
+  pricingNote?: string;
+};
+
+const dust = claimText('method.dustContainment');
+
+export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
+  {
+    slug: 'hardwood-flooring-toronto',
+    h1: 'Hardwood flooring in Toronto',
+    lede:
+      `What hardwood flooring costs in Toronto, which service fits which floor, and the published standard the ` +
+      `finished work is judged against: ${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}, ${criterionCount()} criteria, ` +
+      `free to use on any contractor in the GTA.`,
+    services: SERVICES.map((s) => s.slug),
+    faq: () => true,
+  },
+  {
+    slug: 'hardwood-floor-refinishing-toronto',
+    h1: 'Hardwood floor refinishing in Toronto',
+    lede:
+      'Refinishing an existing hardwood floor: the two published bands (full sand and finish, screen and recoat), ' +
+      `the four-machine sequence the work follows, and how dust is contained. ${dust ?? ''}`.trim(),
+    services: ['floor-refinishing', 'dust-free-sanding', 'floor-restoration', 'stair-refinishing'],
+    faq: (f) => /refinish|sand|dust|stay in the house|warranty|how long|estimate/i.test(`${f.q} ${f.a}`),
+  },
+  {
+    slug: 'hardwood-stairs-toronto',
+    h1: 'Hardwood stairs in Toronto',
+    lede:
+      'Stair refinishing, carpet removal, new treads and risers, matched to the floor they meet. Stairs are quoted ' +
+      'per tread and per flight rather than per square foot, because the work is geometry rather than area.',
+    services: ['stair-refinishing', 'floor-refinishing', 'hardwood-installation'],
+    faq: (f) => /stair|estimate|warranty|how long|contractor/i.test(`${f.q} ${f.a}`),
+    pricingNote:
+      'No per-tread band is published. The stair number is given per tread and per flight after the same ' +
+      'in-home measure and is itemised separately in the written price. The bands below are for the floor.',
+  },
+];
+
+export const commercialToMarkdown = (page: CommercialMirror): string => {
+  const canonical = abs(`/${page.slug}`);
+  const faqs = FAQ_ITEMS.filter(page.faq);
+  const out: string[] = [
+    `# ${page.h1}`,
+    '',
+    identitySentence(),
+    '',
+    page.lede,
+    '',
+    '## Services on this page',
+    '',
+    ...serviceLines(page.services),
+    '',
+    '## Pricing',
+    '',
+    ...(page.pricingNote ? [page.pricingNote, ''] : []),
+    ...priceTable(),
+    `Conditions in full: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    '',
+    '## Coverage',
+    '',
+    `${SERVICE_AREAS.length} published service areas across ${BUSINESS_NAP.region}: ` +
+      `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
+    '',
+  ];
+  if (faqs.length) {
+    out.push('## FAQ', '');
+    for (const f of faqs) out.push(`### ${f.q}`, '', f.a, '');
+  }
+  out.push('## Estimate', '', ...actionLines(), '');
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
+export const commercialMarkdown = (slug: string): string | null => {
+  const page = COMMERCIAL_MIRRORS.find((p) => p.slug === slug);
+  return page ? commercialToMarkdown(page) : null;
+};
+
+/* ── /md — the index of every twin ────────────────────────────────────────── */
+
+/**
+ * One list of every `.md` URL this site serves, grouped by kind, generated
+ * from the same manifests that generate the routes. An agent that finds this
+ * file has found every machine edition; a twin missing from here is a twin
+ * that does not exist, because both are derived from one list.
+ */
+export const mirrorIndexToMarkdown = (): string => {
+  const canonical = abs('/md');
+  const group = (title: string, items: [string, string][]): string[] => [
+    `## ${title}`,
+    '',
+    ...items.map(([name, p]) => `- [${name}](${md(p)}): twin of ${abs(p)}`),
+    '',
+  ];
+  const out: string[] = [
+    `# ${BUSINESS_NAP.legalName} — markdown editions`,
+    '',
+    'Every page below is also served as clean Markdown at the same URL with `.md` appended, per the ',
+    'llms.txt convention (llmstxt.org). Each twin is generated from the constants and manifests its ',
+    'HTML page renders from, carries its canonical URL, and says nothing the page does not say.',
+    '',
+    `- Index for agents: ${abs('/llms.txt')}`,
+    `- Whole corpus, one fetch: ${abs('/llms-full.txt')}`,
+    `- Structured API: ${abs('/api/v1')} (manifest: ${abs('/api/v1/manifest')})`,
+    '',
+    ...group('Entity', [
+      ['Home', '/'],
+      ['About', '/about'],
+      ['Contact', '/contact'],
+      ['Request an estimate', '/estimate'],
+      ['Reviews', '/reviews'],
+      ['Pricing', '/pricing'],
+    ]),
+    ...group('Services', [
+      ['All services', '/services'],
+      ...SERVICES.map((s): [string, string] => [s.name, `/services/${s.slug}`]),
+    ]),
+    ...group('Commercial pages', COMMERCIAL_MIRRORS.map((c): [string, string] => [c.h1, `/${c.slug}`])),
+    ...group('Service areas', [
+      ['All service areas', '/service-areas'],
+      ...SERVICE_AREAS.map((c): [string, string] => [c.name, `/service-areas/${c.slug}`]),
+    ]),
+    ...group('Technical papers', getPapers().map((p): [string, string] => [p.title, `/papers/${p.slug}`])),
+    ...group('Decision guides and reference installations', getGuides().map((g): [string, string] => [g.seoTitle ?? g.title, `/guides/${g.slug}`])),
+    ...group('Glossary', getTerms().map((t): [string, string] => [t.term, `/glossary/${t.slug}`])),
+  ];
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
 /* ── the whole corpus, one fetch ──────────────────────────────────────────── */
 
 /**
@@ -380,19 +943,25 @@ export const corpusToMarkdown = (): string => {
   const areas = SERVICE_AREAS.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
     (x): x is { c: (typeof SERVICE_AREAS)[number]; cc: CityContent } => Boolean(x.cc),
   );
+  /* The same H1 / blockquote / caveat header as /llms.txt, so the index and
+     the bulk file introduce the company identically. The corpus title that
+     used to be the H1 is now the first section. */
   const out: string[] = [
-    `# ${BUSINESS.name} — complete technical corpus`,
-    '',
-    `Every technical paper, decision guide and glossary entry published at ${SITE_URL},`,
-    'in full, in one file. Generated from the same source as the site itself.',
+    ...identityHeader(),
+    `This is the complete published corpus of ${BUSINESS.name} — the company, its prices, every technical`,
+    `paper, decision guide, glossary entry, service and service area published at ${SITE_URL} — in full,`,
+    'in one file. Generated from the same source as the site itself.',
     '',
     `- Index: ${SITE_URL}/llms.txt`,
     `- Citation guide: ${SITE_URL}/ai.txt`,
-    `- Structured API: ${SITE_URL}/api/knowledge`,
+    `- Structured API: ${SITE_URL}/api/v1 (corpus JSON: ${SITE_URL}/api/knowledge)`,
+    `- Markdown twins, one per page: ${SITE_URL}/md`,
     `- Each document is also available on its own at its page URL with \`.md\` appended.`,
     '',
     '## Contents',
     '',
+    '- The company: identity, NAP, hours, review record',
+    `- ${prices().length} published price band(s), with conditions and the written-price caveat`,
     `- ${papers.length} technical paper(s)`,
     `- ${guides.length} decision guide(s) and reference installation(s)`,
     `- ${terms.length} glossary term(s)`,
@@ -403,8 +972,10 @@ export const corpusToMarkdown = (): string => {
     '',
   ];
   /* The company first. An agent that reads only the top of this file should
-     come away knowing who publishes the corpus and what their record is. */
+     come away knowing who publishes the corpus and what their record is. Then
+     the prices, because "what does it cost" is the second question. */
   out.push(entityToMarkdown(), '', '---', '');
+  out.push(pricingToMarkdown(), '', '---', '');
   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');

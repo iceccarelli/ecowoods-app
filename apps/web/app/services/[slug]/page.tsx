@@ -12,6 +12,7 @@ import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { JobCardRail } from '@/app/components/JobCard';
 import { jobCardsForService } from '@/content/job-cards';
+import { getRegistry } from '@/lib/registry/registry';
 import {
   getServicePages,
   getServicePage,
@@ -50,7 +51,7 @@ export async function generateMetadata({
   return {
     title: page.h1,
     description: `${svc?.blurb ?? page.standfirst}${band ? ` Published price band: ${band}.` : ''}`,
-    alternates: { canonical: `/services/${page.slug}` },
+    alternates: { canonical: `/services/${page.slug}`, types: { 'text/markdown': `/services/${page.slug}.md` } },
     openGraph: {
       title: `${svc?.name ?? page.h1} — Ecowoods`,
       description: svc?.blurb ?? page.standfirst,
@@ -92,6 +93,21 @@ export default async function ServiceDetailPage({
   const faqs = faqsFor(page);
   const pillars = pillarsFor(page);
   const terms = termsFor(page);
+  /* "When this is the wrong service" — Protocol v2 §15.2. Exclusions reduce
+     bad leads and raise a model's trust in the inclusions. The list lives in
+     lib/registry (one per service, editorial, no figures); the same rows are
+     served by /api/v1/services/{id} so the page and the API cannot disagree. */
+  const reg = await getRegistry();
+  const wrongWhen = reg.services.find((sv) => sv.data.slug === page.slug)?.data.wrong_when ?? [];
+  const useInstead = (ref: string): { href?: string; label: string } => {
+    if (ref.startsWith('service:')) {
+      const target = ref.slice('service:'.length);
+      return { href: `/services/${target}`, label: SERVICES.find((sv) => sv.slug === target)?.name ?? target };
+    }
+    if (ref === 'price:screen-and-recoat') return { href: '/pricing#screen-and-recoat', label: 'a screen and recoat' };
+    if (ref === 'unsupported') return { label: 'not something Ecowoods offers' };
+    return { label: 'assessed on site during the estimate' };
+  };
 
   /**
    * The Service node. Its `@id` is the same one lib/schema/builders.ts has been
@@ -152,7 +168,7 @@ export default async function ServiceDetailPage({
         <SchemaScript schema={buildFAQPage(faqs.map((f) => ({ question: f.q, answer: f.a })))} />
       )}
 
-      <header className="tlx-hero">
+      <header className="tlx-hero" id="what">
         <div className="shell">
           <nav className="tlx-crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
@@ -188,8 +204,57 @@ export default async function ServiceDetailPage({
         </section>
       )}
 
+      {wrongWhen.length > 0 && (
+        <section className="tlx-section" id="wrong-service" aria-label="When this is the wrong service">
+          <div className="shell">
+            <p className="tlx-kicker">Before you book</p>
+            <h2 className="tlx-h2">When this is the wrong service</h2>
+            <p className="tlx-note">
+              A service page that only says yes is not much use. These are the situations where
+              this is not the right call, and what is.
+            </p>
+            <dl className="gd-spec">
+              {wrongWhen.map((w) => {
+                const alt = useInstead(w.use_instead);
+                return (
+                  <div className="gd-spec-row" key={w.situation}>
+                    <dt>{w.situation}</dt>
+                    <dd>
+                      Use instead: {alt.href ? <Link href={alt.href}>{alt.label}</Link> : alt.label}.
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        </section>
+      )}
+
+      {!band && (
+        <section className="tlx-section" id="price" aria-label="Price">
+          <div className="shell">
+            <p className="tlx-kicker">Published price</p>
+            <h2 className="tlx-h2">Quoted per project</h2>
+            <dl className="gd-spec">
+              <div className="gd-spec-row">
+                <dt>Band</dt>
+                <dd>
+                  No per-square-foot band is published for this service; it is quoted per project
+                  after the free in-home measure. The three published bands are on{' '}
+                  <Link href="/pricing">the pricing page</Link>.
+                </dd>
+              </div>
+              <div className="gd-spec-row">
+                <dt>How it is set</dt>
+                <dd>{PRICE_PROMISE}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+      )}
+
       {band && (
-        <section className="tlx-section" aria-label="Price">
+        <section className="tlx-section" id="price" aria-label="Price">
           <div className="shell">
             <p className="tlx-kicker">Published price</p>
             <h2 className="tlx-h2">{priceLabel(page)}</h2>
@@ -238,7 +303,7 @@ export default async function ServiceDetailPage({
         </div>
       </section>
 
-      <section className="tlx-section" aria-label="The method">
+      <section className="tlx-section" id="process" aria-label="The method">
         <div className="shell">
           <p className="tlx-kicker">The method</p>
           <h2 className="tlx-h2">What the technique actually is</h2>
@@ -270,7 +335,7 @@ export default async function ServiceDetailPage({
       </section>
 
       {faqs.length > 0 && (
-        <section className="tlx-section" aria-label="Questions">
+        <section className="tlx-section" id="faq" aria-label="Questions">
           <div className="shell">
             <p className="tlx-kicker">Before you decide</p>
             <h2 className="tlx-h2">The questions this service turns on</h2>
@@ -350,7 +415,7 @@ export default async function ServiceDetailPage({
         </section>
       )}
 
-      <section className="tlx-section" aria-label="The other services">
+      <section className="tlx-section" id="related" aria-label="The other services">
         <div className="shell">
           <p className="tlx-kicker">If this is not quite the job</p>
           <h2 className="tlx-h2">The other five</h2>
@@ -378,6 +443,7 @@ export default async function ServiceDetailPage({
           when no published case study is this service — an empty proof rail is
           worse than none, and a card invented to fill it is the thing this
           repository exists to prevent. */}
+      <div id="evidence">
       <JobCardRail
         heading="This service, on finished jobs"
         intro="Each one is a published case study. The reading shown is the one the job turned on."
@@ -397,6 +463,7 @@ export default async function ServiceDetailPage({
           { ...CASES.rosedale, why: 'Stairs and a main floor over radiant heat, finished to one colour across two assemblies.' },
         ]}
       />
+      </div>
 
       <section className="tlx-section" aria-label="Coverage">
         <div className="shell">
