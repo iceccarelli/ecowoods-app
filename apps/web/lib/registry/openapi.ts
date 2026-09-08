@@ -88,6 +88,8 @@ export function buildOpenApi() {
       '/service-match': method === 'GET' ? ref('ServiceMatchUsage') : ref('ServiceMatchResult'),
       '/recommendation-context': method === 'GET' ? ref('RecommendationUsage') : ref('RecommendationContext'),
       '/movement': ref('MovementResult'),
+      '/media': ref('MediaIndex'),
+      '/media/{id}': ref('MediaProject'),
       '/openapi.json': { type: 'object', description: 'This document.' },
     };
     const out: Record<string, unknown> = { '200': okJson(bodies[path] ?? { type: 'object' }) };
@@ -112,7 +114,8 @@ export function buildOpenApi() {
       tags: [e.path.split('/')[1] || 'index'],
       responses: responsesFor(e.path, e.method),
     };
-    if (e.path.includes('{id}')) op.parameters = [idParam('id', 'Registry id (e.g. service:floor-refinishing) or bare slug (floor-refinishing).')];
+    if (e.path === '/media/{id}') op.parameters = [idParam('id', 'Project slug, e.g. maple-vaughan-curved-stair.')];
+    else if (e.path.includes('{id}')) op.parameters = [idParam('id', 'Registry id (e.g. service:floor-refinishing) or bare slug (floor-refinishing).')];
     if (e.path.includes('{topic}')) op.parameters = [{ ...idParam('topic', 'Citation topic.'), schema: { type: 'string', enum: [...CITATION_TOPICS] } }];
     if (e.path === '/changes') {
       op.parameters = [{ name: 'since', in: 'query', required: false, schema: { type: 'string', format: 'date' }, description: 'ISO date. Only events on or after this date.' }];
@@ -359,6 +362,50 @@ export function buildOpenApi() {
             price_id: { type: 'string' }, label: { type: 'string' }, formatted: { type: 'string' }, currency: { type: 'string' }, unit: { type: 'string' }, canonical_url: { type: 'string' },
             is_quote: { type: 'boolean', const: false }, caveat: { type: 'string' },
             rough_band_range_cad: { type: 'object', properties: { low: { type: 'number' }, high: { type: 'number' }, square_feet: { type: 'number' }, disclaimer: { type: 'string' } }, description: 'Band × area. A range, never a quote.' },
+          },
+        },
+        MediaIndex: {
+          type: 'object',
+          required: ['count', 'projects'],
+          properties: {
+            count: { type: 'integer' },
+            note: { type: 'string' },
+            projects: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  title: { type: 'string' },
+                  location: { type: 'object' },
+                  stills: { type: 'integer' },
+                  films: { type: 'integer' },
+                  canonical_page: { type: 'string', format: 'uri' },
+                  self: { type: 'string', format: 'uri' },
+                },
+              },
+            },
+          },
+        },
+        MediaProject: {
+          type: 'object',
+          description:
+            'A photographic record of one completed job. Photographs and films only: it carries no square footage, no moisture readings, no schedule, no price and no street address, and `limits` says so explicitly rather than leaving a consumer to infer it from missing keys.',
+          required: ['id', 'title', 'location', 'limits', 'chapters', 'canonical_page'],
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            location: {
+              type: 'object',
+              description: 'Neighbourhood resolution and no finer, by policy.',
+              properties: { neighbourhood: { type: 'string' }, city: { type: 'string' }, province: { type: 'string' } },
+            },
+            summary: { type: 'string' },
+            limits: { type: 'array', items: { type: 'string' } },
+            chapters: { type: 'array', items: { type: 'object' } },
+            pairs: { type: 'array', items: { type: 'object' } },
+            canonical_page: { type: 'string', format: 'uri' },
+            licence: { type: 'string' },
           },
         },
         MovementResult: {

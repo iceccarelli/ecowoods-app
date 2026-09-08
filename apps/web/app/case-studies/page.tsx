@@ -81,6 +81,16 @@ export default async function CaseStudiesPage() {
             </div>
             </>
           )}
+
+          {/* The photo records are the same work without the instruments. They
+              are linked from here rather than mixed in above, because a case
+              study on this site carries moisture readings and a project does
+              not — and the difference is the whole reason both exist. */}
+          <p className="tlx-note" style={{ marginTop: '2.5rem' }}>
+            Looking for the pictures rather than the measurements?{' '}
+            <Link href="/projects">Projects, photographed</Link> is completed work in chapters —
+            the floor sanded to bare, then the same rooms after colour.
+          </p>
         </div>
       </div>
     </div>

@@ -10759,3 +10759,191 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .pj-* — PROJECT PHOTO RECORDS  (/projects, /projects/[slug])
+   ══════════════════════════════════════════════════════════════════════════
+   Its own namespace, semantic tokens only, every width cap written as
+   min(<cap>, 100%).
+
+   The Ken Burns move lives here rather than in the component because
+   globals.css already zeroes every animation-duration under
+   prefers-reduced-motion — so the reduced-motion behaviour is inherited
+   correctly instead of being reimplemented and eventually diverging.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pj-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  margin: 0 0 1.25rem;
+}
+
+.pj-plate-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: scale(1.001);
+}
+
+/* The move only runs while the plate is on screen — the component adds this
+   class from an IntersectionObserver and removes it on the way out. */
+.pj-plate-img.is-live {
+  animation: pj-kenburns 12s linear forwards;
+}
+
+@keyframes pj-kenburns {
+  from { transform: scale(1.001); }
+  to   { transform: scale(1.06); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pj-plate:hover .pj-plate-img.is-live {
+    animation-duration: 7s;
+  }
+}
+
+.pj-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.pj-meta {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin: 0.75rem 0 0;
+}
+
+.pj-note {
+  max-width: min(46rem, 100%);
+}
+
+.pj-film {
+  margin: 2rem 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.pj-film-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--surface-deep);
+}
+
+.pj-film-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.pj-film-btn {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.pj-film-btn[aria-pressed='true'] {
+  background: var(--copper-surface);
+  border-color: var(--copper-surface);
+  color: var(--on-copper);
+}
+
+.pj-film-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.pj-film-fill {
+  display: block;
+  height: 100%;
+  background: var(--copper-surface);
+}
+
+.pj-film-cap,
+.pj-pair-cap {
+  padding: 0.75rem 1rem 1rem;
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+.pj-pair {
+  margin: 0 0 2.5rem;
+}
+
+.pj-pair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  gap: 1.25rem;
+}
+
+.pj-pair-side {
+  min-width: 0;
+}
+
+.pj-pair-label {
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.pj-pair-label--after {
+  color: var(--copper-text);
+}
+
+.pj-pair-cap {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: min(46rem, 100%);
+}
+
+.pj-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  gap: 2rem;
+}
+
+.pj-card {
+  min-width: 0;
+}
+
+.pj-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pj-card-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0.5rem 0 0;
+  color: var(--ink);
+}
+
+.pj-card-link:hover .pj-card-title,
+.pj-card-link:focus-visible .pj-card-title {
+  color: var(--copper-text);
+}

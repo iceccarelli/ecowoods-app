@@ -81,8 +81,8 @@ export default function NewInvoiceForm() {
       <div className="portal-card" style={{ maxWidth: 640 }}>
         <form onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <label>Project *</label>
-            <select value={form.projectId} onChange={(e) => {
+            <label htmlFor="newinvoiceform-project">Project *</label>
+            <select id="newinvoiceform-project" value={form.projectId} onChange={(e) => {
               const proj = projects.find((p) => p.id === e.target.value);
               set('projectId', e.target.value);
               if (proj?.taxRate) set('taxRate', String(proj.taxRate));
@@ -95,8 +95,8 @@ export default function NewInvoiceForm() {
           </div>
 
           <div className="field">
-            <label>Stage *</label>
-            <select value={form.stage} onChange={(e) => set('stage', e.target.value as InvoiceStage)}>
+            <label htmlFor="newinvoiceform-stage">Stage *</label>
+            <select id="newinvoiceform-stage" value={form.stage} onChange={(e) => set('stage', e.target.value as InvoiceStage)}>
               <option value="DEPOSIT">Deposit</option>
               <option value="MIDPOINT">Midpoint</option>
               <option value="FINAL">Final</option>
@@ -106,8 +106,8 @@ export default function NewInvoiceForm() {
 
           <div className="field-row">
             <div className="field">
-              <label>Subtotal (CAD, before tax) *</label>
-              <input
+              <label htmlFor="newinvoiceform-subtotal-cad-before-tax">Subtotal (CAD, before tax) *</label>
+              <input id="newinvoiceform-subtotal-cad-before-tax"
                 type="number"
                 placeholder="e.g. 5000"
                 value={form.subtotal}
@@ -120,19 +120,19 @@ export default function NewInvoiceForm() {
               )}
             </div>
             <div className="field">
-              <label>Tax Rate %</label>
-              <input type="number" value={form.taxRate} onChange={(e) => set('taxRate', e.target.value)} />
+              <label htmlFor="newinvoiceform-tax-rate">Tax Rate %</label>
+              <input id="newinvoiceform-tax-rate" type="number" value={form.taxRate} onChange={(e) => set('taxRate', e.target.value)} />
             </div>
           </div>
 
           <div className="field-row">
             <div className="field">
-              <label>Discount %</label>
-              <input type="number" value={form.discountPct} onChange={(e) => set('discountPct', e.target.value)} min="0" max="100" />
+              <label htmlFor="newinvoiceform-discount">Discount %</label>
+              <input id="newinvoiceform-discount" type="number" value={form.discountPct} onChange={(e) => set('discountPct', e.target.value)} min="0" max="100" />
             </div>
             <div className="field">
-              <label>Surcharge %</label>
-              <input type="number" value={form.surchargePct} onChange={(e) => set('surchargePct', e.target.value)} min="0" />
+              <label htmlFor="newinvoiceform-surcharge">Surcharge %</label>
+              <input id="newinvoiceform-surcharge" type="number" value={form.surchargePct} onChange={(e) => set('surchargePct', e.target.value)} min="0" />
             </div>
           </div>
 
@@ -161,13 +161,13 @@ export default function NewInvoiceForm() {
           )}
 
           <div className="field">
-            <label>Description</label>
-            <textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Visible to customer on invoice..." />
+            <label htmlFor="newinvoiceform-description">Description</label>
+            <textarea id="newinvoiceform-description" rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Visible to customer on invoice..." />
           </div>
 
           <div className="field">
-            <label>Due Date</label>
-            <input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
+            <label htmlFor="newinvoiceform-due-date">Due Date</label>
+            <input id="newinvoiceform-due-date" type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-copper btn-lg" style={{ width: '100%' }}>

@@ -188,16 +188,16 @@ export function BookingScheduler() {
             {fmtDayLabel(selectedSlot.start.slice(0, 10))} · {fmtTime(selectedSlot.start)} · {selectedSlot.durationMinutes} min
           </p>
           <div className="field-row">
-            <div className="field"><label>Full Name *</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" /></div>
-            <div className="field"><label>Phone *</label>
-              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(___) ___-____" /></div>
+            <div className="field"><label htmlFor="bookingscheduler-full-name">Full Name *</label>
+              <input id="bookingscheduler-full-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" /></div>
+            <div className="field"><label htmlFor="bookingscheduler-phone">Phone *</label>
+              <input id="bookingscheduler-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(___) ___-____" /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>Email *</label>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jane@example.com" /></div>
-            <div className="field"><label>Postal Code *</label>
-              <input maxLength={7} value={form.postal} onChange={(e) => setForm({ ...form, postal: e.target.value })} placeholder="M5V 3A8" /></div>
+            <div className="field"><label htmlFor="bookingscheduler-email">Email *</label>
+              <input id="bookingscheduler-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jane@example.com" /></div>
+            <div className="field"><label htmlFor="bookingscheduler-postal-code">Postal Code *</label>
+              <input id="bookingscheduler-postal-code" maxLength={7} value={form.postal} onChange={(e) => setForm({ ...form, postal: e.target.value })} placeholder="M5V 3A8" /></div>
           </div>
           <div className="field"><label>Service *</label>
             <div className="field-radio-group">
@@ -210,11 +210,11 @@ export function BookingScheduler() {
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>Approx. Square Footage</label>
-              <input type="number" value={form.sqft} onChange={(e) => setForm({ ...form, sqft: e.target.value })} placeholder="e.g. 1200" /></div>
+            <div className="field"><label htmlFor="bookingscheduler-approx-square-footage">Approx. Square Footage</label>
+              <input id="bookingscheduler-approx-square-footage" type="number" value={form.sqft} onChange={(e) => setForm({ ...form, sqft: e.target.value })} placeholder="e.g. 1200" /></div>
           </div>
-          <div className="field"><label>Project details (optional)</label>
-            <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+          <div className="field"><label htmlFor="bookingscheduler-project-details-optional">Project details (optional)</label>
+            <textarea id="bookingscheduler-project-details-optional" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
           {/* honeypot */}
           <input type="text" tabIndex={-1} autoComplete="off" aria-hidden="true"
             style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, opacity: 0 }}

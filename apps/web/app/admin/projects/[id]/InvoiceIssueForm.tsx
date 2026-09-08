@@ -181,12 +181,12 @@ export default function InvoiceIssueForm({
         <div style={{ position: 'absolute', zIndex: 50, right: 0, top: '2rem', background: 'white', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', padding: '1rem', width: 280, boxShadow: 'var(--shadow-lg)' }}>
           <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.75rem' }}>Mark as Paid</div>
           <div className="field">
-            <label>Bank Reference / E-Transfer #</label>
-            <input value={paidRef} onChange={(e) => setPaidRef(e.target.value)} placeholder="Optional" />
+            <label htmlFor="invoiceissueform-bank-reference-e-transfer">Bank Reference / E-Transfer #</label>
+            <input id="invoiceissueform-bank-reference-e-transfer" value={paidRef} onChange={(e) => setPaidRef(e.target.value)} placeholder="Optional" />
           </div>
           <div className="field">
-            <label>Admin Notes</label>
-            <input value={paidNotes} onChange={(e) => setPaidNotes(e.target.value)} placeholder="e.g. Received $5,000" />  {/* pricing-allow: an example of NOTE FORMAT in an admin-only field. Not a published price and not customer-facing — /admin is disallowed in robots.txt and behind auth. */}
+            <label htmlFor="invoiceissueform-admin-notes">Admin Notes</label>
+            <input id="invoiceissueform-admin-notes" value={paidNotes} onChange={(e) => setPaidNotes(e.target.value)} placeholder="e.g. Received $5,000" />  {/* pricing-allow: an example of NOTE FORMAT in an admin-only field. Not a published price and not customer-facing — /admin is disallowed in robots.txt and behind auth. */}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleMarkPaid} disabled={loading} className="btn btn-copper btn-sm">
@@ -204,23 +204,23 @@ export default function InvoiceIssueForm({
 
           <div className="field-row">
             <div className="field">
-              <label>Subtotal (CAD)</label>
-              <input type="number" value={reissueForm.subtotal} onChange={(e) => setField('subtotal', e.target.value)} />
+              <label htmlFor="invoiceissueform-subtotal-cad">Subtotal (CAD)</label>
+              <input id="invoiceissueform-subtotal-cad" type="number" value={reissueForm.subtotal} onChange={(e) => setField('subtotal', e.target.value)} />
             </div>
             <div className="field">
-              <label>Tax %</label>
-              <input type="number" value={reissueForm.taxRate} onChange={(e) => setField('taxRate', e.target.value)} />
+              <label htmlFor="invoiceissueform-tax">Tax %</label>
+              <input id="invoiceissueform-tax" type="number" value={reissueForm.taxRate} onChange={(e) => setField('taxRate', e.target.value)} />
             </div>
           </div>
 
           <div className="field-row">
             <div className="field">
-              <label>Discount %</label>
-              <input type="number" value={reissueForm.discountPct} onChange={(e) => setField('discountPct', e.target.value)} min="0" max="100" />
+              <label htmlFor="invoiceissueform-discount">Discount %</label>
+              <input id="invoiceissueform-discount" type="number" value={reissueForm.discountPct} onChange={(e) => setField('discountPct', e.target.value)} min="0" max="100" />
             </div>
             <div className="field">
-              <label>Surcharge %</label>
-              <input type="number" value={reissueForm.surchargePct} onChange={(e) => setField('surchargePct', e.target.value)} min="0" />
+              <label htmlFor="invoiceissueform-surcharge">Surcharge %</label>
+              <input id="invoiceissueform-surcharge" type="number" value={reissueForm.surchargePct} onChange={(e) => setField('surchargePct', e.target.value)} min="0" />
             </div>
           </div>
 
@@ -231,13 +231,13 @@ export default function InvoiceIssueForm({
           </div>
 
           <div className="field">
-            <label>Due Date</label>
-            <input type="date" value={reissueForm.dueDate} onChange={(e) => setField('dueDate', e.target.value)} />
+            <label htmlFor="invoiceissueform-due-date">Due Date</label>
+            <input id="invoiceissueform-due-date" type="date" value={reissueForm.dueDate} onChange={(e) => setField('dueDate', e.target.value)} />
           </div>
 
           <div className="field">
-            <label>Description</label>
-            <textarea rows={2} value={reissueForm.description} onChange={(e) => setField('description', e.target.value)} placeholder="Visible to customer…" style={{ resize: 'vertical' }} />
+            <label htmlFor="invoiceissueform-description">Description</label>
+            <textarea id="invoiceissueform-description" rows={2} value={reissueForm.description} onChange={(e) => setField('description', e.target.value)} placeholder="Visible to customer…" style={{ resize: 'vertical' }} />
           </div>
 
           <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginBottom: '0.75rem' }}>

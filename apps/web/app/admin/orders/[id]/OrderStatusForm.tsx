@@ -30,7 +30,7 @@ export default function OrderStatusForm({ order }: { order: Order }) {
     <div className="portal-card">
       <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Order Status</h2>
       <div className="field">
-        <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)}>
+        <select aria-label="Order status" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)}>
           {STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}

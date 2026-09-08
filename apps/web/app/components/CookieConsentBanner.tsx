@@ -94,6 +94,19 @@ export default function CookieConsentBanner() {
   const [modalOpen, setModalOpen] = useState(false);
   const [draft, setDraft] = useState<OptionalConsent>({ analytics: false });
 
+  /* Escape closes the preferences dialog. The scrim already closes on click
+     and there is a labelled close button, so this is the third exit rather
+     than the first — but a modal that traps a keyboard user until they find
+     the × is a modal that fails the one interaction pattern everybody knows. */
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
+
   useEffect(() => {
     const consent = readConsent();
     if (consent) {

@@ -4,6 +4,7 @@
  */
 
 import type { MetadataRoute } from 'next';
+import { projectSlugs } from '@/lib/projects';
 import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
@@ -174,6 +175,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        constants, so its content changes only when those constants or the species
        list do — monthly is generous rather than optimistic. */
     entry('/tools/floor-movement', 'monthly', 0.9),
+    /* Photographic records. The project pages, not the individual plates:
+       a sitemap listing 22 stills is a sitemap about files rather than pages. */
+    entry('/projects', 'monthly', 0.85),
+    ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above
     entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog

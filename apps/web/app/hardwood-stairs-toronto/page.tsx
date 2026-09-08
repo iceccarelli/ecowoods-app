@@ -366,6 +366,14 @@ export default function HardwoodStairsTorontoPage() {
             </Link>{' '}
             — the edger section is the one that covers stairs.
           </p>
+          <p className="tlx-note">
+            What a curved stair actually looks like at each stage is on{' '}
+            <Link href="/projects/maple-vaughan-curved-stair">
+              the Maple, Vaughan photo record
+            </Link>{' '}
+            — the same flight and the same open well, sanded to bare in one chapter and stained in
+            the next.
+          </p>
         </div>
       </section>
 

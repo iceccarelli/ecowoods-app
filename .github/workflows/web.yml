@@ -66,6 +66,19 @@ jobs:
       # edited in place, or a cascade added from a lead to a floor.
       - name: Floor Graph (consent ledger, benchmark anonymity, no cascade)
         run: node scripts/verify-floor-graph.mjs
+      # Reachability and accessibility, checked as text in about a second each.
+      # The runtime axe pass in audit/ is strictly better and needs Chromium, a
+      # production build and four minutes — so it runs when somebody remembers,
+      # which has been never. These two gate the failures that keep recurring:
+      # a form control with no accessible name, and a route nobody can click to.
+      - name: Accessibility contract (every control has a name, every click a key)
+        run: node scripts/verify-a11y.mjs
+      - name: Navigation (every public route within 3 clicks, chrome resolves)
+        run: node scripts/verify-navigation.mjs
+      # Photographic records: every registered plate is on disk, alt text
+      # describes the room, and no private street address reaches a registry.
+      - name: Media (plates on disk, alt present, no civic address)
+        run: node scripts/verify-media.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

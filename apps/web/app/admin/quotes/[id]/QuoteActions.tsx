@@ -77,8 +77,8 @@ export default function QuoteActions({ quote, customers }: Props) {
       <div className="portal-card">
         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Update Status</h2>
         <div className="field">
-          <label>Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value as never)}>
+          <label htmlFor="quoteactions-status">Status</label>
+          <select id="quoteactions-status" value={status} onChange={(e) => setStatus(e.target.value as never)}>
             <option value="PENDING">Pending</option>
             <option value="QUOTED">Quoted</option>
             <option value="ACCEPTED">Accepted</option>
@@ -86,8 +86,8 @@ export default function QuoteActions({ quote, customers }: Props) {
           </select>
         </div>
         <div className="field">
-          <label>Admin Notes</label>
-          <textarea
+          <label htmlFor="quoteactions-admin-notes">Admin Notes</label>
+          <textarea id="quoteactions-admin-notes"
             rows={3}
             value={statusNotes}
             onChange={(e) => setStatusNotes(e.target.value)}
@@ -107,13 +107,13 @@ export default function QuoteActions({ quote, customers }: Props) {
           </h2>
 
           <div className="field">
-            <label>Project Title *</label>
-            <input value={convertData.title} onChange={(e) => setConvertData({ ...convertData, title: e.target.value })} />
+            <label htmlFor="quoteactions-project-title">Project Title *</label>
+            <input id="quoteactions-project-title" value={convertData.title} onChange={(e) => setConvertData({ ...convertData, title: e.target.value })} />
           </div>
 
           <div className="field">
-            <label>Assign to Customer *</label>
-            <select value={convertData.userId} onChange={(e) => setConvertData({ ...convertData, userId: e.target.value })}>
+            <label htmlFor="quoteactions-assign-to-customer">Assign to Customer *</label>
+            <select id="quoteactions-assign-to-customer" value={convertData.userId} onChange={(e) => setConvertData({ ...convertData, userId: e.target.value })}>
               <option value="">— Select customer —</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name ?? c.email} ({c.email})</option>
@@ -122,8 +122,8 @@ export default function QuoteActions({ quote, customers }: Props) {
           </div>
 
           <div className="field">
-            <label>Contract Value (CAD, excl. tax) *</label>
-            <input
+            <label htmlFor="quoteactions-contract-value-cad-excl-tax">Contract Value (CAD, excl. tax) *</label>
+            <input id="quoteactions-contract-value-cad-excl-tax"
               type="number"
               placeholder="e.g. 18500"
               value={convertData.contractValue}
@@ -133,26 +133,26 @@ export default function QuoteActions({ quote, customers }: Props) {
 
           <div className="field-row">
             <div className="field">
-              <label>Deposit %</label>
-              <input type="number" value={convertData.depositPct} onChange={(e) => setConvertData({ ...convertData, depositPct: e.target.value })} />
+              <label htmlFor="quoteactions-deposit">Deposit %</label>
+              <input id="quoteactions-deposit" type="number" value={convertData.depositPct} onChange={(e) => setConvertData({ ...convertData, depositPct: e.target.value })} />
             </div>
             <div className="field">
-              <label>Midpoint %</label>
-              <input type="number" value={convertData.midpointPct} onChange={(e) => setConvertData({ ...convertData, midpointPct: e.target.value })} />
+              <label htmlFor="quoteactions-midpoint">Midpoint %</label>
+              <input id="quoteactions-midpoint" type="number" value={convertData.midpointPct} onChange={(e) => setConvertData({ ...convertData, midpointPct: e.target.value })} />
             </div>
             <div className="field">
-              <label>Final %</label>
-              <input type="number" value={convertData.finalPct} onChange={(e) => setConvertData({ ...convertData, finalPct: e.target.value })} />
+              <label htmlFor="quoteactions-final">Final %</label>
+              <input id="quoteactions-final" type="number" value={convertData.finalPct} onChange={(e) => setConvertData({ ...convertData, finalPct: e.target.value })} />
             </div>
             <div className="field">
-              <label>Tax Rate %</label>
-              <input type="number" value={convertData.taxRate} onChange={(e) => setConvertData({ ...convertData, taxRate: e.target.value })} />
+              <label htmlFor="quoteactions-tax-rate">Tax Rate %</label>
+              <input id="quoteactions-tax-rate" type="number" value={convertData.taxRate} onChange={(e) => setConvertData({ ...convertData, taxRate: e.target.value })} />
             </div>
           </div>
 
           <div className="field">
-            <label>Planned Start Date</label>
-            <input type="date" value={convertData.startDate} onChange={(e) => setConvertData({ ...convertData, startDate: e.target.value })} />
+            <label htmlFor="quoteactions-planned-start-date">Planned Start Date</label>
+            <input id="quoteactions-planned-start-date" type="date" value={convertData.startDate} onChange={(e) => setConvertData({ ...convertData, startDate: e.target.value })} />
           </div>
 
           <button onClick={handleConvert} disabled={converting} className="btn btn-copper btn-sm">

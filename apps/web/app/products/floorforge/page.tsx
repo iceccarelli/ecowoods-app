@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -79,6 +79,18 @@ export default function FloorForgePage() {
   const queryClient = useQueryClient();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [interestModalOpen, setInterestModalOpen] = useState(false);
+
+  /* Escape closes the pilot-interest dialog. This is a lead form on a live
+     page; making somebody hunt for the × to abandon it is the version of this
+     modal that feels like a trap. */
+  useEffect(() => {
+    if (!interestModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInterestModalOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [interestModalOpen]);
 
   const {
     register,

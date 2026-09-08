@@ -22,6 +22,8 @@ import {
   speciesById,
   computeMovement,
 } from '@/lib/wood';
+import { PROJECTS, getProject, stillById } from '@/lib/projects';
+import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
   count,
@@ -416,5 +418,106 @@ export async function handleMovement(request: Request) {
       sources: { coefficients: SPECIES_SOURCE, moisture_model: EMC_SOURCE },
     },
     { request, cache: CACHE_COMPUTED, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/media — the second front door.
+ *
+ * WHY MEDIA IS AN API AND NOT JUST A PAGE
+ *
+ * A photograph on a page is reachable by a person with a browser. The same
+ * photograph in a JSON document with an absolute URL is reachable by the
+ * mobile app, by a partner's site, by a syndication feed, and by an answer
+ * engine deciding whether this business has ever actually done the work it
+ * describes. The page and the API are the same facts through two doors, and
+ * the second one costs one route file.
+ *
+ * ABSOLUTE URLs, ALWAYS. A consumer of this document is by definition not on
+ * this origin, so a relative path is a broken link with extra steps.
+ *
+ * WHAT IT WILL NOT CARRY. No street address, because the record does not have
+ * one and is not going to acquire one through the API. No square footage, no
+ * moisture readings and no price, because those are not in the record either —
+ * `limits` states that explicitly rather than leaving a consumer to infer it
+ * from missing keys, since a missing key reads as an oversight and a stated
+ * limit reads as a decision.
+ */
+export async function handleMediaIndex(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      count: PROJECTS.length,
+      note: 'Photographic records of completed work. Each carries stills and chapter films with absolute URLs. These are photographs, not engineering case studies — see /api/v1/evidence for the measured material.',
+      projects: PROJECTS.map((p) => ({
+        id: p.slug,
+        title: p.title,
+        location: p.location,
+        stills: p.stills.filter((s) => s.role === 'interior').length,
+        films: p.films.length,
+        canonical_page: `${SITE_URL}/projects/${p.slug}`,
+        self: `${SITE_URL}/api/v1/media/${p.slug}`,
+      })),
+    },
+    { request, updatedAt: reg.updated_at, version: reg.version },
+  );
+}
+
+export async function handleMediaProject(request: Request, id: string) {
+  const project = getProject(id);
+  if (!project) {
+    return error('not_found', `No project with id "${id}". List them at ${SITE_URL}/api/v1/media.`, 404);
+  }
+  const reg = await getRegistry();
+  const abs = (path: string) => `${SITE_URL}${path}`;
+
+  return json(
+    {
+      id: project.slug,
+      title: project.title,
+      location: project.location,
+      summary: project.summary,
+      /* Said out loud rather than left as absent keys. */
+      limits: project.limits,
+      chapters: project.chapters.map((c) => ({
+        id: `ch${c.id}`,
+        label: c.label,
+        note: c.note,
+        stills: project.stills
+          .filter((s) => s.chapter === c.id)
+          .sort((a, b) => a.order - b.order)
+          .map((s) => ({
+            id: s.id,
+            order: s.order,
+            role: s.role,
+            alt: s.alt,
+            kind: s.kind,
+            width: s.width,
+            height: s.height,
+            src: { webp_1920x1080: abs(s.src) },
+          })),
+        films: project.films
+          .filter((f) => f.chapter === c.id)
+          .map((f) => ({
+            id: f.id,
+            title: f.title,
+            aspect: f.aspect,
+            width: f.width,
+            height: f.height,
+            src: abs(f.src),
+            poster: abs(stillById(project, f.posterStillId)?.src ?? ''),
+          })),
+      })),
+      pairs: project.pairs.map((p) => ({
+        id: p.id,
+        anchor: p.anchor,
+        before: abs(stillById(project, p.beforeStillId)?.src ?? ''),
+        after: abs(stillById(project, p.afterStillId)?.src ?? ''),
+        note: 'Not a locked-tripod pair. Shown side by side rather than wiped, because the camera moved between visits.',
+      })),
+      canonical_page: `${SITE_URL}/projects/${project.slug}`,
+      licence: 'Photographs are © Ecowoods Hardwood Flooring Inc. Cite the canonical page.',
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
   );
 }
