@@ -1,0 +1,638 @@
+diff --git a/apps/web/app/admin/floor-graph/[projectId]/OutcomeForm.tsx b/apps/web/app/admin/floor-graph/[projectId]/OutcomeForm.tsx
+new file mode 100644
+index 0000000..fe8c56d
+--- /dev/null
++++ b/apps/web/app/admin/floor-graph/[projectId]/OutcomeForm.tsx
+@@ -0,0 +1,196 @@
++'use client';
++
++import { useState } from 'react';
++import { useRouter } from 'next/navigation';
++import { toast } from 'sonner';
++
++/**
++ * The close-a-job form.
++ *
++ * TWO RULES IT KEEPS, BOTH OF WHICH MATTER MORE THAN THE UI.
++ *
++ * 1. A BLANK FIELD IS OMITTED, NEVER SENT AS ZERO. `numeric()` returns
++ *    undefined for an empty string, and the payload is assembled by dropping
++ *    undefined keys. Zero labour hours is a measurement; a blank box is an
++ *    absence, and a schema that cannot tell them apart cannot be trained on.
++ *
++ * 2. NOTHING IS DERIVED. Schedule days is not computed from the start and end
++ *    dates, material square footage is not copied from the quote. A derived
++ *    value written into a measurement column is indistinguishable from a
++ *    measurement six months later, and at that point the dataset is quietly
++ *    worthless.
++ *
++ * Everything except the project itself is optional, on purpose. The realistic
++ * failure mode for this page is not a wrong number — it is a form long enough
++ * that nobody fills it in, and then there is no dataset at all.
++ */
++type Props = {
++  projectId: string;
++  defaultService: string | null;
++  defaultCompletedOn: string | null;
++  defaultSellingPriceCad: number | null;
++};
++
++function numeric(value: string): number | undefined {
++  const trimmed = value.trim();
++  if (trimmed === '') return undefined;
++  const n = Number(trimmed);
++  return Number.isFinite(n) && n >= 0 ? n : undefined;
++}
++
++function text(value: string): string | undefined {
++  const trimmed = value.trim();
++  return trimmed === '' ? undefined : trimmed;
++}
++
++export default function OutcomeForm({
++  projectId,
++  defaultService,
++  defaultCompletedOn,
++  defaultSellingPriceCad,
++}: Props) {
++  const router = useRouter();
++  const [saving, setSaving] = useState(false);
++
++  const [service, setService] = useState(defaultService ?? '');
++  const [completedOn, setCompletedOn] = useState(defaultCompletedOn ?? '');
++  const [sellingPriceCad, setSellingPriceCad] = useState(
++    defaultSellingPriceCad === null ? '' : String(Math.round(defaultSellingPriceCad)),
++  );
++  const [labourHours, setLabourHours] = useState('');
++  const [machineHours, setMachineHours] = useState('');
++  const [crewSize, setCrewSize] = useState('');
++  const [gritSequence, setGritSequence] = useState('');
++  const [finishCoats, setFinishCoats] = useState('');
++  const [cureHours, setCureHours] = useState('');
++  const [materialSqFt, setMaterialSqFt] = useState('');
++  const [wastePct, setWastePct] = useState('');
++  const [finishLitres, setFinishLitres] = useState('');
++  const [materialCostCad, setMaterialCostCad] = useState('');
++  const [labourCostCad, setLabourCostCad] = useState('');
++  const [scheduleDays, setScheduleDays] = useState('');
++  const [notes, setNotes] = useState('');
++
++  const submit = async () => {
++    setSaving(true);
++    const payload: Record<string, unknown> = {
++      projectId,
++      service: text(service),
++      completedOn: text(completedOn),
++      sellingPriceCad: numeric(sellingPriceCad),
++      labourHours: numeric(labourHours),
++      machineHours: numeric(machineHours),
++      crewSize: numeric(crewSize),
++      gritSequence: text(gritSequence),
++      finishCoats: numeric(finishCoats),
++      cureHours: numeric(cureHours),
++      materialSqFt: numeric(materialSqFt),
++      wastePct: numeric(wastePct),
++      finishLitres: numeric(finishLitres),
++      materialCostCad: numeric(materialCostCad),
++      labourCostCad: numeric(labourCostCad),
++      scheduleDays: numeric(scheduleDays),
++      notes: text(notes),
++    };
++    for (const key of Object.keys(payload)) {
++      if (payload[key] === undefined) delete payload[key];
++    }
++
++    try {
++      const res = await fetch('/api/admin/floor-graph/outcome', {
++        method: 'POST',
++        headers: { 'content-type': 'application/json' },
++        body: JSON.stringify(payload),
++      });
++      const body = (await res.json()) as { predictionsClosed?: number; error?: string };
++      if (!res.ok) throw new Error(body.error ?? String(res.status));
++      toast.success(
++        body.predictionsClosed
++          ? `Outcome recorded. ${body.predictionsClosed} prediction(s) closed.`
++          : 'Outcome recorded. No open prediction to close.',
++      );
++      router.push('/admin/floor-graph');
++      router.refresh();
++    } catch (err) {
++      toast.error(err instanceof Error ? `Could not record that: ${err.message}` : 'Could not record that.');
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  /* The house pattern is <div class="field"><label>…</label><input/></div> —
++     globals.css styles `.field label`, so the label must be a CHILD of .field
++     rather than wrapping it. The one thing added here is htmlFor/id, which the
++     existing admin forms omit: a label that is neither wrapping nor associated
++     is decoration, and this form has fifteen of them. */
++  const field = (
++    id: string,
++    label: string,
++    value: string,
++    onChange: (v: string) => void,
++    type: 'text' | 'number' | 'date' = 'text',
++    hint?: string,
++  ) => (
++    <div className="field" key={id}>
++      <label htmlFor={id}>
++        {label}
++        {hint ? ` — ${hint}` : ''}
++      </label>
++      <input
++        id={id}
++        type={type}
++        value={value}
++        inputMode={type === 'number' ? 'decimal' : undefined}
++        min={type === 'number' ? 0 : undefined}
++        onChange={(e) => onChange(e.currentTarget.value)}
++      />
++    </div>
++  );
++
++  return (
++    <div className="portal-card">
++      <div className="portal-card-header">
++            <h2>What actually happened</h2>
++          </div>
++      <p className="portal-subtitle">
++        Only the selling price is worth stopping for — it is what closes the prediction. Leave
++        anything you do not know blank; a blank field is recorded as unknown, never as zero.
++      </p>
++
++      <div className="field-row">
++        {field('fg-service', 'Service', service, setService, 'text', 'e.g. full-sand-and-finish')}
++        {field('fg-completed', 'Completed on', completedOn, setCompletedOn, 'date')}
++        {field('fg-price', 'Sold for (CAD)', sellingPriceCad, setSellingPriceCad, 'number')}
++        {field('fg-days', 'Schedule days', scheduleDays, setScheduleDays, 'number')}
++
++        {field('fg-labour', 'Labour hours', labourHours, setLabourHours, 'number')}
++        {field('fg-machine', 'Machine hours', machineHours, setMachineHours, 'number')}
++        {field('fg-crew', 'Crew size', crewSize, setCrewSize, 'number')}
++        {field('fg-grit', 'Grit sequence', gritSequence, setGritSequence, 'text', 'e.g. 36-60-80-100')}
++
++        {field('fg-coats', 'Finish coats', finishCoats, setFinishCoats, 'number')}
++        {field('fg-cure', 'Cure hours', cureHours, setCureHours, 'number')}
++        {field('fg-matsqft', 'Material sq ft', materialSqFt, setMaterialSqFt, 'number')}
++        {field('fg-waste', 'Waste %', wastePct, setWastePct, 'number')}
++
++        {field('fg-litres', 'Finish litres', finishLitres, setFinishLitres, 'number')}
++        {field('fg-matcost', 'Material cost (CAD)', materialCostCad, setMaterialCostCad, 'number')}
++        {field('fg-labourcost', 'Labour cost (CAD)', labourCostCad, setLabourCostCad, 'number')}
++      </div>
++
++      <div className="field">
++        <label htmlFor="fg-notes">Notes — optional</label>
++        <textarea
++          id="fg-notes"
++          rows={3}
++          value={notes}
++          onChange={(e) => setNotes(e.currentTarget.value)}
++        />
++      </div>
++
++      <button type="button" className="btn btn-copper" onClick={submit} disabled={saving}>
++        {saving ? 'Recording…' : 'Record outcome'}
++      </button>
++    </div>
++  );
++}
+diff --git a/apps/web/app/admin/floor-graph/[projectId]/page.tsx b/apps/web/app/admin/floor-graph/[projectId]/page.tsx
+new file mode 100644
+index 0000000..1e8d270
+--- /dev/null
++++ b/apps/web/app/admin/floor-graph/[projectId]/page.tsx
+@@ -0,0 +1,140 @@
++import Link from 'next/link';
++import { notFound } from 'next/navigation';
++import { format } from 'date-fns';
++import { db } from '@/lib/db';
++import OutcomeForm from './OutcomeForm';
++
++/**
++ * /admin/floor-graph/[projectId] — close one job into the Floor Graph.
++ *
++ * Everything the business already knows is loaded here and handed to the form
++ * pre-filled: the contract value becomes the selling price, the end date
++ * becomes the completion date. What is left to type is what only the crew
++ * knows — hours, grit sequence, coats, waste, defects — and every one of those
++ * is optional, because a row with four fields filled beats a form nobody
++ * finishes.
++ *
++ * The open price prediction is shown next to the field that will close it, so
++ * the person recording the outcome can see, at the moment they type it, how
++ * far the estimate was out. That is the whole feedback loop rendered on one
++ * screen, and it is the reason this page is worth more than the API endpoint
++ * behind it.
++ */
++export const dynamic = 'force-dynamic';
++
++function cad(n: number | null) {
++  if (n === null || !Number.isFinite(n)) return '—';
++  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
++}
++
++export default async function CloseJobPage({
++  params,
++}: {
++  params: Promise<{ projectId: string }>;
++}) {
++  const { projectId } = await params;
++
++  const project = await db.project.findUnique({
++    where: { id: projectId },
++    select: {
++      id: true,
++      title: true,
++      city: true,
++      province: true,
++      squareFeet: true,
++      species: true,
++      startDate: true,
++      endDate: true,
++      contractValue: true,
++      status: true,
++      user: { select: { name: true, email: true } },
++    },
++  });
++  if (!project) notFound();
++
++  /* The quote is where the price prediction was written, so it is found the
++     same way the outcome endpoint finds it — through the project's own quote
++     request, not by assuming the prediction carries a project id. */
++  const quote = await db.quoteRequest.findFirst({
++    where: { projectId },
++    select: { id: true, quotedAmount: true, service: true },
++  });
++
++  const openPrediction = await db.prediction.findFirst({
++    where: {
++      kind: 'PRICE_CAD',
++      closedAt: null,
++      OR: [{ projectId }, ...(quote ? [{ quoteRequestId: quote.id }] : [])],
++    },
++    orderBy: { predictedAt: 'desc' },
++    select: { id: true, model: true, predictedValue: true, predictedAt: true },
++  });
++
++  const existing = await db.jobOutcome.findFirst({
++    where: { projectId },
++    select: { id: true, createdAt: true },
++  });
++
++  const contractValue = project.contractValue === null ? null : Number(project.contractValue);
++  const predicted = openPrediction ? Number(openPrediction.predictedValue) : null;
++
++  return (
++    <div className="portal-page">
++      <div className="portal-header">
++        <div>
++          <h1 className="portal-title">{project.title}</h1>
++          <p className="portal-subtitle">
++            {project.city ?? 'Location not recorded'}
++            {project.squareFeet ? ` · ${project.squareFeet} sq ft` : ''}
++            {project.user?.name ? ` · ${project.user.name}` : ''}
++          </p>
++        </div>
++        <Link href="/admin/floor-graph" className="btn btn-ghost btn-sm">
++          Back to Floor Graph
++        </Link>
++      </div>
++
++      {existing && (
++        <div className="portal-card">
++          <p>
++            An outcome was already recorded for this project on{' '}
++            {format(existing.createdAt, 'd MMMM yyyy')}. Recording a second one is allowed — jobs get
++            revisited — but it will not close a prediction that is already closed.
++          </p>
++        </div>
++      )}
++
++      <div className="portal-card">
++        <div className="portal-card-header">
++            <h2>What was predicted</h2>
++          </div>
++        {openPrediction ? (
++          <p>
++            <strong>{cad(predicted)}</strong> by <code>{openPrediction.model}</code> on{' '}
++            {format(openPrediction.predictedAt, 'd MMMM yyyy')}. Entering the selling price below
++            closes it and computes the error.
++          </p>
++        ) : (
++          <p>
++            No open price prediction for this project. That is expected for anything estimated before
++            the ledger existed — the outcome is still worth recording, it simply has nothing to close
++            against.
++          </p>
++        )}
++        {contractValue !== null && predicted !== null && (
++          <p className="portal-subtitle">
++            Contract value on file is {cad(contractValue)}, which is{' '}
++            {cad(contractValue - predicted)} against the prediction.
++          </p>
++        )}
++      </div>
++
++      <OutcomeForm
++        projectId={project.id}
++        defaultService={quote?.service ?? null}
++        defaultCompletedOn={project.endDate ? format(project.endDate, 'yyyy-MM-dd') : null}
++        defaultSellingPriceCad={contractValue}
++      />
++    </div>
++  );
++}
+diff --git a/apps/web/app/admin/floor-graph/page.tsx b/apps/web/app/admin/floor-graph/page.tsx
+new file mode 100644
+index 0000000..2c983c8
+--- /dev/null
++++ b/apps/web/app/admin/floor-graph/page.tsx
+@@ -0,0 +1,242 @@
++import Link from 'next/link';
++import { format } from 'date-fns';
++import { db } from '@/lib/db';
++import { accuracySummary } from '@/lib/floor-graph/prediction';
++
++/**
++ * /admin/floor-graph — the console the Floor Graph lives or dies by.
++ *
++ * WHY THIS PAGE IS NOT OPTIONAL
++ *
++ * FG-01 gave the business a schema, FG-02 gave it consented capture and FG-03
++ * gave it a prediction ledger — and every one of those writes an OUTCOME row
++ * only when somebody tells it what happened. Until this page existed, the only
++ * way to do that was a curl with an admin session cookie pasted into it. That
++ * is not a workflow; it is a reason the ledger stays empty, and an empty
++ * ledger makes the entire investment worth nothing.
++ *
++ * So the design goal here is a single number of clicks. A completed project
++ * with a contract value is one click from being a closed prediction, because
++ * the form arrives pre-filled with the value we already know and every other
++ * field is optional. Twenty-five backfilled jobs is a coffee, not an
++ * afternoon.
++ *
++ * WHAT IT SHOWS, AND WHY IN THIS ORDER
++ *
++ * 1. Estimating accuracy, next to the count of predictions still OPEN. Never
++ *    the accuracy alone: four hundred open rows and twelve closed ones is not
++ *    a twelve-row accuracy figure, it is a broken closing process, and a
++ *    dashboard that hid that would be worse than no dashboard.
++ * 2. The queue — completed projects with no outcome recorded. This is the
++ *    work.
++ * 3. The corpus counters, so the gates in the 90-day plan (150 benchmark
++ *    scorings, 300 consented photo pairs) are visible rather than remembered.
++ */
++export const dynamic = 'force-dynamic';
++
++function cad(n: number | null) {
++  if (n === null || !Number.isFinite(n)) return '—';
++  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
++}
++
++function pct(n: number | null) {
++  if (n === null || !Number.isFinite(n)) return '—';
++  return `${n.toFixed(1)}%`;
++}
++
++export default async function FloorGraphConsole() {
++  /* accuracySummary() is awaited on its own rather than inside the Promise.all
++     below. It has a declared return type; the Prisma calls do not, and a
++     heterogeneous Promise.all collapses the tuple inference so the declared
++     type is thrown away and every `row` downstream becomes `any`. */
++  const summary = await accuracySummary();
++
++  const [floorRecords, assessments, photos, scorings, outcomes] = await Promise.all([
++    db.floorRecord.count(),
++    db.floorAssessment.count(),
++    db.assessmentPhoto.count({ where: { erasedAt: null } }),
++    db.frameworkScoring.count(),
++    db.jobOutcome.findMany({
++      orderBy: { createdAt: 'desc' },
++      take: 8,
++      select: { id: true, projectId: true, service: true, completedOn: true, sellingPriceCad: true },
++    }),
++  ]);
++
++  /* The queue. Completed projects are the ones with something to record; the
++     soft link means this is a two-step lookup rather than a join, which is the
++     cost of the schema decision in FG-01 and is paid here on purpose. */
++  const completed = await db.project.findMany({
++    where: { status: 'COMPLETED' },
++    orderBy: { updatedAt: 'desc' },
++    take: 60,
++    select: { id: true, title: true, city: true, contractValue: true, endDate: true, updatedAt: true },
++  });
++  const closedIds = new Set(
++    (await db.jobOutcome.findMany({ where: { projectId: { not: null } }, select: { projectId: true } }))
++      .map((o) => o.projectId)
++      .filter((id: string | null): id is string => id !== null),
++  );
++  const queue = completed.filter((p) => !closedIds.has(p.id));
++
++  const price = summary.rows.find((r) => r.kind === 'PRICE_CAD');
++
++  return (
++    <div className="portal-page">
++      <div className="portal-header">
++        <div>
++          <h1 className="portal-title">Floor Graph</h1>
++          <p className="portal-subtitle">
++            Estimating accuracy and the jobs still waiting to be closed — {format(new Date(), 'MMMM d, yyyy')}
++          </p>
++        </div>
++      </div>
++
++      <div className="portal-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Predictions closed</div>
++          <div className="portal-stat-value">{summary.closedCount}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Still open</div>
++          <div className="portal-stat-value">{summary.openCount}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Price error (MAPE)</div>
++          <div className="portal-stat-value">{pct(price?.mape ?? null)}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Mean signed error</div>
++          <div className="portal-stat-value">{cad(price?.meanError ?? null)}</div>
++        </div>
++      </div>
++
++      {summary.closedCount === 0 && (
++        <div className="portal-card">
++          <p>
++            No predictions have been closed yet, so every accuracy figure above is empty and will stay
++            empty until jobs are closed below. This is the one number worth watching: it is what turns
++            a schema into a dataset.
++          </p>
++        </div>
++      )}
++
++      {summary.rows.length > 0 && (
++        <div className="portal-card">
++          <div className="portal-card-header">
++            <h2>Accuracy by prediction</h2>
++          </div>
++          <table className="portal-table">
++            <thead>
++              <tr>
++                <th scope="col">Kind</th>
++                <th scope="col">Model</th>
++                <th scope="col">Closed</th>
++                <th scope="col">Mean signed error</th>
++                <th scope="col">MAPE</th>
++                <th scope="col">Within 10%</th>
++              </tr>
++            </thead>
++            <tbody>
++              {summary.rows.map((r) => (
++                <tr key={`${r.kind}-${r.model}`}>
++                  <td>{r.kind}</td>
++                  <td>{r.model}</td>
++                  <td>{r.closed}</td>
++                  <td>{r.kind === 'PRICE_CAD' ? cad(r.meanError) : (r.meanError?.toFixed(2) ?? '—')}</td>
++                  <td>{pct(r.mape)}</td>
++                  <td>{pct(r.within10Pct)}</td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++          <p className="portal-subtitle">
++            Signed on purpose. Consistently under on every job is a different and far more fixable
++            problem than ±8% at random, and an absolute-only figure cannot tell them apart.
++          </p>
++        </div>
++      )}
++
++      <div className="portal-card">
++        <div className="portal-card-header">
++            <h2>Jobs waiting to be closed — {queue.length}</h2>
++          </div>
++        {queue.length === 0 ? (
++          <p>Every completed project has an outcome recorded. That is the state to keep it in.</p>
++        ) : (
++          <table className="portal-table">
++            <thead>
++              <tr>
++                <th scope="col">Project</th>
++                <th scope="col">City</th>
++                <th scope="col">Contract value</th>
++                <th scope="col">Finished</th>
++                <th scope="col"></th>
++              </tr>
++            </thead>
++            <tbody>
++              {queue.map((p) => (
++                <tr key={p.id}>
++                  <td>{p.title}</td>
++                  <td>{p.city ?? '—'}</td>
++                  <td>{cad(p.contractValue === null ? null : Number(p.contractValue))}</td>
++                  <td>{p.endDate ? format(p.endDate, 'd MMM yyyy') : '—'}</td>
++                  <td>
++                    <Link href={`/admin/floor-graph/${p.id}`} className="btn btn-copper btn-sm">
++                      Close
++                    </Link>
++                  </td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        )}
++      </div>
++
++      <div className="portal-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Floor records</div>
++          <div className="portal-stat-value">{floorRecords}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Assessments</div>
++          <div className="portal-stat-value">{assessments}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Retained photos</div>
++          <div className="portal-stat-value">{photos}</div>
++        </div>
++        <div className="portal-stat-card">
++          <div className="portal-stat-label">Benchmark scorings</div>
++          <div className="portal-stat-value">{scorings}</div>
++        </div>
++      </div>
++
++      {outcomes.length > 0 && (
++        <div className="portal-card">
++          <div className="portal-card-header">
++            <h2>Recently closed</h2>
++          </div>
++          <table className="portal-table">
++            <thead>
++              <tr>
++                <th scope="col">Service</th>
++                <th scope="col">Completed</th>
++                <th scope="col">Sold for</th>
++              </tr>
++            </thead>
++            <tbody>
++              {outcomes.map((o) => (
++                <tr key={o.id}>
++                  <td>{o.service ?? '—'}</td>
++                  <td>{o.completedOn ? format(o.completedOn, 'd MMM yyyy') : '—'}</td>
++                  <td>{cad(o.sellingPriceCad === null ? null : Number(o.sellingPriceCad))}</td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/app/admin/layout.tsx b/apps/web/app/admin/layout.tsx
+index dad3fc8..4ba426d 100644
+--- a/apps/web/app/admin/layout.tsx
++++ b/apps/web/app/admin/layout.tsx
+@@ -10,6 +10,7 @@ import {
+   InquiriesIcon,
+   SettingsIcon,
+   ShopIcon,
++  FloorGraphIcon,
+ } from '@/app/components/PortalIcons';
+ 
+ const navItems = [
+@@ -20,6 +21,7 @@ const navItems = [
+   { href: '/admin/invoices', label: 'Invoices', icon: <InvoicesIcon /> },
+   { href: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
+   { href: '/admin/inquiries', label: 'Inquiries', icon: <InquiriesIcon /> },
++  { href: '/admin/floor-graph', label: 'Floor Graph', icon: <FloorGraphIcon /> },
+   { href: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> },
+ ];
+ 
+diff --git a/apps/web/app/components/PortalIcons.tsx b/apps/web/app/components/PortalIcons.tsx
+index bf74986..c5faa1b 100644
+--- a/apps/web/app/components/PortalIcons.tsx
++++ b/apps/web/app/components/PortalIcons.tsx
+@@ -85,3 +85,17 @@ export function SettingsIcon() {
+     </svg>
+   );
+ }
++
++/**
++ * Floor Graph. Board lines with a rising trace across them — the two halves of
++ * what the section is: a floor, and what we learned from it.
++ */
++export function FloorGraphIcon() {
++  return (
++    <svg {...iconProps}>
++      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
++      <path d="M3.5 9h17M3.5 14.5h17" />
++      <path d="M6.5 17.5 10 13l3 2.5 4.5-6" />
++    </svg>
++  );
++}
