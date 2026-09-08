@@ -15,6 +15,13 @@ import { buildManifest, ENDPOINTS } from './manifest';
 import { buildOpenApi } from './openapi';
 import { ancestorsOf, publishedWithin } from './locations';
 import type { AnyPrimitive } from './types';
+import {
+  SPECIES,
+  SPECIES_SOURCE,
+  EMC_SOURCE,
+  speciesById,
+  computeMovement,
+} from '@/lib/wood';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
   count,
@@ -262,4 +269,152 @@ export async function handleRecommendationContext(request: Request) {
   if (!parsed.success) return invalid(parsed.error.issues);
   const result = await recommendationContext(parsed.data);
   return json(result, { request, cache: CACHE_COMPUTED, version: result.registry.version });
+}
+
+/**
+ * GET /api/v1/movement — the wood movement primitive.
+ *
+ * WHY THIS ENDPOINT IS DIFFERENT FROM EVERY OTHER ONE IN THE REGISTRY
+ *
+ * The rest of /api/v1 publishes FACTS ABOUT A BUSINESS: our services, our
+ * locations, our published price bands, our evidence. Useful, and copyable by
+ * anyone willing to type their own facts into their own registry.
+ *
+ * This one publishes a COMPUTATION over constants nobody owns — Wood Handbook
+ * Table 13–5 coefficients and the Forest Products Laboratory sorption
+ * isotherm. An agent asked "how much will a 5-inch white oak floor move in a
+ * Toronto winter" cannot answer from a corpus of marketing copy, because the
+ * answer is not written down anywhere; it has to be calculated. This endpoint
+ * calculates it, cites the tables it came from, and states its own validity
+ * limits in the payload.
+ *
+ * That is the difference between being a source an answer engine quotes and
+ * being a source it computes with.
+ *
+ * PURE AND CACHEABLE. No side effects, no storage, no body. Every input is a
+ * query parameter, so the same question is the same URL, and the edge and the
+ * ETag do the rest.
+ */
+export async function handleMovement(request: Request) {
+  const limited = rateLimited(request);
+  if (limited) return limited;
+
+  const url = new URL(request.url);
+  const q = url.searchParams;
+  const reg = await getRegistry();
+
+  const num = (key: string, fallback: number) => {
+    const raw = q.get(key);
+    if (raw === null || raw.trim() === '') return fallback;
+    const v = Number(raw);
+    return Number.isFinite(v) ? v : Number.NaN;
+  };
+
+  if (q.get('species') === null && q.size === 0) {
+    return json(
+      {
+        usage: {
+          method: 'GET',
+          parameters: {
+            species: `one of: ${SPECIES.map((s) => s.id).join(', ')}`,
+            orientation: 'flatsawn | quartersawn (default flatsawn)',
+            width_mm: 'board face width in millimetres (default 127)',
+            rh_low: 'the dry extreme, percent RH (default 25)',
+            rh_high: 'the damp extreme, percent RH (default 60)',
+            temp_c: 'indoor temperature in °C (default 21)',
+            run_m: 'width of the run across the boards, metres (optional)',
+          },
+          example: '/api/v1/movement?species=white-oak&width_mm=127&orientation=flatsawn&rh_low=25&rh_high=60',
+          note: 'Solid wood only. Engineered flooring is deliberately not modelled: its cross-ply core is designed to defeat this calculation.',
+        },
+        species: SPECIES.map((s) => ({
+          id: s.id,
+          label: s.label,
+          table_name: s.tableName,
+          c_radial: s.cRadial,
+          c_tangential: s.cTangential,
+          commercial_group: s.commercialGroup,
+        })),
+        sources: { coefficients: SPECIES_SOURCE, moisture_model: EMC_SOURCE },
+      },
+      { request, updatedAt: reg.updated_at, version: reg.version },
+    );
+  }
+
+  const species = speciesById(q.get('species') ?? 'white-oak');
+  if (!species) {
+    return error(
+      'not_found',
+      `Unknown species. Published species: ${SPECIES.map((s) => s.id).join(', ')}.`,
+      404,
+    );
+  }
+
+  const orientationRaw = (q.get('orientation') ?? 'flatsawn').toLowerCase();
+  if (orientationRaw !== 'flatsawn' && orientationRaw !== 'quartersawn') {
+    return error('invalid_request', "orientation must be 'flatsawn' or 'quartersawn'.", 400);
+  }
+
+  const widthMm = num('width_mm', 127);
+  const rhLow = num('rh_low', 25);
+  const rhHigh = num('rh_high', 60);
+  const tempC = num('temp_c', 21);
+  const runRaw = q.get('run_m');
+  const runWidthM = runRaw === null || runRaw.trim() === '' ? undefined : Number(runRaw);
+
+  const result = computeMovement({
+    species,
+    orientation: orientationRaw,
+    boardWidthMm: widthMm,
+    runWidthM: Number.isFinite(runWidthM ?? Number.NaN) ? runWidthM : undefined,
+    tempC,
+    rhLowPct: rhLow,
+    rhHighPct: rhHigh,
+  });
+
+  if (!result) {
+    return error(
+      'invalid_request',
+      'Could not compute. Check that width_mm is positive, rh_low is below rh_high, and both humidity values are between 0 and 100.',
+      400,
+    );
+  }
+
+  return json(
+    {
+      input: {
+        species: species.id,
+        species_label: species.label,
+        orientation: orientationRaw,
+        board_width_mm: widthMm,
+        run_width_m: runWidthM ?? null,
+        temp_c: tempC,
+        rh_low_pct: rhLow,
+        rh_high_pct: rhHigh,
+      },
+      coefficient_used: orientationRaw === 'quartersawn' ? species.cRadial : species.cTangential,
+      moisture_content: {
+        at_rh_low_pct: Number(result.emcLowPct.toFixed(2)),
+        at_rh_high_pct: Number(result.emcHighPct.toFixed(2)),
+        swing_points: Number(result.mcSwingPct.toFixed(2)),
+      },
+      movement: {
+        per_board_mm: Number(result.boardMovementMm.toFixed(3)),
+        per_board_pct_of_width: Number(result.boardMovementPctOfWidth.toFixed(3)),
+        boards_across_run: result.boardsAcrossRun,
+        across_run_mm: result.runMovementMm === null ? null : Number(result.runMovementMm.toFixed(2)),
+        flatsawn_to_quartersawn_ratio: Number(result.orientationRatio.toFixed(3)),
+      },
+      validity: {
+        within_coefficient_range: result.withinCoefficientRange,
+        within_moisture_model_range: result.withinEmcRange,
+        caveats: result.caveats,
+      },
+      is_quote: false,
+      disclaimer:
+        'Unrestrained dimensional change in solid wood. A fastened floor distributes this movement unevenly, so the run total is the amount the installation has to absorb rather than the gap that appears at any one seam. Not a quote and not a substitute for measuring the material.',
+      sources: { coefficients: SPECIES_SOURCE, moisture_model: EMC_SOURCE },
+    },
+    { request, cache: CACHE_COMPUTED, version: reg.version },
+  );
 }

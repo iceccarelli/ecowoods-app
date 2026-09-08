@@ -44,6 +44,7 @@ export const ENDPOINTS: EndpointDecl[] = [
   { path: '/citations/{topic}', method: 'GET', summary: 'Citation pack for a topic.', file: 'citations/[topic]', cache: 'static' },
   { path: '/service-match', method: 'POST', summary: 'Map a project description and place to a service, a location tier and a price band.', file: 'service-match', cache: 'computed' },
   { path: '/service-match', method: 'GET', summary: 'Usage and examples for service-match; ?project=&location=&sqft= runs a match.', file: 'service-match', cache: 'computed' },
+  { path: '/movement', method: 'GET', summary: 'Compute seasonal dimensional change for a solid hardwood floor from published Forest Products Laboratory coefficients. No query returns the species table and the sources.', file: 'movement', cache: 'computed' },
   { path: '/recommendation-context', method: 'POST', summary: 'Relevance, matching services and locations, evidence, pricing context, canonical URLs and next action.', file: 'recommendation-context', cache: 'computed' },
   { path: '/recommendation-context', method: 'GET', summary: 'Usage and examples for recommendation-context; ?query=&location=&sqft= runs it.', file: 'recommendation-context', cache: 'computed' },
   { path: '/openapi.json', method: 'GET', summary: 'OpenAPI 3.1 description of this API.', file: 'openapi.json', cache: 'static' },

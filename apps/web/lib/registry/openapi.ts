@@ -8,6 +8,7 @@
  * fields, and scripts/verify-agentic.mjs checks every path has a route file.
  */
 import { SITE_URL } from '@/lib/seo-data';
+import { SPECIES } from '@/lib/wood';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { ENDPOINTS } from './manifest';
 import { CITATION_TOPICS } from './citations';
@@ -86,6 +87,7 @@ export function buildOpenApi() {
       '/citations/{topic}': ref('CitationPack'),
       '/service-match': method === 'GET' ? ref('ServiceMatchUsage') : ref('ServiceMatchResult'),
       '/recommendation-context': method === 'GET' ? ref('RecommendationUsage') : ref('RecommendationContext'),
+      '/movement': ref('MovementResult'),
       '/openapi.json': { type: 'object', description: 'This document.' },
     };
     const out: Record<string, unknown> = { '200': okJson(bodies[path] ?? { type: 'object' }) };
@@ -120,6 +122,17 @@ export function buildOpenApi() {
         { name: 'project', in: 'query', schema: { type: 'string', maxLength: 2000 } },
         { name: 'location', in: 'query', schema: { type: 'string', maxLength: 120 } },
         { name: 'sqft', in: 'query', schema: { type: 'number', minimum: 1, maximum: 100000 } },
+      ];
+    }
+    if (e.path === '/movement') {
+      op.parameters = [
+        { name: 'species', in: 'query', schema: { type: 'string', enum: SPECIES.map((sp) => sp.id) }, description: 'Species id from the published coefficient table. Omit every parameter to get the table and the sources.' },
+        { name: 'orientation', in: 'query', schema: { type: 'string', enum: ['flatsawn', 'quartersawn'], default: 'flatsawn' }, description: 'Flatsawn boards move tangentially across their width; quartersawn move radially, roughly half as much.' },
+        { name: 'width_mm', in: 'query', schema: { type: 'number', minimum: 1, maximum: 500, default: 127 }, description: 'Board face width, millimetres.' },
+        { name: 'rh_low', in: 'query', schema: { type: 'number', minimum: 1, maximum: 99, default: 25 }, description: 'The dry extreme, percent relative humidity.' },
+        { name: 'rh_high', in: 'query', schema: { type: 'number', minimum: 1, maximum: 99, default: 60 }, description: 'The damp extreme, percent relative humidity.' },
+        { name: 'temp_c', in: 'query', schema: { type: 'number', default: 21 }, description: 'Indoor temperature, °C.' },
+        { name: 'run_m', in: 'query', schema: { type: 'number', minimum: 0.1, maximum: 100 }, description: 'Width of the run across the boards, metres. Optional; adds the cumulative total.' },
       ];
     }
     if (e.path === '/recommendation-context' && e.method === 'GET') {
@@ -346,6 +359,46 @@ export function buildOpenApi() {
             price_id: { type: 'string' }, label: { type: 'string' }, formatted: { type: 'string' }, currency: { type: 'string' }, unit: { type: 'string' }, canonical_url: { type: 'string' },
             is_quote: { type: 'boolean', const: false }, caveat: { type: 'string' },
             rough_band_range_cad: { type: 'object', properties: { low: { type: 'number' }, high: { type: 'number' }, square_feet: { type: 'number' }, disclaimer: { type: 'string' } }, description: 'Band × area. A range, never a quote.' },
+          },
+        },
+        MovementResult: {
+          type: 'object',
+          description:
+            'Seasonal dimensional change of solid hardwood, computed from Wood Handbook Table 13-5 coefficients and the Forest Products Laboratory sorption isotherm. Not a quote; not applicable to engineered flooring.',
+          required: ['input', 'coefficient_used', 'moisture_content', 'movement', 'validity', 'is_quote', 'sources'],
+          properties: {
+            input: { type: 'object', description: 'The parameters as resolved, including defaults.' },
+            coefficient_used: { type: 'number', description: 'The dimensional change coefficient applied, per 1% moisture content change.' },
+            moisture_content: {
+              type: 'object',
+              properties: {
+                at_rh_low_pct: { type: 'number' },
+                at_rh_high_pct: { type: 'number' },
+                swing_points: { type: 'number' },
+              },
+            },
+            movement: {
+              type: 'object',
+              properties: {
+                per_board_mm: { type: 'number' },
+                per_board_pct_of_width: { type: 'number' },
+                boards_across_run: { type: ['integer', 'null'] },
+                across_run_mm: { type: ['number', 'null'] },
+                flatsawn_to_quartersawn_ratio: { type: 'number' },
+              },
+            },
+            validity: {
+              type: 'object',
+              description: 'Whether the inputs sit inside the range the published constants cover, and why not where they do not.',
+              properties: {
+                within_coefficient_range: { type: 'boolean' },
+                within_moisture_model_range: { type: 'boolean' },
+                caveats: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            is_quote: { type: 'boolean', enum: [false] },
+            disclaimer: { type: 'string' },
+            sources: { type: 'object' },
           },
         },
         ServiceMatchResult: {

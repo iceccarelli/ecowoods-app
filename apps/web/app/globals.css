@@ -10563,3 +10563,199 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .ps-tag-left { left: 0.6rem; }
   .ps-tag-right { right: 0.6rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .wm-* — HARDWOOD MOVEMENT CALCULATOR  (/tools/floor-movement)
+   ══════════════════════════════════════════════════════════════════════════
+   Its own namespace, like .fw-* and .ef-*, so nothing here can reach a rule
+   that belongs to another feature.
+
+   Two rules this block keeps deliberately:
+
+   · SEMANTIC TOKENS ONLY. No --walnut-*, --cream-*, --oak-* or --maple-*.
+     Primitives do not flip between themes, so a component painted with one is
+     correct in light and wrong in dark, silently. verify:tokens enforces it.
+
+   · EVERY WIDTH CAP IS `min(<cap>, 100%)`. A bare cap on a grid child is how
+     the results panel overflows a 360px phone, and a blanket max-width:100%
+     at the end of a file is how a 1280px container cap gets silently killed.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.wm-controls,
+.wm-result {
+  min-width: 0;
+}
+
+.wm-result {
+  position: sticky;
+  top: 6rem;
+  max-width: min(30rem, 100%);
+  padding: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.wm-figure {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: 600;
+  color: var(--copper-text);
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-sub {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.wm-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem 1rem;
+  margin: 1.25rem 0;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.wm-dl > div {
+  display: contents;
+}
+
+.wm-dl dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.wm-dl dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-caveats {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.wm-caveats li::marker {
+  color: var(--warning);
+}
+
+.wm-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.wm-toggle-btn,
+.wm-chip {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.wm-toggle-btn.is-on,
+.wm-chip.is-on {
+  background: var(--copper-surface);
+  border-color: var(--copper-surface);
+  color: var(--on-copper);
+}
+
+.wm-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.wm-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: var(--fs-xs);
+  font-style: normal;
+  color: var(--muted);
+}
+
+.wm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.wm-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  padding-bottom: 0.75rem;
+}
+
+.wm-table th,
+.wm-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.wm-table thead th {
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.wm-table td {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.wm-table tbody tr.is-on {
+  background: var(--surface-warm);
+}
+
+.wm-table tbody tr.is-on th {
+  color: var(--copper-text);
+}
+
+@media (max-width: 1023px) {
+  .wm-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .wm-result {
+    position: static;
+    max-width: min(100%, 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .wm-toggle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

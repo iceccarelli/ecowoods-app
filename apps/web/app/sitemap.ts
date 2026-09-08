@@ -170,6 +170,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
+    /* The movement calculator. Computed from published Forest Products Laboratory
+       constants, so its content changes only when those constants or the species
+       list do — monthly is generous rather than optimistic. */
+    entry('/tools/floor-movement', 'monthly', 0.9),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above
     entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog

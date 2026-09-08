@@ -39,6 +39,7 @@ import * as changes from '@/app/api/v1/changes/route';
 import * as citations from '@/app/api/v1/citations/route';
 import * as citationByTopic from '@/app/api/v1/citations/[topic]/route';
 import * as serviceMatch from '@/app/api/v1/service-match/route';
+import * as movement from '@/app/api/v1/movement/route';
 import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
 import * as openapi from '@/app/api/v1/openapi.json/route';
 
@@ -73,6 +74,7 @@ const ROUTES: Record<string, RouteModule> = {
   citations,
   'citations/[topic]': citationByTopic,
   'service-match': serviceMatch,
+  movement,
   'recommendation-context': recommendationContext,
   'openapi.json': openapi,
 };
