@@ -1,0 +1,510 @@
+diff --git a/apps/web/app/api/admin/floor-graph/accuracy/route.ts b/apps/web/app/api/admin/floor-graph/accuracy/route.ts
+new file mode 100644
+index 0000000..18603bc
+--- /dev/null
++++ b/apps/web/app/api/admin/floor-graph/accuracy/route.ts
+@@ -0,0 +1,43 @@
++import { NextResponse } from 'next/server';
++import { auth } from '@/lib/auth';
++import { accuracySummary } from '@/lib/floor-graph/prediction';
++
++/**
++ * GET /api/admin/floor-graph/accuracy — prediction versus actual, by kind and model.
++ *
++ * The one number the business should look at every month, and the reason the
++ * ledger exists. `?days=90` narrows the window; the default is everything.
++ *
++ * `openCount` is returned next to the figures on purpose. A ledger with four
++ * hundred open rows and twelve closed ones does not have a 12-row accuracy
++ * figure — it has a broken closing process, and reporting the MAPE without
++ * that context would be the most misleading thing this endpoint could do.
++ *
++ * ADMIN ONLY, AND NOT BECAUSE THE NUMBERS ARE EMBARRASSING. This is internal
++ * operating data. The public surface for anything derived from it is a written
++ * finding on the site with its method stated — not a JSON endpoint that a
++ * competitor can poll to watch our margins move.
++ */
++export const dynamic = 'force-dynamic';
++
++export async function GET(request: Request) {
++  const session = await auth();
++  if (session?.user?.role !== 'ADMIN') {
++    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
++  }
++
++  const days = Number(new URL(request.url).searchParams.get('days'));
++  const since =
++    Number.isFinite(days) && days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
++
++  const summary = await accuracySummary(since);
++
++  return NextResponse.json({
++    windowDays: since ? days : null,
++    ...summary,
++    note:
++      summary.closedCount === 0
++        ? 'No closed predictions yet. Every figure here stays null until jobs are closed through /api/admin/floor-graph/outcome.'
++        : undefined,
++  });
++}
+diff --git a/apps/web/app/api/admin/floor-graph/outcome/route.ts b/apps/web/app/api/admin/floor-graph/outcome/route.ts
+new file mode 100644
+index 0000000..2b157ae
+--- /dev/null
++++ b/apps/web/app/api/admin/floor-graph/outcome/route.ts
+@@ -0,0 +1,154 @@
++import { NextResponse } from 'next/server';
++import { z } from 'zod';
++import { auth } from '@/lib/auth';
++import { db } from '@/lib/db';
++import { closePrediction } from '@/lib/floor-graph/prediction';
++
++/**
++ * POST /api/admin/floor-graph/outcome — close a job into the Floor Graph.
++ *
++ * This is the write that makes every other part of the system worth building,
++ * and it is also the one nobody will do unless it takes under a minute. So the
++ * payload is deliberately small and almost entirely optional: a project id and
++ * whatever of the execution record is actually known. A row with three fields
++ * filled is worth more than a form nobody completes.
++ *
++ * WHAT IT DOES BEYOND STORING THE ROW
++ *
++ * It closes the open PRICE_CAD prediction for that project against what the
++ * job actually sold for. That single arithmetic step is the flywheel's return
++ * path: without it the ledger fills with predictions nobody ever scores, which
++ * is the exact failure this whole exercise exists to prevent.
++ *
++ * WHAT IT DELIBERATELY DOES NOT DO
++ *
++ * It does not infer. `labourHours` left out stays null; it is not derived from
++ * schedule days, and `materialSqFt` is not derived from the quote. A derived
++ * value written into a measurement column is indistinguishable from a
++ * measurement six months later, and the dataset stops being trainable.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const numeric = z.number().nonnegative().optional();
++
++const outcomeSchema = z.object({
++  projectId: z.string().uuid(),
++  floorRecordId: z.string().uuid().optional(),
++  service: z.string().max(80).optional(),
++  completedOn: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
++
++  labourHours: numeric,
++  machineHours: numeric,
++  crewSize: z.number().int().positive().max(50).optional(),
++  gritSequence: z.string().max(120).optional(),
++  finishCoats: z.number().int().nonnegative().max(20).optional(),
++  cureHours: numeric,
++
++  materialSqFt: numeric,
++  wastePct: numeric,
++  finishLitres: numeric,
++
++  materialCostCad: numeric,
++  labourCostCad: numeric,
++  sellingPriceCad: numeric,
++
++  scheduleDays: z.number().int().nonnegative().max(400).optional(),
++  defects: z.array(z.object({ kind: z.string().max(80), note: z.string().max(400).optional() })).optional(),
++  notes: z.string().max(4000).optional(),
++});
++
++export async function POST(request: Request) {
++  const session = await auth();
++  if (session?.user?.role !== 'ADMIN') {
++    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
++  }
++
++  let body: unknown;
++  try {
++    body = await request.json();
++  } catch {
++    return NextResponse.json({ error: 'Send JSON.' }, { status: 400 });
++  }
++
++  const parsed = outcomeSchema.safeParse(body);
++  if (!parsed.success) {
++    return NextResponse.json(
++      { error: 'Validation failed', issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })) },
++      { status: 400 },
++    );
++  }
++
++  const d = parsed.data;
++  const completedOn = d.completedOn ? new Date(d.completedOn) : null;
++
++  const outcome = await db.jobOutcome.create({
++    data: {
++      projectId: d.projectId,
++      floorRecordId: d.floorRecordId ?? null,
++      service: d.service ?? null,
++      completedOn,
++      labourHours: d.labourHours ?? null,
++      machineHours: d.machineHours ?? null,
++      crewSize: d.crewSize ?? null,
++      gritSequence: d.gritSequence ?? null,
++      finishCoats: d.finishCoats ?? null,
++      cureHours: d.cureHours ?? null,
++      materialSqFt: d.materialSqFt ?? null,
++      wastePct: d.wastePct ?? null,
++      finishLitres: d.finishLitres ?? null,
++      materialCostCad: d.materialCostCad ?? null,
++      labourCostCad: d.labourCostCad ?? null,
++      sellingPriceCad: d.sellingPriceCad ?? null,
++      scheduleDays: d.scheduleDays ?? null,
++      defects: d.defects ? (d.defects as object) : undefined,
++      notes: d.notes ?? null,
++    },
++    select: { id: true },
++  });
++
++  /* Close the ledger. The quote that became this project is where the price
++     prediction was written, so the lookup goes through the project's own quote
++     request rather than assuming the prediction carries a project id. */
++  const closed: string[] = [];
++  if (d.sellingPriceCad !== undefined) {
++    const quote = await db.quoteRequest.findFirst({
++      where: { projectId: d.projectId },
++      select: { id: true },
++    });
++    const open = await db.prediction.findMany({
++      where: {
++        kind: 'PRICE_CAD',
++        closedAt: null,
++        OR: [{ projectId: d.projectId }, ...(quote ? [{ quoteRequestId: quote.id }] : [])],
++      },
++      select: { id: true },
++    });
++    for (const p of open) {
++      const result = await closePrediction(p.id, d.sellingPriceCad, outcome.id);
++      if (result.ok) closed.push(p.id);
++    }
++  }
++
++  /* Schedule days is a second prediction only where one was recorded; nothing
++     is invented to have something to close. */
++  if (d.scheduleDays !== undefined) {
++    const open = await db.prediction.findMany({
++      where: { kind: 'SCHEDULE_DAYS', closedAt: null, projectId: d.projectId },
++      select: { id: true },
++    });
++    for (const p of open) {
++      const result = await closePrediction(p.id, d.scheduleDays, outcome.id);
++      if (result.ok) closed.push(p.id);
++    }
++  }
++
++  return NextResponse.json({ outcomeId: outcome.id, predictionsClosed: closed.length }, { status: 201 });
++}
++
++export async function GET() {
++  return NextResponse.json(
++    { error: 'Use POST with a projectId and whatever of the execution record is known.' },
++    { status: 405 },
++  );
++}
+diff --git a/apps/web/lib/actions/quotes.ts b/apps/web/lib/actions/quotes.ts
+index 968f726..4ec42a3 100644
+--- a/apps/web/lib/actions/quotes.ts
++++ b/apps/web/lib/actions/quotes.ts
+@@ -9,6 +9,7 @@ import { z } from 'zod';
+ import { db } from '@/lib/db';
+ import { auth } from '@/lib/auth';
+ import { revalidatePath } from 'next/cache';
++import { recordPrediction } from '@/lib/floor-graph/prediction';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ 
+ // ─── Zod schema for the full quote form ─────────────────────────────────────
+@@ -114,6 +115,32 @@ export async function saveEstimate(
+     throw err;
+   }
+ 
++  /* THE PREDICTION LEDGER.
++
++     A written estimate IS a prediction: this floor will cost this much. Until
++     now the number was stored and the outcome was stored and nothing ever
++     compared them, so the business could not say whether its estimating was
++     improving. One row here, at the moment the number is committed, with the
++     line items that produced it — closed later against the contract value by
++     /api/admin/floor-graph/outcome.
++
++     Strictly downstream of the estimate itself: awaited so the row lands in
++     the same request, but its failure is logged inside recordPrediction and
++     can never reach the caller. Losing a ledger row costs a data point.
++     Failing saveEstimate costs an estimate. */
++  await recordPrediction({
++    kind: 'PRICE_CAD',
++    model: 'estimator',
++    inputs: {
++      lineItemCount: data.quoteLineItems.length,
++      units: data.quoteLineItems.map((li) => ({ unit: li.unit, qty: li.qty, unitPrice: li.unitPrice })),
++      taxRate: data.quoteTaxRate,
++      validDays: data.validDays ?? 30,
++    },
++    predictedValue: data.quotedAmount,
++    quoteRequestId: quoteId,
++  });
++
+   revalidatePath(`/admin/quotes/${quoteId}`);
+   return { success: true };
+ }
+diff --git a/apps/web/lib/floor-graph/prediction.ts b/apps/web/lib/floor-graph/prediction.ts
+new file mode 100644
+index 0000000..1d8bef6
+--- /dev/null
++++ b/apps/web/lib/floor-graph/prediction.ts
+@@ -0,0 +1,194 @@
++/**
++ * lib/floor-graph/prediction.ts — the ledger that decides whether any of this
++ * is working.
++ *
++ * THE PROBLEM THIS SOLVES
++ *
++ * A model that is never scored against reality is a rumour with a confidence
++ * interval. This business already makes predictions every week — the price
++ * written after the measure, the days the schedule assumed, the material
++ * ordered — and until now not one of them was recorded next to what actually
++ * happened. So there is no answer, today, to the only question that matters
++ * about estimating: is it getting better or worse?
++ *
++ * The ledger answers it with two writes and one arithmetic operation.
++ *
++ *   recordPrediction() at the moment the number is committed, with the inputs
++ *   that were available AT THAT MOMENT. This is the honest capture point and
++ *   the only one: a feature vector reconstructed after the outcome is known is
++ *   contaminated by it, which is how a model that looks excellent offline
++ *   turns out to be worthless in production.
++ *
++ *   closePrediction() when the actual is known. `error` is signed on purpose —
++ *   a business that is 8% under on every job has a different and more fixable
++ *   problem than one that is ±8% at random, and an absolute-error-only ledger
++ *   cannot tell them apart.
++ *
++ * WHY THIS COMES BEFORE ANY AI FEATURE
++ *
++ * A prediction ledger with three hundred closed rows makes it possible to say
++ * "our estimating is 6.2% high on refinishing and 11% low on stairs", which is
++ * worth money immediately, with no model involved. It is also the only thing
++ * that can ever justify a public accuracy claim: under Competition Act
++ * s.74.01(1)(b) a performance claim needs adequate and proper testing that
++ * exists BEFORE the claim is made, and this table is what that testing would
++ * be built from.
++ */
++import { db } from '@/lib/db';
++
++export type PredictionKind = 'PRICE_CAD' | 'LABOUR_HOURS' | 'MATERIAL_SQFT' | 'SCHEDULE_DAYS';
++
++export type RecordPredictionInput = {
++  kind: PredictionKind;
++  /**
++   * What produced the number. 'published-band', 'estimator', 'configurator',
++   * or a model identifier once one exists. Never blank: an unattributed
++   * prediction cannot be improved, because there is nothing to improve.
++   */
++  model: string;
++  /** The inputs available at prediction time. Captured before the outcome. */
++  inputs: Record<string, unknown>;
++  predictedValue: number;
++  predictedLow?: number | null;
++  predictedHigh?: number | null;
++  quoteRequestId?: string | null;
++  projectId?: string | null;
++};
++
++export type LedgerResult<T> = { ok: true; value: T } | { ok: false; reason: string };
++
++function failed(event: string, err: unknown, context: Record<string, unknown>): { ok: false; reason: string } {
++  const reason = err instanceof Error ? err.message : 'unknown';
++  console.error(JSON.stringify({ event, reason, ...context }));
++  return { ok: false, reason };
++}
++
++/**
++ * Never throws. Every caller is inside a path that does real commercial work —
++ * writing an estimate, closing a job — and a ledger failure must not be able
++ * to fail that work.
++ */
++export async function recordPrediction(
++  input: RecordPredictionInput,
++): Promise<LedgerResult<string>> {
++  try {
++    const row = await db.prediction.create({
++      data: {
++        kind: input.kind,
++        model: input.model,
++        inputs: input.inputs as object,
++        predictedValue: input.predictedValue,
++        predictedLow: input.predictedLow ?? null,
++        predictedHigh: input.predictedHigh ?? null,
++        quoteRequestId: input.quoteRequestId ?? null,
++        projectId: input.projectId ?? null,
++      },
++      select: { id: true },
++    });
++    return { ok: true, value: row.id };
++  } catch (err) {
++    return failed('floor_graph.prediction_failed', err, { kind: input.kind, model: input.model });
++  }
++}
++
++/**
++ * Close one prediction against its actual.
++ *
++ * `absPctError` is left NULL when the predicted value is zero rather than
++ * being reported as infinity or quietly as zero — a divide-by-zero that
++ * silently becomes 0% is how an accuracy dashboard starts lying.
++ */
++export async function closePrediction(
++  predictionId: string,
++  actualValue: number,
++  jobOutcomeId?: string | null,
++): Promise<LedgerResult<{ error: number; absPctError: number | null }>> {
++  try {
++    const existing = await db.prediction.findUnique({
++      where: { id: predictionId },
++      select: { predictedValue: true, closedAt: true },
++    });
++    if (!existing) return { ok: false, reason: 'no such prediction' };
++    if (existing.closedAt) return { ok: false, reason: 'already closed' };
++
++    const predicted = Number(existing.predictedValue);
++    const error = actualValue - predicted;
++    const absPctError = predicted === 0 ? null : Math.abs(error / predicted) * 100;
++
++    await db.prediction.update({
++      where: { id: predictionId },
++      data: {
++        actualValue,
++        closedAt: new Date(),
++        error,
++        absPctError,
++        jobOutcomeId: jobOutcomeId ?? undefined,
++      },
++    });
++    return { ok: true, value: { error, absPctError } };
++  } catch (err) {
++    return failed('floor_graph.close_failed', err, { predictionId });
++  }
++}
++
++export type AccuracyRow = {
++  kind: PredictionKind;
++  model: string;
++  closed: number;
++  /** Mean signed error. Positive means the actual came in ABOVE the estimate. */
++  meanError: number | null;
++  /** Mean absolute percentage error. The headline number. */
++  mape: number | null;
++  /** Share of closed predictions within 10% of the actual. */
++  within10Pct: number | null;
++};
++
++/**
++ * The whole dashboard, as one query and some arithmetic.
++ *
++ * `openCount` is reported alongside deliberately: a ledger where 400 rows were
++ * opened and 12 were ever closed is not a 12-row dataset, it is a broken
++ * process, and an accuracy figure computed off the 12 would be worse than no
++ * figure at all.
++ */
++export async function accuracySummary(since?: Date): Promise<{
++  rows: AccuracyRow[];
++  openCount: number;
++  closedCount: number;
++}> {
++  const where = since ? { predictedAt: { gte: since } } : {};
++
++  const [closed, openCount] = await Promise.all([
++    db.prediction.findMany({
++      where: { ...where, closedAt: { not: null } },
++      select: { kind: true, model: true, error: true, absPctError: true },
++    }),
++    db.prediction.count({ where: { ...where, closedAt: null } }),
++  ]);
++
++  const buckets = new Map<string, { kind: PredictionKind; model: string; errors: number[]; abs: number[] }>();
++  for (const row of closed) {
++    const key = `${row.kind}::${row.model}`;
++    let b = buckets.get(key);
++    if (!b) {
++      b = { kind: row.kind as PredictionKind, model: row.model, errors: [], abs: [] };
++      buckets.set(key, b);
++    }
++    if (row.error !== null) b.errors.push(Number(row.error));
++    if (row.absPctError !== null) b.abs.push(Number(row.absPctError));
++  }
++
++  const mean = (xs: number[]) => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length);
++
++  const rows: AccuracyRow[] = [...buckets.values()].map((b) => ({
++    kind: b.kind,
++    model: b.model,
++    closed: b.errors.length,
++    meanError: mean(b.errors),
++    mape: mean(b.abs),
++    within10Pct: b.abs.length === 0 ? null : (b.abs.filter((x) => x <= 10).length / b.abs.length) * 100,
++  }));
++
++  rows.sort((a, b) => b.closed - a.closed);
++  return { rows, openCount, closedCount: closed.length };
++}
+diff --git a/docs/FLOOR_GRAPH.md b/docs/FLOOR_GRAPH.md
+index 9b0f923..7c6a425 100644
+--- a/docs/FLOOR_GRAPH.md
++++ b/docs/FLOOR_GRAPH.md
+@@ -1,7 +1,7 @@
+ # The Floor Graph
+ 
+-**Status:** foundation shipped. Capture wiring and the prediction ledger follow in
+-`FG-02` and `FG-03`.
++**Status:** foundation, consented capture and the prediction ledger shipped
++(`FG-01`, `FG-02`, `FG-03`). Nothing here is exposed publicly.
+ **Owner:** whoever last touched `apps/web/lib/floor-graph/`.
+ **Guard:** `pnpm verify:floorgraph` (`scripts/verify-floor-graph.mjs`), in the
+ pre-build gate.
+@@ -133,6 +133,41 @@ the exercise was for.
+   `subjectEmail` on the consent ledger plus the soft links; there is no export
+   endpoint yet. Build it before the first request arrives, not after.
+ 
++## 6a. The prediction ledger, and how the loop closes
++
++`Prediction` is written at the moment a number is committed and closed later
++against what happened. Two call sites exist today:
++
++| Written | Where | Closed |
++|---|---|---|
++| `PRICE_CAD`, model `estimator` | `saveEstimate()` in `lib/actions/quotes.ts`, when the written estimate is saved | `POST /api/admin/floor-graph/outcome` with `sellingPriceCad` |
++| `SCHEDULE_DAYS` | not yet written by any call site | `POST /api/admin/floor-graph/outcome` with `scheduleDays` |
++
++`GET /api/admin/floor-graph/accuracy` reports mean signed error, MAPE and the
++share within 10%, split by kind and model, **next to the count of predictions
++still open**. That last number is the honest one: four hundred open rows and
++twelve closed ones is not a twelve-row accuracy figure, it is a broken closing
++process, and a dashboard that reported the MAPE alone would be the most
++misleading thing in the system.
++
++Two rules the code enforces and the reviewer should keep enforcing:
++
++- **The feature vector is captured before the outcome is known.** `inputs` is
++  written at prediction time. A vector reconstructed afterwards is contaminated
++  by the answer, which is how a model that looks excellent offline turns out to
++  be worthless in production.
++- **Error is signed.** A business 8% under on every job has a different and far
++  more fixable problem than one that is ±8% at random. An absolute-only ledger
++  cannot tell them apart.
++
++Nothing about accuracy may be published externally off this table without a
++study designed for the purpose. Under Competition Act s.74.01(1)(b) a
++performance claim requires adequate and proper testing that exists **before**
++the claim is made; after Bill C-59 the exposure is the greater of CAD 10
++million or 3% of worldwide gross revenue, and since June 2025 a private party
++can seek leave to bring it. The ledger is the raw material for that study, not
++a shortcut past it.
++
+ ## 7. Open decisions
+ 
+ These are the owner's, not the schema's. They are listed here so they stay

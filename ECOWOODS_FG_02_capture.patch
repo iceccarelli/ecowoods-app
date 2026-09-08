@@ -1,0 +1,660 @@
+diff --git a/.gitignore b/.gitignore
+index 8fa3762..6a9df93 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -91,3 +91,9 @@ package-lock.json
+ # deployment as if it were a fact about the code.
+ audit/rendered.json
+ audit/rendered.md
++
++# Development-only assessment photographs. lib/floor-graph/photo-storage.ts
++# writes here when no private Supabase bucket is configured, deliberately
++# OUTSIDE public/ so a local run cannot serve somebody's living room as a
++# static asset. Never committed.
++.floor-graph/
+diff --git a/apps/web/app/api/framework-scoring/route.ts b/apps/web/app/api/framework-scoring/route.ts
+new file mode 100644
+index 0000000..dc0b661
+--- /dev/null
++++ b/apps/web/app/api/framework-scoring/route.ts
+@@ -0,0 +1,154 @@
++import { NextResponse } from 'next/server';
++import { frameworkScoringSchema } from '@ecowoods/shared/schemas';
++import { FRAMEWORK_VERSION, criterionCount, allCriteria, score, type Answer } from '@/lib/framework';
++import { recordFrameworkScoring } from '@/lib/floor-graph';
++import { grantConsent } from '@/lib/floor-graph/consent';
++import { CITIES } from '@/lib/seo-data';
++import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
++
++/**
++ * POST /api/framework-scoring — the anonymous benchmark contribution.
++ *
++ * READ THIS BEFORE CHANGING ANYTHING HERE.
++ *
++ * /framework/assess scores a quote the visitor received, very often from a
++ * competitor, and AssessClient.tsx says in its own header that the answers are
++ * never sent anywhere — because the moment a scoring tool posts silently it
++ * becomes a lead-capture form wearing a tool's clothes, and the honest answer
++ * to "should I trust this scoring?" becomes no. That decision stands. This
++ * route does not weaken it; it exists because there is a second, different
++ * thing a person may choose to do with a result they already have.
++ *
++ * The contribution is:
++ *   · opt-in, unticked by default, below a result that renders in full to
++ *     everyone who ignores it;
++ *   · complete scorings only — a partial answer set would bias the benchmark
++ *     toward whichever criteria people answer first;
++ *   · twenty-seven characters, a version string and an optional municipality.
++ *     No name, no email, no user, no IP, no note. The table has no column for
++ *     any of them.
++ *
++ * WHY THE BUSINESS WANTS IT. Nobody in this trade can currently say how often
++ * a GTA hardwood quote specifies a moisture test, because nobody has ever
++ * counted. With enough contributions Ecowoods can publish exactly that — a
++ * sentence about the market rather than about itself, sourced to a dataset it
++ * owns, which is the kind of claim an answer engine cites and a competitor
++ * cannot answer. It is also the only asset here that gets better because
++ * somebody ELSE received a bad quote.
++ *
++ * WHAT IT MUST NEVER BECOME. A path to a lead. There is no email field, and
++ * adding one is not a feature request — it is the end of the dataset's
++ * credibility and of its publishability at the same time.
++ */
++export const runtime = 'nodejs';
++export const dynamic = 'force-dynamic';
++
++const DECODE: Record<string, Answer> = { y: 'yes', u: 'unsure', n: 'no' };
++
++/** Municipality names only, matched against the published service areas. */
++function normaliseRegion(input: string | undefined): string | null {
++  if (!input) return null;
++  const wanted = input.trim().toLowerCase();
++  const hit = CITIES.find((c) => c.name.toLowerCase() === wanted);
++  return hit ? hit.name : null;
++}
++
++export async function POST(request: Request) {
++  if (!isTrustedBrowserOrigin(request)) {
++    return NextResponse.json({ ok: false, message: 'Origin not allowed.' }, { status: 403 });
++  }
++
++  const rl = checkRateLimit(getClientIp(request), LEAD_POST_LIMIT);
++  if (!rl.allowed) {
++    return NextResponse.json(
++      { ok: false, message: 'Please wait a moment before sending another contribution.' },
++      { status: 429, headers: { 'Retry-After': '60' } },
++    );
++  }
++
++  let body: unknown;
++  try {
++    body = await request.json();
++  } catch {
++    return NextResponse.json({ ok: false, message: 'Send JSON.' }, { status: 400 });
++  }
++
++  const parsed = frameworkScoringSchema.safeParse(body);
++  if (!parsed.success) {
++    return NextResponse.json({ ok: false, message: 'That contribution did not validate.' }, { status: 400 });
++  }
++
++  const { frameworkVersion, answers, region } = parsed.data;
++
++  /* A scoring against another version of the instrument is not comparable to
++     one against this version, and silently pooling them would corrupt the
++     benchmark in a way no later query could detect. Refuse rather than
++     coerce. */
++  if (frameworkVersion !== FRAMEWORK_VERSION) {
++    return NextResponse.json(
++      { ok: false, message: 'That score was made against a different version of the framework.' },
++      { status: 409 },
++    );
++  }
++
++  if (answers.length !== criterionCount()) {
++    return NextResponse.json({ ok: false, message: 'That score does not match this framework.' }, { status: 400 });
++  }
++
++  /* Complete scorings only. An answer set with gaps tells us more about which
++     criteria are easy to answer than about the quotes being scored. */
++  if (answers.includes('-')) {
++    return NextResponse.json(
++      { ok: false, message: 'Only a complete scoring can be contributed.' },
++      { status: 400 },
++    );
++  }
++
++  /* The score is recomputed here from the answers, never trusted from the
++     client. The browser sends what it observed; the server decides what it
++     means, using the same lib/framework.ts the page rendered from. */
++  const criteria = allCriteria();
++  const decoded: Record<string, Answer> = {};
++  criteria.forEach((c, i) => {
++    const a = DECODE[answers[i]!];
++    if (a) decoded[c.id] = a;
++  });
++  const result = score(decoded);
++
++  /* The consent row carries no subject, because there is no subject to name.
++     It is still written: it records that the wording shown said what it said,
++     on which surface, at which version — which is what makes the claim "this
++     dataset was contributed knowingly" checkable rather than asserted. */
++  try {
++    await grantConsent({ purpose: 'BENCHMARK_CONTRIBUTION', surface: 'framework-assess' });
++  } catch {
++    /* Non-fatal. A missing ledger row is a reporting gap; refusing the
++       contribution over it would lose the data point AND the consent. */
++  }
++
++  const stored = await recordFrameworkScoring({
++    frameworkVersion,
++    answers,
++    score: result.pct,
++    verdict: result.verdict,
++    criticalFailures: result.failedCritical.length,
++    region: normaliseRegion(region),
++  });
++
++  if (!stored.ok) {
++    return NextResponse.json({ ok: false, message: 'Could not record that just now.' }, { status: 503 });
++  }
++
++  return NextResponse.json({ ok: true, message: 'Added to the benchmark. Thank you.' }, { status: 201 });
++}
++
++export async function GET() {
++  return NextResponse.json(
++    {
++      ok: false,
++      message:
++        'POST a completed framework scoring to contribute it anonymously. There is deliberately no read endpoint: the benchmark is published as findings on /framework, not as a queryable surface, until the corpus is large enough that an aggregate cannot single anybody out.',
++    },
++    { status: 405 },
++  );
++}
+diff --git a/apps/web/app/api/photo-triage/route.ts b/apps/web/app/api/photo-triage/route.ts
+index d57826a..69db793 100644
+--- a/apps/web/app/api/photo-triage/route.ts
++++ b/apps/web/app/api/photo-triage/route.ts
+@@ -3,6 +3,9 @@ import { photoTriageSchema } from '@ecowoods/shared/schemas';
+ import { db } from '@/lib/db';
+ import { sendAdminPhotoTriageEmail, type EmailAttachment } from '@/lib/email';
+ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
++import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
++import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
++import { storePhoto } from '@/lib/floor-graph/photo-storage';
+ 
+ /**
+  * POST /api/photo-triage — track B of the two-track quote form.
+@@ -18,6 +21,28 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT }
+  * (they'd blow the log line); their names and sizes are, so a lost email is
+  * still actionable from the log.
+  *
++ * WHAT CHANGED WHEN THE FLOOR GRAPH ARRIVED, AND WHAT DID NOT.
++ *
++ * Every submission now also writes a FloorAssessment row: the area, the
++ * stated intent, the rough size, and the fact that a triage happened on a
++ * given day. That is operational data about our own demand, collected from
++ * somebody asking us to quote, and it is the shape of the business nobody
++ * here could previously describe because it existed only as a folder of
++ * internal email.
++ *
++ * The PHOTOGRAPHS are different and are gated. They are retained only when
++ * the person ticked the retention box, only under a consent row that stores
++ * the exact wording they were shown, and only into a private store — see
++ * lib/floor-graph/photo-storage.ts, which refuses to write to a public blob
++ * and fails closed when no private store is configured. Untick the box and
++ * this route behaves exactly as it did before: photos to the estimating desk
++ * by email, nothing kept.
++ *
++ * The capture invariant is unchanged and takes precedence over all of it. The
++ * Floor Graph write happens AFTER the lead is safe, in a try/catch that
++ * cannot reach the response. A dropped data point costs a data point; a
++ * dropped lead costs a job.
++ *
+  * Multipart only. The client compresses each image to ≤1.5 MB
+  * (lib/image-compress.ts); the server re-checks count/type/size because the
+  * no-JS fallback posts originals.
+@@ -113,6 +138,10 @@ export async function POST(request: Request) {
+   const lead = parsed.data;
+   const leadId = triageId();
+ 
++  /* Unticked is the default and is sent as ABSENT by every browser, so this
++     reads false unless somebody actively said yes. */
++  const photoConsent = readCheckbox(fields.photoConsent);
++
+   // 1. DURABLE CAPTURE — before the limiter, before anything that can fail.
+   console.log(
+     JSON.stringify({
+@@ -146,7 +175,9 @@ export async function POST(request: Request) {
+         service: `photo-triage:${lead.intent}`,
+         squareFeet: lead.sqft ?? null,
+         notes: [
+-          'PHOTO TRIAGE — photos emailed, not stored in DB.',
++          photoConsent
++            ? 'PHOTO TRIAGE — photos emailed; retained in the Floor Graph with consent.'
++            : 'PHOTO TRIAGE — photos emailed, not retained.',
+           lead.designSummary ? `Design config: ${lead.designSummary}` : null,
+           `Photos: ${files.map((f) => f.name).join(', ')}`,
+         ]
+@@ -189,6 +220,61 @@ export async function POST(request: Request) {
+     );
+   }
+ 
++  // 5. FLOOR GRAPH — strictly downstream. Nothing below this line may change
++  //    the response, and nothing below this line may throw out of the route.
++  try {
++    const assessment = await recordAssessment({
++      source: 'PHOTO_TRIAGE',
++      quoteRequestId: quoteId,
++      statedIntent: lead.intent,
++      statedSqFt: lead.sqft ?? null,
++      city: lead.area,
++    });
++
++    /* Photographs only past this point, and only with a live grant. The
++       consent row is written BEFORE the first byte is stored, so there is no
++       window in which a retained image exists without one. */
++    if (assessment.ok && photoConsent) {
++      const consentId = await grantConsent({
++        purpose: 'ASSESSMENT_PHOTOS',
++        surface: 'estimate-form:photos',
++        subjectEmail: lead.email,
++      });
++
++      const stored: PhotoInput[] = [];
++      let position = 0;
++      for (const f of files.slice(0, MAX_FILES)) {
++        const buffer = Buffer.from(await f.arrayBuffer());
++        const contentType = f.type || 'image/jpeg';
++        const put = await storePhoto(buffer, `${assessment.value}-${position}`, contentType);
++        if (!put.ok) {
++          /* Fails closed: no private store configured, or the upload failed.
++             The photographs are already on their way to the estimating desk
++             by email; they are simply not kept. */
++          console.warn(
++            JSON.stringify({ event: 'floor_graph.photo_not_retained', leadId, reason: put.reason }),
++          );
++          break;
++        }
++        stored.push({ url: put.url, contentType, bytes: buffer.byteLength, position });
++        position += 1;
++      }
++
++      if (stored.length > 0) {
++        await storeAssessmentPhotos(assessment.value, consentId, stored);
++      }
++    }
++  } catch (err) {
++    console.error(
++      JSON.stringify({
++        event: 'floor_graph.triage_capture_failed',
++        leadId,
++        error: err instanceof Error ? err.message : 'unknown',
++        hint: 'Lead and email are unaffected — see photo_triage.captured above.',
++      }),
++    );
++  }
++
+   if (isFormPost && !request.headers.get('accept')?.includes('application/json')) {
+     return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+   }
+diff --git a/apps/web/app/components/EstimateForm.tsx b/apps/web/app/components/EstimateForm.tsx
+index a00bc02..da82268 100644
+--- a/apps/web/app/components/EstimateForm.tsx
++++ b/apps/web/app/components/EstimateForm.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { useEffect, useRef, useState, type FormEvent } from 'react';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
+ import { PHOTO_TRIAGE_INTENTS } from '@ecowoods/shared/schemas';
+ import { SERVICE_AREAS } from '@/lib/seo-data';
+ import { track } from '@/lib/analytics';
+@@ -92,6 +93,7 @@ export function EstimateForm({
+   const [sentTrack, setSentTrack] = useState<Track>('measure');
+   const [errors, setErrors] = useState<Record<string, string>>({});
+   const [photos, setPhotos] = useState<File[]>([]);
++  const [photoConsent, setPhotoConsent] = useState(false);
+   const [photoNote, setPhotoNote] = useState<string | null>(null);
+   const [design, setDesign] = useState<DesignConfig | null>(null);
+   const [recoverConsent, setRecoverConsent] = useState(false);
+@@ -555,6 +557,26 @@ export function EstimateForm({
+             <input id={`ef-pt-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
+           </div>
+ 
++          {/* PHOTO RETENTION. Unticked by default and never required: leave
++              it alone and the photographs reach the estimating desk, get
++              looked at, and are not kept — which is exactly what this form
++              did before the box existed. The wording is imported from
++              lib/floor-graph/wording.ts because the same string is written to
++              the consent ledger; a ledger recording copy nobody was shown is
++              worse than no ledger. */}
++          <label className="ef-consent">
++            <input
++              type="checkbox"
++              name="photoConsent"
++              checked={photoConsent}
++              onChange={(e) => {
++                setPhotoConsent(e.currentTarget.checked);
++                if (e.currentTarget.checked) track('photo_retention_opt_in', { source });
++              }}
++            />
++            <span>{CONSENT_WORDING.ASSESSMENT_PHOTOS.text}</span>
++          </label>
++
+           {consentRow}
+ 
+           <div className="ef-actions">
+diff --git a/apps/web/app/framework/assess/AssessClient.tsx b/apps/web/app/framework/assess/AssessClient.tsx
+index 313b374..28a079e 100644
+--- a/apps/web/app/framework/assess/AssessClient.tsx
++++ b/apps/web/app/framework/assess/AssessClient.tsx
+@@ -12,6 +12,8 @@ import {
+   type Answer,
+ } from '@/lib/framework';
+ import { track } from '@/lib/analytics';
++import { CITIES } from '@/lib/seo-data';
++import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
+ import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
+ 
+ /**
+@@ -47,6 +49,11 @@ import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
+  * makes an offer after giving it. Those are different businesses.
+  */
+ 
++/* The wording shown here is the wording written to the consent ledger — one
++   string, imported, never retyped. A ledger that records copy nobody was
++   shown is worse than no ledger at all. */
++const CONSENT_TEXT = CONSENT_WORDING.BENCHMARK_CONTRIBUTION.text;
++
+ /** One character per criterion, in PILLARS order. `-` is unanswered. */
+ const CODE: Record<Answer, string> = { yes: 'y', unsure: 'u', no: 'n' };
+ const DECODE: Record<string, Answer> = { y: 'yes', u: 'unsure', n: 'no' };
+@@ -110,6 +117,9 @@ export default function AssessClient() {
+   const answered = Object.keys(answers).length;
+   const verdict = VERDICT[result.verdict];
+   const completeFired = useRef(false);
++  const [contribute, setContribute] = useState(false);
++  const [region, setRegion] = useState('');
++  const [contribState, setContribState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+ 
+   /* Restore from the URL on mount only — never during render, so the server
+      and the first client pass agree and hydration stays silent. */
+@@ -152,6 +162,31 @@ export default function AssessClient() {
+     }
+   }, []);
+ 
++  /* The ONLY code path in this file that sends anything anywhere. It fires on
++     a press, after a tick, on a complete scoring — never on mount, never on an
++     answer change, and never with anything but the twenty-seven characters. */
++  const contributeScore = useCallback(async () => {
++    if (!contribute) return;
++    setContribState('sending');
++    try {
++      const res = await fetch('/api/framework-scoring', {
++        method: 'POST',
++        headers: { 'content-type': 'application/json', 'x-requested-with': 'fetch' },
++        body: JSON.stringify({
++          frameworkVersion: FRAMEWORK_VERSION,
++          answers: encodeAnswers(answers),
++          region: region || undefined,
++          consent: true,
++        }),
++      });
++      if (!res.ok) throw new Error(String(res.status));
++      setContribState('done');
++      track('framework_benchmark_contribute', { verdict: result.verdict });
++    } catch {
++      setContribState('error');
++    }
++  }, [answers, contribute, region, result.verdict]);
++
+   const set = (id: string, a: Answer) =>
+     setAnswers((prev) => (prev[id] === a ? (({ [id]: _drop, ...rest }) => rest)(prev) : { ...prev, [id]: a }));
+ 
+@@ -284,6 +319,80 @@ export default function AssessClient() {
+         </section>
+       )}
+ 
++      {/* THE BENCHMARK CONTRIBUTION.
++          Everything above this renders in full to somebody who never touches
++          this block, and the answers still do not leave the browser unless the
++          box is ticked and the button is pressed. What is sent is twenty-seven
++          characters, the framework version and, if chosen, a municipality —
++          no name, no email, nothing that could identify the quote or whoever
++          wrote it. The receiving table has no column for any of that.
++
++          It appears only on a COMPLETE scoring. A partial answer set would
++          bias the benchmark toward whichever criteria people answer first. */}
++      {answered === criterionCount() && (
++        <section className="tlx-section" id="benchmark" aria-label="Contribute to the benchmark">
++          <div className="shell">
++            <p className="tlx-kicker">Optional</p>
++            <h2 className="tlx-h2">Add this score to the benchmark</h2>
++            <p className="tlx-note" style={{ maxWidth: '46rem' }}>
++              Nobody in this trade can currently say how often a GTA hardwood quote specifies a
++              moisture test, because nobody has ever counted. If you send these answers, we count
++              them. We publish what the numbers say — including where they are unflattering to us —
++              and never who sent them.
++            </p>
++
++            <label className="ef-consent">
++              <input
++                type="checkbox"
++                checked={contribute}
++                onChange={(e) => setContribute(e.currentTarget.checked)}
++                disabled={contribState === 'done'}
++              />
++              <span>{CONSENT_TEXT}</span>
++            </label>
++
++            <label className="ef-field" style={{ maxWidth: '22rem' }}>
++              <span>
++                Area <em>optional</em>
++              </span>
++              <select
++                value={region}
++                onChange={(e) => setRegion(e.currentTarget.value)}
++                disabled={contribState === 'done'}
++              >
++                <option value="">Rather not say</option>
++                {CITIES.map((c) => (
++                  <option key={c.slug} value={c.name}>
++                    {c.name}
++                  </option>
++                ))}
++              </select>
++            </label>
++
++            <div className="fw-scorebar-actions">
++              <button
++                type="button"
++                className="fw-btn"
++                disabled={!contribute || contribState === 'sending' || contribState === 'done'}
++                onClick={contributeScore}
++              >
++                {contribState === 'done'
++                  ? 'Added — thank you'
++                  : contribState === 'sending'
++                    ? 'Sending…'
++                    : 'Contribute anonymously'}
++              </button>
++            </div>
++
++            {contribState === 'error' && (
++              <p className="fw-risk" role="alert">
++                That did not send. Nothing was recorded, and your score is unaffected.
++              </p>
++            )}
++          </div>
++        </section>
++      )}
++
+       {/* The offer, AFTER the answer. It renders only once there is a result to
+           react to, it is a separate deliberate upload, and nothing above it is
+           withheld from anyone who ignores it. */}
+diff --git a/apps/web/lib/analytics.ts b/apps/web/lib/analytics.ts
+index f7205af..24a3260 100644
+--- a/apps/web/lib/analytics.ts
++++ b/apps/web/lib/analytics.ts
+@@ -38,7 +38,14 @@ export type AnalyticsEvent =
+   | 'quote_review_submit'
+   | 'commercial_cta'
+   | 'realtor_cta'
+-  | 'recovery_opt_in';
++  | 'recovery_opt_in'
++  /* Floor Graph opt-ins. Both record that a CHOICE was made, never what was
++     chosen about: no photo, no answer, no quote content ever reaches an
++     analytics call. The value of knowing the opt-in rate is that it tells us
++     whether the wording is fair — a rate near zero means people did not
++     understand it, and a rate near one means it was not really a choice. */
++  | 'photo_retention_opt_in'
++  | 'framework_benchmark_contribute';
+ 
+ export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+   if (typeof window === 'undefined') return;
+diff --git a/apps/web/lib/floor-graph/photo-storage.ts b/apps/web/lib/floor-graph/photo-storage.ts
+new file mode 100644
+index 0000000..7ce76ba
+--- /dev/null
++++ b/apps/web/lib/floor-graph/photo-storage.ts
+@@ -0,0 +1,97 @@
++/**
++ * lib/floor-graph/photo-storage.ts — where a retained assessment photograph goes.
++ *
++ * THIS FILE REFUSES TO USE VERCEL BLOB, AND THAT IS THE POINT.
++ *
++ * lib/pdf/storage.ts writes quotes and invoices to Vercel Blob with
++ * `access: 'public'`, which is the only access Blob offers. For a PDF the
++ * customer is about to be emailed a link to, an unguessable public URL is a
++ * defensible trade. For a photograph of the inside of somebody's house it is
++ * not: PIPEDA case summary #2006-349 treats interior photographs as personal
++ * information about the person who lives there, and "public but hard to guess"
++ * is not a safeguard, it is a hope.
++ *
++ * So the ladder here is deliberately shorter and deliberately fails closed:
++ *
++ *   1. Supabase Storage, PRIVATE bucket → the stored path is returned. Reading
++ *      one back requires a signed URL minted by a caller holding the service
++ *      role key, which is the admin and nobody else.
++ *   2. Local filesystem, OUTSIDE public/ → development only.
++ *   3. Nothing configured → `{ ok: false }`. The caller keeps its existing
++ *      behaviour (the photographs still reach the estimating desk by email)
++ *      and simply does not retain them.
++ *
++ * A misconfigured environment therefore loses a data point. It never quietly
++ * publishes a customer's living room.
++ */
++import path from 'node:path';
++import fs from 'node:fs';
++
++export const PHOTO_BUCKET = 'floor-graph';
++
++export type StoredPhoto = { ok: true; url: string } | { ok: false; reason: string };
++
++const EXT: Record<string, string> = {
++  'image/jpeg': 'jpg',
++  'image/png': 'png',
++  'image/webp': 'webp',
++  'image/heic': 'heic',
++  'image/heif': 'heif',
++};
++
++function extensionFor(contentType: string): string {
++  return EXT[contentType] ?? 'bin';
++}
++
++/**
++ * Store one photograph. `key` is caller-chosen and must already be
++ * unguessable — the assessment id plus an ordinal is what the triage route
++ * uses.
++ */
++export async function storePhoto(
++  buffer: Buffer,
++  key: string,
++  contentType: string,
++): Promise<StoredPhoto> {
++  const filename = `${key}.${extensionFor(contentType)}`;
++
++  // ── 1. Supabase Storage, private bucket ──────────────────────────────────
++  if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL) {
++    try {
++      const { createClient } = await import('@supabase/supabase-js');
++      const supabase = createClient(
++        process.env.NEXT_PUBLIC_SUPABASE_URL,
++        process.env.SUPABASE_SERVICE_ROLE_KEY,
++      );
++      const { error } = await supabase.storage
++        .from(PHOTO_BUCKET)
++        .upload(filename, buffer, { contentType, upsert: false });
++      if (error) return { ok: false, reason: `supabase: ${error.message}` };
++      /* The PATH, not a public URL. There is no public URL for this bucket,
++         and storing one would defeat the reason the bucket is private. */
++      return { ok: true, url: `supabase://${PHOTO_BUCKET}/${filename}` };
++    } catch (err) {
++      return { ok: false, reason: err instanceof Error ? err.message : 'supabase upload failed' };
++    }
++  }
++
++  // ── 2. Local development, outside public/ ────────────────────────────────
++  if (process.env.NODE_ENV !== 'production') {
++    try {
++      const dir = path.join(process.cwd(), '.floor-graph', 'photos');
++      fs.mkdirSync(dir, { recursive: true });
++      fs.writeFileSync(path.join(dir, filename), buffer);
++      return { ok: true, url: `file://.floor-graph/photos/${filename}` };
++    } catch (err) {
++      return { ok: false, reason: err instanceof Error ? err.message : 'local write failed' };
++    }
++  }
++
++  // ── 3. Nothing configured. Fail closed. ──────────────────────────────────
++  return {
++    ok: false,
++    reason:
++      'no private photo store configured (SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL). ' +
++      'Photographs were emailed to the estimating desk and not retained.',
++  };
++}
+diff --git a/packages/shared/schemas/index.ts b/packages/shared/schemas/index.ts
+index 76aa885..646210f 100644
+--- a/packages/shared/schemas/index.ts
++++ b/packages/shared/schemas/index.ts
+@@ -259,3 +259,36 @@ export const pilotLeadSchema = z.object({
+ });
+ 
+ export type PilotLeadFormData = z.infer<typeof pilotLeadSchema>;
++
++// ─────────────────────────────────────────────────────────────────
++// FRAMEWORK SCORING — the anonymous benchmark contribution
++// ─────────────────────────────────────────────────────────────────
++
++/**
++ * What /framework/assess posts when — and only when — a person ticks the
++ * contribution box.
++ *
++ * NOTE WHAT IS ABSENT, AND THAT IT IS ABSENT BY CONSTRUCTION. There is no
++ * name, no email, no phone, no free text and no id of any kind. The receiving
++ * table has no column for one either, and scripts/verify-floor-graph.mjs fails
++ * the build if a field name here or there starts to look like an identifier.
++ *
++ * `answers` is one character per criterion in PILLARS order — y | u | n | - —
++ * and the ROUTE, not this schema, checks the length against the live framework
++ * version, because the criterion count is a fact about lib/framework.ts and
++ * this package must not import it.
++ *
++ * `region` is a GTA municipality name or nothing. A postal code would be more
++ * useful and would also make the row re-identifiable against a quote, which is
++ * exactly the trade this dataset refuses to make.
++ */
++export const frameworkScoringSchema = z.object({
++  frameworkVersion: z.string().min(1).max(16),
++  answers: z.string().min(1).max(200).regex(/^[yun-]+$/, 'Unexpected answer encoding'),
++  region: z.string().max(60).optional(),
++  consent: z.literal(true, {
++    errorMap: () => ({ message: 'The contribution is opt-in.' }),
++  }),
++});
++
++export type FrameworkScoringData = z.infer<typeof frameworkScoringSchema>;
