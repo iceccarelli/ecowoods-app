@@ -38,7 +38,14 @@ export type AnalyticsEvent =
   | 'quote_review_submit'
   | 'commercial_cta'
   | 'realtor_cta'
-  | 'recovery_opt_in';
+  | 'recovery_opt_in'
+  /* Floor Graph opt-ins. Both record that a CHOICE was made, never what was
+     chosen about: no photo, no answer, no quote content ever reaches an
+     analytics call. The value of knowing the opt-in rate is that it tells us
+     whether the wording is fair — a rate near zero means people did not
+     understand it, and a rate near one means it was not really a choice. */
+  | 'photo_retention_opt_in'
+  | 'framework_benchmark_contribute';
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
   if (typeof window === 'undefined') return;

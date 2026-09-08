@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
 import { PHOTO_TRIAGE_INTENTS } from '@ecowoods/shared/schemas';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
@@ -92,6 +93,7 @@ export function EstimateForm({
   const [sentTrack, setSentTrack] = useState<Track>('measure');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<File[]>([]);
+  const [photoConsent, setPhotoConsent] = useState(false);
   const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [design, setDesign] = useState<DesignConfig | null>(null);
   const [recoverConsent, setRecoverConsent] = useState(false);
@@ -554,6 +556,26 @@ export function EstimateForm({
             <label htmlFor={`ef-pt-company-${source}`}>Company</label>
             <input id={`ef-pt-company-${source}`} name="company" type="text" tabIndex={-1} autoComplete="off" />
           </div>
+
+          {/* PHOTO RETENTION. Unticked by default and never required: leave
+              it alone and the photographs reach the estimating desk, get
+              looked at, and are not kept — which is exactly what this form
+              did before the box existed. The wording is imported from
+              lib/floor-graph/wording.ts because the same string is written to
+              the consent ledger; a ledger recording copy nobody was shown is
+              worse than no ledger. */}
+          <label className="ef-consent">
+            <input
+              type="checkbox"
+              name="photoConsent"
+              checked={photoConsent}
+              onChange={(e) => {
+                setPhotoConsent(e.currentTarget.checked);
+                if (e.currentTarget.checked) track('photo_retention_opt_in', { source });
+              }}
+            />
+            <span>{CONSENT_WORDING.ASSESSMENT_PHOTOS.text}</span>
+          </label>
 
           {consentRow}
 

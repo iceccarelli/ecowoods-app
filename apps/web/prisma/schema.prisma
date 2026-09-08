@@ -644,3 +644,417 @@ model OrderItem {
   @@index([orderId])
   @@schema("ecowoods")
 }
+
+// ─────────────────────────────────────────────
+// FLOOR GRAPH
+// ─────────────────────────────────────────────
+//
+// WHY THIS SECTION EXISTS
+//
+// Everything above this line records a COMMERCIAL transaction: someone asked
+// for a price, a price was written, a contract was signed, an invoice was
+// paid. None of it records what was actually true about the floor. Species,
+// substrate, moisture at the time of installation, how many hours the crew
+// spent, which grit sequence was run, what the finish did eighteen months
+// later — the entire physical record of the work is, today, in an estimator's
+// head and in a folder of photographs attached to internal email.
+//
+// That is the asset. The React app, the FastAPI service, the schema above and
+// every AI model that will ever be pointed at this business can be rebuilt by
+// a competent team in a quarter. A structured record of two thousand Toronto
+// floors — what was there, what was done, what it cost, and what happened
+// afterwards — cannot be rebuilt at all without doing the work.
+//
+// THE TEST EVERY COLUMN HERE HAD TO PASS
+//
+// Not "could we collect this". Two questions, in order:
+//   1. What prediction does this field make measurably better?
+//   2. What decision does that prediction change?
+// A field that cannot answer both is not in this schema. That is why there is
+// no `customerMood`, no `crewNotes` free-text blob and no `photoTags` — they
+// are collectable and they are inert.
+//
+// THREE STRUCTURAL DECISIONS, EACH DELIBERATE
+//
+// 1. NO HARD FOREIGN KEY TO QuoteRequest OR Project. The links are UUID
+//    columns with indexes and no `@relation`. A Prisma relation would give us
+//    referential integrity and, with it, a cascade: erasing a lead under a
+//    PIPEDA access-and-correction request would silently delete the outcome
+//    record for a floor that still exists in a house. The commercial record
+//    and the physical record have different lifetimes and different lawful
+//    bases, and the schema has to say so. Joins are done in application code,
+//    which is where the consent check belongs anyway.
+//
+// 2. CONSENT IS A ROW, NOT A BOOLEAN. `ConsentRecord` is append-only and
+//    scoped to a purpose. Retention of a photograph and use of that photograph
+//    to train a model are two different purposes requiring two different
+//    grants — the federal, provincial and territorial privacy regulators said
+//    so jointly in December 2023, and PIPEDA case summary #2006-349 already
+//    held that photographs of a dwelling's interior are personal information
+//    about the person who lives there. A `consented: true` column cannot
+//    record which purpose, when, on what wording, or that it was withdrawn.
+//
+// 3. THE BENCHMARK TABLE HOLDS NO IDENTIFIERS AT ALL. `FrameworkScoring` has
+//    no name, no email, no IP, no user id and no free text — twenty-seven
+//    characters, a version string and a coarse region. It is the one dataset
+//    here that is meant to become public, and the only safe way to publish a
+//    dataset is to build it so that there is nothing in it to leak.
+
+/// What a person has agreed to, separately. Never collapse these.
+enum ConsentPurpose {
+  /// Keep the photographs past the triage that prompted them.
+  ASSESSMENT_PHOTOS
+  /// Use this assessment's photographs and readings to improve prediction.
+  MODEL_TRAINING
+  /// Add an anonymous framework scoring to the published benchmark.
+  BENCHMARK_CONTRIBUTION
+  /// Keep a durable record of this floor and hand it to a future owner.
+  FLOOR_RECORD
+
+  @@schema("ecowoods")
+}
+
+enum ConsentState {
+  GRANTED
+  WITHDRAWN
+
+  @@schema("ecowoods")
+}
+
+/// Where a Floor Graph row came from. Provenance is not optional metadata:
+/// a moisture reading taken by a senior estimator with a pin meter and one
+/// inferred from a photograph are not the same fact and must never be pooled.
+enum FloorGraphSource {
+  PHOTO_TRIAGE
+  MEASURE_VISIT
+  JOB_EXECUTION
+  FRAMEWORK_ASSESS
+  IMPORT
+
+  @@schema("ecowoods")
+}
+
+enum AssessmentStatus {
+  UNREVIEWED
+  TRIAGED
+  MEASURED
+  CLOSED
+
+  @@schema("ecowoods")
+}
+
+/// What was predicted. One row per prediction, closed against one actual.
+enum PredictionKind {
+  PRICE_CAD
+  LABOUR_HOURS
+  MATERIAL_SQFT
+  SCHEDULE_DAYS
+
+  @@schema("ecowoods")
+}
+
+/// Append-only consent ledger. A withdrawal is a new row, never an update:
+/// "we had consent on 3 March and it was withdrawn on 9 April" is a different
+/// and more defensible statement than "consent is currently false".
+model ConsentRecord {
+  id      String         @id @default(uuid()) @db.Uuid
+  purpose ConsentPurpose
+  state   ConsentState   @default(GRANTED)
+
+  /// The subject, as we can identify them at the moment of collection. Email
+  /// is the only handle a triage submission has; it is lowercased by the
+  /// caller so a withdrawal matches every grant.
+  subjectEmail String?
+  /// Set once the subject has an account.
+  userId       String? @db.Uuid
+
+  /// The exact wording shown, stored verbatim. A consent you cannot reproduce
+  /// is a consent you cannot defend.
+  wording   String  @db.Text
+  /// Where it was granted, e.g. "estimate-form:photos" or "framework-assess".
+  surface   String
+  /// Version of the wording, so a change of copy is visible in the ledger.
+  version   String  @default("1")
+
+  grantedAt   DateTime  @default(now()) @db.Timestamptz
+  withdrawnAt DateTime? @db.Timestamptz
+
+  @@index([subjectEmail, purpose])
+  @@index([userId, purpose])
+  @@index([grantedAt])
+  @@schema("ecowoods")
+}
+
+/// The passport spine. One row per physical floor, not per customer and not
+/// per job — a floor outlives both, which is the entire point.
+model FloorRecord {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Human-facing stable handle, e.g. "FR-2026-0001". Printed on the record.
+  publicRef String @unique
+
+  /// Coarse location only. Full address lives on the commercial record; a
+  /// floor's postal district is enough to model climate and enough to be
+  /// useful in aggregate, and it is all we are willing to keep on a row
+  /// designed to outlive the customer relationship.
+  city            String?
+  province        String?
+  postalPrefix    String?
+  propertyType    String?
+  /// Storey the floor is on. Basement slab and third-floor joists behave
+  /// differently under the same humidity; without it, moisture data is noise.
+  storey          String?
+
+  areaSqFt     Int?
+  species      String?
+  boardWidthMm Decimal? @db.Decimal(6, 2)
+  boardThickMm Decimal? @db.Decimal(6, 2)
+  pattern      String?
+  finishSystem String?
+  substrate    String?
+  installMethod String?
+  installedOn  DateTime? @db.Date
+
+  /// Soft link. See the header: no cascade from the commercial record.
+  originQuoteRequestId String? @db.Uuid
+  originProjectId      String? @db.Uuid
+
+  assessments FloorAssessment[]
+  outcomes    JobOutcome[]
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+  /// Set when the subject asks for erasure. The row is retained with the
+  /// identifying columns nulled, because the physical facts about a floor are
+  /// not personal information once they cannot be tied to a person.
+  erasedAt  DateTime? @db.Timestamptz
+
+  @@index([city])
+  @@index([species])
+  @@index([installedOn])
+  @@index([originProjectId])
+  @@schema("ecowoods")
+}
+
+/// One look at one floor at one moment. A triage from three photographs and a
+/// senior estimator's measured visit are both assessments; `source` and
+/// `confidence` are what keep them from being averaged together.
+model FloorAssessment {
+  id String @id @default(uuid()) @db.Uuid
+
+  floorRecordId String?      @db.Uuid
+  floorRecord   FloorRecord? @relation(fields: [floorRecordId], references: [id], onDelete: SetNull)
+
+  source FloorGraphSource
+  status AssessmentStatus @default(UNREVIEWED)
+
+  /// Soft links to the commercial record.
+  quoteRequestId String? @db.Uuid
+  projectId      String? @db.Uuid
+
+  /// What the submitter said, in the vocabulary the form already collects.
+  statedIntent String?
+  statedSqFt   Int?
+  city         String?
+
+  /// What was OBSERVED. Every one of these is nullable and stays null until
+  /// somebody actually measured it — an inferred value written into the same
+  /// column as a measured one destroys the dataset it was meant to enrich.
+  observedSpecies      String?
+  observedFinish       String?
+  observedSubstrate    String?
+  observedDamage       Json?    @db.JsonB
+  moisturePctWood      Decimal? @db.Decimal(5, 2)
+  moisturePctSubfloor  Decimal? @db.Decimal(5, 2)
+  relativeHumidityPct  Decimal? @db.Decimal(5, 2)
+  temperatureC         Decimal? @db.Decimal(5, 2)
+  /// How the readings above were taken, e.g. "pin meter, Delmhorst BD-2100".
+  instrument           String?
+
+  /// The recommendation actually given, and by whom. `reviewedBy` empty means
+  /// no human has looked at this yet, and nothing downstream may present it
+  /// as a diagnosis.
+  recommendation String?
+  reviewedBy     String?
+  reviewedAt     DateTime? @db.Timestamptz
+
+  photos AssessmentPhoto[]
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+  erasedAt  DateTime? @db.Timestamptz
+
+  @@index([floorRecordId])
+  @@index([quoteRequestId])
+  @@index([source, status])
+  @@index([createdAt])
+  @@schema("ecowoods")
+}
+
+/// A photograph kept because the person who sent it said we could keep it.
+/// No consent row for ASSESSMENT_PHOTOS, no row here — the capture path
+/// refuses to write one, and scripts/verify-floor-graph.mjs checks that it
+/// still refuses.
+model AssessmentPhoto {
+  id           String          @id @default(uuid()) @db.Uuid
+  assessmentId String          @db.Uuid
+  assessment   FloorAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  /// Storage URL. Blob in production, Supabase or local in development —
+  /// same ladder as lib/pdf/storage.ts.
+  url         String
+  contentType String
+  bytes       Int
+  /// Ordinal within the submission, so "the second photo" is stable.
+  position    Int    @default(0)
+
+  /// The consent row this photograph is retained under. Not a boolean, and
+  /// not nullable: a photograph with no consent id has no lawful basis.
+  consentId String        @db.Uuid
+
+  /// Structured observations, written only by a human or by a reviewed model
+  /// run. Never overwritten in place — a new run appends a new key.
+  observations Json? @db.JsonB
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  erasedAt  DateTime? @db.Timestamptz
+
+  @@index([assessmentId])
+  @@index([consentId])
+  @@schema("ecowoods")
+}
+
+/// An anonymous scoring of somebody's quote against the Well-Installed
+/// Framework, contributed on purpose.
+///
+/// THIS TABLE HAS NO IDENTIFIERS AND IS NEVER TO GAIN ANY. Not an email, not a
+/// user id, not an IP, not a free-text field, not a timestamp finer than the
+/// day. It exists so the business can eventually publish a sentence no
+/// competitor can publish — "of 1,240 GTA hardwood quotes scored against v1.0,
+/// 61% did not answer criterion 1.3" — and that sentence is only worth
+/// publishing if the dataset behind it could be released whole tomorrow.
+model FrameworkScoring {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Framework version the answers were given against. An answer set scored
+  /// against v1.0 is not comparable to one scored against v1.1.
+  frameworkVersion String
+  /// One character per criterion, in PILLARS order: y | u | n | -.
+  answers          String
+  /// Derived at write time so the benchmark can be queried without decoding.
+  score            Int
+  verdict          String
+  criticalFailures Int      @default(0)
+
+  /// Coarse geography only. A GTA municipality, or null.
+  region String?
+  /// Day precision. An exact timestamp on a low-volume table is a fingerprint.
+  scoredOn DateTime @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([frameworkVersion, scoredOn])
+  @@index([region])
+  @@schema("ecowoods")
+}
+
+/// What actually happened, recorded once the job is done. This is the half of
+/// the Floor Graph that no competitor can copy off a public repository,
+/// because it does not exist until somebody sands a floor.
+model JobOutcome {
+  id String @id @default(uuid()) @db.Uuid
+
+  floorRecordId String?      @db.Uuid
+  floorRecord   FloorRecord? @relation(fields: [floorRecordId], references: [id], onDelete: SetNull)
+
+  /// Soft link to the commercial record.
+  projectId String? @db.Uuid
+
+  service       String?
+  completedOn   DateTime? @db.Date
+
+  /// Execution.
+  labourHours   Decimal? @db.Decimal(8, 2)
+  machineHours  Decimal? @db.Decimal(8, 2)
+  crewSize      Int?
+  gritSequence  String?
+  finishCoats   Int?
+  cureHours     Decimal? @db.Decimal(6, 2)
+
+  /// Materials, in the unit the trade actually orders in.
+  materialSqFt   Decimal? @db.Decimal(10, 2)
+  wastePct       Decimal? @db.Decimal(5, 2)
+  finishLitres   Decimal? @db.Decimal(8, 2)
+
+  /// Economics. Kept because margin variance is the signal that decides which
+  /// jobs to bid for, and it is meaningless without both sides.
+  materialCostCad Decimal? @db.Decimal(12, 2)
+  labourCostCad   Decimal? @db.Decimal(12, 2)
+  sellingPriceCad Decimal? @db.Decimal(12, 2)
+
+  /// Consequences.
+  scheduleDays   Int?
+  defects        Json?     @db.JsonB
+  callbackAt     DateTime? @db.Timestamptz
+  warrantyClaimAt DateTime? @db.Timestamptz
+
+  notes String? @db.Text
+
+  predictions Prediction[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([floorRecordId])
+  @@index([projectId])
+  @@index([completedOn])
+  @@schema("ecowoods")
+}
+
+/// The prediction ledger.
+///
+/// A model that is never scored against reality is a rumour with a confidence
+/// interval. Every number this business commits to — the quoted price, the
+/// hours the schedule assumed, the material ordered — is written here when it
+/// is made, with the inputs that produced it, and closed later against what
+/// actually happened. `error` and `absPctError` are computed on close, so the
+/// question "is our estimating getting better or worse this quarter" is a
+/// single aggregate query and not a research project.
+model Prediction {
+  id String @id @default(uuid()) @db.Uuid
+
+  kind   PredictionKind
+  /// What produced it: "published-band", "estimator", "configurator", or a
+  /// model identifier once one exists. Never blank — an unattributed
+  /// prediction cannot be improved.
+  model  String
+  /// Free-form but structured: the inputs available at prediction time. This
+  /// is the training set's feature vector, captured before the outcome is
+  /// known, which is the only time it can be captured honestly.
+  inputs Json @db.JsonB
+
+  predictedValue Decimal  @db.Decimal(14, 4)
+  predictedLow   Decimal? @db.Decimal(14, 4)
+  predictedHigh  Decimal? @db.Decimal(14, 4)
+  predictedAt    DateTime @default(now()) @db.Timestamptz
+
+  /// Soft links to whatever the prediction was about.
+  quoteRequestId String? @db.Uuid
+  projectId      String? @db.Uuid
+
+  jobOutcomeId String?     @db.Uuid
+  jobOutcome   JobOutcome? @relation(fields: [jobOutcomeId], references: [id], onDelete: SetNull)
+
+  actualValue Decimal?  @db.Decimal(14, 4)
+  closedAt    DateTime? @db.Timestamptz
+  /// actual − predicted. Signed on purpose: a business that is 8% under on
+  /// every job has a different problem from one that is ±8% at random.
+  error       Decimal?  @db.Decimal(14, 4)
+  absPctError Decimal?  @db.Decimal(8, 4)
+
+  @@index([kind, predictedAt])
+  @@index([quoteRequestId])
+  @@index([projectId])
+  @@index([closedAt])
+  @@schema("ecowoods")
+}

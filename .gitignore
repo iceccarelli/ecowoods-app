@@ -91,3 +91,10 @@ package-lock.json
 # deployment as if it were a fact about the code.
 audit/rendered.json
 audit/rendered.md
+
+# Development-only assessment photographs. lib/floor-graph/photo-storage.ts
+# writes here when no private Supabase bucket is configured, deliberately
+# OUTSIDE public/ so a local run cannot serve somebody's living room as a
+# static asset. Never committed.
+.floor-graph/
+*.zip

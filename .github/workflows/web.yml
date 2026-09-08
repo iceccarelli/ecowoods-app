@@ -59,6 +59,13 @@ jobs:
         run: node scripts/verify-business-facts.mjs
       - name: Schema / migration drift
         run: node scripts/verify-migrations.mjs
+      # The Floor Graph is the only asset here a competitor cannot copy off a
+      # public repository, and it is also where a small well-meaning edit does
+      # damage nothing else reports: an identifier in the publishable benchmark
+      # table, a photograph whose consent row is optional, consent wording
+      # edited in place, or a cascade added from a lead to a floor.
+      - name: Floor Graph (consent ledger, benchmark anonymity, no cascade)
+        run: node scripts/verify-floor-graph.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

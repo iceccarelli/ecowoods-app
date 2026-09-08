@@ -1,0 +1,9 @@
+{
+  "_comment": "Consent wording baseline. Each sha is the first 16 hex of sha256 over the normalised `text` in apps/web/lib/floor-graph/consent.ts. Editing a wording without bumping its version fails scripts/verify-floor-graph.mjs, because the consent ledger stores the exact string that was shown to the person. Regenerate the values with `node scripts/verify-floor-graph.mjs --update`.",
+  "wording": {
+    "ASSESSMENT_PHOTOS": { "version": "1", "sha": "2bd2431eabb37888" },
+    "MODEL_TRAINING": { "version": "1", "sha": "64396d4d009028e7" },
+    "BENCHMARK_CONTRIBUTION": { "version": "1", "sha": "f6ae70737781c490" },
+    "FLOOR_RECORD": { "version": "1", "sha": "71a6ffcc93762d8e" }
+  }
+}
