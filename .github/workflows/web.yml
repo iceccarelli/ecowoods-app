@@ -102,6 +102,13 @@ jobs:
       # the old domain went on serving 200 on 35 URLs.
       - name: Live contract (the live check asserts things this repo can produce)
         run: node scripts/verify-live-contract.mjs
+      # The geographic model is where a truthful site most easily stops being
+      # one, and it happens by increments that each look reasonable: a
+      # municipality joins a list, a template gives it a page, areaServed is
+      # generated from the list, and the entity graph now says a Toronto company
+      # serves six municipalities in New York State. Checked, not intended.
+      - name: Geography (no claimed coverage without a dated confirmation)
+        run: node scripts/verify-geo.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

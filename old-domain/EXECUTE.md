@@ -39,9 +39,15 @@ request for it ever reaches them.
 ```bash
 vercel whoami                      # must print your account, not "Not authorized"
 vercel domains ls
-vercel domains add ecowoodshardwood.com
-vercel domains add www.ecowoodshardwood.com
+vercel domains add ecowoodshardwood.com ecowoods-app
+vercel domains add www.ecowoodshardwood.com ecowoods-app
 ```
+
+**Both commands take the project name.** Without it, an apex domain is added to
+the *team* and attached to nothing — it looks like a success (`Success! Domain
+… added to <team>`) and changes nothing, and the `www` subdomain is refused
+outright with *"Only apex domains can be added without a project"*. If the apex
+was already added bare, re-run the command with the project to attach it.
 
 Vercel prints the DNS records to set. Set them at the registrar for
 `ecowoodshardwood.com`. This is the step that takes the old Apache box out of

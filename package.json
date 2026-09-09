@@ -36,6 +36,7 @@
     "fix:sliderframes": "node scripts/normalise-slider-frames.mjs",
     "verify:framework": "node scripts/verify-framework.mjs",
     "verify:client": "node scripts/verify-client-boundary.mjs",
+    "verify:geo": "node scripts/verify-geo.mjs",
     "verify:glossary": "node scripts/verify-glossary.mjs",
     "verify:figures": "node scripts/verify-figures.mjs",
     "verify:changelog": "node scripts/verify-changelog.mjs",

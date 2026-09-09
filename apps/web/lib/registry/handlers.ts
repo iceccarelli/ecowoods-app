@@ -25,6 +25,14 @@ import {
 import { PROJECTS, getProject, stillById } from '@/lib/projects';
 import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
 import { SCOPE_ITEMS } from '@/lib/quote-check';
+import {
+  MARKETS,
+  CORRIDORS,
+  marketBySlug,
+  assess as assessMarket,
+  contentQueue,
+  serviceAreaMarkets,
+} from '@/lib/geo';
 import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
@@ -643,6 +651,112 @@ export async function handleQuoteCheck(request: Request) {
         cite: i.cite ? `${SITE_URL}${i.cite}` : null,
       })),
       tool: `${SITE_URL}/quote-check`,
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/markets — where this company works, and where it does not.
+ *
+ * WHY THE SHAPE OF THIS RESPONSE IS THE POINT
+ *
+ * Every flooring company's site answers "do you serve X" with yes. An
+ * assistant asked the question therefore learns nothing from any of them, and
+ * the honest answer — routine here, unconfirmed there, and this one is a
+ * two-hour drive that belongs in the quote — is the answer a homeowner
+ * actually needs.
+ *
+ * So each market carries its status, the sentence that can honestly be said
+ * about serving it, and the date somebody confirmed that. A market nobody has
+ * confirmed says so, in the payload, rather than borrowing the confidence of
+ * the ones beside it. `service_area` lists only what may be claimed, and the
+ * United States markets are excluded from it by construction — they are
+ * advertising reach for Ontario property, not coverage.
+ *
+ * `content_queue` is published deliberately. It is the list of markets that do
+ * not yet have a page and the reason each one does not, which is a more useful
+ * and more falsifiable statement about a company's coverage than any map.
+ */
+export async function handleMarkets(request: Request) {
+  const reg = await getRegistry();
+  const url = new URL(request.url);
+  const corridorFilter = url.searchParams.get('corridor');
+  const statusFilter = url.searchParams.get('status');
+
+  let rows = MARKETS;
+  if (corridorFilter) rows = rows.filter((x) => (x.corridors as string[]).includes(corridorFilter));
+  if (statusFilter) rows = rows.filter((x) => x.status === statusFilter);
+
+  return json(
+    {
+      meta: meta(reg, rows.length),
+      note:
+        'Markets in the Ecowoods geographic model, each with the status and the operational statement that can honestly be made about it. A market being listed is not a claim that it is served.',
+      refuses: [
+        'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
+        'United States markets are advertising reach for Ontario property, never service area, and never appear in service_area',
+        'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
+      ],
+      service_area: serviceAreaMarkets().map((x) => ({ slug: x.slug, name: x.name, region: x.region })),
+      status_legend: {
+        'core-active': 'worked routinely from the Toronto shop',
+        'active-expansion': 'taking work; coverage established, not yet routine',
+        'corridor-target': 'on the route and in the plan; no confirmed operational position',
+        'travel-by-confirmation': 'reachable, scheduled as a trip, priced with the distance in the written quote',
+        'us-proxy': 'advertising reach only; not a service area',
+      },
+      markets: rows.map((x) => {
+        const w = assessMarket(x);
+        return {
+          slug: x.slug,
+          name: x.name,
+          country: x.country,
+          region: x.region,
+          kind: x.kind,
+          part_of: x.partOf ?? null,
+          status: x.status,
+          corridors: x.corridors,
+          parent_hub: x.parentHub,
+          nearest: x.nearest,
+          local_facts: x.localFacts,
+          operational_statement: x.operationalTruth.statement || null,
+          verified_at: x.operationalTruth.verifiedAt,
+          has_page: w.indexable,
+          page: w.indexable ? `${SITE_URL}/service-areas/${x.slug}` : null,
+          why_no_page: w.indexable ? null : w.blockers,
+        };
+      }),
+      content_queue: contentQueue(MARKETS)
+        .slice(0, 10)
+        .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/** GET /api/v1/corridors — the routes, and the markets on each. */
+export async function handleCorridors(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      meta: meta(reg, CORRIDORS.length),
+      note:
+        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region.',
+      corridors: CORRIDORS.map((c) => ({
+        id: c.id,
+        name: c.name,
+        route: c.route,
+        hub: c.hub,
+        summary: c.summary,
+        page: `${SITE_URL}/corridors/${c.id}`,
+        members: c.members.map((slug) => {
+          const x = marketBySlug(slug);
+          return x
+            ? { slug, name: x.name, country: x.country, status: x.status, verified_at: x.operationalTruth.verifiedAt }
+            : { slug, name: slug, country: null, status: null, verified_at: null };
+        }),
+      })),
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );

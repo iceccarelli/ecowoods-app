@@ -10,6 +10,7 @@ import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { SERVICE_AREAS } from '@/lib/seo-data';
+import { CORRIDORS } from '@/lib/geo';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
@@ -181,6 +182,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/projects', 'monthly', 0.85),
     /* Equipment. The specifications change when a manufacturer revises a data
        sheet, which is a yearly event, not a weekly one. */
+    entry('/corridors', 'monthly', 0.8),
+    ...CORRIDORS.map((c) => entry(`/corridors/${c.id}`, 'monthly', 0.7)),
     entry('/quote-check', 'monthly', 0.9),
     entry('/equipment', 'monthly', 0.85),
     ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),

@@ -91,6 +91,8 @@ export function buildOpenApi() {
       '/media': ref('MediaIndex'),
       '/media/{id}': ref('MediaProject'),
       '/equipment': ref('EquipmentIndex'),
+      '/markets': ref('MarketIndex'),
+      '/corridors': ref('CorridorIndex'),
       '/quote-check': ref('QuoteCheckChecklist'),
       '/equipment/{id}': ref('EquipmentMachine'),
       '/openapi.json': { type: 'object', description: 'This document.' },
@@ -384,6 +386,31 @@ export function buildOpenApi() {
             note: { type: 'string' },
             circuit: { type: ['object', 'null'], description: 'Echo of the volts/amps assessed against, or null.' },
             machines: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        MarketIndex: {
+          type: 'object',
+          description:
+            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. United States markets are advertising reach for Ontario property and never appear in service_area.',
+          required: ['meta', 'markets', 'service_area', 'refuses'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            refuses: { type: 'array', items: { type: 'string' } },
+            service_area: { type: 'array', items: { type: 'object' }, description: 'The only markets that may be claimed as served.' },
+            status_legend: { type: 'object' },
+            markets: { type: 'array', items: { type: 'object' } },
+            content_queue: { type: 'array', items: { type: 'object' }, description: 'Markets without a page, ranked by how much a page would be worth, each with the reason it does not have one.' },
+          },
+        },
+        CorridorIndex: {
+          type: 'object',
+          description: 'The routes the work is organised along, each with its hub, highway and member markets in travel order.',
+          required: ['meta', 'corridors'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            corridors: { type: 'array', items: { type: 'object' } },
           },
         },
         QuoteCheckChecklist: {

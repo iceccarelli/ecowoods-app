@@ -220,6 +220,7 @@ const MANIFESTS = {
   '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
   '/projects': { source: 'content/projects/', slugs: keysFromTsDir('content/projects', 'slug') },
   '/equipment': { source: 'content/equipment/', slugs: keysFromTsDir('content/equipment', 'id') },
+  '/corridors': { source: 'content/geo/', slugs: keysFromTsDir('content/geo', 'id') },
 };
 for (const [prefix, m] of Object.entries(MANIFESTS)) {
   if (!m.slugs) {
