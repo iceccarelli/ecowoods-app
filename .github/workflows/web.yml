@@ -124,6 +124,29 @@ jobs:
       # no preview host in anything a machine reads; robots.txt lets agents in.
       - name: Agentic primitives (OpenAPI ↔ routes, no injection, no preview hosts)
         run: node scripts/verify-agentic.mjs
+      # ── the catch-all, and the reason it exists ───────────────────────────
+      #
+      # F-183. The steps above are named individually on purpose — a failing
+      # step name in the PR checks list tells you what broke before you open a
+      # log, and that is worth keeping. What it is NOT is a complete list. On
+      # 2026-09-09 this job ran 17 guards. `pnpm verify` ran 54. Thirty-seven
+      # guards existed, passed locally when someone remembered to run them, and
+      # had never once gated a merge — among them verify:destinations, which
+      # was at that moment failing on a real broken link that had already
+      # shipped to production.
+      #
+      # Nobody removed those steps. They were never added, because adding a
+      # guard meant editing package.json AND this file, and the second edit is
+      # invisible when you forget it.
+      #
+      # So this step runs every guard the repository has, derived from
+      # package.json rather than from a list kept here. The named steps above
+      # re-run inside it; that costs about six seconds and is the price of the
+      # checks list staying legible. A guard added to package.json now gates
+      # this job from its first commit, with no second edit and nothing to
+      # remember.
+      - name: All guards (derived from package.json — nothing can be left out)
+        run: node scripts/verify-all.mjs
 
   build:
     name: Typecheck & Build
