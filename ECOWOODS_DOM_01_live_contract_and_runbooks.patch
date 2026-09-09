@@ -1,0 +1,712 @@
+From d66e7fedf8ce39a4f073c457e9187962f54ece17 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 17:25:34 +0000
+Subject: [PATCH] fix(live): the live check asserted a phrase nothing emits and
+ sent operators to a runbook that does not exist
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The first proper post-deploy run turned up two failures, and neither was a fault
+in the site.
+
+1. verify-live.sh asserted that /llms-full.txt contains "complete technical
+   corpus". The generator says "complete published corpus" and has for some
+   time, so that line could only ever fail — reporting 265 KB of correct corpus
+   as a broken deploy. That is precisely the failure mode verify-live.sh's own
+   header warns about: the moment a check cries wolf, the next real failure gets
+   waved through as "probably that flaky one again".
+
+2. Five places across four files told the operator to follow
+   old-domain/EXECUTE.md. That file did not exist. Neither did
+   docs/outreach/DOMAIN_CONSOLIDATION.md, CLAIMS_REGISTER.md or
+   WHY_NO_AGGREGATE_RATING.md, all named by guards as the reasoning behind what
+   they enforce. An instruction that names a missing file does not read as an
+   error; it reads as a task somebody else already documented — which is the
+   likeliest reason the domain consolidation has never been executed.
+
+That matters because the same run measured the old domain: ecowoodshardwood.com
+answers HTTP 200 on 35 URLs, a second live site competing with ecowoods.ca for
+the same entity, holding 22 customer testimonials with real names. The redirect
+map, the four generated configs and the host-conditioned rules in vercel.json
+were all already correct and already deployed. The only missing piece was the
+page telling somebody which of them to execute and in what order.
+
+All four runbooks are now written. old-domain/EXECUTE.md gives both routes —
+attaching the domain to this Vercel project, where the rules already ship, and
+uploading .htaccess to the Apache host that serves it today — with the
+verification that must report 36 correct before any change of address is filed,
+because telling Google a move happened while the old site still answers 200 is
+worse than saying nothing.
+
+scripts/verify-live-contract.mjs makes both classes checkable offline: every
+md_check want string must appear literally in the generator that produces that
+document, and every old-domain/ or docs/ path a script instructs an operator to
+read must exist. It is scoped to instruction lines, so state-of-truth.sh may go
+on asserting that old-domain/vercel.json is absent. Regression-tested against an
+unsatisfiable assertion, a deleted runbook, and a renamed md_check that would
+have left the guard silently blind.
+
+Also inverts the "known-dead paths (must stay 404)" block. It asserted that
+apps/web/public is unserved, which was true and worth documenting until FIX-01.
+It now asserts those files serve, so a silent regression in the static-root sync
+fails the live check instead of printing a warning nobody reads.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml                |   7 ++
+ docs/outreach/CLAIMS_REGISTER.md         |  66 ++++++++++
+ docs/outreach/DOMAIN_CONSOLIDATION.md    |  96 ++++++++++++++
+ docs/outreach/WHY_NO_AGGREGATE_RATING.md |  65 ++++++++++
+ old-domain/EXECUTE.md                    | 152 +++++++++++++++++++++++
+ package.json                             |   1 +
+ scripts/verify-live-contract.mjs         | 133 ++++++++++++++++++++
+ scripts/verify-live.sh                   |  47 ++++---
+ 8 files changed, 552 insertions(+), 15 deletions(-)
+ create mode 100644 docs/outreach/CLAIMS_REGISTER.md
+ create mode 100644 docs/outreach/DOMAIN_CONSOLIDATION.md
+ create mode 100644 docs/outreach/WHY_NO_AGGREGATE_RATING.md
+ create mode 100644 old-domain/EXECUTE.md
+ create mode 100644 scripts/verify-live-contract.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index c5c42ec..dd00107 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -95,6 +95,13 @@ jobs:
+       # edit from someone who has not read s.74.01(1)(b). Checked mechanically.
+       - name: Quote comparison (no price, no ranking, every citation resolves)
+         run: node scripts/verify-quote-check.mjs
++      # The live check runs against production and cannot be run from here. What
++      # CAN be checked from here is whether its assertions are satisfiable at
++      # all: it spent months asserting a phrase the generator had stopped
++      # emitting, and it sent operators to a runbook that did not exist while
++      # the old domain went on serving 200 on 35 URLs.
++      - name: Live contract (the live check asserts things this repo can produce)
++        run: node scripts/verify-live-contract.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/docs/outreach/CLAIMS_REGISTER.md b/docs/outreach/CLAIMS_REGISTER.md
+new file mode 100644
+index 0000000..a6f2134
+--- /dev/null
++++ b/docs/outreach/CLAIMS_REGISTER.md
+@@ -0,0 +1,66 @@
++# The claims register
++
++Every factual assertion this site makes about the business — a number, a
++timeframe, a capability, a credential — is registered in
++`apps/web/content/claims.ts` before it may appear on a page.
++`scripts/verify-claims.mjs` fails the build on an unregistered business fact,
++and `scripts/verify-cities.mjs` and `scripts/verify-schema-figures.mjs` both
++send you here when they find one.
++
++## Why a register rather than careful writing
++
++Careful writing works once. The failure this exists to prevent is not somebody
++inventing a fact; it is a fact that was true when it was written and quietly
++stopped being true — a crew size, a year founded, a number of completed
++projects, a "same-week scheduling" promise. Nothing in a codebase notices that.
++A register does, because every entry carries where the fact came from and when
++it was last confirmed.
++
++It is also what makes the site defensible. Under the Competition Act,
++s.74.01(1)(b), a performance claim requires adequate and proper testing to have
++existed *before* the representation was made — not to be assembled afterwards
++if someone complains. Since Bill C-59 the exposure is the greater of CAD 10M or
++3% of worldwide gross revenue, and since 20 June 2025 a private party can go to
++the Competition Tribunal directly. "Where did this number come from?" is a
++question that must have an answer on the day it is asked.
++
++## What counts as a claim
++
++Register it if a reasonable reader would take it as a statement of fact about
++this business or its work:
++
++- counts and quantities — years in business, projects completed, crew size
++- timeframes — scheduling, acclimation periods, drying times, warranty terms
++- capabilities and credentials — certifications, memberships, equipment owned
++- comparatives of any kind — faster, quieter, longer-lasting, more durable
++- anything with a unit attached
++
++Not a claim: published price bands, which live in
++`apps/web/content/constants/pricing.ts` and are guarded separately by
++`verify:pricing`; and the wood-science figures in the papers, which are cited to
++their published sources and guarded by `verify:papers` and `verify:figures`.
++
++## Adding one
++
++Each entry records the claim, its source, and the date the source was read. A
++claim with no source is not a claim that needs better wording — it is a claim
++that cannot ship. The options are to find the source, to soften the sentence
++until it is no longer an assertion of fact, or to remove it.
++
++For a city or neighbourhood page, `verify-cities.mjs` additionally requires that
++signature content not be duplicated across pages: thirty near-identical service
++area pages saying the same thing about themselves are thirty claims about places
++where the differentiating fact was invented to fill a template.
++
++## Reviewing it
++
++The register is worth reading end to end whenever the business changes — new
++service, new equipment, new territory — and at least annually. Every entry has a
++date; an entry whose date is old is not automatically wrong, but it is the list
++of things nobody has checked lately.
++
++## Related
++
++- `docs/outreach/WHY_NO_AGGREGATE_RATING.md` — why review figures are never
++  aggregated into structured data.
++- `apps/web/content/constants/pricing.ts` — the one place a price may live.
+diff --git a/docs/outreach/DOMAIN_CONSOLIDATION.md b/docs/outreach/DOMAIN_CONSOLIDATION.md
+new file mode 100644
+index 0000000..a1143f2
+--- /dev/null
++++ b/docs/outreach/DOMAIN_CONSOLIDATION.md
+@@ -0,0 +1,96 @@
++# Domain consolidation — ecowoodshardwood.com → ecowoods.ca
++
++`old-domain/EXECUTE.md` is the procedure. This is why it is the procedure, and
++why the obvious version of it would have made things worse.
++
++## The situation
++
++Two websites exist for one business. `ecowoods.ca` is this repository.
++`ecowoodshardwood.com` is a hosted store platform, still live, answering HTTP
++200 on 35 URLs as measured on 2026-09-09, served by `Apache/2.4.68 (Debian)`.
++
++Both describe the same company, at the same address, with the same phone number.
++To a search engine that is not one business with two sites; it is an entity
++whose signals are split across two domains, each competing with the other for
++the same queries.
++
++## What is actually stranded there
++
++Twenty-two of the 36 URLs in the old sitemap are individual customer
++testimonials with real names — Audrey in Toronto, Andre Fauteux, Melissa
++McCormack, Joan Endersby, Michelle P in East York. Published reviews, written by
++customers, sitting on a domain that does nothing with them.
++
++That is the largest reputation asset this business owns outright, and every one
++of them is a single line in `old-domain/path-map.json` away from pointing at
++`/reviews`.
++
++## Why the redirects are not path-preserving
++
++`/x → ecowoods.ca/x` is the correct default for a migration and it is exactly
++wrong here. The two sites share **zero** paths. The old URLs look like:
++
++```
++/pages/flooring-services-toronto-etobicoke-hamilton
++/blogs/testimonials/172376--audrey-in-toronto
++/?fuseaction=store.returns
++```
++
++None of those exists on `ecowoods.ca`. A path-preserving rule turns all 36 live
++URLs into hard 404s — which is worse than the pages they serve now, because now
++it is `ecowoods.ca` serving the 404, and the destination domain absorbs the
++signal that the content is gone.
++
++Both `vercel.json` and `apps/web/next.config.js` carried path-preserving
++host-conditioned rules for the old domain at one point. They were inert only
++because the domain was never attached. Attaching it would have shipped the
++defect silently.
++
++## Why the map was built from the navigation, not the slugs
++
++Each old URL was matched to a destination using the old site's own navigation
++labels — Home, About, Services, Testimonials, Portfolio, Blog, Contact — read
++from the live pages, rather than by reading the slugs.
++
++The reason is on the record in `path-map.json`: the contact page's slug is
++`hardwood-floor-installation-and-refinishing-toronto-etobicoke-hamilton`. Slug
++matching sends it to `/services`. It is the contact form. Slug-based mapping
++does not fail loudly; it produces confident wrong answers.
++
++## One source, four targets
++
++`old-domain/path-map.json` is the only file anyone edits. `pnpm domain:build`
++generates from it:
++
++| target | for |
++|---|---|
++| `old-domain/.htaccess` | Apache — what the old host runs today |
++| `old-domain/nginx.conf` | nginx |
++| `old-domain/_redirects` | Netlify |
++| `old-domain/index.php` | a host that allows none of the above |
++| `vercel.json` redirects | attaching the domain to this Vercel project |
++
++`pnpm domain:check` fails the build if any of them has drifted from the map, and
++`scripts/verify-vercel-config.mjs` asserts the Vercel rules stay
++non-path-preserving. Hand-editing a generated file is the one way to reintroduce
++the failure above.
++
++## Order of operations, and the one that matters
++
++1. Execute the redirects (`old-domain/EXECUTE.md`).
++2. `pnpm verify:domain` until it reports **36 correct, 0 failures**.
++3. Only then file the change of address in Google Search Console and the site
++   move in Bing Webmaster Tools.
++
++Step 3 before step 2 is actively harmful. Telling Google a move happened while
++the old site still answers 200 on every URL is a statement it can check and
++find false, and the usual outcome is that the move is not honoured and both
++domains keep competing.
++
++## Keep the redirects forever
++
++A 301 is not a task that completes. Links to those 36 URLs exist in other
++people's pages, in directories, and in the index, for years. Do not retire the
++old DNS zone or the old hosting for at least twelve months after the move, and
++keep the redirect rules permanently. The redirect is the only thing carrying
++that equity across.
+diff --git a/docs/outreach/WHY_NO_AGGREGATE_RATING.md b/docs/outreach/WHY_NO_AGGREGATE_RATING.md
+new file mode 100644
+index 0000000..b4fa53b
+--- /dev/null
++++ b/docs/outreach/WHY_NO_AGGREGATE_RATING.md
+@@ -0,0 +1,65 @@
++# Why this site publishes no `aggregateRating`
++
++`scripts/verify-reviews.mjs` fails the build if `aggregateRating` appears
++anywhere in the schema layer. This is the reasoning behind that rule, so that
++nobody has to reconstruct it from a guard's error message.
++
++## The short version
++
++A star rating in search results is worth having. Emitting one for yourself is
++not how you get it, and doing it wrong is how a business gets a manual action.
++
++## The three separate reasons
++
++**1. Self-serving reviews are ineligible.** Google's structured-data guidance
++for review snippets excludes reviews that a business writes about itself, and
++excludes ratings the business assembles about itself. Marking up
++`aggregateRating` on the `LocalBusiness` node is exactly that shape, whatever
++the underlying numbers are.
++
++**2. Aggregating other sites' reviews is specifically disallowed.** The reviews
++this business has are on Google, HomeStars and similar platforms. Reading
++them off those platforms, averaging them, and publishing the average as our own
++structured data is the case the guidance names. It is also unverifiable by
++anyone: the number is whatever this repository says it is.
++
++**3. It would be a performance claim we could not substantiate on demand.**
++Under the Competition Act, s.74.01(1)(b), a representation about performance
++requires adequate and proper testing to have existed *before* it was made. A
++rating average is a claim about how this business performs. Since Bill C-59 the
++penalty is the greater of CAD 10M or 3% of worldwide gross revenue, and since
++20 June 2025 a private party can bring the matter to the Competition Tribunal
++directly, without the Commissioner. An average computed from platforms whose
++data we cannot export, audit or reproduce is not a figure to stake that on.
++
++## What the site does instead
++
++`REVIEW_EVIDENCE` holds every review figure, each with:
++
++- the platform it was read from,
++- a direct `href` to the specific profile — not a platform home page, so anyone
++  can check the number themselves in one click,
++- an `asOf` date, which the guard requires to be a real past date.
++
++`/reviews` publishes those figures with their sources and explains, in the page
++itself, why the reviews live on platforms this business cannot edit. That is a
++stronger position than a star rating: it is falsifiable by the reader.
++
++## The marker in the code
++
++The repository has carried a `ROOT_AGGREGATE_RATING` constant marked
++`DO NOT WIRE THIS` for months. A comment is advisory and a guard is not — rule 1
++of `verify-reviews.mjs` makes the prohibition enforceable, and it is why that
++constant can safely continue to exist as documentation.
++
++## If someone asks for stars anyway
++
++The honest routes to a star display are:
++
++- Reviews collected and displayed by an eligible third-party platform, which
++  emits its own markup on its own domain.
++- `Product`/`Service` review markup for a specific reviewed *thing*, written by
++  identifiable reviewers, which is not what a contractor's homepage rating is.
++
++Neither is "add `aggregateRating` to the LocalBusiness node", and that is the
++only change the guard blocks.
+diff --git a/old-domain/EXECUTE.md b/old-domain/EXECUTE.md
+new file mode 100644
+index 0000000..6c3beb8
+--- /dev/null
++++ b/old-domain/EXECUTE.md
+@@ -0,0 +1,152 @@
++# Consolidating ecowoodshardwood.com into ecowoods.ca
++
++**Status as measured 2026-09-09: not done.** `pnpm verify:domain` reports
++**35 failures, 0 correct.** Every one of those URLs returns HTTP 200 — a second
++live website for this business, competing with ecowoods.ca for the same entity,
++served by `Apache/2.4.68 (Debian)`.
++
++Twenty-two of them are individual customer testimonials with real names. They
++are the largest stranded reputation asset this business has, and they are
++currently doing nothing except splitting the entity.
++
++This file is the mechanical procedure. `docs/outreach/DOMAIN_CONSOLIDATION.md`
++is why it is being done this way.
++
++---
++
++## Choose a route
++
++The redirects are already generated, from one source (`old-domain/path-map.json`)
++into four targets. You are choosing where they get executed, not what they say.
++
++| | Route A — Vercel | Route B — Apache |
++|---|---|---|
++| Needs | Vercel access | shell/FTP on the old host |
++| Rules already deployed | **yes**, in `vercel.json` | no — upload `.htaccess` |
++| Changes DNS | yes | no |
++| Old host afterwards | can be shut off | keeps running |
++
++**Route A is the one to take** unless somebody wants the old server kept alive.
++The rules are already in `vercel.json`, host-conditioned on
++`(www\.)?ecowoodshardwood\.com`, and they are already deployed. They do nothing
++today for exactly one reason: the domain is not attached to the project, so no
++request for it ever reaches them.
++
++---
++
++## Route A — attach the domain to this Vercel project
++
++```bash
++vercel whoami                      # must print your account, not "Not authorized"
++vercel domains ls
++vercel domains add ecowoodshardwood.com
++vercel domains add www.ecowoodshardwood.com
++```
++
++Vercel prints the DNS records to set. Set them at the registrar for
++`ecowoodshardwood.com`. This is the step that takes the old Apache box out of
++the path, so do not do it while anything else you care about is served from
++that host — check first:
++
++```bash
++curl -sI https://www.ecowoodshardwood.com/ | head -5
++```
++
++Propagation is usually minutes. Then verify (next section). Nothing needs
++deploying: the redirect rules shipped with the last build.
++
++If `vercel domains add` refuses because the domain is attached to another
++Vercel project or team, remove it there first — a domain lives in one project.
++
++## Route B — upload the Apache config
++
++The old host answers as `Apache/2.4.68 (Debian)`, so `.htaccess` is the file.
++
++```bash
++# from the repository root
++scp old-domain/.htaccess <user>@<old-host>:<docroot>/.htaccess
++```
++
++Then confirm on that host that `AllowOverride` permits it and `mod_rewrite` is
++loaded — an `.htaccess` in a directory with `AllowOverride None` is silently
++inert, which looks identical to not having uploaded it:
++
++```bash
++ssh <user>@<old-host> 'apache2ctl -M | grep rewrite'
++```
++
++`old-domain/nginx.conf` and `old-domain/_redirects` are the same map for nginx
++and for Netlify, if the host ever changes. `old-domain/index.php` is the
++last-resort version for a host that allows neither.
++
++**Never hand-edit any of those four.** They are generated:
++
++```bash
++pnpm domain:build      # regenerate from old-domain/path-map.json
++pnpm domain:check      # fails the build if they have drifted
++```
++
++---
++
++## Verify — this is the only thing that counts
++
++```bash
++pnpm verify:domain
++```
++
++It fetches all 36 old URLs and asserts each lands on the path
++`old-domain/path-map.json` says it should, in **one** 301 hop.
++
++```
++✓ 36 correct, 0 failure(s)
++```
++
++Spot-check by hand, and note `-I` follows nothing, so you see the hop itself:
++
++```bash
++curl -sI "https://www.ecowoodshardwood.com/blogs/testimonials/172376--audrey-in-toronto" | head -3
++# HTTP/1.1 301 Moved Permanently
++# Location: https://ecowoods.ca/reviews
++```
++
++Three things to check on that output, all of which have gone wrong on other
++migrations:
++
++1. **301, not 302.** A 302 tells a crawler to keep the old URL indexed, which is
++   the opposite of consolidating.
++2. **One hop.** If it lands on an http URL that then redirects to https, that is
++   two hops and it dilutes what is passed. The generated config forces the
++   scheme in the same rule for this reason.
++3. **The destination is not a 404.** Path-preserving redirects would send every
++   one of these to a 404 on ecowoods.ca, because the two sites share no paths.
++   That is the entire reason `path-map.json` exists.
++
++---
++
++## After it reports zero failures
++
++Only then, and in this order:
++
++1. **Google Search Console → Change of address**, from the old property to
++   `ecowoods.ca`. Filing this while the old site still answers 200 is worse than
++   filing nothing: it tells Google a move happened that measurably has not.
++2. **Bing Webmaster Tools → Site Move.**
++3. Submit `https://ecowoods.ca/sitemap.xml` under the new property if it is not
++   already there.
++4. Leave the redirects in place permanently. A 301 is not a task that completes;
++   links to those URLs exist in other people's pages, and in Google's index, for
++   years.
++
++Do not delete the old DNS zone or the old hosting for at least twelve months.
++The redirect is the only thing carrying that equity across.
++
++---
++
++## What "done" looks like
++
++```bash
++pnpm verify:domain          # ✓ 36 correct, 0 failure(s)
++pnpm verify:live            # the "old domain consolidation" section stops warning
++```
++
++Both are also part of `pnpm seo:live`, which is the post-deploy check.
+diff --git a/package.json b/package.json
+index 4d761ca..a62955e 100644
+--- a/package.json
++++ b/package.json
+@@ -89,6 +89,7 @@
+     "env:check": "node scripts/check-env.mjs",
+     "truth": "bash scripts/state-of-truth.sh",
+     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
++    "verify:live-contract": "node scripts/verify-live-contract.mjs",
+     "verify:live": "bash scripts/verify-live.sh",
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+diff --git a/scripts/verify-live-contract.mjs b/scripts/verify-live-contract.mjs
+new file mode 100644
+index 0000000..2f5f5bf
+--- /dev/null
++++ b/scripts/verify-live-contract.mjs
+@@ -0,0 +1,133 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-live-contract.mjs — the live checks must assert things this
++ * repository can actually produce, and point at files that actually exist.
++ *
++ * TWO FAILURES ON THE SAME DAY, BOTH OF THIS SHAPE
++ *
++ * The first time production was checked properly after a deploy, both of these
++ * turned up, and neither was a fault in the site:
++ *
++ *  1. scripts/verify-live.sh asserted that /llms-full.txt contains the phrase
++ *     "complete technical corpus". The generator says "complete published
++ *     corpus" and has for some time. The live check had therefore been
++ *     guaranteed to fail on every run since the wording changed, on a file that
++ *     was correct — 265 KB of correct corpus reported as a broken deploy. That
++ *     is the exact failure mode verify-live.sh's own header warns about: "the
++ *     moment it cries wolf, the next real failure gets waved through".
++ *
++ *  2. Five places across four files told the operator to "follow
++ *     old-domain/EXECUTE.md". That file did not exist. The old domain has been
++ *     answering 200 on 35 URLs — a second live site competing with ecowoods.ca
++ *     for the same entity, holding 22 customer testimonials — and the runbook
++ *     every guard pointed at was not there to follow. An instruction that names
++ *     a missing file does not read as an error; it reads as a task somebody
++ *     else already documented.
++ *
++ * Both are unfalsifiable from inside the site: no amount of correct production
++ * makes either pass. So they are checked here, offline, before a deploy.
++ *
++ * WHAT IS CHECKED
++ *
++ *  1. Every `md_check … "<want>"` string in verify-live.sh appears literally in
++ *     the generator that produces that document. If it does not, the live check
++ *     can only ever fail.
++ *  2. Every repository path named inside scripts/ under old-domain/ or docs/
++ *     exists. A guard that tells you to read a file is making a promise.
++ *
++ *   node scripts/verify-live-contract.mjs
++ */
++import { readFileSync, existsSync, readdirSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const SCRIPTS = join(ROOT, 'scripts');
++const LIVE = join(SCRIPTS, 'verify-live.sh');
++const GENERATOR = join(ROOT, 'apps/web/lib/markdown-export.ts');
++
++const fail = [];
++
++/* ── 1. the live markers exist in the generator ──────────────────────────── */
++if (!existsSync(LIVE)) {
++  fail.push('scripts/verify-live.sh is missing — the live check is the only thing that proves a deploy');
++} else if (!existsSync(GENERATOR)) {
++  fail.push('apps/web/lib/markdown-export.ts is missing — every markdown surface comes from it');
++} else {
++  const live = readFileSync(LIVE, 'utf8');
++  const gen = readFileSync(GENERATOR, 'utf8');
++
++  const wants = [...live.matchAll(/^md_check\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]+)"\s*$/gm)].map(
++    (m) => ({ label: m[1], url: m[2], want: m[3] }),
++  );
++
++  if (!wants.length) {
++    fail.push(
++      'read no md_check lines from verify-live.sh. Either they moved or their shape changed and this ' +
++        'guard is now blind — fix the reader rather than deleting the check.',
++    );
++  }
++
++  for (const w of wants) {
++    if (!gen.includes(w.want)) {
++      fail.push(
++        `verify-live.sh asserts ${w.label} contains "${w.want}", but that string does not appear in ` +
++          'apps/web/lib/markdown-export.ts. The live check cannot pass, whatever production does. ' +
++          'Either the generator was reworded and the assertion was not, or the assertion is a guess.',
++      );
++    }
++  }
++}
++
++/* ── 2. every file a guard tells you to read exists ──────────────────────── */
++/**
++ * Deliberately narrow: old-domain/ and docs/ are where this repository keeps
++ * the things a guard sends a human to read. Widening it to any path anywhere
++ * would sweep up example paths in prose and teach people to ignore this.
++ */
++const REFERENCED = /\b((?:old-domain|docs)\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)/g;
++const missing = new Map();
++
++/**
++ * Only lines that INSTRUCT. `state-of-truth.sh` asserts that
++ * old-domain/vercel.json is absent — it is a loaded gun that was removed on
++ * purpose — and a guard which demanded that every mentioned path exist would
++ * demand the return of a file another guard exists to keep out.
++ */
++const INSTRUCTS = /\b(see|follow|read|steps|described in|documented in|explains|tells you|use)\b/i;
++
++for (const name of readdirSync(SCRIPTS)) {
++  if (!/\.(mjs|sh)$/.test(name)) continue;
++  const src = readFileSync(join(SCRIPTS, name), 'utf8');
++  const lineAt = (i) => src.slice(src.lastIndexOf('\n', i) + 1, (src.indexOf('\n', i) + 1 || src.length) - 1);
++  for (const m of src.matchAll(REFERENCED)) {
++    if (!INSTRUCTS.test(lineAt(m.index))) continue;
++    /* Prose ends in a full stop, and `old-domain/path-map.json.` is the same
++       file as `old-domain/path-map.json`. Trim sentence punctuation before
++       asking the filesystem, or this guard invents six missing files. */
++    const rel = m[1].replace(/[.,;:)]+$/, '');
++    /* A trailing-directory mention like `old-domain/` is a folder, not a file. */
++    if (rel.endsWith('/') || !/\.[A-Za-z0-9]+$/.test(rel)) continue;
++    if (existsSync(join(ROOT, rel))) continue;
++    /* Generated outputs are allowed to be absent before the first build only if
++       the generator writes them; both of ours are committed, so no exception. */
++    if (!missing.has(rel)) missing.set(rel, new Set());
++    missing.get(rel).add(`scripts/${name}`);
++  }
++}
++
++for (const [rel, where] of missing) {
++  fail.push(
++    `${rel} does not exist, and ${[...where].join(', ')} tell${where.size === 1 ? 's' : ''} an operator to ` +
++      'use it. An instruction naming a missing file does not read as an error — it reads as a task ' +
++      'somebody else already documented.',
++  );
++}
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (fail.length) {
++  console.error(`\n✗ live contract: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}\n`);
++  process.exit(1);
++}
++
++console.log('✓ live contract verified — every live assertion exists in its generator, every referenced runbook is on disk');
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index 894cd2f..1e0222a 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -324,7 +324,12 @@ md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toront
+ md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
+ md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
+ md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
+-md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete technical corpus"
++# The want string here is checked against the generator, offline, by
++# scripts/verify-live-contract.mjs. It said "complete technical corpus" for
++# as long as the generator has said "complete published corpus", so this line
++# could only ever fail — on a file that was correct. A live assertion nobody
++# can satisfy is worse than no assertion: it teaches you to skim the output.
++md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete published corpus"
+ 
+ printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
+ #
+@@ -433,20 +438,32 @@ else
+   printf '  %sPASS%s  %-34s 404, %s internal links out\n' "$GRN" "$OFF" "unknown URL" "$NFLINKS"
+ fi
+ 
+-printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"
+-# apps/web/public is not served on this host. This asserts the fact rather than
+-# leaving it to be rediscovered: /icon-192.png has lived there since long before
+-# any of the illustration work and has never been reachable. If this line starts
+-# FAILING, the Vercel Root Directory was fixed — delete this block and move the
+-# paper PDFs back into apps/web/public.
+-GOT="$(code "$BASE/icon-192.png?$CB")"
+-if [ "$GOT" = "404" ]; then
+-  printf '  %s····%s  %-34s still 404 — apps/web/public unserved, as expected\n' "$DIM" "$OFF" "/icon-192.png"
+-else
+-  printf '  %sWARN%s  %-34s now %s — apps/web/public IS being served\n' "$YEL" "$OFF" "/icon-192.png" "$GOT"
+-  printf '        The root cause behind F-131 is fixed. Remove this block, and the paper\n'
+-  printf '        PDFs can go to apps/web/public/papers/ as originally intended.\n'
+-fi
++printf '\n%s── the static root, which was unserved for months %s\n' "$BOLD" "$OFF"
++# THIS BLOCK USED TO ASSERT THE OPPOSITE, AND IT WAS RIGHT TO.
++#
++# Every file under apps/web/public returned 404 in production because Vercel
++# takes its static root from the repository root while this project builds out
++# of apps/web. /icon-192.png had lived there since long before any of the
++# illustration work and had never once been reachable. So this block asserted
++# the 404 — documenting the defect rather than letting it be rediscovered.
++#
++# FIX-01 syncs apps/web/public into the static root at build time and
++# scripts/verify-public-assets.mjs fails the build if that clause is removed.
++# The assertion therefore inverts: these MUST now serve, and a 404 here means
++# the sync silently stopped happening — which is exactly how the first months
++# of this went unnoticed, because next start serves the folder correctly and
++# every local check passed.
++for P in "/icon-192.png" "/gallery/ash-herringbone-01-room.webp"; do
++  GOT="$(code "$BASE$P?$CB")"
++  if [ "$GOT" = "200" ]; then
++    printf '  %sPASS%s  %-34s %s — apps/web/public is in the static root\n' "$GRN" "$OFF" "$P" "$GOT"
++  else
++    printf '  %sFAIL%s  %-34s %s — apps/web/public is NOT being served\n' "$RED" "$OFF" "$P" "$GOT"
++    printf '        The build command no longer syncs it, or the sync failed. Every raw\n'
++    printf '        asset path on the site is 404 right now. See docs/PUBLIC_ASSETS.md.\n'
++    FAILED=$((FAILED + 1))
++  fi
++done
+ 
+ printf '\n%s── every declared image, on its page, serving bytes %s\n' "$BOLD" "$OFF"
+ # WHY THE WHOLE SWEEP RUNS HERE
+-- 
+2.43.0
+
