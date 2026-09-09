@@ -89,6 +89,7 @@
     "env:check": "node scripts/check-env.mjs",
     "truth": "bash scripts/state-of-truth.sh",
     "notify:indexnow": "node apps/web/scripts/notify-indexnow.mjs",
+    "verify:live-contract": "node scripts/verify-live-contract.mjs",
     "verify:live": "bash scripts/verify-live.sh",
     "images:brief": "node scripts/verify-images.mjs --prompts",
     "papers:tex": "node scripts/gen-paper-tex.mjs",

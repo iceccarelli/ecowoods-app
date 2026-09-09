@@ -324,7 +324,12 @@ md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toront
 md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
 md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
 md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
-md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete technical corpus"
+# The want string here is checked against the generator, offline, by
+# scripts/verify-live-contract.mjs. It said "complete technical corpus" for
+# as long as the generator has said "complete published corpus", so this line
+# could only ever fail — on a file that was correct. A live assertion nobody
+# can satisfy is worse than no assertion: it teaches you to skim the output.
+md_check "/llms-full.txt"      "$BASE/llms-full.txt"                                        "complete published corpus"
 
 printf '\n%s── canonical URLs %s\n' "$BOLD" "$OFF"
 #
@@ -433,20 +438,32 @@ else
   printf '  %sPASS%s  %-34s 404, %s internal links out\n' "$GRN" "$OFF" "unknown URL" "$NFLINKS"
 fi
 
-printf '\n%s── known-dead paths (must stay 404) %s\n' "$BOLD" "$OFF"
-# apps/web/public is not served on this host. This asserts the fact rather than
-# leaving it to be rediscovered: /icon-192.png has lived there since long before
-# any of the illustration work and has never been reachable. If this line starts
-# FAILING, the Vercel Root Directory was fixed — delete this block and move the
-# paper PDFs back into apps/web/public.
-GOT="$(code "$BASE/icon-192.png?$CB")"
-if [ "$GOT" = "404" ]; then
-  printf '  %s····%s  %-34s still 404 — apps/web/public unserved, as expected\n' "$DIM" "$OFF" "/icon-192.png"
-else
-  printf '  %sWARN%s  %-34s now %s — apps/web/public IS being served\n' "$YEL" "$OFF" "/icon-192.png" "$GOT"
-  printf '        The root cause behind F-131 is fixed. Remove this block, and the paper\n'
-  printf '        PDFs can go to apps/web/public/papers/ as originally intended.\n'
-fi
+printf '\n%s── the static root, which was unserved for months %s\n' "$BOLD" "$OFF"
+# THIS BLOCK USED TO ASSERT THE OPPOSITE, AND IT WAS RIGHT TO.
+#
+# Every file under apps/web/public returned 404 in production because Vercel
+# takes its static root from the repository root while this project builds out
+# of apps/web. /icon-192.png had lived there since long before any of the
+# illustration work and had never once been reachable. So this block asserted
+# the 404 — documenting the defect rather than letting it be rediscovered.
+#
+# FIX-01 syncs apps/web/public into the static root at build time and
+# scripts/verify-public-assets.mjs fails the build if that clause is removed.
+# The assertion therefore inverts: these MUST now serve, and a 404 here means
+# the sync silently stopped happening — which is exactly how the first months
+# of this went unnoticed, because next start serves the folder correctly and
+# every local check passed.
+for P in "/icon-192.png" "/gallery/ash-herringbone-01-room.webp"; do
+  GOT="$(code "$BASE$P?$CB")"
+  if [ "$GOT" = "200" ]; then
+    printf '  %sPASS%s  %-34s %s — apps/web/public is in the static root\n' "$GRN" "$OFF" "$P" "$GOT"
+  else
+    printf '  %sFAIL%s  %-34s %s — apps/web/public is NOT being served\n' "$RED" "$OFF" "$P" "$GOT"
+    printf '        The build command no longer syncs it, or the sync failed. Every raw\n'
+    printf '        asset path on the site is 404 right now. See docs/PUBLIC_ASSETS.md.\n'
+    FAILED=$((FAILED + 1))
+  fi
+done
 
 printf '\n%s── every declared image, on its page, serving bytes %s\n' "$BOLD" "$OFF"
 # WHY THE WHOLE SWEEP RUNS HERE

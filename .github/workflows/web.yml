@@ -95,6 +95,13 @@ jobs:
       # edit from someone who has not read s.74.01(1)(b). Checked mechanically.
       - name: Quote comparison (no price, no ranking, every citation resolves)
         run: node scripts/verify-quote-check.mjs
+      # The live check runs against production and cannot be run from here. What
+      # CAN be checked from here is whether its assertions are satisfiable at
+      # all: it spent months asserting a phrase the generator had stopped
+      # emitting, and it sent operators to a runbook that did not exist while
+      # the old domain went on serving 200 on 35 URLs.
+      - name: Live contract (the live check asserts things this repo can produce)
+        run: node scripts/verify-live-contract.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:
