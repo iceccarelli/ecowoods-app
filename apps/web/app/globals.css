@@ -10563,3 +10563,387 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .ps-tag-left { left: 0.6rem; }
   .ps-tag-right { right: 0.6rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .wm-* — HARDWOOD MOVEMENT CALCULATOR  (/tools/floor-movement)
+   ══════════════════════════════════════════════════════════════════════════
+   Its own namespace, like .fw-* and .ef-*, so nothing here can reach a rule
+   that belongs to another feature.
+
+   Two rules this block keeps deliberately:
+
+   · SEMANTIC TOKENS ONLY. No --walnut-*, --cream-*, --oak-* or --maple-*.
+     Primitives do not flip between themes, so a component painted with one is
+     correct in light and wrong in dark, silently. verify:tokens enforces it.
+
+   · EVERY WIDTH CAP IS `min(<cap>, 100%)`. A bare cap on a grid child is how
+     the results panel overflows a 360px phone, and a blanket max-width:100%
+     at the end of a file is how a 1280px container cap gets silently killed.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.wm-controls,
+.wm-result {
+  min-width: 0;
+}
+
+.wm-result {
+  position: sticky;
+  top: 6rem;
+  max-width: min(30rem, 100%);
+  padding: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.wm-figure {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: 600;
+  color: var(--copper-text);
+  margin: 0.25rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-sub {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.wm-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem 1rem;
+  margin: 1.25rem 0;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.wm-dl > div {
+  display: contents;
+}
+
+.wm-dl dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.wm-dl dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-caveats {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.wm-caveats li::marker {
+  color: var(--warning);
+}
+
+.wm-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.wm-toggle-btn,
+.wm-chip {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.wm-toggle-btn.is-on,
+.wm-chip.is-on {
+  background: var(--copper-surface);
+  border-color: var(--copper-surface);
+  color: var(--on-copper);
+}
+
+.wm-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.wm-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: var(--fs-xs);
+  font-style: normal;
+  color: var(--muted);
+}
+
+.wm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.wm-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  padding-bottom: 0.75rem;
+}
+
+.wm-table th,
+.wm-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.wm-table thead th {
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.wm-table td {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.wm-table tbody tr.is-on {
+  background: var(--surface-warm);
+}
+
+.wm-table tbody tr.is-on th {
+  color: var(--copper-text);
+}
+
+@media (max-width: 1023px) {
+  .wm-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .wm-result {
+    position: static;
+    max-width: min(100%, 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .wm-toggle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .pj-* — PROJECT PHOTO RECORDS  (/projects, /projects/[slug])
+   ══════════════════════════════════════════════════════════════════════════
+   Its own namespace, semantic tokens only, every width cap written as
+   min(<cap>, 100%).
+
+   The Ken Burns move lives here rather than in the component because
+   globals.css already zeroes every animation-duration under
+   prefers-reduced-motion — so the reduced-motion behaviour is inherited
+   correctly instead of being reimplemented and eventually diverging.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pj-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  margin: 0 0 1.25rem;
+}
+
+.pj-plate-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: scale(1.001);
+}
+
+/* The move only runs while the plate is on screen — the component adds this
+   class from an IntersectionObserver and removes it on the way out. */
+.pj-plate-img.is-live {
+  animation: pj-kenburns 12s linear forwards;
+}
+
+@keyframes pj-kenburns {
+  from { transform: scale(1.001); }
+  to   { transform: scale(1.06); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pj-plate:hover .pj-plate-img.is-live {
+    animation-duration: 7s;
+  }
+}
+
+.pj-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.pj-meta {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin: 0.75rem 0 0;
+}
+
+.pj-note {
+  max-width: min(46rem, 100%);
+}
+
+.pj-film {
+  margin: 2rem 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.pj-film-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--surface-deep);
+}
+
+.pj-film-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.pj-film-btn {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.pj-film-btn[aria-pressed='true'] {
+  background: var(--copper-surface);
+  border-color: var(--copper-surface);
+  color: var(--on-copper);
+}
+
+.pj-film-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.pj-film-fill {
+  display: block;
+  height: 100%;
+  background: var(--copper-surface);
+}
+
+.pj-film-cap,
+.pj-pair-cap {
+  padding: 0.75rem 1rem 1rem;
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+.pj-pair {
+  margin: 0 0 2.5rem;
+}
+
+.pj-pair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  gap: 1.25rem;
+}
+
+.pj-pair-side {
+  min-width: 0;
+}
+
+.pj-pair-label {
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.pj-pair-label--after {
+  color: var(--copper-text);
+}
+
+.pj-pair-cap {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: min(46rem, 100%);
+}
+
+.pj-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
+  gap: 2rem;
+}
+
+.pj-card {
+  min-width: 0;
+}
+
+.pj-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pj-card-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0.5rem 0 0;
+  color: var(--ink);
+}
+
+.pj-card-link:hover .pj-card-title,
+.pj-card-link:focus-visible .pj-card-title {
+  color: var(--copper-text);
+}

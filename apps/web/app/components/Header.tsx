@@ -99,7 +99,12 @@ const SERVICES_MENU: MegaColumn[] = [
     href: '/guides',
     items: [
       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
+      { label: 'Where we actually drive', href: '/corridors', note: 'Nine routes, and what coverage means' },
       { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
+      { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
+      { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+      { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
       { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
     ],

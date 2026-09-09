@@ -3,6 +3,9 @@ import { photoTriageSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { sendAdminPhotoTriageEmail, type EmailAttachment } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
+import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
+import { storePhoto } from '@/lib/floor-graph/photo-storage';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -17,6 +20,28 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } 
  * can erase a person who tried to give us work. Photo BYTES are not logged
  * (they'd blow the log line); their names and sizes are, so a lost email is
  * still actionable from the log.
+ *
+ * WHAT CHANGED WHEN THE FLOOR GRAPH ARRIVED, AND WHAT DID NOT.
+ *
+ * Every submission now also writes a FloorAssessment row: the area, the
+ * stated intent, the rough size, and the fact that a triage happened on a
+ * given day. That is operational data about our own demand, collected from
+ * somebody asking us to quote, and it is the shape of the business nobody
+ * here could previously describe because it existed only as a folder of
+ * internal email.
+ *
+ * The PHOTOGRAPHS are different and are gated. They are retained only when
+ * the person ticked the retention box, only under a consent row that stores
+ * the exact wording they were shown, and only into a private store — see
+ * lib/floor-graph/photo-storage.ts, which refuses to write to a public blob
+ * and fails closed when no private store is configured. Untick the box and
+ * this route behaves exactly as it did before: photos to the estimating desk
+ * by email, nothing kept.
+ *
+ * The capture invariant is unchanged and takes precedence over all of it. The
+ * Floor Graph write happens AFTER the lead is safe, in a try/catch that
+ * cannot reach the response. A dropped data point costs a data point; a
+ * dropped lead costs a job.
  *
  * Multipart only. The client compresses each image to ≤1.5 MB
  * (lib/image-compress.ts); the server re-checks count/type/size because the
@@ -113,6 +138,10 @@ export async function POST(request: Request) {
   const lead = parsed.data;
   const leadId = triageId();
 
+  /* Unticked is the default and is sent as ABSENT by every browser, so this
+     reads false unless somebody actively said yes. */
+  const photoConsent = readCheckbox(fields.photoConsent);
+
   // 1. DURABLE CAPTURE — before the limiter, before anything that can fail.
   console.log(
     JSON.stringify({
@@ -146,7 +175,9 @@ export async function POST(request: Request) {
         service: `photo-triage:${lead.intent}`,
         squareFeet: lead.sqft ?? null,
         notes: [
-          'PHOTO TRIAGE — photos emailed, not stored in DB.',
+          photoConsent
+            ? 'PHOTO TRIAGE — photos emailed; retained in the Floor Graph with consent.'
+            : 'PHOTO TRIAGE — photos emailed, not retained.',
           lead.designSummary ? `Design config: ${lead.designSummary}` : null,
           `Photos: ${files.map((f) => f.name).join(', ')}`,
         ]
@@ -186,6 +217,61 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error(
       JSON.stringify({ event: 'photo_triage.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' }),
+    );
+  }
+
+  // 5. FLOOR GRAPH — strictly downstream. Nothing below this line may change
+  //    the response, and nothing below this line may throw out of the route.
+  try {
+    const assessment = await recordAssessment({
+      source: 'PHOTO_TRIAGE',
+      quoteRequestId: quoteId,
+      statedIntent: lead.intent,
+      statedSqFt: lead.sqft ?? null,
+      city: lead.area,
+    });
+
+    /* Photographs only past this point, and only with a live grant. The
+       consent row is written BEFORE the first byte is stored, so there is no
+       window in which a retained image exists without one. */
+    if (assessment.ok && photoConsent) {
+      const consentId = await grantConsent({
+        purpose: 'ASSESSMENT_PHOTOS',
+        surface: 'estimate-form:photos',
+        subjectEmail: lead.email,
+      });
+
+      const stored: PhotoInput[] = [];
+      let position = 0;
+      for (const f of files.slice(0, MAX_FILES)) {
+        const buffer = Buffer.from(await f.arrayBuffer());
+        const contentType = f.type || 'image/jpeg';
+        const put = await storePhoto(buffer, `${assessment.value}-${position}`, contentType);
+        if (!put.ok) {
+          /* Fails closed: no private store configured, or the upload failed.
+             The photographs are already on their way to the estimating desk
+             by email; they are simply not kept. */
+          console.warn(
+            JSON.stringify({ event: 'floor_graph.photo_not_retained', leadId, reason: put.reason }),
+          );
+          break;
+        }
+        stored.push({ url: put.url, contentType, bytes: buffer.byteLength, position });
+        position += 1;
+      }
+
+      if (stored.length > 0) {
+        await storeAssessmentPhotos(assessment.value, consentId, stored);
+      }
+    }
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: 'floor_graph.triage_capture_failed',
+        leadId,
+        error: err instanceof Error ? err.message : 'unknown',
+        hint: 'Lead and email are unaffected — see photo_triage.captured above.',
+      }),
     );
   }
 

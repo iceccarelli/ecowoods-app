@@ -12,6 +12,8 @@ import {
   type Answer,
 } from '@/lib/framework';
 import { track } from '@/lib/analytics';
+import { CITIES } from '@/lib/seo-data';
+import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
 import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
 
 /**
@@ -46,6 +48,11 @@ import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
  * The distinction that matters: the tool does not charge for its answer. It
  * makes an offer after giving it. Those are different businesses.
  */
+
+/* The wording shown here is the wording written to the consent ledger — one
+   string, imported, never retyped. A ledger that records copy nobody was
+   shown is worse than no ledger at all. */
+const CONSENT_TEXT = CONSENT_WORDING.BENCHMARK_CONTRIBUTION.text;
 
 /** One character per criterion, in PILLARS order. `-` is unanswered. */
 const CODE: Record<Answer, string> = { yes: 'y', unsure: 'u', no: 'n' };
@@ -110,6 +117,9 @@ export default function AssessClient() {
   const answered = Object.keys(answers).length;
   const verdict = VERDICT[result.verdict];
   const completeFired = useRef(false);
+  const [contribute, setContribute] = useState(false);
+  const [region, setRegion] = useState('');
+  const [contribState, setContribState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
 
   /* Restore from the URL on mount only — never during render, so the server
      and the first client pass agree and hydration stays silent. */
@@ -151,6 +161,31 @@ export default function AssessClient() {
       setCopied(false);
     }
   }, []);
+
+  /* The ONLY code path in this file that sends anything anywhere. It fires on
+     a press, after a tick, on a complete scoring — never on mount, never on an
+     answer change, and never with anything but the twenty-seven characters. */
+  const contributeScore = useCallback(async () => {
+    if (!contribute) return;
+    setContribState('sending');
+    try {
+      const res = await fetch('/api/framework-scoring', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-requested-with': 'fetch' },
+        body: JSON.stringify({
+          frameworkVersion: FRAMEWORK_VERSION,
+          answers: encodeAnswers(answers),
+          region: region || undefined,
+          consent: true,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setContribState('done');
+      track('framework_benchmark_contribute', { verdict: result.verdict });
+    } catch {
+      setContribState('error');
+    }
+  }, [answers, contribute, region, result.verdict]);
 
   const set = (id: string, a: Answer) =>
     setAnswers((prev) => (prev[id] === a ? (({ [id]: _drop, ...rest }) => rest)(prev) : { ...prev, [id]: a }));
@@ -280,6 +315,80 @@ export default function AssessClient() {
               criterion above is sourced to a paper published on this site. The link in your address
               bar carries this score — send it to whoever wrote the quote.
             </p>
+          </div>
+        </section>
+      )}
+
+      {/* THE BENCHMARK CONTRIBUTION.
+          Everything above this renders in full to somebody who never touches
+          this block, and the answers still do not leave the browser unless the
+          box is ticked and the button is pressed. What is sent is twenty-seven
+          characters, the framework version and, if chosen, a municipality —
+          no name, no email, nothing that could identify the quote or whoever
+          wrote it. The receiving table has no column for any of that.
+
+          It appears only on a COMPLETE scoring. A partial answer set would
+          bias the benchmark toward whichever criteria people answer first. */}
+      {answered === criterionCount() && (
+        <section className="tlx-section" id="benchmark" aria-label="Contribute to the benchmark">
+          <div className="shell">
+            <p className="tlx-kicker">Optional</p>
+            <h2 className="tlx-h2">Add this score to the benchmark</h2>
+            <p className="tlx-note" style={{ maxWidth: '46rem' }}>
+              Nobody in this trade can currently say how often a GTA hardwood quote specifies a
+              moisture test, because nobody has ever counted. If you send these answers, we count
+              them. We publish what the numbers say — including where they are unflattering to us —
+              and never who sent them.
+            </p>
+
+            <label className="ef-consent">
+              <input
+                type="checkbox"
+                checked={contribute}
+                onChange={(e) => setContribute(e.currentTarget.checked)}
+                disabled={contribState === 'done'}
+              />
+              <span>{CONSENT_TEXT}</span>
+            </label>
+
+            <label className="ef-field" style={{ maxWidth: '22rem' }}>
+              <span>
+                Area <em>optional</em>
+              </span>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.currentTarget.value)}
+                disabled={contribState === 'done'}
+              >
+                <option value="">Rather not say</option>
+                {CITIES.map((c) => (
+                  <option key={c.slug} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="fw-scorebar-actions">
+              <button
+                type="button"
+                className="fw-btn"
+                disabled={!contribute || contribState === 'sending' || contribState === 'done'}
+                onClick={contributeScore}
+              >
+                {contribState === 'done'
+                  ? 'Added — thank you'
+                  : contribState === 'sending'
+                    ? 'Sending…'
+                    : 'Contribute anonymously'}
+              </button>
+            </div>
+
+            {contribState === 'error' && (
+              <p className="fw-risk" role="alert">
+                That did not send. Nothing was recorded, and your score is unaffected.
+              </p>
+            )}
           </div>
         </section>
       )}

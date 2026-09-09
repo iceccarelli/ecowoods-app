@@ -39,7 +39,9 @@
  *  d. Every alias in the intent ontology resolves to a published service slug.
  *  e. Every `use_instead` reference in the registry resolves to a service or a
  *     published price band.
- *  f. robots.txt allows /api/v1/ in BOTH rule groups. /api/ is disallowed
+ *  f. robots.txt allows BOTH '/api/v1' and '/api/v1/' in BOTH rule groups.
+ *     Prefix matching means the trailing-slash form alone does not cover the
+ *     advertised base URL. /api/ is disallowed
  *     wholesale; without the more specific Allow, the endpoints built for
  *     agents are the one thing agents are told not to read (see F-89).
  *  g. FACTS_VERIFIED_AT is a real date, not in the future and not older than
@@ -221,14 +223,23 @@ if (!existsSync(robotsPath)) {
   if (groups.length < 2) {
     fail('apps/web/app/robots.ts', `found ${groups.length} allow: [...] group(s); expected the general group and the named AI-crawler group`);
   }
-  groups.forEach((allow, i) => {
-    if (!allow.includes('/api/v1/')) {
-      fail(
-        'apps/web/app/robots.ts',
-        `rule group ${i + 1} does not Allow '/api/v1/'. /api/ is disallowed wholesale in the same group, so every agent that reads robots.txt is told not to read the one API built for it. Add '/api/v1/' to the allow list of BOTH rule groups.`,
-      );
-    }
-  });
+  /* BOTH spellings are required. robots.txt matching is plain prefix
+     matching, so 'Allow: /api/v1/' does not match the path '/api/v1' — which
+     is the base URL advertised in the OpenAPI `servers` field and in the
+     manifest, and therefore the first URL an agent requests. With only the
+     trailing-slash form present it falls through to 'Disallow: /api/' and the
+     index of the agentic API is the one endpoint every compliant agent is told
+     to skip. That was live and was confirmed against the production host. */
+  for (const form of ['/api/v1', '/api/v1/']) {
+    groups.forEach((allow, i) => {
+      if (!allow.includes(form)) {
+        fail(
+          'apps/web/app/robots.ts',
+          `rule group ${i + 1} does not Allow '${form}'. /api/ is disallowed wholesale in the same group, and robots matching is prefix matching — both '/api/v1' and '/api/v1/' must be listed in BOTH rule groups or the agentic API is unreachable at one of its own advertised URLs.`,
+        );
+      }
+    });
+  }
 }
 
 /* ── g. the verification date is real ────────────────────────────────────── */

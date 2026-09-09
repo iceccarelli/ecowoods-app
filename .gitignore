@@ -91,3 +91,21 @@ package-lock.json
 # deployment as if it were a fact about the code.
 audit/rendered.json
 audit/rendered.md
+
+# Development-only assessment photographs. lib/floor-graph/photo-storage.ts
+# writes here when no private Supabase bucket is configured, deliberately
+# OUTSIDE public/ so a local run cannot serve somebody's living room as a
+# static asset. Never committed.
+.floor-graph/
+*.zip
+
+# ── The build-time public/ sync ──────────────────────────────────────────────
+# Vercel serves the REPO-ROOT public/ as the static root, not apps/web/public —
+# see docs/PUBLIC_ASSETS.md. vercel.json's buildCommand copies the app's public
+# directory up at build time, which means a local `pnpm build` leaves 400+
+# duplicated files here. They are build output, not source: ignore everything
+# except the handful that genuinely live at the root.
+/public/*
+!/public/brand/
+!/public/qr-app.jpg
+!/public/review-card.svg

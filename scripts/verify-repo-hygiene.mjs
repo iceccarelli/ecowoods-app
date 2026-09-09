@@ -45,6 +45,7 @@
  */
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const LIST = process.argv.includes('--list');
@@ -142,18 +143,98 @@ if (LIST) {
 
 if (problems.length) {
   const kb = problems.reduce((n, p) => n + p.kb, 0);
-  console.error(`\n✗ ${problems.length} file(s) at the repository root that should not be tracked (${kb} KB):\n`);
+  const names = problems.map((p) => p.name);
+
+  // ── tracked here, or only sitting in the working directory? ────────────────
+  //
+  // F-179. This guard used to assert "which is every file above" and print a
+  // `git rm --cached … && rm -f …` chain. Twice, on a branch where the files
+  // were NOT tracked, `git rm --cached` exited 1 with "did not match any
+  // files", the `&&` stopped the chain, the `rm -f` never ran, and the guard
+  // failed again on the next run with the identical advice. The second time it
+  // was worse: the advice sent the operator to `main` to fix it, where the
+  // pre-commit main guard blocked the commit — so the archives are still
+  // tracked there and the working copies were still on disk here.
+  //
+  // The file being on disk and the file being in the index are two different
+  // problems with two different commands. Ask git which one this is instead of
+  // assuming, and never chain a command that is allowed to fail into the one
+  // that does the work.
+  const git = (args) => {
+    try {
+      return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    } catch {
+      return null;
+    }
+  };
+  const listed = git(['ls-files', '--', ...names]);
+  const tracked = listed === null ? null : new Set(listed.split('\n').filter(Boolean));
+
+  // Untracked here does not mean untracked everywhere. The archives that keep
+  // reappearing are tracked on main and arrive in the working directory with
+  // any `git checkout main`.
+  let elsewhere = new Set();
+  if (tracked) {
+    for (const ref of ['origin/main', 'main']) {
+      const tree = git(['ls-tree', '-r', '--name-only', ref, '--', ...names]);
+      if (tree === null) continue;
+      elsewhere = new Set(tree.split('\n').filter(Boolean).filter((n) => !tracked.has(n)));
+      break;
+    }
+  }
+
+  console.error(`\n✗ ${problems.length} file(s) at the repository root that do not belong there (${kb} KB):\n`);
   for (const p of problems) {
-    console.error(`  · ${p.name}  (${p.kb} KB)`);
+    const mark = tracked === null ? '' : tracked.has(p.name) ? '  [tracked]' : '  [not tracked here]';
+    console.error(`  · ${p.name}  (${p.kb} KB)${mark}`);
     console.error(`        ${p.why}\n`);
   }
-  console.error(
-    '  .gitignore already lists most of these. It does not apply to a file uploaded\n' +
-      "  through the GitHub web UI, and it never applies to a file that is already\n" +
-      '  tracked — which is every file above. Remove them:\n\n' +
-      `      git rm --cached ${problems.map((p) => `'${p.name}'`).join(' ')}\n` +
-      `      rm -f ${problems.map((p) => `'${p.name}'`).join(' ')}\n`,
-  );
+
+  const quote = (n) => `'${n}'`;
+  if (tracked === null) {
+    console.error(
+      '  Could not ask git which of these are tracked. Run each line separately —\n' +
+        '  the first is allowed to fail if the files are not in the index:\n\n' +
+        `      git rm --cached ${names.map(quote).join(' ')}\n` +
+        `      rm -f ${names.map(quote).join(' ')}\n`,
+    );
+  } else {
+    const inIndex = names.filter((n) => tracked.has(n));
+    const onDiskOnly = names.filter((n) => !tracked.has(n));
+
+    if (inIndex.length) {
+      console.error(
+        `  ${inIndex.length} tracked. .gitignore does not apply to a file uploaded through the\n` +
+          '  GitHub web UI, and never applies to a file that is already tracked. Two steps,\n' +
+          '  and the second must run even if the first does not:\n\n' +
+          `      git rm --cached ${inIndex.map(quote).join(' ')}\n` +
+          `      rm -f ${inIndex.map(quote).join(' ')}\n`,
+      );
+    }
+    if (onDiskOnly.length) {
+      console.error(
+        `  ${onDiskOnly.length} not tracked on this branch — nothing to un-track, and\n` +
+          '  `git rm --cached` on these exits 1 with "did not match any files". Just delete\n' +
+          '  the working copies:\n\n' +
+          `      rm -f ${onDiskOnly.map(quote).join(' ')}\n`,
+      );
+      if (elsewhere.size) {
+        const list = [...elsewhere];
+        console.error(
+          `  ${list.length} of those ARE tracked on main, so they come back with every\n` +
+            '  `git checkout main`, and they are permanent in the object store until main\n' +
+            '  stops carrying them. Deleting them here does not fix that. Do it on a branch\n' +
+            '  off main — the pre-commit guard refuses a commit on main itself:\n\n' +
+            '      git fetch origin\n' +
+            '      git switch -c chore/root-cleanup origin/main\n' +
+            `      git rm --cached ${list.map(quote).join(' ')}\n` +
+            '      git commit -m "chore: remove transport artifacts from the repository root"\n' +
+            '      git push -u origin chore/root-cleanup     # then merge it\n',
+        );
+      }
+    }
+  }
+
   process.exit(1);
 }
 

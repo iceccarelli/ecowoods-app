@@ -4,10 +4,13 @@
  */
 
 import type { MetadataRoute } from 'next';
+import { MACHINES } from '@/lib/equipment';
+import { projectSlugs } from '@/lib/projects';
 import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { SERVICE_AREAS } from '@/lib/seo-data';
+import { CORRIDORS } from '@/lib/geo';
 import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
@@ -170,6 +173,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/authority', 'monthly', 0.7),                           // no date
     entry('/framework', 'monthly', 0.95, changelogDate('/framework'), illustrationUrls()),
     entry('/framework/assess', 'monthly', 0.9, changelogDate('/framework')),
+    /* The movement calculator. Computed from published Forest Products Laboratory
+       constants, so its content changes only when those constants or the species
+       list do — monthly is generous rather than optimistic. */
+    entry('/tools/floor-movement', 'monthly', 0.9),
+    /* Photographic records. The project pages, not the individual plates:
+       a sitemap listing 22 stills is a sitemap about files rather than pages. */
+    entry('/projects', 'monthly', 0.85),
+    /* Equipment. The specifications change when a manufacturer revises a data
+       sheet, which is a yearly event, not a weekly one. */
+    entry('/corridors', 'monthly', 0.8),
+    ...CORRIDORS.map((c) => entry(`/corridors/${c.id}`, 'monthly', 0.7)),
+    entry('/quote-check', 'monthly', 0.9),
+    entry('/equipment', 'monthly', 0.85),
+    ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
+    ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above
     entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog

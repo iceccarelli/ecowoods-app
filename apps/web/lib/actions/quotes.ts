@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 // ─── Zod schema for the full quote form ─────────────────────────────────────
@@ -113,6 +114,32 @@ export async function saveEstimate(
     console.error('[saveEstimate] DB update failed:', err);
     throw err;
   }
+
+  /* THE PREDICTION LEDGER.
+
+     A written estimate IS a prediction: this floor will cost this much. Until
+     now the number was stored and the outcome was stored and nothing ever
+     compared them, so the business could not say whether its estimating was
+     improving. One row here, at the moment the number is committed, with the
+     line items that produced it — closed later against the contract value by
+     /api/admin/floor-graph/outcome.
+
+     Strictly downstream of the estimate itself: awaited so the row lands in
+     the same request, but its failure is logged inside recordPrediction and
+     can never reach the caller. Losing a ledger row costs a data point.
+     Failing saveEstimate costs an estimate. */
+  await recordPrediction({
+    kind: 'PRICE_CAD',
+    model: 'estimator',
+    inputs: {
+      lineItemCount: data.quoteLineItems.length,
+      units: data.quoteLineItems.map((li) => ({ unit: li.unit, qty: li.qty, unitPrice: li.unitPrice })),
+      taxRate: data.quoteTaxRate,
+      validDays: data.validDays ?? 30,
+    },
+    predictedValue: data.quotedAmount,
+    quoteRequestId: quoteId,
+  });
 
   revalidatePath(`/admin/quotes/${quoteId}`);
   return { success: true };

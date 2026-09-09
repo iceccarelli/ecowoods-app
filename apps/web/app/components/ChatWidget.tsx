@@ -260,7 +260,7 @@ export default function ChatWidget() {
 
           <div style={{ borderTop: `1px solid ${C.border}`, background: C.paper, padding: 10 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(input)} placeholder="e.g. white oak, ~600 sqft, M4K…" style={{ flex: 1, border: `1px solid ${C.border}`, background: C.cream, borderRadius: 12, padding: '11px 13px', fontSize: 14, color: C.brown, outline: 'none' }} />
+              <input ref={inputRef} aria-label="Ask about your floor" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(input)} placeholder="e.g. white oak, ~600 sqft, M4K…" style={{ flex: 1, border: `1px solid ${C.border}`, background: C.cream, borderRadius: 12, padding: '11px 13px', fontSize: 14, color: C.brown, outline: 'none' }} />
               <button onClick={() => send(input)} disabled={busy || !input.trim()} aria-label="Send" style={{ height: 42, width: 42, borderRadius: 12, border: 'none', cursor: busy || !input.trim() ? 'default' : 'pointer', background: `linear-gradient(135deg, ${C.bronze}, ${C.bronzeDark})`, opacity: busy || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center' }}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7Z" /></svg>
               </button>

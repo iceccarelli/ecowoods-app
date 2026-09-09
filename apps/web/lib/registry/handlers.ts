@@ -15,6 +15,25 @@ import { buildManifest, ENDPOINTS } from './manifest';
 import { buildOpenApi } from './openapi';
 import { ancestorsOf, publishedWithin } from './locations';
 import type { AnyPrimitive } from './types';
+import {
+  SPECIES,
+  SPECIES_SOURCE,
+  EMC_SOURCE,
+  speciesById,
+  computeMovement,
+} from '@/lib/wood';
+import { PROJECTS, getProject, stillById } from '@/lib/projects';
+import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
+import { SCOPE_ITEMS } from '@/lib/quote-check';
+import {
+  MARKETS,
+  CORRIDORS,
+  marketBySlug,
+  assess as assessMarket,
+  contentQueue,
+  serviceAreaMarkets,
+} from '@/lib/geo';
+import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
   count,
@@ -262,4 +281,523 @@ export async function handleRecommendationContext(request: Request) {
   if (!parsed.success) return invalid(parsed.error.issues);
   const result = await recommendationContext(parsed.data);
   return json(result, { request, cache: CACHE_COMPUTED, version: result.registry.version });
+}
+
+/**
+ * GET /api/v1/movement — the wood movement primitive.
+ *
+ * WHY THIS ENDPOINT IS DIFFERENT FROM EVERY OTHER ONE IN THE REGISTRY
+ *
+ * The rest of /api/v1 publishes FACTS ABOUT A BUSINESS: our services, our
+ * locations, our published price bands, our evidence. Useful, and copyable by
+ * anyone willing to type their own facts into their own registry.
+ *
+ * This one publishes a COMPUTATION over constants nobody owns — Wood Handbook
+ * Table 13–5 coefficients and the Forest Products Laboratory sorption
+ * isotherm. An agent asked "how much will a 5-inch white oak floor move in a
+ * Toronto winter" cannot answer from a corpus of marketing copy, because the
+ * answer is not written down anywhere; it has to be calculated. This endpoint
+ * calculates it, cites the tables it came from, and states its own validity
+ * limits in the payload.
+ *
+ * That is the difference between being a source an answer engine quotes and
+ * being a source it computes with.
+ *
+ * PURE AND CACHEABLE. No side effects, no storage, no body. Every input is a
+ * query parameter, so the same question is the same URL, and the edge and the
+ * ETag do the rest.
+ */
+export async function handleMovement(request: Request) {
+  const limited = rateLimited(request);
+  if (limited) return limited;
+
+  const url = new URL(request.url);
+  const q = url.searchParams;
+  const reg = await getRegistry();
+
+  const num = (key: string, fallback: number) => {
+    const raw = q.get(key);
+    if (raw === null || raw.trim() === '') return fallback;
+    const v = Number(raw);
+    return Number.isFinite(v) ? v : Number.NaN;
+  };
+
+  if (q.get('species') === null && q.size === 0) {
+    return json(
+      {
+        usage: {
+          method: 'GET',
+          parameters: {
+            species: `one of: ${SPECIES.map((s) => s.id).join(', ')}`,
+            orientation: 'flatsawn | quartersawn (default flatsawn)',
+            width_mm: 'board face width in millimetres (default 127)',
+            rh_low: 'the dry extreme, percent RH (default 25)',
+            rh_high: 'the damp extreme, percent RH (default 60)',
+            temp_c: 'indoor temperature in °C (default 21)',
+            run_m: 'width of the run across the boards, metres (optional)',
+          },
+          example: '/api/v1/movement?species=white-oak&width_mm=127&orientation=flatsawn&rh_low=25&rh_high=60',
+          note: 'Solid wood only. Engineered flooring is deliberately not modelled: its cross-ply core is designed to defeat this calculation.',
+        },
+        species: SPECIES.map((s) => ({
+          id: s.id,
+          label: s.label,
+          table_name: s.tableName,
+          c_radial: s.cRadial,
+          c_tangential: s.cTangential,
+          commercial_group: s.commercialGroup,
+        })),
+        sources: { coefficients: SPECIES_SOURCE, moisture_model: EMC_SOURCE },
+      },
+      { request, updatedAt: reg.updated_at, version: reg.version },
+    );
+  }
+
+  const species = speciesById(q.get('species') ?? 'white-oak');
+  if (!species) {
+    return error(
+      'not_found',
+      `Unknown species. Published species: ${SPECIES.map((s) => s.id).join(', ')}.`,
+      404,
+    );
+  }
+
+  const orientationRaw = (q.get('orientation') ?? 'flatsawn').toLowerCase();
+  if (orientationRaw !== 'flatsawn' && orientationRaw !== 'quartersawn') {
+    return error('invalid_request', "orientation must be 'flatsawn' or 'quartersawn'.", 400);
+  }
+
+  const widthMm = num('width_mm', 127);
+  const rhLow = num('rh_low', 25);
+  const rhHigh = num('rh_high', 60);
+  const tempC = num('temp_c', 21);
+  const runRaw = q.get('run_m');
+  const runWidthM = runRaw === null || runRaw.trim() === '' ? undefined : Number(runRaw);
+
+  const result = computeMovement({
+    species,
+    orientation: orientationRaw,
+    boardWidthMm: widthMm,
+    runWidthM: Number.isFinite(runWidthM ?? Number.NaN) ? runWidthM : undefined,
+    tempC,
+    rhLowPct: rhLow,
+    rhHighPct: rhHigh,
+  });
+
+  if (!result) {
+    return error(
+      'invalid_request',
+      'Could not compute. Check that width_mm is positive, rh_low is below rh_high, and both humidity values are between 0 and 100.',
+      400,
+    );
+  }
+
+  return json(
+    {
+      input: {
+        species: species.id,
+        species_label: species.label,
+        orientation: orientationRaw,
+        board_width_mm: widthMm,
+        run_width_m: runWidthM ?? null,
+        temp_c: tempC,
+        rh_low_pct: rhLow,
+        rh_high_pct: rhHigh,
+      },
+      coefficient_used: orientationRaw === 'quartersawn' ? species.cRadial : species.cTangential,
+      moisture_content: {
+        at_rh_low_pct: Number(result.emcLowPct.toFixed(2)),
+        at_rh_high_pct: Number(result.emcHighPct.toFixed(2)),
+        swing_points: Number(result.mcSwingPct.toFixed(2)),
+      },
+      movement: {
+        per_board_mm: Number(result.boardMovementMm.toFixed(3)),
+        per_board_pct_of_width: Number(result.boardMovementPctOfWidth.toFixed(3)),
+        boards_across_run: result.boardsAcrossRun,
+        across_run_mm: result.runMovementMm === null ? null : Number(result.runMovementMm.toFixed(2)),
+        flatsawn_to_quartersawn_ratio: Number(result.orientationRatio.toFixed(3)),
+      },
+      validity: {
+        within_coefficient_range: result.withinCoefficientRange,
+        within_moisture_model_range: result.withinEmcRange,
+        caveats: result.caveats,
+      },
+      is_quote: false,
+      disclaimer:
+        'Unrestrained dimensional change in solid wood. A fastened floor distributes this movement unevenly, so the run total is the amount the installation has to absorb rather than the gap that appears at any one seam. Not a quote and not a substitute for measuring the material.',
+      sources: { coefficients: SPECIES_SOURCE, moisture_model: EMC_SOURCE },
+    },
+    { request, cache: CACHE_COMPUTED, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/media — the second front door.
+ *
+ * WHY MEDIA IS AN API AND NOT JUST A PAGE
+ *
+ * A photograph on a page is reachable by a person with a browser. The same
+ * photograph in a JSON document with an absolute URL is reachable by the
+ * mobile app, by a partner's site, by a syndication feed, and by an answer
+ * engine deciding whether this business has ever actually done the work it
+ * describes. The page and the API are the same facts through two doors, and
+ * the second one costs one route file.
+ *
+ * ABSOLUTE URLs, ALWAYS. A consumer of this document is by definition not on
+ * this origin, so a relative path is a broken link with extra steps.
+ *
+ * WHAT IT WILL NOT CARRY. No street address, because the record does not have
+ * one and is not going to acquire one through the API. No square footage, no
+ * moisture readings and no price, because those are not in the record either —
+ * `limits` states that explicitly rather than leaving a consumer to infer it
+ * from missing keys, since a missing key reads as an oversight and a stated
+ * limit reads as a decision.
+ */
+export async function handleMediaIndex(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      count: PROJECTS.length,
+      note: 'Photographic records of completed work. Each carries stills and chapter films with absolute URLs. These are photographs, not engineering case studies — see /api/v1/evidence for the measured material.',
+      projects: PROJECTS.map((p) => ({
+        id: p.slug,
+        title: p.title,
+        location: p.location,
+        stills: p.stills.filter((s) => s.role === 'interior').length,
+        films: p.films.length,
+        canonical_page: `${SITE_URL}/projects/${p.slug}`,
+        self: `${SITE_URL}/api/v1/media/${p.slug}`,
+      })),
+    },
+    { request, updatedAt: reg.updated_at, version: reg.version },
+  );
+}
+
+export async function handleMediaProject(request: Request, id: string) {
+  const project = getProject(id);
+  if (!project) {
+    return error('not_found', `No project with id "${id}". List them at ${SITE_URL}/api/v1/media.`, 404);
+  }
+  const reg = await getRegistry();
+  const abs = (path: string) => `${SITE_URL}${path}`;
+
+  return json(
+    {
+      id: project.slug,
+      title: project.title,
+      location: project.location,
+      summary: project.summary,
+      /* Said out loud rather than left as absent keys. */
+      limits: project.limits,
+      chapters: project.chapters.map((c) => ({
+        id: `ch${c.id}`,
+        label: c.label,
+        note: c.note,
+        stills: project.stills
+          .filter((s) => s.chapter === c.id)
+          .sort((a, b) => a.order - b.order)
+          .map((s) => ({
+            id: s.id,
+            order: s.order,
+            role: s.role,
+            alt: s.alt,
+            kind: s.kind,
+            width: s.width,
+            height: s.height,
+            src: { webp_1920x1080: abs(s.src) },
+          })),
+        films: project.films
+          .filter((f) => f.chapter === c.id)
+          .map((f) => ({
+            id: f.id,
+            title: f.title,
+            aspect: f.aspect,
+            width: f.width,
+            height: f.height,
+            src: abs(f.src),
+            poster: abs(stillById(project, f.posterStillId)?.src ?? ''),
+          })),
+      })),
+      pairs: project.pairs.map((p) => ({
+        id: p.id,
+        anchor: p.anchor,
+        before: abs(stillById(project, p.beforeStillId)?.src ?? ''),
+        after: abs(stillById(project, p.afterStillId)?.src ?? ''),
+        note: 'Not a locked-tripod pair. Shown side by side rather than wiped, because the camera moved between visits.',
+      })),
+      canonical_page: `${SITE_URL}/projects/${project.slug}`,
+      licence: 'Photographs are © Ecowoods Hardwood Flooring Inc. Cite the canonical page.',
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/equipment — the machine primitive.
+ *
+ * WHAT MAKES THIS WORTH SERVING TO AN AGENT
+ *
+ * An assistant asked "can I run a Bona Belt UX in a house with a 15 A circuit"
+ * cannot answer it from any manufacturer's site, because each one describes
+ * only its own machines and none of them describes a house. This endpoint
+ * carries the published electrical requirement for twelve machines from three
+ * manufacturers, each figure with the URL it came from, plus — when the caller
+ * supplies `volts` and `amps` — the arithmetic against that circuit.
+ *
+ * IT PUBLISHES NO PRICE AND NO PRODUCTIVITY FIGURE, and says so in the payload
+ * rather than leaving a consumer to infer it from missing keys. Neither exists
+ * in any manufacturer's published material for these machines; an API that
+ * quietly omitted them would invite a consumer to go and find them somewhere
+ * worse.
+ */
+export async function handleEquipmentIndex(request: Request) {
+  const reg = await getRegistry();
+  const url = new URL(request.url);
+  const volts = Number(url.searchParams.get('volts'));
+  const amps = Number(url.searchParams.get('amps'));
+  const hasCircuit = Number.isFinite(volts) && volts > 0 && Number.isFinite(amps) && amps > 0;
+  const service = hasCircuit ? { volts, breakerAmps: amps } : null;
+
+  return json(
+    {
+      count: MACHINES.length,
+      note:
+        'Professional floor sanding equipment, as its manufacturers publish it. No price and no productivity figure appears here because no manufacturer in this category publishes either — every such number in circulation is an estimate.',
+      circuit: service,
+      machines: MACHINES.map((m) => {
+        const result = service ? assessMachine(m, service) : null;
+        return {
+          id: m.id,
+          manufacturer: m.manufacturer,
+          model: m.model,
+          category: m.category,
+          role: m.role,
+          north_america: m.northAmerica
+            ? {
+                volts: m.northAmerica.volts,
+                hertz: m.northAmerica.hertz,
+                phase: m.northAmerica.phase,
+                amps: m.northAmerica.amps,
+                kilowatts: m.northAmerica.kilowatts,
+                horsepower: m.northAmerica.horsepower,
+                connector: m.northAmerica.connector,
+                source: m.northAmerica.source.url,
+                verified_at: m.northAmerica.source.verifiedAt,
+              }
+            : null,
+          not_published: m.notPublished,
+          conflicts: m.conflicts,
+          self: `${SITE_URL}/api/v1/equipment/${m.id}`,
+          page: `${SITE_URL}/equipment/${m.id}`,
+          ...(result
+            ? {
+                on_this_circuit: {
+                  verdict: result.verdict,
+                  amps_used: result.usedAmps === null ? null : Number(result.usedAmps.toFixed(2)),
+                  amperage_basis: result.amperageBasis,
+                  reasons: result.reasons,
+                },
+              }
+            : {}),
+        };
+      }),
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/quote-check — the scope checklist, as data.
+ *
+ * WHY AN AGENT SHOULD HAVE THIS
+ *
+ * "Is this flooring quote any good?" is one of the questions people actually
+ * put to an assistant, and there is nothing authoritative for the assistant to
+ * reach for. What it can be given is the list of line items that decide whether
+ * two quotes are even pricing the same work, each with the reason it changes
+ * the scope and the page where this business already published it.
+ *
+ * NOTE WHAT IS ABSENT AND WILL STAY ABSENT: no price for any line item, no
+ * score, no ranking, no way to ask this endpoint which quote is better. An
+ * assistant that wanted to say "subfloor preparation typically costs X" would
+ * have to invent X, and it will not get it here. The `refuses` key says so in
+ * the payload rather than leaving it to be inferred.
+ */
+export async function handleQuoteCheck(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      meta: meta(reg, SCOPE_ITEMS.length),
+      note:
+        'The line items that determine whether two hardwood flooring quotes are pricing the same work. Ticking more of them is not a better quote; it is a different quote.',
+      refuses: [
+        'no price or cost estimate for any line item — no adequate and proper testing exists for a typical price, so none is published',
+        'no score, rank or recommendation between quotes',
+        'no judgement about any company',
+      ],
+      basis_legend: {
+        published:
+          'already published by this business as belonging in a hardwood quote; `cite` is that page',
+        scope:
+          'a neutral line item that changes what is being priced; no claim that including it is better',
+      },
+      items: SCOPE_ITEMS.map((i) => ({
+        id: i.id,
+        group: i.group,
+        label: i.label,
+        why: i.why,
+        basis: i.basis,
+        changes_scope: i.changesScope,
+        cite: i.cite ? `${SITE_URL}${i.cite}` : null,
+      })),
+      tool: `${SITE_URL}/quote-check`,
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/markets — where this company works, and where it does not.
+ *
+ * WHY THE SHAPE OF THIS RESPONSE IS THE POINT
+ *
+ * Every flooring company's site answers "do you serve X" with yes. An
+ * assistant asked the question therefore learns nothing from any of them, and
+ * the honest answer — routine here, unconfirmed there, and this one is a
+ * two-hour drive that belongs in the quote — is the answer a homeowner
+ * actually needs.
+ *
+ * So each market carries its status, the sentence that can honestly be said
+ * about serving it, and the date somebody confirmed that. A market nobody has
+ * confirmed says so, in the payload, rather than borrowing the confidence of
+ * the ones beside it. `service_area` lists only what may be claimed, and the
+ * United States markets are excluded from it by construction — they are
+ * advertising reach for Ontario property, not coverage.
+ *
+ * `content_queue` is published deliberately. It is the list of markets that do
+ * not yet have a page and the reason each one does not, which is a more useful
+ * and more falsifiable statement about a company's coverage than any map.
+ */
+export async function handleMarkets(request: Request) {
+  const reg = await getRegistry();
+  const url = new URL(request.url);
+  const corridorFilter = url.searchParams.get('corridor');
+  const statusFilter = url.searchParams.get('status');
+
+  let rows = MARKETS;
+  if (corridorFilter) rows = rows.filter((x) => (x.corridors as string[]).includes(corridorFilter));
+  if (statusFilter) rows = rows.filter((x) => x.status === statusFilter);
+
+  return json(
+    {
+      meta: meta(reg, rows.length),
+      note:
+        'Markets in the Ecowoods geographic model, each with the status and the operational statement that can honestly be made about it. A market being listed is not a claim that it is served.',
+      refuses: [
+        'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
+        'United States markets are advertising reach for Ontario property, never service area, and never appear in service_area',
+        'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
+      ],
+      service_area: serviceAreaMarkets().map((x) => ({ slug: x.slug, name: x.name, region: x.region })),
+      status_legend: {
+        'core-active': 'worked routinely from the Toronto shop',
+        'active-expansion': 'taking work; coverage established, not yet routine',
+        'corridor-target': 'on the route and in the plan; no confirmed operational position',
+        'travel-by-confirmation': 'reachable, scheduled as a trip, priced with the distance in the written quote',
+        'us-proxy': 'advertising reach only; not a service area',
+      },
+      markets: rows.map((x) => {
+        const w = assessMarket(x);
+        return {
+          slug: x.slug,
+          name: x.name,
+          country: x.country,
+          region: x.region,
+          kind: x.kind,
+          part_of: x.partOf ?? null,
+          status: x.status,
+          corridors: x.corridors,
+          parent_hub: x.parentHub,
+          nearest: x.nearest,
+          local_facts: x.localFacts,
+          operational_statement: x.operationalTruth.statement || null,
+          verified_at: x.operationalTruth.verifiedAt,
+          has_page: w.indexable,
+          page: w.indexable ? `${SITE_URL}/service-areas/${x.slug}` : null,
+          why_no_page: w.indexable ? null : w.blockers,
+        };
+      }),
+      content_queue: contentQueue(MARKETS)
+        .slice(0, 10)
+        .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/** GET /api/v1/corridors — the routes, and the markets on each. */
+export async function handleCorridors(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      meta: meta(reg, CORRIDORS.length),
+      note:
+        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region.',
+      corridors: CORRIDORS.map((c) => ({
+        id: c.id,
+        name: c.name,
+        route: c.route,
+        hub: c.hub,
+        summary: c.summary,
+        page: `${SITE_URL}/corridors/${c.id}`,
+        members: c.members.map((slug) => {
+          const x = marketBySlug(slug);
+          return x
+            ? { slug, name: x.name, country: x.country, status: x.status, verified_at: x.operationalTruth.verifiedAt }
+            : { slug, name: slug, country: null, status: null, verified_at: null };
+        }),
+      })),
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+export async function handleEquipmentMachine(request: Request, id: string) {
+  const machine = machineById(id);
+  if (!machine) {
+    return error('not_found', `No machine with id "${id}". List them at ${SITE_URL}/api/v1/equipment.`, 404);
+  }
+  const reg = await getRegistry();
+  return json(
+    {
+      id: machine.id,
+      manufacturer: machine.manufacturer,
+      model: machine.model,
+      category: machine.category,
+      role: machine.role,
+      power: {
+        north_america: machine.northAmerica,
+        europe: machine.europe,
+      },
+      mechanical: {
+        weight_kg: machine.weightKg,
+        weight_source: machine.weightSource?.url ?? null,
+        drum_or_disc_mm: machine.drumOrDiscMm,
+        disc_count: machine.discCount,
+        rpm: machine.rpm,
+        abrasive: machine.abrasive,
+        dust_extraction: machine.dustExtraction,
+      },
+      not_published: [
+        ...machine.notPublished,
+        'A price — no manufacturer in this category publishes one.',
+        'A productivity figure in area per hour — no manufacturer publishes one for this machine.',
+      ],
+      conflicts: machine.conflicts,
+      page: `${SITE_URL}/equipment/${machine.id}`,
+      licence:
+        'Specifications are the manufacturers’ own published figures, reproduced with the source URL for each. Ecowoods asserts no rights over them and no affiliation with the manufacturers.',
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
 }

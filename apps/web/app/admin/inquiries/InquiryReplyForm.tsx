@@ -75,6 +75,7 @@ export default function InquiryReplyForm({
       </div>
       <textarea
         rows={5}
+        aria-label="Reply to this inquiry"
         value={reply}
         onChange={(e) => setReply(e.target.value)}
         placeholder={`Reply to ${customerName}…`}

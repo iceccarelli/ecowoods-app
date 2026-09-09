@@ -177,6 +177,30 @@ function slugsFromSource(rel) {
   for (const m of src.matchAll(/\bslug:\s*['"`]([a-z0-9-]+)['"`]/g)) out.add(m[1]);
   return out.size ? out : null;
 }
+/**
+ * Same regex idea, but over every .ts in a content directory, and over a
+ * configurable key. `/projects` keeps one file per project and `/equipment`
+ * keys its machines on `id`, so a single-file `slug:` reader is blind to both.
+ *
+ * F-182: MEDIA-01 shipped `/projects/[slug]` and a literal link to it from
+ * /hardwood-stairs-toronto without registering the manifest here. This guard
+ * therefore reported the link as landing nowhere. It was right to complain —
+ * a dynamic route with no manifest entry is exactly the 404 it exists to catch
+ * — and nobody saw it for a day, because `pnpm verify` was an && chain that
+ * stopped at guard 3 of 57 and never reached this one.
+ */
+function keysFromTsDir(rel, key = 'slug') {
+  const dir = path.join(WEB, rel);
+  if (!fs.existsSync(dir)) return null;
+  const re = new RegExp(`\\b${key}:\\s*['"\`]([a-z0-9-]+)['"\`]`, 'g');
+  const out = new Set();
+  for (const f of fs.readdirSync(dir)) {
+    if (!/\.tsx?$/.test(f)) continue;
+    for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(re)) out.add(m[1]);
+  }
+  return out.size ? out : null;
+}
+
 function slugsFromContentDir(rel) {
   const dir = path.join(WEB, rel);
   if (!fs.existsSync(dir)) return null;
@@ -194,6 +218,9 @@ const MANIFESTS = {
   '/service-areas': { source: 'lib/seo-data.ts', slugs: slugsFromSource('lib/seo-data.ts') },
   '/blog': { source: 'content/articles/', slugs: slugsFromContentDir('content/articles') },
   '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
+  '/projects': { source: 'content/projects/', slugs: keysFromTsDir('content/projects', 'slug') },
+  '/equipment': { source: 'content/equipment/', slugs: keysFromTsDir('content/equipment', 'id') },
+  '/corridors': { source: 'content/geo/', slugs: keysFromTsDir('content/geo', 'id') },
 };
 for (const [prefix, m] of Object.entries(MANIFESTS)) {
   if (!m.slugs) {

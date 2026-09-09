@@ -6,6 +6,7 @@ import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
+import { SPECIES, SPECIES_SOURCE } from '@/lib/wood';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { CITIES, SITE_URL } from '@/lib/seo-data';
@@ -179,6 +180,22 @@ export default async function ResourcesPage() {
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/framework">
               Read the specification (v{FRAMEWORK_VERSION})
+            </Link>
+          </div>
+
+          <p className="tlx-kicker" style={{ marginTop: '2.5rem' }}>
+            If you are choosing a species or a width
+          </p>
+          <h2 className="tlx-h2">The movement calculator</h2>
+          <p className="tlx-note">
+            {SPECIES.length} species, flatsawn against quartersawn, at your board width and your
+            humidity range — computed from {SPECIES_SOURCE.table} and the Forest Products
+            Laboratory sorption model rather than from a rule of thumb. It runs in your browser and
+            asks for nothing.
+          </p>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/tools/floor-movement">
+              Calculate your floor&rsquo;s movement →
             </Link>
           </div>
           <ul className="gd-sources" style={{ marginTop: '1.5rem' }}>

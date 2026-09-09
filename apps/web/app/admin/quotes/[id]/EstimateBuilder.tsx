@@ -182,18 +182,19 @@ export default function EstimateBuilder({
               {lines.map((line, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px 110px 110px 32px', gap: '0.35rem', marginBottom: '0.35rem' }}>
                   <input
+                    aria-label={`Line ${i + 1} description`}
                     placeholder="e.g. Hardwood installation – white oak"
                     value={line.description}
                     onChange={e => updateLine(i, 'description', e.target.value)}
                     style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }}
                   />
-                  <input type="number" value={line.qty} min={0} onChange={e => updateLine(i, 'qty', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
-                  <select value={line.unit} onChange={e => updateLine(i, 'unit', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }}>
+                  <input type="number" aria-label={`Line ${i + 1} quantity`} value={line.qty} min={0} onChange={e => updateLine(i, 'qty', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
+                  <select aria-label={`Line ${i + 1} unit`} value={line.unit} onChange={e => updateLine(i, 'unit', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }}>
                     {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
-                  <input type="number" value={line.unitPrice} min={0} step="0.01" onChange={e => updateLine(i, 'unitPrice', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
-                  <input type="number" value={line.amount} min={0} step="0.01" onChange={e => updateLine(i, 'amount', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0, background: 'var(--cream-100)' }} readOnly />
-                  <button onClick={() => removeLine(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '1.1rem', padding: 0, lineHeight: 1, alignSelf: 'center' }}>×</button>
+                  <input type="number" aria-label={`Line ${i + 1} unit price`} value={line.unitPrice} min={0} step="0.01" onChange={e => updateLine(i, 'unitPrice', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0 }} />
+                  <input type="number" aria-label={`Line ${i + 1} amount`} value={line.amount} min={0} step="0.01" onChange={e => updateLine(i, 'amount', e.target.value)} style={{ fontSize: 'var(--fs-sm)', minWidth: 0, background: 'var(--cream-100)' }} readOnly />
+                  <button type="button" aria-label={`Remove line ${i + 1}`} onClick={() => removeLine(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '1.1rem', padding: 0, lineHeight: 1, alignSelf: 'center' }}>×</button>
                 </div>
               ))}
               <button onClick={addLine} className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem', fontSize: 'var(--fs-xs)' }}>
@@ -205,12 +206,12 @@ export default function EstimateBuilder({
           {/* Tax + totals */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
             <div className="field">
-              <label>Tax Rate (HST %)</label>
-              <input type="number" value={taxRate} min={0} max={20} onChange={e => setTaxRate(Number(e.target.value))} />
+              <label htmlFor="estimatebuilder-tax-rate-hst">Tax Rate (HST %)</label>
+              <input id="estimatebuilder-tax-rate-hst" type="number" value={taxRate} min={0} max={20} onChange={e => setTaxRate(Number(e.target.value))} />
             </div>
             <div className="field">
-              <label>Quote Valid For (days)</label>
-              <input type="number" value={validDays} min={1} max={90} onChange={e => setValidDays(Number(e.target.value))} />
+              <label htmlFor="estimatebuilder-quote-valid-for-days">Quote Valid For (days)</label>
+              <input id="estimatebuilder-quote-valid-for-days" type="number" value={validDays} min={1} max={90} onChange={e => setValidDays(Number(e.target.value))} />
             </div>
           </div>
 
@@ -223,8 +224,8 @@ export default function EstimateBuilder({
 
           {/* Notes */}
           <div className="field" style={{ marginBottom: '1rem' }}>
-            <label>Notes for customer (visible on PDF)</label>
-            <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Price includes materials, labour, dust-free sanding, and 3 coats finish. Subfloor prep billed separately if required." />
+            <label htmlFor="estimatebuilder-notes-for-customer-visible-on-pdf">Notes for customer (visible on PDF)</label>
+            <textarea id="estimatebuilder-notes-for-customer-visible-on-pdf" rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Price includes materials, labour, dust-free sanding, and 3 coats finish. Subfloor prep billed separately if required." />
           </div>
 
           <button onClick={handleSave} disabled={saving} className="btn btn-copper btn-sm">

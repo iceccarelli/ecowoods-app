@@ -59,6 +59,56 @@ jobs:
         run: node scripts/verify-business-facts.mjs
       - name: Schema / migration drift
         run: node scripts/verify-migrations.mjs
+      # The Floor Graph is the only asset here a competitor cannot copy off a
+      # public repository, and it is also where a small well-meaning edit does
+      # damage nothing else reports: an identifier in the publishable benchmark
+      # table, a photograph whose consent row is optional, consent wording
+      # edited in place, or a cascade added from a lead to a floor.
+      - name: Floor Graph (consent ledger, benchmark anonymity, no cascade)
+        run: node scripts/verify-floor-graph.mjs
+      # Reachability and accessibility, checked as text in about a second each.
+      # The runtime axe pass in audit/ is strictly better and needs Chromium, a
+      # production build and four minutes — so it runs when somebody remembers,
+      # which has been never. These two gate the failures that keep recurring:
+      # a form control with no accessible name, and a route nobody can click to.
+      - name: Accessibility contract (every control has a name, every click a key)
+        run: node scripts/verify-a11y.mjs
+      - name: Navigation (every public route within 3 clicks, chrome resolves)
+        run: node scripts/verify-navigation.mjs
+      # Photographic records: every registered plate is on disk, alt text
+      # describes the room, and no private street address reaches a registry.
+      - name: Media (plates on disk, alt present, no civic address)
+        run: node scripts/verify-media.mjs
+      # Every file under apps/web/public 404d in production for months because
+      # Vercel takes its static root from the repository root. The build command
+      # now syncs one into the other; this fails if that clause is removed.
+      - name: Public assets (the static root is actually synced)
+        run: node scripts/verify-public-assets.mjs
+      # Specifications for machines other people manufacture. Every figure needs
+      # an https source read within 400 days; no price and no productivity number
+      # may appear, because no manufacturer in this category publishes either.
+      - name: Equipment (sourced specs, no invented price or throughput)
+        run: node scripts/verify-equipment.mjs
+      # /quote-check compares scopes and prices nothing. Its one unacceptable
+      # change — putting a dollar figure on a line item a quote leaves out — is
+      # also its most obvious-looking improvement, and will arrive as a small
+      # edit from someone who has not read s.74.01(1)(b). Checked mechanically.
+      - name: Quote comparison (no price, no ranking, every citation resolves)
+        run: node scripts/verify-quote-check.mjs
+      # The live check runs against production and cannot be run from here. What
+      # CAN be checked from here is whether its assertions are satisfiable at
+      # all: it spent months asserting a phrase the generator had stopped
+      # emitting, and it sent operators to a runbook that did not exist while
+      # the old domain went on serving 200 on 35 URLs.
+      - name: Live contract (the live check asserts things this repo can produce)
+        run: node scripts/verify-live-contract.mjs
+      # The geographic model is where a truthful site most easily stops being
+      # one, and it happens by increments that each look reasonable: a
+      # municipality joins a list, a template gives it a page, areaServed is
+      # generated from the list, and the entity graph now says a Toronto company
+      # serves six municipalities in New York State. Checked, not intended.
+      - name: Geography (no claimed coverage without a dated confirmation)
+        run: node scripts/verify-geo.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:
@@ -94,6 +144,29 @@ jobs:
       # no preview host in anything a machine reads; robots.txt lets agents in.
       - name: Agentic primitives (OpenAPI ↔ routes, no injection, no preview hosts)
         run: node scripts/verify-agentic.mjs
+      # ── the catch-all, and the reason it exists ───────────────────────────
+      #
+      # F-183. The steps above are named individually on purpose — a failing
+      # step name in the PR checks list tells you what broke before you open a
+      # log, and that is worth keeping. What it is NOT is a complete list. On
+      # 2026-09-09 this job ran 17 guards. `pnpm verify` ran 54. Thirty-seven
+      # guards existed, passed locally when someone remembered to run them, and
+      # had never once gated a merge — among them verify:destinations, which
+      # was at that moment failing on a real broken link that had already
+      # shipped to production.
+      #
+      # Nobody removed those steps. They were never added, because adding a
+      # guard meant editing package.json AND this file, and the second edit is
+      # invisible when you forget it.
+      #
+      # So this step runs every guard the repository has, derived from
+      # package.json rather than from a list kept here. The named steps above
+      # re-run inside it; that costs about six seconds and is the price of the
+      # checks list staying legible. A guard added to package.json now gates
+      # this job from its first commit, with no second edit and nothing to
+      # remember.
+      - name: All guards (derived from package.json — nothing can be left out)
+        run: node scripts/verify-all.mjs
 
   build:
     name: Typecheck & Build

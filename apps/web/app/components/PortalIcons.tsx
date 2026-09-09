@@ -85,3 +85,17 @@ export function SettingsIcon() {
     </svg>
   );
 }
+
+/**
+ * Floor Graph. Board lines with a rising trace across them — the two halves of
+ * what the section is: a floor, and what we learned from it.
+ */
+export function FloorGraphIcon() {
+  return (
+    <svg {...iconProps}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+      <path d="M3.5 9h17M3.5 14.5h17" />
+      <path d="M6.5 17.5 10 13l3 2.5 4.5-6" />
+    </svg>
+  );
+}

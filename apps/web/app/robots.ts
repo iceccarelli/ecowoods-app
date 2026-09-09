@@ -25,7 +25,16 @@ export default function robots(): MetadataRoute.Robots {
         // specifically for crawlers and agents to read. Allow is listed first
         // and is more specific, which is how every major crawler resolves the
         // conflict. See F-89.
-        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
+        // BOTH SPELLINGS ARE LISTED, AND THAT IS NOT REDUNDANT. robots.txt
+        // matching is plain prefix matching: 'Allow: /api/v1/' does not match
+        // the path '/api/v1', so the bare base URL — the one this site
+        // advertises in the OpenAPI `servers` field and in /api/v1/manifest,
+        // and therefore the first URL any agent requests — fell through to
+        // 'Disallow: /api/'. Verified externally: a compliant fetcher asking
+        // for https://ecowoods.ca/api/v1 was refused as ROBOTS_DISALLOWED
+        // while https://ecowoods.ca/api/v1/pricing was served. The index of
+        // the agentic API was the one endpoint agents were told to skip.
         // /api/v1/ is the public, read-only, versioned primitives API (entity,
         // services, locations, pricing, evidence, citations, OpenAPI). It is
         // meant to be fetched by agents; the wholesale Disallow: /api/ below
@@ -52,7 +61,7 @@ export default function robots(): MetadataRoute.Robots {
           'PerplexityBot', 'Perplexity-User',
           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
         ],
-        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
     ],

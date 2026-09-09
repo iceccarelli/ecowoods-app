@@ -36,6 +36,7 @@ export default function BankPaymentForm({
     <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
       <input
         type="text"
+        aria-label="Bank transfer reference"
         value={reference}
         onChange={(e) => setReference(e.target.value)}
         placeholder={`E-transfer reference for #${invoiceNumber}`}

@@ -1,0 +1,185 @@
+{
+  "_comment": "Written by scripts/promote-giorgia-media.mjs. The typed registry that the site actually renders from is apps/web/content/projects/maple-vaughan-curved-stair.ts; this file exists so the promotion is auditable and so a missing plate is obvious.",
+  "generatedFrom": [
+    "01_Maple_Giorgia_Ch1_Before_Light_Natural.zip",
+    "02_Maple_Giorgia_Ch2_After_Dark_Stain.zip"
+  ],
+  "stills": [
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/00_chapter_open_ecowoods.webp",
+      "order": 0,
+      "stem": "chapter_open_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/01_foyer_entry_light_oak_and_curved_stair.webp",
+      "order": 1,
+      "stem": "foyer_entry_light_oak_and_curved_stair",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/02_front_elevation_light_oak_curved_stair.webp",
+      "order": 2,
+      "stem": "front_elevation_light_oak_curved_stair",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/03_through_columns_to_stair_well.webp",
+      "order": 3,
+      "stem": "through_columns_to_stair_well",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/04_side_angle_light_oak_treads_black_spindles.webp",
+      "order": 4,
+      "stem": "side_angle_light_oak_treads_black_spindles",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/05_overhead_well_light_treads_marble_below.webp",
+      "order": 5,
+      "stem": "overhead_well_light_treads_marble_below",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/06_overhead_unfinished_treads_and_rail.webp",
+      "order": 6,
+      "stem": "overhead_unfinished_treads_and_rail",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/07_upstairs_landing_arched_windows_light_oak.webp",
+      "order": 7,
+      "stem": "upstairs_landing_arched_windows_light_oak",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/08_landing_geometric_chandelier_light_floors.webp",
+      "order": 8,
+      "stem": "landing_geometric_chandelier_light_floors",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/09_dining_alcove_light_oak_blue_walls.webp",
+      "order": 9,
+      "stem": "dining_alcove_light_oak_blue_walls",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/10_living_room_white_mantel_through_arch.webp",
+      "order": 10,
+      "stem": "living_room_white_mantel_through_arch",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-vaughan-curved-stair/ch1/99_chapter_close_ecowoods.webp",
+      "order": 99,
+      "stem": "chapter_close_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/00_chapter_open_ecowoods.webp",
+      "order": 0,
+      "stem": "chapter_open_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/01_landing_after_dark_floors_curved_rail.webp",
+      "order": 1,
+      "stem": "landing_after_dark_floors_curved_rail",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/02_landing_dark_hardwood_and_art.webp",
+      "order": 2,
+      "stem": "landing_dark_hardwood_and_art",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/03_looking_down_dark_stair_into_living.webp",
+      "order": 3,
+      "stem": "looking_down_dark_stair_into_living",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/04_overhead_dark_spiral_to_marble_foyer.webp",
+      "order": 4,
+      "stem": "overhead_dark_spiral_to_marble_foyer",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/05_overhead_treads_meeting_marble.webp",
+      "order": 5,
+      "stem": "overhead_treads_meeting_marble",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/06_base_newel_from_marble_foyer.webp",
+      "order": 6,
+      "stem": "base_newel_from_marble_foyer",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/07_handrail_spindles_dark_field.webp",
+      "order": 7,
+      "stem": "handrail_spindles_dark_field",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/08_closeup_newel_treads_spindles.webp",
+      "order": 8,
+      "stem": "closeup_newel_treads_spindles",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/maple-vaughan-curved-stair/ch2/99_chapter_close_ecowoods.webp",
+      "order": 99,
+      "stem": "chapter_close_ecowoods",
+      "width": 1920,
+      "height": 1080
+    }
+  ]
+}

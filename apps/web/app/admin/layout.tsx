@@ -10,6 +10,7 @@ import {
   InquiriesIcon,
   SettingsIcon,
   ShopIcon,
+  FloorGraphIcon,
 } from '@/app/components/PortalIcons';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/admin/invoices', label: 'Invoices', icon: <InvoicesIcon /> },
   { href: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
   { href: '/admin/inquiries', label: 'Inquiries', icon: <InquiriesIcon /> },
+  { href: '/admin/floor-graph', label: 'Floor Graph', icon: <FloorGraphIcon /> },
   { href: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 

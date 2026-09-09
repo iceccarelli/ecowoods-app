@@ -224,6 +224,7 @@ export default function CommandPalette() {
               </svg>
               <input
                 ref={inputRef}
+                aria-label="Search this site"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Book a measure, price a floor, jump anywhere…"

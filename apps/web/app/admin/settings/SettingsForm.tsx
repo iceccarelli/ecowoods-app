@@ -75,8 +75,9 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
             { key: 'defaultFinalPct', label: 'Final %' },
           ].map(({ key, label }) => (
             <div key={key} className="field">
-              <label>{label}</label>
+              <label htmlFor={`settings-${key}`}>{label}</label>
               <input
+                id={`settings-${key}`}
                 type="number"
                 value={form[key as keyof typeof form] as string}
                 onChange={(e) => set(key as keyof typeof form, e.target.value)}
@@ -93,8 +94,8 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
         </div>
 
         <div className="field" style={{ maxWidth: 200 }}>
-          <label>Default Tax Rate (HST %)</label>
-          <input
+          <label htmlFor="settingsform-default-tax-rate-hst">Default Tax Rate (HST %)</label>
+          <input id="settingsform-default-tax-rate-hst"
             type="number"
             value={form.defaultTaxRate}
             onChange={(e) => set('defaultTaxRate', e.target.value)}
@@ -112,26 +113,26 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Company Info (used in PDF headers)</h2>
         <div className="field-row">
           <div className="field">
-            <label>Company Name</label>
-            <input value={form.companyName} onChange={(e) => set('companyName', e.target.value)} />
+            <label htmlFor="settingsform-company-name">Company Name</label>
+            <input id="settingsform-company-name" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} />
           </div>
           <div className="field">
-            <label>HST Registration #</label>
-            <input value={form.companyNumberHst} onChange={(e) => set('companyNumberHst', e.target.value)} placeholder="RT xxxx xxxx" />
+            <label htmlFor="settingsform-hst-registration">HST Registration #</label>
+            <input id="settingsform-hst-registration" value={form.companyNumberHst} onChange={(e) => set('companyNumberHst', e.target.value)} placeholder="RT xxxx xxxx" />
           </div>
         </div>
         <div className="field">
-          <label>Company Address</label>
-          <input value={form.companyAddress} onChange={(e) => set('companyAddress', e.target.value)} />
+          <label htmlFor="settingsform-company-address">Company Address</label>
+          <input id="settingsform-company-address" value={form.companyAddress} onChange={(e) => set('companyAddress', e.target.value)} />
         </div>
         <div className="field-row">
           <div className="field">
-            <label>Phone</label>
-            <input value={form.companyPhone} onChange={(e) => set('companyPhone', e.target.value)} />
+            <label htmlFor="settingsform-phone">Phone</label>
+            <input id="settingsform-phone" value={form.companyPhone} onChange={(e) => set('companyPhone', e.target.value)} />
           </div>
           <div className="field">
-            <label>Email</label>
-            <input value={form.companyEmail} onChange={(e) => set('companyEmail', e.target.value)} />
+            <label htmlFor="settingsform-email">Email</label>
+            <input id="settingsform-email" value={form.companyEmail} onChange={(e) => set('companyEmail', e.target.value)} />
           </div>
         </div>
       </div>
@@ -145,6 +146,7 @@ export default function SettingsForm({ settings }: { settings: Settings | null }
         <div className="field">
           <textarea
             rows={4}
+            aria-label="Bank transfer instructions shown to customers"
             value={form.aiBankTransferInstructions}
             onChange={(e) => set('aiBankTransferInstructions', e.target.value)}
           />

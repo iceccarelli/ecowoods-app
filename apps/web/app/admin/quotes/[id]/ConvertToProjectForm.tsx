@@ -82,13 +82,13 @@ export default function ConvertToProjectForm({
       </p>
 
       <div className="field">
-        <label>Project Title *</label>
-        <input value={form.title} onChange={e => set('title', e.target.value)} />
+        <label htmlFor="converttoprojectform-project-title">Project Title *</label>
+        <input id="converttoprojectform-project-title" value={form.title} onChange={e => set('title', e.target.value)} />
       </div>
 
       <div className="field">
-        <label>Assign to Customer *</label>
-        <select value={form.userId} onChange={e => set('userId', e.target.value)}>
+        <label htmlFor="converttoprojectform-assign-to-customer">Assign to Customer *</label>
+        <select id="converttoprojectform-assign-to-customer" value={form.userId} onChange={e => set('userId', e.target.value)}>
           <option value="">— Select customer —</option>
           {customers.map(c => (
             <option key={c.id} value={c.id}>{c.name ?? c.email} ({c.email})</option>
@@ -98,8 +98,8 @@ export default function ConvertToProjectForm({
 
       <div className="field-row">
         <div className="field">
-          <label>Contract Value (CAD, excl. tax) *</label>
-          <input
+          <label htmlFor="converttoprojectform-contract-value-cad-excl-tax">Contract Value (CAD, excl. tax) *</label>
+          <input id="converttoprojectform-contract-value-cad-excl-tax"
             type="number"
             placeholder="e.g. 18500"
             value={form.contractValue}
@@ -112,8 +112,8 @@ export default function ConvertToProjectForm({
           )}
         </div>
         <div className="field">
-          <label>Tax Rate %</label>
-          <input type="number" value={form.taxRate} onChange={e => set('taxRate', e.target.value)} />
+          <label htmlFor="converttoprojectform-tax-rate">Tax Rate %</label>
+          <input id="converttoprojectform-tax-rate" type="number" value={form.taxRate} onChange={e => set('taxRate', e.target.value)} />
         </div>
       </div>
 
@@ -123,8 +123,8 @@ export default function ConvertToProjectForm({
       <div className="field-row">
         {[['depositPct','Deposit %'],['midpointPct','Midpoint %'],['finalPct','Final %']].map(([key, label]) => (
           <div key={key} className="field">
-            <label>{label}</label>
-            <input type="number" min={0} max={100} value={form[key as keyof typeof form]} onChange={e => set(key as keyof typeof form, e.target.value)} />
+            <label htmlFor={`ctp-${key}`}>{label}</label>
+            <input id={`ctp-${key}`} type="number" min={0} max={100} value={form[key as keyof typeof form]} onChange={e => set(key as keyof typeof form, e.target.value)} />
           </div>
         ))}
         <div className="field" style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -135,8 +135,8 @@ export default function ConvertToProjectForm({
       </div>
 
       <div className="field">
-        <label>Planned Start Date</label>
-        <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} />
+        <label htmlFor="converttoprojectform-planned-start-date">Planned Start Date</label>
+        <input id="converttoprojectform-planned-start-date" type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} />
       </div>
 
       <button onClick={handleConvert} disabled={loading} className="btn btn-copper btn-sm" style={{ width: '100%' }}>

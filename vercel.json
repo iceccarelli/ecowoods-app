@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "TURBO_FORCE=true pnpm build",
+  "buildCommand": "TURBO_FORCE=true pnpm build && mkdir -p public && cp -R apps/web/public/. public/",
   "outputDirectory": "apps/web/.next",
 
   "redirects": [

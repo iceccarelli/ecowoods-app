@@ -259,3 +259,36 @@ export const pilotLeadSchema = z.object({
 });
 
 export type PilotLeadFormData = z.infer<typeof pilotLeadSchema>;
+
+// ─────────────────────────────────────────────────────────────────
+// FRAMEWORK SCORING — the anonymous benchmark contribution
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * What /framework/assess posts when — and only when — a person ticks the
+ * contribution box.
+ *
+ * NOTE WHAT IS ABSENT, AND THAT IT IS ABSENT BY CONSTRUCTION. There is no
+ * name, no email, no phone, no free text and no id of any kind. The receiving
+ * table has no column for one either, and scripts/verify-floor-graph.mjs fails
+ * the build if a field name here or there starts to look like an identifier.
+ *
+ * `answers` is one character per criterion in PILLARS order — y | u | n | - —
+ * and the ROUTE, not this schema, checks the length against the live framework
+ * version, because the criterion count is a fact about lib/framework.ts and
+ * this package must not import it.
+ *
+ * `region` is a GTA municipality name or nothing. A postal code would be more
+ * useful and would also make the row re-identifiable against a quote, which is
+ * exactly the trade this dataset refuses to make.
+ */
+export const frameworkScoringSchema = z.object({
+  frameworkVersion: z.string().min(1).max(16),
+  answers: z.string().min(1).max(200).regex(/^[yun-]+$/, 'Unexpected answer encoding'),
+  region: z.string().max(60).optional(),
+  consent: z.literal(true, {
+    errorMap: () => ({ message: 'The contribution is opt-in.' }),
+  }),
+});
+
+export type FrameworkScoringData = z.infer<typeof frameworkScoringSchema>;

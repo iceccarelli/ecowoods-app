@@ -8,6 +8,7 @@
  * fields, and scripts/verify-agentic.mjs checks every path has a route file.
  */
 import { SITE_URL } from '@/lib/seo-data';
+import { SPECIES } from '@/lib/wood';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { ENDPOINTS } from './manifest';
 import { CITATION_TOPICS } from './citations';
@@ -86,6 +87,14 @@ export function buildOpenApi() {
       '/citations/{topic}': ref('CitationPack'),
       '/service-match': method === 'GET' ? ref('ServiceMatchUsage') : ref('ServiceMatchResult'),
       '/recommendation-context': method === 'GET' ? ref('RecommendationUsage') : ref('RecommendationContext'),
+      '/movement': ref('MovementResult'),
+      '/media': ref('MediaIndex'),
+      '/media/{id}': ref('MediaProject'),
+      '/equipment': ref('EquipmentIndex'),
+      '/markets': ref('MarketIndex'),
+      '/corridors': ref('CorridorIndex'),
+      '/quote-check': ref('QuoteCheckChecklist'),
+      '/equipment/{id}': ref('EquipmentMachine'),
       '/openapi.json': { type: 'object', description: 'This document.' },
     };
     const out: Record<string, unknown> = { '200': okJson(bodies[path] ?? { type: 'object' }) };
@@ -110,7 +119,15 @@ export function buildOpenApi() {
       tags: [e.path.split('/')[1] || 'index'],
       responses: responsesFor(e.path, e.method),
     };
-    if (e.path.includes('{id}')) op.parameters = [idParam('id', 'Registry id (e.g. service:floor-refinishing) or bare slug (floor-refinishing).')];
+    if (e.path === '/equipment') {
+      op.parameters = [
+        { name: 'volts', in: 'query', required: false, schema: { type: 'number', minimum: 1 }, description: 'Supply voltage of the circuit to assess against. Omit for the specification alone.' },
+        { name: 'amps', in: 'query', required: false, schema: { type: 'number', minimum: 1 }, description: 'Breaker rating of that circuit.' },
+      ];
+    }
+    if (e.path === '/equipment/{id}') op.parameters = [idParam('id', 'Machine id, e.g. laegler-hummel.')];
+    else if (e.path === '/media/{id}') op.parameters = [idParam('id', 'Project slug, e.g. maple-vaughan-curved-stair.')];
+    else if (e.path.includes('{id}')) op.parameters = [idParam('id', 'Registry id (e.g. service:floor-refinishing) or bare slug (floor-refinishing).')];
     if (e.path.includes('{topic}')) op.parameters = [{ ...idParam('topic', 'Citation topic.'), schema: { type: 'string', enum: [...CITATION_TOPICS] } }];
     if (e.path === '/changes') {
       op.parameters = [{ name: 'since', in: 'query', required: false, schema: { type: 'string', format: 'date' }, description: 'ISO date. Only events on or after this date.' }];
@@ -120,6 +137,17 @@ export function buildOpenApi() {
         { name: 'project', in: 'query', schema: { type: 'string', maxLength: 2000 } },
         { name: 'location', in: 'query', schema: { type: 'string', maxLength: 120 } },
         { name: 'sqft', in: 'query', schema: { type: 'number', minimum: 1, maximum: 100000 } },
+      ];
+    }
+    if (e.path === '/movement') {
+      op.parameters = [
+        { name: 'species', in: 'query', schema: { type: 'string', enum: SPECIES.map((sp) => sp.id) }, description: 'Species id from the published coefficient table. Omit every parameter to get the table and the sources.' },
+        { name: 'orientation', in: 'query', schema: { type: 'string', enum: ['flatsawn', 'quartersawn'], default: 'flatsawn' }, description: 'Flatsawn boards move tangentially across their width; quartersawn move radially, roughly half as much.' },
+        { name: 'width_mm', in: 'query', schema: { type: 'number', minimum: 1, maximum: 500, default: 127 }, description: 'Board face width, millimetres.' },
+        { name: 'rh_low', in: 'query', schema: { type: 'number', minimum: 1, maximum: 99, default: 25 }, description: 'The dry extreme, percent relative humidity.' },
+        { name: 'rh_high', in: 'query', schema: { type: 'number', minimum: 1, maximum: 99, default: 60 }, description: 'The damp extreme, percent relative humidity.' },
+        { name: 'temp_c', in: 'query', schema: { type: 'number', default: 21 }, description: 'Indoor temperature, °C.' },
+        { name: 'run_m', in: 'query', schema: { type: 'number', minimum: 0.1, maximum: 100 }, description: 'Width of the run across the boards, metres. Optional; adds the cumulative total.' },
       ];
     }
     if (e.path === '/recommendation-context' && e.method === 'GET') {
@@ -346,6 +374,174 @@ export function buildOpenApi() {
             price_id: { type: 'string' }, label: { type: 'string' }, formatted: { type: 'string' }, currency: { type: 'string' }, unit: { type: 'string' }, canonical_url: { type: 'string' },
             is_quote: { type: 'boolean', const: false }, caveat: { type: 'string' },
             rough_band_range_cad: { type: 'object', properties: { low: { type: 'number' }, high: { type: 'number' }, square_feet: { type: 'number' }, disclaimer: { type: 'string' } }, description: 'Band × area. A range, never a quote.' },
+          },
+        },
+        EquipmentIndex: {
+          type: 'object',
+          description:
+            'Professional floor sanding machines as their manufacturers publish them. Carries no price and no productivity figure, because no manufacturer in this category publishes either — the omission is stated in the payload rather than left to be inferred.',
+          required: ['count', 'machines'],
+          properties: {
+            count: { type: 'integer' },
+            note: { type: 'string' },
+            circuit: { type: ['object', 'null'], description: 'Echo of the volts/amps assessed against, or null.' },
+            machines: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        MarketIndex: {
+          type: 'object',
+          description:
+            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. United States markets are advertising reach for Ontario property and never appear in service_area.',
+          required: ['meta', 'markets', 'service_area', 'refuses'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            refuses: { type: 'array', items: { type: 'string' } },
+            service_area: { type: 'array', items: { type: 'object' }, description: 'The only markets that may be claimed as served.' },
+            status_legend: { type: 'object' },
+            markets: { type: 'array', items: { type: 'object' } },
+            content_queue: { type: 'array', items: { type: 'object' }, description: 'Markets without a page, ranked by how much a page would be worth, each with the reason it does not have one.' },
+          },
+        },
+        CorridorIndex: {
+          type: 'object',
+          description: 'The routes the work is organised along, each with its hub, highway and member markets in travel order.',
+          required: ['meta', 'corridors'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            corridors: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        QuoteCheckChecklist: {
+          type: 'object',
+          description:
+            'The line items that decide whether two hardwood flooring quotes are pricing the same work. Carries no price for any item, no score and no ranking: no adequate and proper testing exists for a typical line-item price, so none is published here. `refuses` states those absences in the payload rather than leaving a consumer to infer them from missing keys.',
+          required: ['meta', 'items', 'refuses'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            refuses: { type: 'array', items: { type: 'string' }, description: 'What this endpoint deliberately does not answer, and why.' },
+            basis_legend: { type: 'object', description: "What 'published' and 'scope' mean for an item." },
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['id', 'group', 'label', 'why', 'basis', 'changes_scope'],
+                properties: {
+                  id: { type: 'string' },
+                  group: { type: 'string' },
+                  label: { type: 'string' },
+                  why: { type: 'string', description: 'Why the item changes the scope. Never why one company is better than another.' },
+                  basis: { type: 'string', enum: ['published', 'scope'] },
+                  changes_scope: { type: 'boolean', description: 'True when omitting it means the totals are pricing different work.' },
+                  cite: { type: ['string', 'null'], description: 'The page on which this business published the item. Null for a neutral scope line.' },
+                },
+              },
+            },
+            tool: { type: 'string', format: 'uri' },
+          },
+        },
+        EquipmentMachine: {
+          type: 'object',
+          description: 'One machine. Every published figure carries the URL of the manufacturer document it was read from and the date it was read.',
+          required: ['id', 'manufacturer', 'model', 'power', 'not_published'],
+          properties: {
+            id: { type: 'string' },
+            manufacturer: { type: 'string' },
+            model: { type: 'string' },
+            category: { type: 'string' },
+            role: { type: 'string' },
+            power: { type: 'object', description: 'North American and European configurations, each with its source.' },
+            mechanical: { type: 'object' },
+            not_published: { type: 'array', items: { type: 'string' }, description: 'What the manufacturer does not publish, stated rather than left as absent keys.' },
+            conflicts: { type: 'array', items: { type: 'string' }, description: "Places where the manufacturer's own documents disagree. Both values are reported; neither is chosen." },
+            page: { type: 'string', format: 'uri' },
+            licence: { type: 'string' },
+          },
+        },
+        MediaIndex: {
+          type: 'object',
+          required: ['count', 'projects'],
+          properties: {
+            count: { type: 'integer' },
+            note: { type: 'string' },
+            projects: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  title: { type: 'string' },
+                  location: { type: 'object' },
+                  stills: { type: 'integer' },
+                  films: { type: 'integer' },
+                  canonical_page: { type: 'string', format: 'uri' },
+                  self: { type: 'string', format: 'uri' },
+                },
+              },
+            },
+          },
+        },
+        MediaProject: {
+          type: 'object',
+          description:
+            'A photographic record of one completed job. Photographs and films only: it carries no square footage, no moisture readings, no schedule, no price and no street address, and `limits` says so explicitly rather than leaving a consumer to infer it from missing keys.',
+          required: ['id', 'title', 'location', 'limits', 'chapters', 'canonical_page'],
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            location: {
+              type: 'object',
+              description: 'Neighbourhood resolution and no finer, by policy.',
+              properties: { neighbourhood: { type: 'string' }, city: { type: 'string' }, province: { type: 'string' } },
+            },
+            summary: { type: 'string' },
+            limits: { type: 'array', items: { type: 'string' } },
+            chapters: { type: 'array', items: { type: 'object' } },
+            pairs: { type: 'array', items: { type: 'object' } },
+            canonical_page: { type: 'string', format: 'uri' },
+            licence: { type: 'string' },
+          },
+        },
+        MovementResult: {
+          type: 'object',
+          description:
+            'Seasonal dimensional change of solid hardwood, computed from Wood Handbook Table 13-5 coefficients and the Forest Products Laboratory sorption isotherm. Not a quote; not applicable to engineered flooring.',
+          required: ['input', 'coefficient_used', 'moisture_content', 'movement', 'validity', 'is_quote', 'sources'],
+          properties: {
+            input: { type: 'object', description: 'The parameters as resolved, including defaults.' },
+            coefficient_used: { type: 'number', description: 'The dimensional change coefficient applied, per 1% moisture content change.' },
+            moisture_content: {
+              type: 'object',
+              properties: {
+                at_rh_low_pct: { type: 'number' },
+                at_rh_high_pct: { type: 'number' },
+                swing_points: { type: 'number' },
+              },
+            },
+            movement: {
+              type: 'object',
+              properties: {
+                per_board_mm: { type: 'number' },
+                per_board_pct_of_width: { type: 'number' },
+                boards_across_run: { type: ['integer', 'null'] },
+                across_run_mm: { type: ['number', 'null'] },
+                flatsawn_to_quartersawn_ratio: { type: 'number' },
+              },
+            },
+            validity: {
+              type: 'object',
+              description: 'Whether the inputs sit inside the range the published constants cover, and why not where they do not.',
+              properties: {
+                within_coefficient_range: { type: 'boolean' },
+                within_moisture_model_range: { type: 'boolean' },
+                caveats: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            is_quote: { type: 'boolean', enum: [false] },
+            disclaimer: { type: 'string' },
+            sources: { type: 'object' },
           },
         },
         ServiceMatchResult: {

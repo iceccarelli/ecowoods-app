@@ -50,7 +50,7 @@ export default function ProjectStatusForm({ project }: { project: Project }) {
       <div className="portal-card">
         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Project Status</h2>
         <div className="field">
-          <select value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus)}>
+          <select aria-label="Project status" value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus)}>
             {STATUSES.map((s) => (
               <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
             ))}
@@ -71,6 +71,7 @@ export default function ProjectStatusForm({ project }: { project: Project }) {
         <div className="field">
           <textarea
             rows={4}
+            aria-label="Internal note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Notes visible only to admin staff..."
