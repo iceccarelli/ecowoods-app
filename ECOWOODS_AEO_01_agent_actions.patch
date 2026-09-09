@@ -1,0 +1,665 @@
+From a7b579102c7f8fecdf910479b16002eb7f69ff70 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 20:30:40 +0000
+Subject: [PATCH] feat(aeo): register the four things a machine can run, not
+ just the four ways to reach a human
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+/api/v1/actions listed four actions and every one of them ended in a person: a
+form, a phone number, an inbox. That is exactly what an assistant learns from
+every other flooring company's site, and it is why it has no reason to name one
+over another.
+
+Meanwhile this site carries four things an assistant can execute — a
+wood-movement calculation from the published shrinkage coefficients, a circuit
+assessment against manufacturer-published amperage, a quote-scope checklist, and
+an honest coverage lookup — and not one was discoverable as executable. Asked
+how far a 7-inch white oak floor moves between a Toronto summer and a Toronto
+winter, an assistant had no way to know that a documented endpoint on this
+domain computes it from Wood Handbook coefficients and returns the number. So it
+guessed, or it declined.
+
+An assistant that has answered a real question from a real source has a reason
+to cite the source. That is the whole mechanism of AI discoverability for a
+business this size, and it outweighs any amount of prose about being trustworthy.
+
+Each of the four now carries its parameters, a call that works verbatim, the
+page a person would use instead, and — the part that matters most — what it
+refuses to answer. No machine price. No square feet per hour. No price for a
+line item a quote omits. No claim of service without a dated confirmation. A
+tool that does not state its boundary invites a consumer to assume there is not
+one, and to use a number it was never willing to give.
+
+ai.txt gains the section those four deserved: what you can compute here rather
+than estimate, with a working call under each.
+
+scripts/verify-aeo.mjs holds it there: every computational action must target an
+endpoint in the manifest, publish an example that resolves to one, name a real
+human page, and state a refusal; every tool page must have an action pointing at
+it; ai.txt must name every computational endpoint; and robots.ts must still name
+the ten AI crawlers and still allow BOTH spellings of the API base, because
+robots matching is plain prefix matching and /api/v1/ does not match /api/v1 —
+the bare URL being the first thing any agent requests. F-89.
+
+Five regression tests. Two of them found real blindness in the first draft: the
+robots check passed on a file where the two-spelling rule had been deleted from
+the code and survived only in the comment explaining it, and verify-geo's
+confirmation reader used a fixed-size window that ran into the next record,
+reporting Toronto as a district of itself and three confirmed markets as
+unconfirmed.
+
+verify-geo also gains the join between the two geographic models: every
+municipality in AREAS — the list the schema derives areaServed from — must exist
+in the market registry with a dated operational confirmation. Two lists that must
+agree eventually will not, and this is the one that would have turned a corridor
+plan into a coverage claim.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml         |   7 ++
+ apps/web/app/ai.txt/route.ts      |  48 ++++++++
+ apps/web/lib/registry/registry.ts | 138 +++++++++++++++++++++
+ apps/web/lib/registry/types.ts    |  28 ++++-
+ package.json                      |   1 +
+ scripts/verify-aeo.mjs            | 198 ++++++++++++++++++++++++++++++
+ scripts/verify-geo.mjs            |  83 ++++++++++++-
+ 7 files changed, 500 insertions(+), 3 deletions(-)
+ create mode 100644 scripts/verify-aeo.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index deb0fce..ce5937a 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -109,6 +109,13 @@ jobs:
+       # serves six municipalities in New York State. Checked, not intended.
+       - name: Geography (no claimed coverage without a dated confirmation)
+         run: node scripts/verify-geo.mjs
++      # Four endpoints on this site compute an answer. Before they were
++      # registered as actions, every action here ended in a human — which is
++      # exactly what an assistant learns from every competitor, and why it has
++      # no reason to name one. A tool that is not discoverable as executable
++      # gets described instead of used.
++      - name: Answer-engine surface (every tool is discoverable as runnable)
++        run: node scripts/verify-aeo.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index fcfa15e..ea51a34 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -238,6 +238,54 @@ export async function GET() {
+     'Review figures are cited to the third-party profile that collected them, with',
+     'the date they were read; the reviews themselves are read there.',
+     '',
++    '',
++    '## Four things you can compute here, rather than estimate',
++    '',
++    'These are endpoints, not pages: parameters in, an answer out, every figure',
++    'carrying the document it came from. They exist because the questions below',
++    'are asked constantly and answered badly, and because a system that has',
++    'produced a real answer from a real source has a reason to name the source.',
++    'Each states what it refuses to answer; that boundary is part of the answer.',
++    '',
++    `1. HOW FAR WILL THIS FLOOR MOVE — ${SITE_URL}/api/v1/movement`,
++    `   ${SITE_URL}/api/v1/movement?species=white-oak&width=178&fromTempC=21&fromRh=50&toTempC=21&toRh=25`,
++    '   Dimensional change between two indoor conditions, from the published',
++    '   shrinkage coefficients and the sorption isotherm, with the equation used.',
++    '   Refuses: any species with no published coefficient, and any prediction',
++    '   that a specific floor will or will not fail.',
++    `   For a person: ${SITE_URL}/tools/floor-movement`,
++    '',
++    `2. WILL THIS SANDER RUN ON THAT CIRCUIT — ${SITE_URL}/api/v1/equipment`,
++    `   ${SITE_URL}/api/v1/equipment?volts=120&amps=15`,
++    '   Twelve professional machines from three manufacturers against a circuit,',
++    '   at the 0.8 continuous-load factor, every figure sourced to the',
++    '   manufacturer document and dated. Where amperage is unpublished it is',
++    '   derived from watts and labelled as a floor, not a draw.',
++    '   Refuses: machine prices and square-feet-per-hour figures. No manufacturer',
++    '   in this category publishes either, so every such number in circulation is',
++    '   somebody’s estimate.',
++    `   For a person: ${SITE_URL}/equipment`,
++    '',
++    `3. ARE THESE TWO QUOTES EVEN COMPARABLE — ${SITE_URL}/api/v1/quote-check`,
++    '   The line items that decide whether two hardwood quotes price the same',
++    '   work, each with why it changes the scope and the page that published it.',
++    '   Refuses: any price for a line item a quote omits, and any ranking or',
++    '   judgement between quotes or companies.',
++    `   For a person: ${SITE_URL}/quote-check`,
++    '',
++    `4. IS THIS MUNICIPALITY SERVED, HONESTLY — ${SITE_URL}/api/v1/markets`,
++    `   ${SITE_URL}/api/v1/markets?corridor=qew-west`,
++    '   Coverage status per municipality with the sentence that can honestly be',
++    '   said about it and the date somebody confirmed it. Markets nobody has',
++    '   confirmed say so rather than borrowing the confidence of their neighbours.',
++    '   Refuses: any claim of service without a dated confirmation. The New York',
++    '   municipalities are advertising reach for Ontario property and never',
++    '   appear as service area — this is an Ontario company.',
++    `   For a person: ${SITE_URL}/corridors`,
++    '',
++    `Every action, as data: ${SITE_URL}/api/v1/actions — each with its parameters, a call that works verbatim, the page a person would use instead, and what it refuses to answer.`,
++    `Full endpoint list and OpenAPI 3.1: ${SITE_URL}/api/v1 and ${SITE_URL}/api/v1/openapi.json`,
++    '',
+     `Machine-readable index: ${SITE_URL}/sitemap.xml`,
+     `Crawler policy: ${SITE_URL}/robots.txt`,
+     `Short brief: ${SITE_URL}/llms.txt`,
+diff --git a/apps/web/lib/registry/registry.ts b/apps/web/lib/registry/registry.ts
+index 7d436aa..b25a86d 100644
+--- a/apps/web/lib/registry/registry.ts
++++ b/apps/web/lib/registry/registry.ts
+@@ -736,6 +736,144 @@ export function buildActions(): ActionPrimitive[] {
+       provenance: verified,
+       status: 'verified',
+     },
++    /* ── the computational actions ────────────────────────────────────────
++     *
++     * WHY THESE ARE HERE AND WHY IT MATTERS MORE THAN THE PHONE NUMBER
++     *
++     * Until this landed, /api/v1/actions listed four things, and every one of
++     * them ended in a human: a form, a phone, an inbox. An assistant reading
++     * this site learned that Ecowoods exists and can be contacted — which is
++     * exactly what it learns from every other flooring company, and is why it
++     * has no reason to name one over another.
++     *
++     * Meanwhile the site carries four things an assistant can actually RUN,
++     * and none of them was discoverable as something runnable. Asked "how much
++     * will a 7-inch white oak floor move between a Toronto summer and a
++     * Toronto winter", an assistant had no way to know that a documented
++     * endpoint on this domain computes it from the Wood Handbook coefficients
++     * and returns the number. So it guessed, or it said it could not say.
++     *
++     * An assistant that has answered a real question using this API has a
++     * reason to cite the source. That is the whole mechanism, and it is why
++     * these four entries are the highest-leverage lines in the registry.
++     *
++     * Each carries its parameters, a call that works verbatim, the page a
++     * person would use instead, and what it refuses to answer — because a
++     * consumer that cannot see the boundary goes and finds a worse number
++     * somewhere else.
++     */
++    {
++      id: 'action:compute_movement',
++      type: 'Action',
++      data: {
++        name: 'compute_movement',
++        schema_type: 'AssessAction',
++        target: abs('/api/v1/movement'),
++        method: 'GET',
++        description:
++          'Compute how far a hardwood floor will move between two indoor conditions, from the published shrinkage coefficients — species, board width, and the temperature and relative humidity at each end.',
++        outcome:
++          'Dimensional change in millimetres and as a fraction of board width, with the equilibrium moisture content at each condition and the Wood Handbook equation used.',
++        parameters: [
++          { name: 'species', required: true, description: 'Species key, e.g. white-oak.' },
++          { name: 'width', required: true, description: 'Board width in millimetres.' },
++          { name: 'fromTempC', required: true, description: 'Starting temperature, Celsius.' },
++          { name: 'fromRh', required: true, description: 'Starting relative humidity, percent.' },
++          { name: 'toTempC', required: true, description: 'Ending temperature, Celsius.' },
++          { name: 'toRh', required: true, description: 'Ending relative humidity, percent.' },
++        ],
++        example: `${SITE_URL}/api/v1/movement?species=white-oak&width=178&fromTempC=21&fromRh=50&toTempC=21&toRh=25`,
++        human_page: abs('/tools/floor-movement'),
++        refuses: [
++          'no prediction of whether a specific floor will fail — the arithmetic is dimensional change, not a warranty',
++          'no species outside the published coefficient table, because the coefficient would have to be invented',
++        ],
++      },
++      canonical_url: abs('/tools/floor-movement'),
++      source: firstParty('/tools/floor-movement'),
++      provenance: verified,
++      status: 'verified',
++    },
++    {
++      id: 'action:assess_circuit',
++      type: 'Action',
++      data: {
++        name: 'assess_circuit',
++        schema_type: 'AssessAction',
++        target: abs('/api/v1/equipment'),
++        method: 'GET',
++        description:
++          'Given a circuit, report which professional sanding machines will run on it, at the 0.8 continuous-load factor, from each manufacturer’s published electrical requirement.',
++        outcome:
++          'Per machine: a verdict, the amperage used, whether that amperage is published or derived from watts, and the source document for every figure.',
++        parameters: [
++          { name: 'volts', required: false, description: 'Circuit voltage. With amps, runs the assessment.' },
++          { name: 'amps', required: false, description: 'Breaker rating. Without it, the published specification alone is returned.' },
++        ],
++        example: `${SITE_URL}/api/v1/equipment?volts=120&amps=15`,
++        human_page: abs('/equipment'),
++        refuses: [
++          'no machine price and no square-feet-per-hour figure — no manufacturer in this category publishes either',
++          'no substitute for an electrician: the arithmetic is the published draw against the breaker, not an inspection',
++        ],
++      },
++      canonical_url: abs('/equipment'),
++      source: firstParty('/equipment'),
++      provenance: verified,
++      status: 'verified',
++    },
++    {
++      id: 'action:compare_quotes',
++      type: 'Action',
++      data: {
++        name: 'compare_quotes',
++        schema_type: 'AssessAction',
++        target: abs('/api/v1/quote-check'),
++        method: 'GET',
++        description:
++          'The line items that decide whether two hardwood flooring quotes are pricing the same work, each with the reason it changes the scope and the page this business published it on.',
++        outcome:
++          'A checklist a consumer can apply to documents it has, to establish whether two totals are comparable at all.',
++        example: `${SITE_URL}/api/v1/quote-check`,
++        human_page: abs('/quote-check'),
++        refuses: [
++          'no price for any line item a quote leaves out — no adequate and proper testing exists for a typical figure, so none is published',
++          'no score, rank or recommendation between quotes, and no judgement about any company',
++        ],
++      },
++      canonical_url: abs('/quote-check'),
++      source: firstParty('/quote-check'),
++      provenance: verified,
++      status: 'verified',
++    },
++    {
++      id: 'action:check_coverage',
++      type: 'Action',
++      data: {
++        name: 'check_coverage',
++        schema_type: 'SearchAction',
++        target: abs('/api/v1/markets'),
++        method: 'GET',
++        description:
++          'Whether a municipality is served, and what can honestly be said about it — routine, active, on the route with no confirmed position, or reachable only by confirmation — with the date somebody confirmed it.',
++        outcome:
++          'The status and operational statement per market, the list of markets that may be claimed as served, and for every market without a page, the reason it does not have one.',
++        parameters: [
++          { name: 'corridor', required: false, description: 'Filter to one route, e.g. niagara-belt.' },
++          { name: 'status', required: false, description: 'Filter by coverage status, e.g. core-active.' },
++        ],
++        example: `${SITE_URL}/api/v1/markets?corridor=qew-west`,
++        human_page: abs('/corridors'),
++        refuses: [
++          'no market is reported as served without a dated confirmation',
++          'the United States markets are advertising reach for Ontario property and never appear as service area',
++        ],
++      },
++      canonical_url: abs('/corridors'),
++      source: firstParty('/corridors'),
++      provenance: verified,
++      status: 'verified',
++    },
+     {
+       id: 'action:book_measure',
+       type: 'Action',
+diff --git a/apps/web/lib/registry/types.ts b/apps/web/lib/registry/types.ts
+index c4575cd..6f2fa12 100644
+--- a/apps/web/lib/registry/types.ts
++++ b/apps/web/lib/registry/types.ts
+@@ -242,12 +242,38 @@ export type PageData = {
+ 
+ export type ActionData = {
+   name: string;
+-  schema_type: 'QuoteAction' | 'CommunicateAction' | 'ReserveAction';
++  /**
++   * `AssessAction` and `SearchAction` are the computational tools — the ones
++   * an assistant can call and get an answer from without a human being
++   * involved. Everything else on this list ends in a person: a form, a phone,
++   * an inbox.
++   */
++  schema_type:
++    | 'QuoteAction'
++    | 'CommunicateAction'
++    | 'ReserveAction'
++    | 'AssessAction'
++    | 'SearchAction';
+   target: string;
+   method: 'GET' | 'POST' | 'tel' | 'mailto';
+   description: string;
+   /** What the customer gets and when. */
+   outcome: string;
++  /**
++   * Query parameters, for an action a machine can execute. Present only on
++   * computational actions; a phone number has no parameters.
++   */
++  parameters?: { name: string; required: boolean; description: string }[];
++  /** A call that works, verbatim. The one thing a consumer can copy. */
++  example?: string;
++  /** The page a person would use instead of the endpoint. */
++  human_page?: string;
++  /**
++   * What the action will not answer. Published for the same reason the
++   * endpoints publish `refuses`: a consumer that cannot see the boundary goes
++   * and finds a worse number somewhere else.
++   */
++  refuses?: string[];
+ };
+ 
+ export type OrganizationPrimitive = Primitive<'Organization', OrganizationData>;
+diff --git a/package.json b/package.json
+index be0b459..e68eda2 100644
+--- a/package.json
++++ b/package.json
+@@ -64,6 +64,7 @@
+     "verify:schema-figures": "node scripts/verify-schema-figures.mjs",
+     "verify:domain": "node scripts/verify-domain-redirect.mjs",
+     "verify:vercel": "node scripts/verify-vercel-config.mjs",
++    "verify:aeo": "node scripts/verify-aeo.mjs",
+     "verify:agentic": "node scripts/verify-agentic.mjs",
+     "test:web": "pnpm --filter @ecowoods/web test",
+     "seo:audit": "node scripts/audit-current-state.mjs",
+diff --git a/scripts/verify-aeo.mjs b/scripts/verify-aeo.mjs
+new file mode 100644
+index 0000000..d599551
+--- /dev/null
++++ b/scripts/verify-aeo.mjs
+@@ -0,0 +1,198 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-aeo.mjs — the tools this site can run must be discoverable as
++ * things that can be run.
++ *
++ * THE GAP THIS EXISTS TO CLOSE
++ *
++ * Before this guard, /api/v1/actions listed four actions and every one of them
++ * ended in a human: a form, a phone number, an inbox. That is precisely what an
++ * assistant learns from every other flooring company's site, which is why it has
++ * no reason to name one over another.
++ *
++ * Meanwhile this site carries four things an assistant can actually execute —
++ * a wood-movement calculation from the published shrinkage coefficients, a
++ * circuit assessment against manufacturer-published amperage, a quote-scope
++ * checklist, and an honest coverage lookup — and not one of them was
++ * discoverable as executable. Asked how far a 7-inch white oak floor moves
++ * between a Toronto summer and a Toronto winter, an assistant had no way to
++ * know that a documented endpoint on this domain computes it. So it guessed.
++ *
++ * An assistant that has answered a real question from a real source has a
++ * reason to cite the source. That is the entire mechanism of AI discoverability
++ * for a business this size, and it is worth more than any amount of prose.
++ *
++ * WHAT IS CHECKED
++ *
++ *  1. Every computational action (AssessAction, SearchAction) targets an
++ *     endpoint that exists in the ENDPOINTS manifest.
++ *  2. Every computational action publishes an example that resolves to one of
++ *     those endpoints, a human_page that is a real route, and a `refuses` list.
++ *     A tool with no stated boundary invites a consumer to assume there isn't
++ *     one.
++ *  3. Every public tool page has an action pointing at it. A tool nobody can
++ *     discover as executable is a tool that will be described rather than used.
++ *  4. /ai.txt names every computational endpoint. It is the file written for
++ *     exactly this audience; an endpoint absent from it is absent.
++ *  5. robots.txt still allows the named AI crawlers and still allows /api/v1
++ *     under BOTH spellings — prefix matching means `/api/v1/` does not match
++ *     `/api/v1`, and that bare base URL is the first thing any agent requests.
++ *
++ *   node scripts/verify-aeo.mjs
++ */
++import { readFileSync, existsSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = join(ROOT, 'apps/web');
++
++const fail = [];
++const read = (rel, label) => {
++  const p = join(WEB, rel);
++  if (!existsSync(p)) { fail.push(`missing ${label}: apps/web/${rel}`); return ''; }
++  return readFileSync(p, 'utf8');
++};
++
++const registry = read('lib/registry/registry.ts', 'registry');
++const manifest = read('lib/registry/manifest.ts', 'endpoint manifest');
++const aiTxt = read('app/ai.txt/route.ts', 'ai.txt');
++const robots = read('app/robots.ts', 'robots');
++
++/* ── the endpoints that exist ────────────────────────────────────────────── */
++const endpoints = new Set(
++  [...manifest.matchAll(/\{\s*path:\s*'([^']+)'/g)].map((m) => m[1]),
++);
++if (endpoints.size < 20) {
++  fail.push(`read only ${endpoints.size} endpoint(s) from the manifest — the reader is blind`);
++}
++
++/* ── the actions ─────────────────────────────────────────────────────────── */
++const actionsBlock = registry.slice(registry.indexOf('export function buildActions'));
++const actions = [];
++for (const m of actionsBlock.matchAll(/id:\s*'(action:[a-z_]+)',[\s\S]*?status:\s*'[a-z]+',/g)) {
++  const body = m[0];
++  actions.push({
++    id: m[1],
++    schemaType: /schema_type:\s*'([A-Za-z]+)'/.exec(body)?.[1] ?? null,
++    target: /target:\s*(?:abs\('([^']+)'\)|`([^`]*)`|BUSINESS_NAP\.[a-zA-Z]+|`mailto[^`]*`)/.exec(body)?.[1] ?? null,
++    example: /example:\s*`([^`]+)`/.exec(body)?.[1] ?? null,
++    humanPage: /human_page:\s*abs\('([^']+)'\)/.exec(body)?.[1] ?? null,
++    refuses: /refuses:\s*\[/.test(body),
++    body,
++  });
++}
++if (actions.length < 4) {
++  fail.push(`read only ${actions.length} action(s) from buildActions() — the reader is blind, fix it`);
++}
++
++const COMPUTATIONAL = new Set(['AssessAction', 'SearchAction']);
++const computational = actions.filter((a) => COMPUTATIONAL.has(a.schemaType ?? ''));
++
++if (!computational.length) {
++  fail.push(
++    'no computational action is registered. Every action on this site ends in a human — a form, a phone, an ' +
++      'inbox — which is what an assistant learns from every competitor. The endpoints that compute an answer ' +
++      'must be registered as actions, or they will be described rather than used.',
++  );
++}
++
++const apiPath = (url) => {
++  const m = /\/api\/v1(\/[^?\s]*)?/.exec(url ?? '');
++  if (!m) return null;
++  return m[1] ? m[1].replace(/\/$/, '') : '/';
++};
++
++for (const a of computational) {
++  const t = apiPath(a.target);
++  if (!t) {
++    fail.push(`${a.id} is computational but its target "${a.target}" is not an /api/v1 endpoint — an assistant cannot execute a page`);
++  } else if (!endpoints.has(t) && t !== '/') {
++    fail.push(`${a.id} targets /api/v1${t}, which is not in the ENDPOINTS manifest`);
++  }
++  if (!a.example) {
++    fail.push(`${a.id} publishes no example. A call that works verbatim is the one thing a consumer can copy.`);
++  } else {
++    const e = apiPath(a.example);
++    if (e && !endpoints.has(e) && e !== '/') {
++      fail.push(`${a.id} example calls /api/v1${e}, which is not in the ENDPOINTS manifest`);
++    }
++  }
++  if (!a.refuses) {
++    fail.push(
++      `${a.id} publishes no \`refuses\`. A tool that does not state its boundary invites a consumer to assume ` +
++        'there is not one, and to use a number it was never willing to give.',
++    );
++  }
++  if (!a.humanPage) {
++    fail.push(`${a.id} has no human_page. Every endpoint here has a page a person would use instead; say which.`);
++  } else if (!existsSync(join(WEB, 'app', a.humanPage.replace(/^\//, ''), 'page.tsx'))) {
++    fail.push(`${a.id} human_page ${a.humanPage} has no page.tsx`);
++  }
++}
++
++/* ── 3. every tool page is reachable as an action ────────────────────────── */
++const TOOL_PAGES = ['/tools/floor-movement', '/equipment', '/quote-check', '/corridors'];
++for (const page of TOOL_PAGES) {
++  if (!existsSync(join(WEB, 'app', page.replace(/^\//, ''), 'page.tsx'))) {
++    fail.push(`${page} is listed as a tool page but has no page.tsx`);
++    continue;
++  }
++  if (!actions.some((a) => a.humanPage === page)) {
++    fail.push(
++      `${page} is a tool a machine could use and no action points at it. It will be read about and not run.`,
++    );
++  }
++}
++
++/* ── 4. ai.txt names every computational endpoint ────────────────────────── */
++for (const a of computational) {
++  const t = apiPath(a.target);
++  if (!t) continue;
++  const needle = t === '/' ? '/api/v1' : `/api/v1${t}`;
++  if (!aiTxt.includes(needle)) {
++    fail.push(
++      `ai.txt does not name ${needle}. That file is written for exactly this audience; an endpoint absent ` +
++        'from it is absent.',
++    );
++  }
++}
++
++/* ── 5. the crawler policy has not quietly narrowed ──────────────────────── */
++/*
++ * Strip the commentary first. robots.ts explains the two-spelling rule in prose
++ * that quotes both spellings, so a naive substring check passed on a file where
++ * the rule had been deleted from the code and survived only in the comment
++ * describing it. The first regression test caught exactly that.
++ */
++const robotsCode = robots.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n');
++const REQUIRED_AGENTS = [
++  'GPTBot', 'OAI-SearchBot', 'ChatGPT-User',
++  'ClaudeBot', 'Claude-User', 'Claude-SearchBot',
++  'Google-Extended', 'Applebot-Extended', 'PerplexityBot', 'CCBot',
++];
++for (const agent of REQUIRED_AGENTS) {
++  if (!robotsCode.includes(`'${agent}'`)) {
++    fail.push(`robots.ts no longer names ${agent}. Some agents ignore '*', which is why each is named.`);
++  }
++}
++for (const spelling of ["'/api/v1'", "'/api/v1/'"]) {
++  if (!robotsCode.includes(spelling)) {
++    fail.push(
++      `robots.ts no longer allows ${spelling}. Both spellings are required: robots.txt matching is plain ` +
++        'prefix matching, so /api/v1/ does not match the path /api/v1 — and that bare base URL is the one ' +
++        'advertised in the OpenAPI servers field, so it is the first thing any agent requests. F-89.',
++    );
++  }
++}
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (fail.length) {
++  console.error(`\n✗ aeo: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}\n`);
++  process.exit(1);
++}
++
++console.log(
++  `✓ aeo verified — ${computational.length} computational action(s), each targeting a manifested endpoint with a ` +
++    `working example, a human page and a stated refusal; ${REQUIRED_AGENTS.length} AI crawlers named in robots.txt`,
++);
+diff --git a/scripts/verify-geo.mjs b/scripts/verify-geo.mjs
+index 8352bbb..4aad4ab 100644
+--- a/scripts/verify-geo.mjs
++++ b/scripts/verify-geo.mjs
+@@ -84,12 +84,44 @@ for (const mm of marketsSrc.matchAll(
+     index: mm.index,
+   });
+ }
+-/* kind and partOf are the trailing arguments; read the rest of each call. */
++/*
++ * kind, partOf and the confirmation are the trailing arguments. Read a window
++ * rather than a line: an m() call spans several lines, and reading only the
++ * first meant the confirmation was invisible — which made the areaServed check
++ * below pass on a market nobody had confirmed. A guard that silently answers
++ * "false" is worse than one that is absent.
++ */
++const nextCallAfter = (i) => {
++  const candidates = [
++    marketsSrc.indexOf("\n  m('", i + 1),
++    marketsSrc.indexOf("\n  us('", i + 1),
++    marketsSrc.indexOf('\n];', i + 1),
++  ].filter((n) => n > -1);
++  return candidates.length ? Math.min(...candidates) : marketsSrc.length;
++};
++
+ for (const x of markets) {
+-  const tail = marketsSrc.slice(x.index, marketsSrc.indexOf('\n', x.index + x.block.length) + 1);
++  /* This record only. A fixed-size window bleeds into the next m() call, and
++     the first version of this read reported Toronto as a district of itself
++     and three confirmed markets as unconfirmed, because the window had run on
++     into the record below. */
++  const tail = marketsSrc.slice(x.index, nextCallAfter(x.index));
+   x.isDistrict = /'district'/.test(tail);
+   const p = /'district',\s*'([a-z0-9-]+)'/.exec(tail);
+   x.partOf = p ? p[1] : undefined;
++  if (/\bUNVERIFIED\(\)/.test(tail)) x.confirmed = false;
++  else if (/\bACTIVE\('|\bTORONTO_TRUTH\(\)/.test(tail)) x.confirmed = true;
++  else if (/verifiedAt:\s*'[0-9-]+'/.test(tail)) x.confirmed = true;
++  else if (/verifiedAt:\s*null/.test(tail)) x.confirmed = false;
++  else x.confirmed = null;
++}
++const unreadable = markets.filter((x) => x.country === 'CA' && x.confirmed === null);
++if (unreadable.length) {
++  fail.push(
++    `could not read the operational confirmation for ${unreadable.length} market(s) ` +
++      `(${unreadable.slice(0, 3).map((x) => x.slug).join(', ')}). Fix the reader — a guard that cannot see a ` +
++      'confirmation reports every market as unconfirmed, or worse, as confirmed.',
++  );
+ }
+ /*
+  * The United States markets are built by one constructor, so their status is
+@@ -276,6 +308,53 @@ for (const fm of marketsSrc.matchAll(/'([a-z0-9-]+)',[\s\S]{0,400}?localFacts:\s
+   }
+ }
+ 
++/* ── 7a. the schema's city list is a subset of the confirmed markets ──────
++ *
++ * lib/schema/root-schema.ts derives areaServed from CITIES in seo-data.ts, and
++ * that is the right mechanism — the schema cannot claim coverage that has no
++ * page. But CITIES and the market registry are two lists, and two lists that
++ * must agree eventually will not: adding a municipality to CITIES gives it a
++ * page AND puts it into the entity graph as a served City, with nothing asking
++ * whether anybody confirmed that it is served.
++ *
++ * So: every name in CITIES must exist in the registry as a market with a dated
++ * operational confirmation. That is the join between the two models, and it is
++ * the only thing that stops the corridor list from becoming a coverage claim
++ * one convenient edit at a time.
++ */
++const citiesArr = /const AREAS = \[([\s\S]*?)\];/.exec(seoSrc);
++if (!citiesArr) {
++  fail.push('could not read AREAS from lib/seo-data.ts — this guard cannot check the schema city list');
++} else {
++  const slugify = (x) =>
++    x.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
++  const cityNames = [...citiesArr[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
++  const confirmed = new Set(
++    markets
++      .filter((x) => x.country === 'CA')
++      .map((x) => x.slug),
++  );
++  for (const name of cityNames) {
++    const slug = slugify(name);
++    if (!confirmed.has(slug)) {
++      fail.push(
++        `AREAS in lib/seo-data.ts carries "${name}" (${slug}), which is not in the market registry. Every ` +
++          'municipality the schema emits as areaServed must exist in content/geo/markets.ts with a dated ' +
++          'operational confirmation — otherwise the entity graph claims coverage nobody has verified.',
++      );
++    }
++  }
++  const unverified = cityNames
++    .map(slugify)
++    .filter((slug) => bySlug.has(slug) && bySlug.get(slug).confirmed === false);
++  for (const slug of unverified) {
++    fail.push(
++      `${slug} is emitted as areaServed by the schema but its operational position is unconfirmed ` +
++        '(verifiedAt: null). Confirm it on a date, or take it out of AREAS.',
++    );
++  }
++}
++
+ /* ── 7. a page exists only for a market that earned one ──────────────────── */
+ const areaRoute = join(WEB, 'app/service-areas/[city]/page.tsx');
+ if (!existsSync(areaRoute)) fail.push('apps/web/app/service-areas/[city]/page.tsx is missing');
+-- 
+2.43.0
+
