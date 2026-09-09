@@ -99,6 +99,7 @@ const SERVICES_MENU: MegaColumn[] = [
     href: '/guides',
     items: [
       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
       { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },

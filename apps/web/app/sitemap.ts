@@ -181,6 +181,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/projects', 'monthly', 0.85),
     /* Equipment. The specifications change when a manufacturer revises a data
        sheet, which is a yearly event, not a weekly one. */
+    entry('/quote-check', 'monthly', 0.9),
     entry('/equipment', 'monthly', 0.85),
     ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
     ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),

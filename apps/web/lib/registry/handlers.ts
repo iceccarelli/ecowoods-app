@@ -24,6 +24,7 @@ import {
 } from '@/lib/wood';
 import { PROJECTS, getProject, stillById } from '@/lib/projects';
 import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
+import { SCOPE_ITEMS } from '@/lib/quote-check';
 import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
@@ -594,6 +595,56 @@ export async function handleEquipmentIndex(request: Request) {
       }),
     },
     { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/quote-check — the scope checklist, as data.
+ *
+ * WHY AN AGENT SHOULD HAVE THIS
+ *
+ * "Is this flooring quote any good?" is one of the questions people actually
+ * put to an assistant, and there is nothing authoritative for the assistant to
+ * reach for. What it can be given is the list of line items that decide whether
+ * two quotes are even pricing the same work, each with the reason it changes
+ * the scope and the page where this business already published it.
+ *
+ * NOTE WHAT IS ABSENT AND WILL STAY ABSENT: no price for any line item, no
+ * score, no ranking, no way to ask this endpoint which quote is better. An
+ * assistant that wanted to say "subfloor preparation typically costs X" would
+ * have to invent X, and it will not get it here. The `refuses` key says so in
+ * the payload rather than leaving it to be inferred.
+ */
+export async function handleQuoteCheck(request: Request) {
+  const reg = await getRegistry();
+  return json(
+    {
+      meta: meta(reg, SCOPE_ITEMS.length),
+      note:
+        'The line items that determine whether two hardwood flooring quotes are pricing the same work. Ticking more of them is not a better quote; it is a different quote.',
+      refuses: [
+        'no price or cost estimate for any line item — no adequate and proper testing exists for a typical price, so none is published',
+        'no score, rank or recommendation between quotes',
+        'no judgement about any company',
+      ],
+      basis_legend: {
+        published:
+          'already published by this business as belonging in a hardwood quote; `cite` is that page',
+        scope:
+          'a neutral line item that changes what is being priced; no claim that including it is better',
+      },
+      items: SCOPE_ITEMS.map((i) => ({
+        id: i.id,
+        group: i.group,
+        label: i.label,
+        why: i.why,
+        basis: i.basis,
+        changes_scope: i.changesScope,
+        cite: i.cite ? `${SITE_URL}${i.cite}` : null,
+      })),
+      tool: `${SITE_URL}/quote-check`,
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );
 }
 

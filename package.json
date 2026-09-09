@@ -53,6 +53,7 @@
     "verify:entity": "node scripts/verify-entity.mjs",
     "verify:reviews": "node scripts/verify-reviews.mjs",
     "verify:jobcards": "node scripts/verify-job-cards.mjs",
+    "verify:quotecheck": "node scripts/verify-quote-check.mjs",
     "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
     "verify:referral": "node scripts/verify-referral.mjs",
     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",

@@ -258,6 +258,12 @@ export default async function PricingPage() {
             <Link href="/estimate">Request the free in-home estimate</Link> to start.
           </p>
           <p className="tlx-note">
+            Already holding two or three quotes? Before comparing the totals, check whether they are
+            pricing the same work — most of the time they are not.{' '}
+            <Link href="/quote-check">Put them side by side, line by line</Link>. It runs in your
+            browser; nothing is uploaded and no quote is ranked.
+          </p>
+          <p className="tlx-note">
             Where each service sits:{' '}
             {servicePages.map((p, i) => (
               <span key={p.slug}>

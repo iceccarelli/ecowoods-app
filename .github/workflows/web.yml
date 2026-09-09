@@ -89,6 +89,12 @@ jobs:
       # may appear, because no manufacturer in this category publishes either.
       - name: Equipment (sourced specs, no invented price or throughput)
         run: node scripts/verify-equipment.mjs
+      # /quote-check compares scopes and prices nothing. Its one unacceptable
+      # change — putting a dollar figure on a line item a quote leaves out — is
+      # also its most obvious-looking improvement, and will arrive as a small
+      # edit from someone who has not read s.74.01(1)(b). Checked mechanically.
+      - name: Quote comparison (no price, no ranking, every citation resolves)
+        run: node scripts/verify-quote-check.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

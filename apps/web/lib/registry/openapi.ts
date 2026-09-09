@@ -91,6 +91,7 @@ export function buildOpenApi() {
       '/media': ref('MediaIndex'),
       '/media/{id}': ref('MediaProject'),
       '/equipment': ref('EquipmentIndex'),
+      '/quote-check': ref('QuoteCheckChecklist'),
       '/equipment/{id}': ref('EquipmentMachine'),
       '/openapi.json': { type: 'object', description: 'This document.' },
     };
@@ -383,6 +384,35 @@ export function buildOpenApi() {
             note: { type: 'string' },
             circuit: { type: ['object', 'null'], description: 'Echo of the volts/amps assessed against, or null.' },
             machines: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        QuoteCheckChecklist: {
+          type: 'object',
+          description:
+            'The line items that decide whether two hardwood flooring quotes are pricing the same work. Carries no price for any item, no score and no ranking: no adequate and proper testing exists for a typical line-item price, so none is published here. `refuses` states those absences in the payload rather than leaving a consumer to infer them from missing keys.',
+          required: ['meta', 'items', 'refuses'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            refuses: { type: 'array', items: { type: 'string' }, description: 'What this endpoint deliberately does not answer, and why.' },
+            basis_legend: { type: 'object', description: "What 'published' and 'scope' mean for an item." },
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['id', 'group', 'label', 'why', 'basis', 'changes_scope'],
+                properties: {
+                  id: { type: 'string' },
+                  group: { type: 'string' },
+                  label: { type: 'string' },
+                  why: { type: 'string', description: 'Why the item changes the scope. Never why one company is better than another.' },
+                  basis: { type: 'string', enum: ['published', 'scope'] },
+                  changes_scope: { type: 'boolean', description: 'True when omitting it means the totals are pricing different work.' },
+                  cite: { type: ['string', 'null'], description: 'The page on which this business published the item. Null for a neutral scope line.' },
+                },
+              },
+            },
+            tool: { type: 'string', format: 'uri' },
           },
         },
         EquipmentMachine: {

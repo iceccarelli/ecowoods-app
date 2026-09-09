@@ -43,6 +43,7 @@ import * as movement from '@/app/api/v1/movement/route';
 import * as media from '@/app/api/v1/media/route';
 import * as mediaById from '@/app/api/v1/media/[id]/route';
 import * as equipment from '@/app/api/v1/equipment/route';
+import * as quoteCheck from '@/app/api/v1/quote-check/route';
 import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
 import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
 import * as openapi from '@/app/api/v1/openapi.json/route';
@@ -82,6 +83,7 @@ const ROUTES: Record<string, RouteModule> = {
   media,
   'media/[id]': mediaById,
   equipment,
+  'quote-check': quoteCheck,
   'equipment/[id]': equipmentById,
   'recommendation-context': recommendationContext,
   'openapi.json': openapi,

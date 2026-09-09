@@ -99,7 +99,17 @@ for (const file of files) {
   const hasDynamicLabel = /htmlFor=\{/.test(src);
 
   /* ── 1 + 2 + 3 + 4: element-level checks ─────────────────────────────── */
-  for (const m of src.matchAll(/<(input|select|textarea)\b([^>]*?)\/?>/g)) {
+  /*
+   * The attribute matcher below stops at the first `>`, and an arrow function
+   * in a handler contains one. So `<input onChange={() => f()} aria-label="x">`
+   * matched only as far as `onChange={() =` and the aria-label was invisible —
+   * a false "control-name" finding on correctly labelled controls, and the
+   * fix a developer reaches for is to reorder attributes, which teaches nothing
+   * and leaves the trap set. Neutralise the arrow first. The replacement is the
+   * same length, so every index and line number below still refers to `src`.
+   */
+  const scan = src.replace(/=>/g, '==');
+  for (const m of scan.matchAll(/<(input|select|textarea)\b([^>]*?)\/?>/g)) {
     const [tag, attrs] = [m[1], m[2]];
     const line = lineOf(src, m.index);
     if (/type=["']hidden["']/.test(attrs)) continue;

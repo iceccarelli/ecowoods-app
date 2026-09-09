@@ -156,6 +156,15 @@ for (const f of CHROME) {
   for (const l of hrefsIn(src)) chromeLinks.add(l);
   for (const m of src.matchAll(/label:\s*'([^']+)',\s*href:\s*'([^']+)'/g)) {
     const [, label, href] = m;
+    /*
+     * The mega-menus are data, not JSX: `{ label: 'Sanding equipment', href:
+     * '/equipment' }`. hrefsIn() only sees `href="/x"` in markup, so for the
+     * reachability graph the entire header menu did not exist — a route linked
+     * from nothing but the menu was reported as unreachable, and a route linked
+     * from nowhere at all would have been reported the same way. The distinction
+     * this guard exists to make was invisible for every entry in the menu.
+     */
+    chromeLinks.add(href.split('#')[0].split('?')[0] || '/');
     const seen = chromeLabels.get(label);
     if (seen && seen !== href) {
       console.error(`✗ chrome label "${label}" points at both ${seen} and ${href}. One word, one destination.`);
