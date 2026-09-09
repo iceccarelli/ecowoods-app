@@ -1,0 +1,121 @@
+From b9d10cfa007c9097dbecb93a4f9dcd58b22eb3d1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 20:59:00 +0000
+Subject: [PATCH] fix(deploy): the route-parity check invented two URLs and
+ reported them as a broken site
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Its first real run against production reported 2 of 103 routes failing. Both
+were its own fault:
+
+  /api/v1/citations/moisture      — 'moisture' was a guessed sample for the
+                                    {topic} parameter. No such citation pack has
+                                    ever existed. The real topics are in
+                                    CITATION_TOPICS; it now reads them.
+  /md/commercial/hardwood-installation
+                                  — the commercial mirrors are declared in
+                                    lib/markdown-export.ts, not lib/service-pages.ts.
+                                    It was asking for a service slug on a route
+                                    that serves head-term pages.
+
+The site was correct in both cases. A check that cries wolf twice on its first
+run is a check people learn to skim, which is precisely the failure this file
+exists to prevent — and it was written with that sentence in its own header,
+which is its own argument for regression-testing a guard against reality rather
+than against intent.
+
+Also fixes the footnote: x-vercel-id is `<region>::<request id>`, and the second
+half is per-request, so treating it as a deployment identifier printed "the alias
+moved while this ran" on every single run. It now counts edge regions, which is
+what the header actually carries.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ scripts/verify-live-routes.mjs | 41 +++++++++++++++++++++++++++++-----
+ 1 file changed, 35 insertions(+), 6 deletions(-)
+
+diff --git a/scripts/verify-live-routes.mjs b/scripts/verify-live-routes.mjs
+index 1888183..e0cc88d 100644
+--- a/scripts/verify-live-routes.mjs
++++ b/scripts/verify-live-routes.mjs
+@@ -139,7 +139,7 @@ const MANIFESTS = {
+   '/md/glossary/[slug]': slugsFromFile('lib/glossary.ts'),
+   '/md/services/[slug]': slugsFromFile('lib/service-pages.ts'),
+   '/md/service-areas/[slug]': serviceAreaSlugs(),
+-  '/md/commercial/[slug]': slugsFromFile('lib/service-pages.ts'),
++  '/md/commercial/[slug]': slugsFromFile('lib/markdown-export.ts'),
+ };
+ 
+ const unexpanded = [];
+@@ -159,7 +159,27 @@ for (const r of routes) {
+ const apiManifest = existsSync(join(WEB, 'lib/registry/manifest.ts'))
+   ? readFileSync(join(WEB, 'lib/registry/manifest.ts'), 'utf8')
+   : '';
+-const SAMPLE_ID = { '{id}': 'hardwood-installation', '{topic}': 'moisture', '{slug}': 'moisture' };
++/*
++ * Sample ids for the parameterised endpoints. These are READ, not guessed: the
++ * first version of this file invented '{topic}': 'moisture' and asked
++ * production for a citation pack that has never existed, then reported the 404
++ * as a broken deploy. A check that cries wolf twice is a check people learn to
++ * skim, which is the failure this whole file exists to prevent.
++ */
++const citationTopic = (() => {
++  const src = existsSync(join(WEB, 'lib/registry/citations.ts'))
++    ? readFileSync(join(WEB, 'lib/registry/citations.ts'), 'utf8')
++    : '';
++  const literal = /CITATION_TOPICS = \[([\s\S]*?)\]/.exec(src);
++  const named = literal ? [...literal[1].matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1]) : [];
++  if (named.length) return named[0];
++  /* CITATION_TOPICS spreads Object.keys(SERVICE_TOPICS) first; fall back to it. */
++  const svc = /SERVICE_TOPICS[^=]*=\s*\{([\s\S]*?)\}/.exec(src);
++  const keys = svc ? [...svc[1].matchAll(/'([a-z0-9-]+)':/g)].map((m) => m[1]) : [];
++  return keys[0] ?? null;
++})();
++
++const SAMPLE_ID = { '{id}': 'hardwood-installation', '{slug}': 'hardwood-installation' };
+ for (const m of apiManifest.matchAll(/\{\s*path:\s*'([^']+)',\s*method:\s*'GET'/g)) {
+   let p = m[1];
+   if (p.includes('{')) {
+@@ -168,7 +188,10 @@ for (const m of apiManifest.matchAll(/\{\s*path:\s*'([^']+)',\s*method:\s*'GET'/
+     else if (p.startsWith('/evidence')) continue;
+     else if (p.startsWith('/locations')) p = p.replace('{id}', 'toronto');
+     else if (p.startsWith('/pricing')) continue;
+-    else for (const [k, v] of Object.entries(SAMPLE_ID)) p = p.replace(k, v);
++    else if (p.includes('{topic}')) {
++      if (!citationTopic) { unexpanded.push(`/api/v1${p}`); continue; }
++      p = p.replace('{topic}', citationTopic);
++    } else for (const [k, v] of Object.entries(SAMPLE_ID)) p = p.replace(k, v);
+   }
+   if (p.includes('{')) continue;
+   targets.add(`/api/v1${p === '/' ? '' : p}`);
+@@ -217,7 +240,13 @@ await Promise.all(
+ );
+ 
+ const bad = results.filter((r) => r.status !== 200 && r.status !== 304).sort((a, b) => a.path.localeCompare(b.path));
+-const deployments = new Set(results.map((r) => (r.id ?? '').split('::')[1]?.split('-')[0]).filter(Boolean));
++/*
++ * x-vercel-id is `<region>::<request id>` — the second half is per-request, not
++ * per-deployment, so treating it as a deployment identifier reported "the alias
++ * moved" on every run. Count regions instead, which is what the header actually
++ * carries, and say so.
++ */
++const regions = new Set(results.map((r) => (r.id ?? '').split('::')[0]).filter(Boolean));
+ 
+ console.log(`\nROUTE PARITY  ${BASE}\n`);
+ console.log(`  ${list.length} route(s) defined in this repository${ALL ? '' : ' (one slug per dynamic route; --all for every slug)'}`);
+@@ -240,7 +269,7 @@ console.error(
+     '      curl -sI ' + BASE + bad[0].path + ' | grep -i x-vercel-id\n\n' +
+     '  docs/DEPLOY.md has the branch rules and why this file exists.\n',
+ );
+-if (deployments.size > 1) {
+-  console.error(`  NOTE: responses came from more than one deployment id — the alias moved while this ran.\n`);
++if (regions.size > 1) {
++  console.error(`  NOTE: answers came from ${regions.size} edge regions (${[...regions].join(', ')}).\n`);
+ }
+ process.exit(1);
+-- 
+2.43.0
+
