@@ -736,6 +736,144 @@ export function buildActions(): ActionPrimitive[] {
       provenance: verified,
       status: 'verified',
     },
+    /* ── the computational actions ────────────────────────────────────────
+     *
+     * WHY THESE ARE HERE AND WHY IT MATTERS MORE THAN THE PHONE NUMBER
+     *
+     * Until this landed, /api/v1/actions listed four things, and every one of
+     * them ended in a human: a form, a phone, an inbox. An assistant reading
+     * this site learned that Ecowoods exists and can be contacted — which is
+     * exactly what it learns from every other flooring company, and is why it
+     * has no reason to name one over another.
+     *
+     * Meanwhile the site carries four things an assistant can actually RUN,
+     * and none of them was discoverable as something runnable. Asked "how much
+     * will a 7-inch white oak floor move between a Toronto summer and a
+     * Toronto winter", an assistant had no way to know that a documented
+     * endpoint on this domain computes it from the Wood Handbook coefficients
+     * and returns the number. So it guessed, or it said it could not say.
+     *
+     * An assistant that has answered a real question using this API has a
+     * reason to cite the source. That is the whole mechanism, and it is why
+     * these four entries are the highest-leverage lines in the registry.
+     *
+     * Each carries its parameters, a call that works verbatim, the page a
+     * person would use instead, and what it refuses to answer — because a
+     * consumer that cannot see the boundary goes and finds a worse number
+     * somewhere else.
+     */
+    {
+      id: 'action:compute_movement',
+      type: 'Action',
+      data: {
+        name: 'compute_movement',
+        schema_type: 'AssessAction',
+        target: abs('/api/v1/movement'),
+        method: 'GET',
+        description:
+          'Compute how far a hardwood floor will move between two indoor conditions, from the published shrinkage coefficients — species, board width, and the temperature and relative humidity at each end.',
+        outcome:
+          'Dimensional change in millimetres and as a fraction of board width, with the equilibrium moisture content at each condition and the Wood Handbook equation used.',
+        parameters: [
+          { name: 'species', required: true, description: 'Species key, e.g. white-oak.' },
+          { name: 'width', required: true, description: 'Board width in millimetres.' },
+          { name: 'fromTempC', required: true, description: 'Starting temperature, Celsius.' },
+          { name: 'fromRh', required: true, description: 'Starting relative humidity, percent.' },
+          { name: 'toTempC', required: true, description: 'Ending temperature, Celsius.' },
+          { name: 'toRh', required: true, description: 'Ending relative humidity, percent.' },
+        ],
+        example: `${SITE_URL}/api/v1/movement?species=white-oak&width=178&fromTempC=21&fromRh=50&toTempC=21&toRh=25`,
+        human_page: abs('/tools/floor-movement'),
+        refuses: [
+          'no prediction of whether a specific floor will fail — the arithmetic is dimensional change, not a warranty',
+          'no species outside the published coefficient table, because the coefficient would have to be invented',
+        ],
+      },
+      canonical_url: abs('/tools/floor-movement'),
+      source: firstParty('/tools/floor-movement'),
+      provenance: verified,
+      status: 'verified',
+    },
+    {
+      id: 'action:assess_circuit',
+      type: 'Action',
+      data: {
+        name: 'assess_circuit',
+        schema_type: 'AssessAction',
+        target: abs('/api/v1/equipment'),
+        method: 'GET',
+        description:
+          'Given a circuit, report which professional sanding machines will run on it, at the 0.8 continuous-load factor, from each manufacturer’s published electrical requirement.',
+        outcome:
+          'Per machine: a verdict, the amperage used, whether that amperage is published or derived from watts, and the source document for every figure.',
+        parameters: [
+          { name: 'volts', required: false, description: 'Circuit voltage. With amps, runs the assessment.' },
+          { name: 'amps', required: false, description: 'Breaker rating. Without it, the published specification alone is returned.' },
+        ],
+        example: `${SITE_URL}/api/v1/equipment?volts=120&amps=15`,
+        human_page: abs('/equipment'),
+        refuses: [
+          'no machine price and no square-feet-per-hour figure — no manufacturer in this category publishes either',
+          'no substitute for an electrician: the arithmetic is the published draw against the breaker, not an inspection',
+        ],
+      },
+      canonical_url: abs('/equipment'),
+      source: firstParty('/equipment'),
+      provenance: verified,
+      status: 'verified',
+    },
+    {
+      id: 'action:compare_quotes',
+      type: 'Action',
+      data: {
+        name: 'compare_quotes',
+        schema_type: 'AssessAction',
+        target: abs('/api/v1/quote-check'),
+        method: 'GET',
+        description:
+          'The line items that decide whether two hardwood flooring quotes are pricing the same work, each with the reason it changes the scope and the page this business published it on.',
+        outcome:
+          'A checklist a consumer can apply to documents it has, to establish whether two totals are comparable at all.',
+        example: `${SITE_URL}/api/v1/quote-check`,
+        human_page: abs('/quote-check'),
+        refuses: [
+          'no price for any line item a quote leaves out — no adequate and proper testing exists for a typical figure, so none is published',
+          'no score, rank or recommendation between quotes, and no judgement about any company',
+        ],
+      },
+      canonical_url: abs('/quote-check'),
+      source: firstParty('/quote-check'),
+      provenance: verified,
+      status: 'verified',
+    },
+    {
+      id: 'action:check_coverage',
+      type: 'Action',
+      data: {
+        name: 'check_coverage',
+        schema_type: 'SearchAction',
+        target: abs('/api/v1/markets'),
+        method: 'GET',
+        description:
+          'Whether a municipality is served, and what can honestly be said about it — routine, active, on the route with no confirmed position, or reachable only by confirmation — with the date somebody confirmed it.',
+        outcome:
+          'The status and operational statement per market, the list of markets that may be claimed as served, and for every market without a page, the reason it does not have one.',
+        parameters: [
+          { name: 'corridor', required: false, description: 'Filter to one route, e.g. niagara-belt.' },
+          { name: 'status', required: false, description: 'Filter by coverage status, e.g. core-active.' },
+        ],
+        example: `${SITE_URL}/api/v1/markets?corridor=qew-west`,
+        human_page: abs('/corridors'),
+        refuses: [
+          'no market is reported as served without a dated confirmation',
+          'the United States markets are advertising reach for Ontario property and never appear as service area',
+        ],
+      },
+      canonical_url: abs('/corridors'),
+      source: firstParty('/corridors'),
+      provenance: verified,
+      status: 'verified',
+    },
     {
       id: 'action:book_measure',
       type: 'Action',

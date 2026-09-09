@@ -242,12 +242,38 @@ export type PageData = {
 
 export type ActionData = {
   name: string;
-  schema_type: 'QuoteAction' | 'CommunicateAction' | 'ReserveAction';
+  /**
+   * `AssessAction` and `SearchAction` are the computational tools — the ones
+   * an assistant can call and get an answer from without a human being
+   * involved. Everything else on this list ends in a person: a form, a phone,
+   * an inbox.
+   */
+  schema_type:
+    | 'QuoteAction'
+    | 'CommunicateAction'
+    | 'ReserveAction'
+    | 'AssessAction'
+    | 'SearchAction';
   target: string;
   method: 'GET' | 'POST' | 'tel' | 'mailto';
   description: string;
   /** What the customer gets and when. */
   outcome: string;
+  /**
+   * Query parameters, for an action a machine can execute. Present only on
+   * computational actions; a phone number has no parameters.
+   */
+  parameters?: { name: string; required: boolean; description: string }[];
+  /** A call that works, verbatim. The one thing a consumer can copy. */
+  example?: string;
+  /** The page a person would use instead of the endpoint. */
+  human_page?: string;
+  /**
+   * What the action will not answer. Published for the same reason the
+   * endpoints publish `refuses`: a consumer that cannot see the boundary goes
+   * and finds a worse number somewhere else.
+   */
+  refuses?: string[];
 };
 
 export type OrganizationPrimitive = Primitive<'Organization', OrganizationData>;

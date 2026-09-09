@@ -84,12 +84,44 @@ for (const mm of marketsSrc.matchAll(
     index: mm.index,
   });
 }
-/* kind and partOf are the trailing arguments; read the rest of each call. */
+/*
+ * kind, partOf and the confirmation are the trailing arguments. Read a window
+ * rather than a line: an m() call spans several lines, and reading only the
+ * first meant the confirmation was invisible — which made the areaServed check
+ * below pass on a market nobody had confirmed. A guard that silently answers
+ * "false" is worse than one that is absent.
+ */
+const nextCallAfter = (i) => {
+  const candidates = [
+    marketsSrc.indexOf("\n  m('", i + 1),
+    marketsSrc.indexOf("\n  us('", i + 1),
+    marketsSrc.indexOf('\n];', i + 1),
+  ].filter((n) => n > -1);
+  return candidates.length ? Math.min(...candidates) : marketsSrc.length;
+};
+
 for (const x of markets) {
-  const tail = marketsSrc.slice(x.index, marketsSrc.indexOf('\n', x.index + x.block.length) + 1);
+  /* This record only. A fixed-size window bleeds into the next m() call, and
+     the first version of this read reported Toronto as a district of itself
+     and three confirmed markets as unconfirmed, because the window had run on
+     into the record below. */
+  const tail = marketsSrc.slice(x.index, nextCallAfter(x.index));
   x.isDistrict = /'district'/.test(tail);
   const p = /'district',\s*'([a-z0-9-]+)'/.exec(tail);
   x.partOf = p ? p[1] : undefined;
+  if (/\bUNVERIFIED\(\)/.test(tail)) x.confirmed = false;
+  else if (/\bACTIVE\('|\bTORONTO_TRUTH\(\)/.test(tail)) x.confirmed = true;
+  else if (/verifiedAt:\s*'[0-9-]+'/.test(tail)) x.confirmed = true;
+  else if (/verifiedAt:\s*null/.test(tail)) x.confirmed = false;
+  else x.confirmed = null;
+}
+const unreadable = markets.filter((x) => x.country === 'CA' && x.confirmed === null);
+if (unreadable.length) {
+  fail.push(
+    `could not read the operational confirmation for ${unreadable.length} market(s) ` +
+      `(${unreadable.slice(0, 3).map((x) => x.slug).join(', ')}). Fix the reader — a guard that cannot see a ` +
+      'confirmation reports every market as unconfirmed, or worse, as confirmed.',
+  );
 }
 /*
  * The United States markets are built by one constructor, so their status is
@@ -273,6 +305,53 @@ for (const fm of marketsSrc.matchAll(/'([a-z0-9-]+)',[\s\S]{0,400}?localFacts:\s
   const slug = fm[1];
   if (fm[2].trim() && !withContent.has(slug)) {
     fail.push(`${slug} has localFacts but no CityContent entry. Local detail is written once, in one place, and checked.`);
+  }
+}
+
+/* ── 7a. the schema's city list is a subset of the confirmed markets ──────
+ *
+ * lib/schema/root-schema.ts derives areaServed from CITIES in seo-data.ts, and
+ * that is the right mechanism — the schema cannot claim coverage that has no
+ * page. But CITIES and the market registry are two lists, and two lists that
+ * must agree eventually will not: adding a municipality to CITIES gives it a
+ * page AND puts it into the entity graph as a served City, with nothing asking
+ * whether anybody confirmed that it is served.
+ *
+ * So: every name in CITIES must exist in the registry as a market with a dated
+ * operational confirmation. That is the join between the two models, and it is
+ * the only thing that stops the corridor list from becoming a coverage claim
+ * one convenient edit at a time.
+ */
+const citiesArr = /const AREAS = \[([\s\S]*?)\];/.exec(seoSrc);
+if (!citiesArr) {
+  fail.push('could not read AREAS from lib/seo-data.ts — this guard cannot check the schema city list');
+} else {
+  const slugify = (x) =>
+    x.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const cityNames = [...citiesArr[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+  const confirmed = new Set(
+    markets
+      .filter((x) => x.country === 'CA')
+      .map((x) => x.slug),
+  );
+  for (const name of cityNames) {
+    const slug = slugify(name);
+    if (!confirmed.has(slug)) {
+      fail.push(
+        `AREAS in lib/seo-data.ts carries "${name}" (${slug}), which is not in the market registry. Every ` +
+          'municipality the schema emits as areaServed must exist in content/geo/markets.ts with a dated ' +
+          'operational confirmation — otherwise the entity graph claims coverage nobody has verified.',
+      );
+    }
+  }
+  const unverified = cityNames
+    .map(slugify)
+    .filter((slug) => bySlug.has(slug) && bySlug.get(slug).confirmed === false);
+  for (const slug of unverified) {
+    fail.push(
+      `${slug} is emitted as areaServed by the schema but its operational position is unconfirmed ` +
+        '(verifiedAt: null). Confirm it on a date, or take it out of AREAS.',
+    );
   }
 }
 

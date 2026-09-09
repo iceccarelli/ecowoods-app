@@ -109,6 +109,13 @@ jobs:
       # serves six municipalities in New York State. Checked, not intended.
       - name: Geography (no claimed coverage without a dated confirmation)
         run: node scripts/verify-geo.mjs
+      # Four endpoints on this site compute an answer. Before they were
+      # registered as actions, every action here ended in a human — which is
+      # exactly what an assistant learns from every competitor, and why it has
+      # no reason to name one. A tool that is not discoverable as executable
+      # gets described instead of used.
+      - name: Answer-engine surface (every tool is discoverable as runnable)
+        run: node scripts/verify-aeo.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:
