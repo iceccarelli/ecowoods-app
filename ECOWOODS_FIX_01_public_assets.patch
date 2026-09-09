@@ -1,0 +1,281 @@
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index 82be327..eaa0a29 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -79,6 +79,11 @@ jobs:
+       # describes the room, and no private street address reaches a registry.
+       - name: Media (plates on disk, alt present, no civic address)
+         run: node scripts/verify-media.mjs
++      # Every file under apps/web/public 404d in production for months because
++      # Vercel takes its static root from the repository root. The build command
++      # now syncs one into the other; this fails if that clause is removed.
++      - name: Public assets (the static root is actually synced)
++        run: node scripts/verify-public-assets.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/.gitignore b/.gitignore
+index b48e229..79175e3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -98,3 +98,14 @@ audit/rendered.md
+ # static asset. Never committed.
+ .floor-graph/
+ *.zip
++
++# ── The build-time public/ sync ──────────────────────────────────────────────
++# Vercel serves the REPO-ROOT public/ as the static root, not apps/web/public —
++# see docs/PUBLIC_ASSETS.md. vercel.json's buildCommand copies the app's public
++# directory up at build time, which means a local `pnpm build` leaves 400+
++# duplicated files here. They are build output, not source: ignore everything
++# except the handful that genuinely live at the root.
++/public/*
++!/public/brand/
++!/public/qr-app.jpg
++!/public/review-card.svg
+diff --git a/docs/PUBLIC_ASSETS.md b/docs/PUBLIC_ASSETS.md
+new file mode 100644
+index 0000000..369b24c
+--- /dev/null
++++ b/docs/PUBLIC_ASSETS.md
+@@ -0,0 +1,88 @@
++# Why `apps/web/public` is copied into `public/` at build time
++
++**Found:** 8 September 2026, verified against production.
++
++## The defect
++
++Every file under `apps/web/public/` — 422 tracked files — returned **404 in
++production**. Not some of them. All of them.
++
++Measured against `https://ecowoods.ca`, on a live deployment, with a
++robots-respecting fetcher:
++
++| URL | Lives in | Result |
++|---|---|---|
++| `/brand/ew-mark-192.png` | `public/` (repo root) | **served** |
++| `/icon-192.png` | `apps/web/public/` | **404** |
++| `/gallery/ash-herringbone-01-room.webp` | `apps/web/public/` | **404** |
++| `/proof/maple-vaughan-curved-stair/ch2/04_….webp` | `apps/web/public/` | **404** |
++| `/films/maple-vaughan-curved-stair/01_….mp4` | `apps/web/public/` | **404** |
++
++That is as clean a discriminator as this kind of thing produces: the split is
++exactly which of the two `public/` directories the file is in.
++
++## Why
++
++`vercel.json` sets `"outputDirectory": "apps/web/.next"` while the project root
++stays the repository root. Vercel builds the app from `apps/web` and then takes
++its static asset directory from the **project root** — so `public/` at the top
++of the repository is the static root, and `apps/web/public/` is never copied
++into the deployment at all.
++
++## Why nobody noticed for months
++
++Because almost nothing referenced these files by a raw path. The gallery, the
++illustrations and the proof sliders all reach their images through **`next/image`
++static imports** (`apps/web/app/data/slider-images.ts` and friends), and webpack
++emits those into `/_next/static/media/…`, which is part of the build output and
++therefore does get deployed. Only a raw string path — `src="/gallery/….webp"` —
++goes looking in the static root, and until the project photo records shipped
++there was almost no such path on the site.
++
++The five files that ARE in the repo-root `public/` are the tell: `brand/`,
++`qr-app.jpg`, `review-card.svg` — and `vercel.json` has a `/brand/(.*)`
++cache-control rule written specifically for them. Somebody hit this once, moved
++the brand assets up a level, and the general case stayed broken.
++
++## The fix
++
++One clause on the build command:
++
++```
++"buildCommand": "TURBO_FORCE=true pnpm build && mkdir -p public && cp -R apps/web/public/. public/"
++```
++
++`cp -R <src>/. <dst>/` merges the contents rather than nesting a directory, and
++it runs after the Next build and before Vercel collects the static root.
++
++**Why not the alternatives.** Setting the Vercel project's *Root Directory* to
++`apps/web` is the textbook monorepo answer and is probably where this should end
++up — but it is a dashboard setting, it cannot be expressed in this repository,
++and it changes install and build resolution for the whole project. That belongs
++in a deliberate migration, not in the patch that stops the images 404-ing. A
++symlink does not survive git. Moving `apps/web/public` to the repo root breaks
++`next/image` in development, which resolves the public directory relative to the
++app.
++
++`.gitignore` ignores the synced copies so a local `pnpm build` does not offer to
++commit 422 duplicated files, while keeping the five genuinely-tracked root
++assets.
++
++## The guard
++
++`scripts/verify-public-assets.mjs` fails the build if the sync clause is removed
++from `buildCommand`, and if the same path exists in both trees with different
++bytes — which would mean the root copy silently wins over the app one.
++
++**It cannot prove the fix.** `next start` serves `apps/web/public` correctly and
++always did, so every local check passes whether or not the deployment is broken.
++This one is verified in production or it is not verified — the same lesson the
++`Access-Control-Allow-Origin` note in `next.config.js` already records.
++
++## What was affected
++
++- the PWA icons `manifest.webmanifest` points at (`/icon-192.png`, `/icon-512.png`)
++- every raw-path reference under `/gallery/`, `/images/`, `/illustrations/`
++- the project photo records shipped in MEDIA-01 — 22 stills and 2 films
++- `apps/web/public/pdfs/` is empty apart from a `.gitignore`, so no published
++  paper PDF was lost
+diff --git a/package.json b/package.json
+index aa557d3..9974bf7 100644
+--- a/package.json
++++ b/package.json
+@@ -20,6 +20,7 @@
+     "verify:a11y": "node scripts/verify-a11y.mjs",
+     "verify:navigation": "node scripts/verify-navigation.mjs",
+     "verify:media": "node scripts/verify-media.mjs",
++    "verify:assets:public": "node scripts/verify-public-assets.mjs",
+     "media:promote": "node scripts/promote-giorgia-media.mjs",
+     "verify:tokens": "node scripts/verify-tokens.mjs",
+     "verify:schema": "node scripts/verify-schema.mjs",
+@@ -90,7 +91,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:floorgraph && pnpm verify:a11y && pnpm verify:navigation && pnpm verify:media && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:sliders && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check && pnpm verify:agentic",
++    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:floorgraph && pnpm verify:a11y && pnpm verify:navigation && pnpm verify:media && pnpm verify:assets:public && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:sliders && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check && pnpm verify:agentic",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:rendered": "node scripts/audit-rendered.mjs",
+     "audit:full": "bash scripts/audit-all.sh --full",
+diff --git a/scripts/verify-public-assets.mjs b/scripts/verify-public-assets.mjs
+new file mode 100644
+index 0000000..0160006
+--- /dev/null
++++ b/scripts/verify-public-assets.mjs
+@@ -0,0 +1,112 @@
++#!/usr/bin/env node
++/**
++ * verify-public-assets.mjs — the guard on the static root.
++ *
++ * THE DEFECT IT EXISTS FOR
++ *
++ * Every one of the 422 files under apps/web/public returned 404 in production,
++ * for months, because Vercel takes its static root from the repository root
++ * while this project builds out of apps/web. docs/PUBLIC_ASSETS.md has the
++ * measurements. The build command now copies one into the other.
++ *
++ * WHAT THIS CHECKS
++ *
++ *  1. The sync clause is still in vercel.json's buildCommand. Remove it and
++ *     every raw-path asset on the site 404s again, silently, with a green
++ *     build and a green test suite — which is exactly how it went unnoticed
++ *     the first time.
++ *
++ *  2. No path exists in BOTH trees with different bytes. `cp -R` lets the app
++ *     copy win, so a root file of the same name is a file that quietly stops
++ *     being served. Same name, same bytes is fine and is what the sync itself
++ *     produces.
++ *
++ *  3. Nothing in apps/web/public is large enough to be a mistake. A 50 MB file
++ *     in a static root is a video somebody meant to put in object storage.
++ *
++ * WHAT IT CANNOT DO
++ *
++ * Prove the fix. `next start` serves apps/web/public correctly and always did,
++ * so a local check passes whether or not the deployment is broken. The
++ * production curl in the command block is the real verification — the same
++ * lesson the Access-Control-Allow-Origin note in next.config.js records.
++ *
++ * Run:  pnpm verify:assets:public
++ */
++import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
++import { join, relative } from 'node:path';
++import { createHash } from 'node:crypto';
++
++const ROOT = process.cwd();
++const APP_PUBLIC = join(ROOT, 'apps/web/public');
++const ROOT_PUBLIC = join(ROOT, 'public');
++const VERCEL = join(ROOT, 'vercel.json');
++const MAX_BYTES = 25 * 1024 * 1024;
++
++const errors = [];
++
++if (!existsSync(VERCEL)) {
++  console.error('✗ vercel.json not found — run from the repo root');
++  process.exit(1);
++}
++
++const vercel = JSON.parse(readFileSync(VERCEL, 'utf8'));
++const build = String(vercel.buildCommand ?? '');
++if (!/apps\/web\/public\/\.\s+public\//.test(build)) {
++  errors.push(
++    'vercel.json buildCommand no longer copies apps/web/public into public/.\n' +
++      `    Found: ${build || '(none)'}\n` +
++      '    Without it, every raw-path asset on the site 404s in production while the\n' +
++      '    build stays green. docs/PUBLIC_ASSETS.md has the measurements.',
++  );
++}
++
++const walk = (dir, base = dir, out = []) => {
++  if (!existsSync(dir)) return out;
++  for (const name of readdirSync(dir)) {
++    if (name.startsWith('.')) continue;
++    const p = join(dir, name);
++    const s = statSync(p);
++    if (s.isDirectory()) walk(p, base, out);
++    else out.push({ rel: relative(base, p), abs: p, size: s.size });
++  }
++  return out;
++};
++
++const appFiles = walk(APP_PUBLIC);
++const rootFiles = walk(ROOT_PUBLIC);
++const rootByRel = new Map(rootFiles.map((f) => [f.rel, f]));
++
++const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
++
++let collisions = 0;
++for (const f of appFiles) {
++  const twin = rootByRel.get(f.rel);
++  if (twin && sha(twin.abs) !== sha(f.abs)) {
++    collisions += 1;
++    errors.push(
++      `public/${f.rel} exists in both trees with different content.\n` +
++        '    The build-time copy lets the apps/web version win, so the root file is being\n' +
++        '    served today and will stop being served the moment a deploy runs. Delete one.',
++    );
++  }
++  if (f.size > MAX_BYTES) {
++    errors.push(
++      `apps/web/public/${f.rel} is ${(f.size / 1e6).toFixed(1)} MB. A static root is not object storage —` +
++        ' put a file this size behind a bucket and reference it by URL.',
++    );
++  }
++}
++
++if (errors.length) {
++  console.error('');
++  for (const e of errors) console.error(`✗ ${e}`);
++  console.error(`\n✗ public assets: ${errors.length} problem(s)`);
++  process.exit(1);
++}
++
++const totalMb = appFiles.reduce((n, f) => n + f.size, 0) / 1e6;
++console.log(
++  `✓ public assets verified — ${appFiles.length} file(s) in apps/web/public (${totalMb.toFixed(1)} MB) ` +
++    `synced into the static root at build time, ${rootFiles.length} at the root, ${collisions} collision(s)`,
++);
+diff --git a/vercel.json b/vercel.json
+index e80d344..f706b7c 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -2,7 +2,7 @@
+   "$schema": "https://openapi.vercel.sh/vercel.json",
+   "framework": "nextjs",
+   "installCommand": "pnpm install --no-frozen-lockfile",
+-  "buildCommand": "TURBO_FORCE=true pnpm build",
++  "buildCommand": "TURBO_FORCE=true pnpm build && mkdir -p public && cp -R apps/web/public/. public/",
+   "outputDirectory": "apps/web/.next",
+ 
+   "redirects": [
