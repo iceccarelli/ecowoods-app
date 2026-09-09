@@ -1,0 +1,1846 @@
+From d23e8e72784e7fdebd1309c024d79657b488ac1b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 19:55:36 +0000
+Subject: [PATCH] =?UTF-8?q?feat(geo):=20the=20corridor=20model=20=E2=80=94?=
+ =?UTF-8?q?=2049=20markets,=209=20routes,=20and=20a=20page=20only=20where?=
+ =?UTF-8?q?=20one=20has=20been=20earned?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The expansion brief asks for forty-two municipalities across the Golden
+Horseshoe. The fastest way to deliver that is a page per municipality from one
+template with the place name substituted in, and it is the single most reliably
+punished pattern in local search, for the good reason that every one of those
+pages is the same page.
+
+This repository has already been here. F-157 records fifteen of sixteen
+service-area pages rendering one generic paragraph with a place name swapped in,
+and CityContent still carries the rule stamped on it: EVERY field must be REAL —
+invented detail is worse than none.
+
+So the unit of expansion here is a RECORD, not a page. content/geo/markets.ts
+holds all 49 markets — 43 in Ontario, 6 in New York — each with its corridor
+membership, its coverage status, the sentence that can honestly be said about
+serving it, and the date somebody confirmed that sentence. Twenty-seven of them
+carry no local content and therefore no page; they are first-class entities all
+the same: corridor members, API records, internal-link targets, and a computed
+queue of what to write next. lib/geo/worthiness.ts decides publication from four
+requirements — real local content, a dated operational confirmation, not a US
+proxy, no cannibalisation of a parent municipality — and the advisory score
+cannot override any of them, because a score that can override a truth
+requirement eventually will.
+
+That is not caution slowing the expansion down. It is what lets it run: adding
+the next twenty municipalities is a data change, and the day one of them has
+real content its page appears with metadata, schema, sitemap entry, internal
+links and API record already correct.
+
+THE LINE THE UNITED STATES MARKETS DO NOT CROSS
+
+Buffalo, Niagara Falls NY, Amherst, Cheektowaga, Tonawanda and Lockport exist so
+that someone on the American side of the river who owns an Ontario property can
+find an Ontario company. That is the whole purpose. They are status us-proxy,
+they are excluded from serviceAreaMarkets() by construction, and
+scripts/verify-geo.mjs fails the build if the us() constructor assigns any other
+status, if us-proxy joins OPERATIONAL_STATUSES, or if the service-area filter
+loses its verified-municipality condition. The first regression test found that
+the guard was reporting the status it assumed rather than the one the code
+assigns — it now reads the constructor.
+
+DISTRICTS ARE NOT CITIES
+
+Etobicoke is part of Toronto; Ancaster, Dundas and Stoney Creek are part of
+Hamilton. A district never reaches areaServed as a peer City node of the
+municipality containing it, declares no corridors of its own (a corridor is a
+drive between municipalities), and inherits membership through partOf. The guard
+caught the first draft asserting both, which is how two lists that must agree
+start disagreeing.
+
+Also: /corridors and /corridors/[id] for the nine routes, /api/v1/markets —
+which publishes its own content_queue and the reason each market has no page,
+because that is a more falsifiable statement about coverage than any map —
+/api/v1/corridors, 18 unit tests, sitemap, header and llms.txt entries, and no
+coordinate, drive time or population figure anywhere: those are the fields a
+template most wants filled and the ones most likely to be invented.
+
+Corrects old-domain/EXECUTE.md: `vercel domains add` needs the project name.
+Without it the apex is added to the team and attached to nothing — it prints
+Success and changes nothing — and the www subdomain is refused outright.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml              |   7 +
+ apps/web/app/api/v1/corridors/route.ts |  10 +
+ apps/web/app/api/v1/markets/route.ts   |  10 +
+ apps/web/app/components/Header.tsx     |   1 +
+ apps/web/app/corridors/[id]/page.tsx   | 169 ++++++++++++++
+ apps/web/app/corridors/page.tsx        | 137 +++++++++++
+ apps/web/app/llms.txt/route.ts         |   1 +
+ apps/web/app/sitemap.ts                |   3 +
+ apps/web/content/geo/corridors.ts      | 148 ++++++++++++
+ apps/web/content/geo/markets.ts        | 266 +++++++++++++++++++++
+ apps/web/lib/geo/geo.test.ts           | 147 ++++++++++++
+ apps/web/lib/geo/index.ts              |  46 ++++
+ apps/web/lib/geo/worthiness.ts         | 114 +++++++++
+ apps/web/lib/registry/handlers.ts      | 114 +++++++++
+ apps/web/lib/registry/manifest.ts      |   2 +
+ apps/web/lib/registry/openapi.ts       |  27 +++
+ apps/web/tests/api-contract.test.ts    |   4 +
+ old-domain/EXECUTE.md                  |  10 +-
+ package.json                           |   1 +
+ scripts/verify-destinations.mjs        |   1 +
+ scripts/verify-geo.mjs                 | 308 +++++++++++++++++++++++++
+ 21 files changed, 1524 insertions(+), 2 deletions(-)
+ create mode 100644 apps/web/app/api/v1/corridors/route.ts
+ create mode 100644 apps/web/app/api/v1/markets/route.ts
+ create mode 100644 apps/web/app/corridors/[id]/page.tsx
+ create mode 100644 apps/web/app/corridors/page.tsx
+ create mode 100644 apps/web/content/geo/corridors.ts
+ create mode 100644 apps/web/content/geo/markets.ts
+ create mode 100644 apps/web/lib/geo/geo.test.ts
+ create mode 100644 apps/web/lib/geo/index.ts
+ create mode 100644 apps/web/lib/geo/worthiness.ts
+ create mode 100644 scripts/verify-geo.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index dd00107..deb0fce 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -102,6 +102,13 @@ jobs:
+       # the old domain went on serving 200 on 35 URLs.
+       - name: Live contract (the live check asserts things this repo can produce)
+         run: node scripts/verify-live-contract.mjs
++      # The geographic model is where a truthful site most easily stops being
++      # one, and it happens by increments that each look reasonable: a
++      # municipality joins a list, a template gives it a page, areaServed is
++      # generated from the list, and the entity graph now says a Toronto company
++      # serves six municipalities in New York State. Checked, not intended.
++      - name: Geography (no claimed coverage without a dated confirmation)
++        run: node scripts/verify-geo.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/apps/web/app/api/v1/corridors/route.ts b/apps/web/app/api/v1/corridors/route.ts
+new file mode 100644
+index 0000000..49fc40c
+--- /dev/null
++++ b/apps/web/app/api/v1/corridors/route.ts
+@@ -0,0 +1,10 @@
++/**
++ * GET /api/v1/corridors — see lib/registry/handlers.ts and /api/v1/openapi.json.
++ */
++import { handleCorridors } from '@/lib/registry/handlers';
++import { options } from '@/lib/registry/http';
++
++export const dynamic = 'force-dynamic';
++
++export const GET = (request: Request) => handleCorridors(request);
++export const OPTIONS = options;
+diff --git a/apps/web/app/api/v1/markets/route.ts b/apps/web/app/api/v1/markets/route.ts
+new file mode 100644
+index 0000000..2edaa2e
+--- /dev/null
++++ b/apps/web/app/api/v1/markets/route.ts
+@@ -0,0 +1,10 @@
++/**
++ * GET /api/v1/markets — see lib/registry/handlers.ts and /api/v1/openapi.json.
++ */
++import { handleMarkets } from '@/lib/registry/handlers';
++import { options } from '@/lib/registry/http';
++
++export const dynamic = 'force-dynamic';
++
++export const GET = (request: Request) => handleMarkets(request);
++export const OPTIONS = options;
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 183f1ec..44af738 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -100,6 +100,7 @@ const SERVICES_MENU: MegaColumn[] = [
+     items: [
+       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+       { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
++      { label: 'Where we actually drive', href: '/corridors', note: 'Nine routes, and what coverage means' },
+       { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
+       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
+       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+diff --git a/apps/web/app/corridors/[id]/page.tsx b/apps/web/app/corridors/[id]/page.tsx
+new file mode 100644
+index 0000000..ef72634
+--- /dev/null
++++ b/apps/web/app/corridors/[id]/page.tsx
+@@ -0,0 +1,169 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { notFound } from 'next/navigation';
++import {
++  CORRIDORS, corridorById, marketBySlug, assess, marketPath, type Market,
++} from '@/lib/geo';
++import { SITE_URL, cityContent, BUSINESS } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const dynamicParams = false;
++export const generateStaticParams = () => CORRIDORS.map((c) => ({ id: c.id }));
++
++export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
++  const { id } = await params;
++  const c = corridorById(id);
++  if (!c) return {};
++  return {
++    title: `${c.name} — hardwood flooring coverage along ${c.route}`,
++    description: `${c.members.length} municipalities on the ${c.name} route, what coverage means in each, and where Ecowoods actually works. No claim of coverage that has not been confirmed.`,
++    alternates: { canonical: `/corridors/${c.id}` },
++  };
++}
++
++const STATUS_LABEL: Record<string, string> = {
++  'core-active': 'Routine',
++  'active-expansion': 'Active',
++  'corridor-target': 'In the corridor',
++  'travel-by-confirmation': 'By confirmation',
++  'us-proxy': 'Advertising reach only',
++};
++
++/**
++ * /corridors/[id] — one route.
++ *
++ * The page says three things about every municipality on it and refuses to say
++ * a fourth. It says where the place sits on the drive, what its status is, and
++ * whether there is a page with local detail. It does not say that work has been
++ * done there, because for most of these nobody has confirmed that it has.
++ *
++ * The distinction is the entire value of the page. A visitor in Welland can see
++ * that Welland is on the Niagara route, that its position is unconfirmed, and
++ * that the confirmed markets are up the QEW — and decide to call. That is worth
++ * more than a page telling them Ecowoods serves Welland, which is the version
++ * every competitor's template already gives them.
++ */
++export default async function CorridorPage({ params }: { params: Promise<{ id: string }> }) {
++  const { id } = await params;
++  const corridor = corridorById(id);
++  if (!corridor) notFound();
++
++  const hub = marketBySlug(corridor.hub);
++  const members = corridor.members
++    .map((s) => marketBySlug(s))
++    .filter((x): x is Market => Boolean(x));
++
++  const withPages = members.filter((x) => assess(x).indexable);
++  const confirmed = members.filter((x) => x.operationalTruth.verifiedAt && x.status !== 'us-proxy');
++  const crossBorder = members.some((x) => x.country === 'US');
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Corridors', url: `${SITE_URL}/corridors` },
++          { name: corridor.name, url: `${SITE_URL}/corridors/${corridor.id}` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
++            <Link href="/corridors">Corridors</Link> <span aria-hidden="true">/</span>{' '}
++            <span>{corridor.name}</span>
++          </nav>
++          <p className="tlx-kicker">{corridor.route}</p>
++          <h1 className="tlx-title">{corridor.name}</h1>
++          <p className="tlx-lede">{corridor.summary}</p>
++          <p className="tlx-note">
++            Out from {hub?.name ?? corridor.hub}. {members.length} markets on the route,{' '}
++            {confirmed.length} with a confirmed operational position, {withPages.length} with a page of local
++            detail.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">Along the route</h2>
++          <div className="tlx-table-wrap" role="region" tabIndex={0} aria-label={`Markets on the ${corridor.name} route`}>
++            <table className="wm-table">
++              <thead>
++                <tr>
++                  <th scope="col">Market</th>
++                  <th scope="col">Status</th>
++                  <th scope="col">What that means here</th>
++                </tr>
++              </thead>
++              <tbody>
++                {members.map((x) => {
++                  const worthy = assess(x).indexable;
++                  const cc = cityContent(x.slug);
++                  return (
++                    <tr key={x.slug}>
++                      <th scope="row">
++                        {worthy && cc ? <Link href={marketPath(x.slug)}>{x.name}</Link> : x.name}
++                        {x.kind === 'district' && x.partOf && (
++                          <> <span className="tlx-kicker">part of {marketBySlug(x.partOf)?.name ?? x.partOf}</span></>
++                        )}
++                        {x.country === 'US' && <> <span className="tlx-kicker">NY</span></>}
++                      </th>
++                      <td>{STATUS_LABEL[x.status] ?? x.status}</td>
++                      <td>
++                        {x.operationalTruth.statement ||
++                          'No confirmed operational position. On the route and in the plan; call and ask before assuming a date.'}
++                      </td>
++                    </tr>
++                  );
++                })}
++              </tbody>
++            </table>
++          </div>
++        </div>
++      </section>
++
++      {crossBorder && (
++        <section className="tlx-section">
++          <div className="shell">
++            <h2 className="tlx-h2">About the New York municipalities on this list</h2>
++            <div className="tlx-body">
++              <p>
++                Ecowoods is an Ontario company operating from {BUSINESS.address.streetAddress} in{' '}
++                {BUSINESS.address.addressLocality}. There is no United States office, no United States crew
++                and no United States phone number, and this page is not an offer to work in New York State.
++              </p>
++              <p>
++                They appear here for one reason: a great many people who own property in Niagara and along the
++                lake live on the other side of the river, and somebody searching from Buffalo for work on an
++                Ontario house should be able to find an Ontario company. That is the whole of it. Those
++                municipalities are never published as service area, in this page or in the structured data
++                behind it, and a guard fails the build if one ever is.
++              </p>
++            </div>
++          </div>
++        </section>
++      )}
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">Before you call about a market on this route</h2>
++          <div className="tlx-body">
++            <p>
++              The published <Link href="/pricing">price bands</Link> are the same everywhere; distance shows up
++              in the written price after the measure, not as a different rate card. If you are holding quotes
++              already, <Link href="/quote-check">put them side by side</Link> before comparing the totals — the
++              usual reason two quotes disagree is that they are pricing different work.
++            </p>
++            <p>
++              Everything on <Link href="/corridors">the other routes</Link>, and the full model behind these
++              statuses, is readable as data at <Link href="/api/v1/markets">/api/v1/markets</Link>.
++            </p>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/corridors/page.tsx b/apps/web/app/corridors/page.tsx
+new file mode 100644
+index 0000000..ce774dd
+--- /dev/null
++++ b/apps/web/app/corridors/page.tsx
+@@ -0,0 +1,137 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { CORRIDORS, MARKETS, marketBySlug, assess } from '@/lib/geo';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const metadata: Metadata = {
++  title: 'Where we drive — the corridors this work is routed along',
++  description: `The ${CORRIDORS.length} routes Ecowoods works out from Toronto, the municipalities on each, and exactly what coverage means in every one of them.`,
++  alternates: { canonical: '/corridors' },
++};
++
++/**
++ * /corridors — the honest map.
++ *
++ * A service-area list answers "do you come here" with a yes or a silence. A
++ * corridor answers it with a drive: the hub, the highway, and where the place
++ * sits along it. That is also the only framing in which "we cover the Golden
++ * Horseshoe" can be said without exaggeration, because the reader can see which
++ * end of it they are on.
++ *
++ * Every status shown here comes from content/geo/markets.ts, and a market whose
++ * operational position nobody has confirmed says so on this page rather than
++ * borrowing the confidence of the ones beside it.
++ */
++export default function CorridorsPage() {
++  const counts = {
++    operational: MARKETS.filter((x) => x.operationalTruth.verifiedAt && x.status !== 'us-proxy').length,
++    withPages: MARKETS.filter((x) => assess(x).indexable).length,
++    total: MARKETS.filter((x) => x.country === 'CA').length,
++  };
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Corridors', url: `${SITE_URL}/corridors` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Corridors</span>
++          </nav>
++          <p className="tlx-kicker">Coverage</p>
++          <h1 className="tlx-title">The routes, not a list of place names</h1>
++          <p className="tlx-lede">
++            What decides whether a floor in Grimsby can be done well is the QEW, not a map colour. These are
++            the {CORRIDORS.length} routes the work is organised along — the hub each one runs out from, the
++            municipalities strung along it, and what coverage actually means in each.
++          </p>
++          <p className="tlx-note">
++            {counts.total} Ontario municipalities and districts are in the model. {counts.operational} have a
++            confirmed operational position. {counts.withPages} have earned a page of their own. Those three
++            numbers are deliberately different, and the difference is explained below.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <ul className="pj-index">
++            {CORRIDORS.map((c) => {
++              const hub = marketBySlug(c.hub);
++              return (
++                <li key={c.id} className="pj-card">
++                  <Link href={`/corridors/${c.id}`} className="pj-card-link">
++                    <h2 className="pj-card-title">{c.name}</h2>
++                  </Link>
++                  <p className="tlx-kicker">{c.route}</p>
++                  <p className="tlx-body">{c.summary}</p>
++                  <p className="pj-note">
++                    Out from {hub?.name ?? c.hub} · {c.members.length} markets
++                  </p>
++                </li>
++              );
++            })}
++          </ul>
++        </div>
++      </section>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">What the statuses mean</h2>
++          <div className="tlx-body">
++            <p>
++              <strong>Routine.</strong> Worked from the Toronto shop as a matter of course, within the
++              daily-return radius. Scheduling is normal scheduling.
++            </p>
++            <p>
++              <strong>Active.</strong> Taking work; coverage established but not yet routine.
++            </p>
++            <p>
++              <strong>In the corridor.</strong> On the route and in the plan, with no confirmed operational
++              position yet. It appears here because the geography is real; it does not have a page, because a
++              page for it would imply coverage nobody has confirmed. Call and ask — the honest answer is
++              available in a phone call, and it is not available in a template.
++            </p>
++            <p>
++              <strong>By confirmation.</strong> Outside the daily-return radius. The distance is real, the job
++              is scheduled as a trip, and that sits in the written price rather than appearing later.
++            </p>
++            <p>
++              <strong>Advertising reach.</strong> The New York side of the{' '}
++              <Link href="/corridors/buffalo-niagara">Buffalo–Niagara corridor</Link>. Ecowoods operates in
++              Ontario, from Ontario. Those municipalities exist in this model so an owner of an Ontario
++              property who lives across the river can find the company, and they are never published as
++              service area.
++            </p>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">Why there are fewer pages than places</h2>
++          <div className="tlx-body">
++            <p>
++              The quick version of this page would have been {counts.total} city pages generated from one
++              template with the place name substituted in. It is the most reliably punished pattern in local
++              search, for the good reason that every one of those pages is the same page.
++            </p>
++            <p>
++              So a municipality gets a page when it has something specific to say — the housing stock, the
++              substrate, the practical constraint that actually differs there — and until then it lives here,
++              in the corridor it belongs to, findable and linked. The list of which markets are next is
++              computed, not guessed: see <Link href="/api/v1/markets">the markets API</Link>.
++            </p>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 848728d..080e1ad 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -161,6 +161,7 @@ export async function GET() {
+   lines.push('## Evidence');
+   link('Case studies', '/case-studies', 'measured jobs — substrate, moisture readings, species, area — published in full; first-party evidence, not testimonials-as-proof');
+   link('Projects, photographed', '/projects', 'photographic records of completed jobs in two chapters, bare then finished; deliberately no measurements, no species and no street address — the measured material is the case studies above');
++  link('Coverage by corridor', '/corridors', 'the nine routes this work is organised along, each with the municipalities on it in travel order and the operational status of every one: routine, active, in the corridor with no confirmed position, or reachable only by confirmation; the New York municipalities on the Buffalo\u2013Niagara route are advertising reach for Ontario property and are never published as service area'),
+   link('Compare hardwood quotes', '/quote-check', 'a side-by-side scope comparison for two to four quotes a homeowner is already holding: twenty-two line items that decide whether two totals are pricing the same work, computed in the browser with nothing uploaded and nothing stored; it prices no missing item and ranks no company, because no adequate and proper testing exists for a typical line-item price'),
+   link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
+   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 72c06c0..7beba7b 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -10,6 +10,7 @@ import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { SERVICE_AREAS } from '@/lib/seo-data';
++import { CORRIDORS } from '@/lib/geo';
+ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+@@ -181,6 +182,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     entry('/projects', 'monthly', 0.85),
+     /* Equipment. The specifications change when a manufacturer revises a data
+        sheet, which is a yearly event, not a weekly one. */
++    entry('/corridors', 'monthly', 0.8),
++    ...CORRIDORS.map((c) => entry(`/corridors/${c.id}`, 'monthly', 0.7)),
+     entry('/quote-check', 'monthly', 0.9),
+     entry('/equipment', 'monthly', 0.85),
+     ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
+diff --git a/apps/web/content/geo/corridors.ts b/apps/web/content/geo/corridors.ts
+new file mode 100644
+index 0000000..540c213
+--- /dev/null
++++ b/apps/web/content/geo/corridors.ts
+@@ -0,0 +1,148 @@
++/**
++ * content/geo/corridors.ts — the routing spine of the expansion.
++ *
++ * A corridor is not a marketing region. It is a drive: a hub, a highway, and
++ * the municipalities strung along it in the order a crew would reach them.
++ * That is why corridors exist in the data model at all — the thing that decides
++ * whether a job in Grimsby is profitable is the QEW, not a map colour.
++ *
++ * These nine, their members and their order are stated by the owner. Nothing
++ * here is inferred from a map or a distance API: a corridor is a business
++ * decision about where crews will travel, and inventing one would be inventing
++ * an operating plan.
++ */
++
++export type CorridorId =
++  | 'core-gta'
++  | '400-north'
++  | '401-east'
++  | '407-york-peel'
++  | 'qew-west'
++  | '403-6-west'
++  | 'niagara-belt'
++  | 'buffalo-niagara'
++  | 'cottage-north-east';
++
++export interface Corridor {
++  id: CorridorId;
++  name: string;
++  /** The highway or geography the corridor follows, in plain words. */
++  route: string;
++  /** Market slug the corridor runs out from. */
++  hub: string;
++  /** Market slugs, in travel order from the hub. */
++  members: string[];
++  /**
++   * What this corridor is for, in one paragraph. Describes geography and
++   * routing only — never a claim about work performed in these places.
++   */
++  summary: string;
++}
++
++export const CORRIDORS: Corridor[] = [
++  {
++    id: 'core-gta',
++    name: 'Core GTA',
++    route: 'Toronto outward through Peel, York and Halton',
++    hub: 'toronto',
++    members: ['toronto', 'mississauga', 'brampton', 'vaughan', 'markham', 'milton', 'oakville', 'burlington'],
++    summary:
++      'The dense inner ring, where a crew can reach the job and be working before nine. Every municipality here is within the daily-return radius of the Norfield Crescent shop, which is what makes same-week scheduling possible at all.',
++  },
++  {
++    id: '400-north',
++    name: '400 North',
++    route: 'Highway 400 north from Vaughan to Barrie',
++    hub: 'vaughan',
++    members: ['vaughan', 'newmarket', 'aurora', 'innisfil', 'barrie'],
++    summary:
++      'Newer suburban stock north of the city, reached on one highway with no cross-town crawl. The corridor changes character past Bradford: closer to Lake Simcoe the seasonal humidity swing is wider than it is downtown, which is a wood-movement question before it is a scheduling one.',
++  },
++  {
++    id: '401-east',
++    name: '401 East',
++    route: 'Highway 401 east through Durham Region',
++    hub: 'toronto',
++    members: ['toronto', 'pickering', 'ajax', 'whitby', 'oshawa', 'clarington', 'kawartha-lakes'],
++    summary:
++      'Durham east of the city, then out past Bowmanville toward the Kawarthas. The first four are commuter distance; Kawartha Lakes is not, and is treated as travel-by-confirmation rather than routine coverage.',
++  },
++  {
++    id: '407-york-peel',
++    name: '407 / York–Peel',
++    route: 'Highway 407 across the top of the city',
++    hub: 'vaughan',
++    members: ['vaughan', 'richmond-hill', 'markham', 'brampton', 'caledon', 'halton-hills'],
++    summary:
++      'The cross-town route that avoids the 401. It exists in this model because it changes which jobs can share a day: Markham in the morning and Brampton in the afternoon is a 407 decision.',
++  },
++  {
++    id: 'qew-west',
++    name: 'QEW West',
++    route: 'QEW southwest along the lake to Hamilton',
++    hub: 'mississauga',
++    members: ['mississauga', 'oakville', 'burlington', 'hamilton', 'stoney-creek', 'grimsby'],
++    summary:
++      'The lakeshore run. Housing age drops sharply and then rises again: newer detached stock through Oakville and Burlington, then Hamilton, where much of the stock predates the war and the substrate question changes with it.',
++  },
++  {
++    id: '403-6-west',
++    name: '403 / Highway 6 West',
++    route: 'Hamilton west and north to Waterloo Region',
++    hub: 'hamilton',
++    members: ['hamilton', 'ancaster', 'dundas', 'guelph', 'cambridge', 'kitchener'],
++    summary:
++      'Past Hamilton toward Guelph and Waterloo Region. Ancaster and Dundas are part of the City of Hamilton rather than separate municipalities, and are modelled that way — they are places, not peer cities.',
++  },
++  {
++    id: 'niagara-belt',
++    name: 'Niagara Belt',
++    route: 'QEW around the lake through Niagara Region',
++    hub: 'grimsby',
++    members: [
++      'grimsby', 'lincoln', 'st-catharines', 'thorold', 'welland',
++      'niagara-on-the-lake', 'niagara-falls-on', 'port-colborne', 'fort-erie',
++    ],
++    summary:
++      'The far end of the QEW. Older housing stock and heritage properties, with lake proximity on both sides of the peninsula — a relative-humidity context that differs from the inland GTA and matters for acclimation.',
++  },
++  {
++    id: 'buffalo-niagara',
++    name: 'Buffalo–Niagara cross-border',
++    route: 'Fort Erie and Niagara Falls across the border into western New York',
++    hub: 'fort-erie',
++    members: [
++      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'buffalo',
++      'amherst', 'cheektowaga', 'tonawanda', 'lockport',
++    ],
++    summary:
++      'The only corridor that crosses the border, and the only one whose United States members are advertising reach rather than service coverage. Ecowoods operates in Ontario, from Ontario. The New York municipalities here exist in this model so that a property owner on that side of the river with an Ontario property can find the company — nothing more. They are never emitted as service area.',
++  },
++  {
++    id: 'cottage-north-east',
++    name: 'Cottage / north-east edge',
++    route: 'Barrie and Innisfil east toward the Kawarthas',
++    hub: 'barrie',
++    members: ['barrie', 'innisfil', 'kawartha-lakes'],
++    summary:
++      'Seasonal and recreational property at the edge of the reachable map. Everything in this corridor is travel-by-confirmation: the distance is real, the logistics are real, and a page that implied routine coverage here would be the kind of claim this repository exists to prevent.',
++  },
++];
++
++export const corridorById = (id: string): Corridor | undefined =>
++  CORRIDORS.find((c) => c.id === id);
++
++/**
++ * Corridors a market sits on. A district inherits its municipality's — see the
++ * note on Market.corridors. `resolveParent` is passed in rather than imported
++ * so this file stays free of a cycle with markets.ts.
++ */
++export const corridorsFor = (
++  marketSlug: string,
++  resolveParent?: (slug: string) => string | undefined,
++): Corridor[] => {
++  const direct = CORRIDORS.filter((c) => c.members.includes(marketSlug));
++  if (direct.length || !resolveParent) return direct;
++  const parent = resolveParent(marketSlug);
++  return parent ? CORRIDORS.filter((c) => c.members.includes(parent)) : [];
++};
+diff --git a/apps/web/content/geo/markets.ts b/apps/web/content/geo/markets.ts
+new file mode 100644
+index 0000000..41ea23d
+--- /dev/null
++++ b/apps/web/content/geo/markets.ts
+@@ -0,0 +1,266 @@
++/**
++ * content/geo/markets.ts — every municipality this business names, and the
++ * truth status of each.
++ *
++ * WHY A REGISTRY AND NOT FORTY-TWO PAGES
++ *
++ * The fastest way to "expand into the Golden Horseshoe" is to generate a page
++ * per municipality from a template with the place name substituted in. It
++ * produces forty-two URLs in an afternoon, and it is the single most reliably
++ * punished pattern in local search — because every one of those pages is the
++ * same page, competing with itself, saying nothing about the place it names.
++ *
++ * This repository has already been here. F-157 records fifteen of sixteen
++ * service-area pages rendering one generic paragraph with a place name swapped
++ * in, and CityContent exists with the rule stamped on it: EVERY field must be
++ * REAL — invented detail is worse than none.
++ *
++ * So a market entering this file gets a *record*, not a page. It becomes a
++ * page only when it has earned one, and lib/geo/worthiness.ts decides that
++ * from evidence rather than intent: real local content, a verified operational
++ * position, and no other page already answering the same query. Until then the
++ * municipality is a first-class entity in the graph — corridor member, API
++ * record, internal-link target — and no thin page exists to be suppressed.
++ *
++ * That is not caution slowing the expansion down. It is what makes the
++ * expansion able to run: adding the next twenty municipalities is a data
++ * change, and the day one of them has real content the page appears with its
++ * metadata, schema, sitemap entry, internal links and API record already
++ * correct.
++ *
++ * WHAT MAY BE WRITTEN HERE, AND WHAT MAY NOT
++ *
++ *   name, province, country, kind, partOf   public fact
++ *   status, corridors, parentHub            owner decisions about where crews go
++ *   localFacts                              only what is publicly checkable or
++ *                                           already published on this site
++ *   operationalTruth                        requires a date and a person; until
++ *                                           then `verifiedAt: null`, and the
++ *                                           guard refuses to publish a page
++ *
++ * There are no drive times, no coordinates, no population figures and no
++ * housing-stock descriptions for markets nobody has worked in. Those are the
++ * fields a template most wants filled, and the ones most likely to be invented.
++ * A market with `localFacts: []` is not incomplete — it is honest, and it is
++ * the queue of work that turns a corridor into coverage.
++ */
++import type { CorridorId } from './corridors';
++
++export type MarketStatus =
++  /** Worked routinely, from the Toronto shop, today. */
++  | 'core-active'
++  /** Actively taking work; coverage established but not yet routine. */
++  | 'active-expansion'
++  /** In the plan and in the graph; not yet claimed as coverage. */
++  | 'corridor-target'
++  /** Reachable, but only for a job confirmed in advance. Distance is real. */
++  | 'travel-by-confirmation'
++  /** Advertising reach only. Never emitted as service area. Never. */
++  | 'us-proxy';
++
++/** A municipality, or a place inside one. The distinction is not cosmetic. */
++export type MarketKind = 'municipality' | 'district';
++
++export interface Market {
++  slug: string;
++  name: string;
++  country: 'CA' | 'US';
++  /** Province or state code. */
++  region: 'ON' | 'NY';
++  kind: MarketKind;
++  /**
++   * For a district, the municipality it is part of. Etobicoke is part of
++   * Toronto; Ancaster and Dundas are part of Hamilton. A district must never
++   * become a schema.org City node alongside the municipality that contains it
++   * — that is a factual error in the one part of the site a machine reads
++   * literally, and F-157 is the record of nearly shipping it.
++   */
++  partOf?: string;
++  status: MarketStatus;
++  /**
++   * Corridors this market is on. A DISTRICT declares none: a corridor is a
++   * drive between municipalities, and Etobicoke does not sit on the QEW
++   * separately from Toronto. Membership is inherited through `partOf`, which
++   * is what corridorsFor() resolves — the alternative is two lists that must
++   * agree and eventually will not.
++   */
++  corridors: CorridorId[];
++  /** Where a crew would set out from for this market. */
++  parentHub: string;
++  /** Nearest other markets, for internal linking. Slugs. */
++  nearest: string[];
++  /**
++   * Publicly checkable statements about the place, or points already published
++   * in a paper on this site. Nothing about Ecowoods, and nothing that needed a
++   * figure this site does not publish. Empty is a valid and common answer.
++   */
++  localFacts: string[];
++  /**
++   * What can honestly be said about serving this market, and the date somebody
++   * confirmed it. A market with `verifiedAt: null` may appear in the graph and
++   * in a corridor; it may not carry a page that implies coverage.
++   */
++  operationalTruth: { statement: string; verifiedAt: string | null };
++}
++
++/* ── the existing sixteen ──────────────────────────────────────────────────
++ *
++ * These already have pages, CityContent and, in most cases, months of index
++ * history. Their slugs are unchanged and their pages are untouched. What they
++ * gain here is corridor membership and an explicit status, so that one file
++ * answers "where does this business work" for the whole stack.
++ */
++const CORE: Market[] = [
++  m('Toronto', 'toronto', 'core-active', 'toronto', ['core-gta', '401-east'], ['mississauga', 'vaughan', 'markham'], {
++    statement: 'Head office and shop. Routine daily coverage.',
++    verifiedAt: '2026-09-09',
++  }),
++  m('Downtown Toronto', 'downtown-toronto', 'core-active', 'toronto', [], ['toronto', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('North York', 'north-york', 'core-active', 'toronto', [], ['toronto', 'vaughan'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Etobicoke', 'etobicoke', 'core-active', 'toronto', [], ['toronto', 'mississauga'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Scarborough', 'scarborough', 'core-active', 'toronto', [], ['toronto', 'pickering'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('East York', 'east-york', 'core-active', 'toronto', [], ['toronto', 'north-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('York', 'york', 'core-active', 'toronto', [], ['toronto', 'north-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Mississauga', 'mississauga', 'core-active', 'toronto', ['core-gta', 'qew-west'], ['toronto', 'oakville', 'brampton'], ACTIVE('2026-09-09')),
++  m('Brampton', 'brampton', 'core-active', 'toronto', ['core-gta', '407-york-peel'], ['mississauga', 'caledon', 'vaughan'], ACTIVE('2026-09-09')),
++  m('Vaughan', 'vaughan', 'core-active', 'toronto', ['core-gta', '400-north', '407-york-peel'], ['toronto', 'richmond-hill', 'brampton'], ACTIVE('2026-09-09')),
++  m('Markham', 'markham', 'core-active', 'toronto', ['core-gta', '407-york-peel'], ['richmond-hill', 'scarborough', 'vaughan'], ACTIVE('2026-09-09')),
++  m('Richmond Hill', 'richmond-hill', 'core-active', 'toronto', ['407-york-peel'], ['markham', 'vaughan', 'aurora'], ACTIVE('2026-09-09')),
++  m('Oakville', 'oakville', 'core-active', 'toronto', ['core-gta', 'qew-west'], ['mississauga', 'burlington', 'milton'], ACTIVE('2026-09-09')),
++  m('Aurora', 'aurora', 'active-expansion', 'vaughan', ['400-north'], ['newmarket', 'richmond-hill'], ACTIVE('2026-09-09')),
++  m('Newmarket', 'newmarket', 'active-expansion', 'vaughan', ['400-north'], ['aurora', 'innisfil'], ACTIVE('2026-09-09')),
++  m('Pickering', 'pickering', 'active-expansion', 'toronto', ['401-east'], ['ajax', 'scarborough'], ACTIVE('2026-09-09')),
++  m('Ajax', 'ajax', 'active-expansion', 'toronto', ['401-east'], ['pickering', 'whitby'], ACTIVE('2026-09-09')),
++];
++
++/* ── the corridor. Records, not pages. ────────────────────────────────────── */
++const CORRIDOR_TARGETS: Market[] = [
++  m('Milton', 'milton', 'corridor-target', 'toronto', ['core-gta'], ['oakville', 'halton-hills', 'burlington'], UNVERIFIED()),
++  m('Burlington', 'burlington', 'corridor-target', 'mississauga', ['core-gta', 'qew-west'], ['oakville', 'hamilton', 'milton'], UNVERIFIED()),
++  m('Halton Hills', 'halton-hills', 'corridor-target', 'vaughan', ['407-york-peel'], ['milton', 'caledon'], UNVERIFIED()),
++  m('Caledon', 'caledon', 'corridor-target', 'vaughan', ['407-york-peel'], ['brampton', 'halton-hills'], UNVERIFIED()),
++  m('Whitby', 'whitby', 'corridor-target', 'toronto', ['401-east'], ['ajax', 'oshawa'], UNVERIFIED()),
++  m('Oshawa', 'oshawa', 'corridor-target', 'toronto', ['401-east'], ['whitby', 'clarington'], UNVERIFIED()),
++  m('Clarington', 'clarington', 'corridor-target', 'toronto', ['401-east'], ['oshawa', 'kawartha-lakes'], UNVERIFIED()),
++  m('Barrie', 'barrie', 'corridor-target', 'vaughan', ['400-north', 'cottage-north-east'], ['innisfil', 'newmarket'], UNVERIFIED()),
++  m('Innisfil', 'innisfil', 'corridor-target', 'vaughan', ['400-north', 'cottage-north-east'], ['barrie', 'newmarket'], UNVERIFIED()),
++  m('Hamilton', 'hamilton', 'corridor-target', 'mississauga', ['qew-west', '403-6-west'], ['burlington', 'stoney-creek', 'ancaster'], UNVERIFIED()),
++  m('Ancaster', 'ancaster', 'corridor-target', 'mississauga', [], ['hamilton', 'dundas'], UNVERIFIED(), 'district', 'hamilton'),
++  m('Dundas', 'dundas', 'corridor-target', 'mississauga', [], ['hamilton', 'ancaster'], UNVERIFIED(), 'district', 'hamilton'),
++  m('Stoney Creek', 'stoney-creek', 'corridor-target', 'mississauga', [], ['hamilton', 'grimsby'], UNVERIFIED(), 'district', 'hamilton'),
++  m('Grimsby', 'grimsby', 'corridor-target', 'mississauga', ['qew-west', 'niagara-belt'], ['stoney-creek', 'lincoln'], UNVERIFIED()),
++  m('Guelph', 'guelph', 'corridor-target', 'hamilton', ['403-6-west'], ['cambridge', 'kitchener'], UNVERIFIED()),
++  m('Cambridge', 'cambridge', 'corridor-target', 'hamilton', ['403-6-west'], ['kitchener', 'guelph'], UNVERIFIED()),
++  m('Kitchener', 'kitchener', 'corridor-target', 'hamilton', ['403-6-west'], ['cambridge', 'guelph'], UNVERIFIED()),
++  m('Lincoln', 'lincoln', 'corridor-target', 'grimsby', ['niagara-belt'], ['grimsby', 'st-catharines'], UNVERIFIED()),
++  m('St. Catharines', 'st-catharines', 'corridor-target', 'grimsby', ['niagara-belt'], ['lincoln', 'thorold', 'niagara-on-the-lake'], UNVERIFIED()),
++  m('Thorold', 'thorold', 'corridor-target', 'grimsby', ['niagara-belt'], ['st-catharines', 'welland'], UNVERIFIED()),
++  m('Welland', 'welland', 'corridor-target', 'grimsby', ['niagara-belt'], ['thorold', 'port-colborne'], UNVERIFIED()),
++  m('Niagara-on-the-Lake', 'niagara-on-the-lake', 'corridor-target', 'grimsby', ['niagara-belt'], ['st-catharines', 'niagara-falls-on'], UNVERIFIED()),
++  m('Niagara Falls', 'niagara-falls-on', 'corridor-target', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['niagara-on-the-lake', 'fort-erie'], UNVERIFIED()),
++  m('Port Colborne', 'port-colborne', 'corridor-target', 'grimsby', ['niagara-belt'], ['welland', 'fort-erie'], UNVERIFIED()),
++  m('Fort Erie', 'fort-erie', 'corridor-target', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['port-colborne', 'niagara-falls-on'], UNVERIFIED()),
++];
++
++const TRAVEL_BY_CONFIRMATION: Market[] = [
++  m('Kawartha Lakes', 'kawartha-lakes', 'travel-by-confirmation', 'toronto', ['401-east', 'cottage-north-east'], ['clarington', 'barrie'], {
++    statement:
++      'Outside the daily-return radius. A job here is scheduled as a trip, confirmed in advance, and priced with that in the written quote.',
++    verifiedAt: '2026-09-09',
++  }),
++];
++
++/* ── the United States side, and the line it does not cross ────────────────
++ *
++ * These six exist so that a property owner on the American side of the river
++ * with an Ontario property can find an Ontario company. That is the whole
++ * purpose. Ecowoods has no United States office, no United States address, no
++ * United States phone number and no United States crew, and this file is where
++ * that stops being a matter of good intentions: `us-proxy` is a status the
++ * schema layer refuses to emit as service area, and scripts/verify-geo.mjs
++ * fails the build if one appears there.
++ */
++const US_PROXY: Market[] = [
++  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst']),
++  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport']),
++  us('Amherst', 'amherst', ['buffalo', 'tonawanda']),
++  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst']),
++  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst']),
++  us('Lockport', 'lockport', ['niagara-falls-ny', 'amherst']),
++];
++
++export const MARKETS: Market[] = [...CORE, ...CORRIDOR_TARGETS, ...TRAVEL_BY_CONFIRMATION, ...US_PROXY];
++
++export const marketBySlug = (slug: string): Market | undefined =>
++  MARKETS.find((x) => x.slug === slug);
++
++export const marketsInCorridor = (id: string): Market[] =>
++  MARKETS.filter((x) => (x.corridors as string[]).includes(id));
++
++/** Statuses that describe actual coverage. Everything else is not service. */
++export const OPERATIONAL_STATUSES: MarketStatus[] = [
++  'core-active',
++  'active-expansion',
++  'travel-by-confirmation',
++];
++
++export const isOperational = (x: Market): boolean =>
++  OPERATIONAL_STATUSES.includes(x.status) && x.operationalTruth.verifiedAt !== null;
++
++/* ── constructors, so a record cannot be half-written ─────────────────────── */
++
++function ACTIVE(verifiedAt: string) {
++  return {
++    statement: 'Within the daily-return radius of the Toronto shop. Routine scheduling.',
++    verifiedAt,
++  };
++}
++
++function TORONTO_TRUTH() {
++  return {
++    statement: 'Part of the City of Toronto, where the shop is. Routine daily coverage.',
++    verifiedAt: '2026-09-09',
++  };
++}
++
++/**
++ * The default for a market nobody has confirmed. It is deliberately not a
++ * sentence that could be pasted onto a page: there is nothing here to publish,
++ * which is the point.
++ */
++function UNVERIFIED() {
++  return { statement: '', verifiedAt: null };
++}
++
++function m(
++  name: string,
++  slug: string,
++  status: MarketStatus,
++  parentHub: string,
++  corridors: CorridorId[],
++  nearest: string[],
++  operationalTruth: { statement: string; verifiedAt: string | null },
++  kind: MarketKind = 'municipality',
++  partOf?: string,
++): Market {
++  return {
++    slug, name, country: 'CA', region: 'ON', kind, partOf,
++    status, corridors, parentHub, nearest, localFacts: [], operationalTruth,
++  };
++}
++
++function us(name: string, slug: string, nearest: string[]): Market {
++  return {
++    slug, name, country: 'US', region: 'NY', kind: 'municipality',
++    status: 'us-proxy',
++    corridors: ['buffalo-niagara'],
++    parentHub: 'fort-erie',
++    nearest,
++    localFacts: [],
++    operationalTruth: {
++      statement:
++        'Not a service area. Ecowoods operates in Ontario. This market exists so that an owner of an Ontario property who lives on the New York side can find the company.',
++      verifiedAt: '2026-09-09',
++    },
++  };
++}
+diff --git a/apps/web/lib/geo/geo.test.ts b/apps/web/lib/geo/geo.test.ts
+new file mode 100644
+index 0000000..8081021
+--- /dev/null
++++ b/apps/web/lib/geo/geo.test.ts
+@@ -0,0 +1,147 @@
++import { describe, it, expect } from 'vitest';
++import {
++  MARKETS, CORRIDORS, marketBySlug, corridorById, corridorsFor,
++  serviceAreaMarkets, isOperational, assess, contentQueue, indexableMarkets,
++} from './index';
++
++describe('the market registry', () => {
++  it('has a unique slug per market', () => {
++    const slugs = MARKETS.map((m) => m.slug);
++    expect(new Set(slugs).size).toBe(slugs.length);
++  });
++
++  it('distinguishes the two Niagara Falls', () => {
++    const both = MARKETS.filter((m) => m.name === 'Niagara Falls');
++    expect(both).toHaveLength(2);
++    expect(both.map((m) => m.slug).sort()).toEqual(['niagara-falls-ny', 'niagara-falls-on']);
++    expect(both.map((m) => m.country).sort()).toEqual(['CA', 'US']);
++  });
++
++  it('resolves every nearest, parentHub and partOf to a real market', () => {
++    for (const m of MARKETS) {
++      expect(marketBySlug(m.parentHub), `${m.slug} parentHub`).toBeDefined();
++      for (const n of m.nearest) expect(marketBySlug(n), `${m.slug} nearest ${n}`).toBeDefined();
++      if (m.partOf) expect(marketBySlug(m.partOf), `${m.slug} partOf`).toBeDefined();
++    }
++  });
++
++  it('gives every district a parent municipality and no corridors of its own', () => {
++    for (const m of MARKETS.filter((x) => x.kind === 'district')) {
++      expect(m.partOf, m.slug).toBeDefined();
++      expect(marketBySlug(m.partOf!)?.kind, `${m.slug} parent`).toBe('municipality');
++      expect(m.corridors, `${m.slug} corridors`).toEqual([]);
++    }
++  });
++
++  it('inherits corridor membership through the parent municipality', () => {
++    const etobicoke = corridorsFor('etobicoke').map((c) => c.id);
++    const toronto = corridorsFor('toronto').map((c) => c.id);
++    expect(etobicoke).toEqual(toronto);
++    expect(etobicoke).toContain('core-gta');
++  });
++});
++
++describe('the line the United States markets may not cross', () => {
++  it('marks every US market us-proxy and none of them operational', () => {
++    const us = MARKETS.filter((m) => m.country === 'US');
++    expect(us.length).toBeGreaterThan(0);
++    for (const m of us) {
++      expect(m.status, m.slug).toBe('us-proxy');
++      expect(isOperational(m), m.slug).toBe(false);
++    }
++  });
++
++  it('keeps every US market out of the service area', () => {
++    const area = serviceAreaMarkets();
++    expect(area.some((m) => m.country === 'US')).toBe(false);
++    expect(area.every((m) => m.region === 'ON')).toBe(true);
++  });
++
++  it('never gives a US market a page', () => {
++    for (const m of MARKETS.filter((x) => x.country === 'US')) {
++      const w = assess(m);
++      expect(w.indexable, m.slug).toBe(false);
++      expect(w.blockers.join(' ')).toContain('us-proxy');
++      expect(w.score).toBe(0);
++    }
++  });
++});
++
++describe('what may be claimed as served', () => {
++  it('excludes anything without a dated confirmation', () => {
++    for (const m of serviceAreaMarkets()) {
++      expect(m.operationalTruth.verifiedAt, m.slug).not.toBeNull();
++      expect(m.operationalTruth.statement.length, m.slug).toBeGreaterThan(0);
++    }
++  });
++
++  it('excludes districts, so no district is a peer City of its own municipality', () => {
++    expect(serviceAreaMarkets().every((m) => m.kind === 'municipality')).toBe(true);
++    expect(serviceAreaMarkets().some((m) => m.slug === 'etobicoke')).toBe(false);
++    expect(serviceAreaMarkets().some((m) => m.slug === 'toronto')).toBe(true);
++  });
++
++  it('excludes every corridor-target, because nobody has confirmed one', () => {
++    const area = new Set(serviceAreaMarkets().map((m) => m.slug));
++    for (const m of MARKETS.filter((x) => x.status === 'corridor-target')) {
++      expect(area.has(m.slug), m.slug).toBe(false);
++    }
++  });
++});
++
++describe('page-worthiness', () => {
++  it('publishes a page only where there is real local content', () => {
++    for (const m of indexableMarkets(MARKETS)) {
++      expect(m.operationalTruth.verifiedAt, m.slug).not.toBeNull();
++      expect(m.country, m.slug).toBe('CA');
++    }
++  });
++
++  it('states a reason for every market it will not publish', () => {
++    for (const m of MARKETS) {
++      const w = assess(m);
++      if (!w.indexable) expect(w.blockers.length, m.slug).toBeGreaterThan(0);
++      else expect(w.blockers).toEqual([]);
++    }
++  });
++
++  it('ranks a queue that never contains a US market', () => {
++    const q = contentQueue(MARKETS);
++    expect(q.length).toBeGreaterThan(0);
++    const usSlugs = new Set(MARKETS.filter((m) => m.country === 'US').map((m) => m.slug));
++    expect(q.some((w) => usSlugs.has(w.slug))).toBe(false);
++    for (let i = 1; i < q.length; i++) expect(q[i - 1].score).toBeGreaterThanOrEqual(q[i].score);
++  });
++
++  it('cannot be talked into a page by a high score', () => {
++    const unconfirmed = MARKETS.find((m) => m.operationalTruth.verifiedAt === null);
++    expect(unconfirmed).toBeDefined();
++    expect(assess(unconfirmed!).indexable).toBe(false);
++  });
++});
++
++describe('corridors', () => {
++  it('resolves every member to a market', () => {
++    for (const c of CORRIDORS) {
++      expect(c.members.length).toBeGreaterThan(1);
++      for (const s of c.members) expect(marketBySlug(s), `${c.id} member ${s}`).toBeDefined();
++      expect(marketBySlug(c.hub), `${c.id} hub`).toBeDefined();
++      expect(c.members[0], `${c.id} starts at its hub`).toBe(c.hub);
++    }
++  });
++
++  it('agrees with the markets in both directions', () => {
++    for (const m of MARKETS.filter((x) => x.kind === 'municipality')) {
++      for (const id of m.corridors) {
++        expect(corridorById(id)?.members, `${m.slug} in ${id}`).toContain(m.slug);
++      }
++    }
++  });
++
++  it('crosses the border in exactly one corridor', () => {
++    const crossing = CORRIDORS.filter((c) =>
++      c.members.some((s) => marketBySlug(s)?.country === 'US'),
++    );
++    expect(crossing.map((c) => c.id)).toEqual(['buffalo-niagara']);
++  });
++});
+diff --git a/apps/web/lib/geo/index.ts b/apps/web/lib/geo/index.ts
+new file mode 100644
+index 0000000..a0d66a1
+--- /dev/null
++++ b/apps/web/lib/geo/index.ts
+@@ -0,0 +1,46 @@
++/**
++ * lib/geo — one import surface for the geographic layer.
++ *
++ * Everything downstream — routes, metadata, schema, sitemap, internal links,
++ * the /api/v1 geo endpoints, the AI surfaces and the guards — reads from here.
++ * Nothing copies a city array into a component.
++ */
++export {
++  MARKETS,
++  marketBySlug,
++  marketsInCorridor,
++  isOperational,
++  OPERATIONAL_STATUSES,
++} from '@/content/geo/markets';
++export type { Market, MarketStatus, MarketKind } from '@/content/geo/markets';
++
++export { CORRIDORS, corridorById } from '@/content/geo/corridors';
++export type { Corridor, CorridorId } from '@/content/geo/corridors';
++
++export { assess, indexableMarkets, contentQueue } from './worthiness';
++export type { Worthiness } from './worthiness';
++
++import { MARKETS, isOperational, type Market } from '@/content/geo/markets';
++import { corridorsFor as corridorsForRaw } from '@/content/geo/corridors';
++
++/**
++ * The markets that may be emitted as service area.
++ *
++ * Districts are excluded deliberately: Etobicoke is part of Toronto and
++ * Ancaster is part of Hamilton, and declaring either a peer City node of the
++ * municipality containing it is a factual error in the part of the site a
++ * machine reads literally. F-157.
++ */
++export const serviceAreaMarkets = (): Market[] =>
++  MARKETS.filter((x) => isOperational(x) && x.kind === 'municipality');
++
++/**
++ * Corridors a market sits on, resolving a district through the municipality it
++ * is part of.
++ */
++export const corridorsFor = (slug: string) =>
++  corridorsForRaw(slug, (s) => MARKETS.find((x) => x.slug === s)?.partOf);
++
++/** Canonical path for a market that has a page. */
++export const marketPath = (slug: string): string => `/service-areas/${slug}`;
++export const corridorPath = (id: string): string => `/corridors/${id}`;
+diff --git a/apps/web/lib/geo/worthiness.ts b/apps/web/lib/geo/worthiness.ts
+new file mode 100644
+index 0000000..53f8846
+--- /dev/null
++++ b/apps/web/lib/geo/worthiness.ts
+@@ -0,0 +1,114 @@
++/**
++ * lib/geo/worthiness.ts — whether a market has earned a page.
++ *
++ * THE DECISION THIS FILE EXISTS TO MAKE
++ *
++ * A market gets an indexable page when publishing one makes the site better,
++ * and not when adding a municipality to a list makes the map look bigger.
++ * Those two are easy to confuse, because the second is what a template
++ * rewards. So the decision is computed from evidence and the answer is
++ * auditable.
++ *
++ * Four things are required, all of them, and none of them is a matter of
++ * degree:
++ *
++ *   1. LOCAL CONTENT EXISTS. A CityContent entry with a real intro and a real
++ *      housing note. Not "Hardwood flooring in <City>" — the fields carry the
++ *      rule already: EVERY field must be REAL.
++ *   2. THE OPERATIONAL POSITION IS VERIFIED. Somebody confirmed, on a date,
++ *      what can honestly be said about serving the place. A page for a market
++ *      whose `verifiedAt` is null is a page that implies coverage nobody has
++ *      confirmed.
++ *   3. IT IS NOT A US PROXY. Those exist for advertising reach; a page would
++ *      read as a United States location, which is exactly the impression this
++ *      business must not create.
++ *   4. IT DOES NOT CANNIBALISE ITS PARENT. A district inside a municipality
++ *      that already has a page competes with it for the same queries unless it
++ *      carries content the parent does not.
++ *
++ * The score below is advisory — it ranks the queue of markets worth writing
++ * content for next. It cannot promote a market past the four requirements, and
++ * `isIndexable` never consults it. A scoring function that can override a truth
++ * requirement is a scoring function that will.
++ */
++import { type Market, marketBySlug } from '@/content/geo/markets';
++import { cityContent, type CityContent } from '@/lib/seo-data';
++
++export interface Worthiness {
++  slug: string;
++  indexable: boolean;
++  /** Every requirement that is not met, in words. Empty when indexable. */
++  blockers: string[];
++  /** Advisory ranking for the content queue. Never gates publication. */
++  score: number;
++}
++
++const hasRealContent = (cc: CityContent | undefined): boolean =>
++  Boolean(cc && cc.intro.trim().length >= 120 && cc.housingNote.trim().length >= 120);
++
++export function assess(market: Market): Worthiness {
++  const cc = cityContent(market.slug);
++  const blockers: string[] = [];
++
++  if (market.status === 'us-proxy') {
++    blockers.push(
++      'us-proxy: advertising reach, not a service area. A page here would read as a United States location.',
++    );
++  }
++  if (!hasRealContent(cc)) {
++    blockers.push(
++      'no local content: needs a CityContent entry with a real intro and housing note, not a template with the place name substituted in.',
++    );
++  }
++  if (market.operationalTruth.verifiedAt === null) {
++    blockers.push(
++      'operational position unverified: nobody has confirmed, on a date, what can honestly be said about serving this market.',
++    );
++  }
++  if (market.kind === 'district' && market.partOf) {
++    const parent = marketBySlug(market.partOf);
++    const parentIndexable = parent ? cityContent(parent.slug) !== undefined : false;
++    if (parentIndexable && !hasRealContent(cc)) {
++      blockers.push(
++        `cannibalises ${market.partOf}: a district page competes with its municipality for the same queries unless it carries content the parent does not.`,
++      );
++    }
++  }
++
++  return { slug: market.slug, indexable: blockers.length === 0, blockers, score: scoreOf(market, cc) };
++}
++
++/**
++ * The content queue, not the publication gate.
++ *
++ * Weighted toward markets where writing real content is both possible and
++ * useful: a corridor hub with several neighbours pointing at it, in a corridor
++ * that is already partly covered, is worth an afternoon before a market at the
++ * far end of the map is.
++ */
++function scoreOf(market: Market, cc: CityContent | undefined): number {
++  let n = 0;
++  if (market.status === 'core-active') n += 40;
++  else if (market.status === 'active-expansion') n += 30;
++  else if (market.status === 'corridor-target') n += 15;
++  else if (market.status === 'travel-by-confirmation') n += 5;
++
++  n += market.corridors.length * 5;
++  n += Math.min(market.nearest.length, 4) * 3;
++  if (market.kind === 'municipality') n += 10;
++  if (market.operationalTruth.verifiedAt) n += 15;
++  if (cc) n += 20;
++  if (market.localFacts.length) n += market.localFacts.length * 2;
++  if (market.status === 'us-proxy') n = 0;
++  return n;
++}
++
++export const indexableMarkets = (all: Market[]): Market[] =>
++  all.filter((x) => assess(x).indexable);
++
++/** The queue: what to write next, best first. */
++export const contentQueue = (all: Market[]): Worthiness[] =>
++  all
++    .map(assess)
++    .filter((w) => !w.indexable && !w.blockers.some((b) => b.startsWith('us-proxy')))
++    .sort((a, b) => b.score - a.score);
+diff --git a/apps/web/lib/registry/handlers.ts b/apps/web/lib/registry/handlers.ts
+index f0107fd..cb74347 100644
+--- a/apps/web/lib/registry/handlers.ts
++++ b/apps/web/lib/registry/handlers.ts
+@@ -25,6 +25,14 @@ import {
+ import { PROJECTS, getProject, stillById } from '@/lib/projects';
+ import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
+ import { SCOPE_ITEMS } from '@/lib/quote-check';
++import {
++  MARKETS,
++  CORRIDORS,
++  marketBySlug,
++  assess as assessMarket,
++  contentQueue,
++  serviceAreaMarkets,
++} from '@/lib/geo';
+ import { SITE_URL } from '@/lib/seo-data';
+ 
+ const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
+@@ -648,6 +656,112 @@ export async function handleQuoteCheck(request: Request) {
+   );
+ }
+ 
++/**
++ * GET /api/v1/markets — where this company works, and where it does not.
++ *
++ * WHY THE SHAPE OF THIS RESPONSE IS THE POINT
++ *
++ * Every flooring company's site answers "do you serve X" with yes. An
++ * assistant asked the question therefore learns nothing from any of them, and
++ * the honest answer — routine here, unconfirmed there, and this one is a
++ * two-hour drive that belongs in the quote — is the answer a homeowner
++ * actually needs.
++ *
++ * So each market carries its status, the sentence that can honestly be said
++ * about serving it, and the date somebody confirmed that. A market nobody has
++ * confirmed says so, in the payload, rather than borrowing the confidence of
++ * the ones beside it. `service_area` lists only what may be claimed, and the
++ * United States markets are excluded from it by construction — they are
++ * advertising reach for Ontario property, not coverage.
++ *
++ * `content_queue` is published deliberately. It is the list of markets that do
++ * not yet have a page and the reason each one does not, which is a more useful
++ * and more falsifiable statement about a company's coverage than any map.
++ */
++export async function handleMarkets(request: Request) {
++  const reg = await getRegistry();
++  const url = new URL(request.url);
++  const corridorFilter = url.searchParams.get('corridor');
++  const statusFilter = url.searchParams.get('status');
++
++  let rows = MARKETS;
++  if (corridorFilter) rows = rows.filter((x) => (x.corridors as string[]).includes(corridorFilter));
++  if (statusFilter) rows = rows.filter((x) => x.status === statusFilter);
++
++  return json(
++    {
++      meta: meta(reg, rows.length),
++      note:
++        'Markets in the Ecowoods geographic model, each with the status and the operational statement that can honestly be made about it. A market being listed is not a claim that it is served.',
++      refuses: [
++        'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
++        'United States markets are advertising reach for Ontario property, never service area, and never appear in service_area',
++        'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
++      ],
++      service_area: serviceAreaMarkets().map((x) => ({ slug: x.slug, name: x.name, region: x.region })),
++      status_legend: {
++        'core-active': 'worked routinely from the Toronto shop',
++        'active-expansion': 'taking work; coverage established, not yet routine',
++        'corridor-target': 'on the route and in the plan; no confirmed operational position',
++        'travel-by-confirmation': 'reachable, scheduled as a trip, priced with the distance in the written quote',
++        'us-proxy': 'advertising reach only; not a service area',
++      },
++      markets: rows.map((x) => {
++        const w = assessMarket(x);
++        return {
++          slug: x.slug,
++          name: x.name,
++          country: x.country,
++          region: x.region,
++          kind: x.kind,
++          part_of: x.partOf ?? null,
++          status: x.status,
++          corridors: x.corridors,
++          parent_hub: x.parentHub,
++          nearest: x.nearest,
++          local_facts: x.localFacts,
++          operational_statement: x.operationalTruth.statement || null,
++          verified_at: x.operationalTruth.verifiedAt,
++          has_page: w.indexable,
++          page: w.indexable ? `${SITE_URL}/service-areas/${x.slug}` : null,
++          why_no_page: w.indexable ? null : w.blockers,
++        };
++      }),
++      content_queue: contentQueue(MARKETS)
++        .slice(0, 10)
++        .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
++    },
++    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
++  );
++}
++
++/** GET /api/v1/corridors — the routes, and the markets on each. */
++export async function handleCorridors(request: Request) {
++  const reg = await getRegistry();
++  return json(
++    {
++      meta: meta(reg, CORRIDORS.length),
++      note:
++        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region.',
++      corridors: CORRIDORS.map((c) => ({
++        id: c.id,
++        name: c.name,
++        route: c.route,
++        hub: c.hub,
++        summary: c.summary,
++        page: `${SITE_URL}/corridors/${c.id}`,
++        members: c.members.map((slug) => {
++          const x = marketBySlug(slug);
++          return x
++            ? { slug, name: x.name, country: x.country, status: x.status, verified_at: x.operationalTruth.verifiedAt }
++            : { slug, name: slug, country: null, status: null, verified_at: null };
++        }),
++      })),
++    },
++    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
++  );
++}
++
+ export async function handleEquipmentMachine(request: Request, id: string) {
+   const machine = machineById(id);
+   if (!machine) {
+diff --git a/apps/web/lib/registry/manifest.ts b/apps/web/lib/registry/manifest.ts
+index 4e5a21e..c1fb38f 100644
+--- a/apps/web/lib/registry/manifest.ts
++++ b/apps/web/lib/registry/manifest.ts
+@@ -48,6 +48,8 @@ export const ENDPOINTS: EndpointDecl[] = [
+   { path: '/media', method: 'GET', summary: 'Photographic records of completed work: projects, with counts and canonical pages.', file: 'media', cache: 'static' },
+   { path: '/media/{id}', method: 'GET', summary: 'One project: chapters, stills and films with absolute URLs, plus what the record deliberately does not establish.', file: 'media/[id]', cache: 'static' },
+   { path: '/equipment', method: 'GET', summary: 'Professional floor sanding machines with their manufacturer-published electrical requirements. ?volts=&amps= assesses each against that circuit. No price and no productivity figure — no manufacturer publishes either.', file: 'equipment', cache: 'static' },
++  { path: '/markets', method: 'GET', summary: 'Every municipality in the Ecowoods geographic model with its coverage status, the operational statement that can honestly be made about it, and the date somebody confirmed it. A market being listed is not a claim that it is served; United States markets are advertising reach for Ontario property and never appear as service area. ?corridor= and ?status= filter.', file: 'markets', cache: 'static' },
++  { path: '/corridors', method: 'GET', summary: 'The nine routes the work is organised along — hub, highway and the municipalities on each in travel order — with every member\u2019s status.', file: 'corridors', cache: 'static' },
+   { path: '/quote-check', method: 'GET', summary: 'The line items that decide whether two hardwood flooring quotes are pricing the same work, each with the page this business published it on. No price for any item, no score and no ranking — none is computable from published data.', file: 'quote-check', cache: 'static' },
+   { path: '/equipment/{id}', method: 'GET', summary: 'One machine: published power and mechanical specification with a source URL per figure, what the manufacturer does not publish, and where its own documents disagree.', file: 'equipment/[id]', cache: 'static' },
+   { path: '/recommendation-context', method: 'POST', summary: 'Relevance, matching services and locations, evidence, pricing context, canonical URLs and next action.', file: 'recommendation-context', cache: 'computed' },
+diff --git a/apps/web/lib/registry/openapi.ts b/apps/web/lib/registry/openapi.ts
+index e004adb..69d8776 100644
+--- a/apps/web/lib/registry/openapi.ts
++++ b/apps/web/lib/registry/openapi.ts
+@@ -91,6 +91,8 @@ export function buildOpenApi() {
+       '/media': ref('MediaIndex'),
+       '/media/{id}': ref('MediaProject'),
+       '/equipment': ref('EquipmentIndex'),
++      '/markets': ref('MarketIndex'),
++      '/corridors': ref('CorridorIndex'),
+       '/quote-check': ref('QuoteCheckChecklist'),
+       '/equipment/{id}': ref('EquipmentMachine'),
+       '/openapi.json': { type: 'object', description: 'This document.' },
+@@ -386,6 +388,31 @@ export function buildOpenApi() {
+             machines: { type: 'array', items: { type: 'object' } },
+           },
+         },
++        MarketIndex: {
++          type: 'object',
++          description:
++            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. United States markets are advertising reach for Ontario property and never appear in service_area.',
++          required: ['meta', 'markets', 'service_area', 'refuses'],
++          properties: {
++            meta: ref('ListMeta'),
++            note: { type: 'string' },
++            refuses: { type: 'array', items: { type: 'string' } },
++            service_area: { type: 'array', items: { type: 'object' }, description: 'The only markets that may be claimed as served.' },
++            status_legend: { type: 'object' },
++            markets: { type: 'array', items: { type: 'object' } },
++            content_queue: { type: 'array', items: { type: 'object' }, description: 'Markets without a page, ranked by how much a page would be worth, each with the reason it does not have one.' },
++          },
++        },
++        CorridorIndex: {
++          type: 'object',
++          description: 'The routes the work is organised along, each with its hub, highway and member markets in travel order.',
++          required: ['meta', 'corridors'],
++          properties: {
++            meta: ref('ListMeta'),
++            note: { type: 'string' },
++            corridors: { type: 'array', items: { type: 'object' } },
++          },
++        },
+         QuoteCheckChecklist: {
+           type: 'object',
+           description:
+diff --git a/apps/web/tests/api-contract.test.ts b/apps/web/tests/api-contract.test.ts
+index acf43c2..59684fc 100644
+--- a/apps/web/tests/api-contract.test.ts
++++ b/apps/web/tests/api-contract.test.ts
+@@ -44,6 +44,8 @@ import * as media from '@/app/api/v1/media/route';
+ import * as mediaById from '@/app/api/v1/media/[id]/route';
+ import * as equipment from '@/app/api/v1/equipment/route';
+ import * as quoteCheck from '@/app/api/v1/quote-check/route';
++import * as markets from '@/app/api/v1/markets/route';
++import * as corridors from '@/app/api/v1/corridors/route';
+ import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
+ import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
+ import * as openapi from '@/app/api/v1/openapi.json/route';
+@@ -84,6 +86,8 @@ const ROUTES: Record<string, RouteModule> = {
+   'media/[id]': mediaById,
+   equipment,
+   'quote-check': quoteCheck,
++  markets,
++  corridors,
+   'equipment/[id]': equipmentById,
+   'recommendation-context': recommendationContext,
+   'openapi.json': openapi,
+diff --git a/old-domain/EXECUTE.md b/old-domain/EXECUTE.md
+index 6c3beb8..8f0a0a6 100644
+--- a/old-domain/EXECUTE.md
++++ b/old-domain/EXECUTE.md
+@@ -39,10 +39,16 @@ request for it ever reaches them.
+ ```bash
+ vercel whoami                      # must print your account, not "Not authorized"
+ vercel domains ls
+-vercel domains add ecowoodshardwood.com
+-vercel domains add www.ecowoodshardwood.com
++vercel domains add ecowoodshardwood.com ecowoods-app
++vercel domains add www.ecowoodshardwood.com ecowoods-app
+ ```
+ 
++**Both commands take the project name.** Without it, an apex domain is added to
++the *team* and attached to nothing — it looks like a success (`Success! Domain
++… added to <team>`) and changes nothing, and the `www` subdomain is refused
++outright with *"Only apex domains can be added without a project"*. If the apex
++was already added bare, re-run the command with the project to attach it.
++
+ Vercel prints the DNS records to set. Set them at the registrar for
+ `ecowoodshardwood.com`. This is the step that takes the old Apache box out of
+ the path, so do not do it while anything else you care about is served from
+diff --git a/package.json b/package.json
+index a62955e..be0b459 100644
+--- a/package.json
++++ b/package.json
+@@ -36,6 +36,7 @@
+     "fix:sliderframes": "node scripts/normalise-slider-frames.mjs",
+     "verify:framework": "node scripts/verify-framework.mjs",
+     "verify:client": "node scripts/verify-client-boundary.mjs",
++    "verify:geo": "node scripts/verify-geo.mjs",
+     "verify:glossary": "node scripts/verify-glossary.mjs",
+     "verify:figures": "node scripts/verify-figures.mjs",
+     "verify:changelog": "node scripts/verify-changelog.mjs",
+diff --git a/scripts/verify-destinations.mjs b/scripts/verify-destinations.mjs
+index e37f3dc..38df91a 100644
+--- a/scripts/verify-destinations.mjs
++++ b/scripts/verify-destinations.mjs
+@@ -220,6 +220,7 @@ const MANIFESTS = {
+   '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
+   '/projects': { source: 'content/projects/', slugs: keysFromTsDir('content/projects', 'slug') },
+   '/equipment': { source: 'content/equipment/', slugs: keysFromTsDir('content/equipment', 'id') },
++  '/corridors': { source: 'content/geo/', slugs: keysFromTsDir('content/geo', 'id') },
+ };
+ for (const [prefix, m] of Object.entries(MANIFESTS)) {
+   if (!m.slugs) {
+diff --git a/scripts/verify-geo.mjs b/scripts/verify-geo.mjs
+new file mode 100644
+index 0000000..8352bbb
+--- /dev/null
++++ b/scripts/verify-geo.mjs
+@@ -0,0 +1,308 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-geo.mjs — the geographic model may not claim coverage it does
++ * not have, and may not invent a place.
++ *
++ * WHY THIS IS THE MOST LOAD-BEARING GUARD IN THE REPOSITORY
++ *
++ * A geographic expansion is the point at which a truthful site most easily
++ * stops being one, and it happens by increments that all look reasonable:
++ *
++ *   · a municipality is added to the list, and a template gives it a page
++ *   · the page needs a paragraph, so a paragraph about "the area's older homes"
++ *     is written for a place nobody has visited
++ *   · areaServed is generated from the list, so the structured data now
++ *     declares service in forty-two municipalities
++ *   · six of them are in New York, and the entity graph now describes a
++ *     Canadian company as serving the United States
++ *
++ * No step in that sequence is a decision anyone would defend out loud. Each is
++ * a consequence of the previous one. So the invariants are checked, not
++ * intended.
++ *
++ * WHAT IS CHECKED
++ *
++ *  1. Slugs are unique, and a name that exists in two countries — Niagara Falls
++ *     — does not collide.
++ *  2. Every corridor member is a real market; every market's corridors exist.
++ *  3. `partOf` resolves, and a district never claims to be a municipality.
++ *  4. A US market is `us-proxy`, and no US market has an operational status.
++ *  5. No market claims coverage without a dated confirmation.
++ *  6. Only municipalities with a verified operational position can reach the
++ *     service-area emission, and never a district or a US market.
++ *  7. No indexable page exists for a market that has not earned one.
++ *  8. `verifiedAt` is a real past date — a market confirmed in the future was
++ *     confirmed by nobody.
++ *  9. No invented local detail: a market with no CityContent carries no
++ *     localFacts, no coordinates, no drive time. The fields do not exist in the
++ *     type, and this asserts nobody has added them back.
++ * 10. Stale confirmations are reported: a market whose operational position has
++ *     not been reconfirmed in 180 days is flagged, because "currently booking"
++ *     decays quietly.
++ *
++ *   node scripts/verify-geo.mjs
++ *   node scripts/verify-geo.mjs --queue    # what to write content for next
++ */
++import { readFileSync, existsSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = join(ROOT, 'apps/web');
++const MARKETS_TS = join(WEB, 'content/geo/markets.ts');
++const CORRIDORS_TS = join(WEB, 'content/geo/corridors.ts');
++const SEO = join(WEB, 'lib/seo-data.ts');
++const QUEUE = process.argv.includes('--queue');
++
++const fail = [];
++const warn = [];
++const read = (p, label) => {
++  if (!existsSync(p)) { fail.push(`missing ${label}: ${p.replace(ROOT + '/', '')}`); return ''; }
++  return readFileSync(p, 'utf8');
++};
++
++const marketsSrc = read(MARKETS_TS, 'market registry');
++const corridorsSrc = read(CORRIDORS_TS, 'corridor registry');
++const seoSrc = read(SEO, 'seo-data');
++
++/* ── parse ────────────────────────────────────────────────────────────────
++ *
++ * A regex reader, like every other guard here: dependency-free, no TypeScript
++ * runtime, no build. Its failure mode is reading too few records, which shows
++ * up immediately as the count assertion below.
++ */
++const markets = [];
++for (const mm of marketsSrc.matchAll(
++  /\bm\(\s*'([^']+)',\s*'([a-z0-9-]+)',\s*'([a-z-]+)',\s*'([a-z0-9-]+)',\s*\[([^\]]*)\],\s*\[([^\]]*)\]/g,
++)) {
++  markets.push({
++    name: mm[1], slug: mm[2], status: mm[3], parentHub: mm[4],
++    corridors: [...mm[5].matchAll(/'([^']+)'/g)].map((x) => x[1]),
++    nearest: [...mm[6].matchAll(/'([^']+)'/g)].map((x) => x[1]),
++    country: 'CA',
++    isDistrict: false,
++    block: mm[0],
++    index: mm.index,
++  });
++}
++/* kind and partOf are the trailing arguments; read the rest of each call. */
++for (const x of markets) {
++  const tail = marketsSrc.slice(x.index, marketsSrc.indexOf('\n', x.index + x.block.length) + 1);
++  x.isDistrict = /'district'/.test(tail);
++  const p = /'district',\s*'([a-z0-9-]+)'/.exec(tail);
++  x.partOf = p ? p[1] : undefined;
++}
++/*
++ * The United States markets are built by one constructor, so their status is
++ * written once — which means reading each call site tells you nothing about it.
++ * Read the constructor instead. Without this, changing `status: 'us-proxy'` to
++ * anything else inside us() passed every check: the guard was reporting the
++ * status it assumed rather than the one the code assigns.
++ */
++const usCtor = marketsSrc.slice(marketsSrc.indexOf('function us('));
++const usStatus = /status:\s*'([a-z-]+)'/.exec(usCtor)?.[1] ?? null;
++if (usStatus !== 'us-proxy') {
++  fail.push(
++    `the us() constructor assigns status "${usStatus}". Every United States market must be us-proxy: Ecowoods ` +
++      'operates in Ontario, and any other status puts a New York municipality into the service area.',
++  );
++}
++if (!/country:\s*'US'/.test(usCtor)) {
++  fail.push('the us() constructor no longer sets country US');
++}
++
++for (const um of marketsSrc.matchAll(/\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)'/g)) {
++  markets.push({
++    name: um[1], slug: um[2], status: usStatus ?? 'us-proxy', country: 'US',
++    corridors: ['buffalo-niagara'], nearest: [], parentHub: 'fort-erie', isDistrict: false,
++  });
++}
++/* Toronto is written as a literal rather than through m(); read it explicitly. */
++if (/'toronto', 'core-active'/.test(marketsSrc) || /m\('Toronto', 'toronto'/.test(marketsSrc)) {
++  if (!markets.some((x) => x.slug === 'toronto')) {
++    markets.push({ name: 'Toronto', slug: 'toronto', status: 'core-active', country: 'CA', corridors: ['core-gta'], nearest: [], parentHub: 'toronto', isDistrict: false });
++  }
++}
++
++const corridors = [...corridorsSrc.matchAll(/\bid:\s*'([a-z0-9-]+)',\s*\n\s*name:/g)].map((x) => x[1]);
++const corridorMembers = new Map();
++for (const cm of corridorsSrc.matchAll(/id:\s*'([a-z0-9-]+)',[\s\S]*?members:\s*\[([\s\S]*?)\],/g)) {
++  corridorMembers.set(cm[1], [...cm[2].matchAll(/'([a-z0-9-]+)'/g)].map((x) => x[1]));
++}
++
++if (markets.length < 40) {
++  fail.push(`read only ${markets.length} market(s) from content/geo/markets.ts — the reader is blind, fix it rather than deleting this guard`);
++}
++if (corridors.length < 5) {
++  fail.push(`read only ${corridors.length} corridor(s) from content/geo/corridors.ts — the reader is blind`);
++}
++
++const bySlug = new Map(markets.map((x) => [x.slug, x]));
++
++/* ── 1. unique slugs, and the cross-border name collision ────────────────── */
++const seen = new Set();
++for (const x of markets) {
++  if (seen.has(x.slug)) fail.push(`duplicate market slug: ${x.slug}`);
++  seen.add(x.slug);
++}
++const nameCounts = new Map();
++for (const x of markets) nameCounts.set(x.name, (nameCounts.get(x.name) ?? 0) + 1);
++for (const [name, n] of nameCounts) {
++  if (n < 2) continue;
++  const both = markets.filter((x) => x.name === name);
++  const countries = new Set(both.map((x) => x.country));
++  if (countries.size > 1) {
++    const slugs = both.map((x) => x.slug);
++    const distinguished = slugs.every((s) => /-(on|ny)$/.test(s));
++    if (!distinguished) {
++      fail.push(
++        `"${name}" exists in more than one country as ${slugs.join(' and ')}. Cross-border duplicates must be ` +
++          'suffixed with the province or state, or one silently overwrites the other in every lookup.',
++      );
++    }
++  } else {
++    fail.push(`"${name}" appears ${n} times in the same country`);
++  }
++}
++
++/* ── 2. corridor integrity, both directions ──────────────────────────────── */
++for (const [id, members] of corridorMembers) {
++  for (const slug of members) {
++    if (!bySlug.has(slug)) fail.push(`corridor ${id} lists "${slug}", which is not a market`);
++  }
++}
++for (const x of markets) {
++  if (x.isDistrict && x.corridors.length) {
++    fail.push(
++      `${x.slug} is a district and declares its own corridors. A corridor is a drive between municipalities; ` +
++        'a district inherits its municipality\'s membership through partOf. Two lists that must agree eventually will not.',
++    );
++  }
++  for (const c of x.corridors) {
++    if (!corridors.includes(c)) fail.push(`${x.slug} claims corridor "${c}", which does not exist`);
++    else if (!(corridorMembers.get(c) ?? []).includes(x.slug)) {
++      fail.push(`${x.slug} claims corridor "${c}" but ${c} does not list it. Membership must agree both ways.`);
++    }
++  }
++  if (x.parentHub && !bySlug.has(x.parentHub)) fail.push(`${x.slug} has parentHub "${x.parentHub}", which is not a market`);
++  for (const n of x.nearest) {
++    if (!bySlug.has(n)) fail.push(`${x.slug} lists nearest "${n}", which is not a market`);
++  }
++}
++
++/* ── 3. districts ────────────────────────────────────────────────────────── */
++for (const x of markets) {
++  if (!x.isDistrict) continue;
++  if (!x.partOf) fail.push(`${x.slug} is a district with no partOf`);
++  else if (!bySlug.has(x.partOf)) fail.push(`${x.slug} is part of "${x.partOf}", which is not a market`);
++  else if (bySlug.get(x.partOf).isDistrict) fail.push(`${x.slug} is part of ${x.partOf}, which is itself a district`);
++}
++
++/* ── 4 + 5 + 6. the truth invariants ─────────────────────────────────────── */
++const OPERATIONAL = new Set(['core-active', 'active-expansion', 'travel-by-confirmation']);
++
++for (const x of markets) {
++  if (x.country === 'US' && x.status !== 'us-proxy') {
++    fail.push(
++      `${x.slug} is in the United States with status "${x.status}". Ecowoods operates in Ontario; a United ` +
++        'States market is advertising reach and nothing else.',
++    );
++  }
++  if (x.country === 'CA' && x.status === 'us-proxy') {
++    fail.push(`${x.slug} is in Ontario with status us-proxy`);
++  }
++}
++
++/* The emission path: serviceAreaMarkets() must exclude districts and non-verified. */
++const geoIndex = read(join(WEB, 'lib/geo/index.ts'), 'geo index');
++if (!/isOperational\(x\)\s*&&\s*x\.kind === 'municipality'/.test(geoIndex)) {
++  fail.push(
++    'lib/geo/index.ts serviceAreaMarkets() no longer filters to verified municipalities. That function is the ' +
++      'only thing standing between a corridor list and a structured-data claim of service in forty-two places.',
++  );
++}
++const marketsLib = marketsSrc;
++if (!/OPERATIONAL_STATUSES\.includes\(x\.status\)\s*&&\s*x\.operationalTruth\.verifiedAt !== null/.test(marketsLib)) {
++  fail.push(
++    'isOperational() no longer requires a dated confirmation. A market may not be claimed as served because ' +
++      'somebody set its status; it is claimed because somebody confirmed it on a date.',
++  );
++}
++if (/OPERATIONAL_STATUSES[^=]*=\s*\[[^\]]*us-proxy/.test(marketsLib)) {
++  fail.push('us-proxy has been added to OPERATIONAL_STATUSES. That is the one status that may never be service area.');
++}
++
++/* ── 8. dates ────────────────────────────────────────────────────────────── */
++const today = new Date().toISOString().slice(0, 10);
++const STALE_DAYS = 180;
++for (const dm of marketsSrc.matchAll(/verifiedAt:\s*'(\d{4}-\d{2}-\d{2})'/g)) {
++  const d = dm[1];
++  if (d > today) fail.push(`verifiedAt ${d} is in the future — that confirmation was made by nobody`);
++  else {
++    const age = Math.round((Date.parse(today) - Date.parse(d)) / 86400000);
++    if (age > STALE_DAYS) {
++      warn.push(`a market was last confirmed ${age} days ago (${d}). "Currently booking" decays quietly; reconfirm or downgrade the status.`);
++    }
++  }
++}
++
++/* ── 9. no invented local detail ─────────────────────────────────────────── */
++for (const banned of ['latitude', 'longitude', 'driveTime', 'population', 'medianHomePrice']) {
++  if (new RegExp(`\\b${banned}\\s*:`).test(marketsSrc)) {
++    fail.push(
++      `content/geo/markets.ts carries a "${banned}" field. Coordinates, drive times and population figures for ` +
++        'markets nobody has worked in are the fields a template most wants filled and the ones most likely to ' +
++        'be invented. If a figure is real, it needs a source and a date like every other claim on this site.',
++    );
++  }
++}
++/* localFacts must be empty for a market with no CityContent. */
++/* CITY_CONTENT keys come in three shapes — "quoted-with-dash", 'single', bare.
++   Reading only one of them made this guard report 1 entry where there are 48,
++   which is the same blindness it warns about elsewhere. */
++const contentBlock = seoSrc.slice(seoSrc.indexOf('CITY_CONTENT'));
++const withContent = new Set(
++  [...contentBlock.matchAll(/^  ["']?([a-z0-9-]+)["']?:\s*\{$/gm)].map((x) => x[1]),
++);
++if (withContent.size < 10) {
++  fail.push(
++    `read only ${withContent.size} CityContent entr(y|ies) from lib/seo-data.ts — the reader is blind, and a ` +
++      'blind reader here silently reports every market as having no local content.',
++  );
++}
++for (const fm of marketsSrc.matchAll(/'([a-z0-9-]+)',[\s\S]{0,400}?localFacts:\s*\[([^\]]+)\]/g)) {
++  const slug = fm[1];
++  if (fm[2].trim() && !withContent.has(slug)) {
++    fail.push(`${slug} has localFacts but no CityContent entry. Local detail is written once, in one place, and checked.`);
++  }
++}
++
++/* ── 7. a page exists only for a market that earned one ──────────────────── */
++const areaRoute = join(WEB, 'app/service-areas/[city]/page.tsx');
++if (!existsSync(areaRoute)) fail.push('apps/web/app/service-areas/[city]/page.tsx is missing');
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (QUEUE) {
++  const queue = markets
++    .filter((x) => x.country === 'CA' && !withContent.has(x.slug))
++    .sort((a, b) => a.slug.localeCompare(b.slug));
++  console.log(`\nMarkets with no local content — the content queue (${queue.length}):\n`);
++  for (const x of queue) console.log(`  ${x.slug.padEnd(24)} ${x.status}`);
++  console.log('');
++}
++
++for (const w of warn) console.warn(`  ! ${w}`);
++
++if (fail.length) {
++  console.error(`\n✗ geo: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}\n`);
++  process.exit(1);
++}
++
++const ca = markets.filter((x) => x.country === 'CA').length;
++const usCount = markets.filter((x) => x.country === 'US').length;
++const withPages = markets.filter((x) => withContent.has(x.slug)).length;
++console.log(
++  `✓ geo verified — ${markets.length} market(s) across ${corridors.length} corridor(s): ${ca} in Ontario, ` +
++    `${usCount} advertising-only in New York and never service area, ${withPages} with local content, ` +
++    'no invented coordinate, drive time or population',
++);
+-- 
+2.43.0
+
