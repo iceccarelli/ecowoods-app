@@ -1,0 +1,548 @@
+From adce8d1dcd39d413b4798ca0c55b7e842f6c2d06 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 04:35:25 +0000
+Subject: [PATCH] fix(guards): 37 of 54 guards never ran in CI; pnpm verify
+ stopped at the first failure
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Measured on floor-graph: package.json defines 54 gating guards, the CI Guards
+job ran 17, and `pnpm verify` was a 57-link && chain that stopped at link 3.
+Thirty-seven guards had never gated a merge. Nobody disabled them — they were
+added to package.json and the second edit, to the workflow, was forgotten, which
+is invisible because a step never written cannot appear as missing.
+
+One of the 37 was verify:destinations, and it was failing on a real defect that
+had already shipped: /hardwood-stairs-toronto links to
+/projects/maple-vaughan-curved-stair, and MEDIA-01 added that dynamic route
+without registering /projects in the guard's manifest map, so the guard could not
+prove the link resolves. Fixed by teaching it to read slugs from a content
+directory and registering both /projects and /equipment. Regression-tested with a
+planted slug.
+
+pnpm verify is now scripts/verify-all.mjs: the run set is derived from
+package.json so no guard can be left out, an unclassified script fails the
+runner, all 57 run in parallel in ~3s instead of stopping at the first failure,
+and the failures are reprinted in full as the last thing on the screen. That last
+part is the point — twice this week a red verify was followed by a commit and a
+push, because the next pasted command printed four hundred lines of green on top
+of the failure.
+
+The workflow keeps its named steps and gains one final step that runs the whole
+set, so CI and a developer's machine can no longer disagree about which guards
+exist.
+
+verify:hygiene also stopped guessing. It asserted that every file it flagged was
+tracked and printed `git rm --cached … && rm -f …`; on a branch where the files
+were not tracked, git exited 1, the && stopped the chain, the rm never ran, and
+the next run printed the identical advice. It now asks git, prints the right
+command for each case, and says when a file is untracked here but tracked on main
+and will therefore return with every checkout.
+
+docs/VERIFY.md has the measurement and how to add a guard.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml       |  23 ++++
+ docs/VERIFY.md                  |  86 +++++++++++++++
+ package.json                    |   2 +-
+ scripts/verify-all.mjs          | 179 ++++++++++++++++++++++++++++++++
+ scripts/verify-destinations.mjs |  26 +++++
+ scripts/verify-repo-hygiene.mjs |  99 ++++++++++++++++--
+ 6 files changed, 405 insertions(+), 10 deletions(-)
+ create mode 100644 docs/VERIFY.md
+ create mode 100644 scripts/verify-all.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index 762dd5b..fc6c0af 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -124,6 +124,29 @@ jobs:
+       # no preview host in anything a machine reads; robots.txt lets agents in.
+       - name: Agentic primitives (OpenAPI ↔ routes, no injection, no preview hosts)
+         run: node scripts/verify-agentic.mjs
++      # ── the catch-all, and the reason it exists ───────────────────────────
++      #
++      # F-183. The steps above are named individually on purpose — a failing
++      # step name in the PR checks list tells you what broke before you open a
++      # log, and that is worth keeping. What it is NOT is a complete list. On
++      # 2026-09-09 this job ran 17 guards. `pnpm verify` ran 54. Thirty-seven
++      # guards existed, passed locally when someone remembered to run them, and
++      # had never once gated a merge — among them verify:destinations, which
++      # was at that moment failing on a real broken link that had already
++      # shipped to production.
++      #
++      # Nobody removed those steps. They were never added, because adding a
++      # guard meant editing package.json AND this file, and the second edit is
++      # invisible when you forget it.
++      #
++      # So this step runs every guard the repository has, derived from
++      # package.json rather than from a list kept here. The named steps above
++      # re-run inside it; that costs about six seconds and is the price of the
++      # checks list staying legible. A guard added to package.json now gates
++      # this job from its first commit, with no second edit and nothing to
++      # remember.
++      - name: All guards (derived from package.json — nothing can be left out)
++        run: node scripts/verify-all.mjs
+ 
+   build:
+     name: Typecheck & Build
+diff --git a/docs/VERIFY.md b/docs/VERIFY.md
+new file mode 100644
+index 0000000..2f77be2
+--- /dev/null
++++ b/docs/VERIFY.md
+@@ -0,0 +1,86 @@
++# `pnpm verify` — what runs, where, and why it is one command
++
++## The measurement that produced this file
++
++On 2026-09-09, on branch `floor-graph`:
++
++| | guards |
++|---|---|
++| defined in `package.json` (`verify:*`, `seo:*`, `domain:*`, excluding network and generators) | **54** |
++| run by `pnpm verify` before reaching a failure and stopping | **3** |
++| run by the `Guards` job in `.github/workflows/web.yml` | **17** |
++| **never run by CI, ever** | **37** |
++
++The 37 were not disabled and nobody decided to skip them. They were added to
++`package.json` and the corresponding edit to the workflow was forgotten — an
++omission that is invisible, because a step that was never written cannot show up
++as missing in a green checks list.
++
++One of the 37 was `verify:destinations`. At the moment of the measurement it was
++failing, correctly, on a real defect: `/hardwood-stairs-toronto` linked to
++`/projects/maple-vaughan-curved-stair`, and `/projects` had no manifest entry, so
++the guard could not prove the link resolved. That link had already shipped to
++production. Two independent mechanisms should have caught it before the push, and
++neither did:
++
++* **Local.** `pnpm verify` was a 57-link `&&` chain. `verify:hygiene` failed at
++  link 3, the chain stopped, and links 4–57 — including `verify:destinations` at
++  19 — never ran. A chain can only ever report one failure, which reads like you
++  are one fix from green.
++* **CI.** The guard was not in the workflow.
++
++And the chain's failure was invisible for a third reason: it printed its error
++and exited, and then the next pasted command printed four hundred lines of green
++build output on top of it. Twice in one week a red `pnpm verify` was followed by
++a commit and a push, because by the time the screen stopped scrolling everything
++visible said ✓.
++
++## What changed
++
++`pnpm verify` is now `node scripts/verify-all.mjs`, which:
++
++1. **Derives the run set from `package.json`.** Every `verify:*`, `seo:*` and
++   `domain:*` script whose command is a single `node scripts/*.mjs` is run.
++   Nothing lists the guards a second time, so nothing can fall out of the list.
++2. **Refuses to run if a script is neither run nor skipped.** A guard that does
++   not fit the shape must be added to `SKIP` with a stated reason. An
++   unexplained exclusion is how a guard stops running without anyone choosing it.
++3. **Runs all of them, in parallel, and does not stop at the first failure.**
++   57 guards in about 3 seconds, against roughly 60–90 for the old chain of
++   `pnpm` invocations.
++4. **Prints the failures last, in full.** The final thing on the screen is the
++   list of what failed and the complete output of each — no scrolling back into
++   a buffer that may not reach.
++
++`.github/workflows/web.yml` keeps its individually named steps, because a step
++name in the PR checks list says what broke before you open a log, and adds one
++final step that runs the whole set. The named steps re-run inside it. That costs
++about six seconds and buys the guarantee that CI and a developer's machine can
++never again disagree about which guards exist.
++
++## Adding a guard
++
++Add the `package.json` entry. That is the whole procedure:
++
++```json
++"verify:thing": "node scripts/verify-thing.mjs"
++```
++
++It is in `pnpm verify` and in CI from that commit. Add a named CI step as well
++only if the guard is one whose failure you want to read off the checks list
++without opening a log.
++
++## Running it
++
++```bash
++pnpm verify                        # all of them, parallel, ~3s
++node scripts/verify-all.mjs --list # what runs, and what is skipped and why
++node scripts/verify-all.mjs --serial
++node scripts/verify-thing.mjs      # one guard, full output, as always
++```
++
++The 14 skipped scripts are the ones that reach the network (`verify:live`,
++`seo:crawl`, `seo:domain`, `seo:hosts`), the generators (`domain:build`,
++`seo:prompts`), the composites, and `seo:audit`, which is a report and always
++exits 0. The network half runs after a deploy, from a machine with open egress:
++`pnpm seo:live`.
+diff --git a/package.json b/package.json
+index 7924ebe..a7c7675 100644
+--- a/package.json
++++ b/package.json
+@@ -92,7 +92,7 @@
+     "images:brief": "node scripts/verify-images.mjs --prompts",
+     "papers:tex": "node scripts/gen-paper-tex.mjs",
+     "images:provenance": "node scripts/add-provenance-slots.mjs",
+-    "verify": "pnpm verify:css && pnpm verify:convert && pnpm verify:hygiene && pnpm verify:ui && pnpm verify:chrome && pnpm verify:hooks && pnpm verify:facts && pnpm verify:migrations && pnpm verify:floorgraph && pnpm verify:a11y && pnpm verify:navigation && pnpm verify:media && pnpm verify:assets:public && pnpm verify:equipment && pnpm verify:tokens && pnpm verify:schema && pnpm verify:papers && pnpm verify:links && pnpm verify:destinations && pnpm verify:framework && pnpm verify:client && pnpm verify:glossary && pnpm verify:figures && pnpm verify:changelog && pnpm verify:market && pnpm verify:freshness && pnpm verify:images && pnpm verify:sliders && pnpm verify:canonical && pnpm verify:sitemap && pnpm verify:indexnow && pnpm verify:markdown && pnpm verify:services && pnpm verify:cities && pnpm verify:manifests && pnpm verify:assets && pnpm verify:entity && pnpm verify:reviews && pnpm verify:jobcards && pnpm verify:workmap && pnpm verify:quoteimpact && pnpm verify:referral && pnpm verify:knowledge && pnpm verify:preload && pnpm verify:outreach && pnpm verify:schema-figures && pnpm verify:vercel && pnpm seo:pricing && pnpm seo:claims && pnpm seo:topics && pnpm seo:density && pnpm seo:legal && pnpm seo:keys && pnpm seo:assistant && pnpm seo:ai && pnpm domain:check && pnpm verify:agentic",
++    "verify": "node scripts/verify-all.mjs",
+     "audit": "bash scripts/audit-all.sh",
+     "audit:rendered": "node scripts/audit-rendered.mjs",
+     "audit:full": "bash scripts/audit-all.sh --full",
+diff --git a/scripts/verify-all.mjs b/scripts/verify-all.mjs
+new file mode 100644
+index 0000000..06256a9
+--- /dev/null
++++ b/scripts/verify-all.mjs
+@@ -0,0 +1,179 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-all.mjs — run every guard, then say plainly what failed.
++ *
++ * WHY THIS EXISTS
++ *
++ * `pnpm verify` used to be a 57-link `&&` chain. Two properties of that shape
++ * cost real time, twice, in the same week:
++ *
++ *   1. IT STOPS AT THE FIRST FAILURE. Fifty-six guards go unrun. You fix the
++ *      one it reported, run it again, and learn about the next one. A chain
++ *      cannot tell you "three things are wrong"; it can only ever say "one
++ *      thing is wrong", which reads like you are one fix from green when you
++ *      are not.
++ *
++ *   2. THE FAILURE SCROLLS AWAY. The chain prints its error and exits, and then
++ *      the next pasted command — `pnpm test`, `pnpm build` — prints four hundred
++ *      lines of green on top of it. F-181: `verify:hygiene` failed, and the
++ *      commit and push that followed went out anyway, because by the time the
++ *      screen stopped moving the failure was gone and everything visible said
++ *      ✓. That happened twice. Both times the operator was reading the screen
++ *      carefully; the screen was lying by omission.
++ *
++ * So: run all of them, in parallel, and make the LAST thing on the screen a
++ * summary of what failed — reprinted in full, so you never have to scroll up to
++ * a buffer that may not go back far enough. Exit code is still the contract; the
++ * summary is for the human.
++ *
++ * ANTI-DRIFT. The run set is derived from package.json, not from a list kept
++ * here. Every `verify:*`, `seo:*` and `domain:*` script that runs a single node
++ * scripts/*.mjs is run, unless it is in SKIP below with a stated reason. A new
++ * guard therefore joins `pnpm verify` the moment it has a package.json entry —
++ * you cannot forget to chain it, which is exactly how verify:assets:public and
++ * verify:equipment nearly shipped unchained. A script that is neither run nor
++ * skipped fails this runner by design.
++ *
++ *   node scripts/verify-all.mjs            # everything
++ *   node scripts/verify-all.mjs --list     # what would run, and what is skipped
++ *   node scripts/verify-all.mjs --serial   # one at a time, interleaved output
++ */
++import { readFileSync } from 'node:fs';
++import { spawn } from 'node:child_process';
++import { cpus } from 'node:os';
++import { fileURLToPath } from 'node:url';
++import { dirname, resolve } from 'node:path';
++
++const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
++const LIST = process.argv.includes('--list');
++const SERIAL = process.argv.includes('--serial');
++
++/**
++ * Not gates. Each entry needs a reason, because an unexplained exclusion is how
++ * a guard stops running without anyone deciding that it should.
++ */
++const SKIP = new Map([
++  ['verify:live', 'hits the live site over the network; run it after a deploy, not before'],
++  ['verify:live-images', 'hits the live site over the network'],
++  ['verify:domain', 'hits the live site over the network'],
++  ['seo:domain', 'hits the live site over the network'],
++  ['seo:hosts', 'hits the live site over the network'],
++  ['seo:crawl', 'crawls the live site over the network'],
++  ['seo:live', 'composite of the three network checks above'],
++  ['seo:consistency', 'composite of guards this runner already runs individually'],
++  ['seo:links', 'same script as verify:links'],
++  ['seo:schema', 'same script as verify:schema'],
++  ['domain:build', 'a generator — it writes old-domain/; domain:check is the gate'],
++  ['domain:simulate', 'a generator, not a check'],
++  ['seo:prompts', 'a generator — it writes the AI prompt set'],
++  ['seo:audit', 'a report, not a gate: it describes the current state and always exits 0'],
++]);
++
++const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
++const scripts = pkg.scripts ?? {};
++
++/** `node scripts/x.mjs --flag` → ['scripts/x.mjs', '--flag']; anything else → null. */
++function nodeArgs(cmd) {
++  const m = /^node\s+(scripts\/[\w.-]+\.mjs)((?:\s+--[\w-]+)*)\s*$/.exec(cmd.trim());
++  if (!m) return null;
++  return [m[1], ...m[2].split(/\s+/).filter(Boolean)];
++}
++
++const candidates = Object.keys(scripts).filter((k) => /^(verify|seo|domain):/.test(k));
++const run = [];
++const skipped = [];
++const unclassified = [];
++
++for (const name of candidates.sort()) {
++  if (SKIP.has(name)) {
++    skipped.push({ name, why: SKIP.get(name) });
++    continue;
++  }
++  const args = nodeArgs(scripts[name]);
++  if (!args) {
++    unclassified.push({ name, cmd: scripts[name] });
++    continue;
++  }
++  run.push({ name, args });
++}
++
++if (LIST) {
++  console.log(`\nverify-all — ${run.length} guard(s) would run:\n`);
++  for (const g of run) console.log(`  ${g.name.padEnd(24)} ${g.args.join(' ')}`);
++  console.log(`\n${skipped.length} deliberately skipped:\n`);
++  for (const s of skipped) console.log(`  ${s.name.padEnd(24)} ${s.why}`);
++  console.log('');
++  process.exit(0);
++}
++
++if (unclassified.length) {
++  console.error(`\n✗ ${unclassified.length} script(s) are neither run nor skipped:\n`);
++  for (const u of unclassified) console.error(`  · ${u.name}\n        ${u.cmd}\n`);
++  console.error(
++    '  This runner derives what it runs from package.json so a new guard cannot be\n' +
++      '  forgotten. A script matching verify:/seo:/domain: that is not a single\n' +
++      '  `node scripts/*.mjs` command has to be classified by hand: either give it\n' +
++      '  that shape, or add it to SKIP in scripts/verify-all.mjs with a reason.\n',
++  );
++  process.exit(1);
++}
++
++const results = new Map();
++
++function exec(guard) {
++  return new Promise((done) => {
++    const started = Date.now();
++    const child = spawn(process.execPath, guard.args, { cwd: ROOT });
++    let out = '';
++    child.stdout.on('data', (d) => (out += d));
++    child.stderr.on('data', (d) => (out += d));
++    child.on('error', (e) => {
++      results.set(guard.name, { ok: false, out: String(e), ms: Date.now() - started });
++      done();
++    });
++    child.on('close', (code) => {
++      results.set(guard.name, { ok: code === 0, out, ms: Date.now() - started });
++      const r = results.get(guard.name);
++      process.stdout.write(
++        `${r.ok ? '✓' : '✗'} ${guard.name.padEnd(24)} ${String(r.ms).padStart(6)} ms\n`,
++      );
++      done();
++    });
++  });
++}
++
++const started = Date.now();
++console.log(`▸ ${run.length} guards${SERIAL ? ' (serial)' : `, up to ${Math.min(8, cpus().length || 4)} at a time`}\n`);
++
++const queue = [...run];
++const width = SERIAL ? 1 : Math.min(8, cpus().length || 4);
++await Promise.all(
++  Array.from({ length: width }, async () => {
++    for (let g = queue.shift(); g; g = queue.shift()) await exec(g);
++  }),
++);
++
++const failed = run.filter((g) => !results.get(g.name).ok);
++const elapsed = ((Date.now() - started) / 1000).toFixed(1);
++
++if (!failed.length) {
++  console.log(`\n✓ all ${run.length} guards passed in ${elapsed}s (${skipped.length} network/generator scripts skipped)\n`);
++  process.exit(0);
++}
++
++// The whole point of this file: the failures are the last thing printed, in
++// full, after everything else has finished writing to the screen.
++console.error(`\n${'─'.repeat(78)}`);
++console.error(`✗ ${failed.length} of ${run.length} guards FAILED in ${elapsed}s\n`);
++for (const g of failed) console.error(`    ${g.name}`);
++for (const g of failed) {
++  console.error(`\n${'─'.repeat(78)}\n✗ ${g.name}  —  node ${g.args.join(' ')}\n`);
++  console.error(results.get(g.name).out.trimEnd());
++}
++console.error(
++  `\n${'─'.repeat(78)}\n` +
++    `✗ ${failed.length} FAILED: ${failed.map((g) => g.name).join(', ')}\n` +
++    '  Do not commit on top of this. If you pasted a block of commands, the ones\n' +
++    '  after this line ran anyway and their output is above — this is the verdict.\n',
++);
++process.exit(1);
+diff --git a/scripts/verify-destinations.mjs b/scripts/verify-destinations.mjs
+index e1fff1c..e37f3dc 100644
+--- a/scripts/verify-destinations.mjs
++++ b/scripts/verify-destinations.mjs
+@@ -177,6 +177,30 @@ function slugsFromSource(rel) {
+   for (const m of src.matchAll(/\bslug:\s*['"`]([a-z0-9-]+)['"`]/g)) out.add(m[1]);
+   return out.size ? out : null;
+ }
++/**
++ * Same regex idea, but over every .ts in a content directory, and over a
++ * configurable key. `/projects` keeps one file per project and `/equipment`
++ * keys its machines on `id`, so a single-file `slug:` reader is blind to both.
++ *
++ * F-182: MEDIA-01 shipped `/projects/[slug]` and a literal link to it from
++ * /hardwood-stairs-toronto without registering the manifest here. This guard
++ * therefore reported the link as landing nowhere. It was right to complain —
++ * a dynamic route with no manifest entry is exactly the 404 it exists to catch
++ * — and nobody saw it for a day, because `pnpm verify` was an && chain that
++ * stopped at guard 3 of 57 and never reached this one.
++ */
++function keysFromTsDir(rel, key = 'slug') {
++  const dir = path.join(WEB, rel);
++  if (!fs.existsSync(dir)) return null;
++  const re = new RegExp(`\\b${key}:\\s*['"\`]([a-z0-9-]+)['"\`]`, 'g');
++  const out = new Set();
++  for (const f of fs.readdirSync(dir)) {
++    if (!/\.tsx?$/.test(f)) continue;
++    for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(re)) out.add(m[1]);
++  }
++  return out.size ? out : null;
++}
++
+ function slugsFromContentDir(rel) {
+   const dir = path.join(WEB, rel);
+   if (!fs.existsSync(dir)) return null;
+@@ -194,6 +218,8 @@ const MANIFESTS = {
+   '/service-areas': { source: 'lib/seo-data.ts', slugs: slugsFromSource('lib/seo-data.ts') },
+   '/blog': { source: 'content/articles/', slugs: slugsFromContentDir('content/articles') },
+   '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
++  '/projects': { source: 'content/projects/', slugs: keysFromTsDir('content/projects', 'slug') },
++  '/equipment': { source: 'content/equipment/', slugs: keysFromTsDir('content/equipment', 'id') },
+ };
+ for (const [prefix, m] of Object.entries(MANIFESTS)) {
+   if (!m.slugs) {
+diff --git a/scripts/verify-repo-hygiene.mjs b/scripts/verify-repo-hygiene.mjs
+index cdb31e8..a94a3d6 100755
+--- a/scripts/verify-repo-hygiene.mjs
++++ b/scripts/verify-repo-hygiene.mjs
+@@ -45,6 +45,7 @@
+  */
+ import { readdirSync, statSync } from 'node:fs';
+ import { join } from 'node:path';
++import { execFileSync } from 'node:child_process';
+ 
+ const ROOT = process.cwd();
+ const LIST = process.argv.includes('--list');
+@@ -142,18 +143,98 @@ if (LIST) {
+ 
+ if (problems.length) {
+   const kb = problems.reduce((n, p) => n + p.kb, 0);
+-  console.error(`\n✗ ${problems.length} file(s) at the repository root that should not be tracked (${kb} KB):\n`);
++  const names = problems.map((p) => p.name);
++
++  // ── tracked here, or only sitting in the working directory? ────────────────
++  //
++  // F-179. This guard used to assert "which is every file above" and print a
++  // `git rm --cached … && rm -f …` chain. Twice, on a branch where the files
++  // were NOT tracked, `git rm --cached` exited 1 with "did not match any
++  // files", the `&&` stopped the chain, the `rm -f` never ran, and the guard
++  // failed again on the next run with the identical advice. The second time it
++  // was worse: the advice sent the operator to `main` to fix it, where the
++  // pre-commit main guard blocked the commit — so the archives are still
++  // tracked there and the working copies were still on disk here.
++  //
++  // The file being on disk and the file being in the index are two different
++  // problems with two different commands. Ask git which one this is instead of
++  // assuming, and never chain a command that is allowed to fail into the one
++  // that does the work.
++  const git = (args) => {
++    try {
++      return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
++    } catch {
++      return null;
++    }
++  };
++  const listed = git(['ls-files', '--', ...names]);
++  const tracked = listed === null ? null : new Set(listed.split('\n').filter(Boolean));
++
++  // Untracked here does not mean untracked everywhere. The archives that keep
++  // reappearing are tracked on main and arrive in the working directory with
++  // any `git checkout main`.
++  let elsewhere = new Set();
++  if (tracked) {
++    for (const ref of ['origin/main', 'main']) {
++      const tree = git(['ls-tree', '-r', '--name-only', ref, '--', ...names]);
++      if (tree === null) continue;
++      elsewhere = new Set(tree.split('\n').filter(Boolean).filter((n) => !tracked.has(n)));
++      break;
++    }
++  }
++
++  console.error(`\n✗ ${problems.length} file(s) at the repository root that do not belong there (${kb} KB):\n`);
+   for (const p of problems) {
+-    console.error(`  · ${p.name}  (${p.kb} KB)`);
++    const mark = tracked === null ? '' : tracked.has(p.name) ? '  [tracked]' : '  [not tracked here]';
++    console.error(`  · ${p.name}  (${p.kb} KB)${mark}`);
+     console.error(`        ${p.why}\n`);
+   }
+-  console.error(
+-    '  .gitignore already lists most of these. It does not apply to a file uploaded\n' +
+-      "  through the GitHub web UI, and it never applies to a file that is already\n" +
+-      '  tracked — which is every file above. Remove them:\n\n' +
+-      `      git rm --cached ${problems.map((p) => `'${p.name}'`).join(' ')}\n` +
+-      `      rm -f ${problems.map((p) => `'${p.name}'`).join(' ')}\n`,
+-  );
++
++  const quote = (n) => `'${n}'`;
++  if (tracked === null) {
++    console.error(
++      '  Could not ask git which of these are tracked. Run each line separately —\n' +
++        '  the first is allowed to fail if the files are not in the index:\n\n' +
++        `      git rm --cached ${names.map(quote).join(' ')}\n` +
++        `      rm -f ${names.map(quote).join(' ')}\n`,
++    );
++  } else {
++    const inIndex = names.filter((n) => tracked.has(n));
++    const onDiskOnly = names.filter((n) => !tracked.has(n));
++
++    if (inIndex.length) {
++      console.error(
++        `  ${inIndex.length} tracked. .gitignore does not apply to a file uploaded through the\n` +
++          '  GitHub web UI, and never applies to a file that is already tracked. Two steps,\n' +
++          '  and the second must run even if the first does not:\n\n' +
++          `      git rm --cached ${inIndex.map(quote).join(' ')}\n` +
++          `      rm -f ${inIndex.map(quote).join(' ')}\n`,
++      );
++    }
++    if (onDiskOnly.length) {
++      console.error(
++        `  ${onDiskOnly.length} not tracked on this branch — nothing to un-track, and\n` +
++          '  `git rm --cached` on these exits 1 with "did not match any files". Just delete\n' +
++          '  the working copies:\n\n' +
++          `      rm -f ${onDiskOnly.map(quote).join(' ')}\n`,
++      );
++      if (elsewhere.size) {
++        const list = [...elsewhere];
++        console.error(
++          `  ${list.length} of those ARE tracked on main, so they come back with every\n` +
++            '  `git checkout main`, and they are permanent in the object store until main\n' +
++            '  stops carrying them. Deleting them here does not fix that. Do it on a branch\n' +
++            '  off main — the pre-commit guard refuses a commit on main itself:\n\n' +
++            '      git fetch origin\n' +
++            '      git switch -c chore/root-cleanup origin/main\n' +
++            `      git rm --cached ${list.map(quote).join(' ')}\n` +
++            '      git commit -m "chore: remove transport artifacts from the repository root"\n' +
++            '      git push -u origin chore/root-cleanup     # then merge it\n',
++        );
++      }
++    }
++  }
++
+   process.exit(1);
+ }
+ 
+-- 
+2.43.0
+
