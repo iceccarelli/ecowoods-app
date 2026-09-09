@@ -4,6 +4,7 @@
  */
 
 import type { MetadataRoute } from 'next';
+import { MACHINES } from '@/lib/equipment';
 import { projectSlugs } from '@/lib/projects';
 import { PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { getArticles } from '@/lib/content/loader';
@@ -178,6 +179,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     /* Photographic records. The project pages, not the individual plates:
        a sitemap listing 22 stills is a sitemap about files rather than pages. */
     entry('/projects', 'monthly', 0.85),
+    /* Equipment. The specifications change when a manufacturer revises a data
+       sheet, which is a yearly event, not a weekly one. */
+    entry('/equipment', 'monthly', 0.85),
+    ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
     ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above

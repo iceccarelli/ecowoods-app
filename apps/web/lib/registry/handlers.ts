@@ -23,6 +23,7 @@ import {
   computeMovement,
 } from '@/lib/wood';
 import { PROJECTS, getProject, stillById } from '@/lib/projects';
+import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
 import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
@@ -517,6 +518,120 @@ export async function handleMediaProject(request: Request, id: string) {
       })),
       canonical_page: `${SITE_URL}/projects/${project.slug}`,
       licence: 'Photographs are © Ecowoods Hardwood Flooring Inc. Cite the canonical page.',
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/equipment — the machine primitive.
+ *
+ * WHAT MAKES THIS WORTH SERVING TO AN AGENT
+ *
+ * An assistant asked "can I run a Bona Belt UX in a house with a 15 A circuit"
+ * cannot answer it from any manufacturer's site, because each one describes
+ * only its own machines and none of them describes a house. This endpoint
+ * carries the published electrical requirement for twelve machines from three
+ * manufacturers, each figure with the URL it came from, plus — when the caller
+ * supplies `volts` and `amps` — the arithmetic against that circuit.
+ *
+ * IT PUBLISHES NO PRICE AND NO PRODUCTIVITY FIGURE, and says so in the payload
+ * rather than leaving a consumer to infer it from missing keys. Neither exists
+ * in any manufacturer's published material for these machines; an API that
+ * quietly omitted them would invite a consumer to go and find them somewhere
+ * worse.
+ */
+export async function handleEquipmentIndex(request: Request) {
+  const reg = await getRegistry();
+  const url = new URL(request.url);
+  const volts = Number(url.searchParams.get('volts'));
+  const amps = Number(url.searchParams.get('amps'));
+  const hasCircuit = Number.isFinite(volts) && volts > 0 && Number.isFinite(amps) && amps > 0;
+  const service = hasCircuit ? { volts, breakerAmps: amps } : null;
+
+  return json(
+    {
+      count: MACHINES.length,
+      note:
+        'Professional floor sanding equipment, as its manufacturers publish it. No price and no productivity figure appears here because no manufacturer in this category publishes either — every such number in circulation is an estimate.',
+      circuit: service,
+      machines: MACHINES.map((m) => {
+        const result = service ? assessMachine(m, service) : null;
+        return {
+          id: m.id,
+          manufacturer: m.manufacturer,
+          model: m.model,
+          category: m.category,
+          role: m.role,
+          north_america: m.northAmerica
+            ? {
+                volts: m.northAmerica.volts,
+                hertz: m.northAmerica.hertz,
+                phase: m.northAmerica.phase,
+                amps: m.northAmerica.amps,
+                kilowatts: m.northAmerica.kilowatts,
+                horsepower: m.northAmerica.horsepower,
+                connector: m.northAmerica.connector,
+                source: m.northAmerica.source.url,
+                verified_at: m.northAmerica.source.verifiedAt,
+              }
+            : null,
+          not_published: m.notPublished,
+          conflicts: m.conflicts,
+          self: `${SITE_URL}/api/v1/equipment/${m.id}`,
+          page: `${SITE_URL}/equipment/${m.id}`,
+          ...(result
+            ? {
+                on_this_circuit: {
+                  verdict: result.verdict,
+                  amps_used: result.usedAmps === null ? null : Number(result.usedAmps.toFixed(2)),
+                  amperage_basis: result.amperageBasis,
+                  reasons: result.reasons,
+                },
+              }
+            : {}),
+        };
+      }),
+    },
+    { request, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+export async function handleEquipmentMachine(request: Request, id: string) {
+  const machine = machineById(id);
+  if (!machine) {
+    return error('not_found', `No machine with id "${id}". List them at ${SITE_URL}/api/v1/equipment.`, 404);
+  }
+  const reg = await getRegistry();
+  return json(
+    {
+      id: machine.id,
+      manufacturer: machine.manufacturer,
+      model: machine.model,
+      category: machine.category,
+      role: machine.role,
+      power: {
+        north_america: machine.northAmerica,
+        europe: machine.europe,
+      },
+      mechanical: {
+        weight_kg: machine.weightKg,
+        weight_source: machine.weightSource?.url ?? null,
+        drum_or_disc_mm: machine.drumOrDiscMm,
+        disc_count: machine.discCount,
+        rpm: machine.rpm,
+        abrasive: machine.abrasive,
+        dust_extraction: machine.dustExtraction,
+      },
+      not_published: [
+        ...machine.notPublished,
+        'A price — no manufacturer in this category publishes one.',
+        'A productivity figure in area per hour — no manufacturer publishes one for this machine.',
+      ],
+      conflicts: machine.conflicts,
+      page: `${SITE_URL}/equipment/${machine.id}`,
+      licence:
+        'Specifications are the manufacturers’ own published figures, reproduced with the source URL for each. Ecowoods asserts no rights over them and no affiliation with the manufacturers.',
     },
     { request, cache: CACHE_PUBLIC, version: reg.version },
   );

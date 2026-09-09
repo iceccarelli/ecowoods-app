@@ -42,6 +42,8 @@ import * as serviceMatch from '@/app/api/v1/service-match/route';
 import * as movement from '@/app/api/v1/movement/route';
 import * as media from '@/app/api/v1/media/route';
 import * as mediaById from '@/app/api/v1/media/[id]/route';
+import * as equipment from '@/app/api/v1/equipment/route';
+import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
 import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
 import * as openapi from '@/app/api/v1/openapi.json/route';
 
@@ -79,6 +81,8 @@ const ROUTES: Record<string, RouteModule> = {
   movement,
   media,
   'media/[id]': mediaById,
+  equipment,
+  'equipment/[id]': equipmentById,
   'recommendation-context': recommendationContext,
   'openapi.json': openapi,
 };
@@ -128,6 +132,7 @@ beforeAll(async () => {
     'evidence/[id]': reg.evidence[0].id,
     'citations/[topic]': CITATION_TOPICS[0],
     'media/[id]': 'maple-vaughan-curved-stair',
+    'equipment/[id]': 'laegler-hummel',
   };
 });
 

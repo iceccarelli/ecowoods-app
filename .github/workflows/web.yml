@@ -79,6 +79,16 @@ jobs:
       # describes the room, and no private street address reaches a registry.
       - name: Media (plates on disk, alt present, no civic address)
         run: node scripts/verify-media.mjs
+      # Every file under apps/web/public 404d in production for months because
+      # Vercel takes its static root from the repository root. The build command
+      # now syncs one into the other; this fails if that clause is removed.
+      - name: Public assets (the static root is actually synced)
+        run: node scripts/verify-public-assets.mjs
+      # Specifications for machines other people manufacture. Every figure needs
+      # an https source read within 400 days; no price and no productivity number
+      # may appear, because no manufacturer in this category publishes either.
+      - name: Equipment (sourced specs, no invented price or throughput)
+        run: node scripts/verify-equipment.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

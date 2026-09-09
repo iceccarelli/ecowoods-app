@@ -230,6 +230,7 @@ export default function SiteFooter() {
               <a href="/framework/assess">Score a quote</a>
               <a href="/tools/floor-movement">Movement calculator</a>
               <a href="/projects">Projects, photographed</a>
+              <a href="/equipment">Sanding equipment</a>
               <a href="/guides">Decision Guides</a>
               <a href="/glossary">Glossary</a>
               <a href="/data">Data &amp; Figures</a>

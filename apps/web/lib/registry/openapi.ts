@@ -90,6 +90,8 @@ export function buildOpenApi() {
       '/movement': ref('MovementResult'),
       '/media': ref('MediaIndex'),
       '/media/{id}': ref('MediaProject'),
+      '/equipment': ref('EquipmentIndex'),
+      '/equipment/{id}': ref('EquipmentMachine'),
       '/openapi.json': { type: 'object', description: 'This document.' },
     };
     const out: Record<string, unknown> = { '200': okJson(bodies[path] ?? { type: 'object' }) };
@@ -114,7 +116,14 @@ export function buildOpenApi() {
       tags: [e.path.split('/')[1] || 'index'],
       responses: responsesFor(e.path, e.method),
     };
-    if (e.path === '/media/{id}') op.parameters = [idParam('id', 'Project slug, e.g. maple-vaughan-curved-stair.')];
+    if (e.path === '/equipment') {
+      op.parameters = [
+        { name: 'volts', in: 'query', required: false, schema: { type: 'number', minimum: 1 }, description: 'Supply voltage of the circuit to assess against. Omit for the specification alone.' },
+        { name: 'amps', in: 'query', required: false, schema: { type: 'number', minimum: 1 }, description: 'Breaker rating of that circuit.' },
+      ];
+    }
+    if (e.path === '/equipment/{id}') op.parameters = [idParam('id', 'Machine id, e.g. laegler-hummel.')];
+    else if (e.path === '/media/{id}') op.parameters = [idParam('id', 'Project slug, e.g. maple-vaughan-curved-stair.')];
     else if (e.path.includes('{id}')) op.parameters = [idParam('id', 'Registry id (e.g. service:floor-refinishing) or bare slug (floor-refinishing).')];
     if (e.path.includes('{topic}')) op.parameters = [{ ...idParam('topic', 'Citation topic.'), schema: { type: 'string', enum: [...CITATION_TOPICS] } }];
     if (e.path === '/changes') {
@@ -362,6 +371,36 @@ export function buildOpenApi() {
             price_id: { type: 'string' }, label: { type: 'string' }, formatted: { type: 'string' }, currency: { type: 'string' }, unit: { type: 'string' }, canonical_url: { type: 'string' },
             is_quote: { type: 'boolean', const: false }, caveat: { type: 'string' },
             rough_band_range_cad: { type: 'object', properties: { low: { type: 'number' }, high: { type: 'number' }, square_feet: { type: 'number' }, disclaimer: { type: 'string' } }, description: 'Band × area. A range, never a quote.' },
+          },
+        },
+        EquipmentIndex: {
+          type: 'object',
+          description:
+            'Professional floor sanding machines as their manufacturers publish them. Carries no price and no productivity figure, because no manufacturer in this category publishes either — the omission is stated in the payload rather than left to be inferred.',
+          required: ['count', 'machines'],
+          properties: {
+            count: { type: 'integer' },
+            note: { type: 'string' },
+            circuit: { type: ['object', 'null'], description: 'Echo of the volts/amps assessed against, or null.' },
+            machines: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        EquipmentMachine: {
+          type: 'object',
+          description: 'One machine. Every published figure carries the URL of the manufacturer document it was read from and the date it was read.',
+          required: ['id', 'manufacturer', 'model', 'power', 'not_published'],
+          properties: {
+            id: { type: 'string' },
+            manufacturer: { type: 'string' },
+            model: { type: 'string' },
+            category: { type: 'string' },
+            role: { type: 'string' },
+            power: { type: 'object', description: 'North American and European configurations, each with its source.' },
+            mechanical: { type: 'object' },
+            not_published: { type: 'array', items: { type: 'string' }, description: 'What the manufacturer does not publish, stated rather than left as absent keys.' },
+            conflicts: { type: 'array', items: { type: 'string' }, description: "Places where the manufacturer's own documents disagree. Both values are reported; neither is chosen." },
+            page: { type: 'string', format: 'uri' },
+            licence: { type: 'string' },
           },
         },
         MediaIndex: {

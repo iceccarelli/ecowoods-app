@@ -161,6 +161,7 @@ export async function GET() {
   lines.push('## Evidence');
   link('Case studies', '/case-studies', 'measured jobs — substrate, moisture readings, species, area — published in full; first-party evidence, not testimonials-as-proof');
   link('Projects, photographed', '/projects', 'photographic records of completed jobs in two chapters, bare then finished; deliberately no measurements, no species and no street address — the measured material is the case studies above');
+  link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
   link('Technical papers', '/papers', 'the method, sourced — moisture protocol, refinishing sequence, grading, selection, provenance');
   link(`Well-Installed Framework v${FRAMEWORK_VERSION}`, '/framework', `${PILLARS.length} pillars, ${criterionCount()} binary criteria for judging any hardwood installation; free to cite`);

@@ -98,3 +98,14 @@ audit/rendered.md
 # static asset. Never committed.
 .floor-graph/
 *.zip
+
+# ── The build-time public/ sync ──────────────────────────────────────────────
+# Vercel serves the REPO-ROOT public/ as the static root, not apps/web/public —
+# see docs/PUBLIC_ASSETS.md. vercel.json's buildCommand copies the app's public
+# directory up at build time, which means a local `pnpm build` leaves 400+
+# duplicated files here. They are build output, not source: ignore everything
+# except the handful that genuinely live at the root.
+/public/*
+!/public/brand/
+!/public/qr-app.jpg
+!/public/review-card.svg
