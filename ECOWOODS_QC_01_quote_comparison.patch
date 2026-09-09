@@ -1,0 +1,1722 @@
+From 1c1d26ce568b052e8bc3ea0769f06e572789c976 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 9 Sep 2026 04:57:41 +0000
+Subject: [PATCH] feat(quote-check): compare the quotes a homeowner is already
+ holding, and price nothing
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The highest-intent moment in this business is a homeowner holding three quotes
+that are thousands of dollars apart. Every flooring company in this city
+competes for that moment with review counts, and a review count does not tell
+anyone which of three numbers is correct.
+
+Usually none of them is wrong. They are pricing different work: one includes
+subfloor preparation, disposal of the existing floor and four coats, another
+does not, and nothing on either document says so. /quote-check puts two to four
+quotes side by side against 22 line items and reports whether the totals can be
+compared at all. Fourteen of the items are ones this business already publishes
+as belonging in a hardwood quote, each linking to the page that published it;
+the rest are neutral scope questions — who moves the furniture, who takes the
+old floor away — where including the item is not better, it is a different job.
+
+It runs entirely in the browser. There is no fetch in the component: the visitor
+is holding other companies' commercial documents, and a tool that uploads them
+is not usable by the people who most need it.
+
+WHAT IT REFUSES TO DO, AND WHY THAT IS ENFORCED BY A GUARD
+
+The obvious improvement is to price the gaps — "Quote B omits subfloor prep,
+typically $1.80/sq ft". That converts a scope comparison into a performance
+claim about a market. Competition Act s.74.01(1)(b) requires adequate and proper
+testing to exist BEFORE the claim; no such test exists for a typical GTA
+line-item price and none can be assembled from published data. Since Bill C-59
+the exposure is the greater of CAD 10M or 3% of worldwide gross revenue, and
+since 20 June 2025 a private party can bring it to the Tribunal directly.
+Characterising a competitor's document additionally invites the analysis in
+Energizer Brands v Gillette 2023 FC 804.
+
+That edit will arrive months from now, looking small and reasonable, from
+someone who has read none of the above. So scripts/verify-quote-check.mjs fails
+the build on a dollar figure or a percentage in anything rendered, on evaluative
+vocabulary about quotes or companies, on an exported function whose name prices
+or ranks, on a 'published' item whose citation does not resolve to a page this
+repository generates, and on a 'scope' item that quietly acquires a citation.
+Regression-tested against all five.
+
+TWO GUARDS WERE BLIND AND ARE NOT NOW
+
+verify:a11y matched element attributes with [^>]*?, which stops at the first ">"
+— and an arrow function in a handler contains one. Every attribute after
+onChange={() => …} was invisible, so correctly labelled controls were reported
+as unnamed and the fix a developer reaches for is to reorder attributes, which
+teaches nothing and leaves the trap set.
+
+verify:navigation read chrome links only as href="/x" in markup. The header's
+mega-menus are data — { label, href } — so for the reachability graph the entire
+header menu did not exist. It now counts 41 chrome links where it counted one; a
+page linked only from the menu was previously indistinguishable from a page
+linked from nowhere, which is the exact distinction that guard exists to make.
+
+Also: /api/v1/quote-check with the checklist as data and its refusals stated in
+the payload, an OpenAPI schema, a contract test, 16 unit tests, header and
+sitemap entries, an llms.txt entry, and a link from /pricing.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml                    |   6 +
+ apps/web/app/api/v1/quote-check/route.ts     |  11 +
+ apps/web/app/components/Header.tsx           |   1 +
+ apps/web/app/llms.txt/route.ts               |   1 +
+ apps/web/app/pricing/page.tsx                |   6 +
+ apps/web/app/quote-check/QuoteCompare.tsx    | 233 +++++++++++++++
+ apps/web/app/quote-check/page.tsx            | 144 +++++++++
+ apps/web/app/sitemap.ts                      |   1 +
+ apps/web/content/quote-check/scope-items.ts  | 291 +++++++++++++++++++
+ apps/web/lib/quote-check/compare.ts          | 216 ++++++++++++++
+ apps/web/lib/quote-check/index.ts            |   9 +
+ apps/web/lib/quote-check/quote-check.test.ts | 145 +++++++++
+ apps/web/lib/registry/handlers.ts            |  51 ++++
+ apps/web/lib/registry/manifest.ts            |   1 +
+ apps/web/lib/registry/openapi.ts             |  30 ++
+ apps/web/tests/api-contract.test.ts          |   2 +
+ package.json                                 |   1 +
+ scripts/verify-a11y.mjs                      |  12 +-
+ scripts/verify-navigation.mjs                |   9 +
+ scripts/verify-quote-check.mjs               | 250 ++++++++++++++++
+ 20 files changed, 1419 insertions(+), 1 deletion(-)
+ create mode 100644 apps/web/app/api/v1/quote-check/route.ts
+ create mode 100644 apps/web/app/quote-check/QuoteCompare.tsx
+ create mode 100644 apps/web/app/quote-check/page.tsx
+ create mode 100644 apps/web/content/quote-check/scope-items.ts
+ create mode 100644 apps/web/lib/quote-check/compare.ts
+ create mode 100644 apps/web/lib/quote-check/index.ts
+ create mode 100644 apps/web/lib/quote-check/quote-check.test.ts
+ create mode 100644 scripts/verify-quote-check.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index fc6c0af..c5c42ec 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -89,6 +89,12 @@ jobs:
+       # may appear, because no manufacturer in this category publishes either.
+       - name: Equipment (sourced specs, no invented price or throughput)
+         run: node scripts/verify-equipment.mjs
++      # /quote-check compares scopes and prices nothing. Its one unacceptable
++      # change — putting a dollar figure on a line item a quote leaves out — is
++      # also its most obvious-looking improvement, and will arrive as a small
++      # edit from someone who has not read s.74.01(1)(b). Checked mechanically.
++      - name: Quote comparison (no price, no ranking, every citation resolves)
++        run: node scripts/verify-quote-check.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/apps/web/app/api/v1/quote-check/route.ts b/apps/web/app/api/v1/quote-check/route.ts
+new file mode 100644
+index 0000000..05566e0
+--- /dev/null
++++ b/apps/web/app/api/v1/quote-check/route.ts
+@@ -0,0 +1,11 @@
++/**
++ * GET /api/v1/quote-check — see lib/registry/handlers.ts and /api/v1/openapi.json.
++ * The scope checklist as data. Pure, cacheable, and free of any price figure.
++ */
++import { handleQuoteCheck } from '@/lib/registry/handlers';
++import { options } from '@/lib/registry/http';
++
++export const dynamic = 'force-dynamic';
++
++export const GET = (request: Request) => handleQuoteCheck(request);
++export const OPTIONS = options;
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index d9c196b..183f1ec 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -99,6 +99,7 @@ const SERVICES_MENU: MegaColumn[] = [
+     href: '/guides',
+     items: [
+       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
++      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
+       { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
+       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
+       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index e4dc4b0..848728d 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -161,6 +161,7 @@ export async function GET() {
+   lines.push('## Evidence');
+   link('Case studies', '/case-studies', 'measured jobs — substrate, moisture readings, species, area — published in full; first-party evidence, not testimonials-as-proof');
+   link('Projects, photographed', '/projects', 'photographic records of completed jobs in two chapters, bare then finished; deliberately no measurements, no species and no street address — the measured material is the case studies above');
++  link('Compare hardwood quotes', '/quote-check', 'a side-by-side scope comparison for two to four quotes a homeowner is already holding: twenty-two line items that decide whether two totals are pricing the same work, computed in the browser with nothing uploaded and nothing stored; it prices no missing item and ranks no company, because no adequate and proper testing exists for a typical line-item price'),
+   link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
+   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
+   link('Technical papers', '/papers', 'the method, sourced — moisture protocol, refinishing sequence, grading, selection, provenance');
+diff --git a/apps/web/app/pricing/page.tsx b/apps/web/app/pricing/page.tsx
+index 6bfd8c6..208ad37 100644
+--- a/apps/web/app/pricing/page.tsx
++++ b/apps/web/app/pricing/page.tsx
+@@ -257,6 +257,12 @@ export default async function PricingPage() {
+             there is no unforeseen-conditions clause to reopen it later.{' '}
+             <Link href="/estimate">Request the free in-home estimate</Link> to start.
+           </p>
++          <p className="tlx-note">
++            Already holding two or three quotes? Before comparing the totals, check whether they are
++            pricing the same work — most of the time they are not.{' '}
++            <Link href="/quote-check">Put them side by side, line by line</Link>. It runs in your
++            browser; nothing is uploaded and no quote is ranked.
++          </p>
+           <p className="tlx-note">
+             Where each service sits:{' '}
+             {servicePages.map((p, i) => (
+diff --git a/apps/web/app/quote-check/QuoteCompare.tsx b/apps/web/app/quote-check/QuoteCompare.tsx
+new file mode 100644
+index 0000000..08651b9
+--- /dev/null
++++ b/apps/web/app/quote-check/QuoteCompare.tsx
+@@ -0,0 +1,233 @@
++'use client';
++
++import { Fragment, useMemo, useState } from 'react';
++import Link from 'next/link';
++import { SCOPE_ITEMS, SCOPE_GROUPS, compare, type QuoteInput } from '@/lib/quote-check';
++
++/**
++ * The comparator.
++ *
++ * Everything here runs in the browser. No quote, no total, no company name and
++ * no file is sent anywhere by this component — there is no fetch in it. That is
++ * a deliberate constraint, not an oversight: the visitor is holding other
++ * companies' commercial documents, and the moment a tool like this uploads them
++ * it stops being usable by the people who most need it.
++ *
++ * The result never ranks the quotes and never recommends one. It reports where
++ * the scopes differ and hands back the question to ask.
++ */
++const BLANK = (label: string): QuoteInput => ({ label, includes: [] });
++
++function money(v: string): number | undefined {
++  const n = Number(v.replace(/[^0-9.]/g, ''));
++  return Number.isFinite(n) && n > 0 ? n : undefined;
++}
++
++export default function QuoteCompare() {
++  const [quotes, setQuotes] = useState<QuoteInput[]>([BLANK('Quote 1'), BLANK('Quote 2')]);
++  const [raw, setRaw] = useState<{ total: string; area: string }[]>([
++    { total: '', area: '' },
++    { total: '', area: '' },
++  ]);
++
++  const result = useMemo(() => compare(quotes), [quotes]);
++
++  const setQuote = (i: number, patch: Partial<QuoteInput>) =>
++    setQuotes((prev) => prev.map((q, n) => (n === i ? { ...q, ...patch } : q)));
++
++  const setRawAt = (i: number, patch: Partial<{ total: string; area: string }>) =>
++    setRaw((prev) => prev.map((r, n) => (n === i ? { ...r, ...patch } : r)));
++
++  const toggle = (i: number, id: string) =>
++    setQuotes((prev) =>
++      prev.map((q, n) =>
++        n === i
++          ? { ...q, includes: q.includes.includes(id) ? q.includes.filter((x) => x !== id) : [...q.includes, id] }
++          : q,
++      ),
++    );
++
++  const addQuote = () => {
++    if (quotes.length >= 4) return;
++    setQuotes((prev) => [...prev, BLANK(`Quote ${prev.length + 1}`)]);
++    setRaw((prev) => [...prev, { total: '', area: '' }]);
++  };
++
++  const removeQuote = (i: number) => {
++    if (quotes.length <= 2) return;
++    setQuotes((prev) => prev.filter((_, n) => n !== i));
++    setRaw((prev) => prev.filter((_, n) => n !== i));
++  };
++
++  return (
++    <>
++      <div className="tlx-table-wrap" role="region" tabIndex={0} aria-label="The quotes you are holding">
++        <table className="wm-table">
++          <caption className="tlx-kicker">
++            Tick what each document actually says. Leave anything you cannot find unticked — that is the
++            answer, not a gap in the form.
++          </caption>
++          <thead>
++            <tr>
++              <th scope="col">Line item</th>
++              {quotes.map((q, i) => (
++                <th scope="col" key={i}>
++                  <label className="tlx-kicker" htmlFor={`qc-label-${i}`}>
++                    Your name for it
++                  </label>
++                  <input
++                    id={`qc-label-${i}`}
++                    type="text"
++                    value={q.label}
++                    onChange={(e) => setQuote(i, { label: e.target.value })}
++                    aria-label={`Name for quote ${i + 1}`}
++                  />
++                  {quotes.length > 2 && (
++                    <button type="button" onClick={() => removeQuote(i)} aria-label={`Remove ${q.label}`}>
++                      Remove
++                    </button>
++                  )}
++                </th>
++              ))}
++            </tr>
++          </thead>
++          <tbody>
++            <tr>
++              <th scope="row">Total on the document</th>
++              {quotes.map((q, i) => (
++                <td key={i}>
++                  <input
++                    type="text"
++                    inputMode="decimal"
++                    value={raw[i]?.total ?? ''}
++                    placeholder="$"
++                    aria-label={`Total for ${q.label}`}
++                    onChange={(e) => {
++                      setRawAt(i, { total: e.target.value });
++                      setQuote(i, { total: money(e.target.value) });
++                    }}
++                  />
++                </td>
++              ))}
++            </tr>
++            <tr>
++              <th scope="row">Area it covers (sq ft)</th>
++              {quotes.map((q, i) => (
++                <td key={i}>
++                  <input
++                    type="text"
++                    inputMode="decimal"
++                    value={raw[i]?.area ?? ''}
++                    placeholder="sq ft"
++                    aria-label={`Area for ${q.label}`}
++                    onChange={(e) => {
++                      setRawAt(i, { area: e.target.value });
++                      setQuote(i, { areaSqFt: money(e.target.value) });
++                    }}
++                  />
++                </td>
++              ))}
++            </tr>
++
++            {SCOPE_GROUPS.map((group) => (
++              <Fragment key={group}>
++                <tr>
++                  <th scope="rowgroup" colSpan={quotes.length + 1}>
++                    {group}
++                  </th>
++                </tr>
++                {SCOPE_ITEMS.filter((it) => it.group === group).map((it) => (
++                  <tr key={it.id}>
++                    <th scope="row">
++                      {it.label}
++                      {it.cite && (
++                        <>
++                          {' '}
++                          <Link href={it.cite} className="tlx-kicker">
++                            why
++                          </Link>
++                        </>
++                      )}
++                    </th>
++                    {quotes.map((q, i) => (
++                      <td key={i}>
++                        <input
++                          type="checkbox"
++                          checked={q.includes.includes(it.id)}
++                          onChange={() => toggle(i, it.id)}
++                          aria-label={`${it.label} — ${q.label}`}
++                        />
++                      </td>
++                    ))}
++                  </tr>
++                ))}
++              </Fragment>
++            ))}
++          </tbody>
++        </table>
++      </div>
++
++      {quotes.length < 4 && (
++        <p>
++          <button type="button" onClick={addQuote}>
++            Add another quote
++          </button>
++        </p>
++      )}
++
++      <div className="wm-result" role="status" aria-live="polite" style={{ position: 'static', marginTop: '2rem' }}>
++        <p className="tlx-kicker">What the arithmetic supports</p>
++        <p className="wm-sub">{result.statement}</p>
++
++        {result.readings.some((r) => typeof r.perSqFt === 'number') && (
++          <dl className="wm-dl">
++            {result.readings
++              .filter((r) => typeof r.perSqFt === 'number')
++              .map((r) => (
++                <div key={r.label}>
++                  <dt>{r.label}</dt>
++                  <dd>${r.perSqFt?.toFixed(2)} / sq ft</dd>
++                </div>
++              ))}
++          </dl>
++        )}
++
++        {result.readings.some((r) => r.missingScope.length > 0) && (
++          <>
++            <p className="tlx-kicker">Priced by one and not the other</p>
++            <ul className="wm-caveats">
++              {result.readings
++                .filter((r) => r.missingScope.length > 0)
++                .map((r) => (
++                  <li key={r.label}>
++                    <strong>{r.label}</strong> does not mention{' '}
++                    {r.missingScope.map((i) => i.label.toLowerCase()).join('; ')}. Ask what those cost before
++                    you compare the totals.
++                  </li>
++                ))}
++            </ul>
++          </>
++        )}
++
++        {result.absentEverywhere.length > 0 && result.verdict !== 'insufficient' && (
++          <>
++            <p className="tlx-kicker">In none of them — one question for all of them</p>
++            <ul className="wm-caveats">
++              {result.absentEverywhere.map((i) => (
++                <li key={i.id}>
++                  {i.label}. {i.why}
++                </li>
++              ))}
++            </ul>
++          </>
++        )}
++
++        <p className="wm-sub">
++          This tool prices nothing. It cannot tell you what subfloor preparation should cost, because no
++          honest source publishes that figure for your house — which is the same reason the quotes differ.
++          The output is the question to put back to each company.
++        </p>
++      </div>
++    </>
++  );
++}
+diff --git a/apps/web/app/quote-check/page.tsx b/apps/web/app/quote-check/page.tsx
+new file mode 100644
+index 0000000..46fa33b
+--- /dev/null
++++ b/apps/web/app/quote-check/page.tsx
+@@ -0,0 +1,144 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import QuoteCompare from './QuoteCompare';
++import { SCOPE_ITEMS } from '@/lib/quote-check';
++import { SITE_URL } from '@/lib/seo-data';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++
++export const metadata: Metadata = {
++  title: 'Compare hardwood flooring quotes — are they even for the same job?',
++  description: `Put two or three hardwood quotes side by side against ${SCOPE_ITEMS.length} line items and find out whether their totals are comparable at all. Nothing is uploaded, nothing is stored, and no quote is ranked.`,
++  alternates: { canonical: '/quote-check' },
++  openGraph: {
++    title: 'Three quotes, three different jobs',
++    description:
++      'The reason hardwood quotes disagree is usually that they are not pricing the same work. This puts them side by side, line by line.',
++    type: 'website',
++    url: `${SITE_URL}/quote-check`,
++  },
++};
++
++/**
++ * /quote-check — the highest-intent moment in the whole business.
++ *
++ * A homeowner holding three quotes has already decided to do the work, already
++ * chosen a rough budget, and is minutes from picking someone. Every flooring
++ * company in this city competes for that moment with review counts. Review
++ * counts do not tell anybody which of three numbers is correct.
++ *
++ * WHAT IT DOES, AND THE LINE IT WILL NOT CROSS
++ *
++ * It takes the visitor's own numbers about documents we never see and reports
++ * where the scopes differ. It does not rank the quotes, does not price the
++ * gaps, does not characterise anyone's document, and does not ask for an email
++ * before showing the answer.
++ *
++ * The temptation is to price the gaps — "Quote B omits subfloor preparation,
++ * typically $1.80/sq ft" — and it is exactly the thing we must not do.
++ * Competition Act s.74.01(1)(b) requires adequate and proper testing to exist
++ * BEFORE a performance claim is made, and we have no such test for a typical
++ * GTA line-item price. Since Bill C-59 the exposure is the greater of CAD 10M
++ * and 3% of worldwide gross revenue, and since 20 June 2025 a private party can
++ * take it to the Tribunal directly. Naming or characterising a competitor's
++ * document additionally invites the analysis in Energizer Brands v Gillette
++ * 2023 FC 804.
++ *
++ * So the output is a question, not a verdict. That is also the more useful
++ * output: a homeowner who goes back to three companies asking "what would
++ * subfloor preparation cost, and why isn't it here?" learns more about all
++ * three than any score we could compute.
++ *
++ * WHY IT IS WORTH BUILDING ANYWAY
++ *
++ * Every session teaches us, anonymously and only with consent, which line items
++ * GTA quotes leave out. That is a fact about this market that no competitor can
++ * assemble, because no competitor sees other companies' quotes at volume. It is
++ * the same asset as the Floor Graph, gathered at the other end of the funnel.
++ */
++export default function QuoteCheckPage() {
++  const published = SCOPE_ITEMS.filter((i) => i.basis === 'published').length;
++
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Compare quotes', url: `${SITE_URL}/quote-check` },
++        ])}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Compare quotes</span>
++          </nav>
++          <p className="tlx-kicker">Quote comparison</p>
++          <h1 className="tlx-title">Three quotes, and probably three different jobs</h1>
++          <p className="tlx-lede">
++            When two hardwood quotes are thousands of dollars apart, the usual reason is not that one company
++            is expensive. It is that one of them is pricing subfloor preparation, disposal of the old floor
++            and four coats, and the other is not — and nothing on either page says so. Tick what each document
++            actually contains and find out whether the totals can be compared at all.
++          </p>
++          <p className="tlx-note">
++            Nothing is uploaded and nothing is stored. This runs entirely in your browser; the quotes never
++            leave this page.
++          </p>
++        </div>
++      </header>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <QuoteCompare />
++        </div>
++      </section>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">What this will not do</h2>
++          <div className="tlx-body">
++            <p>
++              It will not tell you which quote to accept, and it will not put a dollar figure on anything a
++              quote leaves out. Both are things we would have to invent. Nobody — us included — can publish
++              what subfloor preparation costs in your house without seeing it, and a number we made up is the
++              one number here you would actually act on.
++            </p>
++            <p>
++              It also names nobody. We never see the documents, and this page contains no judgement about any
++              company, including the ones you are comparing us against.
++            </p>
++            <p>
++              {published} of the {SCOPE_ITEMS.length} line items are the ones we already publish as belonging
++              in a hardwood quote, in{' '}
++              <Link href="/guides/how-to-evaluate-a-hardwood-quote">how to evaluate a hardwood quote</Link>.
++              The rest are plain scope questions — who moves the furniture, who takes the old floor away —
++              where including the item is not better, it is simply a different job.
++            </p>
++          </div>
++        </div>
++      </section>
++
++      <section className="tlx-section">
++        <div className="shell">
++          <h2 className="tlx-h2">If you would rather someone read them</h2>
++          <div className="tlx-body">
++            <p>
++              A senior estimator will read the actual documents and tell you what is missing, what is unusual
++              and what is fine — including where our own quote is the weaker one.{' '}
++              <Link href="/framework/assess">Send the quotes you are holding</Link>. They are attached to one
++              internal email and never stored.
++            </p>
++            <p>
++              If you want to test the companies rather than the paperwork, the{' '}
++              <Link href="/framework">twenty-four-criterion framework</Link> scores the process behind a quote,
++              and the <Link href="/tools/floor-movement">movement calculator</Link> and{' '}
++              <Link href="/equipment">equipment reference</Link> cover the two things quotes most often get
++              silently wrong.
++            </p>
++          </div>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index dab05af..72c06c0 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -181,6 +181,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     entry('/projects', 'monthly', 0.85),
+     /* Equipment. The specifications change when a manufacturer revises a data
+        sheet, which is a yearly event, not a weekly one. */
++    entry('/quote-check', 'monthly', 0.9),
+     entry('/equipment', 'monthly', 0.85),
+     ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
+     ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),
+diff --git a/apps/web/content/quote-check/scope-items.ts b/apps/web/content/quote-check/scope-items.ts
+new file mode 100644
+index 0000000..97643a1
+--- /dev/null
++++ b/apps/web/content/quote-check/scope-items.ts
+@@ -0,0 +1,291 @@
++/**
++ * content/quote-check/scope-items.ts — the line items that decide whether two
++ * hardwood quotes are the same job.
++ *
++ * WHY THIS FILE CONTAINS NO OPINIONS AND NO PRICES
++ *
++ * A homeowner holding three quotes is not confused about which number is
++ * smallest. They are confused because the three numbers describe three
++ * different jobs and nothing on the page says so. $8.50/sq ft that includes
++ * subfloor preparation, disposal of the existing floor and four coats is not a
++ * higher price than $6.20/sq ft that includes none of them — it is a different
++ * scope, and comparing the two as prices is a category error.
++ *
++ * So this tool does exactly one thing: it takes the numbers the visitor
++ * supplies about quotes we have never seen, and reports where the scopes
++ * differ. It states no opinion about any company, prices none of the missing
++ * items, and produces no ranking.
++ *
++ * That restraint is not squeamishness, it is the only defensible design:
++ *
++ *  · Competition Act s.74.01(1)(b) requires adequate and proper testing BEFORE
++ *    a performance claim is made. "A quote without moisture readings costs you
++ *    $2,000 more on average" is a performance claim we have no test for. Since
++ *    Bill C-59 the penalty is the greater of CAD 10M and 3% of worldwide gross
++ *    revenue, and since 20 June 2025 a private party can bring it to the
++ *    Tribunal directly.
++ *  · Naming or characterising a competitor's document invites the disparagement
++ *    analysis in Energizer Brands v Gillette 2023 FC 804. We never see the
++ *    document and never name anyone.
++ *
++ * WHERE EACH ITEM COMES FROM — and the guard enforces this
++ *
++ *   basis: 'published'  the item is one this business has already published as
++ *                       belonging in a quote, in /guides/how-to-evaluate-a-
++ *                       hardwood-quote. `cite` points at that published page.
++ *                       Nothing new is being asserted here.
++ *   basis: 'scope'      a neutral line item that plainly changes what is being
++ *                       priced — who moves the furniture, who takes the old
++ *                       floor away. No claim of any kind: including it is not
++ *                       better, excluding it is not worse, it is simply a
++ *                       different job.
++ *
++ * scripts/verify-quote-check.mjs fails if an item carries a dollar figure, a
++ * percentage, a comparative adjective, or a 'published' basis whose citation
++ * does not resolve to a page this repository actually generates.
++ */
++
++export type ScopeBasis = 'published' | 'scope';
++
++export interface ScopeItem {
++  /** Stable id. Appears in the API and in anonymous benchmark rows; never renamed. */
++  id: string;
++  group: 'Before the price' | 'The floor itself' | 'The work' | 'The finish' | 'The paperwork';
++  /** What the visitor is asked to look for in the document they are holding. */
++  label: string;
++  /** Why it changes the scope. Never why one company is better than another. */
++  why: string;
++  basis: ScopeBasis;
++  /** Internal page that already publishes this. Required when basis is 'published'. */
++  cite?: string;
++  /**
++   * True when omitting the item means the two quotes are pricing different
++   * work, so their totals cannot be compared at all. False when the item
++   * affects certainty rather than scope.
++   */
++  changesScope: boolean;
++}
++
++const Q = '/guides/how-to-evaluate-a-hardwood-quote';
++const CLIMATE = '/papers/toronto-hardwood-climate-moisture-protocol';
++const MACHINES = '/papers/hardwood-refinishing-machines-and-sequence';
++const GRADING = '/papers/hardwood-grading-standards-nhla-nwfa';
++
++export const SCOPE_ITEMS: ScopeItem[] = [
++  {
++    id: 'moisture-readings',
++    group: 'Before the price',
++    label: 'Moisture readings, with the date they were taken',
++    why:
++      'A price set before anyone measured the subfloor and the air is a price for a building nobody has examined. If the readings are absent, the quote and any quote that includes them were produced by different processes.',
++    basis: 'published',
++    cite: CLIMATE,
++    changesScope: false,
++  },
++  {
++    id: 'substrate-assessment',
++    group: 'Before the price',
++    label: 'What the subfloor is, and its condition',
++    why:
++      'Plywood, plank, and a concrete slab are three different installations with three different material lists. A quote that does not say which one it assumes has not fixed its own scope.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'species-grade-width',
++    group: 'The floor itself',
++    label: 'Species, grade and board width — all three',
++    why:
++      'Grade and width move material cost independently of species. #1 Common and Select in the same species are different products at different prices; so are 3¼" and 7" of the same grade.',
++    basis: 'published',
++    cite: GRADING,
++    changesScope: true,
++  },
++  {
++    id: 'quantity',
++    group: 'The floor itself',
++    label: 'The area being covered, in square feet',
++    why:
++      'Without it there is no unit price, and two totals for two different areas look like a price difference.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'waste-factor',
++    group: 'The floor itself',
++    label: 'Whether the material quantity includes a cutting allowance',
++    why:
++      'Ordering the exact floor area and ordering the floor area plus an allowance are different quantities of the same product. If one quote carries the allowance and another does not, the shortfall is bought later.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'removal-disposal',
++    group: 'The work',
++    label: 'Removal and disposal of the existing floor',
++    why:
++      'Someone lifts the old floor and pays to dispose of it. If the quote is silent, it is either included or it is yours — and those are different jobs at the same number.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'subfloor-prep',
++    group: 'The work',
++    label: 'Subfloor preparation — levelling, fastening, patching',
++    why:
++      'Flattening and re-fastening a subfloor is labour that either sits in the price or arrives as a change order. It is the single most common difference between two quotes for the same room.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'install-method',
++    group: 'The work',
++    label: 'The installation method, and the reason for it',
++    why:
++      'Nail-down, glue-down and floating carry different materials and different labour. A method chosen without a stated reason is a method chosen without the substrate in view.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'acclimation',
++    group: 'The work',
++    label: 'Acclimation — how long, and in the actual space',
++    why:
++      'Acclimation is days on the schedule and space in the house. A quote that assumes none and a quote that assumes a week are pricing different projects.',
++    basis: 'published',
++    cite: CLIMATE,
++    changesScope: false,
++  },
++  {
++    id: 'furniture',
++    group: 'The work',
++    label: 'Who moves the furniture and the appliances',
++    why: 'Labour that is either in the price or in your weekend.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'stairs-transitions',
++    group: 'The work',
++    label: 'Stairs and transitions, itemised separately',
++    why:
++      'Stairs are priced per unit and transitions per opening; folded into a square-foot rate they are invisible, and a quote that omits them entirely is quoting a smaller job.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'baseboard',
++    group: 'The work',
++    label: 'Baseboard or quarter-round — removed and reinstalled, or new',
++    why: 'Three different line items hide behind the same word, and one of them is carpentry.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'dust-containment',
++    group: 'The work',
++    label: 'Dust containment and extraction',
++    why:
++      'Containment is equipment and setup time. It is a real line whether or not it appears as one.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'grit-sequence',
++    group: 'The finish',
++    label: 'The sanding grit sequence',
++    why:
++      'The number of passes is the labour. A sequence that skips a grit is a shorter job that shows in the floor under a raking light.',
++    basis: 'published',
++    cite: MACHINES,
++    changesScope: true,
++  },
++  {
++    id: 'finish-product',
++    group: 'The finish',
++    label: 'The finish product, by name',
++    why:
++      'Finish is the largest material variable in a refinish and the products differ by several times in cost. "Commercial-grade finish" names nothing.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'coat-count',
++    group: 'The finish',
++    label: 'How many coats',
++    why: 'Each coat is a material quantity and a day. Two coats and four coats are different jobs.',
++    basis: 'published',
++    cite: Q,
++    changesScope: true,
++  },
++  {
++    id: 'stain',
++    group: 'The finish',
++    label: 'Whether stain is included, and whether a sample will be made on your floor',
++    why:
++      'Staining adds a day and a material. A sample made on your own boards is additional labour that some quotes carry and some do not.',
++    basis: 'scope',
++    changesScope: true,
++  },
++  {
++    id: 'schedule',
++    group: 'The paperwork',
++    label: 'The schedule — start date and working days',
++    why:
++      'Duration is the part of a quote that collides with the rest of your life, and a quote with no schedule has not committed to one.',
++    basis: 'published',
++    cite: Q,
++    changesScope: false,
++  },
++  {
++    id: 'price-fixed',
++    group: 'The paperwork',
++    label: 'Whether the price is fixed in writing, with no open-ended change-order clause',
++    why:
++      'An open-ended change-order clause means the number on the page is a starting number. Comparing it to a fixed number is comparing two different kinds of thing.',
++    basis: 'published',
++    cite: Q,
++    changesScope: false,
++  },
++  {
++    id: 'warranty-in-contract',
++    group: 'The paperwork',
++    label: 'Workmanship warranty language in the contract itself, not on a website',
++    why: 'A warranty that lives only on a website is not part of the agreement you sign.',
++    basis: 'published',
++    cite: Q,
++    changesScope: false,
++  },
++  {
++    id: 'who-performs',
++    group: 'The paperwork',
++    label: 'Who performs the work — employees or subcontracted crews',
++    why:
++      'It does not change the material list. It changes who is accountable for the workmanship the warranty covers.',
++    basis: 'published',
++    cite: Q,
++    changesScope: false,
++  },
++  {
++    id: 'condo-logistics',
++    group: 'The paperwork',
++    label: 'Condominium logistics — elevator booking, hours, deposits',
++    why:
++      'In a condominium these are scheduled, paid and sometimes refundable. A quote written for a house does not contain them.',
++    basis: 'scope',
++    changesScope: true,
++  },
++];
++
++export const SCOPE_GROUPS = [
++  'Before the price',
++  'The floor itself',
++  'The work',
++  'The finish',
++  'The paperwork',
++] as const;
+diff --git a/apps/web/lib/quote-check/compare.ts b/apps/web/lib/quote-check/compare.ts
+new file mode 100644
+index 0000000..69a881a
+--- /dev/null
++++ b/apps/web/lib/quote-check/compare.ts
+@@ -0,0 +1,216 @@
++/**
++ * lib/quote-check/compare.ts — arithmetic on numbers the visitor supplied,
++ * about documents we have never seen.
++ *
++ * Every function here is pure and total. Nothing fetches, nothing stores,
++ * nothing is written to the network by the page that calls it. The visitor is
++ * holding somebody else's commercial documents; the design position is that
++ * those never leave their browser unless they separately choose to send them to
++ * a human at /framework/assess.
++ *
++ * THE ONE IDEA
++ *
++ * Two totals are comparable only if they price the same work. So: take the
++ * union of everything any of the quotes includes, and report, per quote, what
++ * is missing from that union. A quote that is cheaper and shorter is not a
++ * better price; it is a smaller job, and until the missing items are priced
++ * nobody knows which is cheaper — including us.
++ *
++ * WHAT THIS DELIBERATELY REFUSES TO COMPUTE
++ *
++ * The obvious next step is to price the gaps: "Quote B omits subfloor prep,
++ * typically $1.80/sq ft, so the real difference is …". We will not, and the
++ * guard will not let anyone add it later. We have no adequate and proper test
++ * for a typical GTA price of a line item — Competition Act s.74.01(1)(b)
++ * requires the testing to exist BEFORE the claim, not after somebody complains
++ * — and an invented figure would be the one number in this whole tool that a
++ * homeowner actually acts on.
++ *
++ * The honest output is the question they should ask, not our guess at the
++ * answer.
++ */
++import { SCOPE_ITEMS, type ScopeItem } from '@/content/quote-check/scope-items';
++
++export interface QuoteInput {
++  /** The visitor's own label: "Company A", "the one from Tuesday". Never sent anywhere. */
++  label: string;
++  /** Total, in dollars, as written on the document. Undefined when not entered. */
++  total?: number;
++  /** Area in square feet, as written on the document. Undefined when not entered. */
++  areaSqFt?: number;
++  /** Ids of SCOPE_ITEMS the visitor found in the document. */
++  includes: string[];
++}
++
++export interface QuoteReading {
++  label: string;
++  total?: number;
++  areaSqFt?: number;
++  /** total / areaSqFt, when both are present. Two decimals. */
++  perSqFt?: number;
++  /** Items present in at least one other quote and absent from this one. */
++  missing: ScopeItem[];
++  /** The subset of `missing` that changes what is being priced. */
++  missingScope: ScopeItem[];
++  /** Items nobody's quote mentions — a question for all of them, not a mark against one. */
++  absentEverywhere: ScopeItem[];
++}
++
++export type Verdict =
++  /** Same scope. The totals are measuring the same thing. */
++  | 'comparable'
++  /** Same scope, but items nobody mentioned. Comparable to each other, incomplete against the checklist. */
++  | 'comparable-with-gaps'
++  /** Scopes differ. The totals are not measuring the same thing. */
++  | 'not-comparable'
++  /** Fewer than two quotes with enough entered to say anything. */
++  | 'insufficient';
++
++export interface Comparison {
++  readings: QuoteReading[];
++  verdict: Verdict;
++  /** Ids present in at least one quote. */
++  union: string[];
++  /** Ids in every quote. */
++  intersection: string[];
++  /** Scope-changing items on which the quotes disagree. The reason for 'not-comparable'. */
++  divergent: ScopeItem[];
++  /** Checklist items no quote mentions. */
++  absentEverywhere: ScopeItem[];
++  /** Plain-language statement of what the arithmetic supports. Never a recommendation. */
++  statement: string;
++}
++
++const byId = new Map(SCOPE_ITEMS.map((i) => [i.id, i]));
++const item = (id: string): ScopeItem | undefined => byId.get(id);
++const items = (ids: Iterable<string>): ScopeItem[] =>
++  [...ids].map(item).filter((i): i is ScopeItem => Boolean(i));
++
++/** Order results the way the checklist is ordered, whatever order the ids arrive in. */
++const inChecklistOrder = (a: ScopeItem, b: ScopeItem) =>
++  SCOPE_ITEMS.indexOf(a) - SCOPE_ITEMS.indexOf(b);
++
++export function perSquareFoot(q: QuoteInput): number | undefined {
++  if (typeof q.total !== 'number' || typeof q.areaSqFt !== 'number') return undefined;
++  if (!Number.isFinite(q.total) || !Number.isFinite(q.areaSqFt)) return undefined;
++  if (q.total <= 0 || q.areaSqFt <= 0) return undefined;
++  return Math.round((q.total / q.areaSqFt) * 100) / 100;
++}
++
++/** A quote counts once the visitor has told us anything at all about it. */
++export function isEntered(q: QuoteInput): boolean {
++  return Boolean(q.label.trim()) && (q.includes.length > 0 || typeof q.total === 'number');
++}
++
++export function compare(quotes: QuoteInput[]): Comparison {
++  const entered = quotes.filter(isEntered);
++
++  const union = new Set<string>();
++  for (const q of entered) for (const id of q.includes) if (byId.has(id)) union.add(id);
++
++  const intersection = new Set<string>(
++    entered.length
++      ? [...union].filter((id) => entered.every((q) => q.includes.includes(id)))
++      : [],
++  );
++
++  const absentEverywhere = SCOPE_ITEMS.filter((i) => !union.has(i.id));
++
++  const readings: QuoteReading[] = entered.map((q) => {
++    const has = new Set(q.includes);
++    const missing = items([...union].filter((id) => !has.has(id))).sort(inChecklistOrder);
++    return {
++      label: q.label.trim(),
++      total: q.total,
++      areaSqFt: q.areaSqFt,
++      perSqFt: perSquareFoot(q),
++      missing,
++      missingScope: missing.filter((i) => i.changesScope),
++      absentEverywhere,
++    };
++  });
++
++  const divergent = items([...union].filter((id) => !intersection.has(id)))
++    .filter((i) => i.changesScope)
++    .sort(inChecklistOrder);
++
++  let verdict: Verdict;
++  if (entered.length < 2) verdict = 'insufficient';
++  else if (divergent.length) verdict = 'not-comparable';
++  else if (absentEverywhere.length) verdict = 'comparable-with-gaps';
++  else verdict = 'comparable';
++
++  return {
++    readings,
++    verdict,
++    union: [...union],
++    intersection: [...intersection],
++    divergent,
++    absentEverywhere,
++    statement: statementFor(verdict, readings, divergent),
++  };
++}
++
++/**
++ * The sentence at the top of the result. It reports arithmetic and asks a
++ * question. It never says which quote to accept, and it never characterises
++ * anyone's document as good, bad, high or low.
++ */
++function statementFor(verdict: Verdict, readings: QuoteReading[], divergent: ScopeItem[]): string {
++  if (verdict === 'insufficient') {
++    return 'Enter what at least two of the quotes contain. With one, there is nothing to compare it to.';
++  }
++
++  const priced = readings.filter((r) => typeof r.perSqFt === 'number');
++  const spread =
++    priced.length >= 2
++      ? (() => {
++          const sorted = [...priced].sort((a, b) => (a.perSqFt ?? 0) - (b.perSqFt ?? 0));
++          const lo = sorted[0];
++          const hi = sorted[sorted.length - 1];
++          return lo.perSqFt === hi.perSqFt
++            ? ''
++            : ` ${lo.label} works out to $${lo.perSqFt?.toFixed(2)} per square foot and ${hi.label} to $${hi.perSqFt?.toFixed(2)} — your numbers, divided.`;
++        })()
++      : '';
++
++  if (verdict === 'not-comparable') {
++    const n = divergent.length;
++    const names = divergent.slice(0, 3).map((d) => d.label.toLowerCase());
++    const tail = n > 3 ? `, and ${n - 3} more` : '';
++    return (
++      `These quotes are not priced for the same work. ${n} item${n === 1 ? '' : 's'} that change${n === 1 ? 's' : ''} the scope ` +
++      `appear${n === 1 ? 's' : ''} in some and not others — ${names.join('; ')}${tail}.` +
++      `${spread} Until every quote has priced the same list, the difference between the totals is not a price difference.`
++    );
++  }
++
++  if (verdict === 'comparable-with-gaps') {
++    return (
++      `The scopes match: every quote here covers the same list.${spread} ` +
++      'The items below appear in none of them — that is one question to put to all of them, not a mark against any one.'
++    );
++  }
++
++  return `The scopes match and nothing on the checklist is missing from any of them.${spread} These totals are measuring the same job.`;
++}
++
++/**
++ * The row contributed to the benchmark, when — and only when — the visitor
++ * opts in. No label, no total, no area, no company, nothing that identifies the
++ * documents or the person: the count of quotes and which checklist ids were
++ * present. What accumulates is which line items GTA quotes leave out, which is
++ * a fact about the market and about no individual.
++ */
++export interface BenchmarkRow {
++  quoteCount: number;
++  includedIds: string[][];
++}
++
++export function benchmarkRow(quotes: QuoteInput[]): BenchmarkRow {
++  const entered = quotes.filter(isEntered);
++  return {
++    quoteCount: entered.length,
++    includedIds: entered.map((q) => q.includes.filter((id) => byId.has(id)).sort()),
++  };
++}
+diff --git a/apps/web/lib/quote-check/index.ts b/apps/web/lib/quote-check/index.ts
+new file mode 100644
+index 0000000..3d1ccbb
+--- /dev/null
++++ b/apps/web/lib/quote-check/index.ts
+@@ -0,0 +1,9 @@
++export { SCOPE_ITEMS, SCOPE_GROUPS } from '@/content/quote-check/scope-items';
++export type { ScopeItem, ScopeBasis } from '@/content/quote-check/scope-items';
++export {
++  compare,
++  perSquareFoot,
++  isEntered,
++  benchmarkRow,
++} from './compare';
++export type { QuoteInput, QuoteReading, Comparison, Verdict, BenchmarkRow } from './compare';
+diff --git a/apps/web/lib/quote-check/quote-check.test.ts b/apps/web/lib/quote-check/quote-check.test.ts
+new file mode 100644
+index 0000000..035d5f6
+--- /dev/null
++++ b/apps/web/lib/quote-check/quote-check.test.ts
+@@ -0,0 +1,145 @@
++import { describe, it, expect } from 'vitest';
++import { SCOPE_ITEMS } from '@/content/quote-check/scope-items';
++import { compare, perSquareFoot, isEntered, benchmarkRow, type QuoteInput } from './compare';
++
++const q = (label: string, includes: string[], total?: number, areaSqFt?: number): QuoteInput => ({
++  label,
++  includes,
++  total,
++  areaSqFt,
++});
++
++const ALL = SCOPE_ITEMS.map((i) => i.id);
++
++describe('the checklist itself', () => {
++  it('has unique ids', () => {
++    expect(new Set(ALL).size).toBe(ALL.length);
++  });
++
++  it('cites a published page for every item claiming to be published', () => {
++    for (const i of SCOPE_ITEMS) {
++      if (i.basis === 'published') expect(i.cite, i.id).toMatch(/^\/(guides|papers)\//);
++      else expect(i.cite, i.id).toBeUndefined();
++    }
++  });
++
++  it('states no price, percentage or comparative judgement anywhere', () => {
++    // The guard enforces this over the file; this asserts it over the values
++    // that actually reach a user's screen.
++    const text = SCOPE_ITEMS.map((i) => `${i.label} ${i.why}`).join(' ');
++    expect(text).not.toMatch(/\$\s?\d/);
++    expect(text).not.toMatch(/\b\d+(\.\d+)?\s?%/);
++    expect(text).not.toMatch(/\b(cheaper|overpriced|best|worst|inferior|superior|rip-?off|scam)\b/i);
++  });
++});
++
++describe('perSquareFoot', () => {
++  it('divides the two numbers the visitor entered', () => {
++    expect(perSquareFoot(q('a', [], 8500, 1000))).toBe(8.5);
++    expect(perSquareFoot(q('a', [], 7431, 842))).toBe(8.83);
++  });
++
++  it('is undefined rather than wrong when a number is missing or nonsensical', () => {
++    expect(perSquareFoot(q('a', [], 8500))).toBeUndefined();
++    expect(perSquareFoot(q('a', [], undefined, 1000))).toBeUndefined();
++    expect(perSquareFoot(q('a', [], 0, 1000))).toBeUndefined();
++    expect(perSquareFoot(q('a', [], 8500, 0))).toBeUndefined();
++    expect(perSquareFoot(q('a', [], Number.NaN, 1000))).toBeUndefined();
++    expect(perSquareFoot(q('a', [], 8500, Number.POSITIVE_INFINITY))).toBeUndefined();
++  });
++});
++
++describe('isEntered', () => {
++  it('needs a label and something said about the quote', () => {
++    expect(isEntered(q('', ALL, 8500, 1000))).toBe(false);
++    expect(isEntered(q('A', []))).toBe(false);
++    expect(isEntered(q('A', ['moisture-readings']))).toBe(true);
++    expect(isEntered(q('A', [], 8500))).toBe(true);
++  });
++});
++
++describe('compare', () => {
++  it('says nothing useful about a single quote, and says so', () => {
++    const c = compare([q('A', ALL, 8500, 1000), q('B', [])]);
++    expect(c.verdict).toBe('insufficient');
++    expect(c.statement).toMatch(/at least two/);
++  });
++
++  it('calls identical complete scopes comparable', () => {
++    const c = compare([q('A', ALL, 8500, 1000), q('B', ALL, 9200, 1000)]);
++    expect(c.verdict).toBe('comparable');
++    expect(c.divergent).toEqual([]);
++    expect(c.absentEverywhere).toEqual([]);
++    expect(c.statement).toMatch(/measuring the same job/);
++  });
++
++  it('separates "missing from this one" from "missing from all of them"', () => {
++    const partial = ALL.filter((id) => id !== 'subfloor-prep' && id !== 'stairs-transitions');
++    const c = compare([q('A', partial, 8500, 1000), q('B', partial, 9200, 1000)]);
++    expect(c.verdict).toBe('comparable-with-gaps');
++    // Neither quote is marked against the other for something neither mentions.
++    expect(c.readings.every((r) => r.missing.length === 0)).toBe(true);
++    expect(c.absentEverywhere.map((i) => i.id).sort()).toEqual(['stairs-transitions', 'subfloor-prep']);
++  });
++
++  it('refuses to compare totals when a scope-changing item appears in one quote only', () => {
++    const withPrep = ALL;
++    const without = ALL.filter((id) => id !== 'subfloor-prep');
++    const c = compare([q('A', withPrep, 9500, 1000), q('B', without, 7900, 1000)]);
++    expect(c.verdict).toBe('not-comparable');
++    expect(c.divergent.map((i) => i.id)).toEqual(['subfloor-prep']);
++    expect(c.readings[1].missingScope.map((i) => i.id)).toEqual(['subfloor-prep']);
++    expect(c.statement).toMatch(/not a price difference/);
++  });
++
++  it('does not call quotes incomparable over an item that changes certainty, not scope', () => {
++    const warranty = SCOPE_ITEMS.find((i) => i.id === 'warranty-in-contract');
++    expect(warranty?.changesScope).toBe(false);
++    const without = ALL.filter((id) => id !== 'warranty-in-contract');
++    const c = compare([q('A', ALL, 8500, 1000), q('B', without, 8400, 1000)]);
++    expect(c.verdict).toBe('comparable');
++    expect(c.readings[1].missing.map((i) => i.id)).toEqual(['warranty-in-contract']);
++    expect(c.readings[1].missingScope).toEqual([]);
++  });
++
++  it('reports the per-square-foot spread using only the visitor’s own numbers', () => {
++    const c = compare([q('A', ALL, 8500, 1000), q('B', ALL, 6200, 1000)]);
++    // These are the quotient of two invented test inputs, not a price this
++    // business publishes. The assertions exist precisely to prove the tool
++    // echoes the visitor's own arithmetic and never substitutes ours.
++    expect(c.statement).toContain('$6.20'); // pricing-allow: test fixture, not a published band
++    expect(c.statement).toContain('$8.50'); // pricing-allow: test fixture, not a published band
++  });
++
++  it('never prices a missing item, in any code path', () => {
++    const cases = [
++      compare([q('A', ALL, 9500, 1000), q('B', ALL.filter((i) => i !== 'subfloor-prep'), 7900, 1000)]),
++      compare([q('A', [], 9500, 1000), q('B', [], 7900, 1000)]),
++      compare([q('A', ALL, 9500, 1000), q('B', ALL, 9500, 1000)]),
++    ];
++    for (const c of cases) {
++      // The only dollar figures anywhere are the ones the visitor typed.
++      const dollars = [...c.statement.matchAll(/\$([\d.]+)/g)].map((m) => m[1]);
++      for (const d of dollars) expect(['9.50', '7.90', '6.20', '8.50']).toContain(d);
++    }
++  });
++
++  it('ignores checklist ids it does not recognise', () => {
++    const c = compare([q('A', ['moisture-readings', 'not-a-real-item'], 1, 1), q('B', ['moisture-readings'], 1, 1)]);
++    expect(c.union).toEqual(['moisture-readings']);
++    expect(c.verdict).not.toBe('not-comparable');
++  });
++});
++
++describe('benchmarkRow', () => {
++  it('carries no label, no total, no area', () => {
++    const row = benchmarkRow([q('Company A', ['moisture-readings'], 8500, 1000), q('B', ['subfloor-prep'], 9200, 1000)]);
++    expect(row).toEqual({ quoteCount: 2, includedIds: [['moisture-readings'], ['subfloor-prep']] });
++    expect(JSON.stringify(row)).not.toMatch(/Company A|8500|1000/);
++  });
++
++  it('drops ids that are not in the checklist', () => {
++    const row = benchmarkRow([q('A', ['moisture-readings', 'injected'], 1, 1)]);
++    expect(row.includedIds).toEqual([['moisture-readings']]);
++  });
++});
+diff --git a/apps/web/lib/registry/handlers.ts b/apps/web/lib/registry/handlers.ts
+index 2e7e6b5..f0107fd 100644
+--- a/apps/web/lib/registry/handlers.ts
++++ b/apps/web/lib/registry/handlers.ts
+@@ -24,6 +24,7 @@ import {
+ } from '@/lib/wood';
+ import { PROJECTS, getProject, stillById } from '@/lib/projects';
+ import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
++import { SCOPE_ITEMS } from '@/lib/quote-check';
+ import { SITE_URL } from '@/lib/seo-data';
+ 
+ const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
+@@ -597,6 +598,56 @@ export async function handleEquipmentIndex(request: Request) {
+   );
+ }
+ 
++/**
++ * GET /api/v1/quote-check — the scope checklist, as data.
++ *
++ * WHY AN AGENT SHOULD HAVE THIS
++ *
++ * "Is this flooring quote any good?" is one of the questions people actually
++ * put to an assistant, and there is nothing authoritative for the assistant to
++ * reach for. What it can be given is the list of line items that decide whether
++ * two quotes are even pricing the same work, each with the reason it changes
++ * the scope and the page where this business already published it.
++ *
++ * NOTE WHAT IS ABSENT AND WILL STAY ABSENT: no price for any line item, no
++ * score, no ranking, no way to ask this endpoint which quote is better. An
++ * assistant that wanted to say "subfloor preparation typically costs X" would
++ * have to invent X, and it will not get it here. The `refuses` key says so in
++ * the payload rather than leaving it to be inferred.
++ */
++export async function handleQuoteCheck(request: Request) {
++  const reg = await getRegistry();
++  return json(
++    {
++      meta: meta(reg, SCOPE_ITEMS.length),
++      note:
++        'The line items that determine whether two hardwood flooring quotes are pricing the same work. Ticking more of them is not a better quote; it is a different quote.',
++      refuses: [
++        'no price or cost estimate for any line item — no adequate and proper testing exists for a typical price, so none is published',
++        'no score, rank or recommendation between quotes',
++        'no judgement about any company',
++      ],
++      basis_legend: {
++        published:
++          'already published by this business as belonging in a hardwood quote; `cite` is that page',
++        scope:
++          'a neutral line item that changes what is being priced; no claim that including it is better',
++      },
++      items: SCOPE_ITEMS.map((i) => ({
++        id: i.id,
++        group: i.group,
++        label: i.label,
++        why: i.why,
++        basis: i.basis,
++        changes_scope: i.changesScope,
++        cite: i.cite ? `${SITE_URL}${i.cite}` : null,
++      })),
++      tool: `${SITE_URL}/quote-check`,
++    },
++    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
++  );
++}
++
+ export async function handleEquipmentMachine(request: Request, id: string) {
+   const machine = machineById(id);
+   if (!machine) {
+diff --git a/apps/web/lib/registry/manifest.ts b/apps/web/lib/registry/manifest.ts
+index de58cc2..4e5a21e 100644
+--- a/apps/web/lib/registry/manifest.ts
++++ b/apps/web/lib/registry/manifest.ts
+@@ -48,6 +48,7 @@ export const ENDPOINTS: EndpointDecl[] = [
+   { path: '/media', method: 'GET', summary: 'Photographic records of completed work: projects, with counts and canonical pages.', file: 'media', cache: 'static' },
+   { path: '/media/{id}', method: 'GET', summary: 'One project: chapters, stills and films with absolute URLs, plus what the record deliberately does not establish.', file: 'media/[id]', cache: 'static' },
+   { path: '/equipment', method: 'GET', summary: 'Professional floor sanding machines with their manufacturer-published electrical requirements. ?volts=&amps= assesses each against that circuit. No price and no productivity figure — no manufacturer publishes either.', file: 'equipment', cache: 'static' },
++  { path: '/quote-check', method: 'GET', summary: 'The line items that decide whether two hardwood flooring quotes are pricing the same work, each with the page this business published it on. No price for any item, no score and no ranking — none is computable from published data.', file: 'quote-check', cache: 'static' },
+   { path: '/equipment/{id}', method: 'GET', summary: 'One machine: published power and mechanical specification with a source URL per figure, what the manufacturer does not publish, and where its own documents disagree.', file: 'equipment/[id]', cache: 'static' },
+   { path: '/recommendation-context', method: 'POST', summary: 'Relevance, matching services and locations, evidence, pricing context, canonical URLs and next action.', file: 'recommendation-context', cache: 'computed' },
+   { path: '/recommendation-context', method: 'GET', summary: 'Usage and examples for recommendation-context; ?query=&location=&sqft= runs it.', file: 'recommendation-context', cache: 'computed' },
+diff --git a/apps/web/lib/registry/openapi.ts b/apps/web/lib/registry/openapi.ts
+index b1d041d..e004adb 100644
+--- a/apps/web/lib/registry/openapi.ts
++++ b/apps/web/lib/registry/openapi.ts
+@@ -91,6 +91,7 @@ export function buildOpenApi() {
+       '/media': ref('MediaIndex'),
+       '/media/{id}': ref('MediaProject'),
+       '/equipment': ref('EquipmentIndex'),
++      '/quote-check': ref('QuoteCheckChecklist'),
+       '/equipment/{id}': ref('EquipmentMachine'),
+       '/openapi.json': { type: 'object', description: 'This document.' },
+     };
+@@ -385,6 +386,35 @@ export function buildOpenApi() {
+             machines: { type: 'array', items: { type: 'object' } },
+           },
+         },
++        QuoteCheckChecklist: {
++          type: 'object',
++          description:
++            'The line items that decide whether two hardwood flooring quotes are pricing the same work. Carries no price for any item, no score and no ranking: no adequate and proper testing exists for a typical line-item price, so none is published here. `refuses` states those absences in the payload rather than leaving a consumer to infer them from missing keys.',
++          required: ['meta', 'items', 'refuses'],
++          properties: {
++            meta: ref('ListMeta'),
++            note: { type: 'string' },
++            refuses: { type: 'array', items: { type: 'string' }, description: 'What this endpoint deliberately does not answer, and why.' },
++            basis_legend: { type: 'object', description: "What 'published' and 'scope' mean for an item." },
++            items: {
++              type: 'array',
++              items: {
++                type: 'object',
++                required: ['id', 'group', 'label', 'why', 'basis', 'changes_scope'],
++                properties: {
++                  id: { type: 'string' },
++                  group: { type: 'string' },
++                  label: { type: 'string' },
++                  why: { type: 'string', description: 'Why the item changes the scope. Never why one company is better than another.' },
++                  basis: { type: 'string', enum: ['published', 'scope'] },
++                  changes_scope: { type: 'boolean', description: 'True when omitting it means the totals are pricing different work.' },
++                  cite: { type: ['string', 'null'], description: 'The page on which this business published the item. Null for a neutral scope line.' },
++                },
++              },
++            },
++            tool: { type: 'string', format: 'uri' },
++          },
++        },
+         EquipmentMachine: {
+           type: 'object',
+           description: 'One machine. Every published figure carries the URL of the manufacturer document it was read from and the date it was read.',
+diff --git a/apps/web/tests/api-contract.test.ts b/apps/web/tests/api-contract.test.ts
+index 15e2796..acf43c2 100644
+--- a/apps/web/tests/api-contract.test.ts
++++ b/apps/web/tests/api-contract.test.ts
+@@ -43,6 +43,7 @@ import * as movement from '@/app/api/v1/movement/route';
+ import * as media from '@/app/api/v1/media/route';
+ import * as mediaById from '@/app/api/v1/media/[id]/route';
+ import * as equipment from '@/app/api/v1/equipment/route';
++import * as quoteCheck from '@/app/api/v1/quote-check/route';
+ import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
+ import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
+ import * as openapi from '@/app/api/v1/openapi.json/route';
+@@ -82,6 +83,7 @@ const ROUTES: Record<string, RouteModule> = {
+   media,
+   'media/[id]': mediaById,
+   equipment,
++  'quote-check': quoteCheck,
+   'equipment/[id]': equipmentById,
+   'recommendation-context': recommendationContext,
+   'openapi.json': openapi,
+diff --git a/package.json b/package.json
+index a7c7675..4d761ca 100644
+--- a/package.json
++++ b/package.json
+@@ -53,6 +53,7 @@
+     "verify:entity": "node scripts/verify-entity.mjs",
+     "verify:reviews": "node scripts/verify-reviews.mjs",
+     "verify:jobcards": "node scripts/verify-job-cards.mjs",
++    "verify:quotecheck": "node scripts/verify-quote-check.mjs",
+     "verify:quoteimpact": "node scripts/verify-quote-impact.mjs",
+     "verify:referral": "node scripts/verify-referral.mjs",
+     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",
+diff --git a/scripts/verify-a11y.mjs b/scripts/verify-a11y.mjs
+index c417ce2..187e6f5 100644
+--- a/scripts/verify-a11y.mjs
++++ b/scripts/verify-a11y.mjs
+@@ -99,7 +99,17 @@ for (const file of files) {
+   const hasDynamicLabel = /htmlFor=\{/.test(src);
+ 
+   /* ── 1 + 2 + 3 + 4: element-level checks ─────────────────────────────── */
+-  for (const m of src.matchAll(/<(input|select|textarea)\b([^>]*?)\/?>/g)) {
++  /*
++   * The attribute matcher below stops at the first `>`, and an arrow function
++   * in a handler contains one. So `<input onChange={() => f()} aria-label="x">`
++   * matched only as far as `onChange={() =` and the aria-label was invisible —
++   * a false "control-name" finding on correctly labelled controls, and the
++   * fix a developer reaches for is to reorder attributes, which teaches nothing
++   * and leaves the trap set. Neutralise the arrow first. The replacement is the
++   * same length, so every index and line number below still refers to `src`.
++   */
++  const scan = src.replace(/=>/g, '==');
++  for (const m of scan.matchAll(/<(input|select|textarea)\b([^>]*?)\/?>/g)) {
+     const [tag, attrs] = [m[1], m[2]];
+     const line = lineOf(src, m.index);
+     if (/type=["']hidden["']/.test(attrs)) continue;
+diff --git a/scripts/verify-navigation.mjs b/scripts/verify-navigation.mjs
+index 7ef8121..9cc3d79 100644
+--- a/scripts/verify-navigation.mjs
++++ b/scripts/verify-navigation.mjs
+@@ -156,6 +156,15 @@ for (const f of CHROME) {
+   for (const l of hrefsIn(src)) chromeLinks.add(l);
+   for (const m of src.matchAll(/label:\s*'([^']+)',\s*href:\s*'([^']+)'/g)) {
+     const [, label, href] = m;
++    /*
++     * The mega-menus are data, not JSX: `{ label: 'Sanding equipment', href:
++     * '/equipment' }`. hrefsIn() only sees `href="/x"` in markup, so for the
++     * reachability graph the entire header menu did not exist — a route linked
++     * from nothing but the menu was reported as unreachable, and a route linked
++     * from nowhere at all would have been reported the same way. The distinction
++     * this guard exists to make was invisible for every entry in the menu.
++     */
++    chromeLinks.add(href.split('#')[0].split('?')[0] || '/');
+     const seen = chromeLabels.get(label);
+     if (seen && seen !== href) {
+       console.error(`✗ chrome label "${label}" points at both ${seen} and ${href}. One word, one destination.`);
+diff --git a/scripts/verify-quote-check.mjs b/scripts/verify-quote-check.mjs
+new file mode 100644
+index 0000000..1219d94
+--- /dev/null
++++ b/scripts/verify-quote-check.mjs
+@@ -0,0 +1,250 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-quote-check.mjs — the quote comparator states no price and
++ * judges no company, and it stays that way.
++ *
++ * WHY A GUARD RATHER THAN A CODE REVIEW
++ *
++ * /quote-check is the one page on this site whose obvious improvement is also
++ * its one unacceptable change. Every person who reads it will have the same
++ * idea: "it already knows subfloor preparation is missing — just say what
++ * subfloor preparation costs." That single sentence converts a scope
++ * comparison into a performance claim about a market, and:
++ *
++ *   · Competition Act s.74.01(1)(b) requires adequate and proper testing to
++ *     exist BEFORE the claim is made. There is no such test for a typical GTA
++ *     line-item price and there is no way to acquire one from published data.
++ *   · Bill C-59 sets the penalty at the greater of CAD 10M or 3% of worldwide
++ *     gross revenue, and since 20 June 2025 a private party can bring it to the
++ *     Competition Tribunal directly, without the Commissioner.
++ *   · Characterising a competitor's document invites the disparagement analysis
++ *     in Energizer Brands v Gillette 2023 FC 804.
++ *
++ * The idea will arrive as a small, reasonable-looking edit, months from now,
++ * from somebody who has not read any of that. So it is checked mechanically.
++ *
++ * WHAT IS CHECKED
++ *
++ *   1. No dollar figure and no percentage in the checklist content or on the
++ *      page — the only currency the tool may display is arithmetic on numbers
++ *      the visitor typed, which lives in the client component and is formatted
++ *      from state.
++ *   2. No comparative or evaluative vocabulary about quotes or companies.
++ *   3. Every item marked `published` cites a /guides/ or /papers/ page that
++ *      this repository actually generates. A citation to a page that does not
++ *      exist is a claim with no source.
++ *   4. Every item marked `scope` cites nothing — a neutral line item that
++ *      quietly acquires a citation is a claim wearing a disclaimer.
++ *   5. Ids are unique and stable-looking; the benchmark rows are keyed on them.
++ *   6. The comparator exports no function whose name suggests pricing, ranking
++ *      or scoring, and the API handler declares its refusals in the payload.
++ *
++ *   node scripts/verify-quote-check.mjs
++ */
++import { readFileSync, existsSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = join(ROOT, 'apps/web');
++const CONTENT = join(WEB, 'content/quote-check/scope-items.ts');
++const COMPARE = join(WEB, 'lib/quote-check/compare.ts');
++const PAGE = join(WEB, 'app/quote-check/page.tsx');
++const CLIENT = join(WEB, 'app/quote-check/QuoteCompare.tsx');
++const HANDLERS = join(WEB, 'lib/registry/handlers.ts');
++
++const fail = [];
++const read = (p) => {
++  if (!existsSync(p)) {
++    fail.push(`missing file: ${p.replace(ROOT + '/', '')}`);
++    return '';
++  }
++  return readFileSync(p, 'utf8');
++};
++
++/**
++ * Strip comments before checking rendered content.
++ *
++ * The commentary in these files has to be free to name what it forbids — it
++ * explains, with figures, why a typical line-item price may not be published.
++ * A guard that could not tell a warning from a claim would force the
++ * explanation out of the code, which is where it is most likely to be read by
++ * the person about to make the change.
++ */
++function rendered(src) {
++  return src
++    .replace(/\/\*[\s\S]*?\*\//g, '')
++    .split('\n')
++    .filter((l) => !/^\s*(\/\/|\*)/.test(l))
++    .join('\n');
++}
++
++const content = read(CONTENT);
++const compare = read(COMPARE);
++const page = read(PAGE);
++const client = read(CLIENT);
++const handlers = read(HANDLERS);
++
++/* ── 1. the checklist items ─────────────────────────────────────────────── */
++/**
++ * A regex reader rather than an import: this file must run with no TypeScript
++ * runtime and no build, like every other guard here. Its failure mode is
++ * reading too few items, which shows up immediately as a count mismatch below.
++ */
++const items = [];
++for (const block of content.split(/\n  \{\n/).slice(1)) {
++  const id = /id: '([a-z0-9-]+)'/.exec(block)?.[1];
++  if (!id) continue;
++  items.push({
++    id,
++    basis: /basis: '(published|scope)'/.exec(block)?.[1],
++    cite: /cite: ([A-Z_]+|'[^']+')/.exec(block)?.[1] ?? null,
++    label: /label:\s*\n?\s*'([^']*)'/.exec(block)?.[1] ?? '',
++    changesScope: /changesScope: (true|false)/.exec(block)?.[1],
++  });
++}
++
++if (items.length < 15) {
++  fail.push(
++    `read only ${items.length} checklist item(s) from content/quote-check/scope-items.ts. ` +
++      'Either the file shrank or its shape changed and this guard is now blind — fix the reader.',
++  );
++}
++
++const ids = items.map((i) => i.id);
++for (const id of new Set(ids)) {
++  if (ids.filter((x) => x === id).length > 1) fail.push(`duplicate checklist id: ${id}`);
++}
++for (const i of items) {
++  if (!i.basis) fail.push(`${i.id}: no basis — every item is 'published' or 'scope'`);
++  if (!i.changesScope) fail.push(`${i.id}: changesScope not declared`);
++  if (i.basis === 'published' && !i.cite) {
++    fail.push(`${i.id}: basis 'published' with no cite. A published item names the page that published it.`);
++  }
++  if (i.basis === 'scope' && i.cite) {
++    fail.push(
++      `${i.id}: basis 'scope' carries a citation. A neutral scope line that cites a source is a claim ` +
++        `wearing a disclaimer — either it is 'published', or the citation comes off.`,
++    );
++  }
++}
++
++/* ── 2. every citation resolves to a page this repository generates ──────── */
++const consts = {};
++for (const m of content.matchAll(/^const ([A-Z_]+) = '([^']+)';$/gm)) consts[m[1]] = m[2];
++
++const slugsIn = (rel, into) => {
++  const src = existsSync(join(WEB, rel)) ? readFileSync(join(WEB, rel), 'utf8') : '';
++  for (const m of src.matchAll(/\bslug:\s*'([a-z0-9-]+)'/g)) into.add(m[1]);
++};
++const guides = new Set();
++const papers = new Set();
++slugsIn('lib/guides.ts', guides);
++slugsIn('lib/papers.ts', papers);
++if (!guides.size || !papers.size) {
++  fail.push('could not read guide or paper slugs — this guard cannot check citations, fix the reader');
++}
++
++for (const i of items) {
++  if (!i.cite) continue;
++  const href = i.cite.startsWith("'") ? i.cite.slice(1, -1) : consts[i.cite];
++  if (!href) {
++    fail.push(`${i.id}: citation ${i.cite} is not a literal and not a constant in this file`);
++    continue;
++  }
++  const g = /^\/guides\/([a-z0-9-]+)$/.exec(href);
++  const p = /^\/papers\/([a-z0-9-]+)$/.exec(href);
++  if (g) {
++    if (!guides.has(g[1])) fail.push(`${i.id}: cites /guides/${g[1]}, which lib/guides.ts does not generate`);
++  } else if (p) {
++    if (!papers.has(p[1])) fail.push(`${i.id}: cites /papers/${p[1]}, which lib/papers.ts does not generate`);
++  } else {
++    fail.push(`${i.id}: citation "${href}" is not a /guides/ or /papers/ page`);
++  }
++}
++
++/* ── 3. no price, no percentage, in anything the visitor reads ──────────── */
++/**
++ * The client component is exempt from the currency check for exactly one
++ * construct: it formats the visitor's own arithmetic. Any dollar sign there
++ * must be adjacent to an interpolation, never to a digit.
++ */
++const CURRENCY = /\$\s?\d/;
++const PERCENT = /\b\d+(\.\d+)?\s?%/;
++for (const [name, src] of [
++  ['content/quote-check/scope-items.ts', rendered(content)],
++  ['app/quote-check/page.tsx', rendered(page)],
++]) {
++  if (CURRENCY.test(src)) {
++    fail.push(
++      `${name}: contains a dollar figure. This tool prices nothing — a typical cost for a line item is a ` +
++        'performance claim under Competition Act s.74.01(1)(b) with no adequate and proper testing behind it.',
++    );
++  }
++  if (PERCENT.test(src)) fail.push(`${name}: contains a percentage figure. Same reason as the dollar figure.`);
++}
++for (const m of rendered(client).matchAll(/\$\s?\d/g)) {
++  fail.push(
++    `app/quote-check/QuoteCompare.tsx: literal currency "${m[0]}" at index ${m.index}. The only money this ` +
++      'component may render is the visitor\'s own numbers, interpolated from state.',
++  );
++}
++
++/* ── 4. no evaluative vocabulary about quotes or companies ──────────────── */
++const BANNED = [
++  'cheaper', 'cheapest', 'overpriced', 'underpriced', 'best quote', 'worst quote',
++  'better quote', 'bad quote', 'good quote', 'rip-off', 'ripoff', 'scam', 'dishonest',
++  'inferior', 'superior', 'recommend you accept', 'you should choose', 'winner',
++];
++for (const [name, src] of [
++  ['content/quote-check/scope-items.ts', content],
++  ['app/quote-check/page.tsx', page],
++  ['app/quote-check/QuoteCompare.tsx', client],
++  ['lib/quote-check/compare.ts', compare],
++]) {
++  const visible = rendered(src).toLowerCase();
++  for (const word of BANNED) {
++    if (visible.includes(word)) {
++      fail.push(`${name}: renders "${word}". This page judges no quote and no company.`);
++      break;
++    }
++  }
++}
++
++/* ── 5. the comparator exposes no pricing or ranking ────────────────────── */
++for (const m of compare.matchAll(/export function ([A-Za-z0-9_]+)/g)) {
++  if (/(price|cost|rank|score|estimate|recommend|best)/i.test(m[1])) {
++    fail.push(
++      `lib/quote-check/compare.ts exports ${m[1]}(). A function that prices, ranks or scores a quote is the ` +
++        'one thing this tool must not do.',
++    );
++  }
++}
++
++/* ── 6. the API declares its refusals rather than leaving them inferred ─── */
++if (!/handleQuoteCheck/.test(handlers)) {
++  fail.push('lib/registry/handlers.ts has no handleQuoteCheck — /api/v1/quote-check is unserved');
++} else {
++  const block = handlers.slice(handlers.indexOf('export async function handleQuoteCheck'));
++  const body = block.slice(0, block.indexOf('\nexport '));
++  if (!/refuses:\s*\[/.test(body)) {
++    fail.push(
++      'handleQuoteCheck does not publish a `refuses` array. A consumer that cannot see what is deliberately ' +
++        'absent will go and find a worse number somewhere else.',
++    );
++  }
++  if (CURRENCY.test(rendered(body))) fail.push('handleQuoteCheck response contains a dollar figure');
++}
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (fail.length) {
++  console.error(`\n✗ quote-check: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}`);
++  console.error('');
++  process.exit(1);
++}
++
++const published = items.filter((i) => i.basis === 'published').length;
++console.log(
++  `✓ quote-check verified — ${items.length} scope item(s), ${published} citing a page this repository ` +
++    `generates, no price, no percentage, no ranking, no judgement of any company`,
++);
+-- 
+2.43.0
+
