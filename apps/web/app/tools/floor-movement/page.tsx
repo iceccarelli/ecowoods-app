@@ -5,6 +5,7 @@ import { SPECIES, SPECIES_SOURCE, EMC_SOURCE } from '@/lib/wood';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { NextStep } from '@/app/components/NextStep';
 
 export const metadata: Metadata = {
   title: 'Hardwood movement calculator — how much will my floor move?',
@@ -94,6 +95,7 @@ export default function FloorMovementPage() {
           </p>
         </div>
       </section>
+      <NextStep route="/tools/floor-movement" />
     </div>
   );
 }

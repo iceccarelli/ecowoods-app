@@ -5,6 +5,7 @@ import { SCOPE_ITEMS } from '@/lib/quote-check';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { NextStep } from '@/app/components/NextStep';
 
 export const metadata: Metadata = {
   title: 'Compare hardwood flooring quotes — are they even for the same job?',
@@ -139,6 +140,7 @@ export default function QuoteCheckPage() {
           </div>
         </div>
       </section>
+      <NextStep route="/quote-check" />
     </div>
   );
 }

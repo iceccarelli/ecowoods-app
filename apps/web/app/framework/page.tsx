@@ -19,6 +19,7 @@ import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
 import { IllustrationPair } from '../components/Illustration';
 import { CatalogueRail } from '../components/CatalogueRail';
+import { NextStep } from '@/app/components/NextStep';
 
 /**
  * /framework — the published specification.
@@ -292,6 +293,7 @@ export default function FrameworkPage() {
           </p>
         </div>
       </section>
+      <NextStep route="/framework" />
     </div>
   );
 }

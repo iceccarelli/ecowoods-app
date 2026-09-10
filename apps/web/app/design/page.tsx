@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ConfiguratorSection from '../components/ConfiguratorSection';
+import { NextStep } from '@/app/components/NextStep';
 
 export const metadata: Metadata = {
   title: 'Design Your Floor',
@@ -34,6 +35,7 @@ export default function DesignPage() {
         </div>
       </header>
       <ConfiguratorSection />
+      <NextStep route="/design" />
     </div>
   );
 }

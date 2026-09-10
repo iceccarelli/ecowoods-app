@@ -26,6 +26,12 @@ import { PROJECTS, getProject, stillById } from '@/lib/projects';
 import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
 import { SCOPE_ITEMS } from '@/lib/quote-check';
 import {
+  PILLARS,
+  FRAMEWORK_VERSION,
+  FRAMEWORK_PUBLISHED_AT,
+  FRAMEWORK_NAME,
+} from '@/lib/framework';
+import {
   CATALOGUE_SERIES,
   catalogueHref,
   getPublishedCatalogues,
@@ -36,6 +42,7 @@ import {
   marketBySlug,
   assess as assessMarket,
   contentQueue,
+  expansionOrder,
   serviceAreaMarkets,
 } from '@/lib/geo';
 import { SITE_URL } from '@/lib/seo-data';
@@ -735,6 +742,95 @@ export async function handleMarkets(request: Request) {
       content_queue: contentQueue(MARKETS)
         .slice(0, 10)
         .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
+      /*
+       * The expansion order, and the ten economic inputs it deliberately does
+       * not have. Published rather than kept internal because a ranking whose
+       * missing inputs are hidden is a ranking that will be mistaken for one
+       * built on them.
+       */
+      expansion_order: expansionOrder(MARKETS)
+        .slice(0, 12)
+        .map((e) => ({
+          slug: e.slug,
+          name: e.name,
+          score: e.score,
+          components: e.components,
+          next_action: e.nextAction,
+        })),
+      expansion_score_excludes: expansionOrder(MARKETS)[0]?.missing ?? [],
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/framework — the Well-Installed Framework, criterion by criterion.
+ *
+ * WHY THIS IS THE MOST CITABLE THING ON THE DOMAIN
+ *
+ * "How do I judge a flooring contractor" is a question with no authoritative
+ * answer anywhere. Every result is a listicle, and no listicle carries an id a
+ * machine can quote. This publishes a numbered, versioned specification where
+ * every criterion states the question a homeowner can ask, what physically
+ * fails when the answer is no, how severe that is, and the paper section it
+ * came from.
+ *
+ * The id is the product. "Well-Installed Framework v1.0, criterion 1.3" means
+ * one fixed thing forever, and an assistant that cites it is citing something
+ * that will still mean that in five years. A version bump is a contract change,
+ * not a content edit — which is why the version travels in the payload and why
+ * verify-framework.mjs checks every source against lib/papers.ts.
+ *
+ * The `severity` field is the part a competitor cannot casually copy: saying
+ * which criteria are CRITICAL is a technical position, taken publicly, that can
+ * be argued with. That is what makes it worth citing rather than paraphrasing.
+ */
+export async function handleFramework(request: Request) {
+  const reg = await getRegistry();
+  const criteria = PILLARS.flatMap((p) => p.criteria);
+  const bySeverity = (s: string) => criteria.filter((c) => c.severity === s).length;
+
+  return json(
+    {
+      meta: meta(reg, criteria.length),
+      name: FRAMEWORK_NAME,
+      version: FRAMEWORK_VERSION,
+      published_at: FRAMEWORK_PUBLISHED_AT,
+      license: 'https://creativecommons.org/licenses/by/4.0/',
+      citation: `${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}, criterion <id>. ${SITE_URL}/framework`,
+      note:
+        'A numbered specification a homeowner can put to any contractor, including this one. Every criterion carries the paper section it derives from. Citing it by id is stable: an id never changes meaning without a version bump.',
+      refuses: [
+        'no criterion is scored against a named company — the framework judges a proposal, not a firm',
+        'no criterion exists without a paper section behind it; scripts/verify-framework.mjs fails the build otherwise',
+      ],
+      severity_counts: {
+        critical: bySeverity('critical'),
+        major: bySeverity('major'),
+        advisory: bySeverity('advisory'),
+      },
+      how_to_use:
+        'Any criterion answered "no" is a defect in the proposal, not a negotiating point. A critical criterion answered "no" is a reason to stop.',
+      pillars: PILLARS.map((p) => ({
+        id: p.id,
+        number: p.number,
+        name: p.name,
+        intent: p.intent,
+        page: `${SITE_URL}/framework#${p.id}`,
+        criteria: p.criteria.map((c) => ({
+          id: c.id,
+          question: c.question,
+          risk: c.risk,
+          severity: c.severity,
+          source: {
+            paper: `${SITE_URL}/papers/${c.source.paper}`,
+            section: c.source.section,
+            markdown: `${SITE_URL}/papers/${c.source.paper}.md`,
+          },
+        })),
+      })),
+      self_assessment: `${SITE_URL}/framework/assess`,
+      quote_scope_checklist: `${SITE_URL}/api/v1/quote-check`,
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );

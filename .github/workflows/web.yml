@@ -138,6 +138,14 @@ jobs:
       # all eleven sat at the repository root, unserved, until they were moved.
       - name: Field catalogues (every listed document is a file the host serves)
         run: node scripts/verify-catalogues.mjs
+      # Six funnels declare the event that ends them. A funnel whose completion
+      # event exists only in the analytics union — declared, never emitted — is
+      # a funnel that reports zero forever and reads as a dead product rather
+      # than a missing call. This also holds the expansion scorecard to what it
+      # can actually source: it must keep refusing the ten economic inputs the
+      # business does not hold, rather than growing invented numbers for them.
+      - name: Strategy (funnels complete, tracked questions resolve, no invented economics)
+        run: node scripts/verify-strategy.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

@@ -13,6 +13,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { IllustrationPair } from '../components/Illustration';
+import { NextStep } from '@/app/components/NextStep';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -569,6 +570,7 @@ export default function HardwoodFloorProblemsTorontoPage() {
 
       <CommercialHeadTermRail />
       <FeedbackBand topic="this page" estimateHref="#estimate" />
+      <NextStep route="/hardwood-floor-problems-toronto" />
     </div>
   );
 }

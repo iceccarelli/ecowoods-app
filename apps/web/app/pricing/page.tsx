@@ -18,6 +18,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
 import { Illustration } from '../components/Illustration';
+import { NextStep } from '@/app/components/NextStep';
 
 /**
  * /pricing — the canonical statement of the three published bands.
@@ -341,6 +342,7 @@ export default async function PricingPage() {
           </div>
         </div>
       </section>
+      <NextStep route="/pricing" />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
+import { NextStep } from '@/app/components/NextStep';
 
 /**
  * /estimate — the conversion target.
@@ -177,6 +178,7 @@ export default function EstimatePage() {
         </div>
       </section>
       <CatalogueRail route="/estimate" />
+      <NextStep route="/estimate" />
     </div>
   );
 }

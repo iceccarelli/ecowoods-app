@@ -17,8 +17,8 @@ export type { Market, MarketStatus, MarketKind } from '@/content/geo/markets';
 export { CORRIDORS, corridorById } from '@/content/geo/corridors';
 export type { Corridor, CorridorId } from '@/content/geo/corridors';
 
-export { assess, indexableMarkets, contentQueue } from './worthiness';
-export type { Worthiness } from './worthiness';
+export { assess, indexableMarkets, contentQueue, expansionScore, expansionOrder } from './worthiness';
+export type { Worthiness, ExpansionScore } from './worthiness';
 
 import { MARKETS, isOperational, type Market } from '@/content/geo/markets';
 import { corridorsFor as corridorsForRaw } from '@/content/geo/corridors';

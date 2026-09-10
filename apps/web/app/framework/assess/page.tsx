@@ -5,6 +5,7 @@ import { FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { NextStep } from '@/app/components/NextStep';
 
 export const metadata: Metadata = {
   title: `Score a hardwood quote — Well-Installed Framework v${FRAMEWORK_VERSION}`,
@@ -57,6 +58,7 @@ export default function AssessPage() {
       </header>
 
       <AssessClient />
+      <NextStep route="/framework/assess" />
     </div>
   );
 }

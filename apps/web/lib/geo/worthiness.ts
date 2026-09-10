@@ -107,6 +107,112 @@ export const indexableMarkets = (all: Market[]): Market[] =>
   all.filter((x) => assess(x).indexable);
 
 /** The queue: what to write next, best first. */
+/**
+ * THE EXPANSION SCORECARD — and the four fields it refuses to invent.
+ *
+ * The brief asks for a weighted market score built from population, household
+ * income, home values, renovation spend, CPC, competitive intensity and
+ * projected contribution margin. Every one of those is a real input and not one
+ * of them is in this repository. Typing a number for "renovation spend in
+ * Burlington" would produce a score that looks authoritative, ranks markets,
+ * directs capital, and is fiction.
+ *
+ * So this computes what CAN be computed from what is actually known — routing,
+ * adjacency, evidence, confirmation — and returns the economic inputs as
+ * `null` with a list of what is missing. A market cannot outrank another on
+ * data nobody supplied.
+ *
+ * The result is still decisive. Corridor centrality and neighbour count are
+ * real facts about where a crew can reach on one drive, and a confirmed
+ * position with real local content beats an unconfirmed market with neither,
+ * every time, regardless of what its median home price turns out to be.
+ */
+export interface ExpansionScore {
+  slug: string;
+  name: string;
+  /** 0–100 from what is known. Never includes an invented economic figure. */
+  score: number;
+  components: {
+    /** Corridors this market sits on. A junction is worth more than a terminus. */
+    routing: number;
+    /** Confirmed neighbours: a market surrounded by covered ones is cheap to reach. */
+    adjacency: number;
+    /** Confirmed operational position, on a date. */
+    confirmation: number;
+    /** Real local content and published evidence. */
+    evidence: number;
+  };
+  /** Economic inputs the brief asks for and this repository does not hold. */
+  missing: string[];
+  /** What has to happen next for this market, in one line. */
+  nextAction: string;
+}
+
+const ECONOMIC_INPUTS = [
+  'population',
+  'household income',
+  'home values',
+  'housing age profile',
+  'hardwood prevalence',
+  'renovation spend',
+  'search demand and CPC',
+  'competitive intensity',
+  'travel time from the shop',
+  'historical project value in this market',
+];
+
+export function expansionScore(market: Market, all: Market[]): ExpansionScore {
+  const cc = cityContent(market.slug);
+  const corridors = market.corridors.length;
+
+  /* A junction is where two drives meet: more ways to reach it, more jobs that
+     can share a day. A terminus is reachable one way only. */
+  const routing = Math.min(corridors * 12, 30);
+
+  /* Neighbours whose position is confirmed. Reaching a market next to three
+     covered ones is a different proposition from reaching an isolated one. */
+  const confirmedNeighbours = market.nearest.filter((slug) => {
+    const n = all.find((x) => x.slug === slug);
+    return n ? n.operationalTruth.verifiedAt !== null && n.status !== 'us-proxy' : false;
+  }).length;
+  const adjacency = Math.min(confirmedNeighbours * 8, 24);
+
+  const confirmation = market.operationalTruth.verifiedAt ? 26 : 0;
+
+  let evidence = 0;
+  if (cc) evidence += 12;
+  if (cc?.signatureProject) evidence += 8;
+  evidence += Math.min(market.localFacts.length * 2, 6);
+
+  const score = market.status === 'us-proxy' ? 0 : routing + adjacency + confirmation + evidence;
+
+  const nextAction = market.status === 'us-proxy'
+    ? 'Nothing. Advertising reach for Ontario property; never a service area.'
+    : !market.operationalTruth.verifiedAt
+      ? 'Confirm the operational position: one sentence and a date. Nothing else can happen first.'
+      : !cc
+        ? 'Write local content from a real job here. The page appears automatically once it exists.'
+        : cc.signatureProject
+          ? 'Covered. Keep the evidence current.'
+          : 'Publish one photographed job from this market.';
+
+  return {
+    slug: market.slug,
+    name: market.name,
+    score,
+    components: { routing, adjacency, confirmation, evidence },
+    missing: ECONOMIC_INPUTS,
+    nextAction,
+  };
+}
+
+/** Every Ontario market, best-scoring first. The expansion order. */
+export const expansionOrder = (all: Market[]): ExpansionScore[] =>
+  all
+    .filter((m) => m.country === 'CA')
+    .map((m) => expansionScore(m, all))
+    .sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
+
 export const contentQueue = (all: Market[]): Worthiness[] =>
   all
     .map(assess)
