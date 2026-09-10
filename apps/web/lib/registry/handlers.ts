@@ -705,8 +705,15 @@ export async function handleMarkets(request: Request) {
       meta: meta(reg, rows.length),
       note:
         'Markets in the Ecowoods geographic model, each with the status and the operational statement that can honestly be made about it. A market being listed is not a claim that it is served.',
+      confirmation_basis:
+        "verified_by names who confirmed a market's operational position. \"owner\" means the owner of this " +
+        'business stated on that date what coverage of that municipality means. It is not a record of ' +
+        'documented completed work in that municipality: that is has_page, which requires published local ' +
+        'content and is false for most confirmed markets. The two are reported separately because they are ' +
+        'different facts and conflating them is how a coverage list becomes a portfolio it has not earned.',
       refuses: [
         'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
+        'a confirmed operational position is never reported as evidence of work performed; has_page and why_no_page carry that, separately',
         'United States markets are advertising reach for Ontario property, never service area, and never appear in service_area',
         'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
       ],
@@ -734,6 +741,7 @@ export async function handleMarkets(request: Request) {
           local_facts: x.localFacts,
           operational_statement: x.operationalTruth.statement || null,
           verified_at: x.operationalTruth.verifiedAt,
+          verified_by: x.operationalTruth.verifiedBy ?? null,
           has_page: w.indexable,
           page: w.indexable ? `${SITE_URL}/service-areas/${x.slug}` : null,
           why_no_page: w.indexable ? null : w.blockers,

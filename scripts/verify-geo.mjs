@@ -100,6 +100,34 @@ const nextCallAfter = (i) => {
   return candidates.length ? Math.min(...candidates) : marketsSrc.length;
 };
 
+/*
+ * WHICH CONSTRUCTORS CONFIRM, READ FROM THE FILE RATHER THAN LISTED HERE.
+ *
+ * The first version of this reader named ACTIVE, TORONTO_TRUTH and UNVERIFIED
+ * literally. Adding COVERED() and BY_TRIP() for the twenty-five corridor
+ * markets blinded it instantly — twenty-five records it could not classify, and
+ * had the fallback been "assume confirmed" instead of "report unreadable" it
+ * would have passed while asserting coverage nobody had confirmed.
+ *
+ * So the classification is derived: every helper in markets.ts whose body sets
+ * verifiedAt to a date (a literal, or the OWNER_CONFIRMED_ON constant) confirms;
+ * every one that sets it to null does not. A new constructor is classified the
+ * day it is written, by what it actually does.
+ */
+const CONFIRMING = new Set();
+const UNCONFIRMING = new Set();
+for (const fn of marketsSrc.matchAll(/function ([A-Z_][A-Za-z_0-9]*)\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/g)) {
+  const [, name, body] = fn;
+  if (/verifiedAt:\s*null/.test(body)) UNCONFIRMING.add(name);
+  else if (/\bverifiedAt\b/.test(body)) CONFIRMING.add(name);
+}
+if (CONFIRMING.size === 0) {
+  fail.push(
+    'read no confirming constructor from content/geo/markets.ts. Either the helpers were renamed or this reader is ' +
+      'blind — and a blind reader here classifies every market by a fallback rather than by what the file says.',
+  );
+}
+
 for (const x of markets) {
   /* This record only. A fixed-size window bleeds into the next m() call, and
      the first version of this read reported Toronto as a district of itself
@@ -109,8 +137,9 @@ for (const x of markets) {
   x.isDistrict = /'district'/.test(tail);
   const p = /'district',\s*'([a-z0-9-]+)'/.exec(tail);
   x.partOf = p ? p[1] : undefined;
-  if (/\bUNVERIFIED\(\)/.test(tail)) x.confirmed = false;
-  else if (/\bACTIVE\('|\bTORONTO_TRUTH\(\)/.test(tail)) x.confirmed = true;
+  const ctor = /\b([A-Z_][A-Z_0-9]*)\(/.exec(tail.replace(/^\s*m\(/, ''));
+  if (ctor && CONFIRMING.has(ctor[1])) x.confirmed = true;
+  else if (ctor && UNCONFIRMING.has(ctor[1])) x.confirmed = false;
   else if (/verifiedAt:\s*'[0-9-]+'/.test(tail)) x.confirmed = true;
   else if (/verifiedAt:\s*null/.test(tail)) x.confirmed = false;
   else x.confirmed = null;
@@ -261,6 +290,56 @@ if (!/OPERATIONAL_STATUSES\.includes\(x\.status\)\s*&&\s*x\.operationalTruth\.ve
 }
 if (/OPERATIONAL_STATUSES[^=]*=\s*\[[^\]]*us-proxy/.test(marketsLib)) {
   fail.push('us-proxy has been added to OPERATIONAL_STATUSES. That is the one status that may never be service area.');
+}
+
+/* ── 7b. status and truth may not disagree ───────────────────────────────
+ *
+ * Two silent failures, opposite directions, both shipped by an ordinary edit.
+ *
+ * A market whose status says `active-expansion` while its confirmation was
+ * removed claims coverage nobody stands behind. A market still labelled
+ * `corridor-target` after somebody confirmed it is coverage the business has
+ * and is not getting credit for — it sits out of the service area, out of the
+ * API's service_area list and reads "unconfirmed" on its corridor page while
+ * crews are working there.
+ *
+ * On 2026-09-10 the owner confirmed all forty-three Ontario markets and the
+ * twenty-five corridor targets became operational. This check is what stops
+ * that state drifting apart again in either direction.
+ */
+for (const x of markets) {
+  if (x.country !== 'CA') continue;
+  if (OPERATIONAL.has(x.status) && x.confirmed === false) {
+    fail.push(
+      `${x.slug} carries the operational status "${x.status}" with no dated confirmation. That is a coverage claim ` +
+        'with nobody behind it — either confirm it on a date or set the status back to corridor-target.',
+    );
+  }
+  if (x.status === 'corridor-target' && x.confirmed === true) {
+    fail.push(
+      `${x.slug} is confirmed on a date but still labelled corridor-target, so it is excluded from the service ` +
+        'area and reads as unconfirmed on its corridor page. Coverage the business has and is not claiming.',
+    );
+  }
+}
+
+/* Every confirmation says who made it. An undated, unattributed sentence is
+   the thing this field exists to prevent — and `verifiedBy` is what keeps an
+   owner's statement of coverage from being read later as a record of
+   documented completed work. */
+for (const x of markets) {
+  const tail = marketsSrc.slice(x.index, nextCallAfter(x.index));
+  if (x.confirmed !== true) continue;
+  const viaCtor = /\b([A-Z_][A-Za-z_0-9]*)\(/.exec(tail.replace(/^\s*m\(/, ''));
+  const ctorSrc = viaCtor
+    ? (new RegExp(`function ${viaCtor[1]}\\s*\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\}`).exec(marketsSrc) ?? [])[1] ?? ''
+    : '';
+  if (!/verifiedBy/.test(tail) && !/verifiedBy/.test(ctorSrc)) {
+    fail.push(
+      `${x.slug} is confirmed but does not say who confirmed it. Add verifiedBy — an owner's statement that the ` +
+        'company covers a market is not the same kind of fact as a record of work done there.',
+    );
+  }
 }
 
 /* ── 8. dates ────────────────────────────────────────────────────────────── */

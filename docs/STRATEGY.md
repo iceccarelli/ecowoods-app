@@ -97,10 +97,28 @@ that directs capital on a number somebody typed. `verify:strategy` fails the
 build if any of those five field names is ever assigned a literal number in
 `worthiness.ts`.
 
-**This is the honest bottleneck.** 27 of 43 Ontario markets score zero on
-`confirmation` — not because the business does not serve them, but because
-nobody has written the sentence and the date. One sentence per market is worth
-more than any further code in this layer.
+**On 2026-09-10 the owner confirmed all 43.** Every Ontario market now carries a
+dated operational position and `verifiedBy: 'owner'`, so nothing scores zero on
+`confirmation` and nothing is excluded from the service area. They are not all
+the same coverage: 28 are inside the daily-return radius (13 core-active, 15
+active-expansion), and 15 — the far Niagara belt, the 403/6 run to Kitchener,
+the north end of the 400, Kawartha Lakes — are scheduled as a trip and say so in
+their own sentence.
+
+`verifiedBy` exists so that one fact is never read as another. An owner's
+confirmation of coverage and a photographed job in that municipality are
+different things; the API reports them in different fields, and
+`verify-geo.mjs` fails the build if a confirmation appears without an
+attribution, or if a status and a confirmation ever disagree in either
+direction.
+
+**The bottleneck moved, it did not disappear.** 27 confirmed markets still have
+no local content, so none of them has a page — `worthiness.ts` requires real
+content independently and confirming coverage was never going to conjure it.
+Every one of those rows now reads *"Write local content from a real job here.
+The page appears automatically once it exists."* That is one photographed job
+and two real paragraphs per market, and it is worth more than any further code
+in this layer.
 
 ---
 

@@ -3,6 +3,7 @@ import {
   MARKETS, CORRIDORS, marketBySlug, corridorById, corridorsFor,
   serviceAreaMarkets, isOperational, assess, contentQueue, indexableMarkets,
 } from './index';
+import { cityContent } from '@/lib/seo-data';
 
 describe('the market registry', () => {
   it('has a unique slug per market', () => {
@@ -81,10 +82,46 @@ describe('what may be claimed as served', () => {
     expect(serviceAreaMarkets().some((m) => m.slug === 'toronto')).toBe(true);
   });
 
-  it('excludes every corridor-target, because nobody has confirmed one', () => {
+  it('excludes any corridor-target, whenever one exists again', () => {
     const area = new Set(serviceAreaMarkets().map((m) => m.slug));
     for (const m of MARKETS.filter((x) => x.status === 'corridor-target')) {
       expect(area.has(m.slug), m.slug).toBe(false);
+    }
+  });
+
+  it('carries all forty-three Ontario markets, none of them unconfirmed', () => {
+    const on = MARKETS.filter((m) => m.region === 'ON');
+    expect(on).toHaveLength(43);
+    const unconfirmed = on.filter((m) => m.operationalTruth.verifiedAt === null);
+    expect(unconfirmed.map((m) => m.slug)).toEqual([]);
+  });
+
+  it('says who confirmed every market it claims, and never leaves the sentence empty', () => {
+    for (const m of MARKETS.filter((x) => x.operationalTruth.verifiedAt !== null)) {
+      expect(m.operationalTruth.verifiedBy, m.slug).toBe('owner');
+      expect(m.operationalTruth.statement.trim().length, m.slug).toBeGreaterThan(20);
+    }
+  });
+
+  it('keeps status and confirmation from disagreeing in either direction', () => {
+    for (const m of MARKETS.filter((x) => x.country === 'CA')) {
+      const operational = ['core-active', 'active-expansion', 'travel-by-confirmation'].includes(m.status);
+      if (operational) expect(m.operationalTruth.verifiedAt, m.slug).not.toBeNull();
+      if (m.status === 'corridor-target') expect(m.operationalTruth.verifiedAt, m.slug).toBeNull();
+    }
+  });
+
+  it('does not flatten a two-hour drive into routine daily coverage', () => {
+    // Confirming the whole map is one decision; pretending Fort Erie is next
+    // door is a different and worse one. The far end of the Niagara belt says
+    // what it is, and its own sentence says so too.
+    for (const slug of ['fort-erie', 'port-colborne', 'welland', 'kitchener', 'barrie']) {
+      const m = MARKETS.find((x) => x.slug === slug)!;
+      expect(m.status, slug).toBe('travel-by-confirmation');
+      expect(m.operationalTruth.statement, slug).toMatch(/confirmed in advance/);
+    }
+    for (const slug of ['milton', 'burlington', 'hamilton', 'oshawa']) {
+      expect(MARKETS.find((x) => x.slug === slug)!.status, slug).toBe('active-expansion');
     }
   });
 });
@@ -114,9 +151,30 @@ describe('page-worthiness', () => {
   });
 
   it('cannot be talked into a page by a high score', () => {
-    const unconfirmed = MARKETS.find((m) => m.operationalTruth.verifiedAt === null);
-    expect(unconfirmed).toBeDefined();
-    expect(assess(unconfirmed!).indexable).toBe(false);
+    // Every Ontario market is confirmed since 2026-09-10, so the subject is
+    // synthetic on purpose: the requirement is that an UNCONFIRMED market is
+    // unpublishable however well it scores, and that has to stay testable when
+    // there is no unconfirmed market left in the file to borrow.
+    const strong = MARKETS.find((m) => m.slug === 'hamilton')!;
+    const unconfirmed = { ...strong, operationalTruth: { statement: '', verifiedAt: null } };
+    const w = assess(unconfirmed);
+    expect(w.indexable).toBe(false);
+    expect(w.blockers.join(' ')).toContain('operational position unverified');
+    expect(w.score).toBeGreaterThan(0);
+  });
+
+  it('still refuses a page to a confirmed market with no local content', () => {
+    // The whole point of confirming twenty-five markets without inventing
+    // content for them: coverage is now true, and none of them earned a page.
+    const noContent = MARKETS.filter(
+      (m) => m.operationalTruth.verifiedAt !== null && m.country === 'CA' && !cityContent(m.slug),
+    );
+    expect(noContent.length).toBeGreaterThan(20);
+    for (const m of noContent) {
+      const w = assess(m);
+      expect(w.indexable, m.slug).toBe(false);
+      expect(w.blockers.join(' '), m.slug).toContain('no local content');
+    }
   });
 });
 

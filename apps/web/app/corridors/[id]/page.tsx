@@ -36,13 +36,23 @@ const STATUS_LABEL: Record<string, string> = {
  * The page says three things about every municipality on it and refuses to say
  * a fourth. It says where the place sits on the drive, what its status is, and
  * whether there is a page with local detail. It does not say that work has been
- * done there, because for most of these nobody has confirmed that it has.
+ * documented there — coverage confirmed by the owner and a photographed job in
+ * that municipality are two different facts, and this page keeps them apart.
  *
- * The distinction is the entire value of the page. A visitor in Welland can see
- * that Welland is on the Niagara route, that its position is unconfirmed, and
- * that the confirmed markets are up the QEW — and decide to call. That is worth
- * more than a page telling them Ecowoods serves Welland, which is the version
- * every competitor's template already gives them.
+ * On 2026-09-10 the owner confirmed coverage of all forty-three Ontario
+ * markets, so the honest content of this table changed: no municipality on any
+ * route now reads "nobody has confirmed this". What did NOT change is the
+ * second column. Eleven of the newly confirmed markets are inside the daily
+ * return; fourteen are a real drive and say so in their own sentence, because a
+ * visitor in Port Colborne is better served by "scheduled as a trip, confirmed
+ * in advance, and priced with that in the written quote" than by the word
+ * "routine", which every competitor's template already gives them and which
+ * stops being true on the morning nobody arrives.
+ *
+ * Nor did the page gate move. A market links to a municipal page only when it
+ * has real local content; twenty-five of these are confirmed and still have
+ * none, and confirming coverage was never going to conjure a page worth
+ * reading.
  */
 export default async function CorridorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -83,6 +93,12 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
             {confirmed.length} with a confirmed operational position, {withPages.length} with a page of local
             detail.
           </p>
+          <p className="tlx-note">
+            A confirmed position means the owner of this business stated, on a date, what coverage of that
+            municipality means — not that a job there has been photographed and published. Both are on the
+            record and they are not the same thing. The dates are in{' '}
+            <Link href="/api/v1/markets">/api/v1/markets</Link>.
+          </p>
         </div>
       </header>
 
@@ -115,6 +131,9 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
                       <td>
                         {x.operationalTruth.statement ||
                           'No confirmed operational position. On the route and in the plan; call and ask before assuming a date.'}
+                        {x.operationalTruth.verifiedAt && (
+                          <> <span className="tlx-kicker">confirmed {x.operationalTruth.verifiedAt}</span></>
+                        )}
                       </td>
                     </tr>
                   );

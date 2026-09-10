@@ -58,6 +58,27 @@ export type MarketStatus =
   /** Advertising reach only. Never emitted as service area. Never. */
   | 'us-proxy';
 
+/**
+ * Who confirmed an operational position. One value today, deliberately: the
+ * owner. A second value would need a second process behind it.
+ */
+export type ConfirmedBy = 'owner';
+
+/**
+ * The date the owner confirmed coverage of the full Ontario map — all forty-
+ * three markets in this file, every corridor end to end. Before it, twenty-five
+ * of them carried `verifiedAt: null` and were correctly excluded from the
+ * service area; after it, none do.
+ *
+ * It is one date rather than twenty-five because it was one statement. Writing
+ * twenty-five different plausible-looking dates would make the record look more
+ * thoroughly assembled than it is, which is the opposite of what this field is
+ * for.
+ */
+export const OWNER_CONFIRMED_ON = '2026-09-10';
+
+const OWNER: ConfirmedBy = 'owner';
+
 /** A municipality, or a place inside one. The distinction is not cosmetic. */
 export type MarketKind = 'municipality' | 'district';
 
@@ -96,11 +117,21 @@ export interface Market {
    */
   localFacts: string[];
   /**
-   * What can honestly be said about serving this market, and the date somebody
-   * confirmed it. A market with `verifiedAt: null` may appear in the graph and
-   * in a corridor; it may not carry a page that implies coverage.
+   * What can honestly be said about serving this market, the date somebody
+   * confirmed it, and who. A market with `verifiedAt: null` may appear in the
+   * graph and in a corridor; it may not carry a page that implies coverage.
+   *
+   * `verifiedBy` exists so that one kind of truth is never mistaken for
+   * another. `'owner'` means the owner of this business stated, on that date,
+   * that the company covers this market — which is the only person entitled to
+   * say it, and is exactly as strong as that. It is NOT a record of documented
+   * completed work: that lives in CityContent and in the Floor Graph, and a
+   * market carrying an owner confirmation and nothing else still has no page,
+   * because lib/geo/worthiness.ts requires real local content independently.
+   *
+   * The distinction matters the day somebody asks what a claim rests on.
    */
-  operationalTruth: { statement: string; verifiedAt: string | null };
+  operationalTruth: { statement: string; verifiedAt: string | null; verifiedBy?: ConfirmedBy };
 }
 
 /* ── the existing sixteen ──────────────────────────────────────────────────
@@ -114,6 +145,7 @@ const CORE: Market[] = [
   m('Toronto', 'toronto', 'core-active', 'toronto', ['core-gta', '401-east'], ['mississauga', 'vaughan', 'markham'], {
     statement: 'Head office and shop. Routine daily coverage.',
     verifiedAt: '2026-09-09',
+    verifiedBy: OWNER,
   }),
   m('Downtown Toronto', 'downtown-toronto', 'core-active', 'toronto', [], ['toronto', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
   m('North York', 'north-york', 'core-active', 'toronto', [], ['toronto', 'vaughan'], TORONTO_TRUTH(), 'district', 'toronto'),
@@ -133,33 +165,58 @@ const CORE: Market[] = [
   m('Ajax', 'ajax', 'active-expansion', 'toronto', ['401-east'], ['pickering', 'whitby'], ACTIVE('2026-09-09')),
 ];
 
-/* ── the corridor. Records, not pages. ────────────────────────────────────── */
+/* ── the corridor, confirmed end to end ───────────────────────────────────
+ *
+ * These twenty-five carried `verifiedAt: null` until the owner confirmed them
+ * on 2026-09-10. Nothing else about them changed: no local content was
+ * invented, no housing note was written, no signature project appeared. What
+ * changed is that the one thing only the owner could supply — whether this
+ * company covers these places — is now on the record with a date and a name
+ * against it, and the graph, the corridors and the service area can stop
+ * saying "unconfirmed" about places the business actually serves.
+ *
+ * They are NOT all the same kind of coverage, and flattening them into one
+ * status would have thrown away the most useful thing in the file. Eleven are
+ * inside the daily-return radius and are scheduled like any other GTA job.
+ * Fourteen — the far Niagara belt, the 403/6 run to Kitchener, the north end of
+ * the 400 — are a real drive, and say so. A customer in Port Colborne reading
+ * "scheduled as a trip, confirmed in advance, and priced with that in the
+ * written quote" is being told something true that helps them; a customer in
+ * Port Colborne reading "routine daily coverage" finds out it was not on the
+ * day nobody arrives.
+ *
+ * Records, still not pages. Every one of these is now a confirmed market in the
+ * service area, in the API and on its corridor page — and none of them has an
+ * indexable municipal page, because lib/geo/worthiness.ts requires real local
+ * content and no amount of confirmation substitutes for it. That gate did not
+ * move.
+ */
 const CORRIDOR_TARGETS: Market[] = [
-  m('Milton', 'milton', 'corridor-target', 'toronto', ['core-gta'], ['oakville', 'halton-hills', 'burlington'], UNVERIFIED()),
-  m('Burlington', 'burlington', 'corridor-target', 'mississauga', ['core-gta', 'qew-west'], ['oakville', 'hamilton', 'milton'], UNVERIFIED()),
-  m('Halton Hills', 'halton-hills', 'corridor-target', 'vaughan', ['407-york-peel'], ['milton', 'caledon'], UNVERIFIED()),
-  m('Caledon', 'caledon', 'corridor-target', 'vaughan', ['407-york-peel'], ['brampton', 'halton-hills'], UNVERIFIED()),
-  m('Whitby', 'whitby', 'corridor-target', 'toronto', ['401-east'], ['ajax', 'oshawa'], UNVERIFIED()),
-  m('Oshawa', 'oshawa', 'corridor-target', 'toronto', ['401-east'], ['whitby', 'clarington'], UNVERIFIED()),
-  m('Clarington', 'clarington', 'corridor-target', 'toronto', ['401-east'], ['oshawa', 'kawartha-lakes'], UNVERIFIED()),
-  m('Barrie', 'barrie', 'corridor-target', 'vaughan', ['400-north', 'cottage-north-east'], ['innisfil', 'newmarket'], UNVERIFIED()),
-  m('Innisfil', 'innisfil', 'corridor-target', 'vaughan', ['400-north', 'cottage-north-east'], ['barrie', 'newmarket'], UNVERIFIED()),
-  m('Hamilton', 'hamilton', 'corridor-target', 'mississauga', ['qew-west', '403-6-west'], ['burlington', 'stoney-creek', 'ancaster'], UNVERIFIED()),
-  m('Ancaster', 'ancaster', 'corridor-target', 'mississauga', [], ['hamilton', 'dundas'], UNVERIFIED(), 'district', 'hamilton'),
-  m('Dundas', 'dundas', 'corridor-target', 'mississauga', [], ['hamilton', 'ancaster'], UNVERIFIED(), 'district', 'hamilton'),
-  m('Stoney Creek', 'stoney-creek', 'corridor-target', 'mississauga', [], ['hamilton', 'grimsby'], UNVERIFIED(), 'district', 'hamilton'),
-  m('Grimsby', 'grimsby', 'corridor-target', 'mississauga', ['qew-west', 'niagara-belt'], ['stoney-creek', 'lincoln'], UNVERIFIED()),
-  m('Guelph', 'guelph', 'corridor-target', 'hamilton', ['403-6-west'], ['cambridge', 'kitchener'], UNVERIFIED()),
-  m('Cambridge', 'cambridge', 'corridor-target', 'hamilton', ['403-6-west'], ['kitchener', 'guelph'], UNVERIFIED()),
-  m('Kitchener', 'kitchener', 'corridor-target', 'hamilton', ['403-6-west'], ['cambridge', 'guelph'], UNVERIFIED()),
-  m('Lincoln', 'lincoln', 'corridor-target', 'grimsby', ['niagara-belt'], ['grimsby', 'st-catharines'], UNVERIFIED()),
-  m('St. Catharines', 'st-catharines', 'corridor-target', 'grimsby', ['niagara-belt'], ['lincoln', 'thorold', 'niagara-on-the-lake'], UNVERIFIED()),
-  m('Thorold', 'thorold', 'corridor-target', 'grimsby', ['niagara-belt'], ['st-catharines', 'welland'], UNVERIFIED()),
-  m('Welland', 'welland', 'corridor-target', 'grimsby', ['niagara-belt'], ['thorold', 'port-colborne'], UNVERIFIED()),
-  m('Niagara-on-the-Lake', 'niagara-on-the-lake', 'corridor-target', 'grimsby', ['niagara-belt'], ['st-catharines', 'niagara-falls-on'], UNVERIFIED()),
-  m('Niagara Falls', 'niagara-falls-on', 'corridor-target', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['niagara-on-the-lake', 'fort-erie'], UNVERIFIED()),
-  m('Port Colborne', 'port-colborne', 'corridor-target', 'grimsby', ['niagara-belt'], ['welland', 'fort-erie'], UNVERIFIED()),
-  m('Fort Erie', 'fort-erie', 'corridor-target', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['port-colborne', 'niagara-falls-on'], UNVERIFIED()),
+  m('Milton', 'milton', 'active-expansion', 'toronto', ['core-gta'], ['oakville', 'halton-hills', 'burlington'], COVERED('Toronto')),
+  m('Burlington', 'burlington', 'active-expansion', 'mississauga', ['core-gta', 'qew-west'], ['oakville', 'hamilton', 'milton'], COVERED('Mississauga')),
+  m('Halton Hills', 'halton-hills', 'active-expansion', 'vaughan', ['407-york-peel'], ['milton', 'caledon'], COVERED('Vaughan')),
+  m('Caledon', 'caledon', 'active-expansion', 'vaughan', ['407-york-peel'], ['brampton', 'halton-hills'], COVERED('Vaughan')),
+  m('Whitby', 'whitby', 'active-expansion', 'toronto', ['401-east'], ['ajax', 'oshawa'], COVERED('Toronto')),
+  m('Oshawa', 'oshawa', 'active-expansion', 'toronto', ['401-east'], ['whitby', 'clarington'], COVERED('Toronto')),
+  m('Clarington', 'clarington', 'travel-by-confirmation', 'toronto', ['401-east'], ['oshawa', 'kawartha-lakes'], BY_TRIP('Toronto')),
+  m('Barrie', 'barrie', 'travel-by-confirmation', 'vaughan', ['400-north', 'cottage-north-east'], ['innisfil', 'newmarket'], BY_TRIP('Vaughan')),
+  m('Innisfil', 'innisfil', 'travel-by-confirmation', 'vaughan', ['400-north', 'cottage-north-east'], ['barrie', 'newmarket'], BY_TRIP('Vaughan')),
+  m('Hamilton', 'hamilton', 'active-expansion', 'mississauga', ['qew-west', '403-6-west'], ['burlington', 'stoney-creek', 'ancaster'], COVERED('Mississauga')),
+  m('Ancaster', 'ancaster', 'active-expansion', 'mississauga', [], ['hamilton', 'dundas'], COVERED('Mississauga'), 'district', 'hamilton'),
+  m('Dundas', 'dundas', 'active-expansion', 'mississauga', [], ['hamilton', 'ancaster'], COVERED('Mississauga'), 'district', 'hamilton'),
+  m('Stoney Creek', 'stoney-creek', 'active-expansion', 'mississauga', [], ['hamilton', 'grimsby'], COVERED('Mississauga'), 'district', 'hamilton'),
+  m('Grimsby', 'grimsby', 'active-expansion', 'mississauga', ['qew-west', 'niagara-belt'], ['stoney-creek', 'lincoln'], COVERED('Mississauga')),
+  m('Guelph', 'guelph', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'kitchener'], BY_TRIP('Hamilton')),
+  m('Cambridge', 'cambridge', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['kitchener', 'guelph'], BY_TRIP('Hamilton')),
+  m('Kitchener', 'kitchener', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'guelph'], BY_TRIP('Hamilton')),
+  m('Lincoln', 'lincoln', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['grimsby', 'st-catharines'], BY_TRIP('Grimsby')),
+  m('St. Catharines', 'st-catharines', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['lincoln', 'thorold', 'niagara-on-the-lake'], BY_TRIP('Grimsby')),
+  m('Thorold', 'thorold', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['st-catharines', 'welland'], BY_TRIP('Grimsby')),
+  m('Welland', 'welland', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['thorold', 'port-colborne'], BY_TRIP('Grimsby')),
+  m('Niagara-on-the-Lake', 'niagara-on-the-lake', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['st-catharines', 'niagara-falls-on'], BY_TRIP('Grimsby')),
+  m('Niagara Falls', 'niagara-falls-on', 'travel-by-confirmation', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['niagara-on-the-lake', 'fort-erie'], BY_TRIP('Grimsby')),
+  m('Port Colborne', 'port-colborne', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['welland', 'fort-erie'], BY_TRIP('Grimsby')),
+  m('Fort Erie', 'fort-erie', 'travel-by-confirmation', 'grimsby', ['niagara-belt', 'buffalo-niagara'], ['port-colborne', 'niagara-falls-on'], BY_TRIP('Grimsby')),
 ];
 
 const TRAVEL_BY_CONFIRMATION: Market[] = [
@@ -167,6 +224,7 @@ const TRAVEL_BY_CONFIRMATION: Market[] = [
     statement:
       'Outside the daily-return radius. A job here is scheduled as a trip, confirmed in advance, and priced with that in the written quote.',
     verifiedAt: '2026-09-09',
+    verifiedBy: 'owner',
   }),
 ];
 
@@ -213,6 +271,7 @@ function ACTIVE(verifiedAt: string) {
   return {
     statement: 'Within the daily-return radius of the Toronto shop. Routine scheduling.',
     verifiedAt,
+    verifiedBy: OWNER,
   };
 }
 
@@ -220,6 +279,46 @@ function TORONTO_TRUTH() {
   return {
     statement: 'Part of the City of Toronto, where the shop is. Routine daily coverage.',
     verifiedAt: '2026-09-09',
+    verifiedBy: OWNER,
+  };
+}
+
+
+/**
+ * COVERED — a market the owner confirmed is worked inside the day.
+ *
+ * The hub is named because it is the fact that makes the sentence checkable
+ * rather than promotional: a crew sets out from somewhere, and saying where
+ * turns "we serve Burlington" into something with an operational shape. The
+ * hub on every record is the same value this sentence quotes, so the two
+ * cannot drift.
+ */
+function COVERED(hubName: string) {
+  return {
+    statement:
+      `Owner-confirmed coverage. Worked from the ${hubName} hub, inside the daily-return radius, ` +
+      'with routine scheduling.',
+    verifiedAt: OWNER_CONFIRMED_ON,
+    verifiedBy: OWNER,
+  };
+}
+
+/**
+ * BY_TRIP — confirmed coverage, honestly priced.
+ *
+ * The far ends of the Niagara belt, the 403/6 run to Kitchener and the north
+ * end of the 400 are real coverage and a real drive. Saying so is worth more
+ * than either of the two easy lies: that the distance is not there, or that
+ * the market is not served. The wording is the owner's own from Kawartha
+ * Lakes, which is where this sentence started.
+ */
+function BY_TRIP(hubName: string) {
+  return {
+    statement:
+      `Owner-confirmed coverage, reached from the ${hubName} hub. Outside the daily-return radius: a job ` +
+      'here is scheduled as a trip, confirmed in advance, and priced with that in the written quote.',
+    verifiedAt: OWNER_CONFIRMED_ON,
+    verifiedBy: OWNER,
   };
 }
 
@@ -227,8 +326,14 @@ function TORONTO_TRUTH() {
  * The default for a market nobody has confirmed. It is deliberately not a
  * sentence that could be pasted onto a page: there is nothing here to publish,
  * which is the point.
+ *
+ * No market uses it today — the owner confirmed all forty-three on
+ * {@link OWNER_CONFIRMED_ON}. It is exported and kept because the next
+ * municipality added to this file must start here, unconfirmed, and having to
+ * write the empty record by hand is exactly the friction that stops a place
+ * name being pasted in with a coverage claim attached.
  */
-function UNVERIFIED() {
+export function UNVERIFIED() {
   return { statement: '', verifiedAt: null };
 }
 
@@ -239,7 +344,7 @@ function m(
   parentHub: string,
   corridors: CorridorId[],
   nearest: string[],
-  operationalTruth: { statement: string; verifiedAt: string | null },
+  operationalTruth: { statement: string; verifiedAt: string | null; verifiedBy?: ConfirmedBy },
   kind: MarketKind = 'municipality',
   partOf?: string,
 ): Market {
@@ -261,6 +366,7 @@ function us(name: string, slug: string, nearest: string[]): Market {
       statement:
         'Not a service area. Ecowoods operates in Ontario. This market exists so that an owner of an Ontario property who lives on the New York side can find the company.',
       verifiedAt: '2026-09-09',
+      verifiedBy: 'owner',
     },
   };
 }
