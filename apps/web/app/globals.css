@@ -10460,10 +10460,55 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   clip-path: inset(0 0 0 var(--ps-pos));
   transition: clip-path 90ms linear;
 }
+/* While the sweep is driving, the position is already updated every animation
+   frame — a 90ms transition on top of that is a 90ms lag, not a smoothing. It
+   is removed for the sweep and kept for the hand, where the input's discrete
+   steps are what need easing. */
+.ps-frame[data-auto='1'] .ps-after,
+.ps-frame[data-auto='1'] .ps-line { transition: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  /* No autoplay exists to disable; the only motion is the visitor's own. This
-     removes the easing and leaves the control fully working. */
+  /* The sweep is disabled in the component, not merely slowed here. This
+     removes the easing on the visitor's own drag and leaves the control fully
+     working. */
   .ps-after { transition: none; }
+  .ps-live { display: none; }
+}
+
+.ps-line { transition: left 90ms linear; }
+
+/* The sweep, made legible as a state rather than only as motion: a small
+   breathing dot beside the instruction. It is aria-hidden — a screen reader is
+   told what to do, not that something is moving. */
+.ps-live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  background: var(--line);
+  vertical-align: middle;
+  transition: background-color 240ms ease;
+}
+.ps-live.is-on {
+  background: var(--copper, #a8663a);
+  animation: ps-breathe 2200ms ease-in-out infinite;
+}
+@keyframes ps-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* The handle reads as live rather than parked while the sweep runs. */
+.ps-frame[data-auto='1'] .ps-knob {
+  animation: ps-knob-pulse 2200ms ease-in-out infinite;
+}
+@keyframes ps-knob-pulse {
+  0%, 100% { box-shadow: 0 2px 10px rgba(26, 20, 16, 0.28); }
+  50% { box-shadow: 0 2px 10px rgba(26, 20, 16, 0.28), 0 0 0 7px rgba(168, 102, 58, 0.16); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-frame[data-auto='1'] .ps-knob { animation: none; }
 }
 
 .ps-tag {
@@ -10946,4 +10991,165 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 .pj-card-link:hover .pj-card-title,
 .pj-card-link:focus-visible .pj-card-title {
   color: var(--copper-text);
+}
+
+/* ── TerritoryMap ────────────────────────────────────────────────────────────
+   The whole corridor, drawn from the registry, one region lit at a time.
+   Geometry lives in the component as presentation attributes where it must not
+   depend on this file to be correct; everything here is theming and motion. */
+.tm {
+  --tm-ink: var(--ink);
+  --tm-dim: rgba(140, 110, 85, 0.22);
+  --tm-lit: var(--copper, #a8663a);
+  position: relative;
+}
+.tm-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  color: var(--tm-ink);
+}
+
+.tm-water {
+  fill: rgba(110, 130, 100, 0.13);
+  stroke: rgba(110, 130, 100, 0.26);
+  stroke-width: 0.35;
+}
+.tm-water-label,
+.tm-border-label,
+.tm-shop-label {
+  font-family: var(--font-mono);
+  font-size: 2.6px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--muted);
+}
+.tm-border-label { font-size: 2.3px; opacity: 0.72; }
+.tm-border {
+  fill: none;
+  stroke: rgba(140, 110, 85, 0.5);
+  stroke-width: 0.4;
+  stroke-dasharray: 1.6 1.4;
+}
+
+/* A corridor at rest: present, legible, and clearly not the subject. */
+.tm-region { cursor: pointer; outline: none; }
+.tm-territory {
+  fill: none;
+  stroke: var(--tm-dim);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.42;
+  transition: stroke 520ms ease, opacity 520ms ease, stroke-width 520ms ease;
+}
+.tm-spine {
+  fill: none;
+  stroke: rgba(90, 70, 55, 0.45);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+  transition: stroke 520ms ease, stroke-width 520ms ease;
+}
+.tm-dot {
+  fill: rgba(120, 92, 70, 0.55);
+  transition: fill 520ms ease, r 520ms ease;
+}
+.tm-halo { opacity: 0; transition: opacity 520ms ease; }
+
+/* The corridor holding the light. */
+.tm-region.is-lit .tm-territory {
+  stroke: rgba(168, 102, 58, 0.4);
+  stroke-width: 11.5;
+  opacity: 1;
+}
+.tm-region.is-lit .tm-spine {
+  stroke: var(--tm-lit);
+  stroke-width: 0.75;
+}
+.tm-region.is-lit .tm-dot { fill: var(--tm-lit); }
+.tm-region.is-lit .tm-halo { opacity: 1; }
+.tm-region.is-lit .tm-dot-g { animation: tm-pulse 2600ms ease-in-out infinite; }
+.tm-region.is-lit .tm-dot-g:nth-child(2n) { animation-delay: 260ms; }
+.tm-region.is-lit .tm-dot-g:nth-child(3n) { animation-delay: 520ms; }
+.tm-region.is-lit .tm-dot-g:nth-child(5n) { animation-delay: 780ms; }
+
+/* Everything that is not lit recedes, so the eye has one place to be. */
+.tm:not([data-still='1']) .tm-region:not(.is-lit) { opacity: 0.5; transition: opacity 520ms ease; }
+
+@keyframes tm-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+.tm-dot-g { transform-box: fill-box; transform-origin: center; }
+
+.tm-region:focus-visible .tm-territory {
+  stroke: var(--copper-bright, var(--copper, #a8663a));
+  opacity: 1;
+}
+
+.tm-shop-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.45;
+  opacity: 0.75;
+}
+.tm-shop-core { fill: var(--ink); }
+.tm-shop-label { font-size: 2.4px; fill: var(--ink); opacity: 0.8; }
+
+.tm-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.7rem;
+  margin: 0.9rem 0 0;
+  min-height: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tm-readout-name { color: var(--copper-text, var(--copper, #a8663a)); }
+.tm-readout-sep { opacity: 0.5; }
+.tm-readout-count { margin-left: auto; }
+
+.tm-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.5rem 1.25rem;
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+}
+.tm-index-group > summary {
+  cursor: pointer;
+  padding: 0.35rem 0;
+  font-size: var(--fs-sm, 0.9rem);
+  color: var(--ink);
+}
+.tm-index-count {
+  margin-left: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+}
+.tm-index-group ul {
+  margin: 0.2rem 0 0.6rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: var(--fs-sm, 0.9rem);
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Every region lit, nothing moving. The same fact, held still. */
+  .tm-territory,
+  .tm-spine,
+  .tm-dot,
+  .tm-halo { transition: none; }
+  .tm[data-still='1'] .tm-territory { stroke: rgba(168, 102, 58, 0.34); opacity: 0.9; }
+  .tm[data-still='1'] .tm-spine { stroke: var(--tm-lit); }
+  .tm[data-still='1'] .tm-dot { fill: var(--tm-lit); }
+  .tm-region.is-lit .tm-dot-g { animation: none; }
 }

@@ -165,6 +165,44 @@ if (/kind:\s*'photograph'/.test(reg)) {
   }
 }
 
+/*
+ * THE SWEEP. A before/after that sits still at fifty percent is read as a
+ * photograph: most visitors never discover there is a second image, and neither
+ * does anything sampling the page. So the component sweeps on its own — and the
+ * three properties that make that acceptable rather than obnoxious are checked
+ * here, because each of them is a line somebody would remove while "simplifying
+ * the animation".
+ *
+ *   · it yields to a person, completely, on the first touch
+ *   · it stops when the figure is off screen
+ *   · it does not run at all against prefers-reduced-motion
+ *
+ * A sweep that keeps moving under a hand is worse than no sweep. A sweep that
+ * runs off screen is a battery drain on a page with several sliders. A sweep
+ * that ignores the stated preference is an accessibility failure with a policy
+ * behind it.
+ */
+{
+  const src = fs.readFileSync(path.join(ROOT, 'apps/web/app/components/ProofSlider.tsx'), 'utf8');
+  const required = [
+    [/requestAnimationFrame/, 'the sweep itself — the slider no longer moves on its own, and a still before/after reads as one photograph'],
+    [/yieldToHuman/, 'the hand-over — the sweep must stop the instant a person touches, focuses or keys the control'],
+    [/resumeMs/, 'the resume delay — without it the sweep either never comes back or fights the visitor immediately'],
+    [/IntersectionObserver/, 'the off-screen stop — a page with several sliders should not animate the ones nobody can see'],
+    [/prefers-reduced-motion/, 'the reduced-motion opt-out — the sweep must be disabled, not merely slowed'],
+    [/defaultValue=/, 'the uncontrolled input — a controlled value fights the sweep every animation frame'],
+  ];
+  for (const [re, what] of required) {
+    if (!re.test(src)) fail.push(`ProofSlider.tsx no longer contains ${what}.`);
+  }
+  if (/value={pos}/.test(src)) {
+    fail.push(
+      'ProofSlider.tsx has gone back to a controlled range input. React would overwrite the sweep on every frame ' +
+        'and the handle would judder or freeze.',
+    );
+  }
+}
+
 if (fail.length) {
   console.error(`✗ sliders: ${fail.length} problem(s)\n`);
   for (const f of fail) console.error(`  · ${f}\n`);

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
-import { IllustrationPair } from '../components/Illustration';
+import TerritoryMap from '../components/TerritoryMap';
 
 export const metadata: Metadata = {
   title: 'Service Areas — Hardwood Flooring Across the GTA',
@@ -51,7 +51,13 @@ export default function ServiceAreasIndex() {
         <div className="shell">
           <p className="tlx-kicker">The same work everywhere</p>
           <h2 className="tlx-h2">What the crews do, wherever the job is</h2>
-          <IllustrationPair a="map-service-areas-gta" b="map-service-areas-gta-b" />
+          {/* Was a static drawing of the GTA. It was accurate the month it was
+              drawn and a factual error the day the territory reached Hamilton —
+              a page headed "the same work everywhere" showing one sixth of
+              everywhere. This reads the registry, so it cannot go stale, and it
+              cycles one corridor at a time because a hundred and one markets
+              shown at once show nothing. */}
+          <TerritoryMap />
           <p className="tlx-note">
             {SERVICES.map((sv, i) => (
               <span key={sv.slug}>

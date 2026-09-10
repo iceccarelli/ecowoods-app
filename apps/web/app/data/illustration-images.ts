@@ -77,8 +77,6 @@ import machine_footprints_to_scale from '../../public/illustrations/machine-foot
 import machine_footprints_to_scale_b from '../../public/illustrations/machine-footprints-to-scale-b.webp';
 import machine_planetary_rotation from '../../public/illustrations/machine-planetary-rotation.webp';
 import machine_planetary_rotation_b from '../../public/illustrations/machine-planetary-rotation-b.webp';
-import map_service_areas_gta from '../../public/illustrations/map-service-areas-gta.webp';
-import map_service_areas_gta_b from '../../public/illustrations/map-service-areas-gta-b.webp';
 import og_about from '../../public/illustrations/og-about.webp';
 import og_data from '../../public/illustrations/og-data.webp';
 import og_framework from '../../public/illustrations/og-framework.webp';
@@ -214,8 +212,6 @@ export const ILLUSTRATION_IMAGES: Record<string, StaticImageData> = {
   'machine-footprints-to-scale-b': machine_footprints_to_scale_b,
   'machine-planetary-rotation': machine_planetary_rotation,
   'machine-planetary-rotation-b': machine_planetary_rotation_b,
-  'map-service-areas-gta': map_service_areas_gta,
-  'map-service-areas-gta-b': map_service_areas_gta_b,
   'og-about': og_about,
   'og-data': og_data,
   'og-framework': og_framework,
