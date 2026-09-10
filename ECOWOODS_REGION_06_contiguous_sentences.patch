@@ -1,0 +1,158 @@
+From 37f7c8a4a503f48fe67f4aea2b65adff4df39b38 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 10 Sep 2026 18:44:19 +0000
+Subject: [PATCH] fix(geo): the one sentence every page exists to state was
+ unliftable by a string extractor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FOUND BY A CURL THAT CAME BACK EMPTY
+
+Two live checks, run side by side after the New York deploy:
+
+  curl .../service-areas/pittsford | grep -o 'Ecowoods serves Pittsford'  →  nothing
+  curl .../service-areas/buffalo   | grep -o 'The showroom is Toronto'    →  matched
+
+The second matched because it is one uninterrupted static chunk. The first did
+not, and the sentence is on the page.
+
+WHY
+
+React's hydratable renderer separates adjacent text and expression children:
+
+  React.createElement('p', null, 'Ecowoods serves ', name, '. Book the measure.')
+  → <p>Ecowoods serves <!-- -->Pittsford, NY<!-- -->. Book the measure.</p>
+
+  React.createElement('p', null, `Ecowoods serves ${name}. Book the measure.`)
+  → <p>Ecowoods serves Pittsford, NY. Book the measure.</p>
+
+Verified against react-dom/server rather than assumed: renderToStaticMarkup
+produces neither separator, which is why this is invisible in a unit test and
+visible only in what the site actually serves.
+
+A browser reads both the same. Any crawler that parses HTML into a tree reads
+both the same. Something that reads the response as a string — which several of
+the simpler answer-engine fetchers do — reads the first as three fragments and
+cannot lift the sentence. That sentence is the entire reason eighty-nine service
+pages exist, and on the twenty-six New York pages it is doing the heaviest work
+on the site: it is what says this company takes the job and where the shop is.
+
+Both required sentences are now single template literals: one text node each,
+contiguous in the served HTML.
+
+THE CHECK
+
+verify-geo-green gains a seventh refusal, on the source rather than the output:
+these two sentences must be interpolated strings, not JSX children. A future
+edit that tidies them back into JSX — which is the more natural way to write
+them, and which is how they were written — fails the build. Regression run and
+observed.
+
+66 guards green, 317 tests, tsc at its 115-error baseline.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ apps/web/app/service-areas/[city]/page.tsx | 24 +++++++++----
+ scripts/verify-geo-green.mjs               | 41 ++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 7 deletions(-)
+
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index cba5c90..784a95a 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -156,14 +156,24 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+               question and it is not about substrate. Answering it in the first
+               line — and, on a New York page, saying in the same breath where
+               the shop is — is what separates a service page from a directory
+-              listing that leaves them guessing. */}
++              listing that leaves them guessing.
++
++              EACH SENTENCE IS ONE TEMPLATE LITERAL, NOT MIXED JSX CHILDREN.
++              Written as `Ecowoods serves {name}. Book the measure.` React
++              renders it as three text nodes with separator comments between
++              them:
++
++                  Ecowoods serves <!-- -->Pittsford, NY<!-- -->. Book the measure.
++
++              A browser and any HTML-parsing crawler read that as one sentence.
++              A naive string extractor does not — and a live grep for the exact
++              sentence came back empty on every New York page while finding the
++              adjacent static one, which is precisely the failure mode. The
++              sentence a page most needs a machine to lift verbatim is the one
++              that must not be interrupted. */}
+           <p style={{ maxWidth: '48rem', marginTop: '1rem', fontWeight: 600 }}>
+-            Ecowoods serves {areaDisplayName(city)}. Book the measure.
+-            {isUS && (
+-              <>
+-                {' '}The showroom is Toronto. The job is in {city.name}. We take this work.
+-              </>
+-            )}
++            {`Ecowoods serves ${areaDisplayName(city)}. Book the measure.`}
++            {isUS && ` The showroom is Toronto. The job is in ${city.name}. We take this work.`}
+           </p>
+ 
+           {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
+diff --git a/scripts/verify-geo-green.mjs b/scripts/verify-geo-green.mjs
+index cc9f578..d29acd6 100644
+--- a/scripts/verify-geo-green.mjs
++++ b/scripts/verify-geo-green.mjs
+@@ -30,6 +30,9 @@
+  *     for months, and appeared on four surfaces. Counts are derived.
+  *  6. A second address or telephone number anywhere in the geography. There is
+  *     one shop, one showroom and one number, and they are in Toronto.
++ *  7. The two sentences every page owes the reader being split across JSX text
++ *     nodes, where React's separator comments make them unliftable by a string
++ *     extractor.
+  *
+  *   node scripts/verify-geo-green.mjs
+  */
+@@ -196,6 +199,44 @@ for (const file of [...walk(join(WEB, 'app')), ...walk(join(WEB, 'lib')), ...wal
+   }
+ }
+ 
++/* ── 7. the two required sentences are contiguous in the HTML ────────────
++ *
++ * Every service-area page owes the reader one sentence — Ecowoods serves this
++ * place, book the measure — and every New York page owes a second saying where
++ * the shop is. Both must survive being lifted verbatim by something that reads
++ * HTML as a string rather than as a tree.
++ *
++ * Written as mixed JSX children, React's hydratable renderer separates them:
++ *
++ *     Ecowoods serves <!-- -->Pittsford, NY<!-- -->. Book the measure.
++ *
++ * A browser and any parsing crawler read that as one sentence. A naive
++ * extractor does not, and a live grep for the exact sentence came back empty on
++ * every New York page while finding the adjacent static one two lines below —
++ * which is how this was found rather than reasoned about. Written as a single
++ * template literal it renders as one text node.
++ *
++ * So the check is on the source: these two sentences are interpolated strings,
++ * not JSX children, and a future edit that "tidies" them back into JSX fails.
++ */
++const areaPage = read('app/service-areas/[city]/page.tsx');
++if (areaPage) {
++  if (!/`Ecowoods serves \$\{[^}]+\}\. Book the measure\.`/.test(areaPage)) {
++    fail.push(
++      'app/service-areas/[city]/page.tsx no longer builds "Ecowoods serves {city}. Book the measure." as a single ' +
++        'template literal. As mixed JSX children React splits it with separator comments and a string extractor ' +
++        'cannot lift the one sentence the page exists to state.',
++    );
++  }
++  if (!/The showroom is Toronto\. The job is in \$\{[^}]+\}\. We take this work\.`/.test(areaPage)) {
++    fail.push(
++      'app/service-areas/[city]/page.tsx no longer builds the New York showroom sentence as a single template ' +
++        'literal. That sentence is the one that keeps a service page from reading as a local presence, and it has ' +
++        'to be liftable verbatim.',
++    );
++  }
++}
++
+ /* ── report ─────────────────────────────────────────────────────────────── */
+ const ca = [...registry.values()].filter((x) => x.country === 'CA').length;
+ const us = [...registry.values()].filter((x) => x.country === 'US').length;
+-- 
+2.43.0
+
