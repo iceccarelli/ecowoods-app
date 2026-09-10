@@ -39,6 +39,7 @@
     "verify:geo": "node scripts/verify-geo.mjs",
     "verify:glossary": "node scripts/verify-glossary.mjs",
     "verify:figures": "node scripts/verify-figures.mjs",
+    "verify:catalogues": "node scripts/verify-catalogues.mjs",
     "verify:changelog": "node scripts/verify-changelog.mjs",
     "verify:market": "node scripts/verify-market.mjs",
     "verify:freshness": "node scripts/verify-freshness.mjs",

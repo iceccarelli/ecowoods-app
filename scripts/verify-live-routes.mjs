@@ -197,6 +197,21 @@ for (const m of apiManifest.matchAll(/\{\s*path:\s*'([^']+)',\s*method:\s*'GET'/
   targets.add(`/api/v1${p === '/' ? '' : p}`);
 }
 
+/*
+ * The field catalogues. Eleven PDFs are the entire point of publishing them —
+ * they are linked from /catalogues, named in the sitemap, in llms.txt and in
+ * /api/knowledge, and every one of them lived at the repository root, unserved,
+ * until they were moved. A file that a machine surface advertises and the host
+ * does not serve is the exact defect this check exists to name, and a document
+ * is no less a URL than a page is.
+ */
+for (const m of (existsSync(join(WEB, 'lib/catalogues.ts'))
+  ? readFileSync(join(WEB, 'lib/catalogues.ts'), 'utf8')
+  : ''
+).matchAll(/\bfile:\s*'([^']+\.pdf)'/g)) {
+  targets.add(`/catalogues/${m[1]}`);
+}
+
 /* Machine surfaces that are not pages. */
 for (const f of ['/robots.txt', '/sitemap.xml', '/llms.txt', '/llms-full.txt', '/ai.txt', '/feed.xml']) {
   targets.add(f);

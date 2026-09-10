@@ -12,6 +12,7 @@ import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail'
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
 import { IllustrationPair } from '../../components/Illustration';
+import { CatalogueRail } from '@/app/components/CatalogueRail';
 
 /* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
    drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
@@ -325,6 +326,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </div>
         </section>
       )}
+
+      <CatalogueRail route={`/guides/${guide.slug}`} />
 
       <CommercialHeadTermRail />
 

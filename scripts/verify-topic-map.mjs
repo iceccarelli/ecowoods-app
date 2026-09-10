@@ -77,7 +77,31 @@ const mdxSlugs = (dir) => {
   } catch { return new Set(); }
 };
 
+/**
+ * A .ts-per-record content directory, read for `slug:` (or another key).
+ *
+ * /projects and /equipment ship one file per record rather than an mdx per
+ * record, and neither was here — so a redirect pointed at a real, live,
+ * sitemapped page was reported as "a permanent 308 into a 404". A guard that
+ * cannot see a route family reports every URL in it as dead, which is the
+ * loudest possible way to be wrong.
+ */
+const tsKeys = (dir, key = 'slug') => {
+  try {
+    const out = new Set();
+    const re = new RegExp(`\\b${key}:\\s*'([a-z0-9-]+)'`, 'g');
+    for (const f of readdirSync(join(WEB, dir))) {
+      if (!/\.tsx?$/.test(f)) continue;
+      for (const m of read(join(WEB, dir, f)).matchAll(re)) out.add(m[1]);
+    }
+    return out;
+  } catch { return new Set(); }
+};
+
 const DYNAMIC = {
+  '/projects': tsKeys('content/projects'),
+  '/equipment': tsKeys('content/equipment', 'id'),
+  '/corridors': tsKeys('content/geo', 'id'),
   '/guides': slugsIn('lib/guides.ts'),
   '/papers': slugsIn('lib/papers.ts'),
   '/glossary': slugsIn('lib/glossary.ts'),

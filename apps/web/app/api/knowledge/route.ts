@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { pdfIsPublished, getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
@@ -133,6 +134,37 @@ async function build() {
       table: s.table,
       callout: s.callout,
     })),
+  }));
+
+  /**
+   * The field catalogues, as document entities.
+   *
+   * A catalogue is not a paper and is not modelled as one: it has no sections,
+   * no references and no HTML edition. What it has is a file, a series, a
+   * length and the canonical page it defers to — and `canonicalUrl` is the
+   * important field here. An agent that finds this collection must be able to
+   * tell, without fetching anything, which URL it should actually be citing.
+   *
+   * Filtered to what is on disk, like the paper PDFs above. See F-162.
+   */
+  const catalogues = getPublishedCatalogues().map((c) => ({
+    id: `catalogue:${c.slug}`,
+    number: c.id,
+    slug: c.slug,
+    title: c.title,
+    kicker: c.kicker,
+    series: c.series,
+    purpose: c.purpose,
+    contentType: 'application/pdf',
+    pdfUrl: url(catalogueHref(c)),
+    fileName: c.file,
+    pages: c.pages,
+    trim: c.trim,
+    publishedYear: c.year,
+    indexUrl: url(`/catalogues#${c.slug}`),
+    /* Cite this, not the PDF. */
+    canonicalUrl: url(c.related[0].href),
+    relatedUrls: c.related.map((r) => url(r.href)),
   }));
 
   const framework = {
@@ -367,6 +399,7 @@ async function build() {
     papers,
     framework,
     guides,
+    catalogues,
     glossary,
     figures,
     changelog,
@@ -409,7 +442,7 @@ export async function GET(request: NextRequest) {
          made the site citable for definitions and invisible for the money
          queries. */
       'commercialPages', 'services', 'pricing', 'locations', 'caseStudies',
-      'framework', 'guides', 'papers', 'glossary', 'figures', 'standards', 'changelog', 'business',
+      'framework', 'guides', 'papers', 'catalogues', 'glossary', 'figures', 'standards', 'changelog', 'business',
     ],
     usage: {
       all: url('/api/knowledge'),
@@ -418,6 +451,7 @@ export async function GET(request: NextRequest) {
     },
     counts: {
       papers: all.papers.length,
+      catalogues: all.catalogues.length,
       frameworkCriteria: all.framework.criterionCount,
       guides: all.guides.length,
       glossaryTerms: all.glossary.length,

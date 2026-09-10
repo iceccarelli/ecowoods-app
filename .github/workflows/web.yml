@@ -53,6 +53,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # THE ONE TOOL THESE GUARDS NEED THAT NODE DOES NOT SHIP.
+      #
+      # verify-business-facts.mjs reads the text of every PDF served from
+      # public/ and looks for retired claims — a price band that changed, a
+      # figure that was withdrawn. Eleven field catalogues are now published, so
+      # eleven documents that a customer downloads and keeps are inside that
+      # check.
+      #
+      # It fails rather than skips when pdftotext is absent, which is correct
+      # and is also why this line exists: a guard that silently skips the file
+      # it cannot read is how F-23 shipped, and a runner image that quietly
+      # stops including poppler-utils would otherwise turn that failure into a
+      # CI outage nobody could explain. Install it explicitly instead of
+      # depending on what the image happens to carry.
+      - name: pdftotext, for the PDF fact check
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       # Dependency-free and connectionless — runs in seconds, never flakes,
       # and fails before anyone waits on an install.
       - name: Business facts
@@ -116,6 +132,12 @@ jobs:
       # gets described instead of used.
       - name: Answer-engine surface (every tool is discoverable as runnable)
         run: node scripts/verify-aeo.mjs
+      # Eleven documents that leave the site. A broken page is a bad minute; a
+      # catalogue that 404s from a link somebody forwarded is the company
+      # failing in front of the person the reader was trying to convince — and
+      # all eleven sat at the repository root, unserved, until they were moved.
+      - name: Field catalogues (every listed document is a file the host serves)
+        run: node scripts/verify-catalogues.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

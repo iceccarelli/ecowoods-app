@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { formatDate } from '@/lib/content/utils';
@@ -105,6 +106,40 @@ export default async function TechnicalLibraryPage() {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The sentence above has said "downloadable as PDFs" since this page
+          shipped, and until the catalogues landed there was nothing behind it.
+          There is now. The HTML papers stay exactly where they are — these are
+          a different family and are labelled as one. */}
+      <section className="tlx-section" aria-label="Field catalogues">
+        <div className="shell">
+          <p className="tlx-kicker">Catalogues</p>
+          <h2 className="tlx-h2">Field catalogues</h2>
+          <p className="tlx-note">
+            Six-page landscape documents, built to be printed and kept. Each one names the page on
+            this site that answers the same question at length.
+          </p>
+          <div className="tlx-grid">
+            {getPublishedCatalogues().map((c) => (
+              <a key={c.id} className="tlx-card" href={catalogueHref(c)} target="_blank" rel="noopener">
+                <span className="tlx-card-tag">Catalogue No. {c.id} · PDF</span>
+                <h3>{c.title}</h3>
+                <p>{c.purpose}</p>
+                <span className="tlx-card-data">
+                  <span>{c.pages} pages</span>
+                  <span>{c.trim}</span>
+                  <span className="wp-sr">{c.file}, opens in a new tab</span>
+                </span>
+              </a>
+            ))}
+          </div>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/catalogues">
+              All catalogues, indexed by series →
+            </Link>
           </div>
         </div>
       </section>

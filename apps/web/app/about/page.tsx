@@ -8,6 +8,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { illustrationImage } from '../data/illustration-images';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
+import { CatalogueRail } from '@/app/components/CatalogueRail';
 
 export const metadata: Metadata = {
   title: `About ${BUSINESS_NAP.shortName} — who we are, what we do, where we work`,
@@ -155,6 +156,7 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      <CatalogueRail route="/about" />
     </div>
   );
 }

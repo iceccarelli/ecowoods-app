@@ -70,7 +70,30 @@ describe('llms.txt', () => {
     const links = core.match(/\]\(https:\/\/[^)]+\)/g) ?? [];
     expect(links.length).toBeGreaterThanOrEqual(20);
     expect(links.length).toBeLessThanOrEqual(60);
-    expect(body.length).toBeLessThan(45000);
+    /**
+     * TWO BUDGETS, BECAUSE THEY GUARD DIFFERENT THINGS.
+     *
+     * The curated core — everything before `## Optional` — is the part that
+     * matters. An agent reads the top of a document and stops, so the facts,
+     * the entity, the prices and the citation targets have to fit in one
+     * comfortable read. That is the number to hold, and it is held tightly.
+     *
+     * The whole-file cap is the coarser one: it exists because this file was
+     * once 65 KB of glossary and figure dumps in prose, and nothing stopped it
+     * growing. It is not a statement that the tail is expensive — the tail is
+     * explicitly the part an agent may skip on a first fetch.
+     *
+     * It moved from 45,000 to 48,000 when the field catalogues were published:
+     * they are real documents that an answer engine must be able to name, they
+     * cost roughly 1.7 KB in the Optional tail for eight and about 2.4 KB for
+     * eleven, and the core did not move (25.5 KB before and after — one curated
+     * link was added to Evidence). Still well under the 65 KB this file came
+     * from, and the cap is deliberately not being raised again for three more
+     * documents: if a future set does not fit, that is the signal to prune the
+     * tail rather than the signal to move the number.
+     */
+    expect(core.length).toBeLessThan(30000);
+    expect(body.length).toBeLessThan(48000);
     // Every linked URL is on the canonical host.
     for (const m of body.matchAll(/\]\((https?:\/\/[^)]+)\)/g)) expect(m[1].startsWith(SITE_URL)).toBe(true);
   });

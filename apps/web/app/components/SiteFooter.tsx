@@ -237,6 +237,7 @@ export default function SiteFooter() {
               <a href="/library">Visual Library</a>
               <a href="/papers">Technical Papers</a>
               <a href="/technical-library">Technical Library</a>
+              <a href="/catalogues">Field Catalogues</a>
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>
               {/* The map has to be reachable from the chrome or verify-links.mjs

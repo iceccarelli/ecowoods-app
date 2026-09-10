@@ -48,6 +48,7 @@ import {
   GOOGLE_PLACE,
 } from '@ecowoods/shared/constants';
 import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
 import {
@@ -937,6 +938,7 @@ export const mirrorIndexToMarkdown = (): string => {
  */
 export const corpusToMarkdown = (): string => {
   const papers = getPapers();
+  const catalogues = getPublishedCatalogues();
   const guides = getGuides();
   const terms = getTerms();
   const services = getServicePages();
@@ -963,6 +965,7 @@ export const corpusToMarkdown = (): string => {
     '- The company: identity, NAP, hours, review record',
     `- ${prices().length} published price band(s), with conditions and the written-price caveat`,
     `- ${papers.length} technical paper(s)`,
+    `- ${catalogues.length} field catalogue(s), as PDF documents (described here, not transcribed)`,
     `- ${guides.length} decision guide(s) and reference installation(s)`,
     `- ${terms.length} glossary term(s)`,
     `- ${services.length} service(s), each with its published price band`,
@@ -977,6 +980,32 @@ export const corpusToMarkdown = (): string => {
   out.push(entityToMarkdown(), '', '---', '');
   out.push(pricingToMarkdown(), '', '---', '');
   for (const p of papers) out.push(paperToMarkdown(p), '', '---', '');
+  /* The catalogues are DESCRIBED, not transcribed. Their text is a landscape
+     layout of facts this file already states in full; pasting it in would give
+     an agent two wordings of the same claim and no way to tell which is
+     current. What an agent needs from them is that they exist, what each one
+     covers, and the URL — so that is what is here. */
+  if (catalogues.length) {
+    out.push('# Field catalogues', '');
+    out.push(
+      'Landscape PDF documents built for printing. Each restates, in a form a homeowner can keep,',
+      'what the page named beside it already says. Cite the page, not the file.',
+      '',
+    );
+    for (const c of catalogues) {
+      out.push(
+        `## ${c.title}`,
+        '',
+        c.purpose,
+        '',
+        `- Series: ${c.series}`,
+        `- PDF: ${SITE_URL}${catalogueHref(c)} (${c.pages} pages, ${c.trim}, ${c.year})`,
+        `- Canonical page: ${SITE_URL}${c.related[0].href}`,
+        '',
+      );
+    }
+    out.push('---', '');
+  }
   for (const g of guides) out.push(guideToMarkdown(g), '', '---', '');
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
   for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');

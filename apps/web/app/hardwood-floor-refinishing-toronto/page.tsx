@@ -13,6 +13,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { ProcessVideo } from '../components/ProcessVideo';
+import { CatalogueRail } from '../components/CatalogueRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -341,6 +342,8 @@ export default function RefinishingTorontoPage() {
           </div>
         </div>
       </section>
+      <CatalogueRail route="/hardwood-floor-refinishing-toronto" />
+
       <FeedbackBand topic="this page" estimateHref="#estimate" />
     </div>
   );

@@ -3,6 +3,7 @@ import { WhatsNewGrid } from '../components/WhatsNewGrid';
 import { FeedbackBand } from '../components/FeedbackBand';
 import Link from 'next/link';
 import { getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
@@ -55,6 +56,7 @@ export const metadata: Metadata = {
 export default async function ResourcesPage() {
   const [articles, caseStudies] = await Promise.all([getArticles(), getCaseStudies()]);
   const papers = getPapers();
+  const catalogues = getPublishedCatalogues();
   const guides = getGuides();
   const decisions = guides.filter((g) => g.kind === 'decision');
   const references = guides.filter((g) => g.kind === 'reference');
@@ -105,6 +107,8 @@ export default async function ResourcesPage() {
           </p>
           <p className="fw-meta">
             <span>{papers.length} papers</span>
+            <span aria-hidden="true">·</span>
+            <span>{catalogues.length} field catalogues</span>
             <span aria-hidden="true">·</span>
             <span>{guides.length} guides</span>
             <span aria-hidden="true">·</span>
@@ -259,6 +263,38 @@ export default async function ResourcesPage() {
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/technical-library">
               Technical library
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 4b — KEEP. The catalogues sit after the papers and not above them:
+          the papers are the citable engineering, the catalogues are the copy a
+          homeowner keeps. A compact table rather than a second card grid —
+          this page is already long, and /catalogues is the full index. */}
+      <section className="tlx-section" aria-label="Field catalogues">
+        <div className="shell">
+          <p className="tlx-kicker">If you want it on paper</p>
+          <h2 className="tlx-h2">Field catalogues</h2>
+          <p className="tlx-note">
+            The same facts as the pages above, in six-page landscape documents built to be printed
+            and handed over. Nothing is gated: no email, no form.
+          </p>
+          <ul className="gd-sources">
+            {catalogues.map((c) => (
+              <li key={c.id}>
+                <a href={catalogueHref(c)} target="_blank" rel="noopener">
+                  {c.title}
+                </a>{' '}
+                <span className="gl-aka">
+                  {c.kicker} · PDF, {c.pages} pages
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/catalogues">
+              All catalogues →
             </Link>
           </div>
         </div>

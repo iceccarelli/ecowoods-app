@@ -17,6 +17,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
+import { CatalogueRail } from '../components/CatalogueRail';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -383,6 +384,8 @@ export default function HardwoodFlooringTorontoPage() {
           </div>
         </div>
       </section>
+      <CatalogueRail route="/hardwood-flooring-toronto" />
+
       <FeedbackBand topic="this page" estimateHref="#estimate" />
     </div>
   );

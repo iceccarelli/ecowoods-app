@@ -45,6 +45,7 @@ import * as mediaById from '@/app/api/v1/media/[id]/route';
 import * as equipment from '@/app/api/v1/equipment/route';
 import * as quoteCheck from '@/app/api/v1/quote-check/route';
 import * as markets from '@/app/api/v1/markets/route';
+import * as cataloguesApi from '@/app/api/v1/catalogues/route';
 import * as corridors from '@/app/api/v1/corridors/route';
 import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
 import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
@@ -87,6 +88,7 @@ const ROUTES: Record<string, RouteModule> = {
   equipment,
   'quote-check': quoteCheck,
   markets,
+  catalogues: cataloguesApi,
   corridors,
   'equipment/[id]': equipmentById,
   'recommendation-context': recommendationContext,

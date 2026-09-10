@@ -12,6 +12,7 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import { CORRIDORS } from '@/lib/geo';
 import { getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { CHANGELOG } from '@/lib/changelog';
@@ -147,6 +148,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...getPapers().map((x) => x.publishedAt),
     ].filter(Boolean) as string[])),                               // what it indexes
     entry('/papers', 'monthly', 0.9, newestPaper),
+    /* The field catalogues. No date: a catalogue carries a publication YEAR and
+       nothing finer, and a year stamped as a January date is the same invention
+       this file exists to refuse. The eight documents themselves are listed
+       separately below. */
+    entry('/catalogues', 'monthly', 0.9),                          // no date
     entry('/products/floorforge', 'monthly', 0.8),                 // no date
     entry('/blog', 'weekly', 0.9, newestArticle),
     entry('/case-studies', 'weekly', 0.9, newestCase),
@@ -326,6 +332,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  /**
+   * The catalogue files themselves.
+   *
+   * A PDF is a document a crawler indexes, not an asset — Google has indexed
+   * PDF text for two decades, and these are the only landscape, printable
+   * statement of what this business does. Listing the HTML index alone would
+   * leave eight indexable documents discoverable by luck.
+   *
+   * Derived from lib/catalogues.ts and filtered to what is actually on disk, so
+   * this cannot list a URL that 404s — the failure F-162 records for the papers.
+   * No lastModified, for the reason given beside the /catalogues entry above.
+   */
+  const cataloguePdfs: MetadataRoute.Sitemap = getPublishedCatalogues().map((c) => ({
+    url: `${SITE_URL}${catalogueHref(c)}`,
+    changeFrequency: 'yearly' as const,
+    priority: 0.6,
+  }));
+
   const paperPages: MetadataRoute.Sitemap = getPapers().map((paper) => ({
     url: `${SITE_URL}/papers/${paper.slug}`,
     lastModified: new Date(paper.publishedAt),
@@ -339,6 +363,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...guidePages,
     ...glossaryPages,
     ...paperPages,
+    ...cataloguePdfs,
     ...cityPages,
     ...articlePages,
     ...caseStudyPages,

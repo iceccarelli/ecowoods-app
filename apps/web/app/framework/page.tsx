@@ -18,6 +18,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
 import { IllustrationPair } from '../components/Illustration';
+import { CatalogueRail } from '../components/CatalogueRail';
 
 /**
  * /framework — the published specification.
@@ -270,6 +271,8 @@ export default function FrameworkPage() {
           </div>
         </div>
       </section>
+
+      <CatalogueRail route="/framework" />
 
       <section className="tlx-section" aria-label="Versioning">
         <div className="shell">

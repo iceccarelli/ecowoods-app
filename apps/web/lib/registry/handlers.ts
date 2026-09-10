@@ -26,6 +26,11 @@ import { PROJECTS, getProject, stillById } from '@/lib/projects';
 import { MACHINES, machineById, assess as assessMachine } from '@/lib/equipment';
 import { SCOPE_ITEMS } from '@/lib/quote-check';
 import {
+  CATALOGUE_SERIES,
+  catalogueHref,
+  getPublishedCatalogues,
+} from '@/lib/catalogues';
+import {
   MARKETS,
   CORRIDORS,
   marketBySlug,
@@ -730,6 +735,67 @@ export async function handleMarkets(request: Request) {
       content_queue: contentQueue(MARKETS)
         .slice(0, 10)
         .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/catalogues — the documents, as data.
+ *
+ * WHY AN ENDPOINT FOR A SET OF PDFs
+ *
+ * A PDF is close to invisible to a language model: it is a binary a crawler
+ * often will not open, and even when it does, what comes back is a page of
+ * layout with the argument scattered through it. That is the whole reason the
+ * technical papers on this site are HTML.
+ *
+ * The catalogues are the other half of that argument. They exist to be printed,
+ * kept and forwarded — a homeowner puts one in front of a spouse, a property
+ * manager forwards one to a board — and a document that does that job well is
+ * one no HTML page replaces. So they stay PDFs, and this endpoint carries what
+ * a machine needs to know ABOUT them: what each one covers, which page answers
+ * the same question at length, and where the file is.
+ *
+ * `related` is the important field. An assistant asked "do you have anything on
+ * refinishing versus replacing" should be able to hand over a document AND the
+ * page that argues it, and this is the only surface that states which page goes
+ * with which document.
+ *
+ * Every entry is gated on the file existing. A published index that lists a
+ * document the host does not serve is the failure this business has already had
+ * once, at scale, and it is not repeated for a set of files whose entire
+ * purpose is to be downloaded.
+ */
+export async function handleCatalogues(request: Request) {
+  const reg = await getRegistry();
+  const items = getPublishedCatalogues();
+  return json(
+    {
+      meta: meta(reg, items.length),
+      note:
+        'Field catalogues: landscape documents built to be printed, kept and forwarded. The same facts as the site, in a form a page cannot replace. Free to read, nothing gated, no email required.',
+      refuses: [
+        'no catalogue is listed unless its file is on disk — an index that advertises a document the host does not serve is worse than no index',
+        'no figure from inside a document is restated here; the purpose lines say what a catalogue covers, and the price bands live at /api/v1/pricing',
+      ],
+      license: 'https://creativecommons.org/licenses/by/4.0/',
+      series: CATALOGUE_SERIES.map((s) => ({ id: s.id, name: s.name, intent: s.intent })),
+      catalogues: items.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        kicker: c.kicker,
+        series: c.series,
+        purpose: c.purpose,
+        pages: c.pages,
+        trim: c.trim,
+        year: c.year,
+        format: 'application/pdf',
+        url: `${SITE_URL}${catalogueHref(c)}`,
+        index: `${SITE_URL}/catalogues#${c.slug}`,
+        related: c.related.map((r) => ({ url: `${SITE_URL}${r.href}`, label: r.label })),
+      })),
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );

@@ -10,6 +10,7 @@ import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { CLUSTERS } from '@/content/search/topic-map';
 
 export const dynamic = 'force-static';
@@ -175,6 +176,29 @@ export async function GET() {
         `Audience: ${p.audience}`,
         `Version: ${p.version} · Published: ${p.publishedAt}`,
         `PDF: ${SITE_URL}/papers/${p.pdf}`,
+        '',
+      ]),
+    );
+  }
+
+  const catalogues = getPublishedCatalogues();
+  if (catalogues.length) {
+    push(
+      '## Field catalogues — the printable edition, not a separate source',
+      '',
+      `${catalogues.length} landscape PDF documents published for a reader to keep or hand over. They`,
+      'restate what the pages named below already say; the page is canonical and is what',
+      'to cite. Quote a catalogue only when the question is about the document itself.',
+      'Nothing here is gated: no email, no form, no interstitial.',
+      '',
+      `Index: ${SITE_URL}/catalogues`,
+      '',
+      ...catalogues.flatMap((c) => [
+        `### ${c.title}`,
+        `${SITE_URL}${catalogueHref(c)}`,
+        c.purpose,
+        `Series: ${c.series} · Format: PDF, ${c.pages} pages, ${c.trim} · Published: ${c.year}`,
+        `Cite instead: ${SITE_URL}${c.related[0].href}`,
         '',
       ]),
     );

@@ -6,6 +6,7 @@ import { SITE_URL } from '@/lib/seo-data';
 import { illustrationImage } from '../data/illustration-images';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { CatalogueRail } from '../components/CatalogueRail';
 
 /**
  * /standards — the map of the standards landscape.
@@ -198,6 +199,8 @@ export default function StandardsPage() {
           </section>
         );
       })}
+
+      <CatalogueRail route="/standards" />
 
       <section className="tlx-section" aria-label="How this is maintained">
         <div className="shell">

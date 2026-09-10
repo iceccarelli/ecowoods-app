@@ -25,7 +25,13 @@ export default function robots(): MetadataRoute.Robots {
         // specifically for crawlers and agents to read. Allow is listed first
         // and is more specific, which is how every major crawler resolves the
         // conflict. See F-89.
-        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
+        //
+        // /catalogues is the field-catalogue index and /catalogues/ the PDF
+        // documents themselves. Both are already covered by Allow: '/' and
+        // neither sits under a disallowed prefix; they are named for the same
+        // reason the editions above are — robots.txt is the first file an agent
+        // reads, and a document family that appears there costs one line.
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/', '/catalogues', '/catalogues/'],
         // BOTH SPELLINGS ARE LISTED, AND THAT IS NOT REDUNDANT. robots.txt
         // matching is plain prefix matching: 'Allow: /api/v1/' does not match
         // the path '/api/v1', so the bare base URL — the one this site
@@ -61,7 +67,7 @@ export default function robots(): MetadataRoute.Robots {
           'PerplexityBot', 'Perplexity-User',
           'CCBot', 'cohere-ai', 'Meta-ExternalAgent', 'Amazonbot',
         ],
-        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/'],
+        allow: ['/', '/api/knowledge', '/api/market', '/api/estimate', '/api/health', '/api/v1', '/api/v1/', '/llms.txt', '/llms-full.txt', '/md/', '/catalogues', '/catalogues/'],
         disallow: ['/admin', '/mypage', '/api/', '/login', '/register', '/verify-email', '/docs/'],
       },
     ],

@@ -6,6 +6,7 @@ import { PRICE_PROMISE } from '@/lib/pricing';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
+import { CatalogueRail } from '@/app/components/CatalogueRail';
 
 /**
  * /estimate — the conversion target.
@@ -175,6 +176,7 @@ export default function EstimatePage() {
           </p>
         </div>
       </section>
+      <CatalogueRail route="/estimate" />
     </div>
   );
 }

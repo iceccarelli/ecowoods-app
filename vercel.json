@@ -65,6 +65,15 @@
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
+    {
+      "source": "/catalogues/(.*).pdf",
+      "headers": [
+        { "key": "Content-Type", "value": "application/pdf" },
+        { "key": "Content-Disposition", "value": "inline" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=31536000, stale-while-revalidate=86400" },
+        { "key": "X-Robots-Tag", "value": "index, follow, max-snippet:-1" }
+      ]
+    },
     { "source": "/llms.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },
     { "source": "/llms-full.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },
     { "source": "/ai.txt", "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }] },

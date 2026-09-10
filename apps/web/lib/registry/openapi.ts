@@ -91,6 +91,7 @@ export function buildOpenApi() {
       '/media': ref('MediaIndex'),
       '/media/{id}': ref('MediaProject'),
       '/equipment': ref('EquipmentIndex'),
+      '/catalogues': ref('CatalogueIndex'),
       '/markets': ref('MarketIndex'),
       '/corridors': ref('CorridorIndex'),
       '/quote-check': ref('QuoteCheckChecklist'),
@@ -386,6 +387,20 @@ export function buildOpenApi() {
             note: { type: 'string' },
             circuit: { type: ['object', 'null'], description: 'Echo of the volts/amps assessed against, or null.' },
             machines: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        CatalogueIndex: {
+          type: 'object',
+          description:
+            'Field catalogues: landscape PDFs built to be printed and forwarded. `related` states which page on this site answers the same question at length, which is the field an assistant needs to hand over a document and its argument together. Entries appear only when the file is on disk.',
+          required: ['meta', 'catalogues', 'refuses'],
+          properties: {
+            meta: ref('ListMeta'),
+            note: { type: 'string' },
+            refuses: { type: 'array', items: { type: 'string' } },
+            license: { type: 'string', format: 'uri' },
+            series: { type: 'array', items: { type: 'object' } },
+            catalogues: { type: 'array', items: { type: 'object' } },
           },
         },
         MarketIndex: {

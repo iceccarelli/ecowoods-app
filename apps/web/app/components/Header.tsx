@@ -139,6 +139,9 @@ const LIBRARY_MENU: MegaColumn[] = [
     href: '/resources',
     items: [
       { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
+      /* The catalogues sit in Reference and not in the primary conversion nav:
+         Quote and Call come first, and a download is not a conversion. */
+      { label: 'Field catalogues', href: '/catalogues', note: 'Landscape PDFs, built to print, nothing gated' },
       { label: 'Standards register', href: '/standards', note: 'NHLA, NWFA, ASTM, FPL' },
       { label: 'Figures and data', href: '/data' },
       { label: 'The Well-Installed Framework', href: '/framework' },

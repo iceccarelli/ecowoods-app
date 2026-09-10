@@ -11,6 +11,7 @@ import {
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { CatalogueRail } from '@/app/components/CatalogueRail';
 
 /**
  * /contact — the NAP, on a URL of its own.
@@ -185,6 +186,7 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+      <CatalogueRail route="/contact" />
     </div>
   );
 }

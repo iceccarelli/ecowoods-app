@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import HomePage from './home-client';
 import { ContentLibraryPromo } from './components/ContentLibraryPromo';
 import { CommercialHeadTermRail } from './components/CommercialHeadTermRail';
+import { CatalogueRail } from './components/CatalogueRail';
 
 /**
  * The homepage is the one route whose canonical genuinely is '/'. It used to get
@@ -33,6 +34,7 @@ export default function Page() {
       contentPromo={
         <>
           <CommercialHeadTermRail />
+          <CatalogueRail route="/" />
           <ContentLibraryPromo />
         </>
       }

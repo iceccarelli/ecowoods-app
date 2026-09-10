@@ -12,6 +12,7 @@ import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { PRICE_PROMISE } from '@/lib/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { pdfIsPublished, getPapers } from '@/lib/papers';
+import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { getFigures } from '@/lib/figures';
@@ -166,6 +167,7 @@ export async function GET() {
   link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
   link('Technical papers', '/papers', 'the method, sourced — moisture protocol, refinishing sequence, grading, selection, provenance');
+  link('Field catalogues', '/catalogues', 'the same published facts as landscape PDF documents, indexed by series; the HTML page each one names is the canonical answer — the file URLs are listed under Optional');
   link(`Well-Installed Framework v${FRAMEWORK_VERSION}`, '/framework', `${PILLARS.length} pillars, ${criterionCount()} binary criteria for judging any hardwood installation; free to cite`);
   link('Standards register', '/standards', 'the external bodies this work answers to, with last-verified dates');
   link('Reviews', '/reviews', `${PRIMARY_REVIEW_EVIDENCE.count} on ${PRIMARY_REVIEW_EVIDENCE.platform} at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)}, read ${PRIMARY_REVIEW_EVIDENCE.asOf}, linked to the profile`);
@@ -316,6 +318,23 @@ export async function GET() {
     lines.push(`${terms.length} terms, one addressable page each, definitions in full at ${SITE_URL}/glossary (Markdown at the same URL with .md appended).`);
     for (const t of terms) {
       lines.push(`- [${t.term}](${SITE_URL}/glossary/${t.slug})`);
+    }
+    lines.push('');
+  }
+
+  const catalogues = getPublishedCatalogues();
+  if (catalogues.length) {
+    lines.push('## Field catalogues');
+    lines.push(
+      'Landscape PDF documents built for printing. Each restates what the page named beside it ' +
+        'already says — cite the page, not the file. Nothing here is gated. Full descriptions: ' +
+        `${SITE_URL}/catalogues`,
+    );
+    for (const c of catalogues) {
+      lines.push(
+        `- [${c.title}](${SITE_URL}${catalogueHref(c)}): ${c.series}, ${c.pages}pp. ` +
+          `Cite ${SITE_URL}${c.related[0].href}`,
+      );
     }
     lines.push('');
   }
