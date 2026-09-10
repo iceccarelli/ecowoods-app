@@ -1,0 +1,1791 @@
+From 9e7c0b3c706e7e2776283c2d283c5c15da00472f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 10 Sep 2026 07:56:05 +0000
+Subject: [PATCH] =?UTF-8?q?feat(geo):=20the=20whole=20corridor=20in=20the?=
+ =?UTF-8?q?=20model=20=E2=80=94=2076=20markets,=20a=20scoring=20engine=20t?=
+ =?UTF-8?q?hat=20refuses=20to=20guess,=20and=20an=2080/20=20split=20the=20?=
+ =?UTF-8?q?build=20enforces?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE MAP IS NOW THE CORRIDOR
+
+76 markets, up from 49. Canada at 80.3% of the model, computed rather than
+asserted.
+
+The sixteen Toronto neighbourhoods — Rosedale, Forest Hill, Yorkville, Leaside,
+The Annex, High Park, Riverdale, Leslieville, The Beaches, Lawrence Park,
+Cabbagetown, Swansea, Davisville Village, Midtown, King West, Liberty Village —
+have had pages and local content since F-157 was resolved, and had no record in
+the geographic model. The corridors, the API, the expansion score and the
+allocation audit could not see the sixteen highest-intent pages on the site.
+They enter as DISTRICTS of Toronto: serviceAreaMarkets() filters to
+municipalities and root-schema derives areaServed from that, so a neighbourhood
+arriving as a municipality would declare Rosedale a city of Ontario alongside
+Mississauga. A test asserts all sixteen stay out of the service area.
+
+Waterdown (City of Hamilton) and Beamsville (Town of Lincoln) close the two
+gaps against the brief's Tier 3 and Tier 4.
+
+Nine United States markets complete Tier US-1 and US-2: Williamsville, Clarence,
+Orchard Park, Hamburg, East Aurora, Grand Island, Kenmore, Lewiston, North
+Tonawanda — on a new `buffalo-metro` corridor which is entirely American and
+carries no Ecowoods drive at all. It is a map of where the demand is. Not one of
+the fifteen can hold a page, enter the service area, or be classified above
+FUTURE, and three independent guards say so.
+
+THE SCORING MODEL, AND THE EIGHT FIGURES IT WILL NOT INVENT
+
+The brief's ten weighted inputs, at the brief's weights: 20 purchasing power,
+15 housing values, 10 each housing age, detached prevalence, renovation
+potential, hardwood opportunity and search demand, 5 each competition,
+logistics and corridor value.
+
+Two are computed from facts this repository holds. Eight are census tables and
+keyword figures nobody has opened. So every market returns score: null,
+confidence: 0.10, classification: UNSCORED, with the missing inputs named and
+where to obtain each one.
+
+That is the model working. A score of 78 from a typed guess and a score of 78
+from the census rank markets identically and direct capital identically; the
+difference surfaces one season later in the wrong municipality. A value
+therefore requires a source URL and a retrieval date, there is deliberately no
+estimate flag — an estimate that survives one edit becomes a fact — and `score`
+is withheld entirely below 60% confidence, above the 10% that logistics and
+corridor value contribute, so nothing can be promoted to DOMINATE on highway
+access.
+
+80/20, MEASURED
+
+Four measures: records (80.3% CA), graph edges (80.5% CA), pages (100/0) and
+content depth (100/0). The last two are structural and correct — a us-proxy
+market can never hold a page — and the report says so in the payload, because
+without that sentence the split reads as a Canadian bias to be corrected, and
+correcting it means publishing in Buffalo.
+
+Nobody violates 80/20 on purpose. It goes one reasonable commit at a time until
+a Toronto contractor's site reads as an American one. verify:allocation fails
+the build below a 70% floor.
+
+READERS THAT WENT BLIND, FIXED PROPERLY
+
+verify-geo hard-coded `corridors: ['buffalo-niagara']` for every us() call. The
+day us() gained corridor, kind and partOf arguments it reported nine markets as
+claiming a corridor they do not claim — and would have been unable to see a
+district declaring corridors of its own. It now reads the call site, falls back
+to the signature's default, and fails if the number of calls it parsed does not
+match the number in the file.
+
+The allocation report's first linkage measure counted internal links inside
+CityContent, which carries prose and no hrefs. It returned 0/0 and would have
+reported a perfect Canadian share forever, through any drift it existed to
+catch. Replaced with corridor and neighbour edges, which are real.
+
+NEW SURFACES
+
+/api/v1/opportunity — the model, the weights, the confidence, the missing
+inputs and the measured allocation, as citable data. 36 endpoints.
+
+Two guards with regressions run and observed: verify:inputs (unsourced value,
+weights off 100, gate at or below the computed share, the US ceiling removed,
+the score published below the gate) and verify:allocation (Canada under the
+floor, the us-proxy page block removed, a measure going blind).
+
+65 guards green, 314 tests, tsc at its 115-error baseline with nothing new.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018hun5TPKuy4M2JfTkF11NU
+---
+ .github/workflows/web.yml                |  14 ++
+ apps/web/app/api/v1/opportunity/route.ts |  12 ++
+ apps/web/content/geo/corridors.ts        |  17 +-
+ apps/web/content/geo/market-inputs.ts    | 155 +++++++++++++++++
+ apps/web/content/geo/markets.ts          |  87 ++++++++--
+ apps/web/lib/geo/allocation.ts           | 130 ++++++++++++++
+ apps/web/lib/geo/geo.test.ts             |  46 ++++-
+ apps/web/lib/geo/index.ts                |   9 +
+ apps/web/lib/geo/opportunity.test.ts     | 108 ++++++++++++
+ apps/web/lib/geo/opportunity.ts          | 202 ++++++++++++++++++++++
+ apps/web/lib/registry/handlers.ts        |  93 ++++++++++
+ apps/web/lib/registry/manifest.ts        |   1 +
+ apps/web/lib/registry/openapi.ts         |  47 ++++++
+ apps/web/tests/api-contract.test.ts      |   2 +
+ docs/GEO_STRATEGY.md                     | 205 +++++++++++++++++++++++
+ package.json                             |   2 +
+ scripts/verify-allocation.mjs            | 108 ++++++++++++
+ scripts/verify-geo.mjs                   |  38 ++++-
+ scripts/verify-market-inputs.mjs         | 140 ++++++++++++++++
+ 19 files changed, 1395 insertions(+), 21 deletions(-)
+ create mode 100644 apps/web/app/api/v1/opportunity/route.ts
+ create mode 100644 apps/web/content/geo/market-inputs.ts
+ create mode 100644 apps/web/lib/geo/allocation.ts
+ create mode 100644 apps/web/lib/geo/opportunity.test.ts
+ create mode 100644 apps/web/lib/geo/opportunity.ts
+ create mode 100644 docs/GEO_STRATEGY.md
+ create mode 100644 scripts/verify-allocation.mjs
+ create mode 100644 scripts/verify-market-inputs.mjs
+
+diff --git a/.github/workflows/web.yml b/.github/workflows/web.yml
+index e860be0..bdd9a55 100644
+--- a/.github/workflows/web.yml
++++ b/.github/workflows/web.yml
+@@ -146,6 +146,20 @@ jobs:
+       # business does not hold, rather than growing invented numbers for them.
+       - name: Strategy (funnels complete, tracked questions resolve, no invented economics)
+         run: node scripts/verify-strategy.mjs
++      # The market score decides where the next page gets written and where the
++      # budget goes. Eight of its ten inputs are census and keyword figures a
++      # person could type from memory in four seconds, and a typed figure scores
++      # identically to a sourced one right up to the season it sends the work to
++      # the wrong municipality.
++      - name: Market inputs (no score from a figure nobody can point at)
++        run: node scripts/verify-market-inputs.mjs
++      # 80% Canada, 20% western New York. Nobody violates that on purpose; it
++      # goes one reasonable commit at a time until a Toronto contractor's site
++      # reads as an American one. Underneath the ratio sits a line with no
++      # tolerance at all: no United States market may hold an indexable page or
++      # enter the service area, because there is no United States office.
++      - name: Allocation (Canada stays the centre of gravity)
++        run: node scripts/verify-allocation.mjs
+       # ── search & retrieval gates ──────────────────────────────────────
+       #
+       # All four are dependency-free and connectionless, like the two above:
+diff --git a/apps/web/app/api/v1/opportunity/route.ts b/apps/web/app/api/v1/opportunity/route.ts
+new file mode 100644
+index 0000000..13e1e71
+--- /dev/null
++++ b/apps/web/app/api/v1/opportunity/route.ts
+@@ -0,0 +1,12 @@
++/**
++ * GET /api/v1/opportunity — see lib/registry/handlers.ts and /api/v1/openapi.json.
++ * The market opportunity model: ten weighted inputs, the confidence behind each
++ * score, and the eight economic figures this business has not yet sourced.
++ */
++import { handleOpportunity } from '@/lib/registry/handlers';
++import { options } from '@/lib/registry/http';
++
++export const dynamic = 'force-dynamic';
++
++export const GET = (request: Request) => handleOpportunity(request);
++export const OPTIONS = options;
+diff --git a/apps/web/content/geo/corridors.ts b/apps/web/content/geo/corridors.ts
+index 540c213..9e6ed16 100644
+--- a/apps/web/content/geo/corridors.ts
++++ b/apps/web/content/geo/corridors.ts
+@@ -21,6 +21,7 @@ export type CorridorId =
+   | '403-6-west'
+   | 'niagara-belt'
+   | 'buffalo-niagara'
++  | 'buffalo-metro'
+   | 'cottage-north-east';
+ 
+ export interface Corridor {
+@@ -112,12 +113,24 @@ export const CORRIDORS: Corridor[] = [
+     route: 'Fort Erie and Niagara Falls across the border into western New York',
+     hub: 'fort-erie',
+     members: [
+-      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'buffalo',
+-      'amherst', 'cheektowaga', 'tonawanda', 'lockport',
++      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'lewiston', 'north-tonawanda', 'lockport',
++      'buffalo', 'amherst', 'cheektowaga', 'tonawanda',
+     ],
+     summary:
+       'The only corridor that crosses the border, and the only one whose United States members are advertising reach rather than service coverage. Ecowoods operates in Ontario, from Ontario. The New York municipalities here exist in this model so that a property owner on that side of the river with an Ontario property can find the company — nothing more. They are never emitted as service area.',
+   },
++  {
++    id: 'buffalo-metro',
++    name: 'Buffalo metro',
++    route: 'Buffalo outward through the Erie County towns',
++    hub: 'buffalo',
++    members: [
++      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga',
++      'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg', 'east-aurora',
++    ],
++    summary:
++      'Western New York, and the one corridor with no Ecowoods drive on it at all. It is a map of where the demand is, not of where crews go: Ecowoods operates in Ontario, from Ontario, and every municipality here is advertising reach for Ontario property. It exists as a corridor because the alternative — a flat list of American place names attached to a Canadian contractor — is exactly the shape of the thing this model refuses to build. Nothing in it is ever emitted as service area, and a guard fails the build if one appears there.',
++  },
+   {
+     id: 'cottage-north-east',
+     name: 'Cottage / north-east edge',
+diff --git a/apps/web/content/geo/market-inputs.ts b/apps/web/content/geo/market-inputs.ts
+new file mode 100644
+index 0000000..2291c36
+--- /dev/null
++++ b/apps/web/content/geo/market-inputs.ts
+@@ -0,0 +1,155 @@
++/**
++ * content/geo/market-inputs.ts — the economic inputs behind the opportunity
++ * score, and the rule that none of them may be typed from memory.
++ *
++ * THE BRIEF, AND WHY IT NEEDS A FILE RATHER THAN A FUNCTION
++ *
++ * The market model asks for a 0–100 opportunity score weighted:
++ *
++ *   20% purchasing power · 15% housing values · 10% housing age ·
++ *   10% detached-home prevalence · 10% renovation potential ·
++ *   10% hardwood opportunity · 10% population and search demand ·
++ *    5% competition · 5% logistical feasibility · 5% strategic corridor value
++ *
++ * Eight of those ten are external facts. They exist — Statistics Canada's
++ * census profiles carry median household income, dwelling values, period of
++ * construction and structural type by census subdivision; the American
++ * Community Survey carries the same for every place in Erie and Niagara
++ * counties; search demand and CPC come from a keyword tool; competitive
++ * intensity from the local pack. Every one is obtainable in an afternoon.
++ *
++ * None of them is obtainable by thinking hard about Oakville.
++ *
++ * That is the entire reason this file exists as data with a source slot rather
++ * than as numbers inside the scoring function. A score built on a plausible
++ * figure someone typed ranks markets, directs where the next page gets written
++ * and where the ad budget goes, and is indistinguishable from a score built on
++ * the census — right up to the point where it sends a season's work to the
++ * wrong municipality.
++ *
++ * THE RULE
++ *
++ * An input carries a value only with a `source`: a title, a URL, and the date
++ * it was retrieved. scripts/verify-market-inputs.mjs fails the build on any
++ * value without one. There is no override, and there is deliberately no way to
++ * mark a figure as an estimate — an estimate that survives one edit becomes a
++ * fact, and this model has no mechanism for un-believing it.
++ *
++ * WHAT IS HERE TODAY
++ *
++ * Nothing sourced yet, which the API says plainly: `confidence` reports the
++ * share of the weighting actually backed by data, and the two inputs that ARE
++ * computable from this repository — logistical feasibility and strategic
++ * corridor value, 10% between them — are computed rather than stored, because
++ * corridor membership, hub distance and confirmed status are facts this
++ * repository already holds and can defend.
++ *
++ * So the model runs today at 10% confidence and says so. Add one census table
++ * and it moves. That is a better starting position than 100% confidence in
++ * numbers nobody can point at.
++ */
++
++/** The ten weighted inputs, in the brief's own words and weights. */
++export type InputId =
++  | 'purchasingPower'
++  | 'housingValues'
++  | 'housingAge'
++  | 'detachedPrevalence'
++  | 'renovationPotential'
++  | 'hardwoodOpportunity'
++  | 'searchDemand'
++  | 'competition'
++  | 'logistics'
++  | 'corridorValue';
++
++export interface InputSpec {
++  id: InputId;
++  /** Share of the 100-point score. Sums to 100 across all ten. */
++  weight: number;
++  /** What it measures, in the words a person would use to go and find it. */
++  measures: string;
++  /** Where this is obtainable. Named so nobody has to rediscover it. */
++  obtainableFrom: string;
++  /**
++   * `sourced` inputs must come from MARKET_INPUTS with a citation.
++   * `computed` inputs are derived from facts this repository already holds.
++   */
++  kind: 'sourced' | 'computed';
++}
++
++export const INPUT_SPECS: InputSpec[] = [
++  {
++    id: 'purchasingPower', weight: 20, kind: 'sourced',
++    measures: 'median household income after tax',
++    obtainableFrom: 'Statistics Canada Census Profile (CSD level) · US Census ACS 5-year, table S1901',
++  },
++  {
++    id: 'housingValues', weight: 15, kind: 'sourced',
++    measures: 'median value of owner-occupied dwellings',
++    obtainableFrom: 'Statistics Canada Census Profile · US Census ACS table B25077',
++  },
++  {
++    id: 'housingAge', weight: 10, kind: 'sourced',
++    measures: 'share of dwellings built before 1980 — old stock is refinishing work',
++    obtainableFrom: 'Statistics Canada period-of-construction table · US Census ACS table B25034',
++  },
++  {
++    id: 'detachedPrevalence', weight: 10, kind: 'sourced',
++    measures: 'share of dwellings that are single-detached houses',
++    obtainableFrom: 'Statistics Canada structural-type table · US Census ACS table B25024',
++  },
++  {
++    id: 'renovationPotential', weight: 10, kind: 'sourced',
++    measures: 'residential renovation permit value per dwelling',
++    obtainableFrom: 'Municipal building-permit open data · CMHC · US Census Building Permits Survey',
++  },
++  {
++    id: 'hardwoodOpportunity', weight: 10, kind: 'sourced',
++    measures: 'prevalence of hardwood floors in the local stock',
++    obtainableFrom:
++      'No public dataset publishes this directly. The defensible proxy is housing age crossed with detached ' +
++      'prevalence, recorded as its own figure with the method written down — not silently inferred inside the score.',
++  },
++  {
++    id: 'searchDemand', weight: 10, kind: 'sourced',
++    measures: 'monthly search volume for the service terms in this market',
++    obtainableFrom: 'Google Keyword Planner · Search Console impressions for queries already ranking',
++  },
++  {
++    id: 'competition', weight: 5, kind: 'sourced',
++    measures: 'how contested the local pack and the organic top ten are',
++    obtainableFrom: 'A recorded SERP observation for the market, dated — the same discipline as the AEO score',
++  },
++  {
++    id: 'logistics', weight: 5, kind: 'computed',
++    measures: 'whether a crew can reach it and return inside the day',
++    obtainableFrom: 'Computed from status and hub in content/geo/markets.ts',
++  },
++  {
++    id: 'corridorValue', weight: 5, kind: 'computed',
++    measures: 'corridor centrality — a junction serves more jobs per drive than a terminus',
++    obtainableFrom: 'Computed from corridor membership in content/geo/corridors.ts',
++  },
++];
++
++export const TOTAL_WEIGHT = INPUT_SPECS.reduce((n, x) => n + x.weight, 0);
++
++export interface SourcedValue {
++  /** Normalised 0–100. The raw figure and its units belong in `note`. */
++  score: number;
++  /** The raw figure as published, with units, so the normalisation is auditable. */
++  note: string;
++  source: { title: string; url: string; retrievedAt: string };
++}
++
++/**
++ * Sourced inputs by market slug. Empty until somebody opens a census table.
++ *
++ * Adding one market's purchasing power moves this model's confidence for that
++ * market from 10% to 30% and changes nothing about any other market, which is
++ * the property that makes it worth filling in one row at a time.
++ */
++export const MARKET_INPUTS: Record<string, Partial<Record<InputId, SourcedValue>>> = {};
++
++export const inputsFor = (slug: string): Partial<Record<InputId, SourcedValue>> =>
++  MARKET_INPUTS[slug] ?? {};
+diff --git a/apps/web/content/geo/markets.ts b/apps/web/content/geo/markets.ts
+index d0e2f0d..4cc1a7b 100644
+--- a/apps/web/content/geo/markets.ts
++++ b/apps/web/content/geo/markets.ts
+@@ -165,6 +165,46 @@ const CORE: Market[] = [
+   m('Ajax', 'ajax', 'active-expansion', 'toronto', ['401-east'], ['pickering', 'whitby'], ACTIVE('2026-09-09')),
+ ];
+ 
++/* ── the sixteen Toronto neighbourhoods ───────────────────────────────────
++ *
++ * These have had pages, local content, sitemap entries and .md editions since
++ * F-157 was resolved. What they did not have was a record in this file, which
++ * meant the geographic model — corridors, the API, the expansion score, the
++ * allocation audit — could not see the sixteen highest-intent pages on the
++ * site. A query for "hardwood flooring Rosedale" was served by a page the
++ * geography layer did not know existed.
++ *
++ * They enter as DISTRICTS of Toronto, never municipalities. That is the whole
++ * of F-157: `serviceAreaMarkets()` filters to `kind === 'municipality'`, and
++ * root-schema derives areaServed from CITIES, so a neighbourhood arriving as a
++ * municipality would declare Rosedale a city of Ontario alongside Mississauga.
++ * It is not. It is a neighbourhood inside a city that is already in the list,
++ * and stating otherwise is a factual error in the one part of this site whose
++ * job is to state facts a machine can rely on.
++ *
++ * Corridor membership is empty and inherited through `partOf`, exactly as it is
++ * for North York and Etobicoke: a corridor is a drive between municipalities,
++ * and Yorkville does not sit on the QEW separately from Toronto.
++ */
++const TORONTO_NEIGHBOURHOODS: Market[] = [
++  m('Rosedale', 'rosedale', 'core-active', 'toronto', [], ['toronto', 'yorkville', 'cabbagetown'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Forest Hill', 'forest-hill', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'the-annex'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Yorkville', 'yorkville', 'core-active', 'toronto', [], ['toronto', 'the-annex', 'rosedale'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Leaside', 'leaside', 'core-active', 'toronto', [], ['toronto', 'davisville-village', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('The Annex', 'the-annex', 'core-active', 'toronto', [], ['toronto', 'yorkville', 'forest-hill'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('High Park', 'high-park', 'core-active', 'toronto', [], ['toronto', 'swansea', 'liberty-village'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Riverdale', 'riverdale', 'core-active', 'toronto', [], ['toronto', 'leslieville', 'cabbagetown'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Leslieville', 'leslieville', 'core-active', 'toronto', [], ['toronto', 'riverdale', 'the-beaches'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('The Beaches', 'the-beaches', 'core-active', 'toronto', [], ['toronto', 'leslieville', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Lawrence Park', 'lawrence-park', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'north-york'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Cabbagetown', 'cabbagetown', 'core-active', 'toronto', [], ['toronto', 'riverdale', 'downtown-toronto'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Swansea', 'swansea', 'core-active', 'toronto', [], ['toronto', 'high-park', 'etobicoke'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Davisville Village', 'davisville-village', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'leaside'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Midtown Toronto', 'midtown-toronto', 'core-active', 'toronto', [], ['toronto', 'davisville-village', 'forest-hill'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('King West', 'king-west', 'core-active', 'toronto', [], ['toronto', 'liberty-village', 'downtown-toronto'], TORONTO_TRUTH(), 'district', 'toronto'),
++  m('Liberty Village', 'liberty-village', 'core-active', 'toronto', [], ['toronto', 'king-west', 'high-park'], TORONTO_TRUTH(), 'district', 'toronto'),
++];
++
+ /* ── the corridor, confirmed end to end ───────────────────────────────────
+  *
+  * These twenty-five carried `verifiedAt: null` until the owner confirmed them
+@@ -205,11 +245,13 @@ const CORRIDOR_TARGETS: Market[] = [
+   m('Ancaster', 'ancaster', 'active-expansion', 'mississauga', [], ['hamilton', 'dundas'], COVERED('Mississauga'), 'district', 'hamilton'),
+   m('Dundas', 'dundas', 'active-expansion', 'mississauga', [], ['hamilton', 'ancaster'], COVERED('Mississauga'), 'district', 'hamilton'),
+   m('Stoney Creek', 'stoney-creek', 'active-expansion', 'mississauga', [], ['hamilton', 'grimsby'], COVERED('Mississauga'), 'district', 'hamilton'),
++  m('Waterdown', 'waterdown', 'active-expansion', 'mississauga', [], ['hamilton', 'dundas'], COVERED('Mississauga'), 'district', 'hamilton'),
+   m('Grimsby', 'grimsby', 'active-expansion', 'mississauga', ['qew-west', 'niagara-belt'], ['stoney-creek', 'lincoln'], COVERED('Mississauga')),
+   m('Guelph', 'guelph', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'kitchener'], BY_TRIP('Hamilton')),
+   m('Cambridge', 'cambridge', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['kitchener', 'guelph'], BY_TRIP('Hamilton')),
+   m('Kitchener', 'kitchener', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'guelph'], BY_TRIP('Hamilton')),
+   m('Lincoln', 'lincoln', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['grimsby', 'st-catharines'], BY_TRIP('Grimsby')),
++  m('Beamsville', 'beamsville', 'travel-by-confirmation', 'grimsby', [], ['lincoln', 'grimsby'], BY_TRIP('Grimsby'), 'district', 'lincoln'),
+   m('St. Catharines', 'st-catharines', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['lincoln', 'thorold', 'niagara-on-the-lake'], BY_TRIP('Grimsby')),
+   m('Thorold', 'thorold', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['st-catharines', 'welland'], BY_TRIP('Grimsby')),
+   m('Welland', 'welland', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['thorold', 'port-colborne'], BY_TRIP('Grimsby')),
+@@ -239,15 +281,33 @@ const TRAVEL_BY_CONFIRMATION: Market[] = [
+  * fails the build if one appears there.
+  */
+ const US_PROXY: Market[] = [
+-  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst']),
+-  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport']),
+-  us('Amherst', 'amherst', ['buffalo', 'tonawanda']),
+-  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst']),
+-  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst']),
+-  us('Lockport', 'lockport', ['niagara-falls-ny', 'amherst']),
++  /* Erie County, on the Buffalo metro corridor. */
++  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
++  us('Amherst', 'amherst', ['buffalo', 'tonawanda'], ['buffalo-niagara', 'buffalo-metro']),
++  us('Williamsville', 'williamsville', ['amherst', 'clarence'], [], 'district', 'amherst'),
++  us('Clarence', 'clarence', ['amherst', 'lockport'], ['buffalo-metro']),
++  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
++  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
++  us('Kenmore', 'kenmore', ['tonawanda', 'buffalo'], [], 'district', 'tonawanda'),
++  us('Orchard Park', 'orchard-park', ['buffalo', 'hamburg'], ['buffalo-metro']),
++  us('Hamburg', 'hamburg', ['buffalo', 'orchard-park'], ['buffalo-metro']),
++  us('East Aurora', 'east-aurora', ['orchard-park', 'hamburg'], ['buffalo-metro']),
++  us('Grand Island', 'grand-island', ['tonawanda', 'niagara-falls-ny'], ['buffalo-metro']),
++
++  /* Niagara County, on the cross-border corridor. */
++  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport'], ['buffalo-niagara']),
++  us('Lewiston', 'lewiston', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
++  us('North Tonawanda', 'north-tonawanda', ['tonawanda', 'lockport'], ['buffalo-niagara']),
++  us('Lockport', 'lockport', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
+ ];
+ 
+-export const MARKETS: Market[] = [...CORE, ...CORRIDOR_TARGETS, ...TRAVEL_BY_CONFIRMATION, ...US_PROXY];
++export const MARKETS: Market[] = [
++  ...CORE,
++  ...TORONTO_NEIGHBOURHOODS,
++  ...CORRIDOR_TARGETS,
++  ...TRAVEL_BY_CONFIRMATION,
++  ...US_PROXY,
++];
+ 
+ export const marketBySlug = (slug: string): Market | undefined =>
+   MARKETS.find((x) => x.slug === slug);
+@@ -354,11 +414,18 @@ function m(
+   };
+ }
+ 
+-function us(name: string, slug: string, nearest: string[]): Market {
++function us(
++  name: string,
++  slug: string,
++  nearest: string[],
++  corridors: CorridorId[] = ['buffalo-niagara'],
++  kind: MarketKind = 'municipality',
++  partOf?: string,
++): Market {
+   return {
+-    slug, name, country: 'US', region: 'NY', kind: 'municipality',
++    slug, name, country: 'US', region: 'NY', kind, partOf,
+     status: 'us-proxy',
+-    corridors: ['buffalo-niagara'],
++    corridors: kind === 'district' ? [] : corridors,
+     parentHub: 'fort-erie',
+     nearest,
+     localFacts: [],
+diff --git a/apps/web/lib/geo/allocation.ts b/apps/web/lib/geo/allocation.ts
+new file mode 100644
+index 0000000..b4037cc
+--- /dev/null
++++ b/apps/web/lib/geo/allocation.ts
+@@ -0,0 +1,130 @@
++/**
++ * lib/geo/allocation.ts — the 80/20 split, measured rather than intended.
++ *
++ * THE TARGET
++ *
++ * 80% of geographic effort in Ontario, 20% in western New York. It is a good
++ * ratio and it is the kind of intention that survives exactly as long as nobody
++ * checks. Six months of "let's add Buffalo suburbs, they're high-value" is how
++ * a Canadian contractor ends up with an American-looking site, and no single
++ * commit in that sequence looks wrong.
++ *
++ * So it is computed, on four measures the brief itself names, and a guard fails
++ * the build when Canada's share of the one that matters drops below the floor.
++ *
++ * THE FOUR MEASURES, AND WHY NOT JUST URLS
++ *
++ *   pages    — markets with a published, indexable page. The measure that
++ *              actually moves rankings, and the one under a hard floor.
++ *   depth    — characters of published local content. Twenty American stubs and
++ *              twenty Canadian essays are not a 50/50 split, and counting URLs
++ *              would say they were.
++ *   records  — markets in the model at all. The widest measure, and the one
++ *              that moves first when attention drifts.
++ *   graph    — prominence inside the geographic graph itself: corridor
++ *              memberships plus nearest-market edges. This is where the
++ *              American twenty percent actually lives, so it is the measure
++ *              that shows the allocation being spent rather than merely
++ *              intended.
++ *
++ * THE ASYMMETRY IS THE POINT
++ *
++ * US markets can never hold a page here — `worthiness.ts` refuses one to a
++ * `us-proxy` market, because a page would read as a United States location for
++ * a company that has no United States office. So the page and depth measures
++ * are structurally 100/0, and that is correct, not a bug to be balanced away.
++ * The 20% American allocation is real and it is spent on *reach* — records in
++ * the model, corridor structure, the entity graph's expansion story — not on
++ * landing pages claiming service. The report says which measure is which so
++ * nobody reads 100/0 as a failure or 80/20 as permission to publish in Buffalo.
++ */
++import { MARKETS, type Market } from '@/content/geo/markets';
++import { cityContent } from '@/lib/seo-data';
++import { assess } from './worthiness';
++
++export interface Split {
++  measure: string;
++  ca: number;
++  us: number;
++  caShare: number;
++  /** What this measure counts, and what a number here does and does not mean. */
++  means: string;
++}
++
++const share = (ca: number, us: number): number =>
++  ca + us === 0 ? 1 : Math.round((ca / (ca + us)) * 1000) / 1000;
++
++const countBy = (f: (m: Market) => number): { ca: number; us: number } => ({
++  ca: MARKETS.filter((m) => m.country === 'CA').reduce((n, m) => n + f(m), 0),
++  us: MARKETS.filter((m) => m.country === 'US').reduce((n, m) => n + f(m), 0),
++});
++
++const contentLength = (m: Market): number => {
++  const cc = cityContent(m.slug);
++  if (!cc) return 0;
++  return cc.intro.length + cc.housingNote.length;
++};
++
++/*
++ * Graph prominence: every corridor this market belongs to, plus every
++ * nearest-market edge it declares. Both are real structure — a market with
++ * three corridors and three neighbours is reachable from more places in the
++ * model than one sitting at the end of a line.
++ *
++ * An earlier version of this measure counted internal links inside CityContent
++ * and read 0 for every market in both countries, because CityContent carries
++ * prose and no hrefs. A measure that always returns zero is worse than no
++ * measure: it reports a perfect Canadian share forever and would have gone on
++ * doing so through any drift it was supposed to catch.
++ */
++const graphEdges = (m: Market): number => m.corridors.length + m.nearest.length;
++
++export function allocation(): Split[] {
++  const records = countBy(() => 1);
++  const pages = countBy((m) => (assess(m).indexable ? 1 : 0));
++  const depth = countBy(contentLength);
++  const graph = countBy(graphEdges);
++
++  return [
++    {
++      measure: 'records',
++      ...records,
++      caShare: share(records.ca, records.us),
++      means:
++        'Markets in the geographic model. The widest measure and the first to drift: adding American place names ' +
++        'is cheap and feels like progress.',
++    },
++    {
++      measure: 'pages',
++      ...pages,
++      caShare: share(pages.ca, pages.us),
++      means:
++        'Markets with a published indexable page. Structurally 100/0 and correct: a us-proxy market can never hold ' +
++        'a page, because one would read as a United States location for a company that has no United States office.',
++    },
++    {
++      measure: 'depth',
++      ...depth,
++      caShare: share(depth.ca, depth.us),
++      means:
++        'Characters of published local content. Counting URLs would call twenty stubs and twenty essays an even ' +
++        'split; this does not.',
++    },
++    {
++      measure: 'graph',
++      ...graph,
++      caShare: share(graph.ca, graph.us),
++      means:
++        'Corridor memberships and nearest-market edges. Where the American twenty percent is actually spent, since ' +
++        'it can never be spent on pages.',
++    },
++  ];
++}
++
++/**
++ * The floor on Canada's share of markets in the model. Set below the 80%
++ * target with room for the model to breathe, and far enough above half that a
++ * drift toward an American-looking site fails the build long before a person
++ * would notice it in a diff.
++ */
++export const CA_RECORD_FLOOR = 0.7;
+diff --git a/apps/web/lib/geo/geo.test.ts b/apps/web/lib/geo/geo.test.ts
+index 4d36c45..ede3b81 100644
+--- a/apps/web/lib/geo/geo.test.ts
++++ b/apps/web/lib/geo/geo.test.ts
+@@ -89,13 +89,30 @@ describe('what may be claimed as served', () => {
+     }
+   });
+ 
+-  it('carries all forty-three Ontario markets, none of them unconfirmed', () => {
++  it('carries every Ontario market confirmed, municipalities and neighbourhoods alike', () => {
+     const on = MARKETS.filter((m) => m.region === 'ON');
+-    expect(on).toHaveLength(43);
++    expect(on.length).toBeGreaterThanOrEqual(61);
++    expect(on.filter((m) => m.kind === 'municipality')).toHaveLength(34);
+     const unconfirmed = on.filter((m) => m.operationalTruth.verifiedAt === null);
+     expect(unconfirmed.map((m) => m.slug)).toEqual([]);
+   });
+ 
++  it('models the sixteen Toronto neighbourhoods as districts, never as cities', () => {
++    const hoods = ['rosedale', 'forest-hill', 'yorkville', 'leaside', 'the-annex', 'high-park',
++      'riverdale', 'leslieville', 'the-beaches', 'lawrence-park', 'cabbagetown', 'swansea',
++      'davisville-village', 'midtown-toronto', 'king-west', 'liberty-village'];
++    const area = new Set(serviceAreaMarkets().map((m) => m.slug));
++    for (const slug of hoods) {
++      const m = MARKETS.find((x) => x.slug === slug);
++      expect(m, slug).toBeDefined();
++      expect(m!.kind, slug).toBe('district');
++      expect(m!.partOf, slug).toBe('toronto');
++      expect(m!.corridors, slug).toEqual([]);
++      // F-157: a neighbourhood must never become a schema.org City node.
++      expect(area.has(slug), slug).toBe(false);
++    }
++  });
++
+   it('says who confirmed every market it claims, and never leaves the sentence empty', () => {
+     for (const m of MARKETS.filter((x) => x.operationalTruth.verifiedAt !== null)) {
+       expect(m.operationalTruth.verifiedBy, m.slug).toBe('owner');
+@@ -196,10 +213,25 @@ describe('corridors', () => {
+     }
+   });
+ 
+-  it('crosses the border in exactly one corridor', () => {
+-    const crossing = CORRIDORS.filter((c) =>
+-      c.members.some((s) => marketBySlug(s)?.country === 'US'),
+-    );
+-    expect(crossing.map((c) => c.id)).toEqual(['buffalo-niagara']);
++  it('mixes the two countries in exactly one corridor, and never anywhere else', () => {
++    // buffalo-metro carries United States markets and is not a border crossing:
++    // it is entirely American, a map of demand rather than of any Ecowoods
++    // drive. What must stay singular is the corridor that contains BOTH
++    // countries, because that is the only place the two can be confused.
++    const mixed = CORRIDORS.filter((c) => {
++      const countries = new Set(c.members.map((s) => marketBySlug(s)?.country));
++      return countries.has('CA') && countries.has('US');
++    });
++    expect(mixed.map((c) => c.id)).toEqual(['buffalo-niagara']);
++
++    const usOnly = CORRIDORS.filter((c) => c.members.every((s) => marketBySlug(s)?.country === 'US'));
++    expect(usOnly.map((c) => c.id)).toEqual(['buffalo-metro']);
++  });
++
++  it('never lets a United States market into a Canada-only corridor', () => {
++    for (const c of CORRIDORS) {
++      if (['buffalo-niagara', 'buffalo-metro'].includes(c.id)) continue;
++      expect(c.members.every((s) => marketBySlug(s)?.country === 'CA'), c.id).toBe(true);
++    }
+   });
+ });
+diff --git a/apps/web/lib/geo/index.ts b/apps/web/lib/geo/index.ts
+index f22a377..43093fb 100644
+--- a/apps/web/lib/geo/index.ts
++++ b/apps/web/lib/geo/index.ts
+@@ -44,3 +44,12 @@ export const corridorsFor = (slug: string) =>
+ /** Canonical path for a market that has a page. */
+ export const marketPath = (slug: string): string => `/service-areas/${slug}`;
+ export const corridorPath = (id: string): string => `/corridors/${id}`;
++
++export {
++  opportunity,
++  opportunityOrder,
++  unsourcedInputs,
++  MIN_CONFIDENCE,
++  type Opportunity,
++  type Classification,
++} from './opportunity';
+diff --git a/apps/web/lib/geo/opportunity.test.ts b/apps/web/lib/geo/opportunity.test.ts
+new file mode 100644
+index 0000000..8c9900e
+--- /dev/null
++++ b/apps/web/lib/geo/opportunity.test.ts
+@@ -0,0 +1,108 @@
++import { describe, it, expect } from 'vitest';
++import { MARKETS, type Market } from '@/content/geo/markets';
++import { opportunity, opportunityOrder, MIN_CONFIDENCE } from './opportunity';
++import { INPUT_SPECS, TOTAL_WEIGHT, MARKET_INPUTS } from '@/content/geo/market-inputs';
++import { allocation, CA_RECORD_FLOOR } from './allocation';
++
++describe('the opportunity model', () => {
++  it('weights ten inputs to exactly one hundred', () => {
++    expect(INPUT_SPECS).toHaveLength(10);
++    expect(TOTAL_WEIGHT).toBe(100);
++    expect(new Set(INPUT_SPECS.map((s) => s.id)).size).toBe(10);
++  });
++
++  it('holds the brief\'s weights, not weights of its own invention', () => {
++    const w = Object.fromEntries(INPUT_SPECS.map((s) => [s.id, s.weight]));
++    expect(w.purchasingPower).toBe(20);
++    expect(w.housingValues).toBe(15);
++    expect(w.housingAge).toBe(10);
++    expect(w.detachedPrevalence).toBe(10);
++    expect(w.renovationPotential).toBe(10);
++    expect(w.hardwoodOpportunity).toBe(10);
++    expect(w.searchDemand).toBe(10);
++    expect(w.competition).toBe(5);
++    expect(w.logistics).toBe(5);
++    expect(w.corridorValue).toBe(5);
++  });
++
++  it('withholds a score until the confidence gate is met', () => {
++    // Nothing is sourced yet, so nothing may carry a score. This is the
++    // assertion that fails the day somebody types a figure into the model.
++    for (const o of opportunityOrder(MARKETS)) {
++      if (o.confidence < MIN_CONFIDENCE) expect(o.score, o.slug).toBeNull();
++    }
++  });
++
++  it('cannot classify a market on routing alone', () => {
++    const computed = INPUT_SPECS.filter((s) => s.kind === 'computed').reduce((n, s) => n + s.weight, 0);
++    expect(MIN_CONFIDENCE).toBeGreaterThan(computed / 100);
++    for (const o of opportunityOrder(MARKETS).filter((x) => x.country === 'CA')) {
++      expect(o.classification, o.slug).toBe('UNSCORED');
++      expect(o.reason, o.slug).toMatch(/sourced/);
++    }
++  });
++
++  it('names every missing input and where to get it', () => {
++    const o = opportunity(MARKETS.find((m) => m.slug === 'oakville')!);
++    expect(o.missing).toHaveLength(8);
++    for (const m of o.missing) expect(m.obtainableFrom.length).toBeGreaterThan(10);
++    expect(o.missing.reduce((n, m) => n + m.weight, 0)).toBe(90);
++  });
++
++  it('never classifies a United States market above FUTURE', () => {
++    for (const o of opportunityOrder(MARKETS).filter((x) => x.country === 'US')) {
++      expect(o.classification, o.slug).toBe('FUTURE');
++      expect(o.reason, o.slug).toMatch(/Ontario/);
++    }
++  });
++
++  it('scores a confirmed core market above an unconfirmed far one on what it can see', () => {
++    const toronto = opportunity(MARKETS.find((m) => m.slug === 'toronto')!);
++    const fortErie = opportunity(MARKETS.find((m) => m.slug === 'fort-erie')!);
++    expect(toronto.partialScore!).toBeGreaterThan(fortErie.partialScore!);
++  });
++
++  it('holds no unsourced figures at all today', () => {
++    expect(Object.keys(MARKET_INPUTS)).toEqual([]);
++  });
++
++  it('is deterministic', () => {
++    const a = opportunityOrder(MARKETS).map((x) => x.slug);
++    const b = opportunityOrder(MARKETS).map((x) => x.slug);
++    expect(a).toEqual(b);
++  });
++});
++
++describe('the 80/20 allocation', () => {
++  const measured = allocation();
++  const by = (m: string) => measured.find((x) => x.measure === m)!;
++
++  it('reports all four measures', () => {
++    expect(measured.map((m) => m.measure)).toEqual(['records', 'pages', 'depth', 'graph']);
++  });
++
++  it('keeps Canada near the eighty-percent target on the two measures that can move', () => {
++    expect(by('records').caShare).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
++    expect(by('records').caShare).toBeLessThan(0.95);
++    expect(by('graph').caShare).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
++  });
++
++  it('is structurally 100/0 on pages and depth, and says why', () => {
++    expect(by('pages').us).toBe(0);
++    expect(by('depth').us).toBe(0);
++    expect(by('pages').means).toMatch(/never hold/);
++  });
++
++  it('spends the American twenty percent on graph structure rather than pages', () => {
++    expect(by('graph').us).toBeGreaterThan(0);
++    expect(by('records').us).toBeGreaterThan(0);
++  });
++
++  it('would fail the floor if the American map outgrew the Canadian one', () => {
++    // The guard reads the file; this asserts the arithmetic it relies on.
++    const ca = MARKETS.filter((m: Market) => m.country === 'CA').length;
++    const us = MARKETS.filter((m: Market) => m.country === 'US').length;
++    expect(ca / (ca + us)).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
++    expect(us / (ca + us)).toBeGreaterThan(0.1);
++  });
++});
+diff --git a/apps/web/lib/geo/opportunity.ts b/apps/web/lib/geo/opportunity.ts
+new file mode 100644
+index 0000000..9f84642
+--- /dev/null
++++ b/apps/web/lib/geo/opportunity.ts
+@@ -0,0 +1,202 @@
++/**
++ * lib/geo/opportunity.ts — the 0–100 market opportunity score, and the
++ * classification that decides where the next page gets written.
++ *
++ * WHAT THIS IS FOR
++ *
++ * There are seventy-six markets in this model and there will never be an
++ * afternoon for all of them. The question is always the same: which one next.
++ * This answers it with a number, and — the part that matters — with the
++ * confidence behind the number.
++ *
++ * TWO NUMBERS, NOT ONE
++ *
++ * `score` is the weighted result over the inputs that are actually present.
++ * `confidence` is the share of the total weighting those inputs represent.
++ * A score of 78 at 10% confidence and a score of 78 at 90% confidence are not
++ * the same claim, and a model that reports only the first number invites
++ * exactly the decision it should be preventing.
++ *
++ * Today confidence is 10% everywhere: logistics and corridor value are
++ * computed from facts this repository holds, and the eight economic inputs are
++ * unsourced. Every classification therefore comes back UNSCORED, with the
++ * missing inputs named. That is not the model failing. That is the model
++ * declining to rank Oakville against Buffalo on figures nobody has opened.
++ *
++ * THE CLASSIFICATION GATE
++ *
++ * DOMINATE, HIGH_PRIORITY, BUILD_AUTHORITY, TEST and FUTURE are decisions about
++ * where money goes. None of them may be assigned below MIN_CONFIDENCE, and the
++ * threshold is deliberately high enough that the eight sourced inputs cannot be
++ * skipped: a market cannot be promoted to DOMINATE by its highway access.
++ *
++ * WHAT IT WILL NOT DO
++ *
++ * It will not classify a United States market as anything but FUTURE. Not
++ * because Buffalo is a poor market — the brief is right that it is a good one —
++ * but because Ecowoods does not operate in New York State, and a model that can
++ * rank an American market as HIGH_PRIORITY is a model one edit away from
++ * producing an American commercial page.
++ */
++import { type Market } from '@/content/geo/markets';
++import { INPUT_SPECS, TOTAL_WEIGHT, inputsFor, type InputId } from '@/content/geo/market-inputs';
++import { corridorsFor as resolveCorridors } from '@/content/geo/corridors';
++import { MARKETS } from '@/content/geo/markets';
++
++const corridorsFor = (slug: string) =>
++  resolveCorridors(slug, (x) => MARKETS.find((y) => y.slug === x)?.partOf);
++
++export type Classification =
++  | 'DOMINATE'
++  | 'HIGH_PRIORITY'
++  | 'BUILD_AUTHORITY'
++  | 'TEST'
++  | 'FUTURE'
++  | 'UNSCORED';
++
++/**
++ * The share of the weighting that must be sourced before a market may be
++ * classified at all. Set above the 10% that logistics and corridor value
++ * contribute, so no market is ever ranked on routing alone.
++ */
++export const MIN_CONFIDENCE = 0.6;
++
++export interface Opportunity {
++  slug: string;
++  name: string;
++  country: 'CA' | 'US';
++  /**
++   * The opportunity score, 0–100 — and null until enough of the weighting is
++   * sourced to mean it. A number computed over 10% of the weights would be
++   * read as a score by everyone who saw it, however carefully the confidence
++   * beside it was worded, so it is not published as one.
++   */
++  score: number | null;
++  /**
++   * The weighted result over whatever inputs ARE present, always. Useful for
++   * ordering the queue and for watching the model come alive as rows are
++   * sourced; never a ranking, and never the number a decision is made on.
++   */
++  partialScore: number | null;
++  /** 0–1: share of the total weighting actually backed by an input. */
++  confidence: number;
++  classification: Classification;
++  /** Why it is classified that way, in one line. */
++  reason: string;
++  components: Array<{ id: InputId; weight: number; score: number | null; source: string | null }>;
++  /** Input ids with no value, and where each is obtainable. */
++  missing: Array<{ id: InputId; weight: number; obtainableFrom: string }>;
++}
++
++/* ── the two inputs this repository can defend ───────────────────────────── */
++
++/** Reachability, from status. Not a drive time — a statement about the day. */
++const logisticsScore = (m: Market): number => {
++  if (m.country === 'US') return 0;
++  if (m.status === 'core-active') return 100;
++  if (m.status === 'active-expansion') return 75;
++  if (m.status === 'travel-by-confirmation') return 35;
++  return 20;
++};
++
++/** Corridor centrality. A junction is worth more per drive than a terminus. */
++const corridorScore = (m: Market): number => {
++  const n = corridorsFor(m.slug).length;
++  if (m.country === 'US') return 0;
++  return Math.min(n * 40, 100);
++};
++
++const COMPUTED: Record<string, (m: Market) => number> = {
++  logistics: logisticsScore,
++  corridorValue: corridorScore,
++};
++
++export function opportunity(market: Market): Opportunity {
++  const sourced = inputsFor(market.slug);
++  const components: Opportunity['components'] = [];
++  const missing: Opportunity['missing'] = [];
++
++  let weighted = 0;
++  let weightPresent = 0;
++
++  for (const spec of INPUT_SPECS) {
++    const computed = COMPUTED[spec.id];
++    if (spec.kind === 'computed' && computed) {
++      const v = computed(market);
++      components.push({ id: spec.id, weight: spec.weight, score: v, source: 'computed from this repository' });
++      weighted += v * spec.weight;
++      weightPresent += spec.weight;
++      continue;
++    }
++    const value = sourced[spec.id];
++    if (value) {
++      components.push({ id: spec.id, weight: spec.weight, score: value.score, source: value.source.url });
++      weighted += value.score * spec.weight;
++      weightPresent += spec.weight;
++    } else {
++      components.push({ id: spec.id, weight: spec.weight, score: null, source: null });
++      missing.push({ id: spec.id, weight: spec.weight, obtainableFrom: spec.obtainableFrom });
++    }
++  }
++
++  const confidence = weightPresent / TOTAL_WEIGHT;
++  const partialScore = weightPresent === 0 ? null : Math.round(weighted / weightPresent);
++  const trustworthy = confidence >= MIN_CONFIDENCE;
++
++  const { classification, reason } = classify(market, partialScore, confidence, missing);
++  return {
++    slug: market.slug,
++    name: market.name,
++    country: market.country,
++    score: trustworthy ? partialScore : null,
++    partialScore,
++    confidence: Math.round(confidence * 100) / 100,
++    classification,
++    reason,
++    components,
++    missing,
++  };
++}
++
++function classify(
++  market: Market,
++  score: number | null,
++  confidence: number,
++  missing: Opportunity['missing'],
++): { classification: Classification; reason: string } {
++  if (market.country === 'US') {
++    return {
++      classification: 'FUTURE',
++      reason:
++        'United States market. Ecowoods operates in Ontario, from Ontario. This market is advertising reach for ' +
++        'Ontario property and is never classified above FUTURE, whatever it would score.',
++    };
++  }
++  if (score === null || confidence < MIN_CONFIDENCE) {
++    const weight = missing.reduce((n, x) => n + x.weight, 0);
++    return {
++      classification: 'UNSCORED',
++      reason:
++        `${Math.round(confidence * 100)}% of the weighting is sourced; ${weight} points of it are not. ` +
++        `Missing: ${missing.map((x) => x.id).join(', ')}. A classification decides where money goes and this one ` +
++        'would be decided by highway access.',
++    };
++  }
++  if (score >= 80) return { classification: 'DOMINATE', reason: `Scores ${score} at ${Math.round(confidence * 100)}% confidence.` };
++  if (score >= 65) return { classification: 'HIGH_PRIORITY', reason: `Scores ${score} at ${Math.round(confidence * 100)}% confidence.` };
++  if (score >= 50) return { classification: 'BUILD_AUTHORITY', reason: `Scores ${score} at ${Math.round(confidence * 100)}% confidence.` };
++  if (score >= 35) return { classification: 'TEST', reason: `Scores ${score} at ${Math.round(confidence * 100)}% confidence.` };
++  return { classification: 'FUTURE', reason: `Scores ${score} at ${Math.round(confidence * 100)}% confidence.` };
++}
++
++/** Every market, best first. Ties broken by slug so the order is stable. */
++export const opportunityOrder = (all: Market[]): Opportunity[] =>
++  all
++    .map(opportunity)
++    .sort((a, b) => (b.partialScore ?? -1) - (a.partialScore ?? -1) || a.slug.localeCompare(b.slug));
++
++/** What the model is missing, aggregated — the shopping list, once. */
++export const unsourcedInputs = (): Array<{ id: InputId; weight: number; obtainableFrom: string }> =>
++  INPUT_SPECS.filter((s) => s.kind === 'sourced').map((s) => ({
++    id: s.id, weight: s.weight, obtainableFrom: s.obtainableFrom,
++  }));
+diff --git a/apps/web/lib/registry/handlers.ts b/apps/web/lib/registry/handlers.ts
+index a78a90b..ca29b51 100644
+--- a/apps/web/lib/registry/handlers.ts
++++ b/apps/web/lib/registry/handlers.ts
+@@ -43,8 +43,14 @@ import {
+   assess as assessMarket,
+   contentQueue,
+   expansionOrder,
++  opportunity,
++  opportunityOrder,
++  unsourcedInputs,
++  MIN_CONFIDENCE,
+   serviceAreaMarkets,
+ } from '@/lib/geo';
++import { INPUT_SPECS } from '@/content/geo/market-inputs';
++import { allocation } from '@/lib/geo/allocation';
+ import { SITE_URL } from '@/lib/seo-data';
+ 
+ const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
+@@ -771,6 +777,93 @@ export async function handleMarkets(request: Request) {
+   );
+ }
+ 
++/**
++ * GET /api/v1/opportunity — the market model, and what it does not know.
++ *
++ * WHY PUBLISH A SCORE THAT IS CURRENTLY NULL EVERYWHERE
++ *
++ * Because the honest version of a market model is more citable than the
++ * confident one. Every competitor's "areas we serve" page asserts a coverage
++ * list with no method behind it. This publishes the method: ten weighted
++ * inputs, which two are computed from facts we hold, which eight require a
++ * census table nobody has opened yet, and the confidence gate that stops a
++ * market being ranked on highway access alone.
++ *
++ * An assistant asked "how does Ecowoods decide where to expand" has a document
++ * to quote. An assistant asked "does Ecowoods work in Buffalo" reads
++ * `classification: FUTURE` with the reason attached, in the company's own
++ * words, rather than inferring an answer from a page that half-implies one.
++ *
++ * THE UNITED STATES RULE IS IN THE PAYLOAD, NOT ONLY IN THE CODE
++ *
++ * Every American market comes back FUTURE with the sentence explaining that
++ * Ecowoods operates in Ontario from Ontario. That is the fact most likely to be
++ * got wrong about this company by a machine reading a cross-border corridor,
++ * and it is cheaper to state it sixty times than to correct it once.
++ */
++export async function handleOpportunity(request: Request) {
++  const reg = await getRegistry();
++  const url = new URL(request.url);
++  const country = url.searchParams.get('country');
++  const slug = url.searchParams.get('market');
++
++  if (slug) {
++    const one = MARKETS.find((x) => x.slug === slug);
++    if (!one) return error('not_found', `No market with slug "${slug}".`, 404);
++    return json(
++      { meta: meta(reg, 1), market: opportunity(one) },
++      { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
++    );
++  }
++
++  let rows = opportunityOrder(MARKETS);
++  if (country === 'CA' || country === 'US') rows = rows.filter((x) => x.country === country);
++
++  return json(
++    {
++      meta: meta(reg, rows.length),
++      model: {
++        note:
++          'A 0-100 opportunity score per market, weighted across ten inputs. `score` is withheld until enough of the ' +
++          'weighting is sourced to mean it; `partial_score` is the weighted result over whatever is present and is ' +
++          'never a ranking. `confidence` is the share of the weighting actually backed by data.',
++        minimum_confidence_to_classify: MIN_CONFIDENCE,
++        weights: INPUT_SPECS.map((x) => ({
++          id: x.id, weight: x.weight, measures: x.measures, kind: x.kind, obtainable_from: x.obtainableFrom,
++        })),
++        unsourced_inputs: unsourcedInputs().map((x) => ({
++          id: x.id, weight: x.weight, obtainable_from: x.obtainableFrom,
++        })),
++      },
++      refuses: [
++        'no input carries a value without a source URL and a retrieval date; the build fails otherwise',
++        'no market is classified below the confidence gate, so none is ranked on highway access alone',
++        'no United States market is classified above FUTURE — Ecowoods operates in Ontario, from Ontario',
++        'no economic figure is estimated; an unsourced input is reported as missing, with where to obtain it',
++      ],
++      allocation: {
++        target: { canada: 0.8, united_states: 0.2 },
++        measured: allocation().map((x) => ({
++          measure: x.measure, canada: x.ca, united_states: x.us, canada_share: x.caShare, means: x.means,
++        })),
++      },
++      markets: rows.map((x) => ({
++        slug: x.slug,
++        name: x.name,
++        country: x.country,
++        score: x.score,
++        partial_score: x.partialScore,
++        confidence: x.confidence,
++        classification: x.classification,
++        reason: x.reason,
++        components: x.components.map((c) => ({ id: c.id, weight: c.weight, score: c.score, source: c.source })),
++        missing: x.missing.map((c) => ({ id: c.id, weight: c.weight, obtainable_from: c.obtainableFrom })),
++      })),
++    },
++    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
++  );
++}
++
+ /**
+  * GET /api/v1/framework — the Well-Installed Framework, criterion by criterion.
+  *
+diff --git a/apps/web/lib/registry/manifest.ts b/apps/web/lib/registry/manifest.ts
+index 9a77e57..e83f60a 100644
+--- a/apps/web/lib/registry/manifest.ts
++++ b/apps/web/lib/registry/manifest.ts
+@@ -49,6 +49,7 @@ export const ENDPOINTS: EndpointDecl[] = [
+   { path: '/media/{id}', method: 'GET', summary: 'One project: chapters, stills and films with absolute URLs, plus what the record deliberately does not establish.', file: 'media/[id]', cache: 'static' },
+   { path: '/equipment', method: 'GET', summary: 'Professional floor sanding machines with their manufacturer-published electrical requirements. ?volts=&amps= assesses each against that circuit. No price and no productivity figure — no manufacturer publishes either.', file: 'equipment', cache: 'static' },
+   { path: '/framework', method: 'GET', summary: 'The Well-Installed Framework as citable data: every criterion with its id, the question a homeowner can ask, what fails when the answer is no, its severity, and the paper section it derives from. Versioned \u2014 an id never changes meaning without a version bump.', file: 'framework', cache: 'static' },
++  { path: '/opportunity', method: 'GET', summary: 'The market opportunity model: ten weighted inputs per market, the confidence behind each score, the classification it supports, and the eight economic figures that are not yet sourced \u2014 named, with where to obtain them. United States markets are never classified above FUTURE.', file: 'opportunity', cache: 'static' },
+   { path: '/catalogues', method: 'GET', summary: 'The field catalogues \u2014 landscape PDFs built to be printed, kept and forwarded \u2014 with what each one covers and which page on this site argues the same thing at length. Every entry is gated on the file existing.', file: 'catalogues', cache: 'static' },
+   { path: '/markets', method: 'GET', summary: 'Every municipality in the Ecowoods geographic model with its coverage status, the operational statement that can honestly be made about it, and the date somebody confirmed it. A market being listed is not a claim that it is served; United States markets are advertising reach for Ontario property and never appear as service area. ?corridor= and ?status= filter.', file: 'markets', cache: 'static' },
+   { path: '/corridors', method: 'GET', summary: 'The nine routes the work is organised along — hub, highway and the municipalities on each in travel order — with every member\u2019s status.', file: 'corridors', cache: 'static' },
+diff --git a/apps/web/lib/registry/openapi.ts b/apps/web/lib/registry/openapi.ts
+index bf50296..73d3e68 100644
+--- a/apps/web/lib/registry/openapi.ts
++++ b/apps/web/lib/registry/openapi.ts
+@@ -92,6 +92,7 @@ export function buildOpenApi() {
+       '/media/{id}': ref('MediaProject'),
+       '/equipment': ref('EquipmentIndex'),
+       '/framework': ref('FrameworkSpec'),
++      '/opportunity': ref('OpportunityModel'),
+       '/catalogues': ref('CatalogueIndex'),
+       '/markets': ref('MarketIndex'),
+       '/corridors': ref('CorridorIndex'),
+@@ -390,6 +391,52 @@ export function buildOpenApi() {
+             machines: { type: 'array', items: { type: 'object' } },
+           },
+         },
++        OpportunityModel: {
++          type: 'object',
++          description:
++            'A 0-100 opportunity score per market over ten weighted inputs. `score` is null until `confidence` — the share of the weighting actually backed by a sourced figure — reaches minimum_confidence_to_classify; `partial_score` is the weighted result over whatever is present and is never a ranking. `missing` names every unsourced input and where it is obtainable. United States markets are always FUTURE: Ecowoods operates in Ontario, from Ontario.',
++          required: ['meta', 'model', 'refuses', 'allocation', 'markets'],
++          properties: {
++            meta: ref('Meta'),
++            model: {
++              type: 'object',
++              properties: {
++                note: { type: 'string' },
++                minimum_confidence_to_classify: { type: 'number' },
++                weights: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, measures: { type: 'string' }, kind: { type: 'string', enum: ['sourced', 'computed'] }, obtainable_from: { type: 'string' } } } },
++                unsourced_inputs: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, obtainable_from: { type: 'string' } } } },
++              },
++            },
++            refuses: { type: 'array', items: { type: 'string' } },
++            allocation: {
++              type: 'object',
++              description: 'The 80/20 Canada/United States target, and the same split measured from the repository across four measures. The page and depth measures are structurally 100/0 because a us-proxy market can never hold a page.',
++              properties: {
++                target: { type: 'object', properties: { canada: { type: 'number' }, united_states: { type: 'number' } } },
++                measured: { type: 'array', items: { type: 'object', properties: { measure: { type: 'string' }, canada: { type: 'number' }, united_states: { type: 'number' }, canada_share: { type: 'number' }, means: { type: 'string' } } } },
++              },
++            },
++            markets: {
++              type: 'array',
++              items: {
++                type: 'object',
++                required: ['slug', 'name', 'country', 'score', 'confidence', 'classification'],
++                properties: {
++                  slug: { type: 'string' },
++                  name: { type: 'string' },
++                  country: { type: 'string', enum: ['CA', 'US'] },
++                  score: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
++                  partial_score: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
++                  confidence: { type: 'number', minimum: 0, maximum: 1 },
++                  classification: { type: 'string', enum: ['DOMINATE', 'HIGH_PRIORITY', 'BUILD_AUTHORITY', 'TEST', 'FUTURE', 'UNSCORED'] },
++                  reason: { type: 'string' },
++                  components: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, score: { type: ['number', 'null'] }, source: { type: ['string', 'null'] } } } },
++                  missing: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, obtainable_from: { type: 'string' } } } },
++                },
++              },
++            },
++          },
++        },
+         FrameworkSpec: {
+           type: 'object',
+           description:
+diff --git a/apps/web/tests/api-contract.test.ts b/apps/web/tests/api-contract.test.ts
+index 7d78804..2e835a6 100644
+--- a/apps/web/tests/api-contract.test.ts
++++ b/apps/web/tests/api-contract.test.ts
+@@ -47,6 +47,7 @@ import * as quoteCheck from '@/app/api/v1/quote-check/route';
+ import * as markets from '@/app/api/v1/markets/route';
+ import * as cataloguesApi from '@/app/api/v1/catalogues/route';
+ import * as frameworkApi from '@/app/api/v1/framework/route';
++import * as opportunityApi from '@/app/api/v1/opportunity/route';
+ import * as corridors from '@/app/api/v1/corridors/route';
+ import * as equipmentById from '@/app/api/v1/equipment/[id]/route';
+ import * as recommendationContext from '@/app/api/v1/recommendation-context/route';
+@@ -91,6 +92,7 @@ const ROUTES: Record<string, RouteModule> = {
+   markets,
+   catalogues: cataloguesApi,
+   framework: frameworkApi,
++  opportunity: opportunityApi,
+   corridors,
+   'equipment/[id]': equipmentById,
+   'recommendation-context': recommendationContext,
+diff --git a/docs/GEO_STRATEGY.md b/docs/GEO_STRATEGY.md
+new file mode 100644
+index 0000000..74d32ae
+--- /dev/null
++++ b/docs/GEO_STRATEGY.md
+@@ -0,0 +1,205 @@
++# The corridor: Toronto → GTA → Hamilton → Niagara → Buffalo
++
++**76 markets. 61 Ontario, 15 New York. Canada at 80.3% of the model.**
++
++The 80/20 allocation is not an intention written in this document. It is computed
++from the repository and `pnpm verify:allocation` fails the build when Canada's
++share drops below the floor.
++
++```
++records   CA     61   US    15   →  Canada 80.3%
++graph     CA    198   US    48   →  Canada 80.5%
++pages     CA     32   US     0   →  Canada  100%
++depth     CA 15,149   US     0   →  Canada  100%
++```
++
++`records` counts markets in the model. `graph` counts corridor memberships and
++nearest-market edges — where the American twenty percent is actually spent.
++`pages` and `depth` are structurally 100/0 and that is correct, not a bias to
++be balanced: a `us-proxy` market can never hold an indexable page, because a
++page would read as a United States location for a company with no United
++States office. The American allocation buys reach, never a landing page.
++
++---
++
++## 1. The geographic map
++
++### Ontario — 61 markets, all confirmed 2026-09-10
++
++**Toronto core** (13 records: the city, six districts, six surrounding cities at
++`core-active`)
++Toronto · Downtown Toronto · North York · Etobicoke · Scarborough · East York ·
++York · Mississauga · Brampton · Vaughan · Markham · Richmond Hill · Oakville
++
++**Toronto neighbourhoods** (16 records, `kind: district`, all with published pages)
++Rosedale · Forest Hill · Yorkville · Leaside · The Annex · High Park · Riverdale ·
++Leslieville · The Beaches · Lawrence Park · Cabbagetown · Swansea ·
++Davisville Village · Midtown Toronto · King West · Liberty Village
++
++> These have had pages and local content since F-157 was resolved. What they did
++> not have until now was a record in the geographic model, which meant the
++> corridors, the API, the expansion score and the allocation audit could not see
++> the sixteen highest-intent pages on the site. They enter as **districts of
++> Toronto**, never municipalities — `serviceAreaMarkets()` filters to
++> municipalities and the entity graph derives `areaServed` from that, so a
++> neighbourhood arriving as a municipality would declare Rosedale a city of
++> Ontario alongside Mississauga. It is not.
++
++**Halton / Peel / York / Durham** (`active-expansion`)
++Milton · Burlington · Halton Hills · Caledon · Whitby · Oshawa · Aurora ·
++Newmarket · Pickering · Ajax
++
++**Hamilton** (`active-expansion`) — Hamilton · Ancaster · Dundas · Stoney Creek ·
++**Waterdown** *(added: Tier 3 of the brief, a community of the City of Hamilton)*
++
++**Niagara belt** — Grimsby (`active-expansion`), then Lincoln · **Beamsville**
++*(added)* · St. Catharines · Thorold · Welland · Niagara-on-the-Lake ·
++Niagara Falls ON · Port Colborne · Fort Erie, all `travel-by-confirmation`
++
++**403 / Highway 6 west** — Guelph · Cambridge · Kitchener, `travel-by-confirmation`
++
++**North and east edge** — Barrie · Innisfil · Clarington · Kawartha Lakes,
++`travel-by-confirmation`
++
++### New York — 15 markets, every one `us-proxy`
++
++**Erie County / Buffalo metro** (new corridor `buffalo-metro`)
++Buffalo · Amherst · **Williamsville** *(village in Amherst — district)* ·
++Clarence · Cheektowaga · Tonawanda · **Kenmore** *(village in Tonawanda —
++district)* · Grand Island · Orchard Park · Hamburg · East Aurora
++
++**Niagara County** (`buffalo-niagara`, the one corridor that crosses the border)
++Niagara Falls NY · Lewiston · North Tonawanda · Lockport
++
++> Nine of these fifteen are new, and the brief's Tier US-1 and US-2 are now
++> complete. Not one of them can hold a page, enter the service area, or be
++> classified above `FUTURE`. Three independent guards enforce that, and a test
++> asserts that exactly one corridor contains both countries.
++
++### Ten corridors
++
++| Corridor | Hub | Markets |
++|---|---|---|
++| `core-gta` | Toronto | 8 |
++| `400-north` | Vaughan | 5 |
++| `401-east` | Toronto | 7 |
++| `407-york-peel` | Vaughan | 6 |
++| `qew-west` | Mississauga | 6 |
++| `403-6-west` | Hamilton | 6 |
++| `niagara-belt` | Grimsby | 9 |
++| `buffalo-niagara` | Fort Erie | 10 — the only cross-border route |
++| `buffalo-metro` | Buffalo | 11 — entirely American, a map of demand, no Ecowoods drive on it |
++| `cottage-north-east` | Barrie | 3 |
++
++---
++
++## 2. The market scoring model
++
++`/api/v1/opportunity` publishes the brief's ten weighted inputs, exactly as
++specified:
++
++| Weight | Input | Where it comes from |
++|---:|---|---|
++| 20 | purchasing power | StatCan Census Profile · ACS S1901 |
++| 15 | housing values | StatCan · ACS B25077 |
++| 10 | housing age | StatCan period of construction · ACS B25034 |
++| 10 | detached prevalence | StatCan structural type · ACS B25024 |
++| 10 | renovation potential | municipal permit open data · CMHC · Building Permits Survey |
++| 10 | hardwood opportunity | no public dataset; a recorded proxy with its method written down |
++| 10 | search demand | Keyword Planner · Search Console impressions |
++| 5 | competition | a dated SERP observation |
++| 5 | **logistics** | **computed** from status and hub |
++| 5 | **corridor value** | **computed** from corridor membership |
++
++**Every market currently returns `score: null`, `confidence: 0.10`,
++`classification: UNSCORED`.**
++
++That is the model working, not failing. Two of the ten inputs are computable
++from facts this repository holds. The other eight are census tables and keyword
++figures nobody has opened yet. A score of 78 built from a typed guess and a
++score of 78 built from the census look identical, rank markets identically, and
++send a season's work to the wrong municipality identically — the difference only
++surfaces afterwards.
++
++So: a value requires a `source` with a URL and a retrieval date, there is
++deliberately no "estimate" flag, and `score` is withheld entirely until 60% of
++the weighting is sourced — above the 10% that logistics and corridor value
++contribute, so no market can ever be promoted to DOMINATE on highway access.
++`partialScore` is published for ordering the queue and is never a ranking.
++
++**Filling this in is an afternoon's work per tranche and it is the single
++highest-leverage thing left.** One census table for the eight Tier-1 and Tier-2
++markets moves confidence from 10% to 30%; income, values, age and detached
++prevalence together reach 55%; add search demand and the model starts
++classifying.
++
++---
++
++## 3. What is enforced, not merely intended
++
++| Guard | Refuses |
++|---|---|
++| `verify:geo` | a coverage claim with no dated confirmation; a status and a confirmation that disagree; a district declaring its own corridors; a US market in the service area |
++| `verify:allocation` | Canada below 70% of the model; a us-proxy market holding a page; the service-area filter being loosened |
++| `verify:inputs` | a score with no source URL and retrieval date; weights that do not sum to 100; a confidence gate at or below the computed share; a US market classifiable above FUTURE |
++| `verify:strategy` | a funnel whose completion event nothing emits; a tracked question pointing at a 404; a route with no intent-matched call |
++| `verify:cities` | a service area losing its local content |
++
++Each shipped with regressions that were run and observed to fail.
++
++---
++
++## 4. First release — status against the brief
++
++The brief's eighteen Canadian first-release markets:
++
++| # | Market | Record | Page | Content |
++|---|---|---|---|---|
++| 1 | Toronto | ✓ | ✓ commercial pages | ✓ |
++| 2–7 | Rosedale, Forest Hill, Lawrence Park, Leaside, Yorkville, Midtown | ✓ | ✓ | ✓ |
++| 8–13 | Oakville, Vaughan, Richmond Hill, Markham, Mississauga | ✓ | ✓ | ✓ |
++| — | Burlington | ✓ | — | **needed** |
++| 14–15 | Hamilton, Ancaster | ✓ | — | **needed** |
++| 16–18 | Niagara-on-the-Lake, St. Catharines, Niagara Falls ON | ✓ | — | **needed** |
++
++The brief's six US foundation markets — Buffalo, Amherst, Williamsville,
++Clarence, Orchard Park, East Aurora — are **all in the model**, in a corridor,
++in the API, and correctly hold no page.
++
++**Thirteen of eighteen Canadian first-release markets are published. Five need
++content, and content is the one input that cannot be generated.**
++
++---
++
++## 5. Expansion roadmap — the next markets, in order
++
++Ranked by what this repository can defend today: confirmed position, corridor
++centrality, neighbour coverage, and published evidence. It is deliberately not
++ranked by the economic model, which is at 10% confidence and says so.
++
++**Content first — confirmed markets with no page (7):**
++Burlington · Hamilton · Grimsby · Barrie · Niagara Falls ON · Milton ·
++St. Catharines
++
++**Then the Niagara premium tier**, which the brief singles out and which this
++model agrees with on routing: Niagara-on-the-Lake · Lincoln/Beamsville ·
++Welland · Thorold · Port Colborne · Fort Erie
++
++**Then the 403/6 run:** Guelph · Cambridge · Kitchener
++
++**Then the outer belt:** Whitby · Oshawa · Clarington · Halton Hills · Caledon ·
++Innisfil · Kawartha Lakes · Ancaster · Dundas · Stoney Creek · Waterdown
++
++**Never, without the business first establishing a United States presence:** any
++Buffalo or western New York page.
++
++Each Canadian market needs the same three things, and none of them is code:
++
++1. One real job in that municipality, photographed — before, during, after.
++2. Two real paragraphs: what the floor was, what the house was like, what the
++   work involved. Not "Hardwood flooring in Burlington."
++3. A `CityContent` entry with those paragraphs — 120 characters minimum each,
++   which is the guard's way of refusing a slogan.
++
++The page then appears on its own, with metadata, schema, sitemap entry, internal
++links and API record already correct.
+diff --git a/package.json b/package.json
+index bdaa6e9..68546b1 100644
+--- a/package.json
++++ b/package.json
+@@ -69,6 +69,8 @@
+     "verify:aeo": "node scripts/verify-aeo.mjs",
+     "verify:agentic": "node scripts/verify-agentic.mjs",
+     "verify:strategy": "node scripts/verify-strategy.mjs",
++    "verify:inputs": "node scripts/verify-market-inputs.mjs",
++    "verify:allocation": "node scripts/verify-allocation.mjs",
+     "test:web": "pnpm --filter @ecowoods/web test",
+     "seo:audit": "node scripts/audit-current-state.mjs",
+     "seo:pricing": "node scripts/verify-pricing-source.mjs",
+diff --git a/scripts/verify-allocation.mjs b/scripts/verify-allocation.mjs
+new file mode 100644
+index 0000000..aa74566
+--- /dev/null
++++ b/scripts/verify-allocation.mjs
+@@ -0,0 +1,108 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-allocation.mjs — the 80/20 split, enforced.
++ *
++ * WHY A GUARD AND NOT A NOTE IN A STRATEGY DOCUMENT
++ *
++ * Eighty percent Canada, twenty percent western New York. Nobody will ever
++ * violate that on purpose. It goes wrong the way every allocation goes wrong:
++ * one commit at a time, each individually reasonable, none of them looking like
++ * the moment a Toronto contractor's site started reading as an American one.
++ * "Add the affluent Buffalo suburbs, they're high-value" is a correct sentence
++ * that, repeated for six months, produces a site whose geography no longer
++ * matches its business.
++ *
++ * So the ratio is measured from the repository and the floor fails the build.
++ *
++ * THE HARDER LINE
++ *
++ * Underneath the ratio is something that is not a ratio at all: no United
++ * States market may ever hold an indexable page or appear in the service area.
++ * Ecowoods has no United States office, crew, address or phone number. The
++ * twenty percent is spent on reach — records in the model, corridor structure,
++ * an entity graph that says where expansion would go — never on a landing page
++ * implying service. Those two checks have no tolerance and no threshold.
++ *
++ *   node scripts/verify-allocation.mjs
++ */
++import { readFileSync, existsSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = join(ROOT, 'apps/web');
++const fail = [];
++const read = (rel) => {
++  const p = join(WEB, rel);
++  if (!existsSync(p)) { fail.push(`${rel} is missing`); return ''; }
++  return readFileSync(p, 'utf8');
++};
++
++const marketsSrc = read('content/geo/markets.ts');
++const alloc = read('lib/geo/allocation.ts');
++const worthiness = read('lib/geo/worthiness.ts');
++const geoIndex = read('lib/geo/index.ts');
++
++/* ── read the map ────────────────────────────────────────────────────────── */
++const ca = [...marketsSrc.matchAll(/\bm\(\s*'[^']+',\s*'([a-z0-9-]+)'/g)].map((x) => x[1]);
++const us = [...marketsSrc.matchAll(/\bus\(\s*'[^']+',\s*'([a-z0-9-]+)'/g)].map((x) => x[1]);
++if (ca.length < 20 || us.length < 3) {
++  fail.push(
++    `read ${ca.length} Canadian and ${us.length} United States market(s) — the reader is blind, and a blind reader ` +
++      'here reports a perfect allocation forever.',
++  );
++}
++
++const floor = Number(/CA_RECORD_FLOOR\s*=\s*([0-9.]+)/.exec(alloc)?.[1] ?? NaN);
++if (Number.isNaN(floor)) {
++  fail.push('could not read CA_RECORD_FLOOR from lib/geo/allocation.ts — the floor under Canada\'s share of the model');
++} else if (ca.length + us.length > 0) {
++  const share = ca.length / (ca.length + us.length);
++  if (share < floor) {
++    fail.push(
++      `Canada holds ${(share * 100).toFixed(1)}% of the markets in the model, below the ${(floor * 100).toFixed(0)}% ` +
++        `floor (${ca.length} Canadian, ${us.length} United States). The centre of gravity has moved; either the ` +
++        'Canadian map is being neglected or American markets are being added faster than the business can justify.',
++    );
++  }
++}
++
++/* ── the two lines with no tolerance ─────────────────────────────────────── */
++if (!/us-proxy: advertising reach/.test(worthiness)) {
++  fail.push(
++    'lib/geo/worthiness.ts no longer blocks a page for a us-proxy market. That single condition is what stops this ' +
++      'repository publishing a Buffalo landing page for a company with no United States office.',
++  );
++}
++if (!/x\.kind === 'municipality'/.test(geoIndex) || !/isOperational/.test(geoIndex)) {
++  fail.push(
++    'lib/geo/index.ts no longer filters the service area to operational municipalities. us-proxy markets are not ' +
++      'operational; drop that filter and every New York town enters areaServed.',
++  );
++}
++
++/* Every measure in the allocation report must be readable, and the report must
++   still say what a 100/0 measure means — otherwise the next person reads the
++   page column as a failure and "balances" it by publishing in Buffalo. */
++const measures = [...alloc.matchAll(/measure:\s*'([a-z]+)'/g)].map((x) => x[1]);
++for (const required of ['records', 'pages', 'depth', 'graph']) {
++  if (!measures.includes(required)) fail.push(`the allocation report no longer computes "${required}"`);
++}
++if (!/[Ss]tructurally 100\/0/.test(alloc) || !/never hold/.test(alloc)) {
++  fail.push(
++    'the allocation report no longer explains why the page measure is 100/0. Without that sentence the split reads ' +
++      'as a Canadian bias to be corrected, and correcting it means publishing an American page.',
++  );
++}
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (fail.length) {
++  console.error(`\n✗ allocation: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}\n`);
++  process.exit(1);
++}
++const share = ((ca.length / (ca.length + us.length)) * 100).toFixed(1);
++console.log(
++  `✓ allocation verified — ${ca.length} Canadian and ${us.length} United States market(s), Canada at ${share}% of ` +
++    `the model against an 80% target and a ${(floor * 100).toFixed(0)}% floor; no United States market can hold a ` +
++    'page or enter the service area',
++);
+diff --git a/scripts/verify-geo.mjs b/scripts/verify-geo.mjs
+index e4d98b6..1050d2a 100644
+--- a/scripts/verify-geo.mjs
++++ b/scripts/verify-geo.mjs
+@@ -171,11 +171,45 @@ if (!/country:\s*'US'/.test(usCtor)) {
+   fail.push('the us() constructor no longer sets country US');
+ }
+ 
+-for (const um of marketsSrc.matchAll(/\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)'/g)) {
++/*
++ * READ THE us() CALL, NOT THE CONSTRUCTOR'S DEFAULT.
++ *
++ * This loop used to hard-code `corridors: ['buffalo-niagara']` for every United
++ * States market, because that was the constructor's only behaviour. The day
++ * us() gained corridor, kind and partOf arguments, the guard reported nine
++ * markets as claiming a corridor they do not claim — and, worse, would have
++ * been unable to see a district declaring corridors of its own, which is the
++ * error the whole model is arranged to prevent.
++ *
++ * The default is now read from the signature and overridden by whatever the
++ * call site actually passes.
++ */
++const usDefaultCorridors =
++  [...(/corridors:\s*CorridorId\[\]\s*=\s*\[([^\]]*)\]/.exec(usCtor)?.[1] ?? '').matchAll(/'([^']+)'/g)]
++    .map((x) => x[1]);
++const US_CALL = /\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)',\s*\[([^\]]*)\](?:\s*,\s*\[([^\]]*)\])?(?:\s*,\s*'([a-z]+)')?(?:\s*,\s*'([a-z0-9-]+)')?\s*\)/g;
++let usRead = 0;
++for (const um of marketsSrc.matchAll(US_CALL)) {
++  const kind = um[5] ?? 'municipality';
++  const declared = um[4] === undefined
++    ? usDefaultCorridors
++    : [...um[4].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+   markets.push({
+     name: um[1], slug: um[2], status: usStatus ?? 'us-proxy', country: 'US',
+-    corridors: ['buffalo-niagara'], nearest: [], parentHub: 'fort-erie', isDistrict: false,
++    corridors: kind === 'district' ? [] : declared,
++    nearest: [...um[3].matchAll(/'([^']+)'/g)].map((x) => x[1]),
++    parentHub: 'fort-erie',
++    isDistrict: kind === 'district',
++    partOf: um[6],
+   });
++  usRead += 1;
++}
++if (usRead !== (marketsSrc.match(/\bus\(\s*'/g) ?? []).length) {
++  fail.push(
++    `read ${usRead} us() call(s) but the file contains ` +
++      `${(marketsSrc.match(/\bus\(\s*'/g) ?? []).length}. The reader is blind to a United States market, which is ` +
++      'the one class of market that may never reach the service area.',
++  );
+ }
+ /* Toronto is written as a literal rather than through m(); read it explicitly. */
+ if (/'toronto', 'core-active'/.test(marketsSrc) || /m\('Toronto', 'toronto'/.test(marketsSrc)) {
+diff --git a/scripts/verify-market-inputs.mjs b/scripts/verify-market-inputs.mjs
+new file mode 100644
+index 0000000..ffaa541
+--- /dev/null
++++ b/scripts/verify-market-inputs.mjs
+@@ -0,0 +1,140 @@
++#!/usr/bin/env node
++/**
++ * scripts/verify-market-inputs.mjs — the opportunity model may not be fed a
++ * number nobody can point at.
++ *
++ * WHAT THIS PROTECTS
++ *
++ * The market score decides where the next page is written and where money goes.
++ * Eight of its ten inputs are external facts — census income, dwelling values,
++ * period of construction, structural type, permit value, search volume — and
++ * every one of them is a figure a person could type from memory in four
++ * seconds. A typed figure and a sourced one produce identical-looking scores,
++ * and the difference only surfaces a season later in the wrong municipality.
++ *
++ * So: a value requires a source, a source requires a URL and a retrieval date,
++ * and the date may not be in the future. There is no estimate flag, on purpose
++ * — an estimate that survives one edit becomes a fact and nothing here can
++ * un-believe it.
++ *
++ * IT ALSO GUARDS THE GATE ITSELF
++ *
++ * Two of the ten inputs are computed from this repository (logistics, corridor
++ * value) and are worth 10 points together. MIN_CONFIDENCE must stay above that
++ * share, or a market could be classified DOMINATE on highway access alone.
++ * And no United States market may ever be classified above FUTURE, because a
++ * model that can rank Buffalo as HIGH_PRIORITY is one edit from an American
++ * commercial page for a company with no American office.
++ *
++ *   node scripts/verify-market-inputs.mjs
++ */
++import { readFileSync, existsSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const WEB = join(ROOT, 'apps/web');
++const fail = [];
++const read = (rel) => {
++  const p = join(WEB, rel);
++  if (!existsSync(p)) { fail.push(`${rel} is missing`); return ''; }
++  return readFileSync(p, 'utf8');
++};
++
++const src = read('content/geo/market-inputs.ts');
++const opp = read('lib/geo/opportunity.ts');
++
++/* ── 1. the ten inputs, and their weights ────────────────────────────────── */
++const specs = [...src.matchAll(/id:\s*'([a-zA-Z]+)',\s*weight:\s*(\d+),\s*kind:\s*'(sourced|computed)'/g)]
++  .map((m) => ({ id: m[1], weight: Number(m[2]), kind: m[3] }));
++
++if (specs.length !== 10) {
++  fail.push(
++    `read ${specs.length} input spec(s) from content/geo/market-inputs.ts, expected 10. Either the model changed or ` +
++      'this reader is blind — and a blind reader here validates nothing while reporting success.',
++  );
++}
++const total = specs.reduce((n, s) => n + s.weight, 0);
++if (specs.length && total !== 100) {
++  fail.push(`the input weights sum to ${total}, not 100. Every score computed from them is on a different scale than it claims.`);
++}
++
++const union = /export type InputId =([\s\S]*?);/.exec(src)?.[1] ?? '';
++const declared = new Set([...union.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]));
++for (const s of specs) {
++  if (!declared.has(s.id)) fail.push(`INPUT_SPECS carries "${s.id}", which is not in the InputId union`);
++}
++for (const id of declared) {
++  if (!specs.some((s) => s.id === id)) fail.push(`InputId declares "${id}" but INPUT_SPECS has no entry for it — that weight is silently zero`);
++}
++
++/* ── 2. every sourced value carries a citation ───────────────────────────── */
++const today = new Date().toISOString().slice(0, 10);
++const body = /MARKET_INPUTS[^=]*=\s*\{([\s\S]*?)\n\};/.exec(src)?.[1] ?? '';
++/*
++ * Match the INPUT block, not the market block. The first version of this reader
++ * matched the outer key and reported "input oakville carries a score with no
++ * source" — actionable by luck rather than by design, and useless the day a
++ * market carries eight inputs and one of them is unsourced.
++ *
++ * An input block is the innermost object that holds a `score` and a `source`,
++ * so it contains exactly one nested brace pair: the source itself.
++ */
++const entries = [...body.matchAll(/(\w+)\s*:\s*\{([^{}]*score:[^{}]*source:\s*\{[^{}]*\}[^{}]*)\}/g)];
++if (/score:\s*-?\d/.test(body) && entries.length === 0) {
++  fail.push(
++    'MARKET_INPUTS contains at least one score but this reader matched no input block. It is blind, and a blind ' +
++      'reader here waves through every unsourced figure in the file.',
++  );
++}
++for (const e of entries) {
++  const [, id, block] = e;
++  if (!/score:\s*-?\d/.test(block)) continue;
++  const url = /url:\s*'([^']*)'/.exec(block)?.[1];
++  const at = /retrievedAt:\s*'(\d{4}-\d{2}-\d{2})'/.exec(block)?.[1];
++  const title = /title:\s*'([^']*)'/.exec(block)?.[1];
++  if (!url || !/^https:\/\//.test(url)) {
++    fail.push(`input "${id}" carries a score with no https source URL. A figure without a source is a figure somebody typed.`);
++  }
++  if (!at) fail.push(`input "${id}" carries a score with no retrievedAt date — nothing says how stale it is`);
++  else if (at > today) fail.push(`input "${id}" was retrieved on ${at}, which is in the future`);
++  if (!title) fail.push(`input "${id}" carries a score with no source title`);
++}
++
++/* ── 3. the confidence gate is above the computed share ──────────────────── */
++const computedWeight = specs.filter((s) => s.kind === 'computed').reduce((n, s) => n + s.weight, 0);
++const min = Number(/MIN_CONFIDENCE\s*=\s*([0-9.]+)/.exec(opp)?.[1] ?? NaN);
++if (Number.isNaN(min)) {
++  fail.push('could not read MIN_CONFIDENCE from lib/geo/opportunity.ts — the gate that stops a market being ranked on highway access');
++} else if (specs.length && min <= computedWeight / 100) {
++  fail.push(
++    `MIN_CONFIDENCE is ${min} and the computed inputs are worth ${computedWeight} points (${computedWeight / 100}). ` +
++      'At or below that, a market can be classified — DOMINATE included — with no economic input sourced at all.',
++  );
++}
++
++/* ── 4. no United States market is ever classified above FUTURE ──────────── */
++if (!/country === 'US'/.test(opp) || !/classification:\s*'FUTURE'/.test(opp)) {
++  fail.push(
++    'lib/geo/opportunity.ts no longer forces United States markets to FUTURE. Ecowoods operates in Ontario; a model ' +
++      'that can rank an American market as HIGH_PRIORITY is one edit from an American commercial page.',
++  );
++}
++if (!/score:\s*trustworthy\s*\?/.test(opp)) {
++  fail.push(
++    'lib/geo/opportunity.ts no longer withholds `score` below the confidence gate. A number computed over a tenth of ' +
++      'the weighting is read as a score by everyone who sees it, whatever the confidence beside it says.',
++  );
++}
++
++/* ── report ─────────────────────────────────────────────────────────────── */
++if (fail.length) {
++  console.error(`\n✗ market inputs: ${fail.length} problem(s)\n`);
++  for (const f of fail) console.error(`  · ${f}\n`);
++  process.exit(1);
++}
++const sourced = specs.filter((s) => s.kind === 'sourced');
++const filled = entries.filter((e) => /score:\s*-?\d/.test(e[2])).length;
++console.log(
++  `✓ market inputs verified — ${specs.length} weighted input(s) summing to ${total}, ${sourced.length} of them ` +
++    `requiring a citation, ${filled} sourced value(s) on file, classification gated at ${min} confidence`,
++);
+-- 
+2.43.0
+
