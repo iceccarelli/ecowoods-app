@@ -21,6 +21,7 @@ export type CorridorId =
   | '403-6-west'
   | 'niagara-belt'
   | 'buffalo-niagara'
+  | 'buffalo-metro'
   | 'cottage-north-east';
 
 export interface Corridor {
@@ -112,11 +113,23 @@ export const CORRIDORS: Corridor[] = [
     route: 'Fort Erie and Niagara Falls across the border into western New York',
     hub: 'fort-erie',
     members: [
-      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'buffalo',
-      'amherst', 'cheektowaga', 'tonawanda', 'lockport',
+      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'lewiston', 'north-tonawanda', 'lockport',
+      'buffalo', 'amherst', 'cheektowaga', 'tonawanda',
     ],
     summary:
       'The only corridor that crosses the border, and the only one whose United States members are advertising reach rather than service coverage. Ecowoods operates in Ontario, from Ontario. The New York municipalities here exist in this model so that a property owner on that side of the river with an Ontario property can find the company — nothing more. They are never emitted as service area.',
+  },
+  {
+    id: 'buffalo-metro',
+    name: 'Buffalo metro',
+    route: 'Buffalo outward through the Erie County towns',
+    hub: 'buffalo',
+    members: [
+      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga',
+      'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg', 'east-aurora',
+    ],
+    summary:
+      'Western New York, and the one corridor with no Ecowoods drive on it at all. It is a map of where the demand is, not of where crews go: Ecowoods operates in Ontario, from Ontario, and every municipality here is advertising reach for Ontario property. It exists as a corridor because the alternative — a flat list of American place names attached to a Canadian contractor — is exactly the shape of the thing this model refuses to build. Nothing in it is ever emitted as service area, and a guard fails the build if one appears there.',
   },
   {
     id: 'cottage-north-east',

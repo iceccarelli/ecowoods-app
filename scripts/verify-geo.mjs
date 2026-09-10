@@ -171,11 +171,45 @@ if (!/country:\s*'US'/.test(usCtor)) {
   fail.push('the us() constructor no longer sets country US');
 }
 
-for (const um of marketsSrc.matchAll(/\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)'/g)) {
+/*
+ * READ THE us() CALL, NOT THE CONSTRUCTOR'S DEFAULT.
+ *
+ * This loop used to hard-code `corridors: ['buffalo-niagara']` for every United
+ * States market, because that was the constructor's only behaviour. The day
+ * us() gained corridor, kind and partOf arguments, the guard reported nine
+ * markets as claiming a corridor they do not claim — and, worse, would have
+ * been unable to see a district declaring corridors of its own, which is the
+ * error the whole model is arranged to prevent.
+ *
+ * The default is now read from the signature and overridden by whatever the
+ * call site actually passes.
+ */
+const usDefaultCorridors =
+  [...(/corridors:\s*CorridorId\[\]\s*=\s*\[([^\]]*)\]/.exec(usCtor)?.[1] ?? '').matchAll(/'([^']+)'/g)]
+    .map((x) => x[1]);
+const US_CALL = /\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)',\s*\[([^\]]*)\](?:\s*,\s*\[([^\]]*)\])?(?:\s*,\s*'([a-z]+)')?(?:\s*,\s*'([a-z0-9-]+)')?\s*\)/g;
+let usRead = 0;
+for (const um of marketsSrc.matchAll(US_CALL)) {
+  const kind = um[5] ?? 'municipality';
+  const declared = um[4] === undefined
+    ? usDefaultCorridors
+    : [...um[4].matchAll(/'([^']+)'/g)].map((x) => x[1]);
   markets.push({
     name: um[1], slug: um[2], status: usStatus ?? 'us-proxy', country: 'US',
-    corridors: ['buffalo-niagara'], nearest: [], parentHub: 'fort-erie', isDistrict: false,
+    corridors: kind === 'district' ? [] : declared,
+    nearest: [...um[3].matchAll(/'([^']+)'/g)].map((x) => x[1]),
+    parentHub: 'fort-erie',
+    isDistrict: kind === 'district',
+    partOf: um[6],
   });
+  usRead += 1;
+}
+if (usRead !== (marketsSrc.match(/\bus\(\s*'/g) ?? []).length) {
+  fail.push(
+    `read ${usRead} us() call(s) but the file contains ` +
+      `${(marketsSrc.match(/\bus\(\s*'/g) ?? []).length}. The reader is blind to a United States market, which is ` +
+      'the one class of market that may never reach the service area.',
+  );
 }
 /* Toronto is written as a literal rather than through m(); read it explicitly. */
 if (/'toronto', 'core-active'/.test(marketsSrc) || /m\('Toronto', 'toronto'/.test(marketsSrc)) {

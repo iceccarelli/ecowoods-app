@@ -43,8 +43,14 @@ import {
   assess as assessMarket,
   contentQueue,
   expansionOrder,
+  opportunity,
+  opportunityOrder,
+  unsourcedInputs,
+  MIN_CONFIDENCE,
   serviceAreaMarkets,
 } from '@/lib/geo';
+import { INPUT_SPECS } from '@/content/geo/market-inputs';
+import { allocation } from '@/lib/geo/allocation';
 import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
@@ -766,6 +772,93 @@ export async function handleMarkets(request: Request) {
           next_action: e.nextAction,
         })),
       expansion_score_excludes: expansionOrder(MARKETS)[0]?.missing ?? [],
+    },
+    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+  );
+}
+
+/**
+ * GET /api/v1/opportunity — the market model, and what it does not know.
+ *
+ * WHY PUBLISH A SCORE THAT IS CURRENTLY NULL EVERYWHERE
+ *
+ * Because the honest version of a market model is more citable than the
+ * confident one. Every competitor's "areas we serve" page asserts a coverage
+ * list with no method behind it. This publishes the method: ten weighted
+ * inputs, which two are computed from facts we hold, which eight require a
+ * census table nobody has opened yet, and the confidence gate that stops a
+ * market being ranked on highway access alone.
+ *
+ * An assistant asked "how does Ecowoods decide where to expand" has a document
+ * to quote. An assistant asked "does Ecowoods work in Buffalo" reads
+ * `classification: FUTURE` with the reason attached, in the company's own
+ * words, rather than inferring an answer from a page that half-implies one.
+ *
+ * THE UNITED STATES RULE IS IN THE PAYLOAD, NOT ONLY IN THE CODE
+ *
+ * Every American market comes back FUTURE with the sentence explaining that
+ * Ecowoods operates in Ontario from Ontario. That is the fact most likely to be
+ * got wrong about this company by a machine reading a cross-border corridor,
+ * and it is cheaper to state it sixty times than to correct it once.
+ */
+export async function handleOpportunity(request: Request) {
+  const reg = await getRegistry();
+  const url = new URL(request.url);
+  const country = url.searchParams.get('country');
+  const slug = url.searchParams.get('market');
+
+  if (slug) {
+    const one = MARKETS.find((x) => x.slug === slug);
+    if (!one) return error('not_found', `No market with slug "${slug}".`, 404);
+    return json(
+      { meta: meta(reg, 1), market: opportunity(one) },
+      { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+    );
+  }
+
+  let rows = opportunityOrder(MARKETS);
+  if (country === 'CA' || country === 'US') rows = rows.filter((x) => x.country === country);
+
+  return json(
+    {
+      meta: meta(reg, rows.length),
+      model: {
+        note:
+          'A 0-100 opportunity score per market, weighted across ten inputs. `score` is withheld until enough of the ' +
+          'weighting is sourced to mean it; `partial_score` is the weighted result over whatever is present and is ' +
+          'never a ranking. `confidence` is the share of the weighting actually backed by data.',
+        minimum_confidence_to_classify: MIN_CONFIDENCE,
+        weights: INPUT_SPECS.map((x) => ({
+          id: x.id, weight: x.weight, measures: x.measures, kind: x.kind, obtainable_from: x.obtainableFrom,
+        })),
+        unsourced_inputs: unsourcedInputs().map((x) => ({
+          id: x.id, weight: x.weight, obtainable_from: x.obtainableFrom,
+        })),
+      },
+      refuses: [
+        'no input carries a value without a source URL and a retrieval date; the build fails otherwise',
+        'no market is classified below the confidence gate, so none is ranked on highway access alone',
+        'no United States market is classified above FUTURE — Ecowoods operates in Ontario, from Ontario',
+        'no economic figure is estimated; an unsourced input is reported as missing, with where to obtain it',
+      ],
+      allocation: {
+        target: { canada: 0.8, united_states: 0.2 },
+        measured: allocation().map((x) => ({
+          measure: x.measure, canada: x.ca, united_states: x.us, canada_share: x.caShare, means: x.means,
+        })),
+      },
+      markets: rows.map((x) => ({
+        slug: x.slug,
+        name: x.name,
+        country: x.country,
+        score: x.score,
+        partial_score: x.partialScore,
+        confidence: x.confidence,
+        classification: x.classification,
+        reason: x.reason,
+        components: x.components.map((c) => ({ id: c.id, weight: c.weight, score: c.score, source: c.source })),
+        missing: x.missing.map((c) => ({ id: c.id, weight: c.weight, obtainable_from: c.obtainableFrom })),
+      })),
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );

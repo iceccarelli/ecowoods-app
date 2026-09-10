@@ -146,6 +146,20 @@ jobs:
       # business does not hold, rather than growing invented numbers for them.
       - name: Strategy (funnels complete, tracked questions resolve, no invented economics)
         run: node scripts/verify-strategy.mjs
+      # The market score decides where the next page gets written and where the
+      # budget goes. Eight of its ten inputs are census and keyword figures a
+      # person could type from memory in four seconds, and a typed figure scores
+      # identically to a sourced one right up to the season it sends the work to
+      # the wrong municipality.
+      - name: Market inputs (no score from a figure nobody can point at)
+        run: node scripts/verify-market-inputs.mjs
+      # 80% Canada, 20% western New York. Nobody violates that on purpose; it
+      # goes one reasonable commit at a time until a Toronto contractor's site
+      # reads as an American one. Underneath the ratio sits a line with no
+      # tolerance at all: no United States market may hold an indexable page or
+      # enter the service area, because there is no United States office.
+      - name: Allocation (Canada stays the centre of gravity)
+        run: node scripts/verify-allocation.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

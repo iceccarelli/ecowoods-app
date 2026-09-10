@@ -165,6 +165,46 @@ const CORE: Market[] = [
   m('Ajax', 'ajax', 'active-expansion', 'toronto', ['401-east'], ['pickering', 'whitby'], ACTIVE('2026-09-09')),
 ];
 
+/* ── the sixteen Toronto neighbourhoods ───────────────────────────────────
+ *
+ * These have had pages, local content, sitemap entries and .md editions since
+ * F-157 was resolved. What they did not have was a record in this file, which
+ * meant the geographic model — corridors, the API, the expansion score, the
+ * allocation audit — could not see the sixteen highest-intent pages on the
+ * site. A query for "hardwood flooring Rosedale" was served by a page the
+ * geography layer did not know existed.
+ *
+ * They enter as DISTRICTS of Toronto, never municipalities. That is the whole
+ * of F-157: `serviceAreaMarkets()` filters to `kind === 'municipality'`, and
+ * root-schema derives areaServed from CITIES, so a neighbourhood arriving as a
+ * municipality would declare Rosedale a city of Ontario alongside Mississauga.
+ * It is not. It is a neighbourhood inside a city that is already in the list,
+ * and stating otherwise is a factual error in the one part of this site whose
+ * job is to state facts a machine can rely on.
+ *
+ * Corridor membership is empty and inherited through `partOf`, exactly as it is
+ * for North York and Etobicoke: a corridor is a drive between municipalities,
+ * and Yorkville does not sit on the QEW separately from Toronto.
+ */
+const TORONTO_NEIGHBOURHOODS: Market[] = [
+  m('Rosedale', 'rosedale', 'core-active', 'toronto', [], ['toronto', 'yorkville', 'cabbagetown'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Forest Hill', 'forest-hill', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'the-annex'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Yorkville', 'yorkville', 'core-active', 'toronto', [], ['toronto', 'the-annex', 'rosedale'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Leaside', 'leaside', 'core-active', 'toronto', [], ['toronto', 'davisville-village', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('The Annex', 'the-annex', 'core-active', 'toronto', [], ['toronto', 'yorkville', 'forest-hill'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('High Park', 'high-park', 'core-active', 'toronto', [], ['toronto', 'swansea', 'liberty-village'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Riverdale', 'riverdale', 'core-active', 'toronto', [], ['toronto', 'leslieville', 'cabbagetown'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Leslieville', 'leslieville', 'core-active', 'toronto', [], ['toronto', 'riverdale', 'the-beaches'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('The Beaches', 'the-beaches', 'core-active', 'toronto', [], ['toronto', 'leslieville', 'east-york'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Lawrence Park', 'lawrence-park', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'north-york'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Cabbagetown', 'cabbagetown', 'core-active', 'toronto', [], ['toronto', 'riverdale', 'downtown-toronto'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Swansea', 'swansea', 'core-active', 'toronto', [], ['toronto', 'high-park', 'etobicoke'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Davisville Village', 'davisville-village', 'core-active', 'toronto', [], ['toronto', 'midtown-toronto', 'leaside'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Midtown Toronto', 'midtown-toronto', 'core-active', 'toronto', [], ['toronto', 'davisville-village', 'forest-hill'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('King West', 'king-west', 'core-active', 'toronto', [], ['toronto', 'liberty-village', 'downtown-toronto'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Liberty Village', 'liberty-village', 'core-active', 'toronto', [], ['toronto', 'king-west', 'high-park'], TORONTO_TRUTH(), 'district', 'toronto'),
+];
+
 /* ── the corridor, confirmed end to end ───────────────────────────────────
  *
  * These twenty-five carried `verifiedAt: null` until the owner confirmed them
@@ -205,11 +245,13 @@ const CORRIDOR_TARGETS: Market[] = [
   m('Ancaster', 'ancaster', 'active-expansion', 'mississauga', [], ['hamilton', 'dundas'], COVERED('Mississauga'), 'district', 'hamilton'),
   m('Dundas', 'dundas', 'active-expansion', 'mississauga', [], ['hamilton', 'ancaster'], COVERED('Mississauga'), 'district', 'hamilton'),
   m('Stoney Creek', 'stoney-creek', 'active-expansion', 'mississauga', [], ['hamilton', 'grimsby'], COVERED('Mississauga'), 'district', 'hamilton'),
+  m('Waterdown', 'waterdown', 'active-expansion', 'mississauga', [], ['hamilton', 'dundas'], COVERED('Mississauga'), 'district', 'hamilton'),
   m('Grimsby', 'grimsby', 'active-expansion', 'mississauga', ['qew-west', 'niagara-belt'], ['stoney-creek', 'lincoln'], COVERED('Mississauga')),
   m('Guelph', 'guelph', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'kitchener'], BY_TRIP('Hamilton')),
   m('Cambridge', 'cambridge', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['kitchener', 'guelph'], BY_TRIP('Hamilton')),
   m('Kitchener', 'kitchener', 'travel-by-confirmation', 'hamilton', ['403-6-west'], ['cambridge', 'guelph'], BY_TRIP('Hamilton')),
   m('Lincoln', 'lincoln', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['grimsby', 'st-catharines'], BY_TRIP('Grimsby')),
+  m('Beamsville', 'beamsville', 'travel-by-confirmation', 'grimsby', [], ['lincoln', 'grimsby'], BY_TRIP('Grimsby'), 'district', 'lincoln'),
   m('St. Catharines', 'st-catharines', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['lincoln', 'thorold', 'niagara-on-the-lake'], BY_TRIP('Grimsby')),
   m('Thorold', 'thorold', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['st-catharines', 'welland'], BY_TRIP('Grimsby')),
   m('Welland', 'welland', 'travel-by-confirmation', 'grimsby', ['niagara-belt'], ['thorold', 'port-colborne'], BY_TRIP('Grimsby')),
@@ -239,15 +281,33 @@ const TRAVEL_BY_CONFIRMATION: Market[] = [
  * fails the build if one appears there.
  */
 const US_PROXY: Market[] = [
-  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst']),
-  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport']),
-  us('Amherst', 'amherst', ['buffalo', 'tonawanda']),
-  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst']),
-  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst']),
-  us('Lockport', 'lockport', ['niagara-falls-ny', 'amherst']),
+  /* Erie County, on the Buffalo metro corridor. */
+  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Amherst', 'amherst', ['buffalo', 'tonawanda'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Williamsville', 'williamsville', ['amherst', 'clarence'], [], 'district', 'amherst'),
+  us('Clarence', 'clarence', ['amherst', 'lockport'], ['buffalo-metro']),
+  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Kenmore', 'kenmore', ['tonawanda', 'buffalo'], [], 'district', 'tonawanda'),
+  us('Orchard Park', 'orchard-park', ['buffalo', 'hamburg'], ['buffalo-metro']),
+  us('Hamburg', 'hamburg', ['buffalo', 'orchard-park'], ['buffalo-metro']),
+  us('East Aurora', 'east-aurora', ['orchard-park', 'hamburg'], ['buffalo-metro']),
+  us('Grand Island', 'grand-island', ['tonawanda', 'niagara-falls-ny'], ['buffalo-metro']),
+
+  /* Niagara County, on the cross-border corridor. */
+  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport'], ['buffalo-niagara']),
+  us('Lewiston', 'lewiston', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
+  us('North Tonawanda', 'north-tonawanda', ['tonawanda', 'lockport'], ['buffalo-niagara']),
+  us('Lockport', 'lockport', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
 ];
 
-export const MARKETS: Market[] = [...CORE, ...CORRIDOR_TARGETS, ...TRAVEL_BY_CONFIRMATION, ...US_PROXY];
+export const MARKETS: Market[] = [
+  ...CORE,
+  ...TORONTO_NEIGHBOURHOODS,
+  ...CORRIDOR_TARGETS,
+  ...TRAVEL_BY_CONFIRMATION,
+  ...US_PROXY,
+];
 
 export const marketBySlug = (slug: string): Market | undefined =>
   MARKETS.find((x) => x.slug === slug);
@@ -354,11 +414,18 @@ function m(
   };
 }
 
-function us(name: string, slug: string, nearest: string[]): Market {
+function us(
+  name: string,
+  slug: string,
+  nearest: string[],
+  corridors: CorridorId[] = ['buffalo-niagara'],
+  kind: MarketKind = 'municipality',
+  partOf?: string,
+): Market {
   return {
-    slug, name, country: 'US', region: 'NY', kind: 'municipality',
+    slug, name, country: 'US', region: 'NY', kind, partOf,
     status: 'us-proxy',
-    corridors: ['buffalo-niagara'],
+    corridors: kind === 'district' ? [] : corridors,
     parentHub: 'fort-erie',
     nearest,
     localFacts: [],

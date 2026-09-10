@@ -89,11 +89,28 @@ describe('what may be claimed as served', () => {
     }
   });
 
-  it('carries all forty-three Ontario markets, none of them unconfirmed', () => {
+  it('carries every Ontario market confirmed, municipalities and neighbourhoods alike', () => {
     const on = MARKETS.filter((m) => m.region === 'ON');
-    expect(on).toHaveLength(43);
+    expect(on.length).toBeGreaterThanOrEqual(61);
+    expect(on.filter((m) => m.kind === 'municipality')).toHaveLength(34);
     const unconfirmed = on.filter((m) => m.operationalTruth.verifiedAt === null);
     expect(unconfirmed.map((m) => m.slug)).toEqual([]);
+  });
+
+  it('models the sixteen Toronto neighbourhoods as districts, never as cities', () => {
+    const hoods = ['rosedale', 'forest-hill', 'yorkville', 'leaside', 'the-annex', 'high-park',
+      'riverdale', 'leslieville', 'the-beaches', 'lawrence-park', 'cabbagetown', 'swansea',
+      'davisville-village', 'midtown-toronto', 'king-west', 'liberty-village'];
+    const area = new Set(serviceAreaMarkets().map((m) => m.slug));
+    for (const slug of hoods) {
+      const m = MARKETS.find((x) => x.slug === slug);
+      expect(m, slug).toBeDefined();
+      expect(m!.kind, slug).toBe('district');
+      expect(m!.partOf, slug).toBe('toronto');
+      expect(m!.corridors, slug).toEqual([]);
+      // F-157: a neighbourhood must never become a schema.org City node.
+      expect(area.has(slug), slug).toBe(false);
+    }
   });
 
   it('says who confirmed every market it claims, and never leaves the sentence empty', () => {
@@ -196,10 +213,25 @@ describe('corridors', () => {
     }
   });
 
-  it('crosses the border in exactly one corridor', () => {
-    const crossing = CORRIDORS.filter((c) =>
-      c.members.some((s) => marketBySlug(s)?.country === 'US'),
-    );
-    expect(crossing.map((c) => c.id)).toEqual(['buffalo-niagara']);
+  it('mixes the two countries in exactly one corridor, and never anywhere else', () => {
+    // buffalo-metro carries United States markets and is not a border crossing:
+    // it is entirely American, a map of demand rather than of any Ecowoods
+    // drive. What must stay singular is the corridor that contains BOTH
+    // countries, because that is the only place the two can be confused.
+    const mixed = CORRIDORS.filter((c) => {
+      const countries = new Set(c.members.map((s) => marketBySlug(s)?.country));
+      return countries.has('CA') && countries.has('US');
+    });
+    expect(mixed.map((c) => c.id)).toEqual(['buffalo-niagara']);
+
+    const usOnly = CORRIDORS.filter((c) => c.members.every((s) => marketBySlug(s)?.country === 'US'));
+    expect(usOnly.map((c) => c.id)).toEqual(['buffalo-metro']);
+  });
+
+  it('never lets a United States market into a Canada-only corridor', () => {
+    for (const c of CORRIDORS) {
+      if (['buffalo-niagara', 'buffalo-metro'].includes(c.id)) continue;
+      expect(c.members.every((s) => marketBySlug(s)?.country === 'CA'), c.id).toBe(true);
+    }
   });
 });

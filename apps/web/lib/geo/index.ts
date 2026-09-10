@@ -44,3 +44,12 @@ export const corridorsFor = (slug: string) =>
 /** Canonical path for a market that has a page. */
 export const marketPath = (slug: string): string => `/service-areas/${slug}`;
 export const corridorPath = (id: string): string => `/corridors/${id}`;
+
+export {
+  opportunity,
+  opportunityOrder,
+  unsourcedInputs,
+  MIN_CONFIDENCE,
+  type Opportunity,
+  type Classification,
+} from './opportunity';
