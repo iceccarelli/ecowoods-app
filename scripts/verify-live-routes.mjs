@@ -274,8 +274,41 @@ if (!bad.length) {
   process.exit(0);
 }
 
+/*
+ * IS THIS EVEN PUSHED?
+ *
+ * The first time a whole feature came back 404 here, the cause was that the
+ * commit was still sitting on the local branch: a pre-push guard had blocked
+ * the push, main was correct locally, and production had never seen the code.
+ * The message below told the operator "the deployment serving the site is not
+ * the code you built", which is true in the least useful possible way and sent
+ * them to look at Vercel.
+ *
+ * Ask git first. An unpushed commit is a different problem with a different
+ * fix, and it is the likelier one.
+ */
+let unpushed = null;
+try {
+  const { execFileSync } = await import('node:child_process');
+  const git = (args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD']);
+  const ahead = git(['rev-list', '--count', `origin/${branch}..HEAD`]);
+  if (Number(ahead) > 0) unpushed = { branch, ahead: Number(ahead) };
+} catch { /* not a checkout, or no upstream — say nothing rather than guess */ }
+
 console.error(`\n✗ ${bad.length} of ${list.length} route(s) defined here do not serve from ${BASE}:\n`);
 for (const r of bad) console.error(`  ${String(r.status).padStart(3)}  ${r.path}${r.error ? `  (${r.error})` : ''}`);
+if (unpushed) {
+  console.error(
+    `\n  ${unpushed.branch} is ${unpushed.ahead} commit(s) AHEAD OF origin/${unpushed.branch}. Production cannot be\n` +
+      '  serving code that has not been pushed. This is almost certainly the whole answer — check that a\n' +
+      '  pre-push guard did not block the push, fix what it reported, and push:\n\n' +
+      `      git log --oneline origin/${unpushed.branch}..HEAD\n` +
+      `      git push origin ${unpushed.branch}\n`,
+  );
+  process.exit(1);
+}
+
 console.error(
   '\n  Every one of these exists in this repository and returns 200 on `next start`. If they 404 in\n' +
     '  production, the deployment serving the site is not the code you built. Check which deployment\n' +
