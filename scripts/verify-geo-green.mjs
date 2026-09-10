@@ -30,6 +30,9 @@
  *     for months, and appeared on four surfaces. Counts are derived.
  *  6. A second address or telephone number anywhere in the geography. There is
  *     one shop, one showroom and one number, and they are in Toronto.
+ *  7. The two sentences every page owes the reader being split across JSX text
+ *     nodes, where React's separator comments make them unliftable by a string
+ *     extractor.
  *
  *   node scripts/verify-geo-green.mjs
  */
@@ -193,6 +196,44 @@ for (const file of [...walk(join(WEB, 'app')), ...walk(join(WEB, 'lib')), ...wal
     if (!TORONTO_PHONE.test(hit[0]) && !RESERVED_FICTIONAL.test(hit[0])) {
       fail.push(`${rel} contains a telephone number that is not the Toronto number: "${hit[0]}"`);
     }
+  }
+}
+
+/* ── 7. the two required sentences are contiguous in the HTML ────────────
+ *
+ * Every service-area page owes the reader one sentence — Ecowoods serves this
+ * place, book the measure — and every New York page owes a second saying where
+ * the shop is. Both must survive being lifted verbatim by something that reads
+ * HTML as a string rather than as a tree.
+ *
+ * Written as mixed JSX children, React's hydratable renderer separates them:
+ *
+ *     Ecowoods serves <!-- -->Pittsford, NY<!-- -->. Book the measure.
+ *
+ * A browser and any parsing crawler read that as one sentence. A naive
+ * extractor does not, and a live grep for the exact sentence came back empty on
+ * every New York page while finding the adjacent static one two lines below —
+ * which is how this was found rather than reasoned about. Written as a single
+ * template literal it renders as one text node.
+ *
+ * So the check is on the source: these two sentences are interpolated strings,
+ * not JSX children, and a future edit that "tidies" them back into JSX fails.
+ */
+const areaPage = read('app/service-areas/[city]/page.tsx');
+if (areaPage) {
+  if (!/`Ecowoods serves \$\{[^}]+\}\. Book the measure\.`/.test(areaPage)) {
+    fail.push(
+      'app/service-areas/[city]/page.tsx no longer builds "Ecowoods serves {city}. Book the measure." as a single ' +
+        'template literal. As mixed JSX children React splits it with separator comments and a string extractor ' +
+        'cannot lift the one sentence the page exists to state.',
+    );
+  }
+  if (!/The showroom is Toronto\. The job is in \$\{[^}]+\}\. We take this work\.`/.test(areaPage)) {
+    fail.push(
+      'app/service-areas/[city]/page.tsx no longer builds the New York showroom sentence as a single template ' +
+        'literal. That sentence is the one that keeps a service page from reading as a local presence, and it has ' +
+        'to be liftable verbatim.',
+    );
   }
 }
 

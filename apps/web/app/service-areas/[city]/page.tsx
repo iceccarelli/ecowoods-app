@@ -156,14 +156,24 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               question and it is not about substrate. Answering it in the first
               line — and, on a New York page, saying in the same breath where
               the shop is — is what separates a service page from a directory
-              listing that leaves them guessing. */}
+              listing that leaves them guessing.
+
+              EACH SENTENCE IS ONE TEMPLATE LITERAL, NOT MIXED JSX CHILDREN.
+              Written as `Ecowoods serves {name}. Book the measure.` React
+              renders it as three text nodes with separator comments between
+              them:
+
+                  Ecowoods serves <!-- -->Pittsford, NY<!-- -->. Book the measure.
+
+              A browser and any HTML-parsing crawler read that as one sentence.
+              A naive string extractor does not — and a live grep for the exact
+              sentence came back empty on every New York page while finding the
+              adjacent static one, which is precisely the failure mode. The
+              sentence a page most needs a machine to lift verbatim is the one
+              that must not be interrupted. */}
           <p style={{ maxWidth: '48rem', marginTop: '1rem', fontWeight: 600 }}>
-            Ecowoods serves {areaDisplayName(city)}. Book the measure.
-            {isUS && (
-              <>
-                {' '}The showroom is Toronto. The job is in {city.name}. We take this work.
-              </>
-            )}
+            {`Ecowoods serves ${areaDisplayName(city)}. Book the measure.`}
+            {isUS && ` The showroom is Toronto. The job is in ${city.name}. We take this work.`}
           </p>
 
           {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
