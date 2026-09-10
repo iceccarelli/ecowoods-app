@@ -13,7 +13,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
-import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
+import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, US_AREA_SLUGS, type City } from '@/lib/seo-data';
 import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
@@ -126,6 +126,22 @@ export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
       '@type': 'Place',
       name: city.name,
       containedInPlace: { '@type': 'City', name: district.partOf },
+    };
+  }
+  /*
+   * New York State. A City node with the state named inside it, because there
+   * is a Niagara Falls and a Brighton on both sides of the border and a bare
+   * name resolves to whichever one the consumer already believed in.
+   */
+  if (US_AREA_SLUGS.has(city.slug)) {
+    return {
+      '@type': 'City',
+      name: city.name,
+      containedInPlace: {
+        '@type': 'AdministrativeArea',
+        name: 'New York',
+        containedInPlace: { '@type': 'Country', name: 'United States' },
+      },
     };
   }
   return { '@type': 'City', name: city.name };

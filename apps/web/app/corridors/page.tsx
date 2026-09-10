@@ -26,9 +26,9 @@ export const metadata: Metadata = {
  */
 export default function CorridorsPage() {
   const counts = {
-    operational: MARKETS.filter((x) => x.operationalTruth.verifiedAt && x.status !== 'us-proxy').length,
+    operational: MARKETS.filter((x) => x.operationalTruth.verifiedAt).length,
     withPages: MARKETS.filter((x) => assess(x).indexable).length,
-    total: MARKETS.filter((x) => x.country === 'CA').length,
+    total: MARKETS.length,
   };
 
   return (
@@ -104,11 +104,13 @@ export default function CorridorsPage() {
               is scheduled as a trip, and that sits in the written price rather than appearing later.
             </p>
             <p>
-              <strong>Advertising reach.</strong> The New York side of the{' '}
-              <Link href="/corridors/buffalo-niagara">Buffalo–Niagara corridor</Link>. Ecowoods operates in
-              Ontario, from Ontario. Those municipalities exist in this model so an owner of an Ontario
-              property who lives across the river can find the company, and they are never published as
-              service area.
+              <strong>New York State.</strong> The{' '}
+              <Link href="/corridors/buffalo-niagara">Buffalo–Niagara</Link>,{' '}
+              <Link href="/corridors/buffalo-metro">Buffalo metro</Link> and{' '}
+              <Link href="/corridors/rochester-east">Rochester east</Link> routes. Ecowoods takes this work.
+              The shop and the showroom are in Toronto and there is no second address, telephone number or
+              crew: what crosses the border is the job, and the written price still follows the free in-home
+              measure.
             </p>
           </div>
         </div>

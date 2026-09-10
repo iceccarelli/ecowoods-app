@@ -44,7 +44,7 @@ export default function ServiceAreasIndex() {
         </div>
       </section>
 
-      {/* The area index listed thirty-two places and nothing else — no service,
+      {/* The area index listed the places and nothing else — no service,
           no evidence, no price. It is the page a "near me" query lands on, and
           it answered "where" while saying nothing about "what" or "how much". */}
       <section className="tlx-section" aria-label="What we do in all of them">

@@ -1,26 +1,60 @@
-# The corridor: Toronto → GTA → Hamilton → Niagara → Buffalo
+# The corridor: Toronto → GTA → Hamilton → Niagara → Buffalo → Rochester
 
-**76 markets. 61 Ontario, 15 New York. 45 published pages. Canada at 80.3% of the model.**
+**101 markets. 75 Ontario, 26 New York. 89 published pages. Eleven corridors.**
 
-The 80/20 allocation is not an intention written in this document. It is computed
-from the repository and `pnpm verify:allocation` fails the build when Canada's
-share drops below the floor.
+Every market in the model is published. Every published page carries its own
+local content — housing stock and substrate in that market's own terms — above a
+floor the build enforces. `pnpm verify:geo:green` fails if any of it disagrees
+with any other surface.
 
 ```
-records   CA     61   US    15   →  Canada 80.3%
-graph     CA    198   US    48   →  Canada 80.5%
-pages     CA     45   US     0   →  Canada  100%
-depth     CA 23,823   US     0   →  Canada  100%
+ECOWOODS GEO GREEN AUDIT
+=========================
+Markets in registry:              101  (75 Ontario, 26 New York)
+Published service-area pages:      89
+Areas with local content:          89
+Areas with no market record:        0
+Orphans (no corridor):              0
+Retired statuses in shipped code:   0
+Hardcoded territory counts:         0
+Second address or telephone:        0
+GREEN GATE: PASSED
 ```
 
-`records` counts markets in the model. `graph` counts corridor memberships and
-nearest-market edges — where the American twenty percent is actually spent.
-`pages` and `depth` are structurally 100/0 and that is correct, not a bias to
-be balanced: a `us-proxy` market can never hold an indexable page, because a
-page would read as a United States location for a company with no United
-States office. The American allocation buys reach, never a landing page.
+## New York State, and the line that did not move
 
----
+On 2026-09-10 the owner confirmed cross-border licensing and crew work
+authorization. Twenty-six western New York municipalities became service areas
+on the same terms as every Ontario one: a page, local content, a sitemap entry,
+`areaServed`, a markdown twin, an API record and corridor membership.
+
+The status `us-proxy` — *advertising reach, never service area* — is gone from
+the type, from every guard, from the API and from the copy. It was the correct
+architecture for a company with no United States position and the wrong one from
+that date.
+
+**What did not change:** there is one shop and one showroom, at 32 Norfield
+Crescent in Toronto, one telephone number, one set of hours, one set of price
+bands and one set of reviews. None of them appears on any page as a local United
+States fact. Three guards enforce it — `verify:geo`, `verify:allocation` and the
+green gate all fail the build if a second address or a non-Toronto telephone
+number appears anywhere in the geography.
+
+Every New York page says the same two things above everything else:
+
+> **Ecowoods serves {city}. Book the measure.**
+> **The showroom is Toronto. The job is in {city}. We take this work.**
+
+## The depth budget
+
+70/20/10 is how hard a page is worked, not whether it exists. The Toronto luxury
+mesh carries the full anatomy; the QEW belt carries the standard one; the Niagara
+hinge and western New York carry a tight complete matrix — all six services, the
+booking path, the schema and the sitemap entry, on every page in every tier.
+
+`MIN_MEAN_DEPTH` is read from the corpus rather than chosen: the floor sits just
+under the tightest published page, so it fails a genuine regression without
+retroactively condemning pages that shipped and rank.
 
 ## 1. The geographic map
 

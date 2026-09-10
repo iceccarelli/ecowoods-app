@@ -81,6 +81,10 @@ const problems = [];
  */
 const areasBlock = src.match(/const AREAS = \[([\s\S]*?)\];/);
 const hoodsBlock = src.match(/const NEIGHBOURHOODS = \[([\s\S]*?)\];/);
+/* NEIGHBOURHOOD_AREAS is NEIGHBOURHOODS plus EXTRA_TORONTO — The Kingsway,
+   whose parent is Toronto rather than a municipality beside it. Reading only
+   the first list reported it as an orphan. */
+const extraTorontoBlock = src.match(/const EXTRA_TORONTO = \[([\s\S]*?)\];/);
 const districtBlock = src.match(/const DISTRICTS: [^=]*=\s*\[([\s\S]*?)\];/);
 if (!areasBlock) {
   console.error('verify-cities: could not read AREAS from seo-data.ts');
@@ -98,6 +102,7 @@ const slugify = (s) => overrides[s] ?? slugifyRaw(s);
 const areas = [
   ...[...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]),
   ...(hoodsBlock ? [...hoodsBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : []),
+  ...(extraTorontoBlock ? [...extraTorontoBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : []),
   ...(districtBlock ? [...districtBlock[1].matchAll(/name:\s*'([^']+)'/g)].map((m) => m[1]) : []),
 ];
 if (districtBlock && !areas.includes('Ancaster')) {

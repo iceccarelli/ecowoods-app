@@ -42,29 +42,48 @@ describe('the market registry', () => {
   });
 });
 
-describe('the line the United States markets may not cross', () => {
-  it('marks every US market us-proxy and none of them operational', () => {
-    const us = MARKETS.filter((m) => m.country === 'US');
-    expect(us.length).toBeGreaterThan(0);
-    for (const m of us) {
-      expect(m.status, m.slug).toBe('us-proxy');
-      expect(isOperational(m), m.slug).toBe(false);
+describe('New York State, and the line that still holds', () => {
+  const us = () => MARKETS.filter((m) => m.country === 'US');
+
+  it('carries every United States market on a live service status', () => {
+    expect(us().length).toBeGreaterThanOrEqual(26);
+    for (const m of us()) {
+      expect(['us-active', 'us-by-confirmation'], m.slug).toContain(m.status);
+      expect(isOperational(m), m.slug).toBe(true);
+      expect(m.operationalTruth.verifiedAt, m.slug).not.toBeNull();
+      expect(m.operationalTruth.verifiedBy, m.slug).toBe('owner');
     }
   });
 
-  it('keeps every US market out of the service area', () => {
+  it('puts New York municipalities in the service area, and still excludes districts', () => {
     const area = serviceAreaMarkets();
-    expect(area.some((m) => m.country === 'US')).toBe(false);
-    expect(area.every((m) => m.region === 'ON')).toBe(true);
+    expect(area.some((m) => m.country === 'US')).toBe(true);
+    expect(area.some((m) => m.slug === 'buffalo')).toBe(true);
+    // Williamsville is a village inside Amherst and Kenmore inside Tonawanda.
+    // Neither may become a peer City of the town that contains it.
+    expect(area.some((m) => m.slug === 'williamsville')).toBe(false);
+    expect(area.some((m) => m.slug === 'kenmore')).toBe(false);
+    expect(area.every((m) => m.kind === 'municipality')).toBe(true);
   });
 
-  it('never gives a US market a page', () => {
-    for (const m of MARKETS.filter((x) => x.country === 'US')) {
-      const w = assess(m);
-      expect(w.indexable, m.slug).toBe(false);
-      expect(w.blockers.join(' ')).toContain('us-proxy');
-      expect(w.score).toBe(0);
+  it('never states a second address, telephone or set of hours', () => {
+    // The one thing the New York confirmation did not change. A local United
+    // States number is the most tempting thing to invent on a page like this
+    // and the claim that turns a true service page into a fabricated presence.
+    const blob = JSON.stringify(MARKETS);
+    expect(blob).not.toMatch(/\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/);
+    for (const m of us()) {
+      expect(m.operationalTruth.statement, m.slug).toMatch(/showroom are in Toronto/);
+      expect(m.operationalTruth.statement, m.slug).not.toMatch(/office|storefront|branch/i);
     }
+  });
+
+  it('distinguishes the two Niagara Falls and keeps both published', () => {
+    const on = MARKETS.find((m) => m.slug === 'niagara-falls-on')!;
+    const ny = MARKETS.find((m) => m.slug === 'niagara-falls-ny')!;
+    expect(on.country).toBe('CA');
+    expect(ny.country).toBe('US');
+    expect(isOperational(on) && isOperational(ny)).toBe(true);
   });
 });
 
@@ -91,8 +110,8 @@ describe('what may be claimed as served', () => {
 
   it('carries every Ontario market confirmed, municipalities and neighbourhoods alike', () => {
     const on = MARKETS.filter((m) => m.region === 'ON');
-    expect(on.length).toBeGreaterThanOrEqual(61);
-    expect(on.filter((m) => m.kind === 'municipality')).toHaveLength(34);
+    expect(on.length).toBeGreaterThanOrEqual(75);
+    expect(on.filter((m) => m.kind === 'municipality').length).toBeGreaterThanOrEqual(35);
     const unconfirmed = on.filter((m) => m.operationalTruth.verifiedAt === null);
     expect(unconfirmed.map((m) => m.slug)).toEqual([]);
   });
@@ -147,7 +166,8 @@ describe('page-worthiness', () => {
   it('publishes a page only where there is real local content', () => {
     for (const m of indexableMarkets(MARKETS)) {
       expect(m.operationalTruth.verifiedAt, m.slug).not.toBeNull();
-      expect(m.country, m.slug).toBe('CA');
+      expect(['CA', 'US'], m.slug).toContain(m.country);
+      expect(cityContent(m.slug), m.slug).toBeDefined();
     }
   });
 
@@ -215,11 +235,11 @@ describe('corridors', () => {
     }
   });
 
-  it('mixes the two countries in exactly one corridor, and never anywhere else', () => {
-    // buffalo-metro carries United States markets and is not a border crossing:
-    // it is entirely American, a map of demand rather than of any Ecowoods
-    // drive. What must stay singular is the corridor that contains BOTH
-    // countries, because that is the only place the two can be confused.
+  it('crosses the border in exactly one corridor', () => {
+    // buffalo-metro and rochester-east are entirely American; the Ontario
+    // corridors are entirely Canadian. Exactly one corridor holds both, and it
+    // is the one named after the crossing — which is what makes it the only
+    // place the two countries can be confused for one another.
     const mixed = CORRIDORS.filter((c) => {
       const countries = new Set(c.members.map((s) => marketBySlug(s)?.country));
       return countries.has('CA') && countries.has('US');
@@ -227,12 +247,12 @@ describe('corridors', () => {
     expect(mixed.map((c) => c.id)).toEqual(['buffalo-niagara']);
 
     const usOnly = CORRIDORS.filter((c) => c.members.every((s) => marketBySlug(s)?.country === 'US'));
-    expect(usOnly.map((c) => c.id)).toEqual(['buffalo-metro']);
+    expect(usOnly.map((c) => c.id).sort()).toEqual(['buffalo-metro', 'rochester-east']);
   });
 
   it('never lets a United States market into a Canada-only corridor', () => {
     for (const c of CORRIDORS) {
-      if (['buffalo-niagara', 'buffalo-metro'].includes(c.id)) continue;
+      if (['buffalo-niagara', 'buffalo-metro', 'rochester-east'].includes(c.id)) continue;
       expect(c.members.every((s) => marketBySlug(s)?.country === 'CA'), c.id).toBe(true);
     }
   });

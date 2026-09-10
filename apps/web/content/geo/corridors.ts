@@ -22,6 +22,7 @@ export type CorridorId =
   | 'niagara-belt'
   | 'buffalo-niagara'
   | 'buffalo-metro'
+  | 'rochester-east'
   | 'cottage-north-east';
 
 export interface Corridor {
@@ -55,7 +56,7 @@ export const CORRIDORS: Corridor[] = [
     name: '400 North',
     route: 'Highway 400 north from Vaughan to Barrie',
     hub: 'vaughan',
-    members: ['vaughan', 'newmarket', 'aurora', 'innisfil', 'barrie'],
+    members: ['vaughan', 'king', 'newmarket', 'aurora', 'innisfil', 'barrie'],
     summary:
       'Newer suburban stock north of the city, reached on one highway with no cross-town crawl. The corridor changes character past Bradford: closer to Lake Simcoe the seasonal humidity swing is wider than it is downtown, which is a wood-movement question before it is a scheduling one.',
   },
@@ -73,7 +74,7 @@ export const CORRIDORS: Corridor[] = [
     name: '407 / York–Peel',
     route: 'Highway 407 across the top of the city',
     hub: 'vaughan',
-    members: ['vaughan', 'richmond-hill', 'markham', 'brampton', 'caledon', 'halton-hills'],
+    members: ['vaughan', 'richmond-hill', 'markham', 'king', 'brampton', 'caledon', 'halton-hills'],
     summary:
       'The cross-town route that avoids the 401. It exists in this model because it changes which jobs can share a day: Markham in the morning and Brampton in the afternoon is a 407 decision.',
   },
@@ -113,11 +114,11 @@ export const CORRIDORS: Corridor[] = [
     route: 'Fort Erie and Niagara Falls across the border into western New York',
     hub: 'fort-erie',
     members: [
-      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'lewiston', 'north-tonawanda', 'lockport',
-      'buffalo', 'amherst', 'cheektowaga', 'tonawanda',
+      'fort-erie', 'niagara-falls-on', 'niagara-falls-ny', 'lewiston', 'wheatfield',
+      'north-tonawanda', 'lockport', 'buffalo', 'amherst', 'cheektowaga', 'tonawanda',
     ],
     summary:
-      'The only corridor that crosses the border, and the only one whose United States members are advertising reach rather than service coverage. Ecowoods operates in Ontario, from Ontario. The New York municipalities here exist in this model so that a property owner on that side of the river with an Ontario property can find the company — nothing more. They are never emitted as service area.',
+      'The border crossing. Fort Erie and Niagara Falls on the Ontario side, then Niagara County on the New York side: Niagara Falls NY, Lewiston, Wheatfield, North Tonawanda and Lockport. Every municipality on it is a service area on both sides of the river, confirmed by the owner on 2026-09-10 together with the cross-border licensing and crew authorization that made it possible. The shop and showroom stay in Toronto: this corridor is a drive, not a second office.',
   },
   {
     id: 'buffalo-metro',
@@ -125,11 +126,24 @@ export const CORRIDORS: Corridor[] = [
     route: 'Buffalo outward through the Erie County towns',
     hub: 'buffalo',
     members: [
-      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga',
-      'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg', 'east-aurora',
+      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga', 'lancaster',
+      'west-seneca', 'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg',
+      'east-aurora',
     ],
     summary:
-      'Western New York, and the one corridor with no Ecowoods drive on it at all. It is a map of where the demand is, not of where crews go: Ecowoods operates in Ontario, from Ontario, and every municipality here is advertising reach for Ontario property. It exists as a corridor because the alternative — a flat list of American place names attached to a Canadian contractor — is exactly the shape of the thing this model refuses to build. Nothing in it is ever emitted as service area, and a guard fails the build if one appears there.',
+      'Erie County, out from Buffalo. Dense pre-1930 stock through the city itself — the Elmwood and Parkside blocks carry some of the best-preserved early-century hardwood in the Great Lakes basin — then post-war ranch and colonial through Amherst, Cheektowaga and West Seneca, and older village cores at Williamsville, East Aurora and Hamburg. Western New York runs the same continental humidity swing as southern Ontario: dry heated winters against humid summers, which is the same wood-movement arithmetic and the same acclimation discipline.',
+  },
+  {
+    id: 'rochester-east',
+    name: 'Rochester east',
+    route: 'The Thruway east along the lake into Monroe and Ontario counties',
+    hub: 'rochester-ny',
+    members: [
+      'rochester-ny', 'brighton', 'pittsford', 'fairport', 'victor',
+      'webster', 'irondequoit', 'greece',
+    ],
+    summary:
+      'The far end of the reach, and the newest. Rochester city carries strong pre-war stock — Park Avenue, Browncroft, the 19th Ward — while Pittsford and Fairport are canal-era villages inside later estate development, and Greece, Webster and Irondequoit are largely post-war suburban. Everything on this corridor is scheduled as a trip and confirmed in advance: the distance is real, the border is real, and the schedule says so rather than the offer being withheld.',
   },
   {
     id: 'cottage-north-east',

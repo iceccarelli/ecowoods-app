@@ -158,8 +158,14 @@ jobs:
       # reads as an American one. Underneath the ratio sits a line with no
       # tolerance at all: no United States market may hold an indexable page or
       # enter the service area, because there is no United States office.
-      - name: Allocation (Canada stays the centre of gravity)
+      - name: Allocation (every published page is genuinely local)
         run: node scripts/verify-allocation.mjs
+      # The cross-surface gate. Every other guard checks one surface; this one
+      # checks that they agree, because the failure this repository has actually
+      # shipped is not a broken page but two true-looking pages contradicting
+      # each other, with a crawler resolving the contradiction against us.
+      - name: Geo green gate (every published city is coherent across every surface)
+        run: node scripts/verify-geo-green.mjs
       # ── search & retrieval gates ──────────────────────────────────────
       #
       # All four are dependency-free and connectionless, like the two above:

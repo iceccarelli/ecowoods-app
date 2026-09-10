@@ -58,8 +58,12 @@ describe('funnels', () => {
 describe('expansion score', () => {
   const order = expansionOrder(MARKETS);
 
-  it('ranks only Canadian markets — the six US ones are advertising reach', () => {
-    expect(order.every((e) => MARKETS.find((m) => m.slug === e.slug)?.country === 'CA')).toBe(true);
+  it('ranks both countries on the same terms since the New York confirmation', () => {
+    // This asserted the opposite until 2026-09-10, when a United States market
+    // could not hold a page and ranking one produced a queue entry nobody could
+    // act on. Both are now on the same queue and the same requirements.
+    expect(order.some((e) => MARKETS.find((m) => m.slug === e.slug)?.country === 'US')).toBe(true);
+    expect(order.length).toBe(MARKETS.length);
   });
 
   it('scores an unconfirmed market below a confirmed one, all else equal', () => {

@@ -1167,14 +1167,14 @@ export const IMAGES: SiteImage[] = [
   ),
   d(
     'map-service-areas-gta',
-    'A simplified map of Toronto and the surrounding Greater Toronto Area with the thirty-two service areas marked, and the lakeshore and the main highway spines shown for orientation.',
-    'Thirty-two municipalities and neighbourhoods across Toronto and the GTA. What changes by address is the housing stock and the substrate under it, which is what each area page is for.',
+    'A simplified map of the corridor from Toronto through the GTA, Hamilton and Niagara into western New York, with the published service areas marked and the lakeshore and main highway spines shown for orientation.',
+    'Every municipality, neighbourhood and community Ecowoods serves, from Toronto out along the corridors to Niagara, Buffalo and Rochester. What changes by address is the housing stock and the substrate under it, which is what each area page is for.',
     'A stylised flat map of the Greater Toronto Area, lake edge as one clean curve, highway corridors as straight spines, municipal outlines simple, thirty-two locations as filled dots in copper accent. No place names, no legend, no compass, no scale bar.',
   ),
   d(
     'map-service-areas-gta-b',
-    'A simplified map of Toronto and the surrounding Greater Toronto Area with the thirty-two service areas marked, and the lakeshore and the main highway spines shown for orientation.',
-    'Thirty-two municipalities and neighbourhoods across Toronto and the GTA. What changes by address is the housing stock and the substrate under it, which is what each area page is for.',
+    'A simplified map of the corridor from Toronto through the GTA, Hamilton and Niagara into western New York, with the published service areas marked and the lakeshore and main highway spines shown for orientation.',
+    'Every municipality, neighbourhood and community Ecowoods serves, from Toronto out along the corridors to Niagara, Buffalo and Rochester. What changes by address is the housing stock and the substrate under it, which is what each area page is for.',
     'A stylised flat map of the Greater Toronto Area, lake edge as one clean curve, highway corridors as straight spines, municipal outlines simple, thirty-two locations as filled dots in copper accent. No place names, no legend, no compass, no scale bar. Second interpretation of the same brief.',
   ),
   p(

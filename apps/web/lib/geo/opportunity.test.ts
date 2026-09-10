@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MARKETS, type Market } from '@/content/geo/markets';
 import { opportunity, opportunityOrder, MIN_CONFIDENCE } from './opportunity';
 import { INPUT_SPECS, TOTAL_WEIGHT, MARKET_INPUTS } from '@/content/geo/market-inputs';
-import { allocation, CA_RECORD_FLOOR } from './allocation';
+import { allocation, meanDepth, MIN_MEAN_DEPTH } from './allocation';
 
 describe('the opportunity model', () => {
   it('weights ten inputs to exactly one hundred', () => {
@@ -36,7 +36,7 @@ describe('the opportunity model', () => {
   it('cannot classify a market on routing alone', () => {
     const computed = INPUT_SPECS.filter((s) => s.kind === 'computed').reduce((n, s) => n + s.weight, 0);
     expect(MIN_CONFIDENCE).toBeGreaterThan(computed / 100);
-    for (const o of opportunityOrder(MARKETS).filter((x) => x.country === 'CA')) {
+    for (const o of opportunityOrder(MARKETS)) {
       expect(o.classification, o.slug).toBe('UNSCORED');
       expect(o.reason, o.slug).toMatch(/sourced/);
     }
@@ -49,10 +49,14 @@ describe('the opportunity model', () => {
     expect(o.missing.reduce((n, m) => n + m.weight, 0)).toBe(90);
   });
 
-  it('never classifies a United States market above FUTURE', () => {
+  it('holds United States markets to the same confidence gate as Canadian ones', () => {
+    // The cap at FUTURE was retired with the New York confirmation. What
+    // replaced it is nothing: both countries are unscored until the census
+    // inputs are sourced, which is the honest position for both.
     for (const o of opportunityOrder(MARKETS).filter((x) => x.country === 'US')) {
-      expect(o.classification, o.slug).toBe('FUTURE');
-      expect(o.reason, o.slug).toMatch(/Ontario/);
+      expect(o.classification, o.slug).toBe('UNSCORED');
+      expect(o.score, o.slug).toBeNull();
+      expect(o.missing.length, o.slug).toBe(8);
     }
   });
 
@@ -81,28 +85,25 @@ describe('the 80/20 allocation', () => {
     expect(measured.map((m) => m.measure)).toEqual(['records', 'pages', 'depth', 'graph']);
   });
 
-  it('keeps Canada near the eighty-percent target on the two measures that can move', () => {
-    expect(by('records').caShare).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
+  it('keeps Canada the centre of gravity without rationing New York', () => {
+    expect(by('records').caShare).toBeGreaterThan(0.6);
     expect(by('records').caShare).toBeLessThan(0.95);
-    expect(by('graph').caShare).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
   });
 
-  it('is structurally 100/0 on pages and depth, and says why', () => {
-    expect(by('pages').us).toBe(0);
-    expect(by('depth').us).toBe(0);
-    expect(by('pages').means).toMatch(/never hold/);
+  it('publishes pages and depth in both countries', () => {
+    expect(by('pages').us).toBeGreaterThan(0);
+    expect(by('depth').us).toBeGreaterThan(0);
   });
 
-  it('spends the American twenty percent on graph structure rather than pages', () => {
+  it('publishes in both countries and carries graph structure in both', () => {
     expect(by('graph').us).toBeGreaterThan(0);
     expect(by('records').us).toBeGreaterThan(0);
+    expect(by('pages').ca).toBeGreaterThan(by('pages').us);
   });
 
-  it('would fail the floor if the American map outgrew the Canadian one', () => {
-    // The guard reads the file; this asserts the arithmetic it relies on.
-    const ca = MARKETS.filter((m: Market) => m.country === 'CA').length;
-    const us = MARKETS.filter((m: Market) => m.country === 'US').length;
-    expect(ca / (ca + us)).toBeGreaterThanOrEqual(CA_RECORD_FLOOR);
-    expect(us / (ca + us)).toBeGreaterThan(0.1);
+  it('keeps every published page above the local-content floor, in both countries', () => {
+    const mean = meanDepth();
+    expect(mean.ca).toBeGreaterThanOrEqual(MIN_MEAN_DEPTH);
+    expect(mean.us).toBeGreaterThanOrEqual(MIN_MEAN_DEPTH);
   });
 });

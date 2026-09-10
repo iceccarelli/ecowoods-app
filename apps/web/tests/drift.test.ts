@@ -91,9 +91,24 @@ describe('llms.txt', () => {
      * from, and the cap is deliberately not being raised again for three more
      * documents: if a future set does not fit, that is the signal to prune the
      * tail rather than the signal to move the number.
+     *
+     * IT WAS RAISED ONCE, FOR A REASON THAT IS NOT "THREE MORE DOCUMENTS".
+     *
+     * The service-area set went from thirty-two published places to
+     * eighty-nine: the Toronto luxury mesh, the Mississauga lakeshore, King
+     * Township, the rest of the Niagara belt, and twenty-six municipalities in
+     * New York State. Each one is a line in the Optional tail with a URL and a
+     * markdown twin, and the whole point of publishing them is that a machine
+     * can enumerate them from here.
+     *
+     * Pruning the tail — the alternative this comment recommends — would mean
+     * hiding published service areas from the file whose job is to list them.
+     * So the tail cap moved and the CORE cap did not: the curated section is
+     * still under 30 KB, still 20–50 links, and still the part that has to stay
+     * navigable. If the core ever crosses, prune the core.
      */
     expect(core.length).toBeLessThan(30000);
-    expect(body.length).toBeLessThan(48000);
+    expect(body.length).toBeLessThan(64000);
     // Every linked URL is on the canonical host.
     for (const m of body.matchAll(/\]\((https?:\/\/[^)]+)\)/g)) expect(m[1].startsWith(SITE_URL)).toBe(true);
   });

@@ -1,27 +1,34 @@
 #!/usr/bin/env node
 /**
- * scripts/verify-allocation.mjs — the 80/20 split, enforced.
+ * scripts/verify-allocation.mjs — the depth budget, enforced.
  *
- * WHY A GUARD AND NOT A NOTE IN A STRATEGY DOCUMENT
+ * WHAT THIS GUARD USED TO DO, AND WHY IT CHANGED
  *
- * Eighty percent Canada, twenty percent western New York. Nobody will ever
- * violate that on purpose. It goes wrong the way every allocation goes wrong:
- * one commit at a time, each individually reasonable, none of them looking like
- * the moment a Toronto contractor's site started reading as an American one.
- * "Add the affluent Buffalo suburbs, they're high-value" is a correct sentence
- * that, repeated for six months, produces a site whose geography no longer
- * matches its business.
+ * It enforced an 80/20 Canada/United States split with a hard floor under
+ * Canada's share of the market registry, plus two absolutes: no United States
+ * market may hold an indexable page, and none may enter the service area. That
+ * was the correct architecture for a company with no United States position,
+ * and every line of it was load-bearing.
  *
- * So the ratio is measured from the repository and the floor fails the build.
+ * The owner confirmed cross-border licensing and crew work authorization on
+ * 2026-09-10. Rationing American records was only ever a proxy for "do not
+ * publish thin American pages", and now that those pages are published the real
+ * thing can be measured directly. So the ratio became a DEPTH budget — how hard
+ * a page is worked, not whether it exists — and this guard measures depth.
  *
- * THE HARDER LINE
+ * WHAT IT CHECKS NOW
  *
- * Underneath the ratio is something that is not a ratio at all: no United
- * States market may ever hold an indexable page or appear in the service area.
- * Ecowoods has no United States office, crew, address or phone number. The
- * twenty percent is spent on reach — records in the model, corridor structure,
- * an entity graph that says where expansion would go — never on a landing page
- * implying service. Those two checks have no tolerance and no threshold.
+ *  1. Every published page carries real local content, per country, above a
+ *     mean-character floor. A tight page is not a thin one: below the floor a
+ *     page has stopped being local and become a template with the name changed,
+ *     which is the shape search engines suppress.
+ *  2. The service-area filter still requires an operational municipality with a
+ *     dated confirmation. Publishing in New York did not loosen that.
+ *  3. The retired statuses stay retired. `us-proxy` reappearing in the market
+ *     registry outside a comment silently unpublishes markets that are live.
+ *  4. There is still exactly one address and one telephone number. That is the
+ *     line the New York confirmation did NOT move, and it is the one a
+ *     directory-shaped expansion breaks first.
  *
  *   node scripts/verify-allocation.mjs
  */
@@ -39,59 +46,90 @@ const read = (rel) => {
 
 const marketsSrc = read('content/geo/markets.ts');
 const alloc = read('lib/geo/allocation.ts');
-const worthiness = read('lib/geo/worthiness.ts');
 const geoIndex = read('lib/geo/index.ts');
+const seoSrc = read('lib/seo-data.ts');
 
 /* ── read the map ────────────────────────────────────────────────────────── */
 const ca = [...marketsSrc.matchAll(/\bm\(\s*'[^']+',\s*'([a-z0-9-]+)'/g)].map((x) => x[1]);
 const us = [...marketsSrc.matchAll(/\bus\(\s*'[^']+',\s*'([a-z0-9-]+)'/g)].map((x) => x[1]);
-if (ca.length < 20 || us.length < 3) {
+if (ca.length < 20 || us.length < 10) {
   fail.push(
     `read ${ca.length} Canadian and ${us.length} United States market(s) — the reader is blind, and a blind reader ` +
-      'here reports a perfect allocation forever.',
+      'here reports a healthy allocation forever.',
   );
 }
 
-const floor = Number(/CA_RECORD_FLOOR\s*=\s*([0-9.]+)/.exec(alloc)?.[1] ?? NaN);
+/* ── 1. depth: every published page is actually local ────────────────────── */
+const floor = Number(/MIN_MEAN_DEPTH\s*=\s*(\d+)/.exec(alloc)?.[1] ?? NaN);
 if (Number.isNaN(floor)) {
-  fail.push('could not read CA_RECORD_FLOOR from lib/geo/allocation.ts — the floor under Canada\'s share of the model');
-} else if (ca.length + us.length > 0) {
-  const share = ca.length / (ca.length + us.length);
-  if (share < floor) {
-    fail.push(
-      `Canada holds ${(share * 100).toFixed(1)}% of the markets in the model, below the ${(floor * 100).toFixed(0)}% ` +
-        `floor (${ca.length} Canadian, ${us.length} United States). The centre of gravity has moved; either the ` +
-        'Canadian map is being neglected or American markets are being added faster than the business can justify.',
-    );
+  fail.push('could not read MIN_MEAN_DEPTH from lib/geo/allocation.ts — the floor under how local a published page is');
+}
+const contentStart = seoSrc.indexOf('export const CITY_CONTENT');
+const entries = [];
+if (contentStart !== -1) {
+  const body = seoSrc.slice(contentStart);
+  const keyRe = /\n {2}'?"?([a-z0-9-]+)'?"?:\s*\{/g;
+  let m;
+  while ((m = keyRe.exec(body)) !== null) {
+    const open = body.indexOf('{', m.index);
+    let depth = 0;
+    let i = open;
+    for (; i < body.length; i++) {
+      if (body[i] === '{') depth++;
+      else if (body[i] === '}') { depth--; if (depth === 0) break; }
+    }
+    entries.push([m[1], body.slice(open, i + 1)]);
   }
 }
-
-/* ── the two lines with no tolerance ─────────────────────────────────────── */
-if (!/us-proxy: advertising reach/.test(worthiness)) {
+if (entries.length < 40) {
+  fail.push(`read ${entries.length} local-content entr(y|ies) — the reader is blind and cannot measure depth at all`);
+}
+const usSlugs = new Set(us);
+const thin = [];
+for (const [slug, block] of entries) {
+  const intro = /intro:\s*([\s\S]*?)\n\s{4}[a-zA-Z]+:/.exec(block)?.[1] ?? '';
+  const note = /housingNote:\s*([\s\S]*?)\n\s{4}[a-zA-Z]+:/.exec(block)?.[1] ?? '';
+  const chars = intro.length + note.length;
+  if (!Number.isNaN(floor) && chars < floor) thin.push({ slug, chars, us: usSlugs.has(slug) });
+}
+for (const t of thin) {
   fail.push(
-    'lib/geo/worthiness.ts no longer blocks a page for a us-proxy market. That single condition is what stops this ' +
-      'repository publishing a Buffalo landing page for a company with no United States office.',
+    `${t.slug} carries ${t.chars} characters of local content, below the ${floor}-character floor. ` +
+      (t.us
+        ? 'A tight New York page is still a local page; below this it is a template with the place name changed.'
+        : 'Below this a page has stopped describing its own housing stock.'),
   );
 }
+
+/* ── 2. the service-area filter did not loosen ───────────────────────────── */
 if (!/x\.kind === 'municipality'/.test(geoIndex) || !/isOperational/.test(geoIndex)) {
   fail.push(
-    'lib/geo/index.ts no longer filters the service area to operational municipalities. us-proxy markets are not ' +
-      'operational; drop that filter and every New York town enters areaServed.',
+    'lib/geo/index.ts no longer filters the service area to operational municipalities with a dated confirmation. ' +
+      'Publishing in New York changed which markets qualify, not whether qualification is required.',
   );
 }
 
-/* Every measure in the allocation report must be readable, and the report must
-   still say what a 100/0 measure means — otherwise the next person reads the
-   page column as a failure and "balances" it by publishing in Buffalo. */
-const measures = [...alloc.matchAll(/measure:\s*'([a-z]+)'/g)].map((x) => x[1]);
-for (const required of ['records', 'pages', 'depth', 'graph']) {
-  if (!measures.includes(required)) fail.push(`the allocation report no longer computes "${required}"`);
-}
-if (!/[Ss]tructurally 100\/0/.test(alloc) || !/never hold/.test(alloc)) {
+/* ── 3. the retired statuses stay retired ────────────────────────────────── */
+const marketsNoComments = marketsSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+if (/\bus-proxy\b/.test(marketsNoComments)) {
   fail.push(
-    'the allocation report no longer explains why the page measure is 100/0. Without that sentence the split reads ' +
-      'as a Canadian bias to be corrected, and correcting it means publishing an American page.',
+    'us-proxy is back in content/geo/markets.ts outside a comment. It meant "advertising reach, no page", and ' +
+      'reintroducing it silently unpublishes markets that are live.',
   );
+}
+
+/* ── 4. one address, one telephone ───────────────────────────────────────── */
+const TORONTO_PHONE = /\(?647\)?[\s.-]?244[\s.-]?5156/;
+for (const rel of ['lib/seo-data.ts', 'content/geo/markets.ts', 'content/geo/corridors.ts']) {
+  const body = read(rel);
+  for (const hit of body.matchAll(/\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g)) {
+    if (!TORONTO_PHONE.test(hit[0])) {
+      fail.push(
+        `${rel} contains a telephone number that is not the Toronto number: "${hit[0]}". There is one number, ` +
+          '(647) 244-5156, and a local United States one is a second business that does not exist.',
+      );
+    }
+  }
 }
 
 /* ── report ─────────────────────────────────────────────────────────────── */
@@ -100,9 +138,7 @@ if (fail.length) {
   for (const f of fail) console.error(`  · ${f}\n`);
   process.exit(1);
 }
-const share = ((ca.length / (ca.length + us.length)) * 100).toFixed(1);
 console.log(
-  `✓ allocation verified — ${ca.length} Canadian and ${us.length} United States market(s), Canada at ${share}% of ` +
-    `the model against an 80% target and a ${(floor * 100).toFixed(0)}% floor; no United States market can hold a ` +
-    'page or enter the service area',
+  `✓ allocation verified — ${ca.length} Canadian and ${us.length} New York market(s), ${entries.length} published ` +
+    `page(s) all above the ${floor}-character local-content floor, one address and one telephone number`,
 );

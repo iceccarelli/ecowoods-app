@@ -19,9 +19,15 @@
  *      what can honestly be said about serving the place. A page for a market
  *      whose `verifiedAt` is null is a page that implies coverage nobody has
  *      confirmed.
- *   3. IT IS NOT A US PROXY. Those exist for advertising reach; a page would
- *      read as a United States location, which is exactly the impression this
- *      business must not create.
+ *   3. (RETIRED 2026-09-10.) A third requirement used to sit here: the market
+ *      must not be a `us-proxy`, because a page would have read as a United
+ *      States location for a company with no United States position. The owner
+ *      confirmed cross-border licensing and crew authorization on that date, so
+ *      a New York market now earns a page on exactly the same terms as an
+ *      Ontario one — real local content and a dated confirmation. What a New
+ *      York page still may not carry is a second address, telephone or set of
+ *      hours; that is enforced in scripts/verify-geo.mjs, where it belongs,
+ *      rather than by refusing the page.
  *   4. IT DOES NOT CANNIBALISE ITS PARENT. A district inside a municipality
  *      that already has a page competes with it for the same queries unless it
  *      carries content the parent does not.
@@ -50,11 +56,6 @@ export function assess(market: Market): Worthiness {
   const cc = cityContent(market.slug);
   const blockers: string[] = [];
 
-  if (market.status === 'us-proxy') {
-    blockers.push(
-      'us-proxy: advertising reach, not a service area. A page here would read as a United States location.',
-    );
-  }
   if (!hasRealContent(cc)) {
     blockers.push(
       'no local content: needs a CityContent entry with a real intro and housing note, not a template with the place name substituted in.',
@@ -90,8 +91,10 @@ function scoreOf(market: Market, cc: CityContent | undefined): number {
   let n = 0;
   if (market.status === 'core-active') n += 40;
   else if (market.status === 'active-expansion') n += 30;
+  else if (market.status === 'us-active') n += 20;
   else if (market.status === 'corridor-target') n += 15;
   else if (market.status === 'travel-by-confirmation') n += 5;
+  else if (market.status === 'us-by-confirmation') n += 5;
 
   n += market.corridors.length * 5;
   n += Math.min(market.nearest.length, 4) * 3;
@@ -99,7 +102,6 @@ function scoreOf(market: Market, cc: CityContent | undefined): number {
   if (market.operationalTruth.verifiedAt) n += 15;
   if (cc) n += 20;
   if (market.localFacts.length) n += market.localFacts.length * 2;
-  if (market.status === 'us-proxy') n = 0;
   return n;
 }
 
@@ -173,7 +175,7 @@ export function expansionScore(market: Market, all: Market[]): ExpansionScore {
      covered ones is a different proposition from reaching an isolated one. */
   const confirmedNeighbours = market.nearest.filter((slug) => {
     const n = all.find((x) => x.slug === slug);
-    return n ? n.operationalTruth.verifiedAt !== null && n.status !== 'us-proxy' : false;
+    return n ? n.operationalTruth.verifiedAt !== null : false;
   }).length;
   const adjacency = Math.min(confirmedNeighbours * 8, 24);
 
@@ -184,11 +186,9 @@ export function expansionScore(market: Market, all: Market[]): ExpansionScore {
   if (cc?.signatureProject) evidence += 8;
   evidence += Math.min(market.localFacts.length * 2, 6);
 
-  const score = market.status === 'us-proxy' ? 0 : routing + adjacency + confirmation + evidence;
+  const score = routing + adjacency + confirmation + evidence;
 
-  const nextAction = market.status === 'us-proxy'
-    ? 'Nothing. Advertising reach for Ontario property; never a service area.'
-    : !market.operationalTruth.verifiedAt
+  const nextAction = !market.operationalTruth.verifiedAt
       ? 'Confirm the operational position: one sentence and a date. Nothing else can happen first.'
       : !cc
         ? 'Write local content from a real job here. The page appears automatically once it exists.'
@@ -206,15 +206,22 @@ export function expansionScore(market: Market, all: Market[]): ExpansionScore {
   };
 }
 
-/** Every Ontario market, best-scoring first. The expansion order. */
+/**
+ * Every market, best-scoring first. The expansion order.
+ *
+ * This filtered to Canada until 2026-09-10, when it had to: a United States
+ * market could not hold a page, so ranking one produced a queue entry nobody
+ * could act on. Since the New York confirmation both countries are on the same
+ * queue and the same terms — real local content and a dated position — which is
+ * the point of the confirmation.
+ */
 export const expansionOrder = (all: Market[]): ExpansionScore[] =>
   all
-    .filter((m) => m.country === 'CA')
     .map((m) => expansionScore(m, all))
     .sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
 
 export const contentQueue = (all: Market[]): Worthiness[] =>
   all
     .map(assess)
-    .filter((w) => !w.indexable && !w.blockers.some((b) => b.startsWith('us-proxy')))
+    .filter((w) => !w.indexable)
     .sort((a, b) => b.score - a.score);

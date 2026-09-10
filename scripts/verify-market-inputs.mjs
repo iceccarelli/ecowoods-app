@@ -112,13 +112,20 @@ if (Number.isNaN(min)) {
   );
 }
 
-/* ── 4. no United States market is ever classified above FUTURE ──────────── */
-if (!/country === 'US'/.test(opp) || !/classification:\s*'FUTURE'/.test(opp)) {
-  fail.push(
-    'lib/geo/opportunity.ts no longer forces United States markets to FUTURE. Ecowoods operates in Ontario; a model ' +
-      'that can rank an American market as HIGH_PRIORITY is one edit from an American commercial page.',
-  );
-}
+/* ── 4. (retired 2026-09-10) ─────────────────────────────────────────────
+ *
+ * This required lib/geo/opportunity.ts to cap every United States market at
+ * FUTURE. That was correct while Ecowoods had no United States position: a
+ * model able to rank Buffalo as HIGH_PRIORITY was one edit from an American
+ * commercial page for a company with no American office.
+ *
+ * The owner confirmed cross-border licensing and crew work authorization on
+ * 2026-09-10, so the cap is gone and both countries are ranked on the same
+ * eight unsourced census inputs — which is to say neither is ranked yet. What
+ * replaces the cap is the check below, which is the one that was doing the real
+ * work all along: no score is published below the confidence gate, whichever
+ * side of the border the market is on.
+ */
 if (!/score:\s*trustworthy\s*\?/.test(opp)) {
   fail.push(
     'lib/geo/opportunity.ts no longer withholds `score` below the confidence gate. A number computed over a tenth of ' +

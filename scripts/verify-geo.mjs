@@ -161,10 +161,12 @@ if (unreadable.length) {
  */
 const usCtor = marketsSrc.slice(marketsSrc.indexOf('function us('));
 const usStatus = /status:\s*'([a-z-]+)'/.exec(usCtor)?.[1] ?? null;
-if (usStatus !== 'us-proxy') {
+const US_LIVE_STATUSES = ['us-active', 'us-by-confirmation'];
+if (usStatus && !US_LIVE_STATUSES.includes(usStatus)) {
   fail.push(
-    `the us() constructor assigns status "${usStatus}". Every United States market must be us-proxy: Ecowoods ` +
-      'operates in Ontario, and any other status puts a New York municipality into the service area.',
+    `the us() constructor defaults United States markets to "${usStatus}". Since the owner confirmed the New York ` +
+      'position on 2026-09-10 the only permitted values are us-active and us-by-confirmation. `us-proxy` is retired: ' +
+      'it meant advertising reach with no page, and reintroducing it would silently unpublish a published market.',
   );
 }
 if (!/country:\s*'US'/.test(usCtor)) {
@@ -187,7 +189,7 @@ if (!/country:\s*'US'/.test(usCtor)) {
 const usDefaultCorridors =
   [...(/corridors:\s*CorridorId\[\]\s*=\s*\[([^\]]*)\]/.exec(usCtor)?.[1] ?? '').matchAll(/'([^']+)'/g)]
     .map((x) => x[1]);
-const US_CALL = /\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)',\s*\[([^\]]*)\](?:\s*,\s*\[([^\]]*)\])?(?:\s*,\s*'([a-z]+)')?(?:\s*,\s*'([a-z0-9-]+)')?\s*\)/g;
+const US_CALL = /\bus\(\s*'([^']+)',\s*'([a-z0-9-]+)',\s*\[([^\]]*)\](?:\s*,\s*\[([^\]]*)\])?(?:\s*,\s*'([a-z]+)')?(?:\s*,\s*(undefined|'[a-z0-9-]+'))?(?:\s*,\s*'(us-active|us-by-confirmation)')?(?:\s*,\s*'([a-z0-9-]+)')?\s*\)/g;
 let usRead = 0;
 for (const um of marketsSrc.matchAll(US_CALL)) {
   const kind = um[5] ?? 'municipality';
@@ -195,14 +197,26 @@ for (const um of marketsSrc.matchAll(US_CALL)) {
     ? usDefaultCorridors
     : [...um[4].matchAll(/'([^']+)'/g)].map((x) => x[1]);
   markets.push({
-    name: um[1], slug: um[2], status: usStatus ?? 'us-proxy', country: 'US',
+    name: um[1], slug: um[2], status: um[7] ?? usStatus ?? 'us-active', country: 'US',
     corridors: kind === 'district' ? [] : declared,
     nearest: [...um[3].matchAll(/'([^']+)'/g)].map((x) => x[1]),
-    parentHub: 'fort-erie',
+    parentHub: um[8] ?? 'buffalo',
     isDistrict: kind === 'district',
-    partOf: um[6],
+    partOf: um[6] && um[6] !== 'undefined' ? um[6].replace(/'/g, '') : undefined,
   });
   usRead += 1;
+}
+/* Every United States market carries a live service status. The check is on the
+   parsed record rather than only on the constructor default, because the
+   Rochester run passes its status explicitly. */
+for (const x of markets) {
+  if (x.country !== 'US') continue;
+  if (!US_LIVE_STATUSES.includes(x.status)) {
+    fail.push(
+      `${x.slug} carries the status "${x.status}". Every New York market is a published service area since ` +
+        '2026-09-10; the only permitted values are us-active and us-by-confirmation.',
+    );
+  }
 }
 if (usRead !== (marketsSrc.match(/\bus\(\s*'/g) ?? []).length) {
   fail.push(
@@ -293,17 +307,53 @@ for (const x of markets) {
 }
 
 /* ── 4 + 5 + 6. the truth invariants ─────────────────────────────────────── */
-const OPERATIONAL = new Set(['core-active', 'active-expansion', 'travel-by-confirmation']);
+const OPERATIONAL = new Set([
+  'core-active', 'active-expansion', 'travel-by-confirmation', 'us-active', 'us-by-confirmation',
+]);
 
 for (const x of markets) {
-  if (x.country === 'US' && x.status !== 'us-proxy') {
+  if (x.country === 'US' && !US_LIVE_STATUSES.includes(x.status)) {
     fail.push(
-      `${x.slug} is in the United States with status "${x.status}". Ecowoods operates in Ontario; a United ` +
-        'States market is advertising reach and nothing else.',
+      `${x.slug} is in the United States with status "${x.status}", which is not a live service status.`,
     );
   }
-  if (x.country === 'CA' && x.status === 'us-proxy') {
-    fail.push(`${x.slug} is in Ontario with status us-proxy`);
+  if (x.country === 'CA' && US_LIVE_STATUSES.includes(x.status)) {
+    fail.push(`${x.slug} is in Ontario with a United States status ("${x.status}")`);
+  }
+}
+
+/*
+ * THE ONE THING THE NEW YORK CONFIRMATION DID NOT CHANGE.
+ *
+ * There is one shop, one showroom, one telephone number and one set of hours,
+ * and all four are in Toronto. Publishing service areas in New York State makes
+ * a second address or a local United States number the single most tempting
+ * thing to invent — it is what every directory expects to see, and it is the
+ * claim that turns a true service page into a fabricated local presence.
+ *
+ * So no United States street address and no non-Toronto North American phone
+ * number may appear anywhere in the geographic content. The Toronto number is
+ * whitelisted by value; anything else shaped like a phone number fails.
+ */
+const TORONTO_PHONE = /\(?647\)?[\s.-]?244[\s.-]?5156/;
+const geoContentFiles = ['content/geo/markets.ts', 'content/geo/corridors.ts'];
+for (const rel of geoContentFiles) {
+  const body = read(join(WEB, rel), rel);
+  for (const hit of body.matchAll(/\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g)) {
+    if (!TORONTO_PHONE.test(hit[0])) {
+      fail.push(
+        `${rel} contains a telephone number that is not the Toronto number: "${hit[0]}". There is one phone number ` +
+          'and it is (647) 244-5156. A local United States number is a second business that does not exist.',
+      );
+    }
+  }
+  for (const hit of body.matchAll(/\b\d{2,6}\s+[A-Z][a-zA-Z]+\s+(Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Crescent|Cres)\b/g)) {
+    if (!/Norfield/.test(hit[0])) {
+      fail.push(
+        `${rel} contains what reads as a street address: "${hit[0]}". The only address this company has is ` +
+          '32 Norfield Crescent, Toronto.',
+      );
+    }
   }
 }
 
@@ -322,8 +372,11 @@ if (!/OPERATIONAL_STATUSES\.includes\(x\.status\)\s*&&\s*x\.operationalTruth\.ve
       'somebody set its status; it is claimed because somebody confirmed it on a date.',
   );
 }
-if (/OPERATIONAL_STATUSES[^=]*=\s*\[[^\]]*us-proxy/.test(marketsLib)) {
-  fail.push('us-proxy has been added to OPERATIONAL_STATUSES. That is the one status that may never be service area.');
+if (/\bus-proxy\b/.test(marketsLib.replace(/\/\*[\s\S]*?\*\//g, ''))) {
+  fail.push(
+    'us-proxy has come back into content/geo/markets.ts outside a comment. It is a retired status meaning ' +
+      '"advertising reach, no page", and reintroducing it silently unpublishes a market that is published.',
+  );
 }
 
 /* ── 7b. status and truth may not disagree ───────────────────────────────
@@ -456,11 +509,14 @@ if (!citiesArr) {
   );
   const slugify = (x) => overrides[x] ?? slugifyRaw(x);
   const cityNames = [...citiesArr[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
-  const confirmed = new Set(
-    markets
-      .filter((x) => x.country === 'CA')
-      .map((x) => x.slug),
-  );
+  /*
+   * Both countries. This filtered to Canada while New York markets could not
+   * hold a page; since 2026-09-10 every published area must exist in the
+   * registry regardless of which side of the river it is on, and filtering by
+   * country here would have reported twenty-four correctly-registered American
+   * municipalities as missing.
+   */
+  const confirmed = new Set(markets.map((x) => x.slug));
   for (const name of cityNames) {
     const slug = slugify(name);
     if (!confirmed.has(slug)) {
@@ -509,6 +565,6 @@ const usCount = markets.filter((x) => x.country === 'US').length;
 const withPages = markets.filter((x) => withContent.has(x.slug)).length;
 console.log(
   `✓ geo verified — ${markets.length} market(s) across ${corridors.length} corridor(s): ${ca} in Ontario, ` +
-    `${usCount} advertising-only in New York and never service area, ${withPages} with local content, ` +
+    `${usCount} in New York State, ${withPages} with local content, one showroom and one telephone number, ` +
     'no invented coordinate, drive time or population',
 );

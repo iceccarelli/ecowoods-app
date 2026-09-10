@@ -71,6 +71,7 @@
     "verify:strategy": "node scripts/verify-strategy.mjs",
     "verify:inputs": "node scripts/verify-market-inputs.mjs",
     "verify:allocation": "node scripts/verify-allocation.mjs",
+    "verify:geo:green": "node scripts/verify-geo-green.mjs",
     "test:web": "pnpm --filter @ecowoods/web test",
     "seo:audit": "node scripts/audit-current-state.mjs",
     "seo:pricing": "node scripts/verify-pricing-source.mjs",

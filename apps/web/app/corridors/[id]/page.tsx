@@ -27,7 +27,8 @@ const STATUS_LABEL: Record<string, string> = {
   'active-expansion': 'Active',
   'corridor-target': 'In the corridor',
   'travel-by-confirmation': 'By confirmation',
-  'us-proxy': 'Advertising reach only',
+  'us-active': 'Active · New York',
+  'us-by-confirmation': 'By confirmation · New York',
 };
 
 /**
@@ -65,7 +66,7 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
     .filter((x): x is Market => Boolean(x));
 
   const withPages = members.filter((x) => assess(x).indexable);
-  const confirmed = members.filter((x) => x.operationalTruth.verifiedAt && x.status !== 'us-proxy');
+  const confirmed = members.filter((x) => x.operationalTruth.verifiedAt);
   const crossBorder = members.some((x) => x.country === 'US');
 
   return (
@@ -147,19 +148,19 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
       {crossBorder && (
         <section className="tlx-section">
           <div className="shell">
-            <h2 className="tlx-h2">About the New York municipalities on this list</h2>
+            <h2 className="tlx-h2">Working in New York State</h2>
             <div className="tlx-body">
               <p>
-                Ecowoods is an Ontario company operating from {BUSINESS.address.streetAddress} in{' '}
-                {BUSINESS.address.addressLocality}. There is no United States office, no United States crew
-                and no United States phone number, and this page is not an offer to work in New York State.
+                Ecowoods serves these municipalities. The shop and showroom are at{' '}
+                {BUSINESS.address.streetAddress} in {BUSINESS.address.addressLocality}, and that is the only
+                address this company has: there is no second office, no local telephone number and no separate
+                crew in New York State. The crews are the same salaried employees who work in Toronto.
               </p>
               <p>
-                They appear here for one reason: a great many people who own property in Niagara and along the
-                lake live on the other side of the river, and somebody searching from Buffalo for work on an
-                Ontario house should be able to find an Ontario company. That is the whole of it. Those
-                municipalities are never published as service area, in this page or in the structured data
-                behind it, and a guard fails the build if one ever is.
+                What travels is the work, not a storefront. The published price is fixed after a free in-home
+                measure, exactly as it is in Ontario, and jobs on this side of the river are scheduled with the
+                crossing accounted for. A guard fails the build if a second address or telephone number ever
+                appears anywhere in this geography.
               </p>
             </div>
           </div>

@@ -30,13 +30,15 @@
  * threshold is deliberately high enough that the eight sourced inputs cannot be
  * skipped: a market cannot be promoted to DOMINATE by its highway access.
  *
- * WHAT IT WILL NOT DO
+ * BOTH COUNTRIES, ONE SET OF RULES
  *
- * It will not classify a United States market as anything but FUTURE. Not
- * because Buffalo is a poor market — the brief is right that it is a good one —
- * but because Ecowoods does not operate in New York State, and a model that can
- * rank an American market as HIGH_PRIORITY is a model one edit away from
- * producing an American commercial page.
+ * Until 2026-09-10 this capped every United States market at FUTURE, whatever
+ * it would have scored, because Ecowoods had no United States position and a
+ * model that could rank Buffalo as HIGH_PRIORITY was one edit from an American
+ * commercial page. The owner confirmed cross-border licensing and crew
+ * authorization on that date. The cap is gone; the confidence gate is not.
+ * Buffalo and Burlington are now ranked on the same eight unsourced census
+ * inputs, which is to say neither is ranked yet.
  */
 import { type Market } from '@/content/geo/markets';
 import { INPUT_SPECS, TOTAL_WEIGHT, inputsFor, type InputId } from '@/content/geo/market-inputs';
@@ -92,19 +94,17 @@ export interface Opportunity {
 
 /** Reachability, from status. Not a drive time — a statement about the day. */
 const logisticsScore = (m: Market): number => {
-  if (m.country === 'US') return 0;
   if (m.status === 'core-active') return 100;
   if (m.status === 'active-expansion') return 75;
   if (m.status === 'travel-by-confirmation') return 35;
+  /* New York: reachable and taken, with a border crossing in the day. */
+  if (m.status === 'us-active') return 30;
+  if (m.status === 'us-by-confirmation') return 15;
   return 20;
 };
 
 /** Corridor centrality. A junction is worth more per drive than a terminus. */
-const corridorScore = (m: Market): number => {
-  const n = corridorsFor(m.slug).length;
-  if (m.country === 'US') return 0;
-  return Math.min(n * 40, 100);
-};
+const corridorScore = (m: Market): number => Math.min(corridorsFor(m.slug).length * 40, 100);
 
 const COMPUTED: Record<string, (m: Market) => number> = {
   logistics: logisticsScore,
@@ -164,14 +164,6 @@ function classify(
   confidence: number,
   missing: Opportunity['missing'],
 ): { classification: Classification; reason: string } {
-  if (market.country === 'US') {
-    return {
-      classification: 'FUTURE',
-      reason:
-        'United States market. Ecowoods operates in Ontario, from Ontario. This market is advertising reach for ' +
-        'Ontario property and is never classified above FUTURE, whatever it would score.',
-    };
-  }
   if (score === null || confidence < MIN_CONFIDENCE) {
     const weight = missing.reduce((n, x) => n + x.weight, 0);
     return {

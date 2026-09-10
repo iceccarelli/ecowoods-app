@@ -55,8 +55,18 @@ export type MarketStatus =
   | 'corridor-target'
   /** Reachable, but only for a job confirmed in advance. Distance is real. */
   | 'travel-by-confirmation'
-  /** Advertising reach only. Never emitted as service area. Never. */
-  | 'us-proxy';
+  /**
+   * New York State, taking work. The showroom stays Toronto — there is no
+   * second shop, no second phone, no United States address — and the job is on
+   * site in the named city.
+   */
+  | 'us-active'
+  /**
+   * New York State, scheduled and confirmed in advance. Same six services, same
+   * booking path, same salaried crew; the distance and the border crossing are
+   * real and the schedule says so.
+   */
+  | 'us-by-confirmation';
 
 /**
  * Who confirmed an operational position. One value today, deliberately: the
@@ -76,6 +86,22 @@ export type ConfirmedBy = 'owner';
  * for.
  */
 export const OWNER_CONFIRMED_ON = '2026-09-10';
+
+/**
+ * The date the owner confirmed the New York position: cross-border licensing
+ * and crew work authorization in hand, and every western New York municipality
+ * in this file a market Ecowoods takes work in.
+ *
+ * Before it, these markets carried the status `us-proxy` — advertising reach,
+ * never service area — and three guards enforced that they could not hold a
+ * page. That was the correct architecture for a company with no United States
+ * position and the wrong one from this date. What the confirmation does NOT
+ * change is the showroom, the phone, the hours, the price bands and the
+ * reviews: those are Toronto facts, they appear on no page as local United
+ * States facts, and a guard fails the build if a second address or phone
+ * appears on a New York page.
+ */
+export const US_CONFIRMED_ON = '2026-09-10';
 
 const OWNER: ConfirmedBy = 'owner';
 
@@ -270,43 +296,98 @@ const TRAVEL_BY_CONFIRMATION: Market[] = [
   }),
 ];
 
-/* ── the United States side, and the line it does not cross ────────────────
+/* ── the luxury mesh and the lakeshore ────────────────────────────────────
  *
- * These six exist so that a property owner on the American side of the river
- * with an Ontario property can find an Ontario company. That is the whole
- * purpose. Ecowoods has no United States office, no United States address, no
- * United States phone number and no United States crew, and this file is where
- * that stops being a matter of good intentions: `us-proxy` is a status the
- * schema layer refuses to emit as service area, and scripts/verify-geo.mjs
- * fails the build if one appears there.
+ * Communities inside municipalities that are already core-active, plus King
+ * Township, which was assessed rather than published until 2026-09-10. Every
+ * one of them is a place a homeowner names when they search — "hardwood
+ * flooring Kleinburg", "refinishing Lorne Park" — and none of them was in this
+ * file, so the geographic model could not see the queries the business most
+ * wants to answer.
+ *
+ * They are DISTRICTS of their municipality, never municipalities. Angus Glen is
+ * not a city beside Markham and Port Credit is not a city beside Mississauga;
+ * the entity graph reads that literally and F-157 is the record of nearly
+ * publishing it.
  */
-const US_PROXY: Market[] = [
-  /* Erie County, on the Buffalo metro corridor. */
-  us('Buffalo', 'buffalo', ['niagara-falls-ny', 'cheektowaga', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
-  us('Amherst', 'amherst', ['buffalo', 'tonawanda'], ['buffalo-niagara', 'buffalo-metro']),
-  us('Williamsville', 'williamsville', ['amherst', 'clarence'], [], 'district', 'amherst'),
-  us('Clarence', 'clarence', ['amherst', 'lockport'], ['buffalo-metro']),
-  us('Cheektowaga', 'cheektowaga', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
-  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst'], ['buffalo-niagara', 'buffalo-metro']),
-  us('Kenmore', 'kenmore', ['tonawanda', 'buffalo'], [], 'district', 'tonawanda'),
-  us('Orchard Park', 'orchard-park', ['buffalo', 'hamburg'], ['buffalo-metro']),
-  us('Hamburg', 'hamburg', ['buffalo', 'orchard-park'], ['buffalo-metro']),
-  us('East Aurora', 'east-aurora', ['orchard-park', 'hamburg'], ['buffalo-metro']),
-  us('Grand Island', 'grand-island', ['tonawanda', 'niagara-falls-ny'], ['buffalo-metro']),
+const LUXURY_AND_LAKESHORE: Market[] = [
+  m('King', 'king', 'active-expansion', 'vaughan', ['400-north', '407-york-peel'], ['vaughan', 'aurora', 'caledon'], COVERED('Vaughan')),
+  m('King City', 'king-city', 'active-expansion', 'vaughan', [], ['king', 'aurora'], COVERED('Vaughan'), 'district', 'king'),
+  m('Nobleton', 'nobleton', 'active-expansion', 'vaughan', [], ['king', 'caledon'], COVERED('Vaughan'), 'district', 'king'),
+  m('Kleinburg', 'kleinburg', 'core-active', 'toronto', [], ['vaughan', 'woodbridge'], ACTIVE('2026-09-10'), 'district', 'vaughan'),
+  m('Woodbridge', 'woodbridge', 'core-active', 'toronto', [], ['vaughan', 'kleinburg'], ACTIVE('2026-09-10'), 'district', 'vaughan'),
+  m('Angus Glen', 'angus-glen', 'core-active', 'toronto', [], ['markham', 'cachet'], ACTIVE('2026-09-10'), 'district', 'markham'),
+  m('Bayview Glen', 'bayview-glen', 'core-active', 'toronto', [], ['markham', 'richmond-hill'], ACTIVE('2026-09-10'), 'district', 'markham'),
+  m('Cachet', 'cachet', 'core-active', 'toronto', [], ['markham', 'angus-glen'], ACTIVE('2026-09-10'), 'district', 'markham'),
+  m('The Kingsway', 'the-kingsway', 'core-active', 'toronto', [], ['etobicoke', 'swansea'], TORONTO_TRUTH(), 'district', 'toronto'),
+  m('Port Credit', 'port-credit', 'core-active', 'toronto', [], ['mississauga', 'mineola'], ACTIVE('2026-09-10'), 'district', 'mississauga'),
+  m('Lorne Park', 'lorne-park', 'core-active', 'toronto', [], ['mississauga', 'clarkson'], ACTIVE('2026-09-10'), 'district', 'mississauga'),
+  m('Mineola', 'mineola', 'core-active', 'toronto', [], ['mississauga', 'port-credit'], ACTIVE('2026-09-10'), 'district', 'mississauga'),
+  m('Clarkson', 'clarkson', 'core-active', 'toronto', [], ['mississauga', 'lorne-park'], ACTIVE('2026-09-10'), 'district', 'mississauga'),
+  m('Sheridan', 'sheridan', 'core-active', 'toronto', [], ['mississauga', 'clarkson'], ACTIVE('2026-09-10'), 'district', 'mississauga'),
+];
 
-  /* Niagara County, on the cross-border corridor. */
-  us('Niagara Falls', 'niagara-falls-ny', ['buffalo', 'lockport'], ['buffalo-niagara']),
-  us('Lewiston', 'lewiston', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
-  us('North Tonawanda', 'north-tonawanda', ['tonawanda', 'lockport'], ['buffalo-niagara']),
-  us('Lockport', 'lockport', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
+/* ── New York State, and the line that still holds ─────────────────────────
+ *
+ * Until 2026-09-10 these were `us-proxy`: advertising reach for Ontario
+ * property, never service area, and three guards enforced that none could hold
+ * a page. That was right for a company with no United States position. The
+ * owner confirmed cross-border licensing and crew work authorization on that
+ * date, and every municipality below is now a market Ecowoods takes work in.
+ *
+ * THE LINE THAT DID NOT MOVE. There is one shop and one showroom, at 32
+ * Norfield Crescent in Toronto. There is one phone number. The hours are
+ * Toronto hours, the price bands are Ontario bands, and the 177 HomeStars and
+ * 19 Google reviews are the company's, not any city's. Not one of those becomes
+ * a local United States fact on any page below, and scripts/verify-geo.mjs
+ * fails the build if a second address or telephone appears on a New York
+ * surface. A page here says what is true: Ecowoods serves this city, the
+ * showroom is Toronto, the job is on site, book the measure.
+ *
+ * Erie and Niagara counties run out from Buffalo; Monroe and Ontario counties
+ * run out from Rochester on the rochester-east corridor.
+ */
+const US_MARKETS: Market[] = [
+  /* Erie County — the Buffalo metro. */
+  us('Buffalo', 'buffalo', ['cheektowaga', 'amherst', 'tonawanda'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Amherst', 'amherst', ['buffalo', 'tonawanda', 'clarence'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Williamsville', 'williamsville', ['amherst', 'clarence'], [], 'district', 'amherst'),
+  us('Clarence', 'clarence', ['amherst', 'lancaster'], ['buffalo-metro']),
+  us('Cheektowaga', 'cheektowaga', ['buffalo', 'lancaster'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Lancaster', 'lancaster', ['cheektowaga', 'clarence'], ['buffalo-metro']),
+  us('West Seneca', 'west-seneca', ['buffalo', 'orchard-park'], ['buffalo-metro']),
+  us('Tonawanda', 'tonawanda', ['buffalo', 'amherst', 'north-tonawanda'], ['buffalo-niagara', 'buffalo-metro']),
+  us('Kenmore', 'kenmore', ['tonawanda', 'buffalo'], [], 'district', 'tonawanda'),
+  us('Grand Island', 'grand-island', ['tonawanda', 'niagara-falls-ny'], ['buffalo-metro']),
+  us('Orchard Park', 'orchard-park', ['buffalo', 'hamburg', 'west-seneca'], ['buffalo-metro']),
+  us('Hamburg', 'hamburg', ['orchard-park', 'buffalo'], ['buffalo-metro']),
+  us('East Aurora', 'east-aurora', ['orchard-park', 'hamburg'], ['buffalo-metro']),
+
+  /* Niagara County — the cross-border run. */
+  us('Niagara Falls', 'niagara-falls-ny', ['lewiston', 'wheatfield', 'grand-island'], ['buffalo-niagara']),
+  us('Lewiston', 'lewiston', ['niagara-falls-ny', 'wheatfield'], ['buffalo-niagara']),
+  us('Wheatfield', 'wheatfield', ['niagara-falls-ny', 'north-tonawanda'], ['buffalo-niagara']),
+  us('North Tonawanda', 'north-tonawanda', ['tonawanda', 'wheatfield', 'lockport'], ['buffalo-niagara']),
+  us('Lockport', 'lockport', ['north-tonawanda', 'wheatfield'], ['buffalo-niagara']),
+
+  /* Monroe and Ontario counties — the Rochester run, east along the lake. */
+  us('Rochester', 'rochester-ny', ['brighton', 'irondequoit', 'greece'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Brighton', 'brighton', ['rochester-ny', 'pittsford'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Pittsford', 'pittsford', ['brighton', 'fairport'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Fairport', 'fairport', ['pittsford', 'victor'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Victor', 'victor', ['fairport', 'pittsford'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Webster', 'webster', ['irondequoit', 'fairport'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Irondequoit', 'irondequoit', ['rochester-ny', 'webster'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
+  us('Greece', 'greece', ['rochester-ny', 'irondequoit'], ['rochester-east'], 'municipality', undefined, 'us-by-confirmation', 'rochester-ny'),
 ];
 
 export const MARKETS: Market[] = [
   ...CORE,
   ...TORONTO_NEIGHBOURHOODS,
+  ...LUXURY_AND_LAKESHORE,
   ...CORRIDOR_TARGETS,
   ...TRAVEL_BY_CONFIRMATION,
-  ...US_PROXY,
+  ...US_MARKETS,
 ];
 
 export const marketBySlug = (slug: string): Market | undefined =>
@@ -315,12 +396,30 @@ export const marketBySlug = (slug: string): Market | undefined =>
 export const marketsInCorridor = (id: string): Market[] =>
   MARKETS.filter((x) => (x.corridors as string[]).includes(id));
 
-/** Statuses that describe actual coverage. Everything else is not service. */
+/**
+ * Statuses that describe actual coverage.
+ *
+ * `us-proxy` was here until 2026-09-10 and is gone from the type entirely. It
+ * meant "advertising reach, never service area", and it was correct for exactly
+ * as long as the business had no United States position. The owner confirmed
+ * cross-border licensing and crew work authorization on 2026-09-10, and from
+ * that date a New York municipality is a market this company takes work in.
+ *
+ * What did NOT change with it: the showroom, the phone, the hours, the price
+ * bands and the reviews are Toronto facts and appear nowhere as local United
+ * States facts. `verify-geo.mjs` fails the build if a second address or phone
+ * ever appears on a New York page.
+ */
 export const OPERATIONAL_STATUSES: MarketStatus[] = [
   'core-active',
   'active-expansion',
   'travel-by-confirmation',
+  'us-active',
+  'us-by-confirmation',
 ];
+
+/** The two statuses that mean New York. Used where the copy differs, not the offer. */
+export const US_STATUSES: MarketStatus[] = ['us-active', 'us-by-confirmation'];
 
 export const isOperational = (x: Market): boolean =>
   OPERATIONAL_STATUSES.includes(x.status) && x.operationalTruth.verifiedAt !== null;
@@ -421,19 +520,23 @@ function us(
   corridors: CorridorId[] = ['buffalo-niagara'],
   kind: MarketKind = 'municipality',
   partOf?: string,
+  status: MarketStatus = 'us-active',
+  hub = 'buffalo',
 ): Market {
   return {
     slug, name, country: 'US', region: 'NY', kind, partOf,
-    status: 'us-proxy',
+    status,
     corridors: kind === 'district' ? [] : corridors,
-    parentHub: 'fort-erie',
+    parentHub: hub,
     nearest,
     localFacts: [],
     operationalTruth: {
       statement:
-        'Not a service area. Ecowoods operates in Ontario. This market exists so that an owner of an Ontario property who lives on the New York side can find the company.',
-      verifiedAt: '2026-09-09',
-      verifiedBy: 'owner',
+        `Owner-confirmed service area in New York State. Ecowoods takes hardwood installation, refinishing, ` +
+        `dust-free sanding, restoration, stair refinishing and custom inlay work in ${name}. The shop and ` +
+        'showroom are in Toronto; there is no second address, phone or crew in New York State.',
+      verifiedAt: US_CONFIRMED_ON,
+      verifiedBy: OWNER,
     },
   };
 }

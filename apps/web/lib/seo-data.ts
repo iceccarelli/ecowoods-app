@@ -6,6 +6,7 @@
  */
 
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { MARKETS } from '@/content/geo/markets';
 import {
   SCREEN_RECOAT,
   FULL_SAND_FINISH,
@@ -45,6 +46,23 @@ const AREAS = [
    */
   'Milton', 'Burlington', 'Hamilton', 'Grimsby',
   'St. Catharines', 'Niagara-on-the-Lake', 'Niagara Falls', 'Barrie',
+  /* King Township, and the rest of the Niagara belt. */
+  'King', 'Lincoln', 'Welland', 'Thorold', 'Fort Erie',
+  /*
+   * New York State, published 2026-09-10 when the owner confirmed cross-border
+   * licensing and crew work authorization. Erie and Niagara counties out from
+   * Buffalo; Monroe and Ontario counties out from Rochester.
+   *
+   * The showroom, the telephone, the hours, the price bands and the reviews are
+   * Toronto facts and appear on none of these pages as local United States
+   * facts. `scripts/verify-geo.mjs` fails the build if a second address or
+   * phone number ever appears in the geographic content.
+   */
+  'Buffalo', 'Amherst', 'Clarence', 'Cheektowaga', 'Lancaster', 'West Seneca',
+  'Tonawanda', 'Grand Island', 'Orchard Park', 'Hamburg', 'East Aurora',
+  'Niagara Falls, NY', 'Lewiston', 'Wheatfield', 'North Tonawanda', 'Lockport',
+  'Rochester, NY', 'Brighton', 'Pittsford', 'Fairport', 'Victor', 'Webster',
+  'Irondequoit', 'Greece',
 ];
 
 /**
@@ -83,7 +101,33 @@ const DISTRICTS: Array<{ name: string; partOf: string }> = [
   { name: 'Stoney Creek', partOf: 'Hamilton' },
   { name: 'Waterdown', partOf: 'Hamilton' },
   { name: 'Beamsville', partOf: 'Lincoln' },
+  /* King Township. */
+  { name: 'King City', partOf: 'King' },
+  { name: 'Nobleton', partOf: 'King' },
+  /* Vaughan. */
+  { name: 'Kleinburg', partOf: 'Vaughan' },
+  { name: 'Woodbridge', partOf: 'Vaughan' },
+  /* Markham. */
+  { name: 'Angus Glen', partOf: 'Markham' },
+  { name: 'Bayview Glen', partOf: 'Markham' },
+  { name: 'Cachet', partOf: 'Markham' },
+  /* Mississauga's lakeshore. */
+  { name: 'Port Credit', partOf: 'Mississauga' },
+  { name: 'Lorne Park', partOf: 'Mississauga' },
+  { name: 'Mineola', partOf: 'Mississauga' },
+  { name: 'Clarkson', partOf: 'Mississauga' },
+  { name: 'Sheridan', partOf: 'Mississauga' },
+  /* Erie County. */
+  { name: 'Williamsville', partOf: 'Amherst' },
+  { name: 'Kenmore', partOf: 'Tonawanda' },
 ];
+
+/**
+ * The Toronto sixteen plus The Kingsway. Listed with the neighbourhoods rather
+ * than the districts because its parent is Toronto, not a municipality beside
+ * it — Etobicoke is itself a district and a district may not contain another.
+ */
+const EXTRA_TORONTO = ['The Kingsway'];
 
 /**
  * Toronto neighbourhoods. Pages, yes — `schema.org/City`, no.
@@ -121,10 +165,25 @@ export const CITIES: City[] = AREAS.map((name) => ({
 }));
 
 /** Toronto neighbourhoods. Pages and local content; never a City node. */
-export const NEIGHBOURHOOD_AREAS: City[] = NEIGHBOURHOODS.map((name) => ({
+export const NEIGHBOURHOOD_AREAS: City[] = [...NEIGHBOURHOODS, ...EXTRA_TORONTO].map((name) => ({
   slug: slugify(name),
   name,
 }));
+
+/**
+ * Slugs of areas in New York State. The page appends ", NY" to the title and
+ * heading for these, so a search result and a schema name both disambiguate a
+ * Niagara Falls or a Brighton without the reader having to know which one.
+ * Derived from the market registry rather than restated, so a market changing
+ * country cannot leave a page saying the wrong one.
+ */
+export const US_AREA_SLUGS = new Set(
+  MARKETS.filter((mk) => mk.country === 'US').map((mk) => mk.slug),
+);
+
+/** The area name as a page says it: "Buffalo, NY", "Oakville". */
+export const areaDisplayName = (area: City): string =>
+  US_AREA_SLUGS.has(area.slug) && !/,\s*NY$/.test(area.name) ? `${area.name}, NY` : area.name;
 
 /**
  * Everything with a /service-areas page. The routes, the sitemap, the .md
@@ -680,9 +739,476 @@ export const CITY_CONTENT: Record<string, CityContent> = {
       'Beamsville is the main community of the Town of Lincoln, a bench of older village housing and surrounding agricultural property between the escarpment and the lake, with newer residential development at the edges of the village.',
     neighbourhoods: ['Beamsville Village', 'Vineland', 'Campden', 'Lincoln Bench'],
     housingNote:
-      'Village and farm houses here often carry original softwood plank or early strip hardwood over plank subfloor, sometimes over a stone foundation, where subfloor moisture and board replacement in kind matter more than the finish system. Newer builds at the edges are plywood over joists and are ordinary installation work by comparison.',
+      'Beamsville sits on the bench, where a high proportion of houses were built for or around fruit farming and have been extended more than once. The recurring problem is not the age of the boards but the number of different floors in one house: an original room, a 1970s addition and a recent one, each on its own subfloor at its own height, which have to be brought into one plane and one colour before anything reads as finished.',
     localConsideration:
-      'This is the far end of the Niagara run from the Toronto shop, so work is scheduled as a trip, confirmed in advance and priced with that in the written quote. Agricultural properties also more often have unheated or intermittently heated spaces adjoining the floor being installed, which changes the acclimation target.',
+      'Wineries and orchards mean a lot of properties with a heated house attached to an unheated outbuilding or a three-season room. The boards nearest that join see a different annual range from the rest of the floor and are acclimated to the room they will live in.',
+  },
+
+  /* ── the luxury mesh, King Township and the Mississauga lakeshore ────────
+   * Same two rules as every entry above: nothing about Ecowoods, and no
+   * signatureProject. Publicly checkable housing stock, and technical points
+   * already published in a paper on this site.
+   */
+
+  king: {
+    intro:
+      'King Township is estate and rural residential north-west of Vaughan, with village cores at King City and Nobleton and large lots in between. Houses here are typically detached, often custom, and frequently large enough that a single continuous floor run is the whole ground level.',
+    neighbourhoods: ['King City', 'Nobleton', 'Schomberg', 'Snowball', 'Kettleby'],
+    housingNote:
+      'Custom and estate housing means long uninterrupted runs, wide-plank specification and, increasingly, radiant heat under the floor — which narrows the species and construction choices rather than widening them. Older farmhouse stock in the township carries plank subfloor and original softwood, where board replacement in kind comes before any uniform finish.',
+    localConsideration:
+      'A rural property is more likely to run on a well and a septic system and to be heated intermittently in shoulder season, which widens the annual humidity range the floor absorbs. That is measured on site before a board width is settled, not assumed from the postal code.',
+  },
+
+  'king-city': {
+    intro:
+      'King City is the largest village in King Township: an older core around Keele Street and King Road surrounded by newer estate subdivisions on generous lots. The work is predominantly installation and full-house specification rather than restoration.',
+    neighbourhoods: ['King City core', 'Kingscross', 'King Ridge', 'Hogans Hill'],
+    housingNote:
+      'The estate stock is plywood over engineered joists with very large main-floor areas, where flatness tolerance and stain consistency across a run matter far more than they do room by room. Radiant heat under a wide plank is common enough here to be the first question rather than an afterthought, because it changes the construction the floor must be.',
+    localConsideration:
+      'Large houses with high ceilings and a lot of glass swing further in relative humidity between February and August than a mid-town semi does. The movement calculation is worth doing explicitly before a wide solid board is ordered.',
+  },
+
+  nobleton: {
+    intro:
+      'Nobleton is a village in King Township west of King City, with an older core and a band of newer detached subdivision housing on larger lots. Detached houses dominate; there is very little multi-residential stock.',
+    neighbourhoods: ['Nobleton village', 'Nobleton Lakes', 'Old Church Road'],
+    housingNote:
+      'Newer detached houses here are plywood over engineered joists, where the flatness a builder accepted under carpet is corrected before a nail-down floor goes in and is usually the largest line in an honest quote. Older village and farm properties carry plank subfloor and original softwood that is replaced in kind rather than levelled away.',
+    localConsideration:
+      'Rural and semi-rural properties often adjoin unheated garages or additions, which changes the acclimation target for the boards nearest them. Acclimating to the room the floor will live in, with a meter, is what separates a flat floor from one that gaps in its first winter.',
+  },
+
+  kleinburg: {
+    intro:
+      'Kleinburg is a heritage village inside the City of Vaughan, with a protected core along Islington Avenue and substantial estate subdivision housing around it. The two stocks want opposite things from the same trade.',
+    neighbourhoods: ['Kleinburg village', 'Kleinburg Heights', 'Copper Creek', 'Islington Woods'],
+    housingNote:
+      'Village-core houses can carry original softwood or early hardwood over plank subfloor, where the honest option is often the least aggressive one: repair, replacement in kind, and a finish that does not read as new. The estate subdivisions are plywood over joists with large continuous areas and frequent radiant heat, where the construction decision comes before the species one.',
+    localConsideration:
+      'Heritage designation in the village core can constrain what may be changed inside as well as outside. That is established before a sander is quoted rather than after, and it sometimes decides the species.',
+  },
+
+  woodbridge: {
+    intro:
+      'Woodbridge is the older western half of Vaughan, running from a nineteenth-century village core along the Humber out into post-1980 subdivision housing. Refinishing of builder-era oak and full-house conversion are both common.',
+    neighbourhoods: ['Woodbridge village', 'Vellore', 'Sonoma Heights', 'West Woodbridge', 'Pine Valley'],
+    housingNote:
+      'The 1980s and 1990s stock carries strip oak that is often thinner on remaining wear layer than the surface suggests, which makes the screen-and-recoat decision a genuine one rather than a lesser option. Houses close to the Humber valley sit on ground that holds moisture differently from the tableland, and basement humidity below a floor being refinished is measured rather than assumed.',
+    localConsideration:
+      'Large open main floors are the norm in the newer stock, which means long uninterrupted runs where a fastening schedule adequate for a bedroom stops being adequate.',
+  },
+
+  'angus-glen': {
+    intro:
+      'Angus Glen is estate housing in north-east Markham built largely from the late 1990s onward around the golf course, on generous lots with substantial detached houses. It is installation and full specification work rather than restoration.',
+    neighbourhoods: ['Angus Glen', 'Cathedraltown', 'Victoria Square', 'Berczy'],
+    housingNote:
+      'Houses here are plywood over engineered joists with very large continuous main-floor areas, high ceilings and a lot of glazing. Flatness tolerance across a long run and stain consistency between the main floor, the landing and the stair are the constraints that decide whether a large floor reads as one floor.',
+    localConsideration:
+      'A large volume of heated air with substantial south glazing dries the house further in winter than the same floor plan would at grade in midtown. That is an argument for engineered construction or a narrower solid board rather than the widest plank on the sample rack.',
+  },
+
+  'bayview-glen': {
+    intro:
+      'Bayview Glen is established residential at the Markham and Thornhill edge, mixing mature mid-century houses with later rebuilds and custom infill on the same streets. Both refinishing and full installation are common, sometimes in adjacent houses.',
+    neighbourhoods: ['Bayview Glen', 'Thornhill', 'German Mills', 'Royal Orchard'],
+    housingNote:
+      'Mid-century houses here often retain original narrow-strip oak over plywood, where the first measurement is remaining thickness above the tongue rather than the finish system. Custom rebuilds on the same streets are new plywood over engineered joists, where the questions are width, grade, radiant compatibility and how the stair is going to match.',
+    localConsideration:
+      'Where an older house has been extended, the original floor and the addition are usually on different subfloor systems with different histories. Making one continuous floor across that join is the part of the job most often underestimated.',
+  },
+
+  cachet: {
+    intro:
+      'Cachet is estate subdivision housing in west Markham, largely built from the late 1980s through the 1990s on large lots, with substantial detached houses and mature landscaping. Refinishing of original oak and full-house replacement are both live.',
+    neighbourhoods: ['Cachet', 'Angus Glen', 'Buttonville', 'Unionville'],
+    housingNote:
+      'Original strip oak from that build era is now thirty years old and frequently at its second refinish, so remaining wear layer decides between a full sand and a screen and recoat. Large formal rooms with long sightlines make stain consistency and flatness across the run more demanding than the same square footage split into small rooms.',
+    localConsideration:
+      'Stairs in this stock are usually a feature rather than an afterthought — open risers, curved runs, landings that read into the main floor — and matching a refinished stair to a refinished floor is what an inconsistent job gives away.',
+  },
+
+  'the-kingsway': {
+    intro:
+      'The Kingsway is a planned interwar neighbourhood in Etobicoke, largely built between the 1920s and the 1950s in Tudor and Georgian revival, with mature trees and a protected streetscape character. Original hardwood survives in a high proportion of the stock.',
+    neighbourhoods: ['The Kingsway', 'Kingsway Park', 'Humber Valley Village', 'Old Mill'],
+    housingNote:
+      'Interwar houses here commonly carry original narrow-strip oak over plank subfloor, often already sanded once or twice, so remaining thickness above the tongue is measured before a finish system is discussed. Board loss at removed partitions and old radiator penetrations is pieced in and feathered before any uniform sand, and the herringbone and border work that appears in the better houses is repaired in kind rather than replaced.',
+    localConsideration:
+      'Houses on the Humber valley side sit above ground that holds moisture differently from the tableland streets, and a stone or block foundation below a floor being refinished changes the subfloor moisture reading. It is measured before the sanding sequence is set.',
+  },
+
+  'port-credit': {
+    intro:
+      'Port Credit is the lakeshore village core of Mississauga, mixing pre-war and post-war detached housing on small lots with a growing band of mid-rise condominium development along Lakeshore Road. Both wood-joist and concrete-slab work are routine here.',
+    neighbourhoods: ['Port Credit', 'Mineola', 'Lakeview', 'Credit Reserve'],
+    housingNote:
+      'Older village houses carry narrow-strip hardwood over plank or early plywood subfloor, frequently with settlement in the plane of the floor that has been there long enough to be part of the house. The newer lakeshore condominiums are concrete slab, where an in-situ moisture protocol and an acoustic assembly decide the specification before anyone chooses a colour.',
+    localConsideration:
+      'Proximity to the lake keeps summer relative humidity higher here than a few kilometres inland, and a floor acclimated in a drier warehouse and installed in July gives that back over the first heating season. The remedy is measurement on site, not a longer wait.',
+  },
+
+  'lorne-park': {
+    intro:
+      'Lorne Park is established large-lot residential between Clarkson and Port Credit, with mature mid-century houses, extensive custom rebuilding on the same streets, and heavy tree cover throughout. Full-house installation and careful matching work are both common.',
+    neighbourhoods: ['Lorne Park', 'Clarkson', 'Sheridan Homelands', 'Whiteoaks'],
+    housingNote:
+      'Mid-century houses retain original oak over plywood in good condition where it has been carpeted, and in thinner condition where it has not. Custom rebuilds on adjoining lots are new construction where width, grade, finish system and radiant compatibility are the decisions, and where the floor is often expected to run continuously across the whole ground level.',
+    localConsideration:
+      'Deep tree cover keeps these houses cooler and damper through summer than open subdivision streets a few minutes north, which shows up as a different acclimation target for the same species. It is worth measuring rather than assuming.',
+  },
+
+  mineola: {
+    intro:
+      'Mineola is large-lot residential just north of Port Credit, one of the most heavily rebuilt neighbourhoods in Mississauga: mid-century bungalows on wide lots being replaced or substantially extended, alongside houses still on their original floors.',
+    neighbourhoods: ['Mineola East', 'Mineola West', 'Port Credit', 'Kenollie'],
+    housingNote:
+      'The surviving mid-century stock carries original strip oak over plywood, where remaining thickness decides the approach. New builds and deep renovations are plywood over engineered joists with large continuous areas, frequently with radiant heat, where the construction of the floor is settled before the species is.',
+    localConsideration:
+      'Where a bungalow has been extended rather than replaced, the original floor and the addition sit on different subfloor systems of different ages. Making one continuous floor across that join, flat and colour-consistent, is the part of the job most often underestimated.',
+  },
+
+  clarkson: {
+    intro:
+      'Clarkson is western Mississauga between the lake and the QEW, with a village core, substantial 1950s to 1970s detached housing, and later infill. Refinishing of original oak is common, and so is full replacement where a floor has already been sanded thin.',
+    neighbourhoods: ['Clarkson village', 'Lorne Park', 'Sheridan', 'Meadowwood', 'Rattray Marsh'],
+    housingNote:
+      'Post-war houses here carry narrow-strip oak over plywood, much of it protected under broadloom and in better condition than the room suggests until the tack strip comes up and the perimeter damage is visible. Houses nearer the marsh and the lake sit on ground that holds moisture, and basement humidity below a floor being refinished is measured rather than assumed.',
+    localConsideration:
+      'Lakeside houses hold summer humidity longer into the autumn than houses on the north side of the QEW a few minutes away. Acclimating to the room the floor will live in, with a meter, is what separates a flat floor from one that gaps in February.',
+  },
+
+  sheridan: {
+    intro:
+      'Sheridan is western Mississauga north of Clarkson, largely detached housing built between the 1960s and the 1980s on regular lots, with mature trees and a stable ownership pattern. Second-generation refinishing and carpet-to-hardwood conversion dominate.',
+    neighbourhoods: ['Sheridan Homelands', 'Erin Mills', 'Clarkson', 'Sheridan Park'],
+    housingNote:
+      'Builder-grade strip oak from that era is frequently thin on remaining wear layer after one aggressive sand, which makes the screen-and-recoat decision real rather than a lesser option. Where carpet has been down since installation, the floor underneath is often sound and needs less than the owner expects.',
+    localConsideration:
+      'Split-level plans are common in this stock, which means short runs interrupted by landings and half-flights. Matching stain and sheen across three or four levels of the same floor is harder than laying one long run, and it is where an inconsistent refinish shows.',
+  },
+
+  /* ── the rest of the Niagara belt ─────────────────────────────────────── */
+
+  lincoln: {
+    intro:
+      'The Town of Lincoln runs from the escarpment down to the lake between Grimsby and St. Catharines, with village cores at Beamsville and Vineland and substantial agricultural and estate property on the bench between them.',
+    neighbourhoods: ['Beamsville', 'Vineland', 'Campden', 'Jordan', 'Lincoln Bench'],
+    housingNote:
+      'Village and farm houses here often carry original softwood plank or early strip hardwood over plank subfloor, sometimes over a stone foundation, where subfloor moisture and replacement in kind matter more than the finish system. Newer builds on the bench and at the village edges are plywood over joists and are ordinary installation work by comparison.',
+    localConsideration:
+      'Agricultural properties more often have unheated or intermittently heated space adjoining the floor being installed, which changes the acclimation target. Work here is scheduled as a trip, confirmed in advance and priced with that in the written quote.',
+  },
+
+  welland: {
+    intro:
+      'Welland sits in the centre of the Niagara peninsula on the canal, with a pre-war core, a large band of post-war housing, and newer subdivision development at the edges. Refinishing original floors and replacing failed post-war installations are both common.',
+    neighbourhoods: ['Downtown Welland', 'Dain City', 'Chippawa Park', 'Northeast Welland'],
+    housingNote:
+      'Pre-war houses carry narrow-strip hardwood or original softwood over plank subfloor, often with settlement that has been in the building long enough to be part of it. The post-war band is plywood over joists with builder strip oak, where remaining thickness above the tongue decides between a full sand and a screen and recoat.',
+    localConsideration:
+      'Canal-side and low-lying properties can carry higher basement humidity than the same house type on higher ground, and subfloor moisture is measured before the sanding sequence is set rather than after.',
+  },
+
+  thorold: {
+    intro:
+      'Thorold sits on the escarpment between St. Catharines and Welland, following the canal, with a nineteenth-century stone-built core, post-war housing above it, and newer subdivision growth at the edges.',
+    neighbourhoods: ['Downtown Thorold', 'Thorold South', 'Port Robinson', 'Confederation Heights'],
+    housingNote:
+      'The older core carries original softwood or early hardwood over plank subfloor, frequently in houses with stone foundations where basement humidity below the floor is the first measurement. Post-war and newer stock is plywood over joists and is conventional refinishing and installation work.',
+    localConsideration:
+      'Sitting on the escarpment puts these houses in a drier microclimate than the lakeside towns a short drive north. A board width chosen for a Port Dalhousie house is not automatically right here.',
+  },
+
+  'fort-erie': {
+    intro:
+      'Fort Erie faces Buffalo across the Niagara River, with an older core near the crossing, lakeshore and riverside housing through Crystal Beach and Ridgeway, and post-war and newer development inland.',
+    neighbourhoods: ['Bridgeburg', 'Ridgeway', 'Crystal Beach', 'Stevensville', 'Douglastown'],
+    housingNote:
+      'Lakeshore and riverside houses include a substantial number of former seasonal cottages converted to year-round use, where the original floor sits on a subfloor and a foundation that were never built for a heated winter. That history is read before a specification is written; the rest of the stock is conventional post-war plywood over joists.',
+    localConsideration:
+      'This is the Canadian side of the border crossing, and work here shares a corridor with Niagara Falls NY, Lewiston and Buffalo. The published Ontario price bands apply; the schedule reflects the distance from the Toronto shop.',
+  },
+
+  /* ── New York State ─────────────────────────────────────────────────────
+   *
+   * Published 2026-09-10, when the owner confirmed cross-border licensing and
+   * crew work authorization. Written to the same two rules as every Ontario
+   * entry above and to one more that only applies here:
+   *
+   *   NO LOCAL PRESENCE IS IMPLIED. There is one shop and one showroom, at 32
+   *   Norfield Crescent in Toronto, one telephone number and one set of hours.
+   *   No entry below claims a county office, a local number, local reviews, or
+   *   a job on a named street. `scripts/verify-geo.mjs` fails the build if a
+   *   second address or telephone appears in the geographic content.
+   *
+   * The technical common ground is real and is what makes these pages worth
+   * reading: western New York runs the same continental humidity cycle as
+   * southern Ontario — dry heated winters against humid summers off the lakes —
+   * so the movement arithmetic, the acclimation discipline and the substrate
+   * questions are the ones already published on this site.
+   */
+
+  buffalo: {
+    intro:
+      'Buffalo has one of the best-preserved concentrations of early-twentieth-century housing on the Great Lakes: Elmwood, Parkside, Allentown and the Fruit Belt are dense pre-1930 stock, much of it in two-family houses and Victorians that still carry their original floors.',
+    neighbourhoods: ['Elmwood Village', 'Parkside', 'Allentown', 'North Buffalo', 'Central Park', 'Kaisertown'],
+    housingNote:
+      'Pre-1930 Buffalo houses commonly carry narrow-strip oak or maple over plank subfloor, frequently with inlaid borders in the principal rooms and with board loss where partitions and radiators were removed. Piecing in and feathering comes before any uniform sand, and a border that has survived a century is repaired in kind rather than sanded flat.',
+    localConsideration:
+      'Lake-effect winters with long heating seasons pull indoor relative humidity low for months, then release it through a humid summer — the same annual cycle as southern Ontario, and the same argument for measuring moisture content at delivery rather than trusting a calendar.',
+  },
+
+  amherst: {
+    intro:
+      'Amherst is the largest of the Buffalo suburbs, running from the older Williamsville and Snyder streets out through post-war ranch and colonial subdivisions to newer development along Transit Road. Refinishing and full-house conversion are both routine.',
+    neighbourhoods: ['Snyder', 'Eggertsville', 'Williamsville', 'Getzville', 'Audubon'],
+    housingNote:
+      'Amherst reads as three build eras on adjacent streets: Snyder and Eggertsville from the 1920s to the 1940s, a wide ranch-and-colonial belt through the 1950s and 1960s, and Transit Road development from the 1980s on. What that means practically is that the same species and the same width can be correct in one house and wrong two blocks away, because the subfloor, the ceiling height and the room sizes all changed with the decade.',
+    localConsideration:
+      'Basements here are frequently finished and heated, which changes the moisture gradient under a first-floor refinish. The subfloor is measured rather than assumed from the age of the house.',
+  },
+
+  williamsville: {
+    intro:
+      'Williamsville is a village inside the Town of Amherst with a nineteenth-century core along Main Street and mature residential streets around it — the oldest concentrated stock in the Amherst area.',
+    neighbourhoods: ['Williamsville village', 'Snyder', 'Glen Park', 'Amherst'],
+    housingNote:
+      'Village houses carry original softwood or early hardwood over plank subfloor, sometimes over a stone foundation, where the honest answer is often the least aggressive one: repair, board replacement in kind, and a finish that does not read as new. Settlement in the plane of the floor has usually been there long enough to be part of the house.',
+    localConsideration:
+      'Older village properties often adjoin unheated or intermittently heated space, which widens the moisture range the floor absorbs. Acclimation is measured to the room the floor will live in.',
+  },
+
+  clarence: {
+    intro:
+      'Clarence runs east from Amherst with a historic hamlet at Clarence Hollow and substantial newer estate subdivision housing on large lots, much of it built from the 1990s onward.',
+    neighbourhoods: ['Clarence Hollow', 'Clarence Center', 'Harris Hill', 'Swormville'],
+    housingNote:
+      'The estate stock is plywood over engineered joists with large continuous main-floor areas, high ceilings and frequent radiant heat, where the construction the floor must be is settled before the species is. The hamlet carries older houses on plank subfloor where replacement in kind precedes any uniform finish.',
+    localConsideration:
+      'Large heated volumes with substantial glazing swing further in relative humidity across the year than a smaller house on the same street. That is an argument for engineered construction or a narrower board rather than the widest plank available.',
+  },
+
+  cheektowaga: {
+    intro:
+      'Cheektowaga is dense post-war housing immediately east of Buffalo — cape cods, bungalows and ranches built largely between the late 1940s and the 1960s on regular lots, with a stable ownership pattern and a high rate of original floors.',
+    neighbourhoods: ['Pine Hill', 'Doyle', 'Forks', 'Union', 'Depew'],
+    housingNote:
+      'Post-war houses here commonly carry narrow-strip oak over plywood that has spent decades under broadloom, which protects the wear layer and hides perimeter damage at the tack strip until the carpet lifts. Where a floor has already been sanded, remaining thickness decides whether a full sand is available at all.',
+    localConsideration:
+      'Small rooms and short runs mean the visible test of a refinish here is the transitions and the doorways rather than a long sightline. Consistency across a hallway that touches six rooms is the harder part.',
+  },
+
+  lancaster: {
+    intro:
+      'Lancaster sits east of Cheektowaga with a village core, a band of post-war housing and substantial newer subdivision growth. Detached houses dominate and the stock spans a wide range of ages.',
+    neighbourhoods: ['Lancaster village', 'Depew', 'Bowmansville', 'Como Park'],
+    housingNote:
+      'Village and early post-war houses carry original strip hardwood over plank or plywood subfloor with the usual patching at removed partitions and heating runs. Newer subdivisions are plywood over engineered joists where flatness accepted under carpet is corrected before a nail-down floor goes down.',
+    localConsideration:
+      'Where an older house has been extended, the original floor and the addition sit on different subfloor systems of different ages, and making one continuous floor across that join is the underestimated part of the job.',
+  },
+
+  'west-seneca': {
+    intro:
+      'West Seneca is post-war suburban housing south-east of Buffalo along the Buffalo Creek corridor, mostly detached ranches and colonials from the 1950s through the 1970s with later infill.',
+    neighbourhoods: ['Ebenezer', 'Winchester', 'Harlem Road', 'Union Road'],
+    housingNote:
+      'Builder-grade strip oak over plywood is the common floor, frequently thinner than the surface suggests once a previous sand is accounted for. Split-level and raised-ranch plans are common, which means short runs interrupted by landings and half-flights rather than one continuous field.',
+    localConsideration:
+      'Creek-adjacent properties can carry higher basement humidity than the same house type on higher ground nearby, and the subfloor is measured before a sanding sequence is set.',
+  },
+
+  tonawanda: {
+    intro:
+      'The Town of Tonawanda is dense inter-war and early post-war housing between Buffalo and the Niagara River, built largely between the 1920s and the 1950s on small regular lots with a very high proportion of original hardwood.',
+    neighbourhoods: ['Kenmore', 'Brighton', 'Sheridan Parkside', 'Elmwood', 'Riverside'],
+    housingNote:
+      'The 1920s and 1930s stock carries narrow-strip oak over plank subfloor, often with a simple border in the front rooms, and is frequently on its second or third finish. Remaining thickness above the tongue is the first measurement, and where it is gone the honest answer is a screen and recoat or a replacement rather than another aggressive sand.',
+    localConsideration:
+      'Small rooms, many doorways and original trim mean the job is decided at the edges: undercutting, transitions and how a refinished floor meets a hundred-year-old baseboard.',
+  },
+
+  kenmore: {
+    intro:
+      'Kenmore is a village inside the Town of Tonawanda, one of the densest and best-preserved inter-war neighbourhoods in western New York, built largely between 1915 and 1940 on small lots with mature street trees.',
+    neighbourhoods: ['Kenmore village', 'Tonawanda', 'North Buffalo', 'Brighton'],
+    housingNote:
+      'Almost the whole stock carries original narrow-strip oak over plank subfloor, much of it with inlaid borders in the living and dining rooms, and much of it already refinished more than once. Thickness above the tongue is measured before any finish system is discussed, and a surviving border is repaired in kind rather than sanded through.',
+    localConsideration:
+      'Original trim, plaster and hardware throughout mean a floor here is one element of an intact interior. Sheen and colour are chosen against the trim rather than from a sample card.',
+  },
+
+  'grand-island': {
+    intro:
+      'Grand Island sits in the Niagara River between Buffalo and Niagara Falls, with post-war and later detached housing, a substantial waterfront band and a number of former seasonal properties converted to year-round use.',
+    neighbourhoods: ['Grand Island', 'Sandy Beach', 'East River', 'Whitehaven'],
+    housingNote:
+      'Waterfront and former seasonal houses frequently sit on foundations and subfloors that were never built for a heated winter, and that history is read before a specification is written. The inland post-war stock is conventional plywood over joists with builder strip oak.',
+    localConsideration:
+      'Being surrounded by the river keeps summer humidity higher and for longer here than a few kilometres inland. Acclimation is measured to the room rather than assumed from a delivery date.',
+  },
+
+  'orchard-park': {
+    intro:
+      'Orchard Park runs south from Buffalo with a historic village core, mature large-lot housing around it, and newer estate subdivision development further out. It is one of the higher-specification markets in Erie County.',
+    neighbourhoods: ['Orchard Park village', 'Windom', 'Ellicott', 'Chestnut Ridge'],
+    housingNote:
+      'Village and near-village houses carry original hardwood over plank subfloor with the patching and feathering that a century of partition changes leaves behind. The estate subdivisions are plywood over engineered joists with large continuous areas where flatness across the run and stain consistency between floor and stair decide whether the result reads as one floor.',
+    localConsideration:
+      'Higher ground south of the city runs a colder, drier winter than the lakeshore, which widens the annual movement the floor absorbs and argues for measuring rather than assuming a board width.',
+  },
+
+  hamburg: {
+    intro:
+      'Hamburg is three towns in one: a preserved village of nineteenth-century brick and frame, a hard-weather Lake Erie shoreline at Athol Springs and Wanakah, and a wide belt of post-war and later subdivision between them. Almost every job here starts by establishing which of the three the house belongs to.',
+    neighbourhoods: ['Hamburg village', 'Blasdell', 'Athol Springs', 'Water Valley', 'Armor'],
+    housingNote:
+      'Village houses carry original softwood or early hardwood over plank subfloor where replacement in kind precedes any uniform finish. Lakeshore properties include former cottages on foundations never built for a heated winter, and the inland subdivisions are conventional plywood over joists.',
+    localConsideration:
+      'Lake Erie holds summer humidity against the shore band well into the autumn and drives hard lake-effect winters, so the annual range here is wider than a few kilometres inland. It is measured on site.',
+  },
+
+  'east-aurora': {
+    intro:
+      'East Aurora is a village south-east of Buffalo with an unusually intact nineteenth- and early twentieth-century core, mature residential streets, and a strong preservation culture. Original floors survive at a high rate.',
+    neighbourhoods: ['East Aurora village', 'Aurora', 'Elma', 'Marilla'],
+    housingNote:
+      'The village stock carries original softwood plank and early hardwood over plank subfloor, often with settlement in the plane that has been part of the house for a century, and frequently in interiors where trim, plaster and hardware are all original. Least-aggressive repair and replacement in kind is usually the correct approach rather than a uniform sand.',
+    localConsideration:
+      'In an intact interior the floor is chosen against the trim, not from a sample rack, and a finish that reads as new is often the wrong outcome even when it is the easiest one.',
+  },
+
+  'niagara-falls-ny': {
+    intro:
+      'Niagara Falls, New York carries a wide spread of housing ages: pre-war stock through the older centre and the DeVeaux and Hyde Park neighbourhoods, substantial post-war development, and newer building at the edges.',
+    neighbourhoods: ['DeVeaux', 'Hyde Park', 'LaSalle', 'Deveaux Woods', 'North End'],
+    housingNote:
+      'DeVeaux and Hyde Park carry inter-war houses built for a chemical and power workforce, which means solid but unshowy material: plain-sawn oak and maple in quantity, laid narrow, usually without borders. It refinishes very well when there is thickness left, and the LaSalle and post-war stock behind it is a different and simpler proposition on plywood over joists.',
+    localConsideration:
+      'This is directly across the river from Niagara Falls, Ontario, and the two share a corridor and a climate. The housing stock does not; the American side carries more inter-war density and the Ontario side more post-war and newer subdivision.',
+  },
+
+  lewiston: {
+    intro:
+      'Lewiston is a historic village on the Niagara River escarpment north of the falls, with an early nineteenth-century core, mature residential streets and larger properties on the surrounding ridge.',
+    neighbourhoods: ['Lewiston village', 'Sanborn', 'Model City', 'Escarpment ridge'],
+    housingNote:
+      'Village houses include some of the oldest surviving stock in the county, carrying original wide softwood plank or early hardwood over plank subfloor, sometimes over stone foundations where basement humidity is the first measurement. Ridge properties are later and larger, with conventional plywood over joists.',
+    localConsideration:
+      'A house that has stood for two centuries has a floor plane it has settled into. Deciding whether to level or to work with that plane changes the quote more than the species does.',
+  },
+
+  wheatfield: {
+    intro:
+      'Wheatfield lies between Niagara Falls and North Tonawanda and is one of the faster-growing towns in Niagara County, dominated by detached subdivision housing built from the 1990s onward on regular lots.',
+    neighbourhoods: ['Shawnee', 'Bergholz', 'Sawyer', 'Walmore'],
+    housingNote:
+      'The stock is overwhelmingly plywood over engineered joists, where the flatness a builder accepted under carpet is corrected before a nail-down floor goes in and is usually the largest single line in an honest quote. There is very little old floor here to restore; the work is installation and conversion.',
+    localConsideration:
+      'Newer houses run tighter and drier through a lake-effect winter than the inter-war stock nearer the river, which widens the annual moisture swing and argues for engineered construction or a narrower solid board.',
+  },
+
+  'north-tonawanda': {
+    intro:
+      'North Tonawanda sits at the mouth of the Erie Canal on the Niagara River, with a dense pre-war core built through the lumber and carousel era, post-war housing around it, and newer development at the edges.',
+    neighbourhoods: ['Downtown North Tonawanda', 'Martinsville', 'Gratwick', 'Sweeney'],
+    housingNote:
+      'The pre-war core carries original narrow-strip hardwood over plank subfloor in houses built when the town was a lumber centre, frequently with better-than-average material and simple borders in the front rooms. Remaining thickness decides the approach; post-war stock is plywood over joists and conventional.',
+    localConsideration:
+      'Riverside and canal-adjacent properties can carry higher basement humidity than the same house type a few streets inland, and the subfloor is measured before a sanding sequence is set.',
+  },
+
+  lockport: {
+    intro:
+      'Lockport is the canal town of Niagara County, with a substantial nineteenth-century core built through the Erie Canal era, post-war housing around it, and rural and estate property in the surrounding town.',
+    neighbourhoods: ['Downtown Lockport', 'Lowertown', 'Rapids', 'Wrights Corners'],
+    housingNote:
+      'Lockport was built up and down a rock cut, so a great many houses sit directly on the escarpment with foundations cut into stone and floors that have never been fully dry underneath. The reading below the boards decides everything here, and it is taken in more than one place: the same house can be within tolerance at the front and out of it at the back wall.',
+    localConsideration:
+      'Stone-founded houses on the escarpment can run damp below a floor being refinished regardless of the season. It is measured before the sanding sequence is set rather than after.',
+  },
+
+  'rochester-ny': {
+    intro:
+      'Rochester carries some of the strongest pre-war residential stock in upstate New York — Park Avenue, Browncroft, the South Wedge and the 19th Ward are dense early-twentieth-century housing where original hardwood, borders and inlay survive at a high rate.',
+    neighbourhoods: ['Park Avenue', 'Browncroft', 'South Wedge', '19th Ward', 'Highland Park', 'Corn Hill'],
+    housingNote:
+      'Pre-1930 houses commonly carry quarter-sawn oak or maple over plank subfloor, frequently with inlaid borders and feature strips in the principal rooms, and frequently already refinished more than once. Thickness above the tongue is measured first, and a surviving border is repaired in kind rather than sanded through.',
+    localConsideration:
+      'Work in Monroe County is scheduled as a trip and confirmed in advance. The published price is fixed after the free in-home measure, as it is everywhere else; the schedule reflects the distance, not the standard.',
+  },
+
+  brighton: {
+    intro:
+      'Brighton is the inner suburb immediately south-east of Rochester, largely built between the 1920s and the 1960s, with mature tree-lined streets, a stable ownership pattern and a high proportion of original floors.',
+    neighbourhoods: ['Home Acres', 'Meridian Hill', 'Council Rock', 'Twelve Corners', 'Buckland'],
+    housingNote:
+      'Inter-war and early post-war houses here carry original narrow-strip oak over plank or early plywood subfloor, often with a border in the principal rooms and often on a second finish already. Where a floor has been carpeted since installation it is usually sounder than the room suggests until the tack strip comes up.',
+    localConsideration:
+      'Intact original trim and plaster through much of this stock means the floor is chosen against the interior rather than from a sample card, and the transitions and undercuts decide how the work reads.',
+  },
+
+  pittsford: {
+    intro:
+      'Pittsford combines a canal-era village core with extensive later estate subdivision development on large lots, and is one of the higher-specification residential markets in Monroe County.',
+    neighbourhoods: ['Pittsford village', 'Sutherland', 'Thornell', 'Mendon Center', 'Golf Club Estates'],
+    housingNote:
+      'The canal village and the estate development are two different problems sharing a postal code. In the village the floor is usually older than the plumbing and the correct move is repair with matched stock. In the estate houses the floor is a single field of several thousand square feet under a lot of glass, where the failure mode is not wear but movement, and where a wide plank ordered on looks alone will telegraph every seasonal swing.',
+    localConsideration:
+      'Large heated volumes with substantial glazing dry further across a Monroe County winter than a smaller house on the same street, which is a real argument against the widest plank on the rack. Work here is scheduled as a trip and confirmed in advance.',
+  },
+
+  fairport: {
+    intro:
+      'Fairport is a canal village east of Rochester with an intact nineteenth-century core along the Erie Canal and substantial later residential development in the surrounding town of Perinton.',
+    neighbourhoods: ['Fairport village', 'Perinton', 'Egypt', 'Bushnells Basin'],
+    housingNote:
+      'Village houses carry original softwood plank and early hardwood over plank subfloor, often over stone foundations where basement humidity is measured before anything else. The surrounding subdivision stock is plywood over engineered joists and is installation and conversion work.',
+    localConsideration:
+      'Canal-adjacent properties can run damper below the floor than the same house type on higher ground a few streets away. The subfloor decides the sanding sequence, not the calendar.',
+  },
+
+  victor: {
+    intro:
+      'Victor sits in Ontario County south-east of Rochester and is one of the faster-growing towns in the region, with a small village core and a large volume of detached subdivision housing built from the 1990s onward.',
+    neighbourhoods: ['Victor village', 'Fishers', 'East Victor', 'Turk Hill'],
+    housingNote:
+      'Almost everything here has been built within one generation, which means the floors are first-generation rather than second: the question is what to lay, not what is left. Open-concept plans with a great room, kitchen and hall in one field make the fastening schedule and the expansion allowance at the perimeter matter more than the species, because there is nothing to break the run.',
+    localConsideration:
+      'Newer construction on higher ground south of the lake runs a colder, drier heating season than the lakeshore towns, which widens the annual movement the floor has to absorb.',
+  },
+
+  webster: {
+    intro:
+      'Webster runs along the Lake Ontario shore east of Irondequoit Bay, with a village core, a lakeshore band including converted seasonal properties, and substantial post-war and newer subdivision housing inland.',
+    neighbourhoods: ['Webster village', 'North Ponds', 'Holt Road', 'Lake Road'],
+    housingNote:
+      'The Webster shore runs cottages that became houses one addition at a time, and the giveaway is a floor that changes direction, height or species at a doorway. Bringing that into one plane is structural work before it is a flooring decision, and it is settled at the measure — inland, the town is conventional plywood over joists and a far shorter conversation.',
+    localConsideration:
+      'The lake holds summer humidity against the shore band into the autumn and moderates the winter, so the annual range differs measurably from the towns a few kilometres south.',
+  },
+
+  irondequoit: {
+    intro:
+      'Irondequoit sits between Rochester and Lake Ontario, densely built between the 1920s and the 1950s on small lots, with a very high proportion of original hardwood surviving under later floor coverings.',
+    neighbourhoods: ['Summerville', 'Sea Breeze', 'Point Pleasant', 'Ridge Culver', 'Durand'],
+    housingNote:
+      'The inter-war and early post-war stock carries narrow-strip oak over plank or early plywood subfloor, much of it under broadloom since installation and in better condition than the room suggests until the tack strip comes up. Where a floor has already been sanded, remaining thickness decides whether a full sand is available at all.',
+    localConsideration:
+      'Proximity to the lake and the bay keeps summer humidity high and moderates the winter compared with the towns inland, and acclimation is measured to the room rather than assumed.',
+  },
+
+  greece: {
+    intro:
+      'Greece is the large suburban town west of Rochester along the lake, built predominantly between the 1950s and the 1980s with later infill, and dominated by detached single-family housing on regular lots.',
+    neighbourhoods: ['Charlotte', 'Barnard', 'North Greece', 'Paddy Hill', 'Braddock Heights'],
+    housingNote:
+      'Greece is largely one long build-out of ranches and colonials, so the floors arrive with the same problem at the same age: a builder oak strip laid over plywood, sanded once somewhere around its thirtieth year, and now being asked for a third finish it may not have the thickness to give. That measurement, taken at a doorway where the tongue is exposed, is the whole conversation.',
+    localConsideration:
+      'Matching stain and sheen across the three or four levels of a split-level, and across the landings between them, is harder than laying one long run and is where an inconsistent refinish shows.',
   },
 };
 

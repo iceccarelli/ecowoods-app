@@ -690,7 +690,7 @@ export async function handleQuoteCheck(request: Request) {
  * confirmed says so, in the payload, rather than borrowing the confidence of
  * the ones beside it. `service_area` lists only what may be claimed, and the
  * United States markets are excluded from it by construction — they are
- * advertising reach for Ontario property, not coverage.
+ * a service area on both sides of the border since 2026-09-10.
  *
  * `content_queue` is published deliberately. It is the list of markets that do
  * not yet have a page and the reason each one does not, which is a more useful
@@ -720,7 +720,7 @@ export async function handleMarkets(request: Request) {
       refuses: [
         'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
         'a confirmed operational position is never reported as evidence of work performed; has_page and why_no_page carry that, separately',
-        'United States markets are advertising reach for Ontario property, never service area, and never appear in service_area',
+        'no second address, telephone number or set of hours is published for any market: there is one shop and one showroom, in Toronto',
         'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
       ],
       service_area: serviceAreaMarkets().map((x) => ({ slug: x.slug, name: x.name, region: x.region })),
@@ -729,7 +729,8 @@ export async function handleMarkets(request: Request) {
         'active-expansion': 'taking work; coverage established, not yet routine',
         'corridor-target': 'on the route and in the plan; no confirmed operational position',
         'travel-by-confirmation': 'reachable, scheduled as a trip, priced with the distance in the written quote',
-        'us-proxy': 'advertising reach only; not a service area',
+        'us-active': 'New York State; taking work, scheduled like any other job',
+        'us-by-confirmation': 'New York State; scheduled as a trip and confirmed in advance',
       },
       markets: rows.map((x) => {
         const w = assessMarket(x);

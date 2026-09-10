@@ -97,8 +97,8 @@ export async function GET() {
     '',
     '## Where it works',
     '',
-    /* SERVICE_AREAS, not CITIES. This read from the sixteen municipalities
-       while the site publishes a page for all thirty-two — the sixteen missing
+    /* SERVICE_AREAS, not CITIES. This read from the municipalities only
+       while the site published a page for every area — the missing
        being the Toronto neighbourhoods, which are the local queries with the
        most hire intent behind them. Same defect, same fix, as llms.txt. */
     ...SERVICE_AREAS.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
@@ -303,8 +303,9 @@ export async function GET() {
     '   said about it and the date somebody confirmed it. Markets nobody has',
     '   confirmed say so rather than borrowing the confidence of their neighbours.',
     '   Refuses: any claim of service without a dated confirmation. The New York',
-    '   municipalities are advertising reach for Ontario property and never',
-    '   appear as service area — this is an Ontario company.',
+    '   municipalities became service areas on 2026-09-10, when the owner',
+    '   confirmed cross-border licensing and crew work authorization. There is',
+    '   still one shop, one showroom and one telephone number, all in Toronto.',
     `   For a person: ${SITE_URL}/corridors`,
     '',
     `Every action, as data: ${SITE_URL}/api/v1/actions — each with its parameters, a call that works verbatim, the page a person would use instead, and what it refuses to answer.`,

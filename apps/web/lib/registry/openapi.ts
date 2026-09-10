@@ -410,7 +410,7 @@ export function buildOpenApi() {
             refuses: { type: 'array', items: { type: 'string' } },
             allocation: {
               type: 'object',
-              description: 'The 80/20 Canada/United States target, and the same split measured from the repository across four measures. The page and depth measures are structurally 100/0 because a us-proxy market can never hold a page.',
+              description: 'The depth budget, measured from the repository across four measures. Both countries publish on the same terms since 2026-09-10: real local content and a dated confirmation. What differs is how deeply a page is worked, not whether it exists.',
               properties: {
                 target: { type: 'object', properties: { canada: { type: 'number' }, united_states: { type: 'number' } } },
                 measured: { type: 'array', items: { type: 'object', properties: { measure: { type: 'string' }, canada: { type: 'number' }, united_states: { type: 'number' }, canada_share: { type: 'number' }, means: { type: 'string' } } } },
@@ -475,7 +475,7 @@ export function buildOpenApi() {
         MarketIndex: {
           type: 'object',
           description:
-            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. United States markets are advertising reach for Ontario property and never appear in service_area.',
+            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. New York State markets are service areas since 2026-09-10; there is still one address and one telephone number, both in Toronto.',
           required: ['meta', 'markets', 'service_area', 'refuses'],
           properties: {
             meta: ref('ListMeta'),

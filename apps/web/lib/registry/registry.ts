@@ -866,7 +866,7 @@ export function buildActions(): ActionPrimitive[] {
         human_page: abs('/corridors'),
         refuses: [
           'no market is reported as served without a dated confirmation',
-          'the United States markets are advertising reach for Ontario property and never appear as service area',
+          'no market publishes a second address, telephone number or set of hours; there is one shop and one showroom, in Toronto',
         ],
       },
       canonical_url: abs('/corridors'),

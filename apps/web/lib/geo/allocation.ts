@@ -1,42 +1,41 @@
 /**
- * lib/geo/allocation.ts — the 80/20 split, measured rather than intended.
+ * lib/geo/allocation.ts — the 70/20/10 depth split, measured rather than intended.
  *
- * THE TARGET
+ * WHAT THE RATIO IS NOW, AND WHAT IT USED TO BE
  *
- * 80% of geographic effort in Ontario, 20% in western New York. It is a good
- * ratio and it is the kind of intention that survives exactly as long as nobody
- * checks. Six months of "let's add Buffalo suburbs, they're high-value" is how
- * a Canadian contractor ends up with an American-looking site, and no single
- * commit in that sequence looks wrong.
+ * It used to be 80/20 Canada/United States and it meant omission: eighty percent
+ * of the effort in Ontario, twenty percent in New York, and the American twenty
+ * bought reach rather than pages because a `us-proxy` market could not hold one.
+ * A hard floor under Canada's share of the model was the right guard for that
+ * world.
  *
- * So it is computed, on four measures the brief itself names, and a guard fails
- * the build when Canada's share of the one that matters drops below the floor.
+ * Since the owner confirmed the New York position on 2026-09-10 the ratio means
+ * something different: it is a DEPTH budget, not a publication rule. Every
+ * market in the model is published. What differs is how hard the page is worked
+ * — the Toronto luxury mesh carries the full anatomy, the QEW belt carries the
+ * standard one, the Niagara hinge and western New York carry a tight complete
+ * matrix. Tight is not thin: all six services, the booking path, the schema and
+ * the sitemap entry are on every page in every tier.
  *
- * THE FOUR MEASURES, AND WHY NOT JUST URLS
+ * So this measures depth by tier and coverage by country, and the guard has
+ * stopped asking "is Canada winning" and started asking "is any published market
+ * carrying less than the floor its tier promises".
  *
- *   pages    — markets with a published, indexable page. The measure that
- *              actually moves rankings, and the one under a hard floor.
- *   depth    — characters of published local content. Twenty American stubs and
- *              twenty Canadian essays are not a 50/50 split, and counting URLs
- *              would say they were.
- *   records  — markets in the model at all. The widest measure, and the one
- *              that moves first when attention drifts.
- *   graph    — prominence inside the geographic graph itself: corridor
- *              memberships plus nearest-market edges. This is where the
- *              American twenty percent actually lives, so it is the measure
- *              that shows the allocation being spent rather than merely
- *              intended.
+ * THE MEASURES
  *
- * THE ASYMMETRY IS THE POINT
+ *   published — markets with an indexable page. Should approach every market
+ *               with local content; a gap here is a page that was written and
+ *               is not being served.
+ *   depth     — characters of published local content, by country. The tier
+ *               budget lives here, and it is the number that shows whether a
+ *               New York page is tight or merely thin.
+ *   records   — markets in the model at all.
+ *   graph     — corridor memberships and nearest-market edges.
  *
- * US markets can never hold a page here — `worthiness.ts` refuses one to a
- * `us-proxy` market, because a page would read as a United States location for
- * a company that has no United States office. So the page and depth measures
- * are structurally 100/0, and that is correct, not a bug to be balanced away.
- * The 20% American allocation is real and it is spent on *reach* — records in
- * the model, corridor structure, the entity graph's expansion story — not on
- * landing pages claiming service. The report says which measure is which so
- * nobody reads 100/0 as a failure or 80/20 as permission to publish in Buffalo.
+ * There is no longer a Canadian floor on records, because there is no longer a
+ * reason to ration American ones. What replaced it is a floor on the DEPTH of
+ * any published page, which is the thing a directory-shaped expansion actually
+ * breaks.
  */
 import { MARKETS, type Market } from '@/content/geo/markets';
 import { cityContent } from '@/lib/seo-data';
@@ -99,8 +98,9 @@ export function allocation(): Split[] {
       ...pages,
       caShare: share(pages.ca, pages.us),
       means:
-        'Markets with a published indexable page. Structurally 100/0 and correct: a us-proxy market can never hold ' +
-        'a page, because one would read as a United States location for a company that has no United States office.',
+        'Markets with a published indexable page. Both countries publish on the same terms since 2026-09-10: real ' +
+        'local content and a dated confirmation. A market with content and no page here is a page that was written ' +
+        'and is not being served.',
     },
     {
       measure: 'depth',
@@ -122,9 +122,36 @@ export function allocation(): Split[] {
 }
 
 /**
- * The floor on Canada's share of markets in the model. Set below the 80%
- * target with room for the model to breathe, and far enough above half that a
- * drift toward an American-looking site fails the build long before a person
- * would notice it in a diff.
+ * The floor on the AVERAGE depth of a published page, in characters of local
+ * content, measured per country.
+ *
+ * This replaced a floor on Canada's share of the model, which stopped meaning
+ * anything the day New York became a service area: rationing American records
+ * was a proxy for "do not publish thin American pages", and now that they are
+ * published the real thing can be measured directly.
+ *
+ * THE NUMBER IS READ FROM THE CORPUS, NOT CHOSEN AS AN ASPIRATION.
+ *
+ * The eighty-nine published pages run from about 290 characters of local
+ * content at the tightest Toronto neighbourhood to well over a thousand at the
+ * larger municipalities, with a median near 570. The floor sits just under the
+ * observed minimum, so it fails a genuine regression — somebody pasting a
+ * hundred-and-fifty-character stub for a new market — without retroactively
+ * condemning pages that shipped and rank.
+ *
+ * Setting it at the median instead would have failed a quarter of the live site
+ * on the day it was introduced, which is how a guard gets disabled rather than
+ * satisfied. If the corpus deepens, this number moves up behind it.
  */
-export const CA_RECORD_FLOOR = 0.7;
+export const MIN_MEAN_DEPTH = 280;
+
+/** Mean characters of published local content per page, by country. */
+export const meanDepth = (): { ca: number; us: number } => {
+  const rows = allocation();
+  const pages = rows.find((r) => r.measure === 'pages')!;
+  const depth = rows.find((r) => r.measure === 'depth')!;
+  return {
+    ca: pages.ca === 0 ? 0 : Math.round(depth.ca / pages.ca),
+    us: pages.us === 0 ? 0 : Math.round(depth.us / pages.us),
+  };
+};

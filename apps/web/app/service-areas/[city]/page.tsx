@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent, type City } from '@/lib/seo-data';
+import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent, areaDisplayName, US_AREA_SLUGS, type City } from '@/lib/seo-data';
 import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
 import { breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 import { placeForArea } from '@/lib/schema/root-schema';
@@ -16,8 +16,15 @@ export function generateStaticParams() {
 }
 export const dynamicParams = false;
 
-/** The <title>, the WebPage name and the Service name — one string, three uses. */
-const pageTitle = (city: City) => `Hardwood floor refinishing & installation in ${city.name}`;
+/**
+ * The <title>, the WebPage name and the Service name — one string, three uses.
+ *
+ * New York areas carry ", NY" so a result for Niagara Falls or Brighton names
+ * which one it is. There is a Niagara Falls on each side of the river and a
+ * Brighton in both Monroe County and Ontario; a bare place name in a title is
+ * resolved by the reader against whichever they already had in mind.
+ */
+const pageTitle = (city: City) => `Hardwood floor refinishing & installation in ${areaDisplayName(city)}`;
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city: slug } = await params;
@@ -57,6 +64,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
      Rosedale is not a city (F-157), and this page used to say it was — in the
      Service node below and in every Offer under it. */
   const place = placeForArea(city);
+  const isUS = US_AREA_SLUGS.has(city.slug);
   const jsonLd = [
     /* ONE BUSINESS ENTITY.
 
@@ -121,7 +129,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const localIntro = cc?.intro;
   const localHousing = cc?.housingNote;
 
-  /* Published jobs done in THIS area. Four of the thirty-two areas have one
+  /* Published jobs done in THIS area. A handful of the published areas have one
      today; the rest render nothing rather than a card invented to fill a grid. */
   const localJobs = jobCardsForArea(city.name);
 
@@ -135,13 +143,28 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <section className="section">
         <div className="shell">
           <nav aria-label="Breadcrumb" style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1rem' }}>
-            <Link href="/">Home</Link> › <Link href="/service-areas">Service Areas</Link> › <span>{city.name}</span>
+            <Link href="/">Home</Link> › <Link href="/service-areas">Service Areas</Link> › <span>{areaDisplayName(city)}</span>
           </nav>
-          <span className="eyebrow">Hardwood Flooring · {city.name}</span>
+          <span className="eyebrow">Hardwood Flooring · {areaDisplayName(city)}</span>
           <h1 style={{ marginTop: '0.5rem' }}>
             Hardwood floor refinishing &amp; installation in{' '}
-            <span className="serif-italic">{city.name}.</span>
+            <span className="serif-italic">{areaDisplayName(city)}.</span>
           </h1>
+
+          {/* THE SENTENCE EVERY PAGE OWES THE READER, ABOVE EVERYTHING ELSE.
+              A visitor arriving from "hardwood flooring {city}" has one
+              question and it is not about substrate. Answering it in the first
+              line — and, on a New York page, saying in the same breath where
+              the shop is — is what separates a service page from a directory
+              listing that leaves them guessing. */}
+          <p style={{ maxWidth: '48rem', marginTop: '1rem', fontWeight: 600 }}>
+            Ecowoods serves {areaDisplayName(city)}. Book the measure.
+            {isUS && (
+              <>
+                {' '}The showroom is Toronto. The job is in {city.name}. We take this work.
+              </>
+            )}
+          </p>
 
           {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
               This paragraph used to be one shared sentence pair with the city
