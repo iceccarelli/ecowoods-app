@@ -189,6 +189,59 @@ function slugsFromSource(rel) {
  * — and nobody saw it for a day, because `pnpm verify` was an && chain that
  * stopped at guard 3 of 57 and never reached this one.
  */
+/**
+ * SERVICE-AREA SLUGS ARE DERIVED, NOT WRITTEN.
+ *
+ * slugsFromSource() looks for `slug: 'x'` literals. lib/seo-data.ts has none for
+ * these: the pages come from three lists of NAMES — AREAS (municipalities),
+ * NEIGHBOURHOODS plus EXTRA_TORONTO (Toronto), and DISTRICTS (communities inside
+ * a municipality elsewhere) — each slugified, with one override for the two
+ * Niagara Falls.
+ *
+ * So the generic reader returned whatever `slug:` literals happened to be in the
+ * file for other reasons, and had been doing so unnoticed for as long as nothing
+ * linked to a city page from a component this guard scans. The first such link
+ * reported three published municipalities as 404s.
+ *
+ * The tempting fix is to delete the link. The reader is what was wrong.
+ */
+function serviceAreaSlugs() {
+  const file = path.join(WEB, 'lib/seo-data.ts');
+  if (!fs.existsSync(file)) return null;
+  const src = fs.readFileSync(file, 'utf8');
+
+  const slugifyRaw = (x) =>
+    x.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const overrides = Object.fromEntries(
+    [...(/AREA_SLUG_OVERRIDES[^=]*=\s*\{([\s\S]*?)\};/.exec(src)?.[1] ?? '')
+      .matchAll(/'([^']+)':\s*'([a-z0-9-]+)'/g)].map((m) => [m[1], m[2]]),
+  );
+  const names = [];
+  for (const re of [/const AREAS = \[([\s\S]*?)\];/, /const NEIGHBOURHOODS = \[([\s\S]*?)\];/, /const EXTRA_TORONTO = \[([\s\S]*?)\];/]) {
+    const block = re.exec(src);
+    if (block) names.push(...[...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]));
+  }
+  const districts = /const DISTRICTS: [^=]*=\s*\[([\s\S]*?)\];/.exec(src);
+  if (districts) names.push(...[...districts[1].matchAll(/name:\s*'([^']+)'/g)].map((m) => m[1]));
+
+  const out = new Set(names.map((n) => overrides[n] ?? slugifyRaw(n)));
+
+  /* Self-check against going blind again: every CITY_CONTENT key is a published
+     area, so the derived set can never be smaller than that map. */
+  const contentAt = src.indexOf('export const CITY_CONTENT');
+  const keys = contentAt === -1
+    ? []
+    : [...src.slice(contentAt).matchAll(/\n {2}'?"?([a-z0-9-]+)'?"?:\s*\{/g)].map((m) => m[1]);
+  const missed = keys.filter((k) => !out.has(k));
+  if (missed.length) {
+    console.error(`verify-destinations: the service-area reader missed ${missed.length} published area(s):`);
+    console.error(`  ${missed.slice(0, 6).join(', ')}`);
+    console.error('  It is deriving slugs from the wrong lists. Fix the reader, not the links.');
+    process.exit(2);
+  }
+  return out.size ? out : null;
+}
+
 function keysFromTsDir(rel, key = 'slug') {
   const dir = path.join(WEB, rel);
   if (!fs.existsSync(dir)) return null;
@@ -215,7 +268,7 @@ const MANIFESTS = {
   '/guides': { source: 'lib/guides.ts', slugs: slugsFromSource('lib/guides.ts') },
   '/papers': { source: 'lib/papers.ts', slugs: slugsFromSource('lib/papers.ts') },
   '/glossary': { source: 'lib/glossary.ts', slugs: slugsFromSource('lib/glossary.ts') },
-  '/service-areas': { source: 'lib/seo-data.ts', slugs: slugsFromSource('lib/seo-data.ts') },
+  '/service-areas': { source: 'lib/seo-data.ts', slugs: serviceAreaSlugs() },
   '/blog': { source: 'content/articles/', slugs: slugsFromContentDir('content/articles') },
   '/case-studies': { source: 'content/case-studies/', slugs: slugsFromContentDir('content/case-studies') },
   '/projects': { source: 'content/projects/', slugs: keysFromTsDir('content/projects', 'slug') },

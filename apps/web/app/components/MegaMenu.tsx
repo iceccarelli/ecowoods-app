@@ -101,6 +101,19 @@ export function MegaMenu({
 
       <div id={`mm-${id}`} className="mm-panel" hidden={!open}>
         <div className="mm-panel-inner">
+          {/* Escape closed this panel and outside-click closed it, and neither
+              is visible. On a touchscreen — where there is no hover to leave and
+              no keyboard in reach — the only way out was to tap the trigger
+              again, which is a thing people have to be taught. A visible control
+              is the affordance the mobile drawer already had. */}
+          <button
+            type="button"
+            className="mm-close"
+            onClick={() => { setOpen(false); trigger.current?.focus(); }}
+            aria-label={`Close the ${label} menu`}
+          >
+            ✕
+          </button>
           <div className="mm-cols">
             {columns.map((col) => (
               <div className="mm-col" key={col.title}>

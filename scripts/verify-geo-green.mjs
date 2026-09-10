@@ -159,7 +159,27 @@ const RETIRED = [
   [/never (?:appear as|be) service area/i, '"never service area" — contradicted by every published New York page'],
   [/not a service area/i, '"not a service area"'],
 ];
-const STALE_COUNT = /\b(?:thirty-two|forty-five)\b[^.]{0,40}\b(?:areas|municipalit|service)/i;
+/*
+ * A TYPED TERRITORY COUNT, IN ANY SHAPE.
+ *
+ * The first version of this looked for two specific numbers next to the word
+ * "areas". It missed "Nine routes, and what coverage means" sitting in the
+ * primary navigation for as long as there were eleven corridors — a stale count
+ * on the most-seen component on the site, in the one place a visitor reads
+ * before deciding the site knows what it is talking about.
+ *
+ * Any written-out number in front of a territory noun is now a failure. Counts
+ * come from the registry; a typed one is correct until it is not, and nothing
+ * tells you when.
+ */
+/* From three upward. "one" and "two" appear in code (`const one = MARKETS…`)
+   and in prose about two areas of a house; nobody has ever typed a stale
+   territory count as "two". */
+const NUMBER_WORD = '(?:three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|twenty|twenty-six|thirty|thirty-two|forty|forty-five|fifty|sixty|seventy|eighty|ninety|hundred)';
+const TERRITORY_NOUN = '(?:areas|area pages|municipalit\\w*|service areas|corridors|routes|cities|markets|neighbourhoods)';
+/* Same line only. Allowed to cross a newline it matched a case-study slug
+   ending "-three-level-transition" against a `routes:` field below it. */
+const STALE_COUNT = new RegExp(`\\b${NUMBER_WORD}\\b[^.<>{}\\n]{0,24}\\b${TERRITORY_NOUN}\\b`, 'i');
 const TORONTO_PHONE = /\(?647\)?[\s.-]?244[\s.-]?5156/;
 /*
  * The 555 exchange is reserved for fiction precisely so that a form placeholder
@@ -189,7 +209,10 @@ for (const file of [...walk(join(WEB, 'app')), ...walk(join(WEB, 'lib')), ...wal
   for (const [re, what] of RETIRED) {
     if (re.test(body)) fail.push(`${rel} still ships ${what}`);
   }
-  if (STALE_COUNT.test(body)) {
+  /* lib/changelog.ts is a DATED RECORD. "sixteen service areas" was true on the
+     day that entry was written and rewriting it would falsify the history the
+     file exists to keep. A changelog is the one place a stale number is correct. */
+  if (!/changelog\.ts$/.test(rel) && STALE_COUNT.test(body)) {
     fail.push(`${rel} hardcodes a territory count. Counts are derived from the registry; a typed one goes stale silently.`);
   }
   for (const hit of body.matchAll(/\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g)) {

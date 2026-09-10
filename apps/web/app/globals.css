@@ -11153,3 +11153,28 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .tm[data-still='1'] .tm-dot { fill: var(--tm-lit); }
   .tm-region.is-lit .tm-dot-g { animation: none; }
 }
+
+/* The visible way out of a mega panel. Escape and outside-click already
+   worked; neither is discoverable, and on a touchscreen neither is available. */
+.mm-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.mm-close:hover { color: var(--ink); border-color: var(--ink); }
+.mm-close:focus-visible { outline: 3px solid var(--copper-bright, var(--copper)); outline-offset: 2px; }
+.mm-panel-inner { position: relative; }

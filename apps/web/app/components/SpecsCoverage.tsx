@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useId, useState } from 'react';
-import CoverageMap from './CoverageMap';
+import TerritoryMap from './TerritoryMap';
 import SpeciesSwatch from './SpeciesSwatch';
 
 export type Species = {
@@ -141,7 +141,10 @@ export default function SpecsCoverage({
                 id={`${uid}-coverage-panel`}
                 aria-labelledby={`${uid}-coverage-tab`}
               >
-                <CoverageMap areas={areas} />
+                {/* Was CoverageMap: a GTA-only drawing with sixteen municipalities in its
+                    label, kept alive only by this component being commented out on the
+                    homepage. TerritoryMap reads the registry and cannot go stale. */}
+                <TerritoryMap />
               </div>
             )}
           </div>

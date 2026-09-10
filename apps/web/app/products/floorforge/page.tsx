@@ -493,8 +493,9 @@ export default function FloorForgePage() {
               <em>Not a pilot candidate?</em>
             </h2>
             <p>
-              Ecowoods offers full-service hardwood flooring installation, refinishing, and dust-free sanding for
-              homeowners across the GTA. We are not going anywhere.
+              Ecowoods installs, refinishes, dust-free sands, restores and builds stairs across the whole
+              corridor — Toronto and the GTA, Hamilton, Niagara, and western New York. We are not going
+              anywhere.
             </p>
             <div className="ff-actions">
               <a href="/#quote" className="btn btn-copper btn-lg">
@@ -503,6 +504,16 @@ export default function FloorForgePage() {
               <a href="/technical-library" className="btn btn-ghost btn-lg">
                 Browse Technical Library
               </a>
+            </div>
+            {/* This page had two links on it and was the only dead end on the
+                site: a visitor arriving from a robotics search had the pilot
+                form or the back button. The flooring business is the reason
+                anyone trusts the robot, so the flooring business gets named. */}
+            <div className="ff-actions" style={{ marginTop: '1rem' }}>
+              <a href="/service-areas" className="btn btn-ghost">Where Ecowoods works</a>
+              <a href="/equipment" className="btn btn-ghost">The machines we run today</a>
+              <a href="/framework" className="btn btn-ghost">The Well-Installed Framework</a>
+              <a href="/papers" className="btn btn-ghost">Technical papers</a>
             </div>
             </div>
           </div>

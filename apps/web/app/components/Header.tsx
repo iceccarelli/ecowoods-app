@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { MegaMenu, type MegaColumn } from './MegaMenu';
+import { CORRIDORS } from '@/content/geo/corridors';
+import { SERVICE_AREAS } from '@/lib/seo-data';
 
 import { useState, useEffect, useRef } from 'react';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
@@ -95,12 +97,28 @@ const SERVICES_MENU: MegaColumn[] = [
     ],
   },
   {
+    /* The geography page was in the footer and not here. It is what a "hardwood
+       flooring near me" search lands on, it is the payoff of the whole corridor
+       model, and the primary navigation did not mention it. Both counts are
+       derived — the nav said "Nine routes" for a week after there were eleven. */
+    title: 'Where we work',
+    href: '/service-areas',
+    items: [
+      { label: 'Find your city', href: '/service-areas', note: `${SERVICE_AREAS.length} published areas, each with its own housing stock` },
+      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, in travel order` },
+      { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
+      { label: 'Mississauga', href: '/service-areas/mississauga' },
+      { label: 'Hamilton', href: '/service-areas/hamilton' },
+      { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
+    ],
+  },
+  {
     title: 'Before you decide',
     href: '/guides',
     items: [
       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
       { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
-      { label: 'Where we actually drive', href: '/corridors', note: 'Nine routes, and what coverage means' },
+      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, and what coverage means` },
       { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },

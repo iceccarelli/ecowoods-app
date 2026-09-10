@@ -91,14 +91,31 @@ const manifestPath = join(REGISTRY, 'manifest.ts');
 const manifest = existsSync(manifestPath) ? strip(read(manifestPath)) : '';
 const endpointsBlock = manifest.match(/export const ENDPOINTS[^=]*=\s*\[[\s\S]*?\n\];/);
 
-/** { path, method, file } per declaration, in declaration order. */
+/**
+ * { path, method, file } per declaration, in declaration order.
+ *
+ * The span between `method` and `file` was `[^}]*?`, which cannot cross a
+ * closing brace — so the day one summary became a template literal carrying
+ * `${CORRIDORS.length}`, that entry stopped parsing and the guard reported its
+ * route as undeclared. The obvious fix is to type the number back in. The
+ * reader was what needed to change: `${…}` groups are now allowed inside the
+ * span, and the count of parsed entries is checked against the count of
+ * declarations so this cannot go quiet again.
+ */
+const ENTRY = /\{\s*path:\s*'([^']*)'\s*,\s*method:\s*'(GET|POST)'(?:[^{}]|\$\{[^{}]*\})*?\bfile:\s*'([^']*)'/g;
 const endpoints = endpointsBlock
-  ? [...endpointsBlock[0].matchAll(/\{\s*path:\s*'([^']*)'\s*,\s*method:\s*'(GET|POST)'[^}]*?\bfile:\s*'([^']*)'/g)].map((m) => ({
-      path: m[1],
-      method: m[2],
-      file: m[3],
-    }))
+  ? [...endpointsBlock[0].matchAll(ENTRY)].map((m) => ({ path: m[1], method: m[2], file: m[3] }))
   : [];
+if (endpointsBlock) {
+  const declared = (endpointsBlock[0].match(/\{\s*path:\s*'/g) ?? []).length;
+  if (endpoints.length !== declared) {
+    fail(
+      'apps/web/lib/registry/manifest.ts',
+      `parsed ${endpoints.length} of ${declared} ENDPOINTS entries. The reader is blind to one, which means a real ` +
+        'route is about to be reported as undeclared — or an undeclared one is about to pass.',
+    );
+  }
+}
 
 if (!existsSync(manifestPath)) {
   fail('apps/web/lib/registry/manifest.ts', 'missing — the OpenAPI document and the manifest have nothing to read');

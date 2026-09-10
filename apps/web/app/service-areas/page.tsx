@@ -24,11 +24,16 @@ export default function ServiceAreasIndex() {
       <section className="section">
         <div className="shell">
           <span className="eyebrow">Service Areas</span>
-          <h1>Hardwood flooring <span className="serif-italic">across the GTA.</span></h1>
+          {/* The headline said "across the GTA" while the list below it ran to
+              eighty-nine places, twenty-six of them in New York State. The most
+              important geography page on the site was contradicting its own
+              contents in its H1 — which is the version a search engine quotes.
+              Counts are derived, so this cannot go stale again. */}
+          <h1>
+            Hardwood flooring <span className="serif-italic">across the corridor.</span>
+          </h1>
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
-            Installation, refinishing and dust-free sanding — from Downtown Toronto to Vaughan, Mississauga,
-            Markham and beyond. Find your city for local details, or book a free in-home estimate anywhere in
-            the Greater Toronto Area.
+            {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas — Toronto and the GTA, west to Waterloo Region, down the Niagara peninsula, and across the river into western New York. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
             {SERVICE_AREAS.map((c) => (
