@@ -22,8 +22,11 @@ describe('the territory map', () => {
     for (const id of Object.keys(SPINES)) expect(ids.has(id), `${id} is not a corridor`).toBe(true);
   });
 
-  it('places every municipality inside the frame, with room for its halo', () => {
-    const pad = 4;
+  it('places every municipality inside the visible crop, with room for its halo', () => {
+    /* The frame is a window onto the coordinate space, not the whole of it — so
+       the bound that matters is the crop, and a dot outside it is simply not on
+       the map. `pad` is the widest territory stroke, which extends past a dot. */
+    const pad = 6;
     for (const c of CORRIDORS) {
       const pts = SPINES[c.id]!;
       const n = c.members.length;
@@ -31,10 +34,10 @@ describe('the territory map', () => {
         const t = n === 1 ? 0.5 : i / (n - 1);
         const [x, y] = along(pts, 0.06 + t * 0.88);
         const [jx, jy] = jitter(slug);
-        expect(x + jx, `${slug} x`).toBeGreaterThan(pad);
-        expect(x + jx, `${slug} x`).toBeLessThan(VIEWBOX.w - pad);
-        expect(y + jy, `${slug} y`).toBeGreaterThan(pad);
-        expect(y + jy, `${slug} y`).toBeLessThan(VIEWBOX.h - pad);
+        expect(x + jx, `${slug} x`).toBeGreaterThan(VIEWBOX.x + pad);
+        expect(x + jx, `${slug} x`).toBeLessThan(VIEWBOX.x + VIEWBOX.w - pad);
+        expect(y + jy, `${slug} y`).toBeGreaterThan(VIEWBOX.y + pad);
+        expect(y + jy, `${slug} y`).toBeLessThan(VIEWBOX.y + VIEWBOX.h - pad);
       });
     }
   });

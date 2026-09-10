@@ -68,26 +68,63 @@ import { CORRIDORS, MARKETS, type Corridor, type Market } from '@/lib/geo';
  * be read rather than buried among the paths that use them.
  */
 export const SPINES: Record<string, Array<[number, number]>> = {
-  'core-gta': [[62, 55], [78, 50], [92, 52]],
-  '400-north': [[76, 47], [74, 33], [72, 19]],
-  '401-east': [[80, 50], [102, 45], [124, 36]],
-  '407-york-peel': [[58, 44], [76, 41], [96, 43]],
-  'qew-west': [[70, 57], [60, 63], [50, 70]],
-  '403-6-west': [[48, 70], [36, 66], [24, 62]],
-  'niagara-belt': [[54, 74], [62, 82], [72, 90]],
-  'buffalo-niagara': [[74, 92], [82, 96], [92, 97]],
-  'buffalo-metro': [[90, 99], [100, 103], [110, 100]],
-  'rochester-east': [[130, 88], [142, 92], [154, 88]],
-  'cottage-north-east': [[74, 22], [96, 26], [116, 32]],
+  /* The Toronto ring and the three routes out of it, kept apart vertically so
+     three drives through the same city do not read as one smear. */
+  'core-gta': [[66, 57], [78, 53], [90, 51]],
+  '407-york-peel': [[59, 45], [76, 42], [93, 45]],
+  '400-north': [[74, 48], [71, 33], [69, 18]],
+  '401-east': [[82, 54], [100, 49], [119, 40]],
+  'cottage-north-east': [[71, 21], [93, 27], [114, 35]],
+
+  /* Down the lakeshore to the head of the lake, then west. */
+  'qew-west': [[68, 58], [62, 63], [55, 68]],
+  '403-6-west': [[53, 69], [42, 65], [31, 60]],
+
+  /* The peninsula: between the two lakes, north-west to south-east. */
+  'niagara-belt': [[59, 73], [70, 81], [81, 89]],
+
+  /* Across the river, then out through Erie County. */
+  'buffalo-niagara': [[80, 87], [87, 92], [94, 96]],
+  'buffalo-metro': [[95, 98], [105, 103], [116, 100]],
+
+  /* The south shore of Lake Ontario, east of the river. */
+  'rochester-east': [[127, 74], [140, 78], [153, 74]],
 };
 
-/** Lake Ontario, Lake Erie and the river between the two countries. */
-export const VIEWBOX = { w: 200, h: 114 } as const;
+/*
+ * The frame is a CROP of the coordinate space, not the whole of it.
+ *
+ * Spines are written in a 200×114 space because round numbers are easier to
+ * reason about when placing a drive. The territory only occupies part of it,
+ * and rendering the whole space left a third of the picture empty on the right
+ * — which reads as a map with nothing in it rather than as breathing room.
+ * The window below is the content's actual bounds plus the width of the widest
+ * territory stroke, so the corridor fills the frame it is given.
+ */
+export const VIEWBOX = { x: 20, y: 8, w: 162, h: 105 } as const;
 
+/*
+ * THE WATER, AND THE BORDER THROUGH IT.
+ *
+ * Lake Ontario runs west-south-west to east-north-east with its head at
+ * Hamilton, Toronto on the north shore and Rochester on the south — which is
+ * the arrangement that makes the whole territory legible at a glance, and which
+ * an earlier draft of this file got wrong badly enough to float Rochester in
+ * open water.
+ *
+ * The border is not a line drawn beside the map for decoration. It runs through
+ * the middle of Lake Erie, up the Niagara River between Fort Erie and Buffalo,
+ * and out east through the middle of Lake Ontario, which is where it actually
+ * is. Drawn that way it does the work no label can: it shows at a glance that
+ * the Niagara belt and Buffalo are opposite banks of one river, and that
+ * Rochester is reached along the far shore of the same lake.
+ */
 const LAKE_ONTARIO =
-  'M 58,66 Q 84,58 118,60 Q 152,62 176,72 Q 152,86 118,88 Q 84,88 66,78 Z';
-const LAKE_ERIE = 'M 36,96 Q 58,90 76,94 Q 70,110 44,112 Q 30,106 36,96 Z';
-const BORDER = 'M 72,88 L 78,94 L 86,99 L 104,104 L 128,102 L 150,96 L 170,88';
+  'M 58,67 Q 64,58 84,54 Q 116,49 148,51 Q 168,53 176,58 Q 166,67 146,71 Q 116,76 88,75 Q 68,74 58,67 Z';
+const LAKE_ERIE =
+  'M 22,101 Q 44,93 66,90 Q 78,88 84,91 Q 80,101 62,108 Q 40,114 26,108 Q 20,105 22,101 Z';
+const BORDER =
+  'M 24,105 Q 48,98 70,93 Q 78,91 82,88 Q 84,82 90,76 Q 112,68 140,63 Q 162,60 174,58';
 
 const pointsToPath = (pts: Array<[number, number]>): string => {
   if (pts.length < 2) return '';
@@ -184,7 +221,7 @@ export default function TerritoryMap() {
     <div className="tm" ref={wrapRef} data-still={still ? '1' : '0'}>
       <svg
         className="tm-svg"
-        viewBox="0 0 200 114"
+        viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.w} ${VIEWBOX.h}`}
         role="img"
         aria-label={
           `Schematic map of the Ecowoods service territory: ${totalMarkets} municipalities on ` +
@@ -202,13 +239,13 @@ export default function TerritoryMap() {
 
         <path d={LAKE_ONTARIO} className="tm-water" />
         <path d={LAKE_ERIE} className="tm-water" />
-        <text x="120" y="76" className="tm-water-label" textAnchor="middle">Lake Ontario</text>
-        <text x="52" y="104" className="tm-water-label" textAnchor="middle">Lake Erie</text>
+        <text x="130" y="62" className="tm-water-label" textAnchor="middle">Lake Ontario</text>
+        <text x="46" y="101" className="tm-water-label" textAnchor="middle">Lake Erie</text>
 
         {/* The border. Drawn because the territory crosses it and a map that
             hides that is telling a story about one country. */}
         <path d={BORDER} className="tm-border" />
-        <text x="150" y="82" className="tm-border-label" textAnchor="middle">Canada · United States</text>
+        <text x="106" y="75.5" className="tm-border-label" textAnchor="middle">Canada · United States</text>
 
         {regions.map((r) => {
           const isLit = r.id === activeId;
@@ -239,9 +276,9 @@ export default function TerritoryMap() {
 
         {/* The shop. One address, and it never moves. */}
         <g className="tm-shop">
-          <circle cx="70" cy="52" r="2.1" className="tm-shop-ring" />
-          <circle cx="70" cy="52" r="0.9" className="tm-shop-core" />
-          <text x="70" y="47.5" className="tm-shop-label" textAnchor="middle">Shop · Toronto</text>
+          <circle cx="78" cy="53" r="2.1" className="tm-shop-ring" />
+          <circle cx="78" cy="53" r="0.9" className="tm-shop-core" />
+          <text x="78" y="58.6" className="tm-shop-label" textAnchor="middle">Shop · Toronto</text>
         </g>
       </svg>
 
