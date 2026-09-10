@@ -65,23 +65,45 @@ const problems = [];
 
 /* ── the published areas ──────────────────────────────────────────────────── */
 /**
- * Both lists. AREAS are municipalities and become schema.org City nodes;
- * NEIGHBOURHOODS are Toronto sub-areas that get pages and never become City
- * nodes (F-157). Every entry in either list needs its own local content, so
- * coverage is checked across both.
+ * THREE lists, because SERVICE_AREAS is three lists.
+ *
+ *   AREAS          — municipalities; these and only these become City nodes.
+ *   NEIGHBOURHOODS — Toronto sub-areas; pages, never City nodes (F-157).
+ *   DISTRICTS      — communities inside a municipality other than Toronto:
+ *                    Ancaster, Dundas, Stoney Creek and Waterdown in Hamilton,
+ *                    Beamsville in Lincoln. Same rule as the Toronto sixteen.
+ *
+ * Every entry in any of the three gets a page and therefore needs its own local
+ * content. This reader knew about two of them for exactly as long as there were
+ * two, and reported five correctly-written entries as orphans the day the third
+ * arrived — the failure mode being that the obvious fix is to delete the
+ * content rather than to teach the guard.
  */
 const areasBlock = src.match(/const AREAS = \[([\s\S]*?)\];/);
 const hoodsBlock = src.match(/const NEIGHBOURHOODS = \[([\s\S]*?)\];/);
+const districtBlock = src.match(/const DISTRICTS: [^=]*=\s*\[([\s\S]*?)\];/);
 if (!areasBlock) {
   console.error('verify-cities: could not read AREAS from seo-data.ts');
   process.exit(2);
 }
-const slugify = (s) =>
+const slugifyRaw = (s) =>
   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+/* The one display name that does not slugify to its own slug. Read from the
+   same override map seo-data.ts and verify-geo.mjs read. */
+const overrides = Object.fromEntries(
+  [...(/AREA_SLUG_OVERRIDES[^=]*=\s*\{([\s\S]*?)\};/.exec(src)?.[1] ?? '')
+    .matchAll(/'([^']+)':\s*'([a-z0-9-]+)'/g)].map((m) => [m[1], m[2]]),
+);
+const slugify = (s) => overrides[s] ?? slugifyRaw(s);
 const areas = [
   ...[...areasBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]),
   ...(hoodsBlock ? [...hoodsBlock[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : []),
+  ...(districtBlock ? [...districtBlock[1].matchAll(/name:\s*'([^']+)'/g)].map((m) => m[1]) : []),
 ];
+if (districtBlock && !areas.includes('Ancaster')) {
+  console.error('verify-cities: read the DISTRICTS block but no names came out of it — the reader is blind');
+  process.exit(2);
+}
 
 /* ── the content map ──────────────────────────────────────────────────────── */
 const contentStart = src.indexOf('export const CITY_CONTENT');
@@ -122,7 +144,7 @@ for (const a of areas) {
 const areaSlugs = new Set(areas.map(slugify));
 for (const k of entries.keys()) {
   if (!areaSlugs.has(k)) {
-    problems.push({ where: `CITY_CONTENT['${k}']`, detail: 'has content but is not in AREAS — no page renders it' });
+    problems.push({ where: `CITY_CONTENT['${k}']`, detail: 'has content but is in none of AREAS, NEIGHBOURHOODS or DISTRICTS — no page renders it' });
   }
 }
 

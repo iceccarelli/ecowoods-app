@@ -439,8 +439,22 @@ const citiesArr = /const AREAS = \[([\s\S]*?)\];/.exec(seoSrc);
 if (!citiesArr) {
   fail.push('could not read AREAS from lib/seo-data.ts — this guard cannot check the schema city list');
 } else {
-  const slugify = (x) =>
+  const slugifyRaw = (x) =>
     x.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  /*
+   * One display name does not slugify to its market slug: there are two Niagara
+   * Falls on this corridor and the registry disambiguates them. seo-data.ts
+   * carries the override map and this guard reads the same map, so the two
+   * cannot disagree about which market a page belongs to. Assuming slugify()
+   * here would have reported "Niagara Falls" as a municipality missing from the
+   * registry, and the obvious fix — deleting it from AREAS — would have taken
+   * a confirmed market off the map.
+   */
+  const overrides = Object.fromEntries(
+    [...(/AREA_SLUG_OVERRIDES[^=]*=\s*\{([\s\S]*?)\};/.exec(seoSrc)?.[1] ?? '')
+      .matchAll(/'([^']+)':\s*'([a-z0-9-]+)'/g)].map((m) => [m[1], m[2]]),
+  );
+  const slugify = (x) => overrides[x] ?? slugifyRaw(x);
   const cityNames = [...citiesArr[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
   const confirmed = new Set(
     markets

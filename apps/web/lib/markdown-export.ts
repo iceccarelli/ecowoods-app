@@ -57,6 +57,7 @@ import {
   SERVICES,
   CITIES,
   NEIGHBOURHOOD_AREAS,
+  DISTRICT_AREAS,
   SERVICE_AREAS,
   FAQ_ITEMS,
   cityContent,
@@ -628,6 +629,16 @@ export const areasHubToMarkdown = (): string => {
     '## Toronto neighbourhoods',
     '',
     ...NEIGHBOURHOOD_AREAS.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+    '',
+    /* Communities inside a municipality other than Toronto. Listed under their
+       parent rather than as peers of it, because that is what they are: the
+       machine edition of this page is read literally, and Ancaster is not a
+       city beside Hamilton. */
+    '## Communities within a municipality',
+    '',
+    ...DISTRICT_AREAS.map(
+      (c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — in ${c.partOf} — markdown: ${md(`/service-areas/${c.slug}`)}`,
+    ),
     '',
   ];
   out.push(...provenance(canonical));

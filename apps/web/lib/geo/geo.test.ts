@@ -181,12 +181,14 @@ describe('page-worthiness', () => {
   });
 
   it('still refuses a page to a confirmed market with no local content', () => {
-    // The whole point of confirming twenty-five markets without inventing
-    // content for them: coverage is now true, and none of them earned a page.
+    // Confirmation and a page are separate facts. Every Ontario market is
+    // confirmed; only the ones with real local content carry a page, and this
+    // asserts the gate holds for the rest — a count that falls as content is
+    // written and must never reach zero by the gate being loosened.
     const noContent = MARKETS.filter(
       (m) => m.operationalTruth.verifiedAt !== null && m.country === 'CA' && !cityContent(m.slug),
     );
-    expect(noContent.length).toBeGreaterThan(20);
+    expect(noContent.length).toBeGreaterThan(5);
     for (const m of noContent) {
       const w = assess(m);
       expect(w.indexable, m.slug).toBe(false);

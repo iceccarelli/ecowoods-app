@@ -13,7 +13,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
-import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, type City } from '@/lib/seo-data';
+import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
 import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
@@ -104,13 +104,31 @@ const NEIGHBOURHOOD_CITY = 'Toronto';
 
 export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
   const isNeighbourhood = NEIGHBOURHOOD_AREAS.some((n) => n.slug === city.slug);
-  return isNeighbourhood
-    ? {
-        '@type': 'Place',
-        name: city.name,
-        containedInPlace: { '@type': 'City', name: NEIGHBOURHOOD_CITY },
-      }
-    : { '@type': 'City', name: city.name };
+  if (isNeighbourhood) {
+    return {
+      '@type': 'Place',
+      name: city.name,
+      containedInPlace: { '@type': 'City', name: NEIGHBOURHOOD_CITY },
+    };
+  }
+  /*
+   * Communities inside a municipality other than Toronto: Ancaster, Dundas,
+   * Stoney Creek and Waterdown in Hamilton, Beamsville in Lincoln. Same rule as
+   * the Toronto sixteen — a Place inside a City, never a City of its own —
+   * except that the containing city is read from the record rather than assumed.
+   * Hard-coding Toronto here would have emitted Beamsville as a neighbourhood
+   * of Toronto, which is the kind of error that is invisible on the page and
+   * unambiguous to a machine.
+   */
+  const district = DISTRICT_AREAS.find((d) => d.slug === city.slug);
+  if (district) {
+    return {
+      '@type': 'Place',
+      name: city.name,
+      containedInPlace: { '@type': 'City', name: district.partOf },
+    };
+  }
+  return { '@type': 'City', name: city.name };
 }
 
 /**

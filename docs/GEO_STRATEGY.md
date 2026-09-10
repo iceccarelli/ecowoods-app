@@ -1,6 +1,6 @@
 # The corridor: Toronto → GTA → Hamilton → Niagara → Buffalo
 
-**76 markets. 61 Ontario, 15 New York. Canada at 80.3% of the model.**
+**76 markets. 61 Ontario, 15 New York. 45 published pages. Canada at 80.3% of the model.**
 
 The 80/20 allocation is not an intention written in this document. It is computed
 from the repository and `pnpm verify:allocation` fails the build when Canada's
@@ -9,8 +9,8 @@ share drops below the floor.
 ```
 records   CA     61   US    15   →  Canada 80.3%
 graph     CA    198   US    48   →  Canada 80.5%
-pages     CA     32   US     0   →  Canada  100%
-depth     CA 15,149   US     0   →  Canada  100%
+pages     CA     45   US     0   →  Canada  100%
+depth     CA 23,823   US     0   →  Canada  100%
 ```
 
 `records` counts markets in the model. `graph` counts corridor memberships and
@@ -149,27 +149,53 @@ Each shipped with regressions that were run and observed to fail.
 
 ---
 
-## 4. First release — status against the brief
+## 4. What is published
 
-The brief's eighteen Canadian first-release markets:
+**Forty-five service-area pages, every one with its own local content.** No page
+in the set renders a generic paragraph with a place name substituted in;
+`pnpm verify:cities` fails the build if one ever does.
 
-| # | Market | Record | Page | Content |
-|---|---|---|---|---|
-| 1 | Toronto | ✓ | ✓ commercial pages | ✓ |
-| 2–7 | Rosedale, Forest Hill, Lawrence Park, Leaside, Yorkville, Midtown | ✓ | ✓ | ✓ |
-| 8–13 | Oakville, Vaughan, Richmond Hill, Markham, Mississauga | ✓ | ✓ | ✓ |
-| — | Burlington | ✓ | — | **needed** |
-| 14–15 | Hamilton, Ancaster | ✓ | — | **needed** |
-| 16–18 | Niagara-on-the-Lake, St. Catharines, Niagara Falls ON | ✓ | — | **needed** |
+**Municipalities — 24.** Toronto's six districts (Downtown, North York,
+Etobicoke, Scarborough, East York, York), Vaughan, Markham, Richmond Hill,
+Mississauga, Oakville, Brampton, Aurora, Newmarket, Pickering, Ajax — and now
+**Milton, Burlington, Hamilton, Grimsby, St. Catharines, Niagara-on-the-Lake,
+Niagara Falls and Barrie.** These, and only these, are schema.org `City` nodes
+in `areaServed`.
 
-The brief's six US foundation markets — Buffalo, Amherst, Williamsville,
-Clarence, Orchard Park, East Aurora — are **all in the model**, in a corridor,
-in the API, and correctly hold no page.
+**Toronto neighbourhoods — 16.** Rosedale, Forest Hill, Yorkville, Leaside, The
+Annex, High Park, Riverdale, Leslieville, The Beaches, Lawrence Park,
+Cabbagetown, Swansea, Davisville Village, Midtown, King West, Liberty Village.
+Pages, never `City` nodes: each is emitted as a `Place` contained in Toronto.
 
-**Thirteen of eighteen Canadian first-release markets are published. Five need
-content, and content is the one input that cannot be generated.**
+**Communities within a municipality — 5.** Ancaster, Dundas, Stoney Creek and
+Waterdown, each a `Place` contained in Hamilton; Beamsville, a `Place` contained
+in Lincoln. The containing city is read from the record rather than assumed, so
+Beamsville is not published as a neighbourhood of Toronto.
 
----
+Every one of the eighteen Canadian markets in the first-release brief is live.
+
+### What each new page carries
+
+Four layers, in the voice the existing fifteen set:
+
+1. **Housing stock.** What was built here and when — period, form, typical
+   subfloor, typical original floor. Publicly checkable, no figures this site
+   does not publish.
+2. **The floor that belongs here.** Which construction the stock actually takes:
+   nail-down solid over plywood, glue-down engineered over slab, refinish
+   against replace when the original strip has been under carpet for forty
+   years — and the measurement that decides it.
+3. **The work.** What the job is on this stock: levelling against accepting the
+   plane the house has settled into, board replacement in kind, remaining wear
+   layer above the tongue, acclimation to the room rather than to a delivery
+   date.
+4. **Corridor fit.** Where the market sits on the drive, and — for the
+   travel-by-confirmation markets — that a job there is scheduled as a trip,
+   confirmed in advance, and priced with that in the written quote.
+
+`signatureProject` is undefined on all forty-five, exactly as it was on the
+first fifteen. It is the one field that asserts a specific job. The shot list
+that fills it is `docs/PHOTO_QUEUE.md`.
 
 ## 5. Expansion roadmap — the next markets, in order
 
@@ -177,29 +203,27 @@ Ranked by what this repository can defend today: confirmed position, corridor
 centrality, neighbour coverage, and published evidence. It is deliberately not
 ranked by the economic model, which is at 10% confidence and says so.
 
-**Content first — confirmed markets with no page (7):**
-Burlington · Hamilton · Grimsby · Barrie · Niagara Falls ON · Milton ·
-St. Catharines
+**Next pages — confirmed markets with no local content yet (16):**
+Whitby · Oshawa · Clarington · Halton Hills · Caledon · Innisfil ·
+Kawartha Lakes · Lincoln · Welland · Thorold · Port Colborne · Fort Erie ·
+Guelph · Cambridge · Kitchener · Toronto (the city record; its commercial pages
+carry the local content today)
 
-**Then the Niagara premium tier**, which the brief singles out and which this
-model agrees with on routing: Niagara-on-the-Lake · Lincoln/Beamsville ·
-Welland · Thorold · Port Colborne · Fort Erie
-
-**Then the 403/6 run:** Guelph · Cambridge · Kitchener
-
-**Then the outer belt:** Whitby · Oshawa · Clarington · Halton Hills · Caledon ·
-Innisfil · Kawartha Lakes · Ancaster · Dundas · Stoney Creek · Waterdown
+Each takes the same four layers as the eighteen already published. None is
+blocked on anything.
 
 **Never, without the business first establishing a United States presence:** any
 Buffalo or western New York page.
 
-Each Canadian market needs the same three things, and none of them is code:
+**The two queues that upgrade what is already live**, both in
+`docs/PHOTO_QUEUE.md`:
 
-1. One real job in that municipality, photographed — before, during, after.
-2. Two real paragraphs: what the floor was, what the house was like, what the
-   work involved. Not "Hardwood flooring in Burlington."
-3. A `CityContent` entry with those paragraphs — 120 characters minimum each,
-   which is the guard's way of refusing a slogan.
-
-The page then appears on its own, with metadata, schema, sitemap entry, internal
-links and API record already correct.
+- **Seven photographs.** Burlington, Hamilton, Grimsby, Barrie, Niagara Falls
+  ON, Milton, St. Catharines. Each brief names the housing type, the floor
+  condition, the two shots, and the sentence already published that the
+  photograph has to be true to. The slot is `signatureProject`; the page is
+  already live around it.
+- **Thirty-two census figures.** Four per market across the eight Tier-1 and
+  Tier-2 markets, each with its source URL and retrieval date. That takes the
+  opportunity model from 10% confidence to 55% and turns every `UNSCORED`
+  classification into a real one.

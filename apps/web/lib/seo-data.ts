@@ -32,9 +32,57 @@ export const BUSINESS = {
 export type City = { slug: string; name: string };
 
 const AREAS = [
+  /* Toronto and the inner ring. */
   'Downtown Toronto', 'North York', 'Etobicoke', 'Scarborough', 'East York', 'York',
   'Vaughan', 'Markham', 'Richmond Hill', 'Mississauga', 'Oakville', 'Brampton',
   'Aurora', 'Newmarket', 'Pickering', 'Ajax',
+  /*
+   * The corridor west and south, published after the owner confirmed coverage
+   * of the whole Ontario map on 2026-09-10. Every name here exists in
+   * content/geo/markets.ts as a municipality with a dated operational
+   * confirmation, and scripts/verify-geo.mjs fails the build if one does not —
+   * that join is what stops this list becoming a coverage claim by edit.
+   */
+  'Milton', 'Burlington', 'Hamilton', 'Grimsby',
+  'St. Catharines', 'Niagara-on-the-Lake', 'Niagara Falls', 'Barrie',
+];
+
+/**
+ * The one display name that does not slugify to its market slug.
+ *
+ * There are two Niagara Falls on this corridor and the registry disambiguates
+ * them as `niagara-falls-on` and `niagara-falls-ny`, which is not negotiable —
+ * one silently overwrites the other in every lookup otherwise. The page is for
+ * a Canadian audience and is titled "Niagara Falls", so the name and the slug
+ * part company exactly here. Both this file and verify-geo read this map, so
+ * they cannot disagree about which market a page belongs to.
+ */
+export const AREA_SLUG_OVERRIDES: Record<string, string> = {
+  'Niagara Falls': 'niagara-falls-on',
+};
+
+/**
+ * Places INSIDE a municipality that is already in AREAS, outside Toronto.
+ *
+ * Ancaster, Dundas, Stoney Creek and Waterdown are communities of the City of
+ * Hamilton; Beamsville is the main community of the Town of Lincoln. They are
+ * the same category as the sixteen Toronto neighbourhoods and get the same
+ * treatment: pages, local content, sitemap entries, .md editions — and never a
+ * schema.org City node, because Hamilton is already in the list and Ancaster is
+ * not a second city inside it.
+ *
+ * The parent is carried here rather than assumed, because the Toronto list
+ * could assume it and this one cannot: `placeForArea` emits Ancaster as a Place
+ * contained in Hamilton and Beamsville as a Place contained in Lincoln, and a
+ * hard-coded "Toronto" would have made both of them wrong in the one part of
+ * the site a machine reads literally.
+ */
+const DISTRICTS: Array<{ name: string; partOf: string }> = [
+  { name: 'Ancaster', partOf: 'Hamilton' },
+  { name: 'Dundas', partOf: 'Hamilton' },
+  { name: 'Stoney Creek', partOf: 'Hamilton' },
+  { name: 'Waterdown', partOf: 'Hamilton' },
+  { name: 'Beamsville', partOf: 'Lincoln' },
 ];
 
 /**
@@ -67,7 +115,10 @@ const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 /** Municipalities. These, and only these, become schema.org City nodes. */
-export const CITIES: City[] = AREAS.map((name) => ({ slug: slugify(name), name }));
+export const CITIES: City[] = AREAS.map((name) => ({
+  slug: AREA_SLUG_OVERRIDES[name] ?? slugify(name),
+  name,
+}));
 
 /** Toronto neighbourhoods. Pages and local content; never a City node. */
 export const NEIGHBOURHOOD_AREAS: City[] = NEIGHBOURHOODS.map((name) => ({
@@ -80,7 +131,17 @@ export const NEIGHBOURHOOD_AREAS: City[] = NEIGHBOURHOODS.map((name) => ({
  * editions and the local-content guard all read this; only CITIES reaches the
  * entity graph.
  */
-export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS];
+/**
+ * Communities inside a municipality other than Toronto. Pages, never City nodes.
+ * `partOf` is the municipality name as it appears in AREAS.
+ */
+export const DISTRICT_AREAS: Array<City & { partOf: string }> = DISTRICTS.map((d) => ({
+  slug: slugify(d.name),
+  name: d.name,
+  partOf: d.partOf,
+}));
+
+export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS, ...DISTRICT_AREAS];
 
 export const cityBySlug = (slug: string): City | undefined =>
   SERVICE_AREAS.find((c) => c.slug === slug);
@@ -473,6 +534,156 @@ export const CITY_CONTENT: Record<string, CityContent> = {
       'Booking the service elevator is part of the scope. Without it, materials and machines do not reach the floor.',
   },
 
+
+  /* ── the corridor west and south ──────────────────────────────────────────
+   *
+   * Written to the same two rules as the fifteen above. Nothing about Ecowoods:
+   * no job counts, no claims of work performed in these municipalities. Every
+   * sentence is either publicly checkable geography and housing stock, or a
+   * technical point already published in a paper on this site — substrate,
+   * remaining wear layer, slab moisture, seasonal movement, acclimation.
+   *
+   * `signatureProject` is undefined in every one of them, exactly as it is
+   * above. It is the one field that would assert a specific job, and asserting
+   * one here to make a page feel more finished is the failure this whole
+   * repository is arranged to prevent. The photo queue in docs/GEO_STRATEGY.md
+   * names the shot each of these pages is waiting for.
+   */
+
+  milton: {
+    intro:
+      'Milton is one of the newest housing stocks in the corridor: a small historic core around Main Street surrounded by subdivisions built almost entirely since the early 2000s. The work here is overwhelmingly installation and carpet-to-hardwood conversion rather than restoration, because there is very little old floor to restore.',
+    neighbourhoods: ['Old Milton', 'Hawthorne Village', 'Scott', 'Willmott', 'Beaty', 'Clarke'],
+    housingNote:
+      'Plywood over engineered joists is close to universal in the post-2000 stock, and the flatness a builder signed off for carpet is not the flatness a nail-down floor needs — subfloor preparation is usually the largest single variable in an honest quote and the line most often missing from a cheap one. Long open-plan main floors also mean uninterrupted runs where a fastening schedule adequate for a bedroom stops being adequate.',
+    localConsideration:
+      'Newer houses run tighter and drier through a Toronto winter than the pre-war stock does, which widens the annual moisture swing the floor has to absorb. That is an argument for engineered or for a narrower solid board, not for the wide plank the room seems to be asking for.',
+  },
+
+  burlington: {
+    intro:
+      'Burlington splits cleanly in two for flooring purposes: the older lakeshore and Aldershot stock, much of it built between the war and the 1970s, and the large subdivisions north of Dundas Street built from the 1990s onward. The first is refinishing and board replacement work; the second is installation and conversion.',
+    neighbourhoods: ['Aldershot', 'Downtown Burlington', 'Roseland', 'Tyandaga', 'Millcroft', 'Alton Village'],
+    housingNote:
+      'The post-war stock frequently carries original narrow-strip red oak that spent decades under broadloom, which protects the wear layer but hides cupping, pet damage and old water staining until the carpet lifts. Remaining thickness above the tongue decides whether a full sand is available or whether the honest answer is a screen and recoat, and that is a measurement rather than a preference.',
+    localConsideration:
+      'Lakeshore houses sit closer to the water and hold a different summer humidity than the subdivisions on the escarpment side of the QEW. Acclimation on site, measured rather than assumed from a delivery date, is the part of the schedule most often compressed.',
+  },
+
+  hamilton: {
+    intro:
+      'Hamilton has the oldest concentrated housing stock on this corridor. The lower-city grid — Durand, Kirkendall, Strathcona, Crown Point, Stipley — is largely pre-1930 brick, while the escarpment above it is post-war bungalow and side-split. The two halves of the city ask for almost opposite work.',
+    neighbourhoods: ['Durand', 'Kirkendall', 'Strathcona', 'Crown Point', 'Westdale', 'Hamilton Mountain'],
+    housingNote:
+      'Pre-war lower-city houses commonly carry narrow-strip hardwood over plank subfloor, often with a softwood underlayer, board loss around removed walls and old radiator penetrations that have to be pieced in and feathered before any uniform finish is possible. The mountain stock is plywood over joists with builder-era strip oak, where the decision is usually how much wear layer is left rather than what to install.',
+    localConsideration:
+      'A hundred-year-old house rarely has a flat floor, and levelling decisions get made before species does. Where a plank subfloor has moved with the joists, the choice is between accepting the plane the house has settled into and rebuilding it — and the two produce very different quotes for what looks like the same job.',
+  },
+
+  grimsby: {
+    intro:
+      'Grimsby is a narrow strip of housing between the escarpment and the lake, with an older downtown core, a band of post-war housing, and newer subdivisions and lakeside development at either end. It is the point where the QEW run stops being suburban and starts being Niagara.',
+    neighbourhoods: ['Grimsby Beach', 'Downtown Grimsby', 'Casablanca', 'Grimsby Mountain', 'Winston Park'],
+    housingNote:
+      'The older core carries pre-war and post-war stock where original softwood or early strip hardwood may need board replacement before it can take a uniform finish, while the newer lakeside and escarpment builds are plywood over joists and are installation work. Houses on the lake side hold summer humidity longer than those above the brow, which shows up as seasonal gapping in a floor acclimated on a schedule rather than a meter.',
+    localConsideration:
+      'The escarpment gives this town two microclimates a few hundred metres apart. Whether a house sits above or below the brow is worth knowing before a species and a board width are settled.',
+  },
+
+  'st-catharines': {
+    intro:
+      'St. Catharines carries a substantial pre-war core around Yates Street, Glenridge and the old downtown, a large band of 1950s–1970s housing north toward the lake, and newer subdivision growth at the edges. Refinishing original floors and replacing failed post-war installations are both common.',
+    neighbourhoods: ['Old Glenridge', 'Yates Street', 'Port Dalhousie', 'Western Hill', 'Facer', 'Lakeport'],
+    housingNote:
+      'Heritage-area houses frequently retain original hardwood that has been sanded before, sometimes more than once, so the first measurement is remaining thickness rather than the finish system. The post-war stock north of the canal is plywood over joists with narrow strip oak, much of it under carpet since installation and in better condition than the room suggests.',
+    localConsideration:
+      'Proximity to Lake Ontario and the canal keeps summer relative humidity higher than inland Niagara, and a floor acclimated to a drier warehouse and installed in July will give that back over the first winter. The remedy is measurement on site, not a longer wait.',
+  },
+
+  'niagara-on-the-lake': {
+    intro:
+      'Niagara-on-the-Lake has the most heritage-sensitive housing stock on the corridor. The Old Town carries early nineteenth-century frame and brick houses under heritage designation, while the surrounding area runs to estate housing, winery properties and newer builds on larger lots.',
+    neighbourhoods: ['Old Town', 'Chautauqua', 'St. Davids', 'Queenston', 'Virgil', 'Garrison Village'],
+    housingNote:
+      'Old Town houses commonly carry original wide softwood plank or early hardwood over plank subfloor, where the correct answer is often the least aggressive one available: repair, board replacement in kind, and a finish that does not read as new. Heritage designation can constrain what may be changed inside as well as outside, and that is established before a sander is quoted rather than after.',
+    localConsideration:
+      'A designated property is a documentation job as much as a floor job. Species, board width and finish sheen may all be part of what makes a floor appropriate to the house, and the fastest route to a bad outcome here is treating an original plank floor as a subfloor to be levelled.',
+  },
+
+  'niagara-falls-on': {
+    intro:
+      'Niagara Falls has a wide spread of housing ages: pre-war and early post-war stock through the older centre and Chippawa, substantial 1960s–1980s subdivisions, and newer development at the north and west edges. The mix means refinishing and installation arrive in roughly equal measure.',
+    neighbourhoods: ['Chippawa', 'Stamford', 'Drummond Hill', 'Fallsview', 'Mount Carmel'],
+    housingNote:
+      'The older centre and Chippawa carry strip hardwood over plank or early plywood subfloor, frequently with board loss at removed partitions and old heating runs that has to be pieced in before a uniform sand. Subdivision-era houses are plywood over joists with builder-grade oak, where the screen-and-recoat decision is a genuine one because the remaining wear layer is often thinner than the surface suggests.',
+    localConsideration:
+      'This is the far end of the daily-return radius from the Toronto shop, so work here is scheduled as a trip, confirmed in advance and priced with that in the written quote. The published price bands do not change with distance; the schedule does.',
+  },
+
+  barrie: {
+    intro:
+      'Barrie grew fastest between the 1990s and the 2010s, so most of its housing is subdivision stock of that era, with an older core around the bay and Allandale. Installation and carpet-to-hardwood conversion dominate; restoration work concentrates in the older waterfront neighbourhoods.',
+    neighbourhoods: ['Allandale', 'Downtown Barrie', 'Painswick', 'Ardagh', 'Innis-Shore', 'East Bayfield'],
+    housingNote:
+      'Subdivision houses are plywood over engineered joists, where flatness accepted for carpet has to be corrected before a nail-down floor goes in, and where builder-grade strip oak is often thin on wear layer by the time a second owner wants it refinished. The older stock around the bay carries plank subfloor and, in places, original softwood that needs replacement in kind rather than levelling out.',
+    localConsideration:
+      'Simcoe County runs a wider annual humidity range than downtown Toronto — colder, drier winters against humid summers near the bay — so the seasonal movement a board has to absorb is larger here. That is a real argument for engineered construction or a narrower solid board, and it is the calculation the movement tool on this site exists to make explicit.',
+  },
+
+  /* ── communities inside a municipality, outside Toronto ──────────────────
+   * Pages and local content; never a City node. Their parent municipality is
+   * declared in DISTRICT_AREAS and emitted by placeForArea.
+   */
+
+  ancaster: {
+    intro:
+      'Ancaster is a community of the City of Hamilton with two distinct housing stocks: an old village core along Wilson Street carrying some of the oldest surviving houses in the region, and large post-1990 estate subdivisions on the plateau around it.',
+    neighbourhoods: ['Ancaster Village', 'Meadowlands', 'Sulphur Springs', 'Duff\'s Corners', 'Parkview Heights'],
+    housingNote:
+      'Village-core houses can carry original softwood or early hardwood over plank subfloor, where board replacement and feathering come before any uniform finish and where the honest option is often the least aggressive one. The estate subdivisions are plywood over joists with large continuous main-floor areas, where flatness tolerance and stain consistency across a long run matter more than they do room by room.',
+    localConsideration:
+      'The two stocks want opposite things from the same trade. A finish schedule appropriate to a 2004 great room is the wrong answer for an 1840s frame house four kilometres away, and the difference is decided at the measure.',
+  },
+
+  dundas: {
+    intro:
+      'Dundas is a community of the City of Hamilton in the valley below the escarpment, with a dense pre-war core and a heritage conservation area running through much of the older town. The housing is older than almost anything else on this corridor outside Niagara-on-the-Lake.',
+    neighbourhoods: ['Downtown Dundas', 'Pleasant Valley', 'University Gardens', 'Governors Road'],
+    housingNote:
+      'Nineteenth- and early twentieth-century houses here commonly carry narrow-strip hardwood or original softwood over plank subfloor, with settlement in the plane of the floor that has been there long enough to be part of the house. Deciding whether to level or to work with the plane the building has settled into is the first conversation, and it changes the quote more than species does.',
+    localConsideration:
+      'The valley holds moisture differently from the mountain above it, and older houses here are more likely to have a stone or rubble foundation with a damp basement below the floor being refinished. Subfloor moisture is measured before the sanding sequence is set, not after.',
+  },
+
+  'stoney-creek': {
+    intro:
+      'Stoney Creek is a community of the City of Hamilton running from the lake up over the escarpment, with an older village core, a broad band of post-war housing, and substantial newer subdivision growth both on the lakeshore and on the mountain brow.',
+    neighbourhoods: ['Stoney Creek Village', 'Winona', 'Fifty Point', 'Heritage Green', 'Felker\'s Falls'],
+    housingNote:
+      'The post-war band carries narrow-strip oak over plywood, much of it protected under carpet and in better condition than the room suggests until the tack strip comes up and the perimeter damage is visible. Newer lakeshore and brow subdivisions are installation work, where the decision is species, width and whether the seasonal range in that particular house supports solid.',
+    localConsideration:
+      'Houses below the escarpment hold lake humidity longer into the autumn than houses on the brow a few minutes away. Acclimating to the room the floor will live in, with a meter, is what separates a flat floor from one that gaps in its first February.',
+  },
+
+  waterdown: {
+    intro:
+      'Waterdown is a community of the City of Hamilton at the top of the escarpment, with a small historic core around Dundas Street and Mill Street and a large volume of subdivision housing built since the 2000s around it.',
+    neighbourhoods: ['Waterdown Village', 'Waterdown East', 'Mountain Brow', 'Parkside'],
+    housingNote:
+      'The core carries older stock where original floors may need board replacement and careful feathering, while the surrounding subdivisions are plywood over engineered joists and are conversion and installation work. In the newer houses the flatness a builder accepted under carpet is the first thing corrected, and it is usually the largest line in an honest quote.',
+    localConsideration:
+      'Being above the brow puts these houses in the drier of the two microclimates the escarpment creates. A board width chosen for a lakeside house is not automatically the right width four kilometres away and a hundred metres up.',
+  },
+
+  beamsville: {
+    intro:
+      'Beamsville is the main community of the Town of Lincoln, a bench of older village housing and surrounding agricultural property between the escarpment and the lake, with newer residential development at the edges of the village.',
+    neighbourhoods: ['Beamsville Village', 'Vineland', 'Campden', 'Lincoln Bench'],
+    housingNote:
+      'Village and farm houses here often carry original softwood plank or early strip hardwood over plank subfloor, sometimes over a stone foundation, where subfloor moisture and board replacement in kind matter more than the finish system. Newer builds at the edges are plywood over joists and are ordinary installation work by comparison.',
+    localConsideration:
+      'This is the far end of the Niagara run from the Toronto shop, so work is scheduled as a trip, confirmed in advance and priced with that in the written quote. Agricultural properties also more often have unheated or intermittently heated spaces adjoining the floor being installed, which changes the acclimation target.',
+  },
 };
 
 export const cityContent = (slug: string): CityContent | undefined => CITY_CONTENT[slug];

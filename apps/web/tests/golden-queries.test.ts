@@ -51,7 +51,15 @@ const golden: {
   { q: 'Screen and recoat before listing the house', service: 'service:floor-refinishing', band: 'price:screen-and-recoat' },
   { q: 'Custom border and medallion in the foyer', service: 'service:custom-inlays' },
   { q: 'Water damaged oak floor after a leak in Leslieville', service: 'service:floor-restoration', locationId: 'location:leslieville', confidence: ['requires_assessment', 'high'] },
-  { q: 'hardwood flooring Hamilton', locationId: 'location:hamilton', coverage: 'assessment', confidence: ['requires_assessment'] },
+  /* Hamilton became a published service area when the corridor pages shipped;
+     it is kept here because it is the one municipality that moved, and this row
+     is what would catch it moving back by accident. */
+  { q: 'hardwood flooring Hamilton', locationId: 'location:hamilton', coverage: 'published' },
+  { q: 'refinish my floors in Niagara-on-the-Lake', locationId: 'location:niagara-on-the-lake', coverage: 'published' },
+  /* Still assessed per project, and must stay that way: London is nowhere near
+     the corridor, and this row is what keeps the assessment path under test now
+     that Hamilton no longer exercises it. */
+  { q: 'hardwood flooring London Ontario', locationId: 'location:london', coverage: 'assessment', confidence: ['requires_assessment'] },
 ];
 
 describe('golden queries — service-match', () => {
