@@ -1,0 +1,406 @@
+# Geography — contradiction log
+
+Every place the system states two different geographies, found by GEO-000 at
+
+```text
+GEO_BASELINE_COMMIT = b206f12fdbd63bfddc777e002288c68efb5fa8f5
+```
+
+How each entry was established: the TypeScript modules at the baseline were
+executed and their output compared (`GEO_MEASUREMENT_20260911.json →
+repository`), then every file:line below was read by hand. Production
+observations are marked as such and are **leads, not measurements** until
+`node scripts/geo-measure.mjs` has been run from Codespaces — the sandbox that
+produced GEO-000 could not reach ecowoods.ca.
+
+Severity, per the protocol's contradiction law (§49): **P0** = the system says
+"we serve X" and "X is not served / is somewhere else" for the same entity, in
+words or in machine form. **P1** = a wrong fact about a place (hierarchy,
+country, count, label) without a served/not-served split. **P2** = a latent
+defect that is consistent today by coincidence, or a model gap. **P3** =
+documentation only.
+
+An entry is closed only by the patch named in *Resolution*, with a regression
+guard, verified against production. Nothing here is closed at GEO-000.
+
+---
+
+## Summary
+
+| ID | Sev | Class | One line | Entities | Resolution |
+|---|---|---|---|---|---|
+| GC-001 | P0 | membership | `service_area` lists 12 municipalities that have no page, no sitemap entry and no `serves` edge | 12 | GEO-006 / GEO-011 |
+| GC-002 | P0 | membership | 9 owner-confirmed markets are "assessment — do not present as covered" in the location API; 2 are absent from it | 11 | GEO-002 / GEO-005 |
+| GC-003 | P0 | hierarchy | 6 districts of Toronto are emitted as schema.org `City` nodes | 6 | GEO-003 / GEO-007 |
+| GC-004 | P0 | country | New York geography sits under Toronto / GTA / Ontario on nine surfaces (table in the entry) | 26 | GEO-004 … GEO-010 |
+| GC-005 | P1 | hierarchy | 4 Niagara municipalities hang from the GTA | 4 | GEO-002 / GEO-005 |
+| GC-006 | P0 | membership | llms.txt and /service-areas.md say non-GTA Ontario is not published; 15 published areas are non-GTA Ontario | 15 | GEO-009 |
+| GC-007 | P1 | count | "89 published areas (53 …, 17 …)" — the parts sum to 70 | — | GEO-004 / GEO-009 |
+| GC-008 | P1 | membership | "west to Waterloo Region" — nothing in Waterloo Region is published | 3 | GEO-008 / GEO-012 |
+| GC-009 | P1 | country | /corridors: "101 Ontario municipalities and districts" — 26 are in New York | 26 | GEO-004 |
+| GC-010 | P0 | membership | Toronto is served in JSON-LD and `service_area`, unserved in the graph and `in_area_served` | 1 | GEO-011 (D2) |
+| GC-011 | P2 | membership | two independent deciders of "has a page" that agree only by coincidence | 89 | GEO-001 / GEO-002 |
+| GC-012 | P1 | semantics | `in_area_served: false` on 36 places the graph says are served | 36 | GEO-005 |
+| GC-013 | P2 | hierarchy | three `partOf`/parent representations; US districts inside a city with no state | 19 + 2 | GEO-002 / GEO-007 |
+| GC-014 | P1 | disambiguation | 29 Ontario place nodes carry no region or country; Niagara Falls ON and Brighton undisambiguated | 29 + 2 names | GEO-007 |
+| GC-015 | P1 | twin drift | HTML and Markdown twins name and frame the same area differently | 89 | GEO-009 |
+| GC-016 | P2 | corridor | corridors list 5 districts; the model forbids it and the guard checks one direction | 5 | GEO-003 / GEO-013 |
+| GC-017 | P2 | model gap | target-model places absent or assessment-only | 9 | GEO-012 / GEO-013 (D4, D5) |
+| GC-018 | P1 · P3 | stale semantics | one emitted API note, and several comments and guard headers, describe a retired geography | — | GEO-005, then hygiene |
+| GC-019 | P1 | guard gap | every geography guard is green while GC-001…017 exist | — | GEO-003, GEO-022, GEO-023 |
+| GC-020 | P1 † | production drift | un-busted requests observed serving an older build (`/team` 32 areas; `/corridors` 404) | — | measure, then GEO-022 |
+| GC-021 | P2 | local proof | job cards attach to pages by display name; 1 of 5 attaches to nothing | 5 | GEO-002 |
+| GC-022 | — | twin gap | no Markdown twin for /corridors, /corridors/{id}, /where-we-work (none advertised) | — | GEO-009 decision |
+| GC-023 | P1 | production drift | machine files and HTML cache for different windows, so surfaces can disagree after a deploy | — | GEO-022 |
+
+† observed through a summarising fetcher; unconfirmed until measured.
+
+---
+
+## GC-001 · P0 · `service_area` without a page
+
+**A says** `/api/v1/markets` → `service_area` includes the slug (the API's
+list of what "may be claimed").
+**B says** `/service-areas/{slug}` does not exist (`dynamicParams = false`),
+the sitemap has no entry, the graph has no `serves` edge, and for nine of the
+twelve the location API says "do not present as covered" (GC-002).
+
+- Entities: toronto, whitby, oshawa, clarington, kawartha-lakes, halton-hills,
+  caledon, innisfil, guelph, cambridge, kitchener, port-colborne.
+- Evidence: `apps/web/lib/geo/index.ts:34` (`serviceAreaMarkets` = operational
+  ∧ municipality — no page condition); `lib/registry/handlers.ts:726`;
+  `app/service-areas/[city]/page.tsx:14–17` (params from `SERVICE_AREAS`).
+  Measured: B = 59, C = 89, B \ C = the twelve above.
+- Production (lead): `/service-areas/whitby?cb` → 404.
+- Root cause: coverage (F1) and publication (F3) are decided in different
+  files, and `service_area` projects coverage alone.
+- Resolution: GEO-006 applies the category rule — an operational municipality
+  without a passed page gate is OPERATIONAL_CORRIDOR, keeps its corridor and its
+  dated statement, and leaves `service_area`. Publication (Outcome A) follows
+  per municipality only with owner content (D1). Toronto is D2 (GC-010).
+
+## GC-002 · P0 · confirmed coverage reported as "assessment"
+
+**A says** `content/geo/markets.ts` — Whitby is `active-expansion`,
+"Owner-confirmed coverage … routine scheduling", verified 2026-09-10.
+**B says** `/api/v1/locations/whitby` — `coverage: assessment`,
+`status: unverified`, note "Not a published service area. Work here is
+assessed per project through the estimate path; do not present as covered."
+— **and** `provenance.verified_at: 2026-09-10`. One record carries both the
+confirmation date and the instruction not to present the place as covered.
+
+- Entities (assessment ∧ confirmed): whitby, oshawa, clarington, halton-hills,
+  caledon, innisfil, guelph, cambridge, kitchener.
+  Confirmed but **absent** from the location API: port-colborne, kawartha-lakes.
+- Evidence: `lib/registry/locations.ts:95–137` (`ASSESSMENT_MUNICIPALITIES`
+  lists them); `lib/registry/registry.ts:326–337` (`verified_at` from the
+  market, note from the coverage); `markets.ts:265–287, 291–296`.
+- Production (lead): observed exactly as above for whitby.
+- Root cause: a fact list inside a projection (F5) that predates the
+  2026-09-10 confirmation and was never re-derived.
+- Resolution: GEO-002 moves the list into `markets.ts` (discovery records for
+  the 23 that are not markets); GEO-005 derives coverage from `category()`.
+
+## GC-003 · P0 · districts emitted as cities
+
+**A says** `markets.ts:176–181` — Downtown Toronto, North York, Etobicoke,
+Scarborough, East York and York are `kind: 'district', partOf: 'toronto'`;
+`locations.ts:37` agrees (`TORONTO_DISTRICT_SLUGS`).
+**B says** they are in `AREAS` (`seo-data.ts:37`), therefore in `CITIES`,
+which the file itself defines as "Municipalities. These, and only these,
+become schema.org City nodes" (`seo-data.ts:161–165`). They are emitted as
+`City` in the organisation `areaServed` on every page
+(`root-schema.ts:66–68, 275`), in every `/services/{slug}` `areaServed`
+(`services/[slug]/page.tsx:131`), as the page's own `spatialCoverage`
+(`placeForArea` falls through to `root-schema.ts:147`), with
+`in_area_served: true`, and in llms.txt under "Municipalities and districts".
+
+- This is the F-157 defect class the code comments describe as prevented. The
+  guard that should catch it (`verify-geo.mjs` 7a, 477–539) checks that each
+  `AREAS` name exists as a market, not that it is a municipality.
+- Resolution: GEO-003 adds the negative test (district ∈ schema City nodes →
+  fail); GEO-007 emits `Place ⊂ City Toronto`. Owner confirmation D3.
+
+## GC-004 · P0 · New York under Toronto / GTA / Ontario
+
+The owner confirmed New York service on 2026-09-10, and the service claim is
+consistent (page, sitemap, graph, markets, llms, corridors). What is not
+consistent is **where** New York is:
+
+| Surface | What it says about a New York place | Evidence |
+|---|---|---|
+| `/api/v1/locations`, graph `within` | Buffalo ⊂ **GTA** ⊂ Southern Ontario ⊂ Ontario ⊂ Canada — all 24 NY municipalities | `locations.ts:165–166` default `'gta'` |
+| `service-match` / `recommendation-context` | "in the GTA" and "in Ontario" return Buffalo, Amherst, Niagara Falls NY, Rochester, Greece … | `match.ts:151` → `publishedWithin` |
+| organisation JSON-LD (every page) | `areaServed = [AdministrativeArea "Greater Toronto Area" ⊂ Ontario ⊂ Canada, City "Buffalo", City "Amherst", … City "Brighton"]` — US cities bare, beside a GTA node | `root-schema.ts:66–68, 86–90, 275`; `builders.ts:184–186` |
+| organisation JSON-LD price offers | CAD Ontario price bands with `areaServed` including the 24 US City nodes — while `markets.ts:338–345` says price bands appear nowhere as local US facts | `root-schema.ts:218–232` |
+| llms.txt | "Serving: **Toronto & the GTA**, 89 published areas" | `llms.txt/route.ts:100`; `constants/index.ts:35` |
+| /about | "89 areas across **Toronto & the GTA**: …, Buffalo, …" | `entity-answers.ts:75–80` |
+| /team, /press, /hardwood-flooring-toronto, /hardwood-stairs-toronto, /hardwood-floor-refinishing-toronto, /hardwood-floor-problems-toronto | "N municipalities and neighbourhoods in Toronto and the GTA" / "N areas across Toronto and the GTA" with N = 89 | team 79; press 160; hardwood-flooring-toronto 31, 100, 373; hardwood-stairs-toronto 426; refinishing 305, 329; problems 268 |
+| /service-areas.md, /llms-full.txt, ai.txt | "— Toronto & the GTA", "across Toronto and the GTA", "Service area: Toronto & the GTA" | `markdown-export.ts:601, 607, 866, 983`; `ai.txt/route.ts:67` |
+| every NY `/service-areas/{slug}` page | "Also serving — **Across the GTA.**" followed by Downtown Toronto, North York … (first ten of the list, regardless of place) | `[city]/page.tsx:123, 347` |
+
+- The prior audit's "Buffalo corridor says not a service area" is **not
+  reproduced** at the baseline: `corridors.ts:124–136` and the live
+  `/corridors/buffalo-metro` (lead) no longer carry that wording, and
+  `verify-geo-green.mjs` §4 forbids it. The remaining Buffalo defect is
+  geographic, not a served/not-served split — it is P0 because a machine
+  reading the graph concludes Buffalo is in Ontario.
+- Resolution: GEO-004 (territory label derived from the regions present),
+  GEO-005 (US parents from the record), GEO-007 (US out of the GTA node and the
+  CAD offer catalog), GEO-008 (nearest from `Market.nearest`), GEO-010 guard.
+
+## GC-005 · P1 · Niagara municipalities under the GTA
+
+`lincoln`, `welland`, `thorold`, `fort-erie` resolve to parent `gta` in the
+location API because they are not in `ASSESSMENT_MUNICIPALITIES` and
+`parentOfPublished` defaults to `'gta'` (`locations.ts:165–166`). Their
+neighbours St. Catharines, Niagara-on-the-Lake and Niagara Falls resolve to
+`southern-ontario` because they are. Same region, two parents.
+Resolution: GEO-002 (`regionOf` is a field on the record), GEO-003 guard
+(no default parent).
+
+## GC-006 · P0 · "outside the GTA … not published" vs thirty published areas
+
+**A says** llms.txt: "Southern Ontario projects outside the GTA are assessed
+per project through the estimate path; they are not published service areas."
+(`llms.txt/route.ts:158`). /service-areas.md: "Projects elsewhere in Southern
+Ontario are assessed per project … They are not published service areas, and
+this page does not claim them as covered." (`markdown-export.ts:610–611`).
+**B says** Hamilton, Ancaster, Dundas, Stoney Creek, Waterdown, Grimsby,
+Lincoln, Beamsville, St. Catharines, Thorold, Welland, Niagara-on-the-Lake,
+Niagara Falls, Fort Erie and Barrie are published pages, in the sitemap, in the
+graph and in the same llms.txt's per-area routing — fifteen published
+Ontario areas outside the GTA. (The 26 New York areas are outside the GTA too,
+but the sentence is about Southern Ontario, so they are not counted here.)
+
+- Production (lead): the llms.txt sentence is live.
+- Resolution: GEO-009 derives the sentence from DISCOVERY_ONLY (what really is
+  assessed per project: London, Kingston, Windsor, …).
+
+## GC-007 · P1 · arithmetic that does not add up
+
+"Serving: Toronto & the GTA, **89** published areas (**53** municipalities and
+districts, **17** Toronto neighbourhoods)" — 53 + 17 = 70. The 19
+`DISTRICT_AREAS` (Ancaster … Kenmore) are in the 89 and in no bracket.
+Same structure at `markdown-export.ts:543–544`. And the "53 municipalities and
+districts" are `CITIES`, which contains 24 US municipalities and the 6
+districts of GC-003. Every number is derived; the partition is wrong.
+Resolution: GEO-004 (counts from `category()` × `kind`), GEO-009.
+
+## GC-008 · P1 · "west to Waterloo Region"
+
+`/service-areas` (`page.tsx:36`) and the territory map's accessible name
+(`TerritoryMap.tsx:229`) describe the **published** areas as reaching "west to
+Waterloo Region". Nothing in Waterloo Region is published: Kitchener and
+Cambridge are OPERATIONAL_CORRIDOR (GC-001), and the City of Waterloo is not a
+market at all — only an assessment location. The corridor text "toward Guelph
+and Waterloo Region" (`corridors.ts:93, 97`) is a route description and is
+accurate; the index sentence turns it into a publication claim.
+Resolution: GEO-008 derives the sentence from the published set; GEO-012 keeps
+City of Waterloo and Waterloo Region as two entities.
+
+## GC-009 · P1 · "Ontario" over a set with New York in it
+
+`/corridors`: "{counts.total} Ontario municipalities and districts are in the
+model" with `counts.total = MARKETS.length` = 101, of which 26 are in New York
+(`corridors/page.tsx:29–31, 56`). Resolution: GEO-004.
+
+## GC-010 · P0 · Toronto — served and not served
+
+- Served: `root-schema.ts:66–68` puts `BUSINESS_NAP.address.addressLocality`
+  ("Toronto") first in the organisation's `areaServed` City list;
+  `serviceAreaMarkets()` includes `toronto` (`core-active`, "Head office and
+  shop. Routine daily coverage.").
+- Not served (machine form): the location node `toronto` has
+  `coverage: region`, `in_area_served: false`, **no `serves` edge** in the graph
+  (`registry.ts:936` emits `serves` only for `published`), and its
+  `canonical_url` is the `/service-areas` index.
+- No `/service-areas/toronto` page exists; `/hardwood-flooring-toronto` is the
+  page that actually answers the Toronto head term.
+- Resolution: GEO-011 after owner decision D2.
+
+## GC-011 · P2 · two deciders of "has a page"
+
+`/api/v1/markets.has_page` = `assess(market).indexable` — computed from
+`CITY_CONTENT`, confirmation and cannibalisation (`worthiness.ts`,
+`handlers.ts:752`). The route, sitemap, graph and AI files use
+`SERVICE_AREAS` — the hand lists in `seo-data.ts`. Both are 89 and identical
+today. Adding a `CITY_CONTENT` entry without an `AREAS` name makes the API
+announce a page that 404s; adding an `AREAS` name for a market without content
+publishes a page the API says is not earned. `verify-geo-green.mjs` §1–2 check
+each direction only partially.
+Resolution: GEO-001 defines one `published` selector; GEO-002 removes the lists.
+
+## GC-012 · P1 · `in_area_served: false` on served places
+
+`in_area_served` is `slug ∈ CITIES` (`registry.ts:287, 302`) — i.e. "is a
+schema City node". For 36 published places with a page and a graph `serves`
+edge it is `false`, including forest-hill, midtown-toronto, rosedale and
+yorkville, which have published completed jobs. Toronto is `false` too
+(GC-010). A consumer reading the field by its name concludes these places are
+outside the service area. Resolution: GEO-005 (the field means what it says:
+category = SERVICE_AREA; the City-node fact gets its own field if needed).
+
+## GC-013 · P2 · three parent representations
+
+`markets.ts` `partOf` (slug) · `seo-data.ts` `DISTRICTS[].partOf` (display
+name: 'Hamilton', 'Amherst') · `locations.ts` `parent` (slug, else region
+fallback). `locations.ts:192` still says Beamsville hangs from Southern Ontario
+because Lincoln has no page — Lincoln has had one since 2026-09-10 and
+Beamsville now resolves to `lincoln`. In JSON-LD, Williamsville and Kenmore are
+`Place ⊂ City "Amherst"` / `City "Tonawanda"` with no state or country
+(`root-schema.ts:123–130`) — the one place the New York disambiguation of
+`root-schema.ts:136–146` does not reach. (Which Tonawanda — town or city — is a
+fact for the record, not for this log.) Resolution: GEO-002, GEO-007.
+
+## GC-014 · P1 · places without region, names without disambiguation
+
+- 29 Ontario pages emit `spatialCoverage` / `areaServed` as a bare
+  `{ "@type": "City", "name": … }` with no `containedInPlace`
+  (`root-schema.ts:147`) — Ajax … York; the New York branch has a state and a
+  country, the Ontario branch has neither.
+- "Niagara Falls" (Ontario) is emitted bare in the page title, the page's
+  JSON-LD and the organisation `areaServed`, beside "Niagara Falls, NY"
+  (`seo-data.ts:78–80` is a slug override only).
+- The organisation `areaServed` names are inconsistent: "Rochester, NY" and
+  "Niagara Falls, NY" carry the state in the name, "Buffalo" and "Brighton" do
+  not — and there is a Brighton in Ontario.
+- Resolution: GEO-007 (`placeFor()` always emits region and country; names are
+  display names, not disambiguators).
+
+## GC-015 · P1 · HTML and its Markdown twin disagree
+
+| | HTML `/service-areas/buffalo` | Twin `/service-areas/buffalo.md` |
+|---|---|---|
+| title / H1 | "… in Buffalo, NY" (`areaDisplayName`) | "# Hardwood floor installation & refinishing in Buffalo" (`markdown-export.ts:351`) |
+| service sentence | "Ecowoods serves Buffalo, NY. Book the measure. The showroom is Toronto. The job is in Buffalo." | absent |
+| hub framing | `/service-areas`: "across the corridor … into western New York" | `/service-areas.md`: "# Hardwood flooring service areas — Toronto & the GTA" |
+
+A twin is a projection of the same page; it may format differently, it may not
+say something different. Resolution: GEO-009.
+
+## GC-016 · P2 · corridors that list districts
+
+`corridors.ts` lists `stoney-creek` (qew-west, 86), `ancaster` and `dundas`
+(403-6-west, 95), `williamsville` and `kenmore` (buffalo-metro, 129–130). The
+model's own rule (`markets.ts:127–133`) is that a corridor is a drive between
+municipalities and a district inherits membership through `partOf`.
+`verify-geo.mjs` §2 (276–299) enforces the rule from the market side only, so a
+corridor naming a district passes. Resolution: GEO-003 guard, GEO-013 data.
+
+## GC-017 · P2 · target-model places absent
+
+| Place | Baseline state | Note |
+|---|---|---|
+| Lakeview Park (Oshawa) | absent | locality under Oshawa (D5) |
+| Bowmanville (Clarington) | alias of Clarington in `locations.ts:98`; named in the 401-east summary | locality under Clarington (D5) |
+| City of Waterloo | assessment location only, no market | must never be merged with Waterloo Region (D4) |
+| Waterloo Region | named in corridor route text; no entity | region, not a municipality |
+| Brantford | assessment location only | no Hamilton → Brantford corridor edge (D4) |
+| Paris, Ayr | absent | investigate only (protocol §11) |
+| Woodstock | assessment location only | investigate only |
+| Stoney Creek | district of Hamilton | correct since 2001 amalgamation; keep as district |
+| Kitchener / Waterloo | Kitchener is a market; Waterloo is not; no "Kitchener-Waterloo" entity anywhere | no collapse today — keep it that way (GEO-003 guard) |
+
+## GC-018 · stale semantics
+
+Emitted (P1): `registry.ts:336` returns, in the public location API for the
+hierarchy nodes, "Hierarchy node. The published service area is Toronto and
+the Greater Toronto Area." — false since Hamilton was published.
+
+Comments and headers (P3): `handlers.ts:691–693` ("United States markets are
+excluded from it by construction — they are a service area…"),
+`handlers.ts:796–803` (opportunity: "Every American market comes back
+FUTURE"), `verify-geo.mjs:29` (item 4 still requires `us-proxy`),
+`locations.ts:1–19` (16 + 16 areas; Hamilton and Barrie as assessment
+examples), `locations.ts:192` (GC-013), and seven comments that still say
+"32" areas (`EstimateForm.tsx:32`, `where-we-work/page.tsx:33`,
+`[city]/page.tsx:35, 181`, `claims.ts:249`, `verify-business-facts.mjs:60`,
+`match.ts:44`). No emitted count is hand-typed — the `verify-geo-green` §5 rule
+holds; these are comments.
+
+## GC-019 · P1 · green while wrong
+
+At the baseline `verify-geo`, `verify-geo-green`, `verify-cities`,
+`verify-sitemap`, `verify-allocation`, `verify-market-inputs`,
+`verify-market`, `verify-agentic`, `verify-canonical`, `verify-markdown`,
+`verify-entity`, `verify-business-facts`, `verify-repo-hygiene`,
+`verify-changelog` and `verify-links` all pass. Gaps that let GC-001…017
+through: 7a checks existence not kind (GC-003); §2 one direction (GC-016);
+check 7 is a file-exists check (`verify-geo.mjs:541–543`); nothing compares
+`service_area` with the published set (GC-001), location coverage with market
+status (GC-002), any node's country or parent (GC-004, GC-005), or HTML with its
+twin (GC-015). No guard reads production geography.
+Resolution: GEO-003 (repository guards, negative tests first), GEO-022
+(`geo-measure.mjs --strict` against production), GEO-023.
+
+## GC-020 · P1 (unconfirmed) · un-busted requests serve an older build
+
+Observed through a summarising fetcher on 2026-09-11:
+
+| URL | without `?cb` | with `?cb` |
+|---|---|---|
+| `/team` | "32 areas" | "89 municipalities and neighbourhoods in Toronto and the GTA" |
+| `/corridors` | 404 | 200, H1 "The routes, not a list of place names" |
+
+The baseline build derives `/team` from `SERVICE_AREAS.length` (89) and builds
+`/corridors`. If the stale copies are the CDN's, crawlers — which never add a
+cache-buster — are reading a geography two builds old. If they are the
+fetcher's, there is no defect. `geo-measure.mjs` fetches both forms and
+records `x-vercel-cache` and `age` to decide. Until then this entry is open and
+unconfirmed.
+
+## GC-021 · P2 · local proof keyed by display name
+
+`jobCardsForArea(city.name)` (`job-cards.ts:172`) matches a job's `area`
+string to a page's display name. Four of five jobs match (Midtown Toronto,
+Forest Hill, Yorkville, Rosedale); "Distillery District" matches no page and
+attaches to nothing, though it lies inside Downtown Toronto. Coverage and proof
+are correctly separate concepts here (protocol §23); the join is the defect.
+Resolution: GEO-002 (proof keyed by market slug, locality allowed).
+
+## GC-022 · twin gap (not a contradiction)
+
+`/corridors`, `/corridors/{id}` and `/where-we-work` have no Markdown twin
+and none is advertised (no `alternates.types`, no manifest entry, no llms
+reference). No false capability claim. GEO-009 decides whether to generate
+them.
+
+## GC-023 · P1 · different staleness windows per surface
+
+| Surface | Cache-Control at the baseline |
+|---|---|
+| HTML (vercel.json catch-all) | `s-maxage=300, stale-while-revalidate=86400` |
+| `/api/v1/*` | `max-age=300, s-maxage=3600, stale-while-revalidate=86400` |
+| `/llms.txt`, `/ai.txt` | `max-age=3600, s-maxage=86400` |
+| `/llms-full.txt`, `/md`, `/service-areas/{slug}.md` | `s-maxage=86400, stale-while-revalidate=604800` |
+| `/sitemap.xml` | `revalidate = 86400` |
+
+A geography change deployed at T can be served as the old geography by the
+Markdown twins for up to 8 days while HTML updates in minutes — which would
+recreate GC-015 in production after it is fixed in the repository. Whether a
+Vercel deployment purges these depends on the deployment; GEO-022 measures it
+after a real geography deploy rather than assuming.
+
+---
+
+## Not reproduced from the prior audit
+
+| Prior finding (2026-09-11 audit) | At the baseline |
+|---|---|
+| `/corridors/buffalo-metro` says "not a service area" | Not in the source; not observed live. Closed before GEO-000. |
+| About / Team list = 45 | The build derives 89 on both. Live `/team` observed at 32 or 89 depending on cache-busting (GC-020). |
+| 1 of 89 pages is 5/5 | Local proof is a separate gate (protocol §23) and is not re-scored here; job-card attachment measured in GC-021. |
+
+## Verified as correct at the baseline (do not "fix")
+
+- No emitted geographic count is hand-typed (`verify-geo-green` §5 holds).
+- No second address, telephone or hours appears for any New York market.
+- Every published page has real `CITY_CONTENT` (89 of 89), and the worthiness
+  gate refuses template content.
+- Sitemap ⇔ route set ⇔ graph `serves` ⇔ llms per-area routing are equal
+  (89 = 89 = 89 = 89).
+- Every page self-canonicalises to `/service-areas/{slug}` and advertises its
+  `.md` twin.
+- The stale preview host `ecowoods-app.vercel.app` returns 404 (lead) and
+  `vercel.json` 301s the legacy domain.
