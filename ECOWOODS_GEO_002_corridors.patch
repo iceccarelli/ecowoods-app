@@ -1,0 +1,1342 @@
+From c4492335f482934568d9146e7fd28c768b0ca553 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 11 Sep 2026 23:15:35 +0000
+Subject: [PATCH] =?UTF-8?q?feat(geo):=20GEO-002=20=E2=80=94=20corridors:?=
+ =?UTF-8?q?=20one=20membership=20rule,=20and=20a=20machine=20edition?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A corridor names municipalities. Districts reach it through partOf, which is
+the registry's own rule and was enforced from one side only — so five
+districts sat in the corridor member lists as peers of the cities containing
+them (GC-016). They are out of the fact list and back on every corridor
+surface, under the municipality they belong to, derived by corridorStops().
+
+The corridor pages and the proof map get machine editions and structured data
+(GC-022): /corridors.md, eleven route twins, /where-we-work.md, and a
+WebPage + Service + ItemList graph on every route page whose place nodes come
+from the same hierarchy rule the area pages use.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/corridors/[id]/page.tsx    |  78 +++++--
+ apps/web/app/corridors/page.tsx         |  39 +++-
+ apps/web/app/globals.css                |  32 +++
+ apps/web/app/llms.txt/route.ts          |   3 +-
+ apps/web/app/md/corridors/[id]/route.ts |  30 +++
+ apps/web/app/md/corridors/route.ts      |  21 ++
+ apps/web/app/md/where-we-work/route.ts  |  20 ++
+ apps/web/app/where-we-work/page.tsx     |   8 +-
+ apps/web/content/geo/corridors.ts       |  41 +++-
+ apps/web/lib/geo/index.ts               |  44 +++-
+ apps/web/lib/markdown-export.ts         | 267 ++++++++++++++++++++++++
+ apps/web/lib/registry/handlers.ts       |  30 ++-
+ apps/web/lib/schema/corridor-schema.ts  | 142 +++++++++++++
+ apps/web/lib/schema/root-schema.ts      |  33 +++
+ apps/web/next.config.js                 |   9 +
+ docs/GEO_CONTRADICTION_LOG.md           |  37 ++++
+ docs/GEO_SOURCE_MAP.md                  |  39 +++-
+ scripts/geo-measure.mjs                 |   7 +-
+ scripts/verify-destinations.mjs         |  27 +++
+ scripts/verify-live.sh                  |   6 +
+ 20 files changed, 859 insertions(+), 54 deletions(-)
+ create mode 100644 apps/web/app/md/corridors/[id]/route.ts
+ create mode 100644 apps/web/app/md/corridors/route.ts
+ create mode 100644 apps/web/app/md/where-we-work/route.ts
+ create mode 100644 apps/web/lib/schema/corridor-schema.ts
+
+diff --git a/apps/web/app/corridors/[id]/page.tsx b/apps/web/app/corridors/[id]/page.tsx
+index f6f521b..69a2704 100644
+--- a/apps/web/app/corridors/[id]/page.tsx
++++ b/apps/web/app/corridors/[id]/page.tsx
+@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+ import {
+-  CORRIDORS, corridorById, marketBySlug, assess, marketPath, type Market,
++  CORRIDORS, corridorById, corridorStops, corridorMarkets, marketBySlug, assess, marketPath,
+ } from '@/lib/geo';
+ import { SITE_URL, cityContent, BUSINESS } from '@/lib/seo-data';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+-import { SchemaScript } from '@/lib/schema/components';
++import { buildCorridorSchema } from '@/lib/schema/corridor-schema';
++import { SchemaScripts } from '@/lib/schema/components';
+ 
+ export const dynamicParams = false;
+ export const generateStaticParams = () => CORRIDORS.map((c) => ({ id: c.id }));
+@@ -18,7 +19,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
+   return {
+     title: `${c.name} — hardwood flooring coverage along ${c.route}`,
+     description: `${c.members.length} municipalities on the ${c.name} route, what coverage means in each, and where Ecowoods actually works. No claim of coverage that has not been confirmed.`,
+-    alternates: { canonical: `/corridors/${c.id}` },
++    alternates: {
++      canonical: `/corridors/${c.id}`,
++      /* The machine edition (GEO-002). next.config.js rewrites
++         /corridors/:id.md onto app/md/corridors/[id]; declaring it here is
++         what lets an agent discover it instead of guessing the convention. */
++      types: { 'text/markdown': `/corridors/${c.id}.md` },
++    },
+   };
+ }
+ 
+@@ -61,9 +68,15 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+   if (!corridor) notFound();
+ 
+   const hub = marketBySlug(corridor.hub);
+-  const members = corridor.members
+-    .map((s) => marketBySlug(s))
+-    .filter((x): x is Market => Boolean(x));
++  /* The stops are municipalities, in travel order, each carrying the districts
++     inside it. Until GEO-002 five districts were typed into the corridor's own
++     member list and rendered as peers of the cities that contain them
++     (GC-016); they are still every one of them on this page, under the
++     municipality they belong to, which is where they were always true. */
++  const stops = corridorStops(corridor.id);
++  const municipalities = stops.map((s) => s.municipality);
++  const members = corridorMarkets(corridor.id);
++  const districts = members.filter((x) => x.kind === 'district');
+ 
+   const withPages = members.filter((x) => assess(x).indexable);
+   const confirmed = members.filter((x) => x.operationalTruth.verifiedAt);
+@@ -71,12 +84,15 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+ 
+   return (
+     <div className="tlx-page">
+-      <SchemaScript
+-        schema={buildBreadcrumbList([
+-          { name: 'Home', url: SITE_URL },
+-          { name: 'Corridors', url: `${SITE_URL}/corridors` },
+-          { name: corridor.name, url: `${SITE_URL}/corridors/${corridor.id}` },
+-        ])}
++      <SchemaScripts
++        schemas={[
++          buildBreadcrumbList([
++            { name: 'Home', url: SITE_URL },
++            { name: 'Corridors', url: `${SITE_URL}/corridors` },
++            { name: corridor.name, url: `${SITE_URL}/corridors/${corridor.id}` },
++          ]),
++          buildCorridorSchema(corridor),
++        ]}
+       />
+ 
+       <header className="tlx-hero">
+@@ -90,9 +106,10 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+           <h1 className="tlx-title">{corridor.name}</h1>
+           <p className="tlx-lede">{corridor.summary}</p>
+           <p className="tlx-note">
+-            Out from {hub?.name ?? corridor.hub}. {members.length} markets on the route,{' '}
+-            {confirmed.length} with a confirmed operational position, {withPages.length} with a page of local
+-            detail.
++            Out from {hub?.name ?? corridor.hub}. {municipalities.length} municipalities on the route
++            {districts.length > 0 && <>, {districts.length} districts and communities inside them</>}.{' '}
++            {confirmed.length} of the {members.length} have a confirmed operational position,{' '}
++            {withPages.length} have a page of local detail.
+           </p>
+           <p className="tlx-note">
+             A confirmed position means the owner of this business stated, on a date, what coverage of that
+@@ -107,7 +124,7 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+         <div className="shell">
+           <h2 className="tlx-h2">Along the route</h2>
+           <div className="tlx-table-wrap" role="region" tabIndex={0} aria-label={`Markets on the ${corridor.name} route`}>
+-            <table className="wm-table">
++            <table className="wm-table cr-table">
+               <thead>
+                 <tr>
+                   <th scope="col">Market</th>
+@@ -116,20 +133,33 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+                 </tr>
+               </thead>
+               <tbody>
+-                {members.map((x) => {
++                {stops.map(({ municipality: x, districts: inside }) => {
+                   const worthy = assess(x).indexable;
+                   const cc = cityContent(x.slug);
+                   return (
+                     <tr key={x.slug}>
+                       <th scope="row">
+                         {worthy && cc ? <Link href={marketPath(x.slug)}>{x.name}</Link> : x.name}
+-                        {x.kind === 'district' && x.partOf && (
+-                          <> <span className="tlx-kicker">part of {marketBySlug(x.partOf)?.name ?? x.partOf}</span></>
+-                        )}
+                         {x.country === 'US' && <> <span className="tlx-kicker">NY</span></>}
++                        {/* The districts inside this municipality — named as what they
++                            are, under it, never as another stop on the drive. */}
++                        {inside.length > 0 && (
++                          <span className="tlx-kicker cr-within">
++                            <span className="cr-within-label">within it</span>{' '}
++                            {inside.map((d, i) => {
++                              const linked = assess(d).indexable && cityContent(d.slug);
++                              return (
++                                <span key={d.slug}>
++                                  {i > 0 && ', '}
++                                  {linked ? <Link href={marketPath(d.slug)}>{d.name}</Link> : d.name}
++                                </span>
++                              );
++                            })}
++                          </span>
++                        )}
+                       </th>
+-                      <td>{STATUS_LABEL[x.status] ?? x.status}</td>
+-                      <td>
++                      <td data-label="Status">{STATUS_LABEL[x.status] ?? x.status}</td>
++                      <td data-label="What that means here">
+                         {x.operationalTruth.statement ||
+                           'No confirmed operational position. On the route and in the plan; call and ask before assuming a date.'}
+                         {x.operationalTruth.verifiedAt && (
+@@ -179,7 +209,9 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+             </p>
+             <p>
+               Everything on <Link href="/corridors">the other routes</Link>, and the full model behind these
+-              statuses, is readable as data at <Link href="/api/v1/markets">/api/v1/markets</Link>.
++              statuses, is readable as data at <Link href="/api/v1/markets">/api/v1/markets</Link> and{' '}
++              <Link href="/api/v1/corridors">/api/v1/corridors</Link>. This page is served as clean Markdown
++              at <Link href={`/corridors/${corridor.id}.md`}>{`/corridors/${corridor.id}.md`}</Link>.
+             </p>
+           </div>
+         </div>
+diff --git a/apps/web/app/corridors/page.tsx b/apps/web/app/corridors/page.tsx
+index a4cbc63..e857ceb 100644
+--- a/apps/web/app/corridors/page.tsx
++++ b/apps/web/app/corridors/page.tsx
+@@ -1,14 +1,20 @@
+ import type { Metadata } from 'next';
+ import Link from 'next/link';
+-import { CORRIDORS, MARKETS, marketBySlug, assess } from '@/lib/geo';
++import { CORRIDORS, MARKETS, marketBySlug, assess, corridorMarkets } from '@/lib/geo';
+ import { SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+-import { SchemaScript } from '@/lib/schema/components';
++import { buildCorridorsIndexSchema } from '@/lib/schema/corridor-schema';
++import { SchemaScripts } from '@/lib/schema/components';
+ 
+ export const metadata: Metadata = {
+   title: 'Where we drive — the corridors this work is routed along',
+   description: `The ${CORRIDORS.length} routes Ecowoods works out from Toronto, the municipalities on each, and exactly what coverage means in every one of them.`,
+-  alternates: { canonical: '/corridors' },
++  alternates: {
++    canonical: '/corridors',
++    /* The machine edition (GEO-002): the routes, their stops and every
++       operational statement, as Markdown rather than as a parsed table. */
++    types: { 'text/markdown': '/corridors.md' },
++  },
+ };
+ 
+ /**
+@@ -35,11 +41,14 @@ export default function CorridorsPage() {
+ 
+   return (
+     <div className="tlx-page">
+-      <SchemaScript
+-        schema={buildBreadcrumbList([
+-          { name: 'Home', url: SITE_URL },
+-          { name: 'Corridors', url: `${SITE_URL}/corridors` },
+-        ])}
++      <SchemaScripts
++        schemas={[
++          buildBreadcrumbList([
++            { name: 'Home', url: SITE_URL },
++            { name: 'Corridors', url: `${SITE_URL}/corridors` },
++          ]),
++          buildCorridorsIndexSchema(),
++        ]}
+       />
+ 
+       <header className="tlx-hero">
+@@ -76,7 +85,10 @@ export default function CorridorsPage() {
+                   <p className="tlx-kicker">{c.route}</p>
+                   <p className="tlx-body">{c.summary}</p>
+                   <p className="pj-note">
+-                    Out from {hub?.name ?? c.hub} · {c.members.length} markets
++                    Out from {hub?.name ?? c.hub} · {c.members.length} municipalities
++                    {corridorMarkets(c.id).length > c.members.length && (
++                      <> · {corridorMarkets(c.id).length - c.members.length} districts inside them</>
++                    )}
+                   </p>
+                 </li>
+               );
+@@ -134,6 +146,15 @@ export default function CorridorsPage() {
+               in the corridor it belongs to, findable and linked. The list of which markets are next is
+               computed, not guessed: see <Link href="/api/v1/markets">the markets API</Link>.
+             </p>
++            <p>
++              A corridor names municipalities. The districts and communities inside one — Ancaster and Dundas
++              inside Hamilton, Kenmore inside Tonawanda — are shown under the municipality they belong to
++              rather than beside it, on this page, in the route pages, in{' '}
++              <Link href="/api/v1/corridors">the corridors API</Link> and in the structured data. One
++              geography, one shape, read the same way by a person and by a machine. Every route page is also
++              served as clean Markdown at the same URL with <code>.md</code> appended, and this page is at{' '}
++              <Link href="/corridors.md">/corridors.md</Link>.
++            </p>
+           </div>
+         </div>
+       </section>
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 1c0bd42..5a1c614 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -11274,3 +11274,35 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+   border-bottom: 0;
+   justify-content: flex-start;
+ }
++
++/* ── GEO-002 · the districts inside a corridor stop ─────────────────────────
++   A corridor names municipalities; the districts and communities inside one
++   are listed under it, never beside it. The cell needs to read as a second
++   line under the municipality rather than as a continuation of its name, and
++   the links inside it have to stay reachable — .tlx-kicker is uppercase mono
++   at 0.72rem, which is a label, not a list of destinations. */
++.cr-within { display: block; margin-top: 0.35rem; text-transform: none;
++  font-family: var(--font-body); font-size: 0.82rem; letter-spacing: 0;
++  line-height: 1.6; color: var(--ink-soft); font-weight: 400; }
++.cr-within-label { font-family: var(--font-mono); font-size: 0.68rem;
++  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-soft); }
++
++/* The route table, on a phone. Three columns of prose inside 390px compress to
++   two or three words a line, and the widest cell on this table is a sentence.
++   So below 640px the rows stack: each municipality becomes a block with its own
++   labelled fields. Scoped to .cr-table — .wm-table is the work map's too, and
++   that one is four short numeric columns that do fit. */
++@media (max-width: 640px) {
++  .cr-table thead { position: absolute; width: 1px; height: 1px; padding: 0;
++    margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
++  .cr-table tr { display: block; padding: 1rem 0 1.1rem;
++    border-bottom: 1px solid var(--line); }
++  .cr-table th[scope='row'], .cr-table td { display: block; padding: 0; border-bottom: 0; }
++  .cr-table td { margin-top: 0.7rem; }
++  .cr-table td::before { content: attr(data-label); display: block;
++    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
++    text-transform: uppercase; color: var(--muted-soft); margin-bottom: 0.25rem; }
++}
++.cr-within a { color: var(--ink-soft); text-decoration: underline;
++  text-decoration-thickness: 1px; text-underline-offset: 2px; }
++.cr-within a:hover, .cr-within a:focus-visible { color: var(--copper-text); }
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index cba1ccb..fa1e88a 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -163,9 +163,10 @@ export async function GET() {
+ 
+   /* ── Evidence ─────────────────────────────────────────────────────────── */
+   lines.push('## Evidence');
++  link('Where the work has been done', '/where-we-work', `every published job by neighbourhood, with its year, its floor area, the service and the case study carrying the measurements \u2014 proof of work, kept separate from the coverage claim the service-area pages make; neighbourhood precision only, no address is published. Markdown: ${SITE_URL}/where-we-work.md`);
+   link('Case studies', '/case-studies', 'measured jobs — substrate, moisture readings, species, area — published in full; first-party evidence, not testimonials-as-proof');
+   link('Projects, photographed', '/projects', 'photographic records of completed jobs in two chapters, bare then finished; deliberately no measurements, no species and no street address — the measured material is the case studies above');
+-  link('Coverage by corridor', '/corridors', 'every route this work is organised along, each with the municipalities on it in travel order and the operational status of every one: routine, active, reachable by confirmation, or in New York State \u2014 where the owner confirmed cross-border licensing and crew work authorization on 2026-09-10, and where the shop, the showroom and the telephone number remain the single Toronto ones'),
++  link('Coverage by corridor', '/corridors', `every route this work is organised along, each with the municipalities on it in travel order and the operational status of every one: routine, active, reachable by confirmation, or in New York State — where the owner confirmed cross-border licensing and crew work authorization on 2026-09-10, and where the shop, the showroom and the telephone number remain the single Toronto ones. A corridor names municipalities; the districts inside one are reported under it, never beside it. Each route has a page and a clean Markdown twin at the same URL with .md appended, and the hub is at ${SITE_URL}/corridors.md`);
+   link('Compare hardwood quotes', '/quote-check', 'a side-by-side scope comparison for two to four quotes a homeowner is already holding: twenty-two line items that decide whether two totals are pricing the same work, computed in the browser with nothing uploaded and nothing stored; it prices no missing item and ranks no company, because no adequate and proper testing exists for a typical line-item price'),
+   link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
+   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
+diff --git a/apps/web/app/md/corridors/[id]/route.ts b/apps/web/app/md/corridors/[id]/route.ts
+new file mode 100644
+index 0000000..0dc3a81
+--- /dev/null
++++ b/apps/web/app/md/corridors/[id]/route.ts
+@@ -0,0 +1,30 @@
++/**
++ * GET /corridors/{id}.md  (rewritten from this path by next.config.js)
++ *
++ * One route: the stops in travel order, the districts inside each, and the
++ * operational statement the owner confirmed for every one of them, verbatim.
++ * Same source as the HTML page. See lib/markdown-export.ts.
++ */
++import { CORRIDORS } from '@/lib/geo';
++import { corridorMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export function generateStaticParams() {
++  return CORRIDORS.map((c) => ({ id: c.id }));
++}
++
++export async function GET(
++  _req: Request,
++  { params }: { params: Promise<{ id: string }> },
++) {
++  const { id } = await params;
++  const md = corridorMarkdown(id);
++  if (!md) return new Response('Not found\n', { status: 404 });
++  return new Response(md, {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/md/corridors/route.ts b/apps/web/app/md/corridors/route.ts
+new file mode 100644
+index 0000000..8acb655
+--- /dev/null
++++ b/apps/web/app/md/corridors/route.ts
+@@ -0,0 +1,21 @@
++/**
++ * GET /corridors.md  (rewritten from this path by next.config.js)
++ *
++ * The corridor hub twin: every route, its hub, how many municipalities sit on
++ * it and how many districts sit inside those, and what each status means.
++ * Generated from content/geo/corridors.ts and the market registry — see
++ * lib/markdown-export.ts, and GEO-002 for why this surface had no machine
++ * edition until now.
++ */
++import { corridorsHubToMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export async function GET() {
++  return new Response(corridorsHubToMarkdown(), {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/md/where-we-work/route.ts b/apps/web/app/md/where-we-work/route.ts
+new file mode 100644
+index 0000000..d03f6b6
+--- /dev/null
++++ b/apps/web/app/md/where-we-work/route.ts
+@@ -0,0 +1,20 @@
++/**
++ * GET /where-we-work.md  (rewritten from this path by next.config.js)
++ *
++ * The proof map as text: every published job, its year, its floor area, the
++ * service and the case study that carries the measurements. No coordinate is
++ * emitted — COORDS_VERIFIED is false, and scripts/verify-work-map.mjs §6 is
++ * the mechanical half of that rule. See lib/markdown-export.ts.
++ */
++import { whereWeWorkToMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export async function GET() {
++  return new Response(whereWeWorkToMarkdown(), {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/where-we-work/page.tsx b/apps/web/app/where-we-work/page.tsx
+index d24b781..ed36d87 100644
+--- a/apps/web/app/where-we-work/page.tsx
++++ b/apps/web/app/where-we-work/page.tsx
+@@ -15,7 +15,13 @@ export const metadata: Metadata = {
+   description:
+     `Completed hardwood work across ${BUSINESS_NAP.region}, plotted by neighbourhood and linked to the ` +
+     `measurements taken on each job. Neighbourhood precision only — no customer address is published.`,
+-  alternates: { canonical: '/where-we-work' },
++  alternates: {
++    canonical: '/where-we-work',
++    /* The machine edition (GEO-002). Proof of work was HTML-only: an agent
++       deciding whether to recommend this business could read the coverage
++       claim and not the evidence. No coordinate is emitted — see the twin. */
++    types: { 'text/markdown': '/where-we-work.md' },
++  },
+   openGraph: {
+     title: `Where ${BUSINESS_NAP.shortName} has worked`,
+     description: `Published jobs across ${BUSINESS_NAP.region}, ${SPAN}, each one linked to what was measured.`,
+diff --git a/apps/web/content/geo/corridors.ts b/apps/web/content/geo/corridors.ts
+index c76fdd4..5d766a3 100644
+--- a/apps/web/content/geo/corridors.ts
++++ b/apps/web/content/geo/corridors.ts
+@@ -6,10 +6,13 @@
+  * That is why corridors exist in the data model at all — the thing that decides
+  * whether a job in Grimsby is profitable is the QEW, not a map colour.
+  *
+- * These nine, their members and their order are stated by the owner. Nothing
+- * here is inferred from a map or a distance API: a corridor is a business
+- * decision about where crews will travel, and inventing one would be inventing
+- * an operating plan.
++ * These corridors, their members and their order are stated by the owner.
++ * Nothing here is inferred from a map or a distance API: a corridor is a
++ * business decision about where crews will travel, and inventing one would be
++ * inventing an operating plan.
++ *
++ * A corridor names MUNICIPALITIES. Districts reach it through their
++ * municipality — see the note on `members` below, and GEO-002.
+  */
+ 
+ export type CorridorId =
+@@ -32,7 +35,27 @@ export interface Corridor {
+   route: string;
+   /** Market slug the corridor runs out from. */
+   hub: string;
+-  /** Market slugs, in travel order from the hub. */
++  /**
++   * MUNICIPALITY slugs, in travel order from the hub. Municipalities only.
++   *
++   * A corridor is a drive between municipalities, and a district inherits its
++   * municipality's membership through `partOf` — that rule is written in
++   * content/geo/markets.ts on the `corridors` field and enforced from the
++   * market side by scripts/verify-geo.mjs §2, which is why every district
++   * declares `corridors: []`.
++   *
++   * Until GEO-002 this list said otherwise. It named Stoney Creek beside
++   * Hamilton on the QEW, Ancaster and Dundas beside Guelph on the 403, and
++   * Williamsville and Kenmore beside Buffalo and Amherst in Erie County — five
++   * districts standing as peers of the cities that contain them, in the one
++   * list a machine reads as "the places on this route"
++   * (docs/GEO_CONTRADICTION_LOG.md GC-016). The guard checked the rule in one
++   * direction only, so it passed.
++   *
++   * Nothing was lost by removing them: `corridorStops()` in lib/geo/index.ts
++   * puts every district back on the page, under the municipality it is part
++   * of, which is where it was always true.
++   */
+   members: string[];
+   /**
+    * What this corridor is for, in one paragraph. Describes geography and
+@@ -83,7 +106,7 @@ export const CORRIDORS: Corridor[] = [
+     name: 'QEW West',
+     route: 'QEW southwest along the lake to Hamilton',
+     hub: 'mississauga',
+-    members: ['mississauga', 'oakville', 'burlington', 'hamilton', 'stoney-creek', 'grimsby'],
++    members: ['mississauga', 'oakville', 'burlington', 'hamilton', 'grimsby'],
+     summary:
+       'The lakeshore run. Housing age drops sharply and then rises again: newer detached stock through Oakville and Burlington, then Hamilton, where much of the stock predates the war and the substrate question changes with it.',
+   },
+@@ -92,7 +115,7 @@ export const CORRIDORS: Corridor[] = [
+     name: '403 / Highway 6 West',
+     route: 'Hamilton west and north to Waterloo Region',
+     hub: 'hamilton',
+-    members: ['hamilton', 'ancaster', 'dundas', 'guelph', 'cambridge', 'kitchener'],
++    members: ['hamilton', 'guelph', 'cambridge', 'kitchener'],
+     summary:
+       'Past Hamilton toward Guelph and Waterloo Region. Ancaster and Dundas are part of the City of Hamilton rather than separate municipalities, and are modelled that way — they are places, not peer cities.',
+   },
+@@ -126,8 +149,8 @@ export const CORRIDORS: Corridor[] = [
+     route: 'Buffalo outward through the Erie County towns',
+     hub: 'buffalo',
+     members: [
+-      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga', 'lancaster',
+-      'west-seneca', 'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg',
++      'buffalo', 'amherst', 'clarence', 'cheektowaga', 'lancaster',
++      'west-seneca', 'tonawanda', 'grand-island', 'orchard-park', 'hamburg',
+       'east-aurora',
+     ],
+     summary:
+diff --git a/apps/web/lib/geo/index.ts b/apps/web/lib/geo/index.ts
+index 43093fb..beffd1f 100644
+--- a/apps/web/lib/geo/index.ts
++++ b/apps/web/lib/geo/index.ts
+@@ -21,7 +21,7 @@ export { assess, indexableMarkets, contentQueue, expansionScore, expansionOrder
+ export type { Worthiness, ExpansionScore } from './worthiness';
+ 
+ import { MARKETS, isOperational, type Market } from '@/content/geo/markets';
+-import { corridorsFor as corridorsForRaw } from '@/content/geo/corridors';
++import { corridorsFor as corridorsForRaw, corridorById as corridorByIdRaw } from '@/content/geo/corridors';
+ 
+ /**
+  * The markets that may be emitted as service area.
+@@ -41,6 +41,48 @@ export const serviceAreaMarkets = (): Market[] =>
+ export const corridorsFor = (slug: string) =>
+   corridorsForRaw(slug, (s) => MARKETS.find((x) => x.slug === s)?.partOf);
+ 
++/**
++ * THE STOPS ON A CORRIDOR, AS THEY ACTUALLY SIT (GEO-002).
++ *
++ * `Corridor.members` names municipalities and nothing else — a corridor is a
++ * drive between municipalities, and a district inherits its membership through
++ * `partOf`. Before GEO-002 five districts were typed into `members` beside the
++ * cities that contain them (GC-016), so the corridor surfaces showed Stoney
++ * Creek as a peer of Hamilton and Kenmore as a peer of Buffalo. Removing them
++ * from the fact list without putting them back somewhere true would have cost
++ * five internal links and made the corridor pages less useful than they were.
++ *
++ * So the display is derived instead: each municipality on the route, in travel
++ * order, carrying the districts inside it. Publish a district and it appears on
++ * its municipality's corridor with no list to update; a district can never
++ * appear without its municipality, because it hangs from it here.
++ *
++ * Nothing here decides whether a place is covered or published. It reads the
++ * market registry's own `partOf` and returns structure; the page and the twin
++ * apply the worthiness gate to decide what becomes a link.
++ */
++export interface CorridorStop {
++  municipality: Market;
++  /** Districts inside it, in registry order. Empty for most municipalities. */
++  districts: Market[];
++}
++
++export const corridorStops = (id: string): CorridorStop[] => {
++  const corridor = corridorByIdRaw(id);
++  if (!corridor) return [];
++  return corridor.members
++    .map((slug) => MARKETS.find((x) => x.slug === slug))
++    .filter((m): m is Market => Boolean(m))
++    .map((municipality) => ({
++      municipality,
++      districts: MARKETS.filter((x) => x.kind === 'district' && x.partOf === municipality.slug),
++    }));
++};
++
++/** Every market on a corridor — municipalities and the districts inside them, flat, in order. */
++export const corridorMarkets = (id: string): Market[] =>
++  corridorStops(id).flatMap((s) => [s.municipality, ...s.districts]);
++
+ /** Canonical path for a market that has a page. */
+ export const marketPath = (slug: string): string => `/service-areas/${slug}`;
+ export const corridorPath = (id: string): string => `/corridors/${id}`;
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 020cdae..c6d62e5 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -68,6 +68,10 @@ import {
+ } from '@/lib/seo-data';
+ import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
+ import { DISCOVERY } from '@/content/geo/regions';
++import {
++  CORRIDORS, corridorById, corridorStops, corridorMarkets, marketBySlug, assess, type Corridor,
++} from '@/lib/geo';
++import { WORK_PLACES } from '@/content/work-map';
+ import {
+   getServicePages,
+   getServicePage,
+@@ -663,6 +667,260 @@ export const areasHubToMarkdown = (): string => {
+   return out.join('\n');
+ };
+ 
++/* ── corridors ──────────────────────────────────────────────── */
++
++/**
++ * THE ROUTES, AS MACHINE TEXT (GEO-002).
++ *
++ * `/corridors` is the page that answers the question a service-area list
++ * cannot: not "do you have a page for my town" but "how would you get here".
++ * It had no Markdown twin and none was advertised (GC-022), so the one surface
++ * that carries routing, hubs and the per-market operational statement was the
++ * one an agent had to scrape a table out of.
++ *
++ * Both files below are projections of content/geo/corridors.ts and
++ * content/geo/markets.ts. The status sentence in each row is
++ * `operationalTruth.statement` verbatim, with the date the owner confirmed it;
++ * nothing is summarised, because summarising is where an export starts making
++ * claims of its own.
++ *
++ * Districts sit in a column of their own, under the municipality that contains
++ * them. A reader — human or machine — can no more take Ancaster for a peer of
++ * Guelph here than on the page.
++ */
++const statusSentence = (slug: string): string => {
++  const m = marketBySlug(slug);
++  if (!m) return '';
++  const stated =
++    m.operationalTruth.statement ||
++    'No confirmed operational position. On the route and in the plan; ask before assuming a date.';
++  return m.operationalTruth.verifiedAt ? `${stated} (confirmed ${m.operationalTruth.verifiedAt})` : stated;
++};
++
++const marketCell = (slug: string, name: string): string => {
++  const m = marketBySlug(slug);
++  const linked = m && assess(m).indexable && cityContent(slug) ? link(name, `/service-areas/${slug}`) : name;
++  return m?.country === 'US' ? `${linked} (NY)` : linked;
++};
++
++/** /corridors.md — every route, and where to read each one in full. */
++export const corridorsHubToMarkdown = (): string => {
++  const canonical = abs('/corridors');
++  const out: string[] = [
++    `# Coverage by corridor — the ${CORRIDORS.length} routes this work is organised along`,
++    '',
++    identitySentence(),
++    '',
++    '> A corridor is a drive: a hub, a highway, and the municipalities strung along it in the order a crew',
++    `> would reach them. It is not a marketing region. Territory: ${TERRITORY}.`,
++    '',
++    '## The routes',
++    '',
++    ...table(
++      ['Route', 'Follows', 'Out from', 'Municipalities', 'Districts inside them', 'Confirmed', 'With a page', 'Markdown'],
++      CORRIDORS.map((c) => {
++        const all = corridorMarkets(c.id);
++        return [
++          link(c.name, `/corridors/${c.id}`),
++          c.route,
++          marketBySlug(c.hub)?.name ?? c.hub,
++          String(c.members.length),
++          String(all.length - c.members.length),
++          String(all.filter((m) => m.operationalTruth.verifiedAt).length),
++          String(all.filter((m) => assess(m).indexable).length),
++          md(`/corridors/${c.id}`),
++        ];
++      }),
++    ),
++    '## What a member is, and what it is not',
++    '',
++    'A member of a corridor is a MUNICIPALITY. The districts and communities inside one — Ancaster and',
++    'Dundas inside Hamilton, Kenmore inside Tonawanda, Stoney Creek inside Hamilton — are reported under',
++    'the municipality they belong to and never beside it. A district is somewhere inside a stop, not',
++    'another stop on the drive.',
++    '',
++    '## What the statuses mean',
++    '',
++    '- **Routine.** Worked from the Toronto shop as a matter of course, within the daily-return radius.',
++    '- **Active.** Taking work; coverage established but not yet routine.',
++    '- **In the corridor.** On the route and in the plan, with no confirmed operational position yet.',
++    '- **By confirmation.** Outside the daily-return radius; the job is scheduled as a trip, and that sits',
++    '  in the written price rather than appearing later.',
++    '- **New York State.** Ecowoods takes this work. The shop, the showroom and the telephone number are',
++    '  the single Toronto ones; what crosses the border is the job.',
++    '',
++    '## Coverage is not proof',
++    '',
++    'A confirmed operational position means the owner of this business stated, on a date, what coverage of',
++    'that municipality means. It does not mean a job there has been photographed and published. Both are on',
++    `the record and they are not the same thing: the dates are in ${abs('/api/v1/markets')}, and the`,
++    `published jobs are at ${abs('/where-we-work')} (markdown: ${md('/where-we-work')}).`,
++    '',
++    '## Where a page comes from',
++    '',
++    'A municipality gets a page of its own when it has something specific to say — the housing stock, the',
++    'substrate, the constraint that actually differs there. Until then it lives on its corridor, findable',
++    `and linked. The published areas are at ${abs('/service-areas')} (markdown: ${md('/service-areas')}).`,
++    '',
++  ];
++  out.push(
++    ...provenance(canonical, [
++      `- Structured data: ${abs('/api/v1/corridors')}`,
++      `- Market registry: ${abs('/api/v1/markets')}`,
++    ]),
++  );
++  return out.join('\n');
++};
++
++/** /corridors/{id}.md — one route, every stop, every operational statement. */
++export const corridorToMarkdown = (c: Corridor): string => {
++  const canonical = abs(`/corridors/${c.id}`);
++  const stops = corridorStops(c.id);
++  const all = corridorMarkets(c.id);
++  const hub = marketBySlug(c.hub);
++  const out: string[] = [
++    `# ${c.name}`,
++    '',
++    `> ${c.route}. Out from ${hub?.name ?? c.hub}.`,
++    '',
++    c.summary,
++    '',
++    `${stops.length} municipalities on the route` +
++      (all.length > stops.length ? `, with ${all.length - stops.length} districts and communities inside them` : '') +
++      `. ${all.filter((m) => m.operationalTruth.verifiedAt).length} of the ${all.length} have a confirmed ` +
++      `operational position; ${all.filter((m) => assess(m).indexable).length} have a page of local detail.`,
++    '',
++    '## Along the route, in travel order',
++    '',
++    ...table(
++      ['#', 'Municipality', 'Within it', 'Status', 'What that means here'],
++      stops.map((stop, i) => [
++        String(i + 1),
++        marketCell(stop.municipality.slug, stop.municipality.name),
++        stop.districts.length ? stop.districts.map((d) => marketCell(d.slug, d.name)).join(', ') : '—',
++        stop.municipality.status,
++        statusSentence(stop.municipality.slug),
++      ]),
++    ),
++  ];
++
++  const districts = all.filter((m) => m.kind === 'district');
++  if (districts.length) {
++    out.push(
++      '## The districts and communities on this route',
++      '',
++      'Each is part of the municipality named beside it, not a municipality of its own.',
++      '',
++      ...table(
++        ['District or community', 'Part of', 'Status', 'What that means here'],
++        districts.map((d) => [
++          marketCell(d.slug, d.name),
++          marketBySlug(d.partOf ?? '')?.name ?? (d.partOf ?? '—'),
++          d.status,
++          statusSentence(d.slug),
++        ]),
++      ),
++    );
++  }
++
++  if (all.some((m) => m.country === 'US')) {
++    out.push(
++      '## Working in New York State',
++      '',
++      `Ecowoods serves these municipalities. The shop and showroom are at ${BUSINESS_ADDRESS_LINE}, and that`,
++      'is the only address this company has: there is no second office, no local telephone number and no',
++      'separate crew in New York State. The crews are the same salaried employees who work in Toronto. What',
++      'travels is the work, not a storefront; the published price is fixed after a free in-home measure,',
++      'exactly as it is in Ontario.',
++      '',
++    );
++  }
++
++  out.push(
++    '## Before you call about a market on this route',
++    '',
++    `The published price bands are the same everywhere: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
++    'Distance shows up in the written price after the measure, not as a different rate card.',
++    '',
++    `Every route: ${link('Corridors', '/corridors')} (markdown: ${md('/corridors')}).`,
++    '',
++  );
++  out.push(
++    ...provenance(canonical, [
++      `- Structured data: ${abs('/api/v1/corridors')}`,
++      `- This route as data: ${abs(`/api/v1/markets?corridor=${c.id}`)}`,
++    ]),
++  );
++  return out.join('\n');
++};
++
++export const corridorMarkdown = (id: string): string | null => {
++  const c = corridorById(id);
++  return c ? corridorToMarkdown(c) : null;
++};
++
++/* ── where the work has been done ───────────────────────────────── */
++
++/**
++ * /where-we-work.md — proof, kept apart from coverage.
++ *
++ * The corridor pages say where this business will drive. This one says where it
++ * has demonstrably worked, and a pin may only exist if it points at a published
++ * case study with the measurements in it (content/work-map.ts,
++ * scripts/verify-work-map.mjs). The twin publishes the same five facts the page
++ * does and deliberately not the sixth: no coordinate appears here, because
++ * COORDS_VERIFIED is false and a drawn map at sixty kilometres wide tolerates a
++ * three-hundred-metre error where a machine-readable claim does not.
++ */
++export const whereWeWorkToMarkdown = (): string => {
++  const canonical = abs('/where-we-work');
++  const years = WORK_PLACES.map((w) => w.year);
++  const out: string[] = [
++    '# Where the work has been done',
++    '',
++    identitySentence(),
++    '',
++    `> ${WORK_PLACES.length} published jobs, ${Math.min(...years)}–${Math.max(...years)}, each one linked to`,
++    '> the case study that carries its measurements. Neighbourhood precision only: no customer address is',
++    '> published, and none is held in the data this file is generated from.',
++    '',
++    '## Coverage and proof are two different statements',
++    '',
++    `A service-area page is a claim: ${PUBLISHED_PARTITION.total} of them say this business works in those`,
++    'places. This file is the other kind of statement — here is a job, here is the year, here is the square',
++    'footage, and here is the document with the readings in it. A place can be covered without appearing',
++    `below, and the corridors at ${abs('/corridors')} say which (markdown: ${md('/corridors')}).`,
++    '',
++    '## The published jobs',
++    '',
++    /* The label is the neighbourhood the job was in; the link is the published
++       area page that neighbourhood belongs to, and they are two columns rather
++       than one because "Distillery District" pointing at /service-areas/
++       downtown-toronto reads, collapsed into a single cell, as a claim that the
++       Distillery District is a service area of its own. It is not. */
++    ...table(
++      ['Neighbourhood', 'Area page', 'Year', 'Floor area (sq ft)', 'Service', 'What it was', 'Case study'],
++      WORK_PLACES.map((w) => [
++        w.label,
++        marketCell(w.areaSlug, marketBySlug(w.areaSlug)?.name ?? w.areaSlug),
++        String(w.year),
++        String(w.sqft),
++        link(SERVICES.find((x) => x.slug === w.serviceSlug)?.name ?? w.serviceSlug, `/services/${w.serviceSlug}`),
++        w.summary,
++        abs(`/case-studies/${w.caseStudySlug}`),
++      ]),
++    ),
++    '## Why it is thin, and what makes it thick',
++    '',
++    'A pin may only exist if it points at a published case study with the measurements in it. That is the',
++    'whole design: this list cannot be padded, and it gets denser the way everything else here does — by',
++    'publishing the next job.',
++    '',
++  ];
++  out.push(...provenance(canonical, [`- Published areas: ${abs('/service-areas')}`]));
++  return out.join('\n');
++};
++
+ /* /pricing.md — table first, conditions second, the written price third. */
+ export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string => {
+   const canonical = abs('/pricing');
+@@ -943,6 +1201,15 @@ export const mirrorIndexToMarkdown = (): string => {
+       ['All service areas', '/service-areas'],
+       ...SERVICE_AREAS.map((c): [string, string] => [c.name, `/service-areas/${c.slug}`]),
+     ]),
++    /* The routing spine and the proof map (GEO-002). Both were HTML-only until
++       then: the one page that says how a crew would get to a place, and the one
++       that says where work has demonstrably been done, were the two surfaces an
++       agent had to scrape. */
++    ...group('Corridors — how the work is routed', [
++      ['All corridors', '/corridors'],
++      ...CORRIDORS.map((c): [string, string] => [c.name, `/corridors/${c.id}`]),
++    ]),
++    ...group('Proof of work', [['Where the work has been done', '/where-we-work']]),
+     ...group('Technical papers', getPapers().map((p): [string, string] => [p.title, `/papers/${p.slug}`])),
+     ...group('Decision guides and reference installations', getGuides().map((g): [string, string] => [g.seoTitle ?? g.title, `/guides/${g.slug}`])),
+     ...group('Glossary', getTerms().map((t): [string, string] => [t.term, `/glossary/${t.slug}`])),
+diff --git a/apps/web/lib/registry/handlers.ts b/apps/web/lib/registry/handlers.ts
+index 03f9585..8ed92cf 100644
+--- a/apps/web/lib/registry/handlers.ts
++++ b/apps/web/lib/registry/handlers.ts
+@@ -39,7 +39,7 @@ import {
+ import {
+   MARKETS,
+   CORRIDORS,
+-  marketBySlug,
++  corridorStops,
+   assess as assessMarket,
+   contentQueue,
+   expansionOrder,
+@@ -1003,7 +1003,8 @@ export async function handleCorridors(request: Request) {
+     {
+       meta: meta(reg, CORRIDORS.length),
+       note:
+-        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region.',
++        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region. ' +
++        'A member is a MUNICIPALITY. The districts and communities inside one are nested under it in `districts`, never listed beside it: a district is somewhere inside a stop, not another stop.',
+       corridors: CORRIDORS.map((c) => ({
+         id: c.id,
+         name: c.name,
+@@ -1011,12 +1012,25 @@ export async function handleCorridors(request: Request) {
+         hub: c.hub,
+         summary: c.summary,
+         page: `${SITE_URL}/corridors/${c.id}`,
+-        members: c.members.map((slug) => {
+-          const x = marketBySlug(slug);
+-          return x
+-            ? { slug, name: x.name, country: x.country, status: x.status, verified_at: x.operationalTruth.verifiedAt }
+-            : { slug, name: slug, country: null, status: null, verified_at: null };
+-        }),
++        markdown: `${SITE_URL}/corridors/${c.id}.md`,
++        members: corridorStops(c.id).map(({ municipality: x, districts }) => ({
++          slug: x.slug,
++          name: x.name,
++          country: x.country,
++          status: x.status,
++          verified_at: x.operationalTruth.verifiedAt,
++          /* GEO-002. Until then five of these sat in `members` as peers of the
++             municipality containing them, and this endpoint reported Kenmore
++             as a stop on the Buffalo metro drive beside Tonawanda, which is the
++             town it is part of (GC-016). */
++          districts: districts.map((d) => ({
++            slug: d.slug,
++            name: d.name,
++            country: d.country,
++            status: d.status,
++            verified_at: d.operationalTruth.verifiedAt,
++          })),
++        })),
+       })),
+     },
+     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+diff --git a/apps/web/lib/schema/corridor-schema.ts b/apps/web/lib/schema/corridor-schema.ts
+new file mode 100644
+index 0000000..e77d86a
+--- /dev/null
++++ b/apps/web/lib/schema/corridor-schema.ts
+@@ -0,0 +1,142 @@
++import { SITE_URL } from '@/lib/seo-data';
++import { CORRIDORS, corridorStops, corridorMarkets, assess, type Corridor } from '@/lib/geo';
++import { placeForMarket } from './root-schema';
++
++/**
++ * Structured data for the corridor pages.
++ *
++ * WHY THIS EXISTS (GEO-002)
++ *
++ * `/corridors` and its eleven route pages are the only place on this site that
++ * answers "who covers the Niagara run" with the actual shape of the answer — a
++ * hub, a highway, and the municipalities on it in travel order. They were also
++ * the least machine-readable pages the business owned: one BreadcrumbList each
++ * and nothing else. A crawler could read that a page existed and that it was
++ * called "Niagara Belt", and had to parse a table to learn anything a machine
++ * could act on.
++ *
++ * WHAT IS CLAIMED, AND WHAT IS NOT
++ *
++ * Two lists, deliberately different, because they answer different questions.
++ *
++ *   · `itemListElement` is THE DRIVE. Municipalities only, in the order a crew
++ *     reaches them, positions 1..n. That is what a corridor is, and a district
++ *     is not a stop on it — Stoney Creek is somewhere inside Hamilton, not a
++ *     place the truck arrives at separately (GC-016).
++ *
++ *   · `areaServed` is COVERAGE. Every market on the route, districts included,
++ *     whose operational position the owner has confirmed on a date. A market
++ *     nobody has confirmed is on the page — with the sentence saying so — and
++ *     is not in this list, because `areaServed` is read as a claim.
++ *
++ * Both are derived. Nothing here can name a place the registry does not carry,
++ * put a district beside the city that contains it, or place a New York town in
++ * Ontario: every node comes from `placeForMarket`, which is the same hierarchy
++ * rule the service-area pages and the organisation node use (GEO-001).
++ *
++ * No Offer and no price appears here. The bands are Ontario bands in Canadian
++ * dollars and three of these routes are American; the corridor pages link to
++ * /pricing rather than restating it. scripts/verify-schema-figures.mjs fails
++ * the build on a currency literal anywhere in this directory, which is the
++ * mechanical half of the same rule.
++ */
++
++const ORG = { '@id': `${SITE_URL}/#organization` };
++const WEBSITE = { '@id': `${SITE_URL}/#website` };
++
++/** Markets on the route whose coverage the owner has confirmed, as place nodes. */
++const confirmedPlaces = (id: string) =>
++  corridorMarkets(id)
++    .filter((m) => m.operationalTruth.verifiedAt)
++    .map((m) => placeForMarket(m.slug))
++    .filter((p): p is NonNullable<typeof p> => Boolean(p));
++
++/** One route: the page, the service it offers, and the stops in travel order. */
++export function buildCorridorSchema(corridor: Corridor): Record<string, unknown> {
++  const url = `${SITE_URL}/corridors/${corridor.id}`;
++  const stops = corridorStops(corridor.id);
++
++  return {
++    '@context': 'https://schema.org',
++    '@graph': [
++      {
++        '@type': 'WebPage',
++        '@id': `${url}#page`,
++        url,
++        name: `${corridor.name} — ${corridor.route}`,
++        description: corridor.summary,
++        inLanguage: 'en-CA',
++        isPartOf: WEBSITE,
++        about: ORG,
++        mainEntity: { '@id': `${url}#service` },
++        /* The machine edition of this page, declared where a consumer that
++           reads JSON-LD but not <head> will still find it. */
++        encoding: {
++          '@type': 'MediaObject',
++          encodingFormat: 'text/markdown',
++          contentUrl: `${url}.md`,
++        },
++      },
++      {
++        '@type': 'Service',
++        '@id': `${url}#service`,
++        name: `Hardwood flooring along the ${corridor.name} route`,
++        description: corridor.summary,
++        serviceType: 'Hardwood flooring',
++        url,
++        provider: ORG,
++        areaServed: confirmedPlaces(corridor.id),
++      },
++      {
++        '@type': 'ItemList',
++        '@id': `${url}#stops`,
++        name: `Municipalities on the ${corridor.name} route, in travel order`,
++        itemListOrder: 'https://schema.org/ItemListOrderAscending',
++        numberOfItems: stops.length,
++        itemListElement: stops.map((stop, i) => {
++          const place = placeForMarket(stop.municipality.slug);
++          const worthy = assess(stop.municipality).indexable;
++          return {
++            '@type': 'ListItem',
++            position: i + 1,
++            name: stop.municipality.name,
++            ...(worthy ? { url: `${SITE_URL}/service-areas/${stop.municipality.slug}` } : {}),
++            ...(place ? { item: place } : {}),
++          };
++        }),
++      },
++    ],
++  };
++}
++
++/** The index: every route, as an ordered list a consumer can walk. */
++export function buildCorridorsIndexSchema(): Record<string, unknown> {
++  const url = `${SITE_URL}/corridors`;
++  return {
++    '@context': 'https://schema.org',
++    '@type': 'CollectionPage',
++    '@id': `${url}#page`,
++    url,
++    name: 'Coverage by corridor — the routes this work is organised along',
++    inLanguage: 'en-CA',
++    isPartOf: WEBSITE,
++    about: ORG,
++    encoding: {
++      '@type': 'MediaObject',
++      encodingFormat: 'text/markdown',
++      contentUrl: `${url}.md`,
++    },
++    mainEntity: {
++      '@type': 'ItemList',
++      '@id': `${url}#routes`,
++      numberOfItems: CORRIDORS.length,
++      itemListElement: CORRIDORS.map((c, i) => ({
++        '@type': 'ListItem',
++        position: i + 1,
++        name: c.name,
++        description: c.route,
++        url: `${url}/${c.id}`,
++      })),
++    },
++  };
++}
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 789fbad..b61d8c5 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -183,6 +183,39 @@ export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
+   return cityNode(city.name, city.slug);
+ }
+ 
++/**
++ * THE SAME NODE, FOR A MARKET THAT MAY HAVE NO PAGE (GEO-002).
++ *
++ * `placeForArea` takes a published `City` — it is what the service-area and
++ * commercial pages have. The corridor pages are about the ROUTE, and a route
++ * names markets whether or not each has earned a page yet, so they need the
++ * identical hierarchy rule keyed by market slug instead.
++ *
++ * It is the same rule, not a second one: a district is a Place inside the City
++ * it is `partOf`, and that City names its province or state and country; a
++ * municipality is a City that names its province or state and country. Both
++ * branches call the same `cityNode`, so a corridor can no more put Kenmore
++ * beside Buffalo, or Buffalo in Ontario, than an area page can.
++ *
++ * Returns null for a slug that is not a market, so a caller cannot invent a
++ * place by misspelling one.
++ */
++export function placeForMarket(slug: string): AreaServedCity | AreaServedPlace | null {
++  const market = marketBySlug(slug);
++  if (!market) return null;
++  if (market.kind === 'district' && market.partOf) {
++    const parent = marketBySlug(market.partOf);
++    if (parent) {
++      return {
++        '@type': 'Place',
++        name: market.name,
++        containedInPlace: cityNode(parent.name, parent.slug),
++      };
++    }
++  }
++  return cityNode(market.name, market.slug);
++}
++
+ /**
+  * KEYED IDENTIFIERS, FROM THE CONSTANTS.
+  *
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 5ad7305..8caf9a1 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -26,6 +26,12 @@ const MARKDOWN_TWINS = [
+   ['/services/:slug([a-z0-9-]+)', '/services/:slug.md'],
+   ['/service-areas', '/service-areas.md'],
+   ['/service-areas/:slug([a-z0-9-]+)', '/service-areas/:slug.md'],
++  /* The routing spine and the proof map (GEO-002). The corridor pages are the
++     only surface that answers "how would you get here" rather than "do you
++     have a page for my town", and they had no machine edition at all. */
++  ['/corridors', '/corridors.md'],
++  ['/corridors/:id([a-z0-9-]+)', '/corridors/:id.md'],
++  ['/where-we-work', '/where-we-work.md'],
+   ['/pricing', '/pricing.md'],
+   ['/reviews', '/reviews.md'],
+   ['/estimate', '/estimate.md'],
+@@ -201,6 +207,7 @@ const nextConfig = {
+       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
+       { source: '/services/:slug.md', destination: '/md/services/:slug' },
+       { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
++      { source: '/corridors/:id.md', destination: '/md/corridors/:id' },
+       /* The entity's own machine edition. Every content collection has had one
+          since F-153; the company itself did not until F-187. */
+       { source: '/about.md', destination: '/md/about' },
+@@ -212,6 +219,8 @@ const nextConfig = {
+       { source: '/index.md', destination: '/md/home' },
+       { source: '/services.md', destination: '/md/services' },
+       { source: '/service-areas.md', destination: '/md/service-areas' },
++      { source: '/corridors.md', destination: '/md/corridors' },
++      { source: '/where-we-work.md', destination: '/md/where-we-work' },
+       { source: '/pricing.md', destination: '/md/pricing' },
+       { source: '/reviews.md', destination: '/md/reviews' },
+       { source: '/estimate.md', destination: '/md/estimate' },
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 944f196..70051e2 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -82,6 +82,43 @@ content instead of more than five (eleven were written).
+ 
+ ---
+ 
++## Status after GEO-002 — the corridors
++
++GEO-002 closed the two corridor entries and added no guard.
++
++| ID | Status | How |
++|---|---|---|
++| GC-016 | fixed | the five districts are out of `Corridor.members`; `corridorStops()` derives them from `partOf` and every corridor surface — page, API, twin, JSON-LD — nests them under the municipality that contains them |
++| GC-022 | closed | `/corridors.md`, `/corridors/{id}.md` and `/where-we-work.md` are served, advertised in `<head>` (`alternates.types`), in the `Link:` header, in `/md`, in `/llms.txt` and in the page's own JSON-LD (`encoding`) |
++
++Measured in the repository after the change:
++
++| Set | Before | After |
++|---|---|---|
++| districts listed as corridor members | 5 | 0 |
++| districts named by a corridor surface | 5 | 42 (every district in the registry, through its municipality) |
++| markets named by a corridor surface | 64 (59 municipalities + 5 districts) | 101 (every market) |
++| service-area links on `/corridors/core-gta` | 7 | 40 |
++| corridor pages with JSON-LD beyond a breadcrumb | 0 | 11 (`WebPage` + `Service` + `ItemList`) |
++| Markdown twins | 100 areas + 15 other surfaces | + `/corridors`, 11 route twins, `/where-we-work` |
++| `Service.areaServed` nodes with no province/state or country | — | 0 (every node from `placeForMarket`) |
++| guards / tests | 66 / 336 | 66 / 336 |
++
++`itemListElement` and `areaServed` were kept deliberately different: the first
++is the drive (municipalities, in travel order), the second is coverage (every
++market on the route, districts included, whose operational position the owner
++has confirmed on a date). A market nobody has confirmed appears on the page,
++with the sentence saying so, and in neither list.
++
++One existing check was edited, and the edit widens: `scripts/verify-destinations.mjs`
++now asks `next.config.js` for its `rewrites()` and counts a literal `.md` source
++as a route when its destination is one. It could not see any of the sixteen
++markdown twins — a link to `/service-areas.md` read as "no route, no public
++file, no manifest entry" — and nothing had noticed because until GEO-002 no page
++linked to a twin in prose. A rewrite pointing at nothing still fails.
++
++---
++
+ ## Summary
+ 
+ | ID | Sev | Class | One line | Entities | Resolution |
+diff --git a/docs/GEO_SOURCE_MAP.md b/docs/GEO_SOURCE_MAP.md
+index ddded49..802bb60 100644
+--- a/docs/GEO_SOURCE_MAP.md
++++ b/docs/GEO_SOURCE_MAP.md
+@@ -35,6 +35,29 @@ Toronto rule: the City of Toronto is a `region` node. It is in the markets
+ `in_area_served: true`; it has no `/service-areas/toronto` page, and the graph's
+ `serves` edges go to its 23 published districts and neighbourhoods.
+ 
++## 0b. Status after GEO-002 — the corridors
++
++GEO-002 took the protocol's GEO-013 (corridor normalisation) together with the
++GEO-009 twin decision for the corridor surfaces, and added JSON-LD to them.
++
++| Fact | Owner | Selector / projection |
++|---|---|---|
++| which municipalities a corridor runs through, and in what order | `content/geo/corridors.ts` `Corridor.members` — **municipalities only** | `/corridors`, `/corridors/{id}`, `/api/v1/corridors`, the territory map, `TERRITORY` |
++| which district belongs to which municipality | `content/geo/markets.ts` `partOf` (unchanged) | `lib/geo` `corridorStops()` / `corridorMarkets()` — the one derivation every corridor surface reads |
++| where a corridor's markets are, in JSON-LD | derived — `root-schema.ts` `placeForMarket` (new, same rule as `placeForArea`) | `lib/schema/corridor-schema.ts` → `Service.areaServed`, `ItemList.itemListElement` |
++
++The rule this restores is the registry's own, written on `Market.corridors`: a
++corridor is a drive between municipalities, and a district inherits membership
++through `partOf`. Every district declared `corridors: []` and the guard enforced
++that from the market side, while five districts sat in the corridor's own member
++list where nothing looked (GC-016).
++
++New public surfaces: `/corridors.md`, `/corridors/{id}.md` (11),
++`/where-we-work.md`. Each is declared in `alternates.types`, in the `Link:`
++header from `MARKDOWN_TWINS`, in `/md`, in `/llms.txt`, and — new — in the
++page's own JSON-LD as `encoding` (`MediaObject`, `text/markdown`), so a consumer
++that reads structured data but not `<head>` still finds the machine edition.
++
+ Sections 1–10 below describe the GEO-000 baseline and are kept as the record.
+ 
+ ---
+@@ -297,8 +320,21 @@ inspection: fact normalisation (002) must land **with output snapshots** so it
+ provably changes nothing public, and the Whitby/Oshawa resolution is a
+ consequence of the category rule (006), not a separate content decision.
+ 
++**Shipped so far**, and what each one actually took, because the patch numbers
++below are the protocol's plan and the ones that shipped are wider than it:
++
++```text
++GEO-000  archaeology: this map, the contradiction log, the measurement, geo-measure.mjs
++GEO-001  one geography: 11 municipalities published; took GEO-001…GEO-013's intent for
++         the fact/projection split, the counts, the API, the JSON-LD and the twins
++UI-NAV-01 the mega-menu you can reach, and one mobile drawer (not a GEO patch)
++GEO-002  corridors: districts out of the member lists (GEO-013), corridor JSON-LD, and
++         the twins for /corridors, /corridors/{id} and /where-we-work (GEO-009 decision)
++```
++
++**The protocol's plan, for the record:**
++
+ ```text
+-GEO-000  archaeology: this map, contradiction log, measurement, geo-measure.mjs     ← this patch
+ GEO-001  contract: GeoCategory + category() + selectors in lib/geo; snapshot tests pin every
+          current output (C, D, B, locations, graph, llms, org JSON-LD). No output changes.
+ GEO-002  fact normalisation: F3 lists → Market.published/kind; F5 assessment list, aliases and
+@@ -318,6 +354,7 @@ GEO-010  Buffalo / New York: whatever of GC-004 is left after 005–009, closed
+ GEO-011  Toronto (D2) and the twelve OPERATIONAL_CORRIDOR municipalities (D1).
+ GEO-012  Waterloo / Brantford / Kitchener entity normalisation (discovery records, no pages).
+ GEO-013  corridor normalisation (districts out of member lists; Brantford/Waterloo decision D4).
++         ← districts done in GEO-002; the Brantford/Waterloo decision (D4) is still open.
+ GEO-014+ controlled publication, one municipality per patch, only with owner content (D1).
+ GEO-022  production gate: geo-measure --strict in scripts/verify-live.sh.
+ GEO-023  regression suite completion.
+diff --git a/scripts/geo-measure.mjs b/scripts/geo-measure.mjs
+index 3e5407e..e06cd21 100644
+--- a/scripts/geo-measure.mjs
++++ b/scripts/geo-measure.mjs
+@@ -215,7 +215,12 @@ async function main() {
+     ai_txt_service_areas: areaSlugsIn(fetched.ai.body),
+     html_index_links: areaSlugsIn(fetched.index_html.body),
+     md_index_links: areaSlugsIn(fetched.index_md.body),
+-    corridor_members: [...new Set((corridorsApi.corridors ?? []).flatMap((c) => (c.members ?? []).map((m) => m.slug)))].sort(),
++    /* GEO-002: a corridor's `members` are municipalities, and the districts
++       inside each are nested under it. Both levels are read here, because what
++       this set answers is "which places does the corridor surface name". */
++    corridor_members: [...new Set((corridorsApi.corridors ?? []).flatMap((c) =>
++      (c.members ?? []).flatMap((m) => [m.slug, ...((m.districts ?? []).map((d) => d.slug))]),
++    ))].sort(),
+   };
+ 
+   /* The invariant pivot: what the sitemap tells a crawler is a service-area page. */
+diff --git a/scripts/verify-destinations.mjs b/scripts/verify-destinations.mjs
+index 6be7c89..b1f5a7d 100644
+--- a/scripts/verify-destinations.mjs
++++ b/scripts/verify-destinations.mjs
+@@ -148,6 +148,33 @@ for (const [file, route] of [
+   if (fs.existsSync(path.join(APP, file))) staticRoutes.add(route);
+ }
+ 
++/**
++ * THE MARKDOWN TWINS ARE REAL URLS (GEO-002).
++ *
++ * `/service-areas.md` and its fifteen siblings are served by handlers under
++ * app/md/, reached through a rewrite in next.config.js. The walk above sees
++ * `/md/service-areas` and never `/service-areas.md`, so every link to a twin
++ * read as "no route, no public file, no manifest entry" — and until a page
++ * linked to one, nothing noticed. This widens the route table rather than
++ * excusing the link: the config is asked (not regexed, for the reason §5 gives
++ * below), and a literal `.md` source counts as a route only when its
++ * destination is one. A rewrite pointing at nothing still fails.
++ */
++{
++  const require_ = createRequire(path.join(WEB, 'next.config.js'));
++  const cfg = require_(path.join(WEB, 'next.config.js'));
++  const list = typeof cfg.rewrites === 'function' ? await cfg.rewrites() : [];
++  if (!list.length) {
++    console.error('verify-destinations: next.config.js returned no rewrites — the markdown twins are invisible. Fix the reader.');
++    process.exit(2);
++  }
++  for (const r of list) {
++    if (typeof r.source !== 'string' || typeof r.destination !== 'string') continue;
++    if (r.source.includes(':') || r.source.includes('(')) continue;   // dynamic: handled by the manifests
++    if (staticRoutes.has(r.destination)) staticRoutes.add(r.source);
++  }
++}
++
+ /* ── 2. public/ ──────────────────────────────────────────────────────────── */
+ const publicFiles = new Set();
+ const PUBLIC_DIRS = [path.join(WEB, 'public'), path.join(ROOT, 'public')];
+diff --git a/scripts/verify-live.sh b/scripts/verify-live.sh
+index 1e0222a..33a7f15 100755
+--- a/scripts/verify-live.sh
++++ b/scripts/verify-live.sh
+@@ -324,6 +324,12 @@ md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toront
+ md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
+ md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
+ md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
++# GEO-002 shipped three more twins, and a twin nobody probes is a twin that can
++# 404 quietly for a week. These three probe the surfaces that patch added: the
++# corridor hub, one route, and the proof map. Same shape as the five above.
++md_check "/corridors.md"           "$BASE/corridors.md"                      "## Provenance"
++md_check "/corridors/{id}.md"      "$BASE/corridors/niagara-belt.md"         "## Provenance"
++md_check "/where-we-work.md"       "$BASE/where-we-work.md"                  "## Provenance"
+ # The want string here is checked against the generator, offline, by
+ # scripts/verify-live-contract.mjs. It said "complete technical corpus" for
+ # as long as the generator has said "complete published corpus", so this line
+-- 
+2.43.0
+
