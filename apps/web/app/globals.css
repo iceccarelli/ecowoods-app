@@ -809,7 +809,7 @@ p {
   min-width: 0;
 }
 
-.topbar-nav a {
+.topbar-nav > a {
   /* Padding and type scale with the viewport instead of forcing an overflow. */
   padding: 0.5rem clamp(0.3rem, 0.8vw, 0.625rem);
   font-size: clamp(0.78rem, 0.45vw + 0.55rem, 0.875rem);
@@ -821,12 +821,12 @@ p {
   transition: all 200ms var(--ease-out-quart);
 }
 
-.topbar-nav a:hover {
+.topbar-nav > a:hover {
   color: var(--ink);
   background: var(--hover-tint);
 }
 
-.topbar-nav a.active {
+.topbar-nav > a.active {
   color: var(--copper-deep);
 }
 
@@ -4577,12 +4577,12 @@ p {
   padding-top: 0.7rem;
   padding-bottom: 0.7rem;
 }
-.topbar-nav a {
+.topbar-nav > a {
   font-size: var(--fs-sm);
   letter-spacing: 0.005em;
   border-radius: var(--radius-md, 8px);
 }
-.topbar-nav a.active {
+.topbar-nav > a.active {
   background: rgba(176, 109, 58, 0.08);
 }
 .brand-mark {
@@ -11178,3 +11178,99 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 .mm-close:hover { color: var(--ink); border-color: var(--ink); }
 .mm-close:focus-visible { outline: 3px solid var(--copper-bright, var(--copper)); outline-offset: 2px; }
 .mm-panel-inner { position: relative; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UI-NAV-01 — the mega-menu a hand can follow, and a drawer that matches it
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* The two triggers look and behave like the four links beside them: same
+   type size, same pill hover. They were a different size with an underline,
+   so the bar read as two kinds of thing. */
+.mm-trigger {
+  padding: 0.5rem clamp(0.3rem, 0.8vw, 0.625rem);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: var(--ink-soft);
+  border-bottom: 0;
+  border-radius: var(--radius-md, 8px);
+  white-space: nowrap;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+.mm-trigger:hover { color: var(--ink); background: var(--hover-tint); }
+.mm-trigger.is-open { color: var(--copper-text); background: var(--hover-tint); }
+
+/* THE BRIDGE. The panel hangs from the bottom of the bar and the trigger sits
+   in its middle; this invisible strip fills the band between them, so the
+   pointer is inside the menu on the way down. A sibling of the panel rather
+   than a ::before on it, because the panel scrolls (overflow-y: auto) and would
+   clip a pseudo-element hanging above its own top edge. Rendered only while
+   the panel is open, and positioned against .topbar-inner like the panel. */
+.mm-bridge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 0.85rem);
+  height: 0.8rem;
+  z-index: 119;
+}
+
+/* Explicit columns. `auto-fit, minmax(210px, 1fr)` put five groups on the first
+   row and the sixth alone on a second row, with a screen of empty panel beside
+   it; the Services layout now stacks groups into four columns. */
+.mm-cols[data-cols='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mm-cols[data-cols='4'] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mm-cols[data-cols='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mm-stack { display: grid; align-content: start; gap: 1.6rem; min-width: 0; }
+.mm-col { min-width: 0; }
+.mm-col a { white-space: normal; overflow-wrap: anywhere; }
+/* A column heading that is a link was picked up by `.mm-col a` — block, padded,
+   ink-coloured, haloed on hover — so "By the job" sat lower and darker than
+   "Start here", which is not a link. A heading is a heading either way. */
+.mm-col .mm-col-title a {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  color: inherit;
+  background: none;
+  box-shadow: none;
+}
+.mm-col .mm-col-title a:hover,
+.mm-col .mm-col-title a:focus-visible {
+  color: var(--copper-text);
+  background: none;
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+/* The mobile drawer: Services, Library and Service areas are rows of the same
+   list as Refinishing and Installation, in the same serif, numbered in the same
+   sequence. They were a smaller sans with no number, between 04 and 05, and the
+   list read as two lists. */
+.mobile-sheet .mnav-group { border-top: 0; border-bottom: 1px solid var(--line); }
+.mobile-sheet .mnav-group-trigger {
+  min-height: 0;
+  padding: 1.1rem 0;
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.mnav-group-right { display: inline-flex; align-items: center; gap: 0.9rem; }
+.mnav-group-right .num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--muted-soft);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+.mobile-sheet .mnav-group-body { padding: 0 0 1.25rem; }
+.mobile-sheet .mnav-group-body li a {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0;
+  border-bottom: 0;
+  justify-content: flex-start;
+}

@@ -109,6 +109,10 @@ const SERVICES_MENU: MegaColumn[] = [
       { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
       { label: 'Mississauga', href: '/service-areas/mississauga' },
       { label: 'Hamilton', href: '/service-areas/hamilton' },
+      /* The corridor page, not one town: it lists every Niagara municipality
+         with a page, from Grimsby to Fort Erie, in the order a crew reaches them. */
+      { label: 'Niagara', href: '/corridors/niagara-belt', note: 'Grimsby to Fort Erie, on the QEW' },
+      { label: 'Kitchener', href: '/service-areas/kitchener', note: 'On the 403 and Highway 6, with Cambridge and Guelph' },
       { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
     ],
   },
@@ -118,8 +122,6 @@ const SERVICES_MENU: MegaColumn[] = [
     items: [
       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
       { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
-      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, and what coverage means` },
-      { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
@@ -127,6 +129,15 @@ const SERVICES_MENU: MegaColumn[] = [
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
     ],
   },
+];
+
+/* Where each group sits in the desktop panel: four columns, groups stacked.
+   The mobile drawer lists SERVICES_MENU in its own order. */
+const SERVICES_LAYOUT: string[][] = [
+  ['Start here', 'By who you are'],
+  ['By the job', 'By the problem'],
+  ['Where we work'],
+  ['Before you decide'],
 ];
 
 const LIBRARY_MENU: MegaColumn[] = [
@@ -205,6 +216,15 @@ const ADMIN_NAV = [
   { href: '/admin/settings', label: 'Settings' },
 ];
 
+/* The drawer's accordions, in drawer order. */
+const MOBILE_GROUPS = [
+  { key: 'services', label: 'Services', cols: SERVICES_MENU },
+  { key: 'library', label: 'Library', cols: LIBRARY_MENU },
+];
+
+/** Row numbers for the drawer: 01, 02 … 10 — never "010". */
+const rowNum = (i: number) => String(i + 1).padStart(2, '0');
+
 const PHONE_DISPLAY = BUSINESS_NAP.phoneDisplay;
 const PHONE_HREF = BUSINESS_NAP.phoneHref;
 
@@ -243,9 +263,13 @@ export default function Header() {
     };
   }, [mobileOpen]);
 
-  // Reset portal sub-menu when mobile sheet closes
+  // Reset the portal sub-menu and the accordions when the mobile sheet closes,
+  // so the drawer opens the same way every time.
   useEffect(() => {
-    if (!mobileOpen) setPortalExpanded(false);
+    if (!mobileOpen) {
+      setPortalExpanded(false);
+      setOpenGroup(null);
+    }
   }, [mobileOpen]);
 
   // Track active section on scroll
@@ -296,7 +320,7 @@ export default function Header() {
   const isLoggedIn = status === 'authenticated';
   const portalLabel = isAdmin ? 'Admin' : 'My Page';
   const portalNav = isAdmin ? ADMIN_NAV : MYPAGE_NAV;
-  const portalIndex = navigation.length + 2;
+  const portalIndex = rowNum(navigation.length + MOBILE_GROUPS.length + 2);
 
   return (
     <>
@@ -334,7 +358,7 @@ export default function Header() {
 
           {/* Primary Nav */}
           <nav className="topbar-nav" aria-label="Primary">
-            <MegaMenu label="Services" id="services" columns={SERVICES_MENU} footer={{ label: 'All six services', href: '/services' }} />
+            <MegaMenu label="Services" id="services" columns={SERVICES_MENU} layout={SERVICES_LAYOUT} footer={{ label: 'All six services', href: '/services' }} />
             <MegaMenu label="Library" id="library" columns={LIBRARY_MENU} footer={{ label: 'Everything published here', href: '/resources' }} />
             {navigation.map((item) => {
               // Check if this is an anchor link or a page link
@@ -500,6 +524,9 @@ export default function Header() {
         inert={!mobileOpen}
       >
         <nav aria-label="Mobile navigation">
+          {/* One list, one numbering. Services, Library and Service areas were
+              a second, smaller list wedged between 04 and 05 with no numbers,
+              so the drawer read as two menus stapled together (UI-NAV-01). */}
           {navigation.map((item, idx) => {
             const href = item.href.startsWith('#') ? `${baseUrl}${item.href}` : item.href;
             return (
@@ -509,32 +536,33 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 {item.label}
-                <span className="num">0{idx + 1}</span>
+                <span className="num">{rowNum(idx)}</span>
               </a>
             );
           })}
-          {[
-            { key: 'services', label: 'Services', cols: SERVICES_MENU },
-            { key: 'library', label: 'Library', cols: LIBRARY_MENU },
-          ].map((group) => (
+          {MOBILE_GROUPS.map((group, gi) => (
             <div className="mnav-group" key={group.key}>
               <button
                 type="button"
                 className="mnav-group-trigger"
                 aria-expanded={openGroup === group.key}
+                aria-controls={`mnav-${group.key}`}
                 onClick={() => setOpenGroup((v) => (v === group.key ? null : group.key))}
               >
                 <span>{group.label}</span>
-                <span className="mnav-group-sign" aria-hidden="true">{openGroup === group.key ? '\u2212' : '+'}</span>
+                <span className="mnav-group-right">
+                  <span className="mnav-group-sign" aria-hidden="true">{openGroup === group.key ? '\u2212' : '+'}</span>
+                  <span className="num">{rowNum(navigation.length + gi)}</span>
+                </span>
               </button>
               {openGroup === group.key && (
-                <div className="mnav-group-body">
+                <div className="mnav-group-body" id={`mnav-${group.key}`}>
                   {group.cols.map((col) => (
                     <div key={col.title}>
                       <p className="mnav-group-title">{col.title}</p>
                       <ul>
                         {col.items.map((it) => (
-                          <li key={it.href}>
+                          <li key={`${it.href}|${it.label}`}>
                             <Link href={it.href} onClick={() => setMobileOpen(false)}>{it.label}</Link>
                           </li>
                         ))}
@@ -546,16 +574,21 @@ export default function Header() {
             </div>
           ))}
 
+          <a href="/service-areas" onClick={() => setMobileOpen(false)}>
+            Service areas
+            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length)}</span>
+          </a>
+
           <a href={`${baseUrl}#estimate`} onClick={() => setMobileOpen(false)}>
             Get a written price
-            <span className="num">0{navigation.length + 1}</span>
+            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length + 1)}</span>
           </a>
 
           {/* Portal section — Login or My Page / Admin */}
           {!isLoggedIn && status !== 'loading' ? (
             <a href="/login" onClick={() => setMobileOpen(false)}>
               Login
-              <span className="num">0{portalIndex}</span>
+              <span className="num">{portalIndex}</span>
             </a>
           ) : isLoggedIn ? (
             <div className="mobile-portal-section">
@@ -574,7 +607,7 @@ export default function Header() {
                       <path d="M6 9l6 6 6-6" />
                     </svg>
                   </span>
-                  <span className="num" style={{ position: 'static' }}>0{portalIndex}</span>
+                  <span className="num" style={{ position: 'static' }}>{portalIndex}</span>
                 </span>
               </button>
               {portalExpanded && (
