@@ -1,0 +1,1936 @@
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index 9b06b38..ad12578 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -1,4 +1,5 @@
+-import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, areaDisplayName } from '@/lib/seo-data';
++import { TERRITORY } from '@/lib/geo/territory';
+ import {
+   BUSINESS_NAP,
+   BUSINESS_ADDRESS_LINE,
+@@ -64,7 +65,7 @@ export async function GET() {
+     `- Email: ${BUSINESS_NAP.email}`,
+     `- Founded: ${BUSINESS_NAP.foundedYear}`,
+     `- Hours: ${HOURS_LINE} (America/Toronto)`,
+-    `- Service area: ${BUSINESS.region}`,
++    `- Service area: ${TERRITORY}`,
+     `- Organisation @id: ${SITE_URL}/#organization`,
+     '',
+     '## Published figures',
+@@ -101,7 +102,7 @@ export async function GET() {
+        while the site published a page for every area — the missing
+        being the Toronto neighbourhoods, which are the local queries with the
+        most hire intent behind them. Same defect, same fix, as llms.txt. */
+-    ...SERVICE_AREAS.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
++    ...SERVICE_AREAS.map((c) => `- ${areaDisplayName(c)}: ${SITE_URL}/service-areas/${c.slug}`),
+     '',
+   );
+ 
+diff --git a/apps/web/app/api/framework-scoring/route.ts b/apps/web/app/api/framework-scoring/route.ts
+index dc0b661..c4a0fce 100644
+--- a/apps/web/app/api/framework-scoring/route.ts
++++ b/apps/web/app/api/framework-scoring/route.ts
+@@ -3,7 +3,7 @@ import { frameworkScoringSchema } from '@ecowoods/shared/schemas';
+ import { FRAMEWORK_VERSION, criterionCount, allCriteria, score, type Answer } from '@/lib/framework';
+ import { recordFrameworkScoring } from '@/lib/floor-graph';
+ import { grantConsent } from '@/lib/floor-graph/consent';
+-import { CITIES } from '@/lib/seo-data';
++import { SERVICE_AREAS } from '@/lib/seo-data';
+ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+ 
+ /**
+@@ -49,7 +49,7 @@ const DECODE: Record<string, Answer> = { y: 'yes', u: 'unsure', n: 'no' };
+ function normaliseRegion(input: string | undefined): string | null {
+   if (!input) return null;
+   const wanted = input.trim().toLowerCase();
+-  const hit = CITIES.find((c) => c.name.toLowerCase() === wanted);
++  const hit = SERVICE_AREAS.find((c) => c.name.toLowerCase() === wanted);
+   return hit ? hit.name : null;
+ }
+ 
+diff --git a/apps/web/app/components/ContentLibraryPromo.tsx b/apps/web/app/components/ContentLibraryPromo.tsx
+index 93cc449..1150b9d 100644
+--- a/apps/web/app/components/ContentLibraryPromo.tsx
++++ b/apps/web/app/components/ContentLibraryPromo.tsx
+@@ -26,7 +26,7 @@ import { getPapers } from '@/lib/papers';
+ import { getGuides } from '@/lib/guides';
+ import { getTerms } from '@/lib/glossary';
+ import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
+-import { CITIES } from '@/lib/seo-data';
++import { PRIMARY_AREAS } from '@/lib/seo-data';
+ 
+ export function ContentLibraryPromo() {
+   const papers = getPapers();
+@@ -156,7 +156,7 @@ export function ContentLibraryPromo() {
+           <div className="clp-secondary-col">
+             <h3>Where we work</h3>
+             <ul className="clp-areas">
+-              {CITIES.map((c) => (
++              {PRIMARY_AREAS.map((c) => (
+                 <li key={c.slug}>
+                   <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+                 </li>
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 633c6ea..67d306b 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -20,7 +20,7 @@
+  */
+ 
+ import { EW_MARK } from '@/lib/brand';
+-import { CITIES, SERVICES } from '@/lib/seo-data';
++import { PRIMARY_AREAS, SERVICES } from '@/lib/seo-data';
+ import { BUSINESS_NAP, PROFILE_LINKS, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+ import type { ReactNode } from 'react';
+ import CookiePreferencesButton from './CookiePreferencesButton';
+@@ -267,7 +267,7 @@ export default function SiteFooter() {
+               See audit/FINDINGS.md F-73. */}
+           <FooterCol title="Service Areas" mobile={m}>
+             <div className="footer-links">
+-              {CITIES.slice(0, 8).map((c) => (
++              {PRIMARY_AREAS.slice(0, 8).map((c) => (
+                 <a key={c.slug} href={`/service-areas/${c.slug}`}>{c.name}</a>
+               ))}
+               <a href="/service-areas">All service areas →</a>
+diff --git a/apps/web/app/corridors/page.tsx b/apps/web/app/corridors/page.tsx
+index 037f11b..a4cbc63 100644
+--- a/apps/web/app/corridors/page.tsx
++++ b/apps/web/app/corridors/page.tsx
+@@ -29,6 +29,8 @@ export default function CorridorsPage() {
+     operational: MARKETS.filter((x) => x.operationalTruth.verifiedAt).length,
+     withPages: MARKETS.filter((x) => assess(x).indexable).length,
+     total: MARKETS.length,
++    ca: MARKETS.filter((x) => x.country === 'CA').length,
++    us: MARKETS.filter((x) => x.country === 'US').length,
+   };
+ 
+   return (
+@@ -53,7 +55,8 @@ export default function CorridorsPage() {
+             municipalities strung along it, and what coverage actually means in each.
+           </p>
+           <p className="tlx-note">
+-            {counts.total} Ontario municipalities and districts are in the model. {counts.operational} have a
++            {`${counts.total} municipalities and districts are in the model — ${counts.ca} in Ontario, ${counts.us} in New York State.`}{' '}
++            {counts.operational} have a
+             confirmed operational position. {counts.withPages} have earned a page of their own. Those three
+             numbers are deliberately different, and the difference is explained below.
+           </p>
+diff --git a/apps/web/app/framework/assess/AssessClient.tsx b/apps/web/app/framework/assess/AssessClient.tsx
+index 28a079e..46cadb8 100644
+--- a/apps/web/app/framework/assess/AssessClient.tsx
++++ b/apps/web/app/framework/assess/AssessClient.tsx
+@@ -12,7 +12,7 @@ import {
+   type Answer,
+ } from '@/lib/framework';
+ import { track } from '@/lib/analytics';
+-import { CITIES } from '@/lib/seo-data';
++import { PRIMARY_AREAS } from '@/lib/seo-data';
+ import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
+ import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
+ 
+@@ -361,7 +361,7 @@ export default function AssessClient() {
+                 disabled={contribState === 'done'}
+               >
+                 <option value="">Rather not say</option>
+-                {CITIES.map((c) => (
++                {PRIMARY_AREAS.map((c) => (
+                   <option key={c.slug} value={c.name}>
+                     {c.name}
+                   </option>
+diff --git a/apps/web/app/hardwood-floor-problems-toronto/page.tsx b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+index 9adc19d..b001258 100644
+--- a/apps/web/app/hardwood-floor-problems-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+@@ -14,6 +14,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+ import { IllustrationPair } from '../components/Illustration';
+ import { NextStep } from '@/app/components/NextStep';
++import { TERRITORY } from '@/lib/geo/territory';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -265,7 +266,7 @@ const FAQS = [
+   {
+     question: 'Who fixes hardwood floor problems in Toronto?',
+     answer:
+-      `${BUSINESS_NAP.legalName}, across ${SERVICE_AREAS.length} areas of Toronto and the GTA, ` +
++      `${BUSINESS_NAP.legalName}, across ${SERVICE_AREAS.length} areas of ${TERRITORY}, ` +
+       'with salaried crews rather than subcontractors. The diagnosis is a free in-home visit ' +
+       'with moisture readings taken and written down before any price is given — because a ' +
+       'price quoted before anyone has measured the subfloor is a guess that gets corrected ' +
+diff --git a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+index db8d7d5..befb4b6 100644
+--- a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+@@ -14,6 +14,7 @@ import { Illustration, IllustrationPair } from '../components/Illustration';
+ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { ProcessVideo } from '../components/ProcessVideo';
+ import { CatalogueRail } from '../components/CatalogueRail';
++import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -302,8 +303,7 @@ export default function RefinishingTorontoPage() {
+             ))}
+           </dl>
+           <p className="tlx-note">
+-            {BUSINESS_NAP.legalName} works across {SERVICE_AREAS.length} areas in Toronto and the
+-            GTA. See <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for
++            {BUSINESS_NAP.legalName} works across {SERVICE_AREAS.length} areas in {TERRITORY}. See <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for
+             new installation, or <Link href="/service-areas">the coverage list</Link>.
+           </p>
+         </div>
+@@ -326,7 +326,7 @@ export default function RefinishingTorontoPage() {
+         <div className="shell">
+           <p className="tlx-kicker">Coverage</p>
+           <h2 className="tlx-h2">
+-            Hardwood floor refinishing across {SERVICE_AREAS.length} Toronto and GTA areas
++            Hardwood floor refinishing across {SERVICE_AREAS.length} areas in {TERRITORY_SHORT}
+           </h2>
+           <p className="tlx-note">
+             Each area has its own page describing the housing stock there and what it means for a
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index aa30c6b..7358e74 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -8,7 +8,7 @@ import {
+   PRIMARY_REVIEW_EVIDENCE,
+   yearsInBusiness,
+ } from '@ecowoods/shared/constants';
+-import { SITE_URL, SERVICES, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
++import { SITE_URL, SERVICES, PRIMARY_AREAS, SERVICE_AREAS } from '@/lib/seo-data';
+ import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
+ import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
+ import { getPapers } from '@/lib/papers';
+@@ -18,6 +18,7 @@ import { SchemaScript } from '@/lib/schema/components';
+ import { Illustration } from '../components/Illustration';
+ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { CatalogueRail } from '../components/CatalogueRail';
++import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -28,7 +29,7 @@ export const metadata: Metadata = {
+   alternates: { canonical: '/hardwood-flooring-toronto', types: { 'text/markdown': '/hardwood-flooring-toronto.md' } },
+   openGraph: {
+     title: 'Hardwood Flooring Toronto — Ecowoods',
+-    description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across Toronto and the GTA.`,
++    description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across ${TERRITORY_SHORT}.`,
+     type: 'website',
+     url: `${SITE_URL}/hardwood-flooring-toronto`,
+   },
+@@ -97,8 +98,8 @@ const FAQS = [
+   {
+     question: 'What areas does Ecowoods cover?',
+     answer:
+-      `${SERVICE_AREAS.length} municipalities and neighbourhoods across Toronto and the GTA, ` +
+-      `including ${CITIES.slice(0, 6).map((c) => c.name).join(', ')} and more. Each has its own ` +
++      `${SERVICE_AREAS.length} municipalities and neighbourhoods across ${TERRITORY}, ` +
++      `including ${PRIMARY_AREAS.slice(0, 6).map((c) => c.name).join(', ')} and more. Each has its own ` +
+       `page describing the housing stock there and what it means for a floor.`,
+   },
+   {
+@@ -370,7 +371,7 @@ export default function HardwoodFlooringTorontoPage() {
+       <section className="tlx-section" aria-label="Where we work">
+         <div className="shell">
+           <p className="tlx-kicker">Coverage</p>
+-          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across Toronto and the GTA</h2>
++          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across {TERRITORY_SHORT}</h2>
+           <p className="tlx-note">
+             Each area has its own page describing the housing stock there and what it means for a
+             floor — a 1920s semi in Leslieville and a 2018 slab condo downtown are different jobs.
+diff --git a/apps/web/app/hardwood-stairs-toronto/page.tsx b/apps/web/app/hardwood-stairs-toronto/page.tsx
+index 30ac686..75beebf 100644
+--- a/apps/web/app/hardwood-stairs-toronto/page.tsx
++++ b/apps/web/app/hardwood-stairs-toronto/page.tsx
+@@ -14,6 +14,7 @@ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { IllustrationPair } from '../components/Illustration';
+ import { CatalogueRail } from '../components/CatalogueRail';
++import { TERRITORY_SHORT } from '@/lib/geo/territory';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -423,7 +424,7 @@ export default function HardwoodStairsTorontoPage() {
+       <section className="tlx-section" aria-label="Where we work">
+         <div className="shell">
+           <p className="tlx-kicker">Coverage</p>
+-          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across Toronto and the GTA</h2>
++          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across {TERRITORY_SHORT}</h2>
+           <p className="tlx-note">
+             Stair stock tracks house stock: pre-war semis in Leslieville and Riverdale usually have
+             solid oak under the carpet, post-war bungalows in Etobicoke and North York often do
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 5ae2b42..cba1ccb 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -1,4 +1,6 @@
+-import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, FAQ_ITEMS } from '@/lib/seo-data';
++import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, FAQ_ITEMS, areaDisplayName } from '@/lib/seo-data';
++import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
++import { DISCOVERY } from '@/content/geo/regions';
+ import {
+   BUSINESS_NAP,
+   BUSINESS_ADDRESS_LINE,
+@@ -97,7 +99,7 @@ export async function GET() {
+   lines.push(`- Phone: ${BUSINESS_NAP.phoneDisplay} · Email: ${BUSINESS_NAP.email}`);
+   lines.push(`- Hours: ${HOURS_LINE} (America/Toronto)`);
+   lines.push(`- Founded: ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years in Toronto`);
+-  lines.push(`- Serving: ${BUSINESS_NAP.region}, ${SERVICE_AREAS.length} published areas (${CITIES.length} municipalities and districts, ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods)`);
++  lines.push(`- Serving: ${TERRITORY} — ${PUBLISHED_PARTITION.total} published areas (${PUBLISHED_PARTITION.municipalities} municipalities, ${PUBLISHED_PARTITION.districts} districts and communities within a municipality, ${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods)`);
+   lines.push(`- Crews: salaried, no subcontractors. Dust-free HEPA sanding. Fixed written price after a free in-home measure.`);
+   for (const b of PRICE_BANDS) {
+     lines.push(`- Price, ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure — ${SITE_URL}/pricing`);
+@@ -153,9 +155,10 @@ export async function GET() {
+   /* ── Service areas ────────────────────────────────────────────────────── */
+   lines.push('## Service areas');
+   link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. Price bands and the crew model do not change by postal code; housing stock and substrate do, and each area page says how. Markdown: ${SITE_URL}/service-areas.md`);
+-  lines.push(`- Municipalities and districts (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => c.name).join(', ')}.`);
++  lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
++  lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
+   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
+-  lines.push('- Southern Ontario projects outside the GTA are assessed per project through the estimate path; they are not published service areas.');
++  lines.push(`- Named but not published — assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
+   lines.push('');
+ 
+   /* ── Evidence ─────────────────────────────────────────────────────────── */
+@@ -249,7 +252,7 @@ export async function GET() {
+   lines.push('### Per-area routing');
+   lines.push('"hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" → the area page; Markdown at the same URL with .md appended.');
+   for (const c of SERVICE_AREAS) {
+-    lines.push(`- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`);
++    lines.push(`- ${areaDisplayName(c)}: ${SITE_URL}/service-areas/${c.slug}`);
+   }
+   lines.push('');
+ 
+diff --git a/apps/web/app/press/page.tsx b/apps/web/app/press/page.tsx
+index 978db81..ae65015 100644
+--- a/apps/web/app/press/page.tsx
++++ b/apps/web/app/press/page.tsx
+@@ -16,6 +16,7 @@ import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
+ import { buildBreadcrumbList } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { illustrationImage } from '../data/illustration-images';
++import { TERRITORY } from '@/lib/geo/territory';
+ 
+ export const metadata: Metadata = {
+   title: 'Press and media kit',
+@@ -157,7 +158,7 @@ export default function PressPage() {
+                 <tr>
+                   <th scope="row">Service area</th>
+                   <td>
+-                    {BUSINESS_NAP.region} — {SERVICE_AREAS.length} municipalities and neighbourhoods,
++                    {TERRITORY} — {SERVICE_AREAS.length} municipalities and neighbourhoods,
+                     listed at <Link href="/service-areas">/service-areas</Link>
+                   </td>
+                 </tr>
+diff --git a/apps/web/app/resources/page.tsx b/apps/web/app/resources/page.tsx
+index b10105d..d38f005 100644
+--- a/apps/web/app/resources/page.tsx
++++ b/apps/web/app/resources/page.tsx
+@@ -10,7 +10,7 @@ import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
+ import { SPECIES, SPECIES_SOURCE } from '@/lib/wood';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+-import { CITIES, SITE_URL } from '@/lib/seo-data';
++import { PRIMARY_AREAS, SITE_URL } from '@/lib/seo-data';
+ import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { Illustration } from '../components/Illustration';
+@@ -342,7 +342,7 @@ export default async function ResourcesPage() {
+           <p className="tlx-kicker">If you want to know whether we work near you</p>
+           <h2 className="tlx-h2">Service areas</h2>
+           <ul className="clp-areas">
+-            {CITIES.map((c) => (
++            {PRIMARY_AREAS.map((c) => (
+               <li key={c.slug}>
+                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
+               </li>
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index 784a95a..94d95bc 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -10,6 +10,7 @@ import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail'
+ import { JobCardRail } from '../../components/JobCard';
+ import { jobCardsForArea } from '@/content/job-cards';
+ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
++import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
+ 
+ export function generateStaticParams() {
+   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
+@@ -54,6 +55,23 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
+   };
+ }
+ 
++function nearbyAreas(slug: string): City[] {
++  const published = new Set(SERVICE_AREAS.map((a) => a.slug));
++  const out: string[] = [];
++  const push = (s: string | undefined) => {
++    if (s && s !== slug && published.has(s) && !out.includes(s)) out.push(s);
++  };
++  const mk = marketBySlug(slug);
++  mk?.nearest.forEach(push);
++  if (mk?.partOf) {
++    push(mk.partOf);
++    MARKETS.filter((x) => x.partOf === mk.partOf).forEach((x) => push(x.slug));
++  }
++  MARKETS.filter((x) => x.partOf === slug).forEach((x) => push(x.slug));
++  corridorsFor(slug).forEach((c) => c.members.forEach(push));
++  return out.slice(0, 10).map((s) => cityBySlug(s)).filter((c): c is City => Boolean(c));
++}
++
+ export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {
+   const { city: slug } = await params;
+   const city = cityBySlug(slug);
+@@ -120,7 +138,15 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       },
+     },
+   ];
+-  const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
++  /*
++   * Nearby, from the geography — not the first ten entries of a list. This was
++   * `SERVICE_AREAS.slice(0, 10)` under the heading "Across the GTA", so every
++   * New York page, Port Colborne and Barrie linked to Downtown Toronto, North
++   * York and Etobicoke as their neighbours, under a heading that put them in
++   * the GTA (GC-004). Now: the market's own nearest list, its siblings and
++   * children, then its corridor, restricted to places with a page.
++   */
++  const nearby = nearbyAreas(city.slug);
+ 
+   /* The per-area copy, read once. `intro` and `housingNote` are promoted into
+      the hero (see the note there); the block further down renders what is left
+@@ -344,11 +370,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       <section className="section">
+         <div className="shell">
+           <span className="eyebrow">Also serving</span>
+-          <h2>Across the GTA.</h2>
++          <h2>Nearby.</h2>
+           <p style={{ marginTop: '1rem', lineHeight: 2 }}>
+             {nearby.map((c, i) => (
+               <span key={c.slug}>
+-                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>{i < nearby.length - 1 ? ' · ' : ''}
++                <Link href={`/service-areas/${c.slug}`}>{areaDisplayName(c)}</Link>{i < nearby.length - 1 ? ' · ' : ''}
+               </span>
+             ))}
+           </p>
+diff --git a/apps/web/app/service-areas/page.tsx b/apps/web/app/service-areas/page.tsx
+index 868b502..836cde2 100644
+--- a/apps/web/app/service-areas/page.tsx
++++ b/apps/web/app/service-areas/page.tsx
+@@ -1,14 +1,17 @@
+ import type { Metadata } from 'next';
+ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
+ import Link from 'next/link';
+-import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
++import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS, areaDisplayName } from '@/lib/seo-data';
++import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
+ import { breadcrumbSchema } from '@/lib/structured-data';
+ import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
+ import TerritoryMap from '../components/TerritoryMap';
+ 
+ export const metadata: Metadata = {
+-  title: 'Service Areas — Hardwood Flooring Across the GTA',
+-  description: `Ecowoods installs and refinishes hardwood floors across Toronto and the GTA — from Downtown to Vaughan, Mississauga, Markham and beyond. Find your city. Call ${BUSINESS.phoneDisplay}.`,
++  /* The title said "Across the GTA" over an index that runs to Port Colborne
++     and Rochester (GC-004). Named from the published places, like the H1. */
++  title: `Service Areas — Hardwood Flooring Across ${TERRITORY_SHORT}`,
++  description: `Ecowoods installs and refinishes hardwood floors in ${SERVICE_AREAS.length} published areas across ${TERRITORY_SHORT}, from Downtown Toronto outward. Find your city. Call ${BUSINESS.phoneDisplay}.`,
+   alternates: { canonical: '/service-areas', types: { 'text/markdown': '/service-areas.md' } },
+ };
+ 
+@@ -33,13 +36,13 @@ export default function ServiceAreasIndex() {
+             Hardwood flooring <span className="serif-italic">across the corridor.</span>
+           </h1>
+           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
+-            {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas — Toronto and the GTA, west to Waterloo Region, down the Niagara peninsula, and across the river into western New York. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
++            {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas across ${TERRITORY}. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
+           </p>
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
+             {SERVICE_AREAS.map((c) => (
+               <Link key={c.slug} href={`/service-areas/${c.slug}`}
+                 style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
+-                Hardwood Flooring in {c.name} →
++                Hardwood Flooring in {areaDisplayName(c)} →
+               </Link>
+             ))}
+           </div>
+diff --git a/apps/web/app/services/[slug]/page.tsx b/apps/web/app/services/[slug]/page.tsx
+index c73d631..51a7e84 100644
+--- a/apps/web/app/services/[slug]/page.tsx
++++ b/apps/web/app/services/[slug]/page.tsx
+@@ -4,6 +4,7 @@ import { EstimateForm } from '../../components/EstimateForm';
+ import Link from 'next/link';
+ import { notFound } from 'next/navigation';
+ import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
++import { placeForArea } from '@/lib/schema/root-schema';
+ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { Illustration, IllustrationPair } from '../../components/Illustration';
+@@ -128,7 +129,7 @@ export default async function ServiceDetailPage({
+     description: svc?.blurb ?? page.standfirst,
+     serviceType: svc?.name ?? page.h1,
+     provider: { '@id': `${SITE_URL}/#organization` },
+-    areaServed: CITIES.map((c) => ({ '@type': 'City' as const, name: c.name })),
++    areaServed: CITIES.map((c) => placeForArea(c)),
+     url,
+     ...(band
+       ? {
+diff --git a/apps/web/app/team/page.tsx b/apps/web/app/team/page.tsx
+index 43a6823..fd35d7e 100644
+--- a/apps/web/app/team/page.tsx
++++ b/apps/web/app/team/page.tsx
+@@ -6,6 +6,7 @@ import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/li
+ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
+ import { SchemaScript } from '@/lib/schema/components';
+ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
++import { TERRITORY } from '@/lib/geo/territory';
+ 
+ /**
+  * /team — who actually does the work, answered without inventing anyone.
+@@ -76,7 +77,7 @@ const FAQS = [
+     question: `How long has ${BUSINESS_NAP.shortName} been working in Toronto?`,
+     answer:
+       `Since ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years — across ` +
+-      `${SERVICE_AREAS.length} municipalities and neighbourhoods in Toronto and the GTA.`,
++      `${SERVICE_AREAS.length} municipalities and neighbourhoods across ${TERRITORY}.`,
+   },
+ ];
+ 
+diff --git a/apps/web/content/claims.ts b/apps/web/content/claims.ts
+index 66d7fdf..87296f5 100644
+--- a/apps/web/content/claims.ts
++++ b/apps/web/content/claims.ts
+@@ -49,7 +49,7 @@
+  * `UNSOURCED_DEADLINE` below is the date it should happen by.
+  */
+ import { BUSINESS_NAP, REVIEW_EVIDENCE, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+-import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS } from '@/lib/seo-data';
++import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS } from '@/lib/seo-data';
+ import { SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL, formatBand } from '@/content/constants/pricing';
+ 
+ /** Where a claim is allowed to appear. Ordered loosest to strictest. */
+@@ -221,7 +221,7 @@ export const CLAIMS: Claim[] = [
+     source: 'SERVICE_AREAS.length in lib/seo-data.ts.',
+     verifiedAt: '2026-08-24',
+     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine'],
+-    note: `${CITIES.length} municipalities + ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods. Only the municipalities become schema City nodes (F-157).`,
++    note: `${CITIES.length} municipalities + ${DISTRICT_AREAS.length} districts and communities within a municipality + ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods. Only the municipalities become schema City nodes (F-157).`,
+   },
+ 
+   // ── Method ────────────────────────────────────────────────────────────
+diff --git a/apps/web/content/geo/markets.ts b/apps/web/content/geo/markets.ts
+index 6697ca2..501b4c9 100644
+--- a/apps/web/content/geo/markets.ts
++++ b/apps/web/content/geo/markets.ts
+@@ -251,11 +251,13 @@ const TORONTO_NEIGHBOURHOODS: Market[] = [
+  * Port Colborne reading "routine daily coverage" finds out it was not on the
+  * day nobody arrives.
+  *
+- * Records, still not pages. Every one of these is now a confirmed market in the
+- * service area, in the API and on its corridor page — and none of them has an
+- * indexable municipal page, because lib/geo/worthiness.ts requires real local
+- * content and no amount of confirmation substitutes for it. That gate did not
+- * move.
++ * Pages followed the records as local content was written for each, and the
++ * last eleven — Whitby, Oshawa, Clarington, Halton Hills, Caledon, Innisfil,
++ * Guelph, Cambridge, Kitchener, Port Colborne and Kawartha Lakes — were
++ * published in GEO-001, when a confirmed market with no page was found to be a
++ * coverage claim with nothing behind it (docs/GEO_CONTRADICTION_LOG.md GC-001).
++ * lib/geo/worthiness.ts still requires real local content for every one; no
++ * amount of confirmation substitutes for it. That gate did not move.
+  */
+ const CORRIDOR_TARGETS: Market[] = [
+   m('Milton', 'milton', 'active-expansion', 'toronto', ['core-gta'], ['oakville', 'halton-hills', 'burlington'], COVERED('Toronto')),
+diff --git a/apps/web/content/geo/regions.ts b/apps/web/content/geo/regions.ts
+new file mode 100644
+index 0000000..550882a
+--- /dev/null
++++ b/apps/web/content/geo/regions.ts
+@@ -0,0 +1,148 @@
++/**
++ * content/geo/regions.ts — which region each place sits in, and the places the
++ * business names without covering.
++ *
++ * WHY THIS FILE EXISTS (GEO-001)
++ *
++ * Until GEO-001 these facts lived inside lib/registry/locations.ts — a
++ * PROJECTION, which by this repository's own rule owns no fact. The projection
++ * kept its own list of forty-one municipalities with a region each, and every
++ * published place that was not on that list fell through to a default parent of
++ * `'gta'`. So Buffalo, Rochester and Lincoln were all "in the Greater Toronto
++ * Area" in the location API, the graph's `within` edges and the matcher, while
++ * the market registry said something else. docs/GEO_CONTRADICTION_LOG.md
++ * GC-002, GC-004 and GC-005 are the record.
++ *
++ * Now the region of a place is a fact written once, here, beside the market
++ * registry, and nothing has a default. A municipality that is in no region below
++ * is a municipality somebody forgot to place — it is not silently put in the GTA.
++ *
++ * WHAT MAY BE WRITTEN HERE
++ *
++ * Public administrative geography only: which regional municipality or state a
++ * place belongs to. Nothing about Ecowoods. Coverage is decided in markets.ts;
++ * this file never says whether a place is served.
++ */
++
++/** A region node in the location hierarchy. */
++export interface RegionNode {
++  slug: string;
++  name: string;
++  tier: 'country' | 'province' | 'state' | 'region';
++  /** The node this one sits inside. Null for a country. */
++  parent: string | null;
++  /**
++   * `parent` — a hierarchy node that is wider than anything the business
++   * covers (a country, a province, a state). `region` — a region whose places
++   * the business publishes. `assessment` — a region worked per project.
++   */
++  coverage: 'parent' | 'region' | 'assessment';
++  aliases: string[];
++}
++
++export const REGION_NODES: RegionNode[] = [
++  { slug: 'canada', name: 'Canada', tier: 'country', parent: null, coverage: 'parent', aliases: ['ca'] },
++  {
++    slug: 'ontario', name: 'Ontario', tier: 'province', parent: 'canada', coverage: 'parent',
++    aliases: ['on', 'province of ontario', 'all ontario', 'all of ontario', 'anywhere in ontario', 'everywhere in ontario'],
++  },
++  {
++    slug: 'southern-ontario', name: 'Southern Ontario', tier: 'region', parent: 'ontario', coverage: 'assessment',
++    aliases: ['south ontario', 'south of ontario', 'all southern ontario', 'southwestern ontario', 'golden horseshoe', 'greater golden horseshoe', 'all of southern ontario'],
++  },
++  {
++    slug: 'gta', name: 'Greater Toronto Area', tier: 'region', parent: 'southern-ontario', coverage: 'region',
++    aliases: ['the gta', 'greater toronto', 'greater toronto area', 'toronto area', 'gta ontario', 'the greater toronto area', 'peel', 'york region', 'durham', 'durham region', 'halton', 'halton region'],
++  },
++  /*
++   * Two regional municipalities outside the GTA, because the corridor runs
++   * through them and because each name is a place people search for. Waterloo
++   * Region in particular is a REGION — Kitchener, Cambridge and the City of
++   * Waterloo sit inside it — and must never be read as the City of Waterloo.
++   */
++  {
++    slug: 'niagara-region', name: 'Niagara Region', tier: 'region', parent: 'southern-ontario', coverage: 'region',
++    aliases: ['niagara', 'the niagara region', 'regional municipality of niagara', 'niagara peninsula'],
++  },
++  {
++    slug: 'waterloo-region', name: 'Waterloo Region', tier: 'region', parent: 'southern-ontario', coverage: 'region',
++    aliases: ['region of waterloo', 'regional municipality of waterloo', 'waterloo region'],
++  },
++  { slug: 'united-states', name: 'United States', tier: 'country', parent: null, coverage: 'parent', aliases: ['usa', 'united states of america', 'the united states'] },
++  { slug: 'new-york-state', name: 'New York State', tier: 'state', parent: 'united-states', coverage: 'parent', aliases: ['new york state', 'ny state', 'upstate new york', 'western new york', 'wny'] },
++];
++
++/**
++ * The municipalities of the Greater Toronto Area that appear anywhere in the
++ * geography: the City of Toronto and the municipalities of the four regional
++ * municipalities around it (Durham, York, Peel, Halton). Public fact.
++ */
++export const GTA_MUNICIPALITIES: ReadonlySet<string> = new Set([
++  'toronto',
++  /* Peel */ 'mississauga', 'brampton', 'caledon',
++  /* York */ 'vaughan', 'markham', 'richmond-hill', 'aurora', 'newmarket', 'king',
++  'whitchurch-stouffville', 'east-gwillimbury', 'georgina',
++  /* Durham */ 'pickering', 'ajax', 'whitby', 'oshawa', 'clarington', 'uxbridge',
++  /* Halton */ 'oakville', 'burlington', 'milton', 'halton-hills',
++]);
++
++/** Municipalities inside a regional municipality outside the GTA that has a node above. */
++const REGIONAL_MUNICIPALITY: Record<string, string> = {
++  grimsby: 'niagara-region', lincoln: 'niagara-region', 'st-catharines': 'niagara-region',
++  thorold: 'niagara-region', welland: 'niagara-region', 'niagara-on-the-lake': 'niagara-region',
++  'niagara-falls-on': 'niagara-region', 'port-colborne': 'niagara-region', 'fort-erie': 'niagara-region',
++  kitchener: 'waterloo-region', cambridge: 'waterloo-region', waterloo: 'waterloo-region',
++};
++
++/**
++ * The region node a MUNICIPALITY hangs from. Districts and neighbourhoods hang
++ * from their municipality (`partOf`) and never reach this function.
++ *
++ * Every New York municipality is in New York State; every Ontario one is in the
++ * GTA, a regional node above, or Southern Ontario. There is no default: an
++ * Ontario municipality this file has not placed returns Southern Ontario, which
++ * is true of every Ontario place in the model, and never the GTA.
++ */
++export function regionOf(slug: string, country: 'CA' | 'US'): string {
++  if (country === 'US') return 'new-york-state';
++  if (GTA_MUNICIPALITIES.has(slug)) return 'gta';
++  return REGIONAL_MUNICIPALITY[slug] ?? 'southern-ontario';
++}
++
++/**
++ * Real Southern Ontario municipalities that are NOT markets: named, reachable,
++ * assessed per project through the estimate path, and never claimed as covered.
++ * The DISCOVERY_ONLY category of docs/GEO_SOURCE_MAP.md §7.
++ *
++ * Moved here from lib/registry/locations.ts in GEO-001. That list also carried
++ * eighteen municipalities the market registry had confirmed as covered, and the
++ * location API reported them as "not a published service area … do not present
++ * as covered" beside a confirmation date (GC-002). A place is in this list or in
++ * markets.ts, never both; the location projection enforces it by construction.
++ */
++export const DISCOVERY: { slug: string; name: string; aliases?: string[] }[] = [
++  { slug: 'uxbridge', name: 'Uxbridge' },
++  { slug: 'whitchurch-stouffville', name: 'Whitchurch-Stouffville', aliases: ['stouffville'] },
++  { slug: 'east-gwillimbury', name: 'East Gwillimbury', aliases: ['holland landing', 'mount albert'] },
++  { slug: 'georgina', name: 'Georgina', aliases: ['keswick', 'sutton'] },
++  /* The City of Waterloo — a municipality inside Waterloo Region, beside Kitchener. Not the region. */
++  { slug: 'waterloo', name: 'Waterloo', aliases: ['city of waterloo', 'waterloo ontario', 'waterloo on', 'uptown waterloo'] },
++  { slug: 'bradford-west-gwillimbury', name: 'Bradford West Gwillimbury', aliases: ['bradford'] },
++  { slug: 'orangeville', name: 'Orangeville' },
++  { slug: 'brantford', name: 'Brantford' },
++  { slug: 'london', name: 'London', aliases: ['london ontario', 'london on'] },
++  { slug: 'woodstock', name: 'Woodstock' },
++  { slug: 'stratford', name: 'Stratford' },
++  { slug: 'peterborough', name: 'Peterborough' },
++  { slug: 'cobourg', name: 'Cobourg' },
++  { slug: 'port-hope', name: 'Port Hope' },
++  { slug: 'belleville', name: 'Belleville' },
++  { slug: 'kingston', name: 'Kingston' },
++  { slug: 'collingwood', name: 'Collingwood' },
++  { slug: 'wasaga-beach', name: 'Wasaga Beach' },
++  { slug: 'muskoka', name: 'Muskoka', aliases: ['bracebridge', 'gravenhurst', 'huntsville'] },
++  { slug: 'sarnia', name: 'Sarnia' },
++  { slug: 'windsor', name: 'Windsor' },
++  { slug: 'chatham-kent', name: 'Chatham-Kent', aliases: ['chatham'] },
++  { slug: 'owen-sound', name: 'Owen Sound' },
++];
+diff --git a/apps/web/lib/entity-answers.ts b/apps/web/lib/entity-answers.ts
+index d2978db..deab00e 100644
+--- a/apps/web/lib/entity-answers.ts
++++ b/apps/web/lib/entity-answers.ts
+@@ -1,5 +1,6 @@
+ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, yearsInBusiness } from '@ecowoods/shared/constants';
+ import { SERVICES, SERVICE_AREAS, SITE_URL } from '@/lib/seo-data';
++import { TERRITORY } from '@/lib/geo/territory';
+ import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
+ import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
+ import { PRIMARY_REVIEW_EVIDENCE, SECONDARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+@@ -74,7 +75,7 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
+   {
+     q: `Where does ${BUSINESS_NAP.shortName} work?`,
+     a:
+-      `${SERVICE_AREAS.length} areas across ${BUSINESS_NAP.region}: ` +
++      `${SERVICE_AREAS.length} areas across ${TERRITORY}: ` +
+       SERVICE_AREAS.map((c) => c.name).join(', ') +
+       `. Each has its own page describing the housing stock and the technical constraint specific to it.`,
+     href: '/service-areas',
+diff --git a/apps/web/lib/geo/geo.test.ts b/apps/web/lib/geo/geo.test.ts
+index 378660f..2ed6478 100644
+--- a/apps/web/lib/geo/geo.test.ts
++++ b/apps/web/lib/geo/geo.test.ts
+@@ -208,7 +208,9 @@ describe('page-worthiness', () => {
+     const noContent = MARKETS.filter(
+       (m) => m.operationalTruth.verifiedAt !== null && m.country === 'CA' && !cityContent(m.slug),
+     );
+-    expect(noContent.length).toBeGreaterThan(5);
++    // GEO-001 wrote real local content for eleven of them; the City of Toronto,
++    // served through the pages of its districts, is the one left.
++    expect(noContent.length).toBeGreaterThan(0);
+     for (const m of noContent) {
+       const w = assess(m);
+       expect(w.indexable, m.slug).toBe(false);
+diff --git a/apps/web/lib/geo/territory.ts b/apps/web/lib/geo/territory.ts
+new file mode 100644
+index 0000000..315d24a
+--- /dev/null
++++ b/apps/web/lib/geo/territory.ts
+@@ -0,0 +1,95 @@
++/**
++ * lib/geo/territory.ts — the one phrase that names the whole territory.
++ *
++ * WHY THIS EXISTS (GEO-001)
++ *
++ * `BUSINESS_NAP.region` is "Toronto & the GTA". It is true of the shop, and it
++ * was used as the name of the service territory on eleven surfaces — llms.txt,
++ * /about, /team, /press, the Toronto head-term pages, the Markdown hub, ai.txt
++ * and the matcher's answers — directly in front of a list of 89 areas that ran
++ * from Barrie to Port Colborne and across the river to Rochester. "89 areas
++ * across Toronto & the GTA: …, Buffalo, …" is a sentence that puts Buffalo in
++ * the GTA (docs/GEO_CONTRADICTION_LOG.md GC-004).
++ *
++ * So the territory is named from the published places themselves, not typed:
++ * the Ontario part names the GTA and every other published municipality, and
++ * the New York part names the hubs of the New York corridors that carry a
++ * published place. Publish a municipality and the phrase gains it; nothing in
++ * it can name a place that has no page.
++ *
++ * `BUSINESS_NAP.region` is left alone: "a hardwood flooring contractor in
++ * Toronto & the GTA" is where the business IS, and stays true. This is where
++ * it WORKS.
++ */
++import { MARKETS, marketBySlug } from '@/content/geo/markets';
++import { CORRIDORS } from '@/content/geo/corridors';
++import { regionOf } from '@/content/geo/regions';
++import { SERVICE_AREAS, CITIES, DISTRICT_AREAS, NEIGHBOURHOOD_AREAS } from '@/lib/seo-data';
++
++const published = new Set(SERVICE_AREAS.map((a) => a.slug));
++
++const publishedMunicipalities = MARKETS.filter((m) => m.kind === 'municipality' && published.has(m.slug));
++
++/*
++ * The Ontario part names what is published, region by region — never a wider
++ * planning region than that. "The Greater Golden Horseshoe" was the first
++ * draft of this phrase and it was wrong: Brantford, Orangeville and
++ * Peterborough are inside it and are named-but-not-published places
++ * (content/geo/regions.ts DISCOVERY), so the phrase would have claimed them.
++ * The GTA is named as a region because the business is Toronto's; every other
++ * published Ontario municipality is named, with the Niagara municipalities
++ * collapsed into "Niagara".
++ */
++const caPart = (): string | null => {
++  const ca = publishedMunicipalities.filter((m) => m.country === 'CA');
++  if (!ca.length) return null;
++  const parts: string[] = [];
++  for (const m of ca) {
++    const region = regionOf(m.slug, 'CA');
++    const label = region === 'gta' ? 'Toronto and the GTA' : region === 'niagara-region' ? 'Niagara' : m.name;
++    if (!parts.includes(label)) parts.push(label);
++  }
++  if (parts[0] !== 'Toronto and the GTA' && parts.includes('Toronto and the GTA')) {
++    parts.splice(parts.indexOf('Toronto and the GTA'), 1);
++    parts.unshift('Toronto and the GTA');
++  }
++  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
++};
++
++const usPart = (): string | null => {
++  const hubs = CORRIDORS.map((c) => marketBySlug(c.hub))
++    .filter((h): h is NonNullable<typeof h> => Boolean(h && h.country === 'US'))
++    .filter((h) => CORRIDORS.some((c) => c.hub === h.slug && c.members.some((s) => published.has(s))));
++  const names = [...new Set(hubs.map((h) => h.name))];
++  if (!names.length) return null;
++  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
++  return `the ${list} area${names.length === 1 ? '' : 's'} of New York State`;
++};
++
++/** "Toronto and the GTA, Barrie, …, Kawartha Lakes, and the Buffalo and Rochester areas of New York State". */
++export const TERRITORY: string = [caPart(), usPart()].filter(Boolean).join(', and ');
++
++/** For headings and counts: "Ontario and New York State", or "Ontario" alone. */
++export const TERRITORY_SHORT: string = [
++  publishedMunicipalities.some((m) => m.country === 'CA') ? 'Ontario' : null,
++  publishedMunicipalities.some((m) => m.country === 'US') ? 'New York State' : null,
++].filter(Boolean).join(' and ');
++
++/**
++ * Published areas by kind — the partition every "N areas (…)" sentence must add
++ * up to. llms.txt said "89 published areas (53 municipalities and districts, 17
++ * Toronto neighbourhoods)", which sums to 70 (GC-007): the third list was never
++ * counted. All three are read here, and they sum to the total by construction.
++ */
++export const PUBLISHED_PARTITION = {
++  total: SERVICE_AREAS.length,
++  municipalities: CITIES.length,
++  districts: DISTRICT_AREAS.length,
++  neighbourhoods: NEIGHBOURHOOD_AREAS.length,
++};
++
++/** Published areas by country. */
++export const PUBLISHED_BY_COUNTRY = {
++  ca: SERVICE_AREAS.filter((a) => marketBySlug(a.slug)?.country !== 'US').length,
++  us: SERVICE_AREAS.filter((a) => marketBySlug(a.slug)?.country === 'US').length,
++};
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 7f64f17..020cdae 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -61,9 +61,13 @@ import {
+   SERVICE_AREAS,
+   FAQ_ITEMS,
+   cityContent,
++  areaDisplayName,
++  US_AREA_SLUGS,
+   type CityContent,
+   type FaqItem,
+ } from '@/lib/seo-data';
++import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
++import { DISCOVERY } from '@/content/geo/regions';
+ import {
+   getServicePages,
+   getServicePage,
+@@ -312,7 +316,7 @@ export const serviceToMarkdown = (page: ServicePage): string => {
+ 
+   const rows: string[][] = [['Service', svc?.name ?? page.h1]];
+   if (band) rows.push(['Published price band', band]);
+-  rows.push(['Areas served', CITIES.map((c) => c.name).join(', ')]);
++  rows.push(['Areas served', CITIES.map((c) => areaDisplayName(c)).join(', ')]);
+   out.push(...table(['Field', 'Value'], rows));
+ 
+   const pillars = PILLARS.filter((p) => page.pillars.includes(p.id));
+@@ -347,8 +351,20 @@ export const serviceToMarkdown = (page: ServicePage): string => {
+ 
+ export const areaToMarkdown = (slug: string, name: string, cc: CityContent): string => {
+   const canonical = `${SITE_URL}/service-areas/${slug}`;
++  /*
++   * The twin names the place exactly as the HTML page does ("Buffalo, NY",
++   * "Niagara Falls, ON") and states the same service sentence, verbatim. Until
++   * GEO-001 the HTML said "… in Buffalo, NY" and carried the sentence while the
++   * twin said "… in Buffalo" and did not (GC-015). A twin may format
++   * differently; it may not say something different.
++   */
++  const displayName = areaDisplayName({ slug, name });
++  const isUS = US_AREA_SLUGS.has(slug);
+   const out: string[] = [
+-    `# Hardwood floor installation & refinishing in ${name}`,
++    `# Hardwood floor installation & refinishing in ${displayName}`,
++    '',
++    `Ecowoods serves ${displayName}. Book the measure.` +
++      (isUS ? ` The showroom is Toronto. The job is in ${name}. We take this work.` : ''),
+     '',
+     cc.intro,
+     '',
+@@ -515,7 +531,7 @@ const napTable = (): string[] =>
+       ['Email', `[${BUSINESS_NAP.email}](mailto:${BUSINESS_NAP.email})`],
+       ['Hours', `${HOURS_LINE} (${BUSINESS_TIMEZONE_NAME})`],
+       ['Established', String(BUSINESS_NAP.foundedYear)],
+-      ['Service region', BUSINESS_NAP.region],
++      ['Service territory', TERRITORY],
+       ['Website', SITE_URL],
+     ],
+   );
+@@ -540,8 +556,9 @@ export const homeToMarkdown = (): string => {
+     '',
+     '## Where the work is done',
+     '',
+-    `${BUSINESS_NAP.region}. ${SERVICE_AREAS.length} published service areas — ${CITIES.length} municipalities and ` +
+-      `districts and ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods — each with its own page: ` +
++    `${TERRITORY}. ${PUBLISHED_PARTITION.total} published service areas — ${PUBLISHED_PARTITION.municipalities} municipalities, ` +
++      `${PUBLISHED_PARTITION.districts} districts and communities within a municipality, and ` +
++      `${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods — each with its own page: ` +
+       `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
+     '',
+     '## Evidence',
+@@ -598,17 +615,17 @@ export const areasHubToMarkdown = (): string => {
+   const canonical = abs('/service-areas');
+   const crew = claimText('workforce.salaried');
+   const out: string[] = [
+-    `# Hardwood flooring service areas — ${BUSINESS_NAP.region}`,
++    `# Hardwood flooring service areas — ${TERRITORY}`,
+     '',
+     identitySentence(),
+     '',
+     '## Who is served',
+     '',
+-    `Homeowners, condominium owners and property managers across ${BUSINESS_NAP.region}: ` +
+-      `${SERVICE_AREAS.length} published service areas, each with its own page.`,
++    `Homeowners, condominium owners and property managers across ${TERRITORY}: ` +
++      `${PUBLISHED_PARTITION.total} published service areas, each with its own page.`,
+     '',
+-    'Projects elsewhere in Southern Ontario are assessed per project through the estimate path. ' +
+-      'They are not published service areas, and this page does not claim them as covered.',
++    `Named but not published — assessed per project through the estimate path, and not claimed as covered: ` +
++      `${DISCOVERY.map((d) => d.name).join(', ')}.`,
+     '',
+     '## What does not change by area',
+     '',
+@@ -622,19 +639,20 @@ export const areasHubToMarkdown = (): string => {
+       'bungalow and a concrete-slab condominium are different jobs with different moisture questions, and ' +
+       'each area page below says which it is.',
+     '',
+-    '## Municipalities and districts',
++    '## Municipalities',
+     '',
+-    ...CITIES.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
++    ...CITIES.map((c) => `- ${link(areaDisplayName(c), `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+     '',
+     '## Toronto neighbourhoods',
+     '',
+     ...NEIGHBOURHOOD_AREAS.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+     '',
+-    /* Communities inside a municipality other than Toronto. Listed under their
++    /* Districts and communities inside a municipality — the six former
++       municipalities of Toronto among them since GEO-001. Listed under their
+        parent rather than as peers of it, because that is what they are: the
+        machine edition of this page is read literally, and Ancaster is not a
+        city beside Hamilton. */
+-    '## Communities within a municipality',
++    '## Districts and communities within a municipality',
+     '',
+     ...DISTRICT_AREAS.map(
+       (c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — in ${c.partOf} — markdown: ${md(`/service-areas/${c.slug}`)}`,
+@@ -863,7 +881,7 @@ export const commercialToMarkdown = (page: CommercialMirror): string => {
+     '',
+     '## Coverage',
+     '',
+-    `${SERVICE_AREAS.length} published service areas across ${BUSINESS_NAP.region}: ` +
++    `${SERVICE_AREAS.length} published service areas across ${TERRITORY}: ` +
+       `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
+     '',
+   ];
+@@ -980,7 +998,7 @@ export const corpusToMarkdown = (): string => {
+     `- ${guides.length} decision guide(s) and reference installation(s)`,
+     `- ${terms.length} glossary term(s)`,
+     `- ${services.length} service(s), each with its published price band`,
+-    `- ${areas.length} service area(s) across Toronto and the GTA`,
++    `- ${areas.length} service area(s) across ${TERRITORY}`,
+     '',
+     '---',
+     '',
+diff --git a/apps/web/lib/registry/handlers.ts b/apps/web/lib/registry/handlers.ts
+index 0108a58..03f9585 100644
+--- a/apps/web/lib/registry/handlers.ts
++++ b/apps/web/lib/registry/handlers.ts
+@@ -688,9 +688,10 @@ export async function handleQuoteCheck(request: Request) {
+  * So each market carries its status, the sentence that can honestly be said
+  * about serving it, and the date somebody confirmed that. A market nobody has
+  * confirmed says so, in the payload, rather than borrowing the confidence of
+- * the ones beside it. `service_area` lists only what may be claimed, and the
+- * United States markets are excluded from it by construction — they are
+- * a service area on both sides of the border since 2026-09-10.
++ * the ones beside it. `service_area` lists the confirmed municipalities, on
++ * both sides of the border since the owner's New York confirmation of
++ * 2026-09-10; since GEO-001 every one of them has a page, and Toronto is served
++ * through the pages of its districts and neighbourhoods.
+  *
+  * `content_queue` is published deliberately. It is the list of markets that do
+  * not yet have a page and the reason each one does not, which is a more useful
+@@ -791,16 +792,12 @@ export async function handleMarkets(request: Request) {
+  * market being ranked on highway access alone.
+  *
+  * An assistant asked "how does Ecowoods decide where to expand" has a document
+- * to quote. An assistant asked "does Ecowoods work in Buffalo" reads
+- * `classification: FUTURE` with the reason attached, in the company's own
+- * words, rather than inferring an answer from a page that half-implies one.
++ * to quote, with the reason for every classification in the company's own
++ * words rather than inferred from a page.
+  *
+- * THE UNITED STATES RULE IS IN THE PAYLOAD, NOT ONLY IN THE CODE
+- *
+- * Every American market comes back FUTURE with the sentence explaining that
+- * Ecowoods operates in Ontario from Ontario. That is the fact most likely to be
+- * got wrong about this company by a machine reading a cross-border corridor,
+- * and it is cheaper to state it sixty times than to correct it once.
++ * New York markets are classified on the same terms as Ontario ones since the
++ * owner's confirmation of 2026-09-10 (lib/geo/opportunity.ts); the cap that
++ * held every American market at FUTURE described the position before it.
+  */
+ export async function handleOpportunity(request: Request) {
+   const reg = await getRegistry();
+diff --git a/apps/web/lib/registry/locations.ts b/apps/web/lib/registry/locations.ts
+index c1a13fa..62bb572 100644
+--- a/apps/web/lib/registry/locations.ts
++++ b/apps/web/lib/registry/locations.ts
+@@ -1,23 +1,30 @@
+ /**
+  * lib/registry/locations.ts — location intelligence (Protocol v2, Stage 7).
+  *
+- * Hierarchy: Canada → Ontario → Southern Ontario → GTA → Toronto → districts →
+- * published neighbourhoods. The PUBLISHED set is exactly SERVICE_AREAS from
+- * lib/seo-data.ts (16 municipalities/districts + 16 Toronto neighbourhoods),
+- * every one of which has a /service-areas page. Nothing here adds a
+- * municipality to the public list — that is an owner decision (Protocol §23).
++ * A PROJECTION. Since GEO-001 this file owns no geographic fact: every node is
++ * built from content/geo/markets.ts (who is covered, what kind of place it is,
++ * what it is part of), content/geo/regions.ts (which region a municipality sits
++ * in, and the Southern Ontario places that are named but not covered) and
++ * lib/seo-data.ts (which areas have a page). Before GEO-001 it kept its own list
++ * of forty-one municipalities with a region each and a default parent of the
++ * GTA, and so it reported owner-confirmed markets as "not a published service
++ * area" and hung Buffalo, Rochester and four Niagara municipalities from the
++ * Greater Toronto Area (docs/GEO_CONTRADICTION_LOG.md GC-002, GC-004, GC-005).
+  *
+- * What this module adds is GEOGRAPHIC KNOWLEDGE the matcher needs to answer
+- * honestly about places the site does not list: a query about Hamilton or
+- * Barrie resolves to a real place, with coverage `assessment` ("served on
+- * assessment, not a published area") and the estimate action — never to
+- * `unknown`, and never to a fabricated "yes, covered".
++ * Hierarchy: Canada → Ontario → Southern Ontario → GTA / Niagara Region /
++ * Waterloo Region → municipality → district / neighbourhood; and United States →
++ * New York State → municipality → district. Toronto is a `region` node: the
++ * City of Toronto itself has no service-area page, and its published areas are
++ * its six former municipalities and seventeen neighbourhoods.
+  *
+- * The regional parents (GTA, Toronto, Ontario, Southern Ontario) carry
+- * coverage `region` / `parent` so "who installs hardwood in the GTA" resolves
+- * to the published set rather than to nothing.
++ * The matcher still needs to answer honestly about places the site does not
++ * list: a query about London or Kingston resolves to a real place with coverage
++ * `assessment` and the estimate action — never to `unknown`, and never to a
++ * fabricated "yes, covered".
+  */
+ import { CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
++import { MARKETS, marketBySlug } from '@/content/geo/markets';
++import { REGION_NODES, DISCOVERY, regionOf } from '@/content/geo/regions';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import type { LocationCoverage, LocationTier } from './types';
+ 
+@@ -33,11 +40,6 @@ export type LocationNode = {
+ const slugify = (s: string) =>
+   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+ 
+-/** Toronto's six former municipalities — districts of the city, not peers of Mississauga. */
+-const TORONTO_DISTRICT_SLUGS = new Set([
+-  'downtown-toronto', 'north-york', 'etobicoke', 'scarborough', 'east-york', 'york',
+-]);
+-
+ /** Aliases for published areas: the strings a person types that are not the page name. */
+ const PUBLISHED_ALIASES: Record<string, string[]> = {
+   'downtown-toronto': ['downtown', 'toronto downtown', 'the core', 'old toronto', 'central toronto'],
+@@ -56,6 +58,19 @@ const PUBLISHED_ALIASES: Record<string, string[]> = {
+   newmarket: [],
+   pickering: [],
+   ajax: [],
++  /* GEO-001: the eleven municipalities published with this patch. Aliases are
++     the communities inside each that a person types instead of its name. */
++  whitby: ['brooklin', 'port whitby'],
++  oshawa: ['lakeview park', 'oshawa ontario'],
++  clarington: ['bowmanville', 'courtice', 'orono'],
++  'kawartha-lakes': ['city of kawartha lakes', 'lindsay', 'fenelon falls', 'bobcaygeon'],
++  'halton-hills': ['georgetown', 'acton', 'glen williams'],
++  caledon: ['bolton', 'caledon east', 'caledon village'],
++  innisfil: ['alcona', 'lefroy'],
++  guelph: ['guelph ontario'],
++  cambridge: ['galt', 'preston', 'hespeler', 'cambridge ontario'],
++  kitchener: ['kitchener ontario', 'kitchener on'],
++  'port-colborne': ['port colborne'],
+   milton: [],
+   burlington: ['aldershot', 'millcroft', 'alton village'],
+   hamilton: ['hamilton ontario', 'hamilton on', 'city of hamilton', 'the hammer', 'hamilton mountain'],
+@@ -87,141 +102,88 @@ const PUBLISHED_ALIASES: Record<string, string[]> = {
+   'liberty-village': ['liberty', 'libertyvillage'],
+ };
+ 
++/** The City of Toronto's own node aliases. */
++const TORONTO_ALIASES = ['city of toronto', 'toronto ontario', 'toronto on', 'toronto canada', 'the six', 'tdot', 't.o.', 'to'];
++
+ /**
+- * Real Southern Ontario municipalities WITHOUT a published page. Coverage is
+- * `assessment` — a real place the estimate path can assess, never a claim.
+- * Name only; no copy is generated for these and no page exists.
++ * The hierarchy, built once, from the fact files.
++ *
++ * Every market in content/geo/markets.ts becomes exactly one node; every
++ * published area is `published`; every region node comes from regions.ts; and
++ * every Southern Ontario place that is not a market is `assessment`. A place is
++ * never both a market and an assessment node — the second is only built for
++ * slugs the first did not claim.
+  */
+-const ASSESSMENT_MUNICIPALITIES: { name: string; region: 'gta' | 'southern-ontario'; aliases?: string[] }[] = [
+-  { name: 'Whitby', region: 'gta' },
+-  { name: 'Oshawa', region: 'gta' },
+-  { name: 'Clarington', region: 'gta', aliases: ['bowmanville', 'courtice'] },
+-  { name: 'Uxbridge', region: 'gta' },
+-  { name: 'Whitchurch-Stouffville', region: 'gta', aliases: ['stouffville'] },
+-  { name: 'King', region: 'gta', aliases: ['king city', 'nobleton', 'schomberg'] },
+-  { name: 'East Gwillimbury', region: 'gta', aliases: ['holland landing', 'mount albert'] },
+-  { name: 'Georgina', region: 'gta', aliases: ['keswick', 'sutton'] },
+-  { name: 'Caledon', region: 'gta', aliases: ['bolton'] },
+-  { name: 'Milton', region: 'gta' },
+-  { name: 'Burlington', region: 'gta' },
+-  { name: 'Halton Hills', region: 'gta', aliases: ['georgetown', 'acton'] },
+-  { name: 'Hamilton', region: 'southern-ontario', aliases: ['ancaster', 'dundas', 'stoney creek', 'waterdown'] },
+-  { name: 'Guelph', region: 'southern-ontario' },
+-  { name: 'Kitchener', region: 'southern-ontario' },
+-  { name: 'Waterloo', region: 'southern-ontario' },
+-  { name: 'Cambridge', region: 'southern-ontario' },
+-  { name: 'Barrie', region: 'southern-ontario' },
+-  { name: 'Innisfil', region: 'southern-ontario', aliases: ['alcona'] },
+-  { name: 'Bradford West Gwillimbury', region: 'southern-ontario', aliases: ['bradford'] },
+-  { name: 'Orangeville', region: 'southern-ontario' },
+-  { name: 'Brantford', region: 'southern-ontario' },
+-  { name: 'St. Catharines', region: 'southern-ontario', aliases: ['st catharines', 'saint catharines'] },
+-  { name: 'Niagara Falls', region: 'southern-ontario' },
+-  { name: 'Niagara-on-the-Lake', region: 'southern-ontario', aliases: ['niagara on the lake', 'notl'] },
+-  { name: 'Grimsby', region: 'southern-ontario' },
+-  { name: 'London', region: 'southern-ontario', aliases: ['london ontario', 'london on'] },
+-  { name: 'Woodstock', region: 'southern-ontario' },
+-  { name: 'Stratford', region: 'southern-ontario' },
+-  { name: 'Peterborough', region: 'southern-ontario' },
+-  { name: 'Cobourg', region: 'southern-ontario' },
+-  { name: 'Port Hope', region: 'southern-ontario' },
+-  { name: 'Belleville', region: 'southern-ontario' },
+-  { name: 'Kingston', region: 'southern-ontario' },
+-  { name: 'Collingwood', region: 'southern-ontario' },
+-  { name: 'Wasaga Beach', region: 'southern-ontario' },
+-  { name: 'Muskoka', region: 'southern-ontario', aliases: ['bracebridge', 'gravenhurst', 'huntsville'] },
+-  { name: 'Sarnia', region: 'southern-ontario' },
+-  { name: 'Windsor', region: 'southern-ontario' },
+-  { name: 'Chatham-Kent', region: 'southern-ontario', aliases: ['chatham'] },
+-  { name: 'Owen Sound', region: 'southern-ontario' },
+-];
+-
+-/** The hierarchy, built once. */
+ export function buildLocationNodes(): LocationNode[] {
+-  const nodes: LocationNode[] = [
+-    { slug: 'canada', name: 'Canada', tier: 'country', coverage: 'parent', parent: null, aliases: ['ca'] },
+-    { slug: 'ontario', name: 'Ontario', tier: 'province', coverage: 'parent', parent: 'canada', aliases: ['on', 'province of ontario', 'all ontario', 'all of ontario', 'anywhere in ontario', 'everywhere in ontario'] },
+-    { slug: 'southern-ontario', name: 'Southern Ontario', tier: 'region', coverage: 'assessment', parent: 'ontario', aliases: ['south ontario', 'south of ontario', 'all southern ontario', 'southwestern ontario', 'golden horseshoe', 'greater golden horseshoe', 'all of southern ontario'] },
+-    { slug: 'gta', name: 'Greater Toronto Area', tier: 'region', coverage: 'region', parent: 'southern-ontario', aliases: ['the gta', 'greater toronto', 'greater toronto area', 'toronto area', 'gta ontario', 'the greater toronto area', 'peel', 'york region', 'durham', 'durham region', 'halton', 'halton region'] },
+-    { slug: 'toronto', name: 'Toronto', tier: 'municipality', coverage: 'region', parent: 'gta', aliases: ['city of toronto', 'toronto ontario', 'toronto on', 'toronto canada', 'the six', 'tdot', 't.o.', 'to'] },
+-  ];
++  const nodes: LocationNode[] = REGION_NODES.map((r) => ({
++    slug: r.slug,
++    name: r.name,
++    tier: r.tier as LocationTier,
++    coverage: r.coverage,
++    parent: r.parent,
++    aliases: [...r.aliases],
++  }));
++  const has = (slug: string) => nodes.some((n) => n.slug === slug);
++  const add = (n: LocationNode) => {
++    if (!has(n.slug)) nodes.push(n);
++  };
++  const published = new Set(SERVICE_AREAS.map((a) => a.slug));
+ 
+-  /*
+-   * WHERE A PUBLISHED MUNICIPALITY HANGS FROM.
+-   *
+-   * This used to be `'gta'` for everything in CITIES, which was true while
+-   * CITIES was sixteen GTA municipalities. It stopped being true the moment
+-   * Hamilton, St. Catharines, Niagara-on-the-Lake, Niagara Falls, Grimsby and
+-   * Barrie were published: none of those is in the Greater Toronto Area, and a
+-   * hierarchy that says otherwise is wrong in the part of the graph that exists
+-   * to answer "where is this place".
+-   *
+-   * The region for each is already recorded, once, in ASSESSMENT_MUNICIPALITIES
+-   * below — so it is read from there rather than restated here, and a
+-   * municipality moving between the published and assessed lists cannot change
+-   * which region it belongs to.
+-   */
+-  const REGION_OF = new Map(ASSESSMENT_MUNICIPALITIES.map((m) => [slugify(m.name), m.region]));
+-  const parentOfPublished = (slug: string, name: string): string =>
+-    REGION_OF.get(slug) ?? REGION_OF.get(slugify(name)) ?? 'gta';
++  /* Toronto: a region node. Its published areas are the districts and
++     neighbourhoods below, each hanging from it. */
++  add({ slug: 'toronto', name: 'Toronto', tier: 'municipality', coverage: 'region', parent: 'gta', aliases: TORONTO_ALIASES });
+ 
+   for (const c of CITIES) {
+-    const isDistrict = TORONTO_DISTRICT_SLUGS.has(c.slug);
+-    nodes.push({
++    const m = marketBySlug(c.slug);
++    add({
+       slug: c.slug,
+       name: c.name,
+-      tier: isDistrict ? 'district' : 'municipality',
++      tier: 'municipality',
+       coverage: 'published',
+-      parent: isDistrict ? 'toronto' : parentOfPublished(c.slug, c.name),
++      parent: regionOf(c.slug, m?.country ?? 'CA'),
+       aliases: PUBLISHED_ALIASES[c.slug] ?? [],
+     });
+   }
+   for (const n of NEIGHBOURHOOD_AREAS) {
+-    nodes.push({
++    add({
+       slug: n.slug,
+       name: n.name,
+       tier: 'neighbourhood',
+       coverage: 'published',
+-      parent: 'toronto',
++      parent: marketBySlug(n.slug)?.partOf ?? 'toronto',
+       aliases: PUBLISHED_ALIASES[n.slug] ?? [],
+     });
+   }
+-  /*
+-   * Communities inside a municipality other than Toronto. They hang from their
+-   * own municipality when it is a node — Ancaster, Dundas, Stoney Creek and
+-   * Waterdown from Hamilton — and from the region when it is not: Lincoln is a
+-   * confirmed market in content/geo/markets.ts with no published page, so
+-   * Beamsville hangs from Southern Ontario rather than from a node that does
+-   * not exist. The alternative, inventing a Lincoln node with no page behind
+-   * it, would put a location in the graph that resolves to nothing.
+-   */
++  /* Districts: the six former municipalities of Toronto, and communities inside
++     a municipality elsewhere. Each hangs from the municipality the market
++     registry says it is part of. */
+   for (const d of DISTRICT_AREAS) {
+-    const parentSlug = slugify(d.partOf);
+-    nodes.push({
++    add({
+       slug: d.slug,
+       name: d.name,
+       tier: 'district',
+       coverage: 'published',
+-      parent: nodes.some((n) => n.slug === parentSlug) ? parentSlug : 'southern-ontario',
++      parent: marketBySlug(d.slug)?.partOf ?? slugify(d.partOf),
+       aliases: PUBLISHED_ALIASES[d.slug] ?? [],
+     });
+   }
+-  for (const m of ASSESSMENT_MUNICIPALITIES) {
+-    const slug = slugify(m.name);
+-    /* By slug AND by name: "Niagara Falls" here slugifies to `niagara-falls`,
+-       while the published Canadian page is `niagara-falls-on` because there are
+-       two Niagara Falls on this corridor. Matching on slug alone would have
+-       published one node and assessed a second node for the same place. */
+-    if (nodes.some((n) => n.slug === slug || n.name === m.name)) continue;
+-    nodes.push({
+-      slug,
++  /* Any market without a page. None today — every market is published or, for
++     Toronto, a region — but a market added tomorrow without a page is still a
++     real place with a real parent, not a gap in the hierarchy. */
++  for (const m of MARKETS) {
++    if (published.has(m.slug)) continue;
++    add({
++      slug: m.slug,
+       name: m.name,
+-      tier: 'municipality',
++      tier: m.kind === 'district' ? 'district' : 'municipality',
+       coverage: 'assessment',
+-      parent: m.region,
+-      aliases: m.aliases ?? [],
++      parent: m.partOf ?? regionOf(m.slug, m.country),
++      aliases: [],
+     });
+   }
++  for (const d of DISCOVERY) {
++    add({ slug: d.slug, name: d.name, tier: 'municipality', coverage: 'assessment', parent: regionOf(d.slug, 'CA'), aliases: d.aliases ?? [] });
++  }
+   return nodes;
+ }
+ 
+diff --git a/apps/web/lib/registry/match.ts b/apps/web/lib/registry/match.ts
+index dc8c92e..612a27a 100644
+--- a/apps/web/lib/registry/match.ts
++++ b/apps/web/lib/registry/match.ts
+@@ -23,6 +23,7 @@ import { estimateServiceBandCad } from '@/lib/pricing';
+ import type { PriceBandKey } from '@/content/constants/pricing';
+ import { SERVICE_ALIASES, UNSUPPORTED_ALIASES, GENERIC_HARDWOOD_PHRASES, normalise } from './intents';
+ import { LOCATION_NODES, publishedWithin, ancestorsOf, type LocationNode } from './locations';
++import { TERRITORY } from '@/lib/geo/territory';
+ import { getRegistry, serviceId, locationId, BAND_SERVICE_SLUG, type Registry } from './registry';
+ import type { EvidencePrimitive, ServicePrimitive, LocationPrimitive, PricePrimitive } from './types';
+ 
+@@ -143,8 +144,8 @@ export function resolveLocation(reg: Registry, text: string | undefined, fallbac
+       published_within: [],
+       note:
+         nothingProvided || !text
+-          ? `No location given. The published service area is ${reg.organization.data.service_region}.`
+-          : 'Place not recognised. If it is in Southern Ontario, work is assessed per project through the estimate path; the published service area is Toronto and the Greater Toronto Area.',
++          ? `No location given. The published service territory is ${TERRITORY}.`
++          : `Place not recognised. If it is in Southern Ontario, work is assessed per project through the estimate path; the published service territory is ${TERRITORY}.`,
+     };
+   }
+   const prim = reg.locations.find((l) => l.id === locationId(node.slug)) as LocationPrimitive | undefined;
+@@ -155,8 +156,8 @@ export function resolveLocation(reg: Registry, text: string | undefined, fallbac
+   const notes: Record<LocationNode['coverage'], string> = {
+     published: `${node.name} is a published service area with its own page.`,
+     region: `${node.name} contains ${within.length} published service areas.`,
+-    assessment: `${node.name} is not a published service area. Projects there are assessed individually; the published service area is Toronto and the Greater Toronto Area. Use the estimate path to confirm.`,
+-    parent: `${node.name} is broader than the published service area (Toronto and the Greater Toronto Area). Southern Ontario projects outside the GTA are assessed individually.`,
++    assessment: `${node.name} is not a published service area. Projects there are assessed individually; the published service territory is ${TERRITORY}. Use the estimate path to confirm.`,
++    parent: `${node.name} is broader than the published service territory (${TERRITORY}). Places inside it without a published page are assessed individually.`,
+   };
+   return {
+     id: locationId(node.slug),
+diff --git a/apps/web/lib/registry/openapi.ts b/apps/web/lib/registry/openapi.ts
+index 13b3094..343e18c 100644
+--- a/apps/web/lib/registry/openapi.ts
++++ b/apps/web/lib/registry/openapi.ts
+@@ -269,7 +269,7 @@ export function buildOpenApi() {
+           required: ['slug', 'name', 'tier', 'coverage', 'parent_id', 'in_area_served'],
+           properties: {
+             slug: { type: 'string' }, name: { type: 'string' },
+-            tier: { type: 'string', enum: ['country', 'province', 'region', 'municipality', 'district', 'neighbourhood'] },
++            tier: { type: 'string', enum: ['country', 'province', 'state', 'region', 'municipality', 'district', 'neighbourhood'] },
+             coverage: { type: 'string', enum: ['published', 'region', 'assessment', 'parent'], description: 'published = has a page and is in areaServed; region = contains published areas; assessment = real place, served on assessment only; parent = hierarchy node.' },
+             parent_id: { type: ['string', 'null'] }, in_area_served: { type: 'boolean' },
+             local_notes: { type: ['object', 'null'] }, aliases: { type: 'array', items: { type: 'string' } },
+diff --git a/apps/web/lib/registry/registry.ts b/apps/web/lib/registry/registry.ts
+index 7b83cfb..caa8177 100644
+--- a/apps/web/lib/registry/registry.ts
++++ b/apps/web/lib/registry/registry.ts
+@@ -45,7 +45,7 @@ import { getGuides } from '@/lib/guides';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { LOGO_URL } from '@/lib/brand-assets';
+ import { SERVICE_ALIASES } from './intents';
+-import { LOCATION_NODES, hasLocalNotes } from './locations';
++import { LOCATION_NODES, HOME_LOCALITY_SLUG, hasLocalNotes } from './locations';
+ import { marketBySlug } from '@/content/geo/markets';
+ import type {
+   ActionPrimitive,
+@@ -284,7 +284,14 @@ export function buildServices(): ServicePrimitive[] {
+ /* ── locations ──────────────────────────────────────────────────────────── */
+ 
+ export function buildLocations(): LocationPrimitive[] {
+-  const areaServed = new Set(CITIES.map((c) => c.slug));
++  /*
++   * `in_area_served` means what its type says: the organisation's JSON-LD
++   * declares this place as a City in areaServed. That list is CITIES plus the
++   * shop's own locality (root-schema.ts), and until GEO-001 this read CITIES
++   * alone — so Toronto, the first City in the organisation's areaServed, was
++   * `false` here (GC-010).
++   */
++  const areaServed = new Set([HOME_LOCALITY_SLUG, ...CITIES.map((c) => c.slug)]);
+   const coverageClaim = claim('coverage.serviceAreas');
+   return LOCATION_NODES.map((n) => {
+     const cc = n.coverage === 'published' ? cityContent(n.slug) : undefined;
+@@ -333,7 +340,7 @@ export function buildLocations(): LocationPrimitive[] {
+           n.coverage === 'assessment'
+             ? 'Not a published service area. Work here is assessed per project through the estimate path; do not present as covered.'
+             : n.coverage === 'parent'
+-              ? 'Hierarchy node. The published service area is Toronto and the Greater Toronto Area.'
++              ? `Hierarchy node, wider than the service territory. The published service areas are listed at ${abs('/service-areas')}.`
+               : undefined,
+       },
+       status: published || n.coverage === 'region' ? 'verified' : 'unverified',
+diff --git a/apps/web/lib/registry/types.ts b/apps/web/lib/registry/types.ts
+index 6f2fa12..ef23ef1 100644
+--- a/apps/web/lib/registry/types.ts
++++ b/apps/web/lib/registry/types.ts
+@@ -139,14 +139,14 @@ export type ServiceData = {
+   markdown_url: string;
+ };
+ 
+-export type LocationTier = 'country' | 'province' | 'region' | 'municipality' | 'district' | 'neighbourhood';
++export type LocationTier = 'country' | 'province' | 'state' | 'region' | 'municipality' | 'district' | 'neighbourhood';
+ 
+ /**
+  * `published`  — has a service-area page and appears in areaServed.
+  * `region`     — a region the published areas sit inside (GTA, Toronto).
+  * `assessment` — a real place in Southern Ontario without a published page;
+  *                served on assessment, never claimed as covered.
+- * `parent`     — hierarchy node only (Ontario, Canada).
++ * `parent`     — hierarchy node only (Canada, Ontario, United States, New York State).
+  */
+ export type LocationCoverage = 'published' | 'region' | 'assessment' | 'parent';
+ 
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index 71c1c4e..789fbad 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -13,7 +13,7 @@
+  * Keep in sync with seo-data.ts (NAP).
+  */
+ 
+-import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, US_AREA_SLUGS, type City } from '@/lib/seo-data';
++import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
+ import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
+ import { getServicePages, priceBand } from '@/lib/service-pages';
+ import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+@@ -27,6 +27,7 @@ import {
+   type RegionConfig,
+   type FAQItem,
+ } from './builders';
++import { marketBySlug } from '@/content/geo/markets';
+ import type {
+   Organization,
+   WebSite,
+@@ -35,6 +36,7 @@ import type {
+   PropertyValue,
+   AreaServedCity,
+   AreaServedPlace,
++  AreaServedRegion,
+ } from './types';
+ 
+ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+@@ -67,6 +69,50 @@ const GTA = Array.from(
+   new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
+ );
+ 
++/*
++ * WHERE EACH CITY IS (GEO-001).
++ *
++ * The organisation's areaServed listed fifty-odd bare `{ "@type": "City",
++ * "name": … }` nodes after an AdministrativeArea "Greater Toronto Area ⊂
++ * Ontario ⊂ Canada" — Buffalo and Rochester among them, with nothing to say
++ * they were not in Ontario, and "Niagara Falls" beside "Niagara Falls, NY" with
++ * nothing to say which was which (GC-004, GC-014). Every City node now names
++ * its province or state and country, read from the market registry.
++ */
++const ONTARIO: AreaServedRegion = {
++  '@type': 'AdministrativeArea',
++  name: 'Ontario',
++  containedInPlace: { '@type': 'Country', name: 'Canada' },
++};
++const NEW_YORK: AreaServedRegion = {
++  '@type': 'AdministrativeArea',
++  name: 'New York',
++  containedInPlace: { '@type': 'Country', name: 'United States' },
++};
++const countryOfSlug = (slug: string): 'CA' | 'US' => (marketBySlug(slug)?.country === 'US' ? 'US' : 'CA');
++const stateOf = (slug: string): AreaServedRegion => (countryOfSlug(slug) === 'US' ? NEW_YORK : ONTARIO);
++const cityNode = (name: string, slug: string): AreaServedCity => ({
++  '@type': 'City',
++  name,
++  containedInPlace: stateOf(slug),
++});
++const slugOf = (name: string): string =>
++  CITIES.find((c) => c.name === name)?.slug ??
++  name.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
++
++/** Every City the organisation serves, each with its province or state. */
++const SERVED_CITY_NODES: AreaServedCity[] = GTA.map((name) => cityNode(name, slugOf(name)));
++
++/**
++ * The price bands are Ontario bands in Canadian dollars. content/geo/markets.ts
++ * is explicit that they are not a local United States fact on any page, and the
++ * offer catalog carried every New York city as an areaServed of a CAD price
++ * until GEO-001. The offers now name the Ontario cities only.
++ */
++const PRICE_BAND_CITY_NODES: AreaServedCity[] = GTA
++  .filter((name) => countryOfSlug(slugOf(name)) === 'CA')
++  .map((name) => cityNode(name, slugOf(name)));
++
+ /**
+  * THE PUBLISHED REGION, STRUCTURED.
+  *
+@@ -108,43 +154,33 @@ export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
+     return {
+       '@type': 'Place',
+       name: city.name,
+-      containedInPlace: { '@type': 'City', name: NEIGHBOURHOOD_CITY },
++      containedInPlace: cityNode(NEIGHBOURHOOD_CITY, 'toronto'),
+     };
+   }
+   /*
+-   * Communities inside a municipality other than Toronto: Ancaster, Dundas,
+-   * Stoney Creek and Waterdown in Hamilton, Beamsville in Lincoln. Same rule as
+-   * the Toronto sixteen — a Place inside a City, never a City of its own —
+-   * except that the containing city is read from the record rather than assumed.
+-   * Hard-coding Toronto here would have emitted Beamsville as a neighbourhood
+-   * of Toronto, which is the kind of error that is invisible on the page and
+-   * unambiguous to a machine.
++   * Districts: the six former municipalities of Toronto, communities of
++   * Hamilton, Lincoln, King, Vaughan, Markham and Mississauga, and two Erie
++   * County villages. A Place inside the City it belongs to, and that City
++   * inside its province or state — Williamsville is in Amherst, New York, and
++   * until GEO-001 this node did not say New York (GC-013).
+    */
+   const district = DISTRICT_AREAS.find((d) => d.slug === city.slug);
+   if (district) {
++    const parentSlug = marketBySlug(district.slug)?.partOf ?? slugOf(district.partOf);
+     return {
+       '@type': 'Place',
+       name: city.name,
+-      containedInPlace: { '@type': 'City', name: district.partOf },
++      containedInPlace: cityNode(district.partOf, parentSlug),
+     };
+   }
+   /*
+-   * New York State. A City node with the state named inside it, because there
+-   * is a Niagara Falls and a Brighton on both sides of the border and a bare
+-   * name resolves to whichever one the consumer already believed in.
++   * A municipality. Its province or state and country are always named, so a
++   * Niagara Falls, a Brighton or a Hamburg resolves to the one this page is
++   * about rather than whichever the consumer already believed in. Until
++   * GEO-001 only the New York branch did this, and every Ontario City node
++   * named no province at all (GC-014).
+    */
+-  if (US_AREA_SLUGS.has(city.slug)) {
+-    return {
+-      '@type': 'City',
+-      name: city.name,
+-      containedInPlace: {
+-        '@type': 'AdministrativeArea',
+-        name: 'New York',
+-        containedInPlace: { '@type': 'Country', name: 'United States' },
+-      },
+-    };
+-  }
+-  return { '@type': 'City', name: city.name };
++  return cityNode(city.name, city.slug);
+ }
+ 
+ /**
+@@ -225,7 +261,7 @@ const BAND_OFFER_CATALOG = {
+     priceCurrency: band.currency,
+     priceSpecification: priceSpecification(band),
+     itemOffered: { '@id': `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}#service` },
+-    areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
++    areaServed: PRICE_BAND_CITY_NODES,
+     availability: 'https://schema.org/InStock',
+     url: `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}`,
+   })),
+@@ -272,7 +308,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
+   // Derived, like the per-service lists below. This block was sixteen
+   // hand-typed City nodes that happened to agree with CITIES today; the
+   // per-service lists were four hand-typed nodes that did not. One source.
+-  areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
++  areaServed: SERVED_CITY_NODES,
+   /**
+    * THE SERVICES, DERIVED FROM THE TEXT A VISITOR READS.
+    *
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+index 06c97f7..0e5e34b 100644
+--- a/apps/web/lib/seo-data.ts
++++ b/apps/web/lib/seo-data.ts
+@@ -33,10 +33,26 @@ export const BUSINESS = {
+ export type City = { slug: string; name: string };
+ 
+ const AREAS = [
+-  /* Toronto and the inner ring. */
+-  'Downtown Toronto', 'North York', 'Etobicoke', 'Scarborough', 'East York', 'York',
++  /*
++   * The inner ring. The six former municipalities of Toronto — Downtown
++   * Toronto, North York, Etobicoke, Scarborough, East York and York — were in
++   * this list until GEO-001, which made each of them a schema.org City node
++   * beside the City of Toronto that contains them. content/geo/markets.ts has
++   * always recorded them as districts of Toronto; they are in DISTRICTS below
++   * now, with the same pages, and emit as a Place inside Toronto. GC-003.
++   */
+   'Vaughan', 'Markham', 'Richmond Hill', 'Mississauga', 'Oakville', 'Brampton',
+   'Aurora', 'Newmarket', 'Pickering', 'Ajax',
++  /*
++   * The eleven owner-confirmed municipalities that had no page (GEO-001).
++   * Each was a confirmed market in content/geo/markets.ts and in the
++   * /api/v1/markets service area, and had no URL, no sitemap entry and no
++   * graph edge — a coverage claim with nothing behind it (GC-001). Each now
++   * has local content written from public geography, with no job, review or
++   * address invented for it.
++   */
++  'Whitby', 'Oshawa', 'Clarington', 'Kawartha Lakes', 'Halton Hills', 'Caledon',
++  'Innisfil', 'Guelph', 'Cambridge', 'Kitchener', 'Port Colborne',
+   /*
+    * The corridor west and south, published after the owner confirmed coverage
+    * of the whole Ontario map on 2026-09-10. Every name here exists in
+@@ -80,7 +96,8 @@ export const AREA_SLUG_OVERRIDES: Record<string, string> = {
+ };
+ 
+ /**
+- * Places INSIDE a municipality that is already in AREAS, outside Toronto.
++ * Places INSIDE a municipality: the six former municipalities of Toronto
++ * (since GEO-001), and communities inside a municipality that is in AREAS.
+  *
+  * Ancaster, Dundas, Stoney Creek and Waterdown are communities of the City of
+  * Hamilton; Beamsville is the main community of the Town of Lincoln. They are
+@@ -96,6 +113,13 @@ export const AREA_SLUG_OVERRIDES: Record<string, string> = {
+  * the site a machine reads literally.
+  */
+ const DISTRICTS: Array<{ name: string; partOf: string }> = [
++  /* The six former municipalities of Toronto. Districts of the City of Toronto (GC-003). */
++  { name: 'Downtown Toronto', partOf: 'Toronto' },
++  { name: 'North York', partOf: 'Toronto' },
++  { name: 'Etobicoke', partOf: 'Toronto' },
++  { name: 'Scarborough', partOf: 'Toronto' },
++  { name: 'East York', partOf: 'Toronto' },
++  { name: 'York', partOf: 'Toronto' },
+   { name: 'Ancaster', partOf: 'Hamilton' },
+   { name: 'Dundas', partOf: 'Hamilton' },
+   { name: 'Stoney Creek', partOf: 'Hamilton' },
+@@ -181,9 +205,26 @@ export const US_AREA_SLUGS = new Set(
+   MARKETS.filter((mk) => mk.country === 'US').map((mk) => mk.slug),
+ );
+ 
+-/** The area name as a page says it: "Buffalo, NY", "Oakville". */
+-export const areaDisplayName = (area: City): string =>
+-  US_AREA_SLUGS.has(area.slug) && !/,\s*NY$/.test(area.name) ? `${area.name}, NY` : area.name;
++/**
++ * Ontario markets whose name is also the name of a New York market — today,
++ * Niagara Falls. The New York one already says ", NY"; until GEO-001 the
++ * Ontario one said nothing, so a title, an H1 and a schema name all read
++ * "Niagara Falls" and a reader resolved it against whichever one they knew
++ * (GC-014). Derived from the registry, so a new collision is disambiguated the
++ * day it is added.
++ */
++const bareName = (n: string) => n.replace(/,\s*(NY|ON)$/, '').trim().toLowerCase();
++const US_MARKET_NAMES = new Set(MARKETS.filter((mk) => mk.country === 'US').map((mk) => bareName(mk.name)));
++const CA_NAME_COLLISIONS = new Set(
++  MARKETS.filter((mk) => mk.country === 'CA' && US_MARKET_NAMES.has(bareName(mk.name))).map((mk) => mk.slug),
++);
++
++/** The area name as a page says it: "Buffalo, NY", "Niagara Falls, ON", "Oakville". */
++export const areaDisplayName = (area: City): string => {
++  if (US_AREA_SLUGS.has(area.slug)) return /,\s*NY$/.test(area.name) ? area.name : `${area.name}, NY`;
++  if (CA_NAME_COLLISIONS.has(area.slug)) return /,\s*ON$/.test(area.name) ? area.name : `${area.name}, ON`;
++  return area.name;
++};
+ 
+ /**
+  * Everything with a /service-areas page. The routes, the sitemap, the .md
+@@ -200,7 +241,22 @@ export const DISTRICT_AREAS: Array<City & { partOf: string }> = DISTRICTS.map((d
+   partOf: d.partOf,
+ }));
+ 
+-export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS, ...DISTRICT_AREAS];
++/**
++ * The top level a visitor chooses from: Toronto's six districts, then every
++ * municipality. The footer column, the resources index, the framework's area
++ * select and the library promo list these. Before GEO-001 they listed CITIES,
++ * which happened to start with the six Toronto districts because those were
++ * (wrongly) municipalities; they keep the same first entries now that they are
++ * districts, and the lists stay derived.
++ */
++const TORONTO_DISTRICT_AREAS = DISTRICT_AREAS.filter((d) => d.partOf === 'Toronto');
++export const PRIMARY_AREAS: City[] = [...TORONTO_DISTRICT_AREAS, ...CITIES];
++
++export const SERVICE_AREAS: City[] = [
++  ...PRIMARY_AREAS,
++  ...NEIGHBOURHOOD_AREAS,
++  ...DISTRICT_AREAS.filter((d) => d.partOf !== 'Toronto'),
++];
+ 
+ export const cityBySlug = (slug: string): City | undefined =>
+   SERVICE_AREAS.find((c) => c.slug === slug);
+@@ -1210,6 +1266,126 @@ export const CITY_CONTENT: Record<string, CityContent> = {
+     localConsideration:
+       'Matching stain and sheen across the three or four levels of a split-level, and across the landings between them, is harder than laying one long run and is where an inconsistent refinish shows.',
+   },
++
++  /* ── GEO-001: the eleven owner-confirmed municipalities that had no page ──
++   *
++   * Every one of these was a confirmed market (content/geo/markets.ts, owner
++   * confirmation 2026-09-10) and in the /api/v1/markets service area, with no
++   * URL behind the claim. What is written below is public geography — how the
++   * municipality was formed, when its housing was built, what that means for a
++   * floor — and the site's own published method. No job, review, customer or
++   * address is stated or implied for any of them, and none carries a
++   * signatureProject.
++   */
++  whitby: {
++    intro:
++      'Whitby runs from the Lake Ontario shore at Port Whitby, through a nineteenth-century downtown on Brock and Dundas Streets, north to the village of Brooklin. Most of its housing between those points is subdivision stock built from the 1980s onward, around an older core that still carries original floors.',
++    neighbourhoods: ['Downtown Whitby', 'Port Whitby', 'Brooklin', 'Williamsburg', 'Pringle Creek', 'Rolling Acres'],
++    housingNote:
++      'The pre-war houses around the downtown core sit on plank subfloor with narrow-strip or face-nailed boards that have usually been sanded before, so remaining thickness is the first measurement. The newer subdivisions to the north are plywood over engineered joists, where carpet-grade flatness has to be corrected before a nail-down floor goes in.',
++    localConsideration:
++      'Brooklin and the north end are new enough that many houses are on their first floor covering, and conversion from builder carpet to hardwood is the common job; the older lakeshore and downtown stock is where refinishing and board replacement concentrate.',
++  },
++
++  oshawa: {
++    intro:
++      'Oshawa grew around the McLaughlin carriage works that became General Motors of Canada, and its housing still reads that history: early-twentieth-century and wartime houses south and east of downtown, post-war streets through the middle of the city, and subdivisions north toward Windfields and the university campus.',
++    neighbourhoods: ['Lakeview', 'McLaughlin', 'Donevan', 'Eastdale', 'Samac', 'Windfields'],
++    housingNote:
++      'The older worker housing near downtown and down toward Lakeview Park is small-footprint stock with original strip floors, frequently under two or three later coverings, where board replacement and feathering come before any sand. The north-end subdivisions are plywood over engineered joists and are installation and conversion work.',
++    localConsideration:
++      'Houses within a few blocks of the lake at Lakeview hold more summer humidity than the north end does, and a floor delivered from a dry warehouse in July is measured on site before it is installed rather than dated from the delivery slip.',
++  },
++
++  clarington: {
++    intro:
++      'Clarington is not one town but several: Bowmanville, Courtice, Newcastle and Orono, with hamlets between them, joined into one municipality in the 1970s. Bowmanville has a Victorian main street and older residential streets around it; Courtice and the edges of Bowmanville are largely built since the 1990s.',
++    neighbourhoods: ['Bowmanville', 'Courtice', 'Newcastle', 'Orono', 'Hampton'],
++    housingNote:
++      'Heritage houses in old Bowmanville and Newcastle village carry plank subfloors and original boards that often change species or width room to room, so matching comes before sanding. The Courtice and south Bowmanville subdivisions are conventional plywood over joists, where subfloor flatness is the variable that most changes the quote.',
++    localConsideration:
++      'Clarington is outside the daily-return radius of the Toronto shop: a job here is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Lakeshore streets in Bowmanville and Newcastle hold more summer humidity than the inland hamlets, and acclimation is measured on site.',
++  },
++
++  'kawartha-lakes': {
++    intro:
++      'Kawartha Lakes is a single municipality covering Lindsay, Fenelon Falls, Bobcaygeon, Omemee and the lake country around them, much of it strung along the Trent-Severn Waterway. Its housing is a mix of small-town cores, rural houses and a large stock of cottages, many of them converted to year-round use.',
++    neighbourhoods: ['Lindsay', 'Fenelon Falls', 'Bobcaygeon', 'Omemee', 'Coboconk'],
++    housingNote:
++      'Cottage conversions are the defining job here: floors laid over joists that were framed for summer use, crawlspaces open to lake air, and additions at different heights. The subfloor and the moisture below it are measured before any material is chosen, because an unconditioned crawlspace decides what a floor can survive.',
++    localConsideration:
++      'This is outside the daily-return radius of the Toronto shop. A job here is scheduled as a trip, confirmed in advance and priced with that in the written quote — and a seasonal property that is shut in winter changes the acclimation plan entirely.',
++  },
++
++  'halton-hills': {
++    intro:
++      'Halton Hills is Georgetown and Acton, with the hamlets of Glen Williams, Limehouse and Terra Cotta between them along the Credit River and the escarpment. Georgetown has a nineteenth-century core around Main Street and large subdivisions built from the 1970s onward; Acton is a smaller town of the same pattern.',
++    neighbourhoods: ['Georgetown', 'Acton', 'Glen Williams', 'Limehouse', 'Terra Cotta'],
++    housingNote:
++      'The 1970s and 1980s subdivisions in Georgetown frequently still carry their original strip oak under carpet, with enough wear layer left for a full sand when nothing has been done to them since. The older core and the hamlet houses are plank subfloor and mixed-age boards that call for repair in kind before refinishing.',
++    localConsideration:
++      'Escarpment and river-valley lots run cooler and damper than the flat subdivisions, and houses on the valley slopes often have walk-out basements where a below-grade floor is a moisture question before it is a flooring one.',
++  },
++
++  caledon: {
++    intro:
++      'Caledon is the largest municipality by area in the GTA and mostly rural: Bolton in the southeast, Caledon East, Caledon Village, Inglewood, Alton, Belfountain and Palgrave, spread across the Oak Ridges Moraine and the Niagara Escarpment. Estate lots and custom houses sit alongside the subdivision growth in Bolton.',
++    neighbourhoods: ['Bolton', 'Caledon East', 'Caledon Village', 'Inglewood', 'Alton', 'Belfountain', 'Palgrave'],
++    housingNote:
++      'Custom and estate houses bring long open runs, wide-plank specifications and radiant heat, which together make engineered construction and a measured moisture reading on the slab or subfloor part of the specification rather than an option. Bolton subdivisions are conventional plywood over joists and are installation and conversion work.',
++    localConsideration:
++      'Moraine and escarpment lots run cooler than the Bolton subdivisions, and large rural houses often have basements finished at different times; each below-grade room is a moisture reading before it is a flooring choice.',
++  },
++
++  innisfil: {
++    intro:
++      'Innisfil lies along the west shore of Lake Simcoe south of Barrie, with Alcona as its largest community and Lefroy, Stroud, Cookstown and the shoreline settlements around it. Much of the lakeside housing began as cottages; the inland growth around Alcona is recent subdivision stock.',
++    neighbourhoods: ['Alcona', 'Lefroy', 'Stroud', 'Cookstown', 'Sandy Cove', 'Gilford'],
++    housingNote:
++      'Shoreline houses that started as cottages carry the same signature as anywhere on a lake: additions at different heights, floors that change direction at a doorway, and crawlspaces that breathe lake air. The Alcona subdivisions are plywood over engineered joists, where flatness is corrected before a nail-down floor is laid.',
++    localConsideration:
++      'Innisfil is reached from the Vaughan hub on the 400 and is outside the daily-return radius, so a job is scheduled as a trip and confirmed in advance. Lake Simcoe widens the humidity swing near the shore, which is an argument for engineered construction on the lakeside properties.',
++  },
++
++  guelph: {
++    intro:
++      'Guelph is a planned nineteenth-century city built out of local limestone, and its older neighbourhoods around downtown and the University of Guelph still carry that stock. Post-war housing fills the middle of the city, and the south end is subdivision growth from the 1990s onward.',
++    neighbourhoods: ['Exhibition Park', 'Old University', 'St. George’s Park', 'The Ward', 'Kortright Hills', 'South End'],
++    housingNote:
++      'Stone and brick houses near downtown carry original boards over plank subfloor, often with heating ducts, radiators and old repairs cut through them, so piecing in and feathering come before any uniform sand. The south-end subdivisions are plywood over engineered joists and are installation work with subfloor flatness as the main variable.',
++    localConsideration:
++      'Guelph is reached from the Hamilton hub on the 403 and Highway 6 and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Thick masonry walls in the limestone houses change how quickly a room settles to its winter humidity.',
++  },
++
++  cambridge: {
++    intro:
++      'Cambridge was formed in 1973 from Galt, Preston and Hespeler, three older towns on the Grand and Speed Rivers, and each core still has its own nineteenth-century main street and stone buildings. It is part of Waterloo Region, beside Kitchener, with post-war and newer subdivision housing between and around the old centres.',
++    neighbourhoods: ['Galt', 'Preston', 'Hespeler', 'Blair', 'West Galt', 'East Galt'],
++    housingNote:
++      'The older houses in Galt, Preston and Hespeler carry original boards over plank subfloor, sometimes several species in one house where rooms were added over a century. The post-war and newer streets are plywood over joists with strip oak or builder engineered, and are refinishing and conversion work.',
++    localConsideration:
++      'Cambridge is reached from the Hamilton hub on the 403 corridor and is outside the daily-return radius, so a job is scheduled as a trip and confirmed in advance. River-valley lots in Galt run damper than the upland subdivisions, and basements there are measured before anything is laid below grade.',
++  },
++
++  kitchener: {
++    intro:
++      'Kitchener, called Berlin until 1916, is the largest city in Waterloo Region. Its pre-war housing surrounds the downtown and Victoria Park, a broad band of post-war streets runs through the middle of the city, and the south end toward Doon is recent subdivision growth. The City of Waterloo is a separate municipality to the north.',
++    neighbourhoods: ['Downtown Kitchener', 'Victoria Park', 'Forest Heights', 'Stanley Park', 'Doon', 'Laurentian Hills'],
++    housingNote:
++      'The pre-war houses around Victoria Park and downtown carry narrow-strip oak or maple over plank subfloor, often sanded before, so remaining thickness decides between a full sand and a screen and recoat. Post-war Stanley Park and Forest Heights stock is frequently original strip oak under carpet; the south-end subdivisions are installation work.',
++    localConsideration:
++      'Kitchener is reached from the Hamilton hub on the 403 and Highway 6 corridor and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. This page covers Kitchener; the City of Waterloo is not a published area.',
++  },
++
++  'port-colborne': {
++    intro:
++      'Port Colborne sits at the Lake Erie end of the Welland Canal, a working canal town with an older downtown along the waterway and early-twentieth-century housing around it, post-war streets inland, and lakeshore cottages east toward Sherkston. It is part of Niagara Region, south of Welland.',
++    neighbourhoods: ['Downtown Port Colborne', 'Humberstone', 'Sherkston', 'Gasline', 'Bethel'],
++    housingNote:
++      'Canal-era and early-twentieth-century houses carry plank subfloor with original boards that have usually been covered or patched more than once, so repair in kind comes before refinishing. Lakeshore cottages converted to year-round use bring crawlspaces open to lake air, which are measured before any floor is chosen.',
++    localConsideration:
++      'Port Colborne is reached from the Grimsby hub across the Niagara peninsula and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Lake Erie keeps the shore band humid well into the autumn.',
++  },
+ };
+ 
+ export const cityContent = (slug: string): CityContent | undefined => CITY_CONTENT[slug];
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 296d344..944f196 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -25,6 +25,63 @@ guard, verified against production. Nothing here is closed at GEO-000.
+ 
+ ---
+ 
++## Status after GEO-001
++
++GEO-001 took the protocol's GEO-001…GEO-013 intent in one change, because the
++architecture allowed it: every contradiction below traced to three places
++(`seo-data.ts` lists, `locations.ts` region list, `root-schema.ts` place
++builder) plus the territory label, and fixing those three made every
++projection agree. Measured in the repository after the change (production is
++measured by `node scripts/geo-measure.mjs` after deploy):
++
++| Set | Before | After |
++|---|---|---|
++| markets | 101 | 101 |
++| `service_area` (municipalities) | 59 | 59 |
++| org JSON-LD City nodes | 54 | 59 (= `service_area`) |
++| `in_area_served` | 53 | 59 (= `service_area`) |
++| published pages = sitemap = graph `serves` = llms = `has_page` | 89 | 100 (every market except the City of Toronto, which is served through its 23 published districts and neighbourhoods) |
++| location nodes | 126 | 132 (+ United States, New York State, Niagara Region, Waterloo Region, Port Colborne, Kawartha Lakes) |
++| `service_area` without a page | 12 | 1 — Toronto, a region node by definition (below) |
++| New York places under a Canadian parent | 24 | 0 |
++| districts emitted as `City` | 6 | 0 |
++| Ontario place nodes without province/country | 29 | 0 |
++
++| ID | Status | How |
++|---|---|---|
++| GC-001 | fixed (Toronto rule) | the eleven confirmed municipalities have pages with local content; Toronto is a `region` node served through its 23 pages |
++| GC-002 | fixed | `ASSESSMENT_MUNICIPALITIES` moved to `content/geo/regions.ts` as `DISCOVERY` (23 non-markets only); every market is a node from `markets.ts` |
++| GC-003 | fixed | the six former municipalities of Toronto moved from `AREAS` to `DISTRICTS`; they emit `Place ⊂ City Toronto ⊂ Ontario ⊂ Canada` |
++| GC-004 | fixed (machine) · open (marketing copy) | NY under `new-york-state`; every City node carries its state; CAD offers name Ontario cities only; territory named by `lib/geo/territory.ts` on llms, ai.txt, about, team, press, head-term pages, Markdown hub, matcher; "Nearby" replaces "Across the GTA". Service-page H1s such as "Stair refinishing in Toronto and the GTA" are unchanged head-term copy |
++| GC-005 | fixed | Niagara municipalities under `niagara-region`; Kitchener, Cambridge and the City of Waterloo under `waterloo-region` |
++| GC-006 | fixed | the sentence names the real DISCOVERY places instead of "outside the GTA" |
++| GC-007 | fixed | `PUBLISHED_PARTITION`: 58 municipalities + 25 districts + 17 neighbourhoods = 100 |
++| GC-008 | fixed | Kitchener and Cambridge are published; the index sentence is `TERRITORY` |
++| GC-009 | fixed | "101 municipalities and districts — 75 in Ontario, 26 in New York State" |
++| GC-010 | fixed by definition | Toronto: `service_area` ✓, org City ✓, `in_area_served` ✓; `coverage: region`, no `serves` edge — the graph serves its 23 pages, each `within` Toronto. The golden-query suite pins Toronto as a region, and that model is kept |
++| GC-011 | fixed in data (100 = 100) | the two deciders still exist; one selector is future work |
++| GC-012 | reclassified | `in_area_served` is documented as "a City in the organisation JSON-LD"; districts and neighbourhoods are correctly false. Municipalities: `service_area` ⇔ `in_area_served`, 0 disagreements |
++| GC-013 | fixed | parents read from `markets.ts` `partOf`; Williamsville ⊂ Amherst ⊂ New York ⊂ United States |
++| GC-014 | fixed | every place carries province/state and country; "Niagara Falls, ON" in titles, llms, ai.txt, twins |
++| GC-015 | fixed | twin title uses the display name and states the same service sentence(s) as the HTML |
++| GC-016 | open | corridors still list five districts (display choice on corridor pages) |
++| GC-017 | partly | Bowmanville, Courtice, Lakeview Park are content/aliases on Clarington and Oshawa; City of Waterloo and Waterloo Region are two nodes; Brantford, Paris, Ayr unchanged |
++| GC-018 | fixed (emitted) | location note and matcher answers no longer say "Toronto and the Greater Toronto Area" |
++| GC-019 | not pursued | per owner instruction no new guard was added |
++| GC-020 | closed — not a defect | live run 2026-09-11: 0 of 7 surfaces differ with/without cache-buster; `x-vercel-cache: HIT`, `age` 10–17 s on both. The stale copies were the fetcher's |
++| GC-021 | open | job cards still keyed by display name |
++| GC-022 | open | no twins for corridors / where-we-work (none advertised) |
++| GC-023 | open | measure after the first geography deploy |
++| GC-024 | open, owner question | area pages in New York show the Ontario price bands in CAD; `markets.ts` says those bands are not a local United States fact. Either state NY pricing or scope the bands to Ontario on NY pages |
++
++Two existing checks were edited because they encoded the old geography, and
++both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
++reads `DISTRICTS` (it could not see Downtown Toronto once it became a district),
++and `lib/geo/geo.test.ts` expects at least one confirmed market without local
++content instead of more than five (eleven were written).
++
++---
++
+ ## Summary
+ 
+ | ID | Sev | Class | One line | Entities | Resolution |
+diff --git a/docs/GEO_SOURCE_MAP.md b/docs/GEO_SOURCE_MAP.md
+index a7342f8..ddded49 100644
+--- a/docs/GEO_SOURCE_MAP.md
++++ b/docs/GEO_SOURCE_MAP.md
+@@ -18,6 +18,27 @@ Every line number below is at the baseline commit.
+ 
+ ---
+ 
++## 0. Status after GEO-001
++
++The five lists are now three facts and their selectors:
++
++| Fact | Owner | Selector / projection |
++|---|---|---|
++| who is covered, kind, `partOf`, country | `content/geo/markets.ts` | every other file |
++| region of each municipality; the 23 named-but-not-covered places; region nodes | `content/geo/regions.ts` (new) | `lib/registry/locations.ts` builds every node from markets + regions + pages; no default parent |
++| which areas have a page | `lib/seo-data.ts` `AREAS` / `NEIGHBOURHOODS` / `DISTRICTS` (kept because six guards read them) | `CITIES` (58 municipalities), `PRIMARY_AREAS`, `SERVICE_AREAS` (100) |
++| the territory's name | derived — `lib/geo/territory.ts` `TERRITORY`, `TERRITORY_SHORT`, `PUBLISHED_PARTITION` | llms, ai.txt, about, team, press, head-term pages, Markdown, matcher, /service-areas |
++| where a place is, in JSON-LD | derived — `root-schema.ts` `placeForArea` / `cityNode` from markets | page `spatialCoverage`, org `areaServed`, services `areaServed`, offers (Ontario only) |
++
++Toronto rule: the City of Toronto is a `region` node. It is in the markets
++`service_area`, is the first City in the organisation JSON-LD and has
++`in_area_served: true`; it has no `/service-areas/toronto` page, and the graph's
++`serves` edges go to its 23 published districts and neighbourhoods.
++
++Sections 1–10 below describe the GEO-000 baseline and are kept as the record.
++
++---
++
+ ## 1. The answer in one paragraph
+ 
+ The site does not have one geography. It has **five hand-maintained lists that
+diff --git a/scripts/geo-measure.mjs b/scripts/geo-measure.mjs
+index 989252f..3e5407e 100644
+--- a/scripts/geo-measure.mjs
++++ b/scripts/geo-measure.mjs
+@@ -119,8 +119,11 @@ const json = (r) => {
+ const strip = ({ body, ...rest }) => rest;
+ 
+ /* ── parsers ────────────────────────────────────────────────────────────── */
++/* `(?<!\/app)`: the HTML also carries Next's own chunk paths, and
++   "/_next/static/chunks/app/service-areas/page-1a2b3c.js" is not a service area.
++   The first production run counted it as one (html_index_links 90 vs 89). */
+ const areaSlugsIn = (text) =>
+-  [...new Set([...text.matchAll(/\/service-areas\/([a-z0-9-]+?)(?:\.md)?(?=[\s"')<>\]#?,.]|$)/g)].map((m) => m[1]))].sort();
++  [...new Set([...text.matchAll(/(?<!\/app)\/service-areas\/([a-z0-9-]+?)(?:\.md)?(?=[\s"')<>\]#?,.]|$)/g)].map((m) => m[1]))].sort();
+ const corridorIdsIn = (text) =>
+   [...new Set([...text.matchAll(/\/corridors\/([a-z0-9-]+)/g)].map((m) => m[1]))].sort();
+ const jsonLd = (html) => {
+@@ -257,9 +260,17 @@ async function main() {
+   const contradictions = [];
+   const add = (id, slug, detail) => contradictions.push({ id, slug, detail });
+   for (const e of entities) {
+-    if (e.in_markets_service_area && e.html.status !== 200) add('SERVICE_AREA_WITHOUT_PAGE', e.slug, `markets.service_area lists it; /service-areas/${e.slug} → ${e.html.status}`);
++    /* A region node (Toronto) is served through the published areas inside it
++       — its districts and neighbourhoods — and has no page of its own by
++       design (docs/GEO_SOURCE_MAP.md §7). Anything else without a page is a
++       coverage claim with nothing behind it. */
++    if (e.in_markets_service_area && e.html.status !== 200 && e.api_location.coverage !== 'region') add('SERVICE_AREA_WITHOUT_PAGE', e.slug, `markets.service_area lists it; /service-areas/${e.slug} → ${e.html.status}`);
+     if (e.in_markets_service_area && e.api_location.coverage === 'assessment') add('SERVICE_AREA_VS_ASSESSMENT', e.slug, 'markets.service_area lists it; locations says coverage=assessment ("do not present as covered")');
+-    if (e.graph_serves && e.api_location.in_area_served === false) add('SERVES_BUT_NOT_IN_AREA_SERVED', e.slug, 'graph serves edge, locations.in_area_served=false');
++    /* in_area_served is defined as "the organisation's JSON-LD lists this place
++       as a City" (lib/registry/types.ts), so a district or neighbourhood with a
++       page is correctly false. What must agree is a MUNICIPALITY: served in the
++       markets API ⇔ a City in the JSON-LD. */
++    if (e.market?.kind === 'municipality' && e.in_markets_service_area !== (e.api_location.in_area_served === true)) add('SERVICE_AREA_VS_IN_AREA_SERVED', e.slug, `markets.service_area=${e.in_markets_service_area}, locations.in_area_served=${e.api_location.in_area_served}`);
+     if (e.sitemap && e.html.status !== 200) add('SITEMAP_GHOST', e.slug, `in sitemap, HTML → ${e.html.status}`);
+     if (e.html.status === 200 && !e.sitemap) add('PAGE_NOT_IN_SITEMAP', e.slug, 'HTML 200, absent from sitemap');
+     if (e.html.status === 200 && e.md.status !== 200) add('MISSING_MD_TWIN', e.slug, `.md → ${e.md.status}`);
+diff --git a/scripts/verify-work-map.mjs b/scripts/verify-work-map.mjs
+index a41cb26..14b7fb0 100644
+--- a/scripts/verify-work-map.mjs
++++ b/scripts/verify-work-map.mjs
+@@ -143,6 +143,12 @@ for (const list of ['AREAS', 'NEIGHBOURHOODS']) {
+   const m = seo.match(new RegExp(`const ${list}\\s*=\\s*\\[([\\s\\S]*?)\\]`));
+   if (m) for (const s of m[1].matchAll(/'([^']+)'/g)) areaSlugs.add(slugify(s[1]));
+ }
++/* DISTRICTS carries pages too — since GEO-001 the six former municipalities of
++   Toronto among them. Names only: a partOf is a parent, not a page. */
++{
++  const m = seo.match(/const DISTRICTS[^=]*=\s*\[([\s\S]*?)\n\];/);
++  if (m) for (const s of m[1].matchAll(/name:\s*'([^']+)'/g)) areaSlugs.add(slugify(s[1]));
++}
+ const serviceSlugs = new Set(
+   [...fs.readFileSync(SERVICE_PAGES, 'utf8').matchAll(/slug:\s*'([a-z0-9-]+)'/g)].map((m) => m[1]),
+ );
