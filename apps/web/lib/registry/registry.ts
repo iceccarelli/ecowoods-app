@@ -46,6 +46,7 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { LOGO_URL } from '@/lib/brand-assets';
 import { SERVICE_ALIASES } from './intents';
 import { LOCATION_NODES, hasLocalNotes } from './locations';
+import { marketBySlug } from '@/content/geo/markets';
 import type {
   ActionPrimitive,
   EvidencePrimitive,
@@ -309,7 +310,23 @@ export function buildLocations(): LocationPrimitive[] {
       canonical_url: abs(path ?? '/service-areas'),
       source: firstParty('/service-areas'),
       provenance: {
-        verified_at: coverageClaim?.verifiedAt ?? FACTS_VERIFIED_AT,
+        /*
+         * THE MARKET'S OWN CONFIRMATION DATE, NOT THE REGISTRY'S.
+         *
+         * Every location carried the coverage claim's date, which is a single
+         * date for the whole set. That was adequate while coverage moved as one
+         * block, and stopped being true the moment individual markets were
+         * confirmed on their own dates — Buffalo's operational position was
+         * confirmed on 2026-09-10, and this said 2026-09-05 about it.
+         *
+         * An agent deciding whether to trust a coverage statement reads exactly
+         * this field. Telling it the answer was verified five days before the
+         * confirmation that created it is worse than telling it nothing.
+         */
+        verified_at:
+          marketBySlug(n.slug)?.operationalTruth.verifiedAt
+          ?? coverageClaim?.verifiedAt
+          ?? FACTS_VERIFIED_AT,
         method: published ? 'published' : 'derived',
         claim_ids: published ? ['coverage.serviceAreas'] : [],
         note:
@@ -967,11 +984,27 @@ export function getRegistry(): Promise<Registry> {
       const evidence = await buildEvidence();
       const reviews = buildReviews();
       const prices = buildPrices();
+      /*
+       * `updated_at` is the freshest thing in the registry — the signal a
+       * consumer uses to decide whether to re-fetch. It was computed from
+       * reviews, prices and evidence and NOT from locations, so the day
+       * twenty-six New York markets and forty-four pages were added it did not
+       * move: the API went on reporting 2026-09-05 through the largest factual
+       * change the site has had. A cache keyed on this would still be serving
+       * the old territory.
+       *
+       * `facts_verified_at` is deliberately NOT touched by this. It means one
+       * specific thing — the day a person last re-read the NAP, hours, founding
+       * year and price bands on the live host — and moving it to look fresh
+       * would be the exact dishonesty its own comment forbids.
+       */
+      const locations = buildLocations();
       const updated_at = latestDate(
         FACTS_VERIFIED_AT,
         ...reviews.map((r) => r.provenance.verified_at),
         ...prices.map((p) => p.provenance.verified_at),
         ...evidence.map((e) => e.provenance.verified_at),
+        ...locations.map((l) => l.provenance.verified_at),
       );
       return {
         version: REGISTRY_VERSION,
@@ -979,7 +1012,7 @@ export function getRegistry(): Promise<Registry> {
         updated_at,
         organization: buildOrganization(),
         services: buildServices(),
-        locations: buildLocations(),
+        locations,
         prices,
         reviews,
         sources: buildSources(),
