@@ -208,7 +208,9 @@ describe('page-worthiness', () => {
     const noContent = MARKETS.filter(
       (m) => m.operationalTruth.verifiedAt !== null && m.country === 'CA' && !cityContent(m.slug),
     );
-    expect(noContent.length).toBeGreaterThan(5);
+    // GEO-001 wrote real local content for eleven of them; the City of Toronto,
+    // served through the pages of its districts, is the one left.
+    expect(noContent.length).toBeGreaterThan(0);
     for (const m of noContent) {
       const w = assess(m);
       expect(w.indexable, m.slug).toBe(false);

@@ -139,14 +139,14 @@ export type ServiceData = {
   markdown_url: string;
 };
 
-export type LocationTier = 'country' | 'province' | 'region' | 'municipality' | 'district' | 'neighbourhood';
+export type LocationTier = 'country' | 'province' | 'state' | 'region' | 'municipality' | 'district' | 'neighbourhood';
 
 /**
  * `published`  — has a service-area page and appears in areaServed.
  * `region`     — a region the published areas sit inside (GTA, Toronto).
  * `assessment` — a real place in Southern Ontario without a published page;
  *                served on assessment, never claimed as covered.
- * `parent`     — hierarchy node only (Ontario, Canada).
+ * `parent`     — hierarchy node only (Canada, Ontario, United States, New York State).
  */
 export type LocationCoverage = 'published' | 'region' | 'assessment' | 'parent';
 

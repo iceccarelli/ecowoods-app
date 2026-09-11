@@ -45,7 +45,7 @@ import { getGuides } from '@/lib/guides';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { LOGO_URL } from '@/lib/brand-assets';
 import { SERVICE_ALIASES } from './intents';
-import { LOCATION_NODES, hasLocalNotes } from './locations';
+import { LOCATION_NODES, HOME_LOCALITY_SLUG, hasLocalNotes } from './locations';
 import { marketBySlug } from '@/content/geo/markets';
 import type {
   ActionPrimitive,
@@ -284,7 +284,14 @@ export function buildServices(): ServicePrimitive[] {
 /* ── locations ──────────────────────────────────────────────────────────── */
 
 export function buildLocations(): LocationPrimitive[] {
-  const areaServed = new Set(CITIES.map((c) => c.slug));
+  /*
+   * `in_area_served` means what its type says: the organisation's JSON-LD
+   * declares this place as a City in areaServed. That list is CITIES plus the
+   * shop's own locality (root-schema.ts), and until GEO-001 this read CITIES
+   * alone — so Toronto, the first City in the organisation's areaServed, was
+   * `false` here (GC-010).
+   */
+  const areaServed = new Set([HOME_LOCALITY_SLUG, ...CITIES.map((c) => c.slug)]);
   const coverageClaim = claim('coverage.serviceAreas');
   return LOCATION_NODES.map((n) => {
     const cc = n.coverage === 'published' ? cityContent(n.slug) : undefined;
@@ -333,7 +340,7 @@ export function buildLocations(): LocationPrimitive[] {
           n.coverage === 'assessment'
             ? 'Not a published service area. Work here is assessed per project through the estimate path; do not present as covered.'
             : n.coverage === 'parent'
-              ? 'Hierarchy node. The published service area is Toronto and the Greater Toronto Area.'
+              ? `Hierarchy node, wider than the service territory. The published service areas are listed at ${abs('/service-areas')}.`
               : undefined,
       },
       status: published || n.coverage === 'region' ? 'verified' : 'unverified',

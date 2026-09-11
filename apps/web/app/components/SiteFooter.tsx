@@ -20,7 +20,7 @@
  */
 
 import { EW_MARK } from '@/lib/brand';
-import { CITIES, SERVICES } from '@/lib/seo-data';
+import { PRIMARY_AREAS, SERVICES } from '@/lib/seo-data';
 import { BUSINESS_NAP, PROFILE_LINKS, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
@@ -267,7 +267,7 @@ export default function SiteFooter() {
               See audit/FINDINGS.md F-73. */}
           <FooterCol title="Service Areas" mobile={m}>
             <div className="footer-links">
-              {CITIES.slice(0, 8).map((c) => (
+              {PRIMARY_AREAS.slice(0, 8).map((c) => (
                 <a key={c.slug} href={`/service-areas/${c.slug}`}>{c.name}</a>
               ))}
               <a href="/service-areas">All service areas →</a>

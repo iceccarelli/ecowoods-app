@@ -13,7 +13,7 @@
  * Keep in sync with seo-data.ts (NAP).
  */
 
-import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, US_AREA_SLUGS, type City } from '@/lib/seo-data';
+import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
 import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
@@ -27,6 +27,7 @@ import {
   type RegionConfig,
   type FAQItem,
 } from './builders';
+import { marketBySlug } from '@/content/geo/markets';
 import type {
   Organization,
   WebSite,
@@ -35,6 +36,7 @@ import type {
   PropertyValue,
   AreaServedCity,
   AreaServedPlace,
+  AreaServedRegion,
 } from './types';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
@@ -66,6 +68,50 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 const GTA = Array.from(
   new Set([BUSINESS_NAP.address.addressLocality, ...CITIES.map((c) => c.name)]),
 );
+
+/*
+ * WHERE EACH CITY IS (GEO-001).
+ *
+ * The organisation's areaServed listed fifty-odd bare `{ "@type": "City",
+ * "name": … }` nodes after an AdministrativeArea "Greater Toronto Area ⊂
+ * Ontario ⊂ Canada" — Buffalo and Rochester among them, with nothing to say
+ * they were not in Ontario, and "Niagara Falls" beside "Niagara Falls, NY" with
+ * nothing to say which was which (GC-004, GC-014). Every City node now names
+ * its province or state and country, read from the market registry.
+ */
+const ONTARIO: AreaServedRegion = {
+  '@type': 'AdministrativeArea',
+  name: 'Ontario',
+  containedInPlace: { '@type': 'Country', name: 'Canada' },
+};
+const NEW_YORK: AreaServedRegion = {
+  '@type': 'AdministrativeArea',
+  name: 'New York',
+  containedInPlace: { '@type': 'Country', name: 'United States' },
+};
+const countryOfSlug = (slug: string): 'CA' | 'US' => (marketBySlug(slug)?.country === 'US' ? 'US' : 'CA');
+const stateOf = (slug: string): AreaServedRegion => (countryOfSlug(slug) === 'US' ? NEW_YORK : ONTARIO);
+const cityNode = (name: string, slug: string): AreaServedCity => ({
+  '@type': 'City',
+  name,
+  containedInPlace: stateOf(slug),
+});
+const slugOf = (name: string): string =>
+  CITIES.find((c) => c.name === name)?.slug ??
+  name.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+/** Every City the organisation serves, each with its province or state. */
+const SERVED_CITY_NODES: AreaServedCity[] = GTA.map((name) => cityNode(name, slugOf(name)));
+
+/**
+ * The price bands are Ontario bands in Canadian dollars. content/geo/markets.ts
+ * is explicit that they are not a local United States fact on any page, and the
+ * offer catalog carried every New York city as an areaServed of a CAD price
+ * until GEO-001. The offers now name the Ontario cities only.
+ */
+const PRICE_BAND_CITY_NODES: AreaServedCity[] = GTA
+  .filter((name) => countryOfSlug(slugOf(name)) === 'CA')
+  .map((name) => cityNode(name, slugOf(name)));
 
 /**
  * THE PUBLISHED REGION, STRUCTURED.
@@ -108,43 +154,33 @@ export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
     return {
       '@type': 'Place',
       name: city.name,
-      containedInPlace: { '@type': 'City', name: NEIGHBOURHOOD_CITY },
+      containedInPlace: cityNode(NEIGHBOURHOOD_CITY, 'toronto'),
     };
   }
   /*
-   * Communities inside a municipality other than Toronto: Ancaster, Dundas,
-   * Stoney Creek and Waterdown in Hamilton, Beamsville in Lincoln. Same rule as
-   * the Toronto sixteen — a Place inside a City, never a City of its own —
-   * except that the containing city is read from the record rather than assumed.
-   * Hard-coding Toronto here would have emitted Beamsville as a neighbourhood
-   * of Toronto, which is the kind of error that is invisible on the page and
-   * unambiguous to a machine.
+   * Districts: the six former municipalities of Toronto, communities of
+   * Hamilton, Lincoln, King, Vaughan, Markham and Mississauga, and two Erie
+   * County villages. A Place inside the City it belongs to, and that City
+   * inside its province or state — Williamsville is in Amherst, New York, and
+   * until GEO-001 this node did not say New York (GC-013).
    */
   const district = DISTRICT_AREAS.find((d) => d.slug === city.slug);
   if (district) {
+    const parentSlug = marketBySlug(district.slug)?.partOf ?? slugOf(district.partOf);
     return {
       '@type': 'Place',
       name: city.name,
-      containedInPlace: { '@type': 'City', name: district.partOf },
+      containedInPlace: cityNode(district.partOf, parentSlug),
     };
   }
   /*
-   * New York State. A City node with the state named inside it, because there
-   * is a Niagara Falls and a Brighton on both sides of the border and a bare
-   * name resolves to whichever one the consumer already believed in.
+   * A municipality. Its province or state and country are always named, so a
+   * Niagara Falls, a Brighton or a Hamburg resolves to the one this page is
+   * about rather than whichever the consumer already believed in. Until
+   * GEO-001 only the New York branch did this, and every Ontario City node
+   * named no province at all (GC-014).
    */
-  if (US_AREA_SLUGS.has(city.slug)) {
-    return {
-      '@type': 'City',
-      name: city.name,
-      containedInPlace: {
-        '@type': 'AdministrativeArea',
-        name: 'New York',
-        containedInPlace: { '@type': 'Country', name: 'United States' },
-      },
-    };
-  }
-  return { '@type': 'City', name: city.name };
+  return cityNode(city.name, city.slug);
 }
 
 /**
@@ -225,7 +261,7 @@ const BAND_OFFER_CATALOG = {
     priceCurrency: band.currency,
     priceSpecification: priceSpecification(band),
     itemOffered: { '@id': `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}#service` },
-    areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
+    areaServed: PRICE_BAND_CITY_NODES,
     availability: 'https://schema.org/InStock',
     url: `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}`,
   })),
@@ -272,7 +308,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   // Derived, like the per-service lists below. This block was sixteen
   // hand-typed City nodes that happened to agree with CITIES today; the
   // per-service lists were four hand-typed nodes that did not. One source.
-  areaServed: GTA.map((name) => ({ '@type': 'City' as const, name })),
+  areaServed: SERVED_CITY_NODES,
   /**
    * THE SERVICES, DERIVED FROM THE TEXT A VISITOR READS.
    *

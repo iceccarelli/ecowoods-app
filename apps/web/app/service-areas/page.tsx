@@ -1,14 +1,17 @@
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
-import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS } from '@/lib/seo-data';
+import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS, areaDisplayName } from '@/lib/seo-data';
+import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import TerritoryMap from '../components/TerritoryMap';
 
 export const metadata: Metadata = {
-  title: 'Service Areas — Hardwood Flooring Across the GTA',
-  description: `Ecowoods installs and refinishes hardwood floors across Toronto and the GTA — from Downtown to Vaughan, Mississauga, Markham and beyond. Find your city. Call ${BUSINESS.phoneDisplay}.`,
+  /* The title said "Across the GTA" over an index that runs to Port Colborne
+     and Rochester (GC-004). Named from the published places, like the H1. */
+  title: `Service Areas — Hardwood Flooring Across ${TERRITORY_SHORT}`,
+  description: `Ecowoods installs and refinishes hardwood floors in ${SERVICE_AREAS.length} published areas across ${TERRITORY_SHORT}, from Downtown Toronto outward. Find your city. Call ${BUSINESS.phoneDisplay}.`,
   alternates: { canonical: '/service-areas', types: { 'text/markdown': '/service-areas.md' } },
 };
 
@@ -33,13 +36,13 @@ export default function ServiceAreasIndex() {
             Hardwood flooring <span className="serif-italic">across the corridor.</span>
           </h1>
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
-            {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas — Toronto and the GTA, west to Waterloo Region, down the Niagara peninsula, and across the river into western New York. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
+            {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas across ${TERRITORY}. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
             {SERVICE_AREAS.map((c) => (
               <Link key={c.slug} href={`/service-areas/${c.slug}`}
                 style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
-                Hardwood Flooring in {c.name} →
+                Hardwood Flooring in {areaDisplayName(c)} →
               </Link>
             ))}
           </div>

@@ -33,10 +33,26 @@ export const BUSINESS = {
 export type City = { slug: string; name: string };
 
 const AREAS = [
-  /* Toronto and the inner ring. */
-  'Downtown Toronto', 'North York', 'Etobicoke', 'Scarborough', 'East York', 'York',
+  /*
+   * The inner ring. The six former municipalities of Toronto — Downtown
+   * Toronto, North York, Etobicoke, Scarborough, East York and York — were in
+   * this list until GEO-001, which made each of them a schema.org City node
+   * beside the City of Toronto that contains them. content/geo/markets.ts has
+   * always recorded them as districts of Toronto; they are in DISTRICTS below
+   * now, with the same pages, and emit as a Place inside Toronto. GC-003.
+   */
   'Vaughan', 'Markham', 'Richmond Hill', 'Mississauga', 'Oakville', 'Brampton',
   'Aurora', 'Newmarket', 'Pickering', 'Ajax',
+  /*
+   * The eleven owner-confirmed municipalities that had no page (GEO-001).
+   * Each was a confirmed market in content/geo/markets.ts and in the
+   * /api/v1/markets service area, and had no URL, no sitemap entry and no
+   * graph edge — a coverage claim with nothing behind it (GC-001). Each now
+   * has local content written from public geography, with no job, review or
+   * address invented for it.
+   */
+  'Whitby', 'Oshawa', 'Clarington', 'Kawartha Lakes', 'Halton Hills', 'Caledon',
+  'Innisfil', 'Guelph', 'Cambridge', 'Kitchener', 'Port Colborne',
   /*
    * The corridor west and south, published after the owner confirmed coverage
    * of the whole Ontario map on 2026-09-10. Every name here exists in
@@ -80,7 +96,8 @@ export const AREA_SLUG_OVERRIDES: Record<string, string> = {
 };
 
 /**
- * Places INSIDE a municipality that is already in AREAS, outside Toronto.
+ * Places INSIDE a municipality: the six former municipalities of Toronto
+ * (since GEO-001), and communities inside a municipality that is in AREAS.
  *
  * Ancaster, Dundas, Stoney Creek and Waterdown are communities of the City of
  * Hamilton; Beamsville is the main community of the Town of Lincoln. They are
@@ -96,6 +113,13 @@ export const AREA_SLUG_OVERRIDES: Record<string, string> = {
  * the site a machine reads literally.
  */
 const DISTRICTS: Array<{ name: string; partOf: string }> = [
+  /* The six former municipalities of Toronto. Districts of the City of Toronto (GC-003). */
+  { name: 'Downtown Toronto', partOf: 'Toronto' },
+  { name: 'North York', partOf: 'Toronto' },
+  { name: 'Etobicoke', partOf: 'Toronto' },
+  { name: 'Scarborough', partOf: 'Toronto' },
+  { name: 'East York', partOf: 'Toronto' },
+  { name: 'York', partOf: 'Toronto' },
   { name: 'Ancaster', partOf: 'Hamilton' },
   { name: 'Dundas', partOf: 'Hamilton' },
   { name: 'Stoney Creek', partOf: 'Hamilton' },
@@ -181,9 +205,26 @@ export const US_AREA_SLUGS = new Set(
   MARKETS.filter((mk) => mk.country === 'US').map((mk) => mk.slug),
 );
 
-/** The area name as a page says it: "Buffalo, NY", "Oakville". */
-export const areaDisplayName = (area: City): string =>
-  US_AREA_SLUGS.has(area.slug) && !/,\s*NY$/.test(area.name) ? `${area.name}, NY` : area.name;
+/**
+ * Ontario markets whose name is also the name of a New York market — today,
+ * Niagara Falls. The New York one already says ", NY"; until GEO-001 the
+ * Ontario one said nothing, so a title, an H1 and a schema name all read
+ * "Niagara Falls" and a reader resolved it against whichever one they knew
+ * (GC-014). Derived from the registry, so a new collision is disambiguated the
+ * day it is added.
+ */
+const bareName = (n: string) => n.replace(/,\s*(NY|ON)$/, '').trim().toLowerCase();
+const US_MARKET_NAMES = new Set(MARKETS.filter((mk) => mk.country === 'US').map((mk) => bareName(mk.name)));
+const CA_NAME_COLLISIONS = new Set(
+  MARKETS.filter((mk) => mk.country === 'CA' && US_MARKET_NAMES.has(bareName(mk.name))).map((mk) => mk.slug),
+);
+
+/** The area name as a page says it: "Buffalo, NY", "Niagara Falls, ON", "Oakville". */
+export const areaDisplayName = (area: City): string => {
+  if (US_AREA_SLUGS.has(area.slug)) return /,\s*NY$/.test(area.name) ? area.name : `${area.name}, NY`;
+  if (CA_NAME_COLLISIONS.has(area.slug)) return /,\s*ON$/.test(area.name) ? area.name : `${area.name}, ON`;
+  return area.name;
+};
 
 /**
  * Everything with a /service-areas page. The routes, the sitemap, the .md
@@ -200,7 +241,22 @@ export const DISTRICT_AREAS: Array<City & { partOf: string }> = DISTRICTS.map((d
   partOf: d.partOf,
 }));
 
-export const SERVICE_AREAS: City[] = [...CITIES, ...NEIGHBOURHOOD_AREAS, ...DISTRICT_AREAS];
+/**
+ * The top level a visitor chooses from: Toronto's six districts, then every
+ * municipality. The footer column, the resources index, the framework's area
+ * select and the library promo list these. Before GEO-001 they listed CITIES,
+ * which happened to start with the six Toronto districts because those were
+ * (wrongly) municipalities; they keep the same first entries now that they are
+ * districts, and the lists stay derived.
+ */
+const TORONTO_DISTRICT_AREAS = DISTRICT_AREAS.filter((d) => d.partOf === 'Toronto');
+export const PRIMARY_AREAS: City[] = [...TORONTO_DISTRICT_AREAS, ...CITIES];
+
+export const SERVICE_AREAS: City[] = [
+  ...PRIMARY_AREAS,
+  ...NEIGHBOURHOOD_AREAS,
+  ...DISTRICT_AREAS.filter((d) => d.partOf !== 'Toronto'),
+];
 
 export const cityBySlug = (slug: string): City | undefined =>
   SERVICE_AREAS.find((c) => c.slug === slug);
@@ -1209,6 +1265,126 @@ export const CITY_CONTENT: Record<string, CityContent> = {
       'Greece is largely one long build-out of ranches and colonials, so the floors arrive with the same problem at the same age: a builder oak strip laid over plywood, sanded once somewhere around its thirtieth year, and now being asked for a third finish it may not have the thickness to give. That measurement, taken at a doorway where the tongue is exposed, is the whole conversation.',
     localConsideration:
       'Matching stain and sheen across the three or four levels of a split-level, and across the landings between them, is harder than laying one long run and is where an inconsistent refinish shows.',
+  },
+
+  /* ── GEO-001: the eleven owner-confirmed municipalities that had no page ──
+   *
+   * Every one of these was a confirmed market (content/geo/markets.ts, owner
+   * confirmation 2026-09-10) and in the /api/v1/markets service area, with no
+   * URL behind the claim. What is written below is public geography — how the
+   * municipality was formed, when its housing was built, what that means for a
+   * floor — and the site's own published method. No job, review, customer or
+   * address is stated or implied for any of them, and none carries a
+   * signatureProject.
+   */
+  whitby: {
+    intro:
+      'Whitby runs from the Lake Ontario shore at Port Whitby, through a nineteenth-century downtown on Brock and Dundas Streets, north to the village of Brooklin. Most of its housing between those points is subdivision stock built from the 1980s onward, around an older core that still carries original floors.',
+    neighbourhoods: ['Downtown Whitby', 'Port Whitby', 'Brooklin', 'Williamsburg', 'Pringle Creek', 'Rolling Acres'],
+    housingNote:
+      'The pre-war houses around the downtown core sit on plank subfloor with narrow-strip or face-nailed boards that have usually been sanded before, so remaining thickness is the first measurement. The newer subdivisions to the north are plywood over engineered joists, where carpet-grade flatness has to be corrected before a nail-down floor goes in.',
+    localConsideration:
+      'Brooklin and the north end are new enough that many houses are on their first floor covering, and conversion from builder carpet to hardwood is the common job; the older lakeshore and downtown stock is where refinishing and board replacement concentrate.',
+  },
+
+  oshawa: {
+    intro:
+      'Oshawa grew around the McLaughlin carriage works that became General Motors of Canada, and its housing still reads that history: early-twentieth-century and wartime houses south and east of downtown, post-war streets through the middle of the city, and subdivisions north toward Windfields and the university campus.',
+    neighbourhoods: ['Lakeview', 'McLaughlin', 'Donevan', 'Eastdale', 'Samac', 'Windfields'],
+    housingNote:
+      'The older worker housing near downtown and down toward Lakeview Park is small-footprint stock with original strip floors, frequently under two or three later coverings, where board replacement and feathering come before any sand. The north-end subdivisions are plywood over engineered joists and are installation and conversion work.',
+    localConsideration:
+      'Houses within a few blocks of the lake at Lakeview hold more summer humidity than the north end does, and a floor delivered from a dry warehouse in July is measured on site before it is installed rather than dated from the delivery slip.',
+  },
+
+  clarington: {
+    intro:
+      'Clarington is not one town but several: Bowmanville, Courtice, Newcastle and Orono, with hamlets between them, joined into one municipality in the 1970s. Bowmanville has a Victorian main street and older residential streets around it; Courtice and the edges of Bowmanville are largely built since the 1990s.',
+    neighbourhoods: ['Bowmanville', 'Courtice', 'Newcastle', 'Orono', 'Hampton'],
+    housingNote:
+      'Heritage houses in old Bowmanville and Newcastle village carry plank subfloors and original boards that often change species or width room to room, so matching comes before sanding. The Courtice and south Bowmanville subdivisions are conventional plywood over joists, where subfloor flatness is the variable that most changes the quote.',
+    localConsideration:
+      'Clarington is outside the daily-return radius of the Toronto shop: a job here is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Lakeshore streets in Bowmanville and Newcastle hold more summer humidity than the inland hamlets, and acclimation is measured on site.',
+  },
+
+  'kawartha-lakes': {
+    intro:
+      'Kawartha Lakes is a single municipality covering Lindsay, Fenelon Falls, Bobcaygeon, Omemee and the lake country around them, much of it strung along the Trent-Severn Waterway. Its housing is a mix of small-town cores, rural houses and a large stock of cottages, many of them converted to year-round use.',
+    neighbourhoods: ['Lindsay', 'Fenelon Falls', 'Bobcaygeon', 'Omemee', 'Coboconk'],
+    housingNote:
+      'Cottage conversions are the defining job here: floors laid over joists that were framed for summer use, crawlspaces open to lake air, and additions at different heights. The subfloor and the moisture below it are measured before any material is chosen, because an unconditioned crawlspace decides what a floor can survive.',
+    localConsideration:
+      'This is outside the daily-return radius of the Toronto shop. A job here is scheduled as a trip, confirmed in advance and priced with that in the written quote — and a seasonal property that is shut in winter changes the acclimation plan entirely.',
+  },
+
+  'halton-hills': {
+    intro:
+      'Halton Hills is Georgetown and Acton, with the hamlets of Glen Williams, Limehouse and Terra Cotta between them along the Credit River and the escarpment. Georgetown has a nineteenth-century core around Main Street and large subdivisions built from the 1970s onward; Acton is a smaller town of the same pattern.',
+    neighbourhoods: ['Georgetown', 'Acton', 'Glen Williams', 'Limehouse', 'Terra Cotta'],
+    housingNote:
+      'The 1970s and 1980s subdivisions in Georgetown frequently still carry their original strip oak under carpet, with enough wear layer left for a full sand when nothing has been done to them since. The older core and the hamlet houses are plank subfloor and mixed-age boards that call for repair in kind before refinishing.',
+    localConsideration:
+      'Escarpment and river-valley lots run cooler and damper than the flat subdivisions, and houses on the valley slopes often have walk-out basements where a below-grade floor is a moisture question before it is a flooring one.',
+  },
+
+  caledon: {
+    intro:
+      'Caledon is the largest municipality by area in the GTA and mostly rural: Bolton in the southeast, Caledon East, Caledon Village, Inglewood, Alton, Belfountain and Palgrave, spread across the Oak Ridges Moraine and the Niagara Escarpment. Estate lots and custom houses sit alongside the subdivision growth in Bolton.',
+    neighbourhoods: ['Bolton', 'Caledon East', 'Caledon Village', 'Inglewood', 'Alton', 'Belfountain', 'Palgrave'],
+    housingNote:
+      'Custom and estate houses bring long open runs, wide-plank specifications and radiant heat, which together make engineered construction and a measured moisture reading on the slab or subfloor part of the specification rather than an option. Bolton subdivisions are conventional plywood over joists and are installation and conversion work.',
+    localConsideration:
+      'Moraine and escarpment lots run cooler than the Bolton subdivisions, and large rural houses often have basements finished at different times; each below-grade room is a moisture reading before it is a flooring choice.',
+  },
+
+  innisfil: {
+    intro:
+      'Innisfil lies along the west shore of Lake Simcoe south of Barrie, with Alcona as its largest community and Lefroy, Stroud, Cookstown and the shoreline settlements around it. Much of the lakeside housing began as cottages; the inland growth around Alcona is recent subdivision stock.',
+    neighbourhoods: ['Alcona', 'Lefroy', 'Stroud', 'Cookstown', 'Sandy Cove', 'Gilford'],
+    housingNote:
+      'Shoreline houses that started as cottages carry the same signature as anywhere on a lake: additions at different heights, floors that change direction at a doorway, and crawlspaces that breathe lake air. The Alcona subdivisions are plywood over engineered joists, where flatness is corrected before a nail-down floor is laid.',
+    localConsideration:
+      'Innisfil is reached from the Vaughan hub on the 400 and is outside the daily-return radius, so a job is scheduled as a trip and confirmed in advance. Lake Simcoe widens the humidity swing near the shore, which is an argument for engineered construction on the lakeside properties.',
+  },
+
+  guelph: {
+    intro:
+      'Guelph is a planned nineteenth-century city built out of local limestone, and its older neighbourhoods around downtown and the University of Guelph still carry that stock. Post-war housing fills the middle of the city, and the south end is subdivision growth from the 1990s onward.',
+    neighbourhoods: ['Exhibition Park', 'Old University', 'St. George’s Park', 'The Ward', 'Kortright Hills', 'South End'],
+    housingNote:
+      'Stone and brick houses near downtown carry original boards over plank subfloor, often with heating ducts, radiators and old repairs cut through them, so piecing in and feathering come before any uniform sand. The south-end subdivisions are plywood over engineered joists and are installation work with subfloor flatness as the main variable.',
+    localConsideration:
+      'Guelph is reached from the Hamilton hub on the 403 and Highway 6 and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Thick masonry walls in the limestone houses change how quickly a room settles to its winter humidity.',
+  },
+
+  cambridge: {
+    intro:
+      'Cambridge was formed in 1973 from Galt, Preston and Hespeler, three older towns on the Grand and Speed Rivers, and each core still has its own nineteenth-century main street and stone buildings. It is part of Waterloo Region, beside Kitchener, with post-war and newer subdivision housing between and around the old centres.',
+    neighbourhoods: ['Galt', 'Preston', 'Hespeler', 'Blair', 'West Galt', 'East Galt'],
+    housingNote:
+      'The older houses in Galt, Preston and Hespeler carry original boards over plank subfloor, sometimes several species in one house where rooms were added over a century. The post-war and newer streets are plywood over joists with strip oak or builder engineered, and are refinishing and conversion work.',
+    localConsideration:
+      'Cambridge is reached from the Hamilton hub on the 403 corridor and is outside the daily-return radius, so a job is scheduled as a trip and confirmed in advance. River-valley lots in Galt run damper than the upland subdivisions, and basements there are measured before anything is laid below grade.',
+  },
+
+  kitchener: {
+    intro:
+      'Kitchener, called Berlin until 1916, is the largest city in Waterloo Region. Its pre-war housing surrounds the downtown and Victoria Park, a broad band of post-war streets runs through the middle of the city, and the south end toward Doon is recent subdivision growth. The City of Waterloo is a separate municipality to the north.',
+    neighbourhoods: ['Downtown Kitchener', 'Victoria Park', 'Forest Heights', 'Stanley Park', 'Doon', 'Laurentian Hills'],
+    housingNote:
+      'The pre-war houses around Victoria Park and downtown carry narrow-strip oak or maple over plank subfloor, often sanded before, so remaining thickness decides between a full sand and a screen and recoat. Post-war Stanley Park and Forest Heights stock is frequently original strip oak under carpet; the south-end subdivisions are installation work.',
+    localConsideration:
+      'Kitchener is reached from the Hamilton hub on the 403 and Highway 6 corridor and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. This page covers Kitchener; the City of Waterloo is not a published area.',
+  },
+
+  'port-colborne': {
+    intro:
+      'Port Colborne sits at the Lake Erie end of the Welland Canal, a working canal town with an older downtown along the waterway and early-twentieth-century housing around it, post-war streets inland, and lakeshore cottages east toward Sherkston. It is part of Niagara Region, south of Welland.',
+    neighbourhoods: ['Downtown Port Colborne', 'Humberstone', 'Sherkston', 'Gasline', 'Bethel'],
+    housingNote:
+      'Canal-era and early-twentieth-century houses carry plank subfloor with original boards that have usually been covered or patched more than once, so repair in kind comes before refinishing. Lakeshore cottages converted to year-round use bring crawlspaces open to lake air, which are measured before any floor is chosen.',
+    localConsideration:
+      'Port Colborne is reached from the Grimsby hub across the Niagara peninsula and is outside the daily-return radius: a job is scheduled as a trip, confirmed in advance and priced with the distance in the written quote. Lake Erie keeps the shore band humid well into the autumn.',
   },
 };
 

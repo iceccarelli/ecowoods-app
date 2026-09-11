@@ -1,4 +1,5 @@
-import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, areaDisplayName } from '@/lib/seo-data';
+import { TERRITORY } from '@/lib/geo/territory';
 import {
   BUSINESS_NAP,
   BUSINESS_ADDRESS_LINE,
@@ -64,7 +65,7 @@ export async function GET() {
     `- Email: ${BUSINESS_NAP.email}`,
     `- Founded: ${BUSINESS_NAP.foundedYear}`,
     `- Hours: ${HOURS_LINE} (America/Toronto)`,
-    `- Service area: ${BUSINESS.region}`,
+    `- Service area: ${TERRITORY}`,
     `- Organisation @id: ${SITE_URL}/#organization`,
     '',
     '## Published figures',
@@ -101,7 +102,7 @@ export async function GET() {
        while the site published a page for every area — the missing
        being the Toronto neighbourhoods, which are the local queries with the
        most hire intent behind them. Same defect, same fix, as llms.txt. */
-    ...SERVICE_AREAS.map((c) => `- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`),
+    ...SERVICE_AREAS.map((c) => `- ${areaDisplayName(c)}: ${SITE_URL}/service-areas/${c.slug}`),
     '',
   );
 

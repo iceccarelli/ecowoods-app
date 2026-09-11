@@ -14,6 +14,7 @@ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { IllustrationPair } from '../components/Illustration';
 import { CatalogueRail } from '../components/CatalogueRail';
+import { TERRITORY_SHORT } from '@/lib/geo/territory';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -423,7 +424,7 @@ export default function HardwoodStairsTorontoPage() {
       <section className="tlx-section" aria-label="Where we work">
         <div className="shell">
           <p className="tlx-kicker">Coverage</p>
-          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across Toronto and the GTA</h2>
+          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across {TERRITORY_SHORT}</h2>
           <p className="tlx-note">
             Stair stock tracks house stock: pre-war semis in Leslieville and Riverdale usually have
             solid oak under the carpet, post-war bungalows in Etobicoke and North York often do

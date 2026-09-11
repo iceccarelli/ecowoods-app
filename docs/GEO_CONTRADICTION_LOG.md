@@ -25,6 +25,63 @@ guard, verified against production. Nothing here is closed at GEO-000.
 
 ---
 
+## Status after GEO-001
+
+GEO-001 took the protocol's GEO-001…GEO-013 intent in one change, because the
+architecture allowed it: every contradiction below traced to three places
+(`seo-data.ts` lists, `locations.ts` region list, `root-schema.ts` place
+builder) plus the territory label, and fixing those three made every
+projection agree. Measured in the repository after the change (production is
+measured by `node scripts/geo-measure.mjs` after deploy):
+
+| Set | Before | After |
+|---|---|---|
+| markets | 101 | 101 |
+| `service_area` (municipalities) | 59 | 59 |
+| org JSON-LD City nodes | 54 | 59 (= `service_area`) |
+| `in_area_served` | 53 | 59 (= `service_area`) |
+| published pages = sitemap = graph `serves` = llms = `has_page` | 89 | 100 (every market except the City of Toronto, which is served through its 23 published districts and neighbourhoods) |
+| location nodes | 126 | 132 (+ United States, New York State, Niagara Region, Waterloo Region, Port Colborne, Kawartha Lakes) |
+| `service_area` without a page | 12 | 1 — Toronto, a region node by definition (below) |
+| New York places under a Canadian parent | 24 | 0 |
+| districts emitted as `City` | 6 | 0 |
+| Ontario place nodes without province/country | 29 | 0 |
+
+| ID | Status | How |
+|---|---|---|
+| GC-001 | fixed (Toronto rule) | the eleven confirmed municipalities have pages with local content; Toronto is a `region` node served through its 23 pages |
+| GC-002 | fixed | `ASSESSMENT_MUNICIPALITIES` moved to `content/geo/regions.ts` as `DISCOVERY` (23 non-markets only); every market is a node from `markets.ts` |
+| GC-003 | fixed | the six former municipalities of Toronto moved from `AREAS` to `DISTRICTS`; they emit `Place ⊂ City Toronto ⊂ Ontario ⊂ Canada` |
+| GC-004 | fixed (machine) · open (marketing copy) | NY under `new-york-state`; every City node carries its state; CAD offers name Ontario cities only; territory named by `lib/geo/territory.ts` on llms, ai.txt, about, team, press, head-term pages, Markdown hub, matcher; "Nearby" replaces "Across the GTA". Service-page H1s such as "Stair refinishing in Toronto and the GTA" are unchanged head-term copy |
+| GC-005 | fixed | Niagara municipalities under `niagara-region`; Kitchener, Cambridge and the City of Waterloo under `waterloo-region` |
+| GC-006 | fixed | the sentence names the real DISCOVERY places instead of "outside the GTA" |
+| GC-007 | fixed | `PUBLISHED_PARTITION`: 58 municipalities + 25 districts + 17 neighbourhoods = 100 |
+| GC-008 | fixed | Kitchener and Cambridge are published; the index sentence is `TERRITORY` |
+| GC-009 | fixed | "101 municipalities and districts — 75 in Ontario, 26 in New York State" |
+| GC-010 | fixed by definition | Toronto: `service_area` ✓, org City ✓, `in_area_served` ✓; `coverage: region`, no `serves` edge — the graph serves its 23 pages, each `within` Toronto. The golden-query suite pins Toronto as a region, and that model is kept |
+| GC-011 | fixed in data (100 = 100) | the two deciders still exist; one selector is future work |
+| GC-012 | reclassified | `in_area_served` is documented as "a City in the organisation JSON-LD"; districts and neighbourhoods are correctly false. Municipalities: `service_area` ⇔ `in_area_served`, 0 disagreements |
+| GC-013 | fixed | parents read from `markets.ts` `partOf`; Williamsville ⊂ Amherst ⊂ New York ⊂ United States |
+| GC-014 | fixed | every place carries province/state and country; "Niagara Falls, ON" in titles, llms, ai.txt, twins |
+| GC-015 | fixed | twin title uses the display name and states the same service sentence(s) as the HTML |
+| GC-016 | open | corridors still list five districts (display choice on corridor pages) |
+| GC-017 | partly | Bowmanville, Courtice, Lakeview Park are content/aliases on Clarington and Oshawa; City of Waterloo and Waterloo Region are two nodes; Brantford, Paris, Ayr unchanged |
+| GC-018 | fixed (emitted) | location note and matcher answers no longer say "Toronto and the Greater Toronto Area" |
+| GC-019 | not pursued | per owner instruction no new guard was added |
+| GC-020 | closed — not a defect | live run 2026-09-11: 0 of 7 surfaces differ with/without cache-buster; `x-vercel-cache: HIT`, `age` 10–17 s on both. The stale copies were the fetcher's |
+| GC-021 | open | job cards still keyed by display name |
+| GC-022 | open | no twins for corridors / where-we-work (none advertised) |
+| GC-023 | open | measure after the first geography deploy |
+| GC-024 | open, owner question | area pages in New York show the Ontario price bands in CAD; `markets.ts` says those bands are not a local United States fact. Either state NY pricing or scope the bands to Ontario on NY pages |
+
+Two existing checks were edited because they encoded the old geography, and
+both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
+reads `DISTRICTS` (it could not see Downtown Toronto once it became a district),
+and `lib/geo/geo.test.ts` expects at least one confirmed market without local
+content instead of more than five (eleven were written).
+
+---
+
 ## Summary
 
 | ID | Sev | Class | One line | Entities | Resolution |

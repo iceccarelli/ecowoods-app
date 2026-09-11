@@ -251,11 +251,13 @@ const TORONTO_NEIGHBOURHOODS: Market[] = [
  * Port Colborne reading "routine daily coverage" finds out it was not on the
  * day nobody arrives.
  *
- * Records, still not pages. Every one of these is now a confirmed market in the
- * service area, in the API and on its corridor page — and none of them has an
- * indexable municipal page, because lib/geo/worthiness.ts requires real local
- * content and no amount of confirmation substitutes for it. That gate did not
- * move.
+ * Pages followed the records as local content was written for each, and the
+ * last eleven — Whitby, Oshawa, Clarington, Halton Hills, Caledon, Innisfil,
+ * Guelph, Cambridge, Kitchener, Port Colborne and Kawartha Lakes — were
+ * published in GEO-001, when a confirmed market with no page was found to be a
+ * coverage claim with nothing behind it (docs/GEO_CONTRADICTION_LOG.md GC-001).
+ * lib/geo/worthiness.ts still requires real local content for every one; no
+ * amount of confirmation substitutes for it. That gate did not move.
  */
 const CORRIDOR_TARGETS: Market[] = [
   m('Milton', 'milton', 'active-expansion', 'toronto', ['core-gta'], ['oakville', 'halton-hills', 'burlington'], COVERED('Toronto')),

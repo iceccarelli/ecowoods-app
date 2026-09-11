@@ -10,6 +10,7 @@ import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail'
 import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
+import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
 
 export function generateStaticParams() {
   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
@@ -52,6 +53,23 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
     },
     openGraph: { title: `${title} · Ecowoods`, description, url: `${SITE_URL}/service-areas/${city.slug}`, type: 'website' },
   };
+}
+
+function nearbyAreas(slug: string): City[] {
+  const published = new Set(SERVICE_AREAS.map((a) => a.slug));
+  const out: string[] = [];
+  const push = (s: string | undefined) => {
+    if (s && s !== slug && published.has(s) && !out.includes(s)) out.push(s);
+  };
+  const mk = marketBySlug(slug);
+  mk?.nearest.forEach(push);
+  if (mk?.partOf) {
+    push(mk.partOf);
+    MARKETS.filter((x) => x.partOf === mk.partOf).forEach((x) => push(x.slug));
+  }
+  MARKETS.filter((x) => x.partOf === slug).forEach((x) => push(x.slug));
+  corridorsFor(slug).forEach((c) => c.members.forEach(push));
+  return out.slice(0, 10).map((s) => cityBySlug(s)).filter((c): c is City => Boolean(c));
 }
 
 export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {
@@ -120,7 +138,15 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       },
     },
   ];
-  const nearby = SERVICE_AREAS.filter((c) => c.slug !== city.slug).slice(0, 10);
+  /*
+   * Nearby, from the geography — not the first ten entries of a list. This was
+   * `SERVICE_AREAS.slice(0, 10)` under the heading "Across the GTA", so every
+   * New York page, Port Colborne and Barrie linked to Downtown Toronto, North
+   * York and Etobicoke as their neighbours, under a heading that put them in
+   * the GTA (GC-004). Now: the market's own nearest list, its siblings and
+   * children, then its corridor, restricted to places with a page.
+   */
+  const nearby = nearbyAreas(city.slug);
 
   /* The per-area copy, read once. `intro` and `housingNote` are promoted into
      the hero (see the note there); the block further down renders what is left
@@ -344,11 +370,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <section className="section">
         <div className="shell">
           <span className="eyebrow">Also serving</span>
-          <h2>Across the GTA.</h2>
+          <h2>Nearby.</h2>
           <p style={{ marginTop: '1rem', lineHeight: 2 }}>
             {nearby.map((c, i) => (
               <span key={c.slug}>
-                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>{i < nearby.length - 1 ? ' · ' : ''}
+                <Link href={`/service-areas/${c.slug}`}>{areaDisplayName(c)}</Link>{i < nearby.length - 1 ? ' · ' : ''}
               </span>
             ))}
           </p>

@@ -269,7 +269,7 @@ export function buildOpenApi() {
           required: ['slug', 'name', 'tier', 'coverage', 'parent_id', 'in_area_served'],
           properties: {
             slug: { type: 'string' }, name: { type: 'string' },
-            tier: { type: 'string', enum: ['country', 'province', 'region', 'municipality', 'district', 'neighbourhood'] },
+            tier: { type: 'string', enum: ['country', 'province', 'state', 'region', 'municipality', 'district', 'neighbourhood'] },
             coverage: { type: 'string', enum: ['published', 'region', 'assessment', 'parent'], description: 'published = has a page and is in areaServed; region = contains published areas; assessment = real place, served on assessment only; parent = hierarchy node.' },
             parent_id: { type: ['string', 'null'] }, in_area_served: { type: 'boolean' },
             local_notes: { type: ['object', 'null'] }, aliases: { type: 'array', items: { type: 'string' } },

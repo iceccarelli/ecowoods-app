@@ -12,7 +12,7 @@ import {
   type Answer,
 } from '@/lib/framework';
 import { track } from '@/lib/analytics';
-import { CITIES } from '@/lib/seo-data';
+import { PRIMARY_AREAS } from '@/lib/seo-data';
 import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
 import { QuoteReviewForm } from '@/app/components/QuoteReviewForm';
 
@@ -361,7 +361,7 @@ export default function AssessClient() {
                 disabled={contribState === 'done'}
               >
                 <option value="">Rather not say</option>
-                {CITIES.map((c) => (
+                {PRIMARY_AREAS.map((c) => (
                   <option key={c.slug} value={c.name}>
                     {c.name}
                   </option>

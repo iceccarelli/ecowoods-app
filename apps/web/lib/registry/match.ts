@@ -23,6 +23,7 @@ import { estimateServiceBandCad } from '@/lib/pricing';
 import type { PriceBandKey } from '@/content/constants/pricing';
 import { SERVICE_ALIASES, UNSUPPORTED_ALIASES, GENERIC_HARDWOOD_PHRASES, normalise } from './intents';
 import { LOCATION_NODES, publishedWithin, ancestorsOf, type LocationNode } from './locations';
+import { TERRITORY } from '@/lib/geo/territory';
 import { getRegistry, serviceId, locationId, BAND_SERVICE_SLUG, type Registry } from './registry';
 import type { EvidencePrimitive, ServicePrimitive, LocationPrimitive, PricePrimitive } from './types';
 
@@ -143,8 +144,8 @@ export function resolveLocation(reg: Registry, text: string | undefined, fallbac
       published_within: [],
       note:
         nothingProvided || !text
-          ? `No location given. The published service area is ${reg.organization.data.service_region}.`
-          : 'Place not recognised. If it is in Southern Ontario, work is assessed per project through the estimate path; the published service area is Toronto and the Greater Toronto Area.',
+          ? `No location given. The published service territory is ${TERRITORY}.`
+          : `Place not recognised. If it is in Southern Ontario, work is assessed per project through the estimate path; the published service territory is ${TERRITORY}.`,
     };
   }
   const prim = reg.locations.find((l) => l.id === locationId(node.slug)) as LocationPrimitive | undefined;
@@ -155,8 +156,8 @@ export function resolveLocation(reg: Registry, text: string | undefined, fallbac
   const notes: Record<LocationNode['coverage'], string> = {
     published: `${node.name} is a published service area with its own page.`,
     region: `${node.name} contains ${within.length} published service areas.`,
-    assessment: `${node.name} is not a published service area. Projects there are assessed individually; the published service area is Toronto and the Greater Toronto Area. Use the estimate path to confirm.`,
-    parent: `${node.name} is broader than the published service area (Toronto and the Greater Toronto Area). Southern Ontario projects outside the GTA are assessed individually.`,
+    assessment: `${node.name} is not a published service area. Projects there are assessed individually; the published service territory is ${TERRITORY}. Use the estimate path to confirm.`,
+    parent: `${node.name} is broader than the published service territory (${TERRITORY}). Places inside it without a published page are assessed individually.`,
   };
   return {
     id: locationId(node.slug),

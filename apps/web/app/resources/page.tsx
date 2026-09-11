@@ -10,7 +10,7 @@ import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
 import { SPECIES, SPECIES_SOURCE } from '@/lib/wood';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
-import { CITIES, SITE_URL } from '@/lib/seo-data';
+import { PRIMARY_AREAS, SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
@@ -342,7 +342,7 @@ export default async function ResourcesPage() {
           <p className="tlx-kicker">If you want to know whether we work near you</p>
           <h2 className="tlx-h2">Service areas</h2>
           <ul className="clp-areas">
-            {CITIES.map((c) => (
+            {PRIMARY_AREAS.map((c) => (
               <li key={c.slug}>
                 <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
               </li>

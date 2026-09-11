@@ -8,7 +8,7 @@ import {
   PRIMARY_REVIEW_EVIDENCE,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
-import { SITE_URL, SERVICES, CITIES, SERVICE_AREAS } from '@/lib/seo-data';
+import { SITE_URL, SERVICES, PRIMARY_AREAS, SERVICE_AREAS } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
 import { getPapers } from '@/lib/papers';
@@ -18,6 +18,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { CatalogueRail } from '../components/CatalogueRail';
+import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/hardwood-flooring-toronto', types: { 'text/markdown': '/hardwood-flooring-toronto.md' } },
   openGraph: {
     title: 'Hardwood Flooring Toronto — Ecowoods',
-    description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across Toronto and the GTA.`,
+    description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across ${TERRITORY_SHORT}.`,
     type: 'website',
     url: `${SITE_URL}/hardwood-flooring-toronto`,
   },
@@ -97,8 +98,8 @@ const FAQS = [
   {
     question: 'What areas does Ecowoods cover?',
     answer:
-      `${SERVICE_AREAS.length} municipalities and neighbourhoods across Toronto and the GTA, ` +
-      `including ${CITIES.slice(0, 6).map((c) => c.name).join(', ')} and more. Each has its own ` +
+      `${SERVICE_AREAS.length} municipalities and neighbourhoods across ${TERRITORY}, ` +
+      `including ${PRIMARY_AREAS.slice(0, 6).map((c) => c.name).join(', ')} and more. Each has its own ` +
       `page describing the housing stock there and what it means for a floor.`,
   },
   {
@@ -370,7 +371,7 @@ export default function HardwoodFlooringTorontoPage() {
       <section className="tlx-section" aria-label="Where we work">
         <div className="shell">
           <p className="tlx-kicker">Coverage</p>
-          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across Toronto and the GTA</h2>
+          <h2 className="tlx-h2">{SERVICE_AREAS.length} areas across {TERRITORY_SHORT}</h2>
           <p className="tlx-note">
             Each area has its own page describing the housing stock there and what it means for a
             floor — a 1920s semi in Leslieville and a 2018 slab condo downtown are different jobs.

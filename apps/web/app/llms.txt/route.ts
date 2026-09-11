@@ -1,4 +1,6 @@
-import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, FAQ_ITEMS } from '@/lib/seo-data';
+import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, FAQ_ITEMS, areaDisplayName } from '@/lib/seo-data';
+import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
+import { DISCOVERY } from '@/content/geo/regions';
 import {
   BUSINESS_NAP,
   BUSINESS_ADDRESS_LINE,
@@ -97,7 +99,7 @@ export async function GET() {
   lines.push(`- Phone: ${BUSINESS_NAP.phoneDisplay} · Email: ${BUSINESS_NAP.email}`);
   lines.push(`- Hours: ${HOURS_LINE} (America/Toronto)`);
   lines.push(`- Founded: ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years in Toronto`);
-  lines.push(`- Serving: ${BUSINESS_NAP.region}, ${SERVICE_AREAS.length} published areas (${CITIES.length} municipalities and districts, ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods)`);
+  lines.push(`- Serving: ${TERRITORY} — ${PUBLISHED_PARTITION.total} published areas (${PUBLISHED_PARTITION.municipalities} municipalities, ${PUBLISHED_PARTITION.districts} districts and communities within a municipality, ${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods)`);
   lines.push(`- Crews: salaried, no subcontractors. Dust-free HEPA sanding. Fixed written price after a free in-home measure.`);
   for (const b of PRICE_BANDS) {
     lines.push(`- Price, ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure — ${SITE_URL}/pricing`);
@@ -153,9 +155,10 @@ export async function GET() {
   /* ── Service areas ────────────────────────────────────────────────────── */
   lines.push('## Service areas');
   link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. Price bands and the crew model do not change by postal code; housing stock and substrate do, and each area page says how. Markdown: ${SITE_URL}/service-areas.md`);
-  lines.push(`- Municipalities and districts (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => c.name).join(', ')}.`);
+  lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
+  lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
-  lines.push('- Southern Ontario projects outside the GTA are assessed per project through the estimate path; they are not published service areas.');
+  lines.push(`- Named but not published — assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
   lines.push('');
 
   /* ── Evidence ─────────────────────────────────────────────────────────── */
@@ -249,7 +252,7 @@ export async function GET() {
   lines.push('### Per-area routing');
   lines.push('"hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" → the area page; Markdown at the same URL with .md appended.');
   for (const c of SERVICE_AREAS) {
-    lines.push(`- ${c.name}: ${SITE_URL}/service-areas/${c.slug}`);
+    lines.push(`- ${areaDisplayName(c)}: ${SITE_URL}/service-areas/${c.slug}`);
   }
   lines.push('');
 

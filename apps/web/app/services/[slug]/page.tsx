@@ -4,6 +4,7 @@ import { EstimateForm } from '../../components/EstimateForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
+import { placeForArea } from '@/lib/schema/root-schema';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../../components/Illustration';
@@ -128,7 +129,7 @@ export default async function ServiceDetailPage({
     description: svc?.blurb ?? page.standfirst,
     serviceType: svc?.name ?? page.h1,
     provider: { '@id': `${SITE_URL}/#organization` },
-    areaServed: CITIES.map((c) => ({ '@type': 'City' as const, name: c.name })),
+    areaServed: CITIES.map((c) => placeForArea(c)),
     url,
     ...(band
       ? {

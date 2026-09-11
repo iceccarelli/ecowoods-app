@@ -49,7 +49,7 @@
  * `UNSOURCED_DEADLINE` below is the date it should happen by.
  */
 import { BUSINESS_NAP, REVIEW_EVIDENCE, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
-import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS } from '@/lib/seo-data';
+import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS } from '@/lib/seo-data';
 import { SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL, formatBand } from '@/content/constants/pricing';
 
 /** Where a claim is allowed to appear. Ordered loosest to strictest. */
@@ -221,7 +221,7 @@ export const CLAIMS: Claim[] = [
     source: 'SERVICE_AREAS.length in lib/seo-data.ts.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine'],
-    note: `${CITIES.length} municipalities + ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods. Only the municipalities become schema City nodes (F-157).`,
+    note: `${CITIES.length} municipalities + ${DISTRICT_AREAS.length} districts and communities within a municipality + ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods. Only the municipalities become schema City nodes (F-157).`,
   },
 
   // ── Method ────────────────────────────────────────────────────────────

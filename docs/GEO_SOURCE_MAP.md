@@ -18,6 +18,27 @@ Every line number below is at the baseline commit.
 
 ---
 
+## 0. Status after GEO-001
+
+The five lists are now three facts and their selectors:
+
+| Fact | Owner | Selector / projection |
+|---|---|---|
+| who is covered, kind, `partOf`, country | `content/geo/markets.ts` | every other file |
+| region of each municipality; the 23 named-but-not-covered places; region nodes | `content/geo/regions.ts` (new) | `lib/registry/locations.ts` builds every node from markets + regions + pages; no default parent |
+| which areas have a page | `lib/seo-data.ts` `AREAS` / `NEIGHBOURHOODS` / `DISTRICTS` (kept because six guards read them) | `CITIES` (58 municipalities), `PRIMARY_AREAS`, `SERVICE_AREAS` (100) |
+| the territory's name | derived — `lib/geo/territory.ts` `TERRITORY`, `TERRITORY_SHORT`, `PUBLISHED_PARTITION` | llms, ai.txt, about, team, press, head-term pages, Markdown, matcher, /service-areas |
+| where a place is, in JSON-LD | derived — `root-schema.ts` `placeForArea` / `cityNode` from markets | page `spatialCoverage`, org `areaServed`, services `areaServed`, offers (Ontario only) |
+
+Toronto rule: the City of Toronto is a `region` node. It is in the markets
+`service_area`, is the first City in the organisation JSON-LD and has
+`in_area_served: true`; it has no `/service-areas/toronto` page, and the graph's
+`serves` edges go to its 23 published districts and neighbourhoods.
+
+Sections 1–10 below describe the GEO-000 baseline and are kept as the record.
+
+---
+
 ## 1. The answer in one paragraph
 
 The site does not have one geography. It has **five hand-maintained lists that

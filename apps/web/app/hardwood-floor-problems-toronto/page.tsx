@@ -14,6 +14,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { IllustrationPair } from '../components/Illustration';
 import { NextStep } from '@/app/components/NextStep';
+import { TERRITORY } from '@/lib/geo/territory';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -265,7 +266,7 @@ const FAQS = [
   {
     question: 'Who fixes hardwood floor problems in Toronto?',
     answer:
-      `${BUSINESS_NAP.legalName}, across ${SERVICE_AREAS.length} areas of Toronto and the GTA, ` +
+      `${BUSINESS_NAP.legalName}, across ${SERVICE_AREAS.length} areas of ${TERRITORY}, ` +
       'with salaried crews rather than subcontractors. The diagnosis is a free in-home visit ' +
       'with moisture readings taken and written down before any price is given — because a ' +
       'price quoted before anyone has measured the subfloor is a guess that gets corrected ' +

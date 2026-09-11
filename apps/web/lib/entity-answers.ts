@@ -1,5 +1,6 @@
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, yearsInBusiness } from '@ecowoods/shared/constants';
 import { SERVICES, SERVICE_AREAS, SITE_URL } from '@/lib/seo-data';
+import { TERRITORY } from '@/lib/geo/territory';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
 import { PRIMARY_REVIEW_EVIDENCE, SECONDARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
@@ -74,7 +75,7 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
   {
     q: `Where does ${BUSINESS_NAP.shortName} work?`,
     a:
-      `${SERVICE_AREAS.length} areas across ${BUSINESS_NAP.region}: ` +
+      `${SERVICE_AREAS.length} areas across ${TERRITORY}: ` +
       SERVICE_AREAS.map((c) => c.name).join(', ') +
       `. Each has its own page describing the housing stock and the technical constraint specific to it.`,
     href: '/service-areas',

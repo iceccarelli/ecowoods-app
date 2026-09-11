@@ -1,23 +1,30 @@
 /**
  * lib/registry/locations.ts — location intelligence (Protocol v2, Stage 7).
  *
- * Hierarchy: Canada → Ontario → Southern Ontario → GTA → Toronto → districts →
- * published neighbourhoods. The PUBLISHED set is exactly SERVICE_AREAS from
- * lib/seo-data.ts (16 municipalities/districts + 16 Toronto neighbourhoods),
- * every one of which has a /service-areas page. Nothing here adds a
- * municipality to the public list — that is an owner decision (Protocol §23).
+ * A PROJECTION. Since GEO-001 this file owns no geographic fact: every node is
+ * built from content/geo/markets.ts (who is covered, what kind of place it is,
+ * what it is part of), content/geo/regions.ts (which region a municipality sits
+ * in, and the Southern Ontario places that are named but not covered) and
+ * lib/seo-data.ts (which areas have a page). Before GEO-001 it kept its own list
+ * of forty-one municipalities with a region each and a default parent of the
+ * GTA, and so it reported owner-confirmed markets as "not a published service
+ * area" and hung Buffalo, Rochester and four Niagara municipalities from the
+ * Greater Toronto Area (docs/GEO_CONTRADICTION_LOG.md GC-002, GC-004, GC-005).
  *
- * What this module adds is GEOGRAPHIC KNOWLEDGE the matcher needs to answer
- * honestly about places the site does not list: a query about Hamilton or
- * Barrie resolves to a real place, with coverage `assessment` ("served on
- * assessment, not a published area") and the estimate action — never to
- * `unknown`, and never to a fabricated "yes, covered".
+ * Hierarchy: Canada → Ontario → Southern Ontario → GTA / Niagara Region /
+ * Waterloo Region → municipality → district / neighbourhood; and United States →
+ * New York State → municipality → district. Toronto is a `region` node: the
+ * City of Toronto itself has no service-area page, and its published areas are
+ * its six former municipalities and seventeen neighbourhoods.
  *
- * The regional parents (GTA, Toronto, Ontario, Southern Ontario) carry
- * coverage `region` / `parent` so "who installs hardwood in the GTA" resolves
- * to the published set rather than to nothing.
+ * The matcher still needs to answer honestly about places the site does not
+ * list: a query about London or Kingston resolves to a real place with coverage
+ * `assessment` and the estimate action — never to `unknown`, and never to a
+ * fabricated "yes, covered".
  */
 import { CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
+import { MARKETS, marketBySlug } from '@/content/geo/markets';
+import { REGION_NODES, DISCOVERY, regionOf } from '@/content/geo/regions';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import type { LocationCoverage, LocationTier } from './types';
 
@@ -32,11 +39,6 @@ export type LocationNode = {
 
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-/** Toronto's six former municipalities — districts of the city, not peers of Mississauga. */
-const TORONTO_DISTRICT_SLUGS = new Set([
-  'downtown-toronto', 'north-york', 'etobicoke', 'scarborough', 'east-york', 'york',
-]);
 
 /** Aliases for published areas: the strings a person types that are not the page name. */
 const PUBLISHED_ALIASES: Record<string, string[]> = {
@@ -56,6 +58,19 @@ const PUBLISHED_ALIASES: Record<string, string[]> = {
   newmarket: [],
   pickering: [],
   ajax: [],
+  /* GEO-001: the eleven municipalities published with this patch. Aliases are
+     the communities inside each that a person types instead of its name. */
+  whitby: ['brooklin', 'port whitby'],
+  oshawa: ['lakeview park', 'oshawa ontario'],
+  clarington: ['bowmanville', 'courtice', 'orono'],
+  'kawartha-lakes': ['city of kawartha lakes', 'lindsay', 'fenelon falls', 'bobcaygeon'],
+  'halton-hills': ['georgetown', 'acton', 'glen williams'],
+  caledon: ['bolton', 'caledon east', 'caledon village'],
+  innisfil: ['alcona', 'lefroy'],
+  guelph: ['guelph ontario'],
+  cambridge: ['galt', 'preston', 'hespeler', 'cambridge ontario'],
+  kitchener: ['kitchener ontario', 'kitchener on'],
+  'port-colborne': ['port colborne'],
   milton: [],
   burlington: ['aldershot', 'millcroft', 'alton village'],
   hamilton: ['hamilton ontario', 'hamilton on', 'city of hamilton', 'the hammer', 'hamilton mountain'],
@@ -87,140 +102,87 @@ const PUBLISHED_ALIASES: Record<string, string[]> = {
   'liberty-village': ['liberty', 'libertyvillage'],
 };
 
+/** The City of Toronto's own node aliases. */
+const TORONTO_ALIASES = ['city of toronto', 'toronto ontario', 'toronto on', 'toronto canada', 'the six', 'tdot', 't.o.', 'to'];
+
 /**
- * Real Southern Ontario municipalities WITHOUT a published page. Coverage is
- * `assessment` — a real place the estimate path can assess, never a claim.
- * Name only; no copy is generated for these and no page exists.
+ * The hierarchy, built once, from the fact files.
+ *
+ * Every market in content/geo/markets.ts becomes exactly one node; every
+ * published area is `published`; every region node comes from regions.ts; and
+ * every Southern Ontario place that is not a market is `assessment`. A place is
+ * never both a market and an assessment node — the second is only built for
+ * slugs the first did not claim.
  */
-const ASSESSMENT_MUNICIPALITIES: { name: string; region: 'gta' | 'southern-ontario'; aliases?: string[] }[] = [
-  { name: 'Whitby', region: 'gta' },
-  { name: 'Oshawa', region: 'gta' },
-  { name: 'Clarington', region: 'gta', aliases: ['bowmanville', 'courtice'] },
-  { name: 'Uxbridge', region: 'gta' },
-  { name: 'Whitchurch-Stouffville', region: 'gta', aliases: ['stouffville'] },
-  { name: 'King', region: 'gta', aliases: ['king city', 'nobleton', 'schomberg'] },
-  { name: 'East Gwillimbury', region: 'gta', aliases: ['holland landing', 'mount albert'] },
-  { name: 'Georgina', region: 'gta', aliases: ['keswick', 'sutton'] },
-  { name: 'Caledon', region: 'gta', aliases: ['bolton'] },
-  { name: 'Milton', region: 'gta' },
-  { name: 'Burlington', region: 'gta' },
-  { name: 'Halton Hills', region: 'gta', aliases: ['georgetown', 'acton'] },
-  { name: 'Hamilton', region: 'southern-ontario', aliases: ['ancaster', 'dundas', 'stoney creek', 'waterdown'] },
-  { name: 'Guelph', region: 'southern-ontario' },
-  { name: 'Kitchener', region: 'southern-ontario' },
-  { name: 'Waterloo', region: 'southern-ontario' },
-  { name: 'Cambridge', region: 'southern-ontario' },
-  { name: 'Barrie', region: 'southern-ontario' },
-  { name: 'Innisfil', region: 'southern-ontario', aliases: ['alcona'] },
-  { name: 'Bradford West Gwillimbury', region: 'southern-ontario', aliases: ['bradford'] },
-  { name: 'Orangeville', region: 'southern-ontario' },
-  { name: 'Brantford', region: 'southern-ontario' },
-  { name: 'St. Catharines', region: 'southern-ontario', aliases: ['st catharines', 'saint catharines'] },
-  { name: 'Niagara Falls', region: 'southern-ontario' },
-  { name: 'Niagara-on-the-Lake', region: 'southern-ontario', aliases: ['niagara on the lake', 'notl'] },
-  { name: 'Grimsby', region: 'southern-ontario' },
-  { name: 'London', region: 'southern-ontario', aliases: ['london ontario', 'london on'] },
-  { name: 'Woodstock', region: 'southern-ontario' },
-  { name: 'Stratford', region: 'southern-ontario' },
-  { name: 'Peterborough', region: 'southern-ontario' },
-  { name: 'Cobourg', region: 'southern-ontario' },
-  { name: 'Port Hope', region: 'southern-ontario' },
-  { name: 'Belleville', region: 'southern-ontario' },
-  { name: 'Kingston', region: 'southern-ontario' },
-  { name: 'Collingwood', region: 'southern-ontario' },
-  { name: 'Wasaga Beach', region: 'southern-ontario' },
-  { name: 'Muskoka', region: 'southern-ontario', aliases: ['bracebridge', 'gravenhurst', 'huntsville'] },
-  { name: 'Sarnia', region: 'southern-ontario' },
-  { name: 'Windsor', region: 'southern-ontario' },
-  { name: 'Chatham-Kent', region: 'southern-ontario', aliases: ['chatham'] },
-  { name: 'Owen Sound', region: 'southern-ontario' },
-];
-
-/** The hierarchy, built once. */
 export function buildLocationNodes(): LocationNode[] {
-  const nodes: LocationNode[] = [
-    { slug: 'canada', name: 'Canada', tier: 'country', coverage: 'parent', parent: null, aliases: ['ca'] },
-    { slug: 'ontario', name: 'Ontario', tier: 'province', coverage: 'parent', parent: 'canada', aliases: ['on', 'province of ontario', 'all ontario', 'all of ontario', 'anywhere in ontario', 'everywhere in ontario'] },
-    { slug: 'southern-ontario', name: 'Southern Ontario', tier: 'region', coverage: 'assessment', parent: 'ontario', aliases: ['south ontario', 'south of ontario', 'all southern ontario', 'southwestern ontario', 'golden horseshoe', 'greater golden horseshoe', 'all of southern ontario'] },
-    { slug: 'gta', name: 'Greater Toronto Area', tier: 'region', coverage: 'region', parent: 'southern-ontario', aliases: ['the gta', 'greater toronto', 'greater toronto area', 'toronto area', 'gta ontario', 'the greater toronto area', 'peel', 'york region', 'durham', 'durham region', 'halton', 'halton region'] },
-    { slug: 'toronto', name: 'Toronto', tier: 'municipality', coverage: 'region', parent: 'gta', aliases: ['city of toronto', 'toronto ontario', 'toronto on', 'toronto canada', 'the six', 'tdot', 't.o.', 'to'] },
-  ];
+  const nodes: LocationNode[] = REGION_NODES.map((r) => ({
+    slug: r.slug,
+    name: r.name,
+    tier: r.tier as LocationTier,
+    coverage: r.coverage,
+    parent: r.parent,
+    aliases: [...r.aliases],
+  }));
+  const has = (slug: string) => nodes.some((n) => n.slug === slug);
+  const add = (n: LocationNode) => {
+    if (!has(n.slug)) nodes.push(n);
+  };
+  const published = new Set(SERVICE_AREAS.map((a) => a.slug));
 
-  /*
-   * WHERE A PUBLISHED MUNICIPALITY HANGS FROM.
-   *
-   * This used to be `'gta'` for everything in CITIES, which was true while
-   * CITIES was sixteen GTA municipalities. It stopped being true the moment
-   * Hamilton, St. Catharines, Niagara-on-the-Lake, Niagara Falls, Grimsby and
-   * Barrie were published: none of those is in the Greater Toronto Area, and a
-   * hierarchy that says otherwise is wrong in the part of the graph that exists
-   * to answer "where is this place".
-   *
-   * The region for each is already recorded, once, in ASSESSMENT_MUNICIPALITIES
-   * below — so it is read from there rather than restated here, and a
-   * municipality moving between the published and assessed lists cannot change
-   * which region it belongs to.
-   */
-  const REGION_OF = new Map(ASSESSMENT_MUNICIPALITIES.map((m) => [slugify(m.name), m.region]));
-  const parentOfPublished = (slug: string, name: string): string =>
-    REGION_OF.get(slug) ?? REGION_OF.get(slugify(name)) ?? 'gta';
+  /* Toronto: a region node. Its published areas are the districts and
+     neighbourhoods below, each hanging from it. */
+  add({ slug: 'toronto', name: 'Toronto', tier: 'municipality', coverage: 'region', parent: 'gta', aliases: TORONTO_ALIASES });
 
   for (const c of CITIES) {
-    const isDistrict = TORONTO_DISTRICT_SLUGS.has(c.slug);
-    nodes.push({
+    const m = marketBySlug(c.slug);
+    add({
       slug: c.slug,
       name: c.name,
-      tier: isDistrict ? 'district' : 'municipality',
+      tier: 'municipality',
       coverage: 'published',
-      parent: isDistrict ? 'toronto' : parentOfPublished(c.slug, c.name),
+      parent: regionOf(c.slug, m?.country ?? 'CA'),
       aliases: PUBLISHED_ALIASES[c.slug] ?? [],
     });
   }
   for (const n of NEIGHBOURHOOD_AREAS) {
-    nodes.push({
+    add({
       slug: n.slug,
       name: n.name,
       tier: 'neighbourhood',
       coverage: 'published',
-      parent: 'toronto',
+      parent: marketBySlug(n.slug)?.partOf ?? 'toronto',
       aliases: PUBLISHED_ALIASES[n.slug] ?? [],
     });
   }
-  /*
-   * Communities inside a municipality other than Toronto. They hang from their
-   * own municipality when it is a node — Ancaster, Dundas, Stoney Creek and
-   * Waterdown from Hamilton — and from the region when it is not: Lincoln is a
-   * confirmed market in content/geo/markets.ts with no published page, so
-   * Beamsville hangs from Southern Ontario rather than from a node that does
-   * not exist. The alternative, inventing a Lincoln node with no page behind
-   * it, would put a location in the graph that resolves to nothing.
-   */
+  /* Districts: the six former municipalities of Toronto, and communities inside
+     a municipality elsewhere. Each hangs from the municipality the market
+     registry says it is part of. */
   for (const d of DISTRICT_AREAS) {
-    const parentSlug = slugify(d.partOf);
-    nodes.push({
+    add({
       slug: d.slug,
       name: d.name,
       tier: 'district',
       coverage: 'published',
-      parent: nodes.some((n) => n.slug === parentSlug) ? parentSlug : 'southern-ontario',
+      parent: marketBySlug(d.slug)?.partOf ?? slugify(d.partOf),
       aliases: PUBLISHED_ALIASES[d.slug] ?? [],
     });
   }
-  for (const m of ASSESSMENT_MUNICIPALITIES) {
-    const slug = slugify(m.name);
-    /* By slug AND by name: "Niagara Falls" here slugifies to `niagara-falls`,
-       while the published Canadian page is `niagara-falls-on` because there are
-       two Niagara Falls on this corridor. Matching on slug alone would have
-       published one node and assessed a second node for the same place. */
-    if (nodes.some((n) => n.slug === slug || n.name === m.name)) continue;
-    nodes.push({
-      slug,
+  /* Any market without a page. None today — every market is published or, for
+     Toronto, a region — but a market added tomorrow without a page is still a
+     real place with a real parent, not a gap in the hierarchy. */
+  for (const m of MARKETS) {
+    if (published.has(m.slug)) continue;
+    add({
+      slug: m.slug,
       name: m.name,
-      tier: 'municipality',
+      tier: m.kind === 'district' ? 'district' : 'municipality',
       coverage: 'assessment',
-      parent: m.region,
-      aliases: m.aliases ?? [],
+      parent: m.partOf ?? regionOf(m.slug, m.country),
+      aliases: [],
     });
+  }
+  for (const d of DISCOVERY) {
+    add({ slug: d.slug, name: d.name, tier: 'municipality', coverage: 'assessment', parent: regionOf(d.slug, 'CA'), aliases: d.aliases ?? [] });
   }
   return nodes;
 }

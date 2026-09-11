@@ -61,9 +61,13 @@ import {
   SERVICE_AREAS,
   FAQ_ITEMS,
   cityContent,
+  areaDisplayName,
+  US_AREA_SLUGS,
   type CityContent,
   type FaqItem,
 } from '@/lib/seo-data';
+import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
+import { DISCOVERY } from '@/content/geo/regions';
 import {
   getServicePages,
   getServicePage,
@@ -312,7 +316,7 @@ export const serviceToMarkdown = (page: ServicePage): string => {
 
   const rows: string[][] = [['Service', svc?.name ?? page.h1]];
   if (band) rows.push(['Published price band', band]);
-  rows.push(['Areas served', CITIES.map((c) => c.name).join(', ')]);
+  rows.push(['Areas served', CITIES.map((c) => areaDisplayName(c)).join(', ')]);
   out.push(...table(['Field', 'Value'], rows));
 
   const pillars = PILLARS.filter((p) => page.pillars.includes(p.id));
@@ -347,8 +351,20 @@ export const serviceToMarkdown = (page: ServicePage): string => {
 
 export const areaToMarkdown = (slug: string, name: string, cc: CityContent): string => {
   const canonical = `${SITE_URL}/service-areas/${slug}`;
+  /*
+   * The twin names the place exactly as the HTML page does ("Buffalo, NY",
+   * "Niagara Falls, ON") and states the same service sentence, verbatim. Until
+   * GEO-001 the HTML said "… in Buffalo, NY" and carried the sentence while the
+   * twin said "… in Buffalo" and did not (GC-015). A twin may format
+   * differently; it may not say something different.
+   */
+  const displayName = areaDisplayName({ slug, name });
+  const isUS = US_AREA_SLUGS.has(slug);
   const out: string[] = [
-    `# Hardwood floor installation & refinishing in ${name}`,
+    `# Hardwood floor installation & refinishing in ${displayName}`,
+    '',
+    `Ecowoods serves ${displayName}. Book the measure.` +
+      (isUS ? ` The showroom is Toronto. The job is in ${name}. We take this work.` : ''),
     '',
     cc.intro,
     '',
@@ -515,7 +531,7 @@ const napTable = (): string[] =>
       ['Email', `[${BUSINESS_NAP.email}](mailto:${BUSINESS_NAP.email})`],
       ['Hours', `${HOURS_LINE} (${BUSINESS_TIMEZONE_NAME})`],
       ['Established', String(BUSINESS_NAP.foundedYear)],
-      ['Service region', BUSINESS_NAP.region],
+      ['Service territory', TERRITORY],
       ['Website', SITE_URL],
     ],
   );
@@ -540,8 +556,9 @@ export const homeToMarkdown = (): string => {
     '',
     '## Where the work is done',
     '',
-    `${BUSINESS_NAP.region}. ${SERVICE_AREAS.length} published service areas — ${CITIES.length} municipalities and ` +
-      `districts and ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods — each with its own page: ` +
+    `${TERRITORY}. ${PUBLISHED_PARTITION.total} published service areas — ${PUBLISHED_PARTITION.municipalities} municipalities, ` +
+      `${PUBLISHED_PARTITION.districts} districts and communities within a municipality, and ` +
+      `${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods — each with its own page: ` +
       `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
     '',
     '## Evidence',
@@ -598,17 +615,17 @@ export const areasHubToMarkdown = (): string => {
   const canonical = abs('/service-areas');
   const crew = claimText('workforce.salaried');
   const out: string[] = [
-    `# Hardwood flooring service areas — ${BUSINESS_NAP.region}`,
+    `# Hardwood flooring service areas — ${TERRITORY}`,
     '',
     identitySentence(),
     '',
     '## Who is served',
     '',
-    `Homeowners, condominium owners and property managers across ${BUSINESS_NAP.region}: ` +
-      `${SERVICE_AREAS.length} published service areas, each with its own page.`,
+    `Homeowners, condominium owners and property managers across ${TERRITORY}: ` +
+      `${PUBLISHED_PARTITION.total} published service areas, each with its own page.`,
     '',
-    'Projects elsewhere in Southern Ontario are assessed per project through the estimate path. ' +
-      'They are not published service areas, and this page does not claim them as covered.',
+    `Named but not published — assessed per project through the estimate path, and not claimed as covered: ` +
+      `${DISCOVERY.map((d) => d.name).join(', ')}.`,
     '',
     '## What does not change by area',
     '',
@@ -622,19 +639,20 @@ export const areasHubToMarkdown = (): string => {
       'bungalow and a concrete-slab condominium are different jobs with different moisture questions, and ' +
       'each area page below says which it is.',
     '',
-    '## Municipalities and districts',
+    '## Municipalities',
     '',
-    ...CITIES.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
+    ...CITIES.map((c) => `- ${link(areaDisplayName(c), `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
     '',
     '## Toronto neighbourhoods',
     '',
     ...NEIGHBOURHOOD_AREAS.map((c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — markdown: ${md(`/service-areas/${c.slug}`)}`),
     '',
-    /* Communities inside a municipality other than Toronto. Listed under their
+    /* Districts and communities inside a municipality — the six former
+       municipalities of Toronto among them since GEO-001. Listed under their
        parent rather than as peers of it, because that is what they are: the
        machine edition of this page is read literally, and Ancaster is not a
        city beside Hamilton. */
-    '## Communities within a municipality',
+    '## Districts and communities within a municipality',
     '',
     ...DISTRICT_AREAS.map(
       (c) => `- ${link(c.name, `/service-areas/${c.slug}`)} — in ${c.partOf} — markdown: ${md(`/service-areas/${c.slug}`)}`,
@@ -863,7 +881,7 @@ export const commercialToMarkdown = (page: CommercialMirror): string => {
     '',
     '## Coverage',
     '',
-    `${SERVICE_AREAS.length} published service areas across ${BUSINESS_NAP.region}: ` +
+    `${SERVICE_AREAS.length} published service areas across ${TERRITORY}: ` +
       `${link('Service areas', '/service-areas')} (${md('/service-areas')}).`,
     '',
   ];
@@ -980,7 +998,7 @@ export const corpusToMarkdown = (): string => {
     `- ${guides.length} decision guide(s) and reference installation(s)`,
     `- ${terms.length} glossary term(s)`,
     `- ${services.length} service(s), each with its published price band`,
-    `- ${areas.length} service area(s) across Toronto and the GTA`,
+    `- ${areas.length} service area(s) across ${TERRITORY}`,
     '',
     '---',
     '',

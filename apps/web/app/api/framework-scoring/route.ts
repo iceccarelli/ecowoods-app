@@ -3,7 +3,7 @@ import { frameworkScoringSchema } from '@ecowoods/shared/schemas';
 import { FRAMEWORK_VERSION, criterionCount, allCriteria, score, type Answer } from '@/lib/framework';
 import { recordFrameworkScoring } from '@/lib/floor-graph';
 import { grantConsent } from '@/lib/floor-graph/consent';
-import { CITIES } from '@/lib/seo-data';
+import { SERVICE_AREAS } from '@/lib/seo-data';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 
 /**
@@ -49,7 +49,7 @@ const DECODE: Record<string, Answer> = { y: 'yes', u: 'unsure', n: 'no' };
 function normaliseRegion(input: string | undefined): string | null {
   if (!input) return null;
   const wanted = input.trim().toLowerCase();
-  const hit = CITIES.find((c) => c.name.toLowerCase() === wanted);
+  const hit = SERVICE_AREAS.find((c) => c.name.toLowerCase() === wanted);
   return hit ? hit.name : null;
 }
 

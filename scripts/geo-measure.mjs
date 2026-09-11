@@ -119,8 +119,11 @@ const json = (r) => {
 const strip = ({ body, ...rest }) => rest;
 
 /* ── parsers ────────────────────────────────────────────────────────────── */
+/* `(?<!\/app)`: the HTML also carries Next's own chunk paths, and
+   "/_next/static/chunks/app/service-areas/page-1a2b3c.js" is not a service area.
+   The first production run counted it as one (html_index_links 90 vs 89). */
 const areaSlugsIn = (text) =>
-  [...new Set([...text.matchAll(/\/service-areas\/([a-z0-9-]+?)(?:\.md)?(?=[\s"')<>\]#?,.]|$)/g)].map((m) => m[1]))].sort();
+  [...new Set([...text.matchAll(/(?<!\/app)\/service-areas\/([a-z0-9-]+?)(?:\.md)?(?=[\s"')<>\]#?,.]|$)/g)].map((m) => m[1]))].sort();
 const corridorIdsIn = (text) =>
   [...new Set([...text.matchAll(/\/corridors\/([a-z0-9-]+)/g)].map((m) => m[1]))].sort();
 const jsonLd = (html) => {
@@ -257,9 +260,17 @@ async function main() {
   const contradictions = [];
   const add = (id, slug, detail) => contradictions.push({ id, slug, detail });
   for (const e of entities) {
-    if (e.in_markets_service_area && e.html.status !== 200) add('SERVICE_AREA_WITHOUT_PAGE', e.slug, `markets.service_area lists it; /service-areas/${e.slug} → ${e.html.status}`);
+    /* A region node (Toronto) is served through the published areas inside it
+       — its districts and neighbourhoods — and has no page of its own by
+       design (docs/GEO_SOURCE_MAP.md §7). Anything else without a page is a
+       coverage claim with nothing behind it. */
+    if (e.in_markets_service_area && e.html.status !== 200 && e.api_location.coverage !== 'region') add('SERVICE_AREA_WITHOUT_PAGE', e.slug, `markets.service_area lists it; /service-areas/${e.slug} → ${e.html.status}`);
     if (e.in_markets_service_area && e.api_location.coverage === 'assessment') add('SERVICE_AREA_VS_ASSESSMENT', e.slug, 'markets.service_area lists it; locations says coverage=assessment ("do not present as covered")');
-    if (e.graph_serves && e.api_location.in_area_served === false) add('SERVES_BUT_NOT_IN_AREA_SERVED', e.slug, 'graph serves edge, locations.in_area_served=false');
+    /* in_area_served is defined as "the organisation's JSON-LD lists this place
+       as a City" (lib/registry/types.ts), so a district or neighbourhood with a
+       page is correctly false. What must agree is a MUNICIPALITY: served in the
+       markets API ⇔ a City in the JSON-LD. */
+    if (e.market?.kind === 'municipality' && e.in_markets_service_area !== (e.api_location.in_area_served === true)) add('SERVICE_AREA_VS_IN_AREA_SERVED', e.slug, `markets.service_area=${e.in_markets_service_area}, locations.in_area_served=${e.api_location.in_area_served}`);
     if (e.sitemap && e.html.status !== 200) add('SITEMAP_GHOST', e.slug, `in sitemap, HTML → ${e.html.status}`);
     if (e.html.status === 200 && !e.sitemap) add('PAGE_NOT_IN_SITEMAP', e.slug, 'HTML 200, absent from sitemap');
     if (e.html.status === 200 && e.md.status !== 200) add('MISSING_MD_TWIN', e.slug, `.md → ${e.md.status}`);

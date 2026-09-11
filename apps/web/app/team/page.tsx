@@ -6,6 +6,7 @@ import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/li
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+import { TERRITORY } from '@/lib/geo/territory';
 
 /**
  * /team — who actually does the work, answered without inventing anyone.
@@ -76,7 +77,7 @@ const FAQS = [
     question: `How long has ${BUSINESS_NAP.shortName} been working in Toronto?`,
     answer:
       `Since ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years — across ` +
-      `${SERVICE_AREAS.length} municipalities and neighbourhoods in Toronto and the GTA.`,
+      `${SERVICE_AREAS.length} municipalities and neighbourhoods across ${TERRITORY}.`,
   },
 ];
 

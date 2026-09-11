@@ -29,6 +29,8 @@ export default function CorridorsPage() {
     operational: MARKETS.filter((x) => x.operationalTruth.verifiedAt).length,
     withPages: MARKETS.filter((x) => assess(x).indexable).length,
     total: MARKETS.length,
+    ca: MARKETS.filter((x) => x.country === 'CA').length,
+    us: MARKETS.filter((x) => x.country === 'US').length,
   };
 
   return (
@@ -53,7 +55,8 @@ export default function CorridorsPage() {
             municipalities strung along it, and what coverage actually means in each.
           </p>
           <p className="tlx-note">
-            {counts.total} Ontario municipalities and districts are in the model. {counts.operational} have a
+            {`${counts.total} municipalities and districts are in the model — ${counts.ca} in Ontario, ${counts.us} in New York State.`}{' '}
+            {counts.operational} have a
             confirmed operational position. {counts.withPages} have earned a page of their own. Those three
             numbers are deliberately different, and the difference is explained below.
           </p>

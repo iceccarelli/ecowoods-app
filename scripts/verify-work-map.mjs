@@ -143,6 +143,12 @@ for (const list of ['AREAS', 'NEIGHBOURHOODS']) {
   const m = seo.match(new RegExp(`const ${list}\\s*=\\s*\\[([\\s\\S]*?)\\]`));
   if (m) for (const s of m[1].matchAll(/'([^']+)'/g)) areaSlugs.add(slugify(s[1]));
 }
+/* DISTRICTS carries pages too — since GEO-001 the six former municipalities of
+   Toronto among them. Names only: a partOf is a parent, not a page. */
+{
+  const m = seo.match(/const DISTRICTS[^=]*=\s*\[([\s\S]*?)\n\];/);
+  if (m) for (const s of m[1].matchAll(/name:\s*'([^']+)'/g)) areaSlugs.add(slugify(s[1]));
+}
 const serviceSlugs = new Set(
   [...fs.readFileSync(SERVICE_PAGES, 'utf8').matchAll(/slug:\s*'([a-z0-9-]+)'/g)].map((m) => m[1]),
 );

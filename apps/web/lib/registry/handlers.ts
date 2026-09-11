@@ -688,9 +688,10 @@ export async function handleQuoteCheck(request: Request) {
  * So each market carries its status, the sentence that can honestly be said
  * about serving it, and the date somebody confirmed that. A market nobody has
  * confirmed says so, in the payload, rather than borrowing the confidence of
- * the ones beside it. `service_area` lists only what may be claimed, and the
- * United States markets are excluded from it by construction — they are
- * a service area on both sides of the border since 2026-09-10.
+ * the ones beside it. `service_area` lists the confirmed municipalities, on
+ * both sides of the border since the owner's New York confirmation of
+ * 2026-09-10; since GEO-001 every one of them has a page, and Toronto is served
+ * through the pages of its districts and neighbourhoods.
  *
  * `content_queue` is published deliberately. It is the list of markets that do
  * not yet have a page and the reason each one does not, which is a more useful
@@ -791,16 +792,12 @@ export async function handleMarkets(request: Request) {
  * market being ranked on highway access alone.
  *
  * An assistant asked "how does Ecowoods decide where to expand" has a document
- * to quote. An assistant asked "does Ecowoods work in Buffalo" reads
- * `classification: FUTURE` with the reason attached, in the company's own
- * words, rather than inferring an answer from a page that half-implies one.
+ * to quote, with the reason for every classification in the company's own
+ * words rather than inferred from a page.
  *
- * THE UNITED STATES RULE IS IN THE PAYLOAD, NOT ONLY IN THE CODE
- *
- * Every American market comes back FUTURE with the sentence explaining that
- * Ecowoods operates in Ontario from Ontario. That is the fact most likely to be
- * got wrong about this company by a machine reading a cross-border corridor,
- * and it is cheaper to state it sixty times than to correct it once.
+ * New York markets are classified on the same terms as Ontario ones since the
+ * owner's confirmation of 2026-09-10 (lib/geo/opportunity.ts); the cap that
+ * held every American market at FUTURE described the position before it.
  */
 export async function handleOpportunity(request: Request) {
   const reg = await getRegistry();

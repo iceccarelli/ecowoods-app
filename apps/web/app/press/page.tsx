@@ -16,6 +16,7 @@ import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { illustrationImage } from '../data/illustration-images';
+import { TERRITORY } from '@/lib/geo/territory';
 
 export const metadata: Metadata = {
   title: 'Press and media kit',
@@ -157,7 +158,7 @@ export default function PressPage() {
                 <tr>
                   <th scope="row">Service area</th>
                   <td>
-                    {BUSINESS_NAP.region} — {SERVICE_AREAS.length} municipalities and neighbourhoods,
+                    {TERRITORY} — {SERVICE_AREAS.length} municipalities and neighbourhoods,
                     listed at <Link href="/service-areas">/service-areas</Link>
                   </td>
                 </tr>

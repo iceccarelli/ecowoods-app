@@ -26,7 +26,7 @@ import { getPapers } from '@/lib/papers';
 import { getGuides } from '@/lib/guides';
 import { getTerms } from '@/lib/glossary';
 import { PILLARS, criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
-import { CITIES } from '@/lib/seo-data';
+import { PRIMARY_AREAS } from '@/lib/seo-data';
 
 export function ContentLibraryPromo() {
   const papers = getPapers();
@@ -156,7 +156,7 @@ export function ContentLibraryPromo() {
           <div className="clp-secondary-col">
             <h3>Where we work</h3>
             <ul className="clp-areas">
-              {CITIES.map((c) => (
+              {PRIMARY_AREAS.map((c) => (
                 <li key={c.slug}>
                   <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
                 </li>

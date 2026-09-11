@@ -14,6 +14,7 @@ import { Illustration, IllustrationPair } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { ProcessVideo } from '../components/ProcessVideo';
 import { CatalogueRail } from '../components/CatalogueRail';
+import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -302,8 +303,7 @@ export default function RefinishingTorontoPage() {
             ))}
           </dl>
           <p className="tlx-note">
-            {BUSINESS_NAP.legalName} works across {SERVICE_AREAS.length} areas in Toronto and the
-            GTA. See <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for
+            {BUSINESS_NAP.legalName} works across {SERVICE_AREAS.length} areas in {TERRITORY}. See <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link> for
             new installation, or <Link href="/service-areas">the coverage list</Link>.
           </p>
         </div>
@@ -326,7 +326,7 @@ export default function RefinishingTorontoPage() {
         <div className="shell">
           <p className="tlx-kicker">Coverage</p>
           <h2 className="tlx-h2">
-            Hardwood floor refinishing across {SERVICE_AREAS.length} Toronto and GTA areas
+            Hardwood floor refinishing across {SERVICE_AREAS.length} areas in {TERRITORY_SHORT}
           </h2>
           <p className="tlx-note">
             Each area has its own page describing the housing stock there and what it means for a
