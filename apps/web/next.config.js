@@ -26,6 +26,12 @@ const MARKDOWN_TWINS = [
   ['/services/:slug([a-z0-9-]+)', '/services/:slug.md'],
   ['/service-areas', '/service-areas.md'],
   ['/service-areas/:slug([a-z0-9-]+)', '/service-areas/:slug.md'],
+  /* The routing spine and the proof map (GEO-002). The corridor pages are the
+     only surface that answers "how would you get here" rather than "do you
+     have a page for my town", and they had no machine edition at all. */
+  ['/corridors', '/corridors.md'],
+  ['/corridors/:id([a-z0-9-]+)', '/corridors/:id.md'],
+  ['/where-we-work', '/where-we-work.md'],
   ['/pricing', '/pricing.md'],
   ['/reviews', '/reviews.md'],
   ['/estimate', '/estimate.md'],
@@ -201,6 +207,7 @@ const nextConfig = {
       { source: '/glossary/:slug.md', destination: '/md/glossary/:slug' },
       { source: '/services/:slug.md', destination: '/md/services/:slug' },
       { source: '/service-areas/:slug.md', destination: '/md/service-areas/:slug' },
+      { source: '/corridors/:id.md', destination: '/md/corridors/:id' },
       /* The entity's own machine edition. Every content collection has had one
          since F-153; the company itself did not until F-187. */
       { source: '/about.md', destination: '/md/about' },
@@ -212,6 +219,8 @@ const nextConfig = {
       { source: '/index.md', destination: '/md/home' },
       { source: '/services.md', destination: '/md/services' },
       { source: '/service-areas.md', destination: '/md/service-areas' },
+      { source: '/corridors.md', destination: '/md/corridors' },
+      { source: '/where-we-work.md', destination: '/md/where-we-work' },
       { source: '/pricing.md', destination: '/md/pricing' },
       { source: '/reviews.md', destination: '/md/reviews' },
       { source: '/estimate.md', destination: '/md/estimate' },

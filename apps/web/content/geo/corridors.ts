@@ -6,10 +6,13 @@
  * That is why corridors exist in the data model at all — the thing that decides
  * whether a job in Grimsby is profitable is the QEW, not a map colour.
  *
- * These nine, their members and their order are stated by the owner. Nothing
- * here is inferred from a map or a distance API: a corridor is a business
- * decision about where crews will travel, and inventing one would be inventing
- * an operating plan.
+ * These corridors, their members and their order are stated by the owner.
+ * Nothing here is inferred from a map or a distance API: a corridor is a
+ * business decision about where crews will travel, and inventing one would be
+ * inventing an operating plan.
+ *
+ * A corridor names MUNICIPALITIES. Districts reach it through their
+ * municipality — see the note on `members` below, and GEO-002.
  */
 
 export type CorridorId =
@@ -32,7 +35,27 @@ export interface Corridor {
   route: string;
   /** Market slug the corridor runs out from. */
   hub: string;
-  /** Market slugs, in travel order from the hub. */
+  /**
+   * MUNICIPALITY slugs, in travel order from the hub. Municipalities only.
+   *
+   * A corridor is a drive between municipalities, and a district inherits its
+   * municipality's membership through `partOf` — that rule is written in
+   * content/geo/markets.ts on the `corridors` field and enforced from the
+   * market side by scripts/verify-geo.mjs §2, which is why every district
+   * declares `corridors: []`.
+   *
+   * Until GEO-002 this list said otherwise. It named Stoney Creek beside
+   * Hamilton on the QEW, Ancaster and Dundas beside Guelph on the 403, and
+   * Williamsville and Kenmore beside Buffalo and Amherst in Erie County — five
+   * districts standing as peers of the cities that contain them, in the one
+   * list a machine reads as "the places on this route"
+   * (docs/GEO_CONTRADICTION_LOG.md GC-016). The guard checked the rule in one
+   * direction only, so it passed.
+   *
+   * Nothing was lost by removing them: `corridorStops()` in lib/geo/index.ts
+   * puts every district back on the page, under the municipality it is part
+   * of, which is where it was always true.
+   */
   members: string[];
   /**
    * What this corridor is for, in one paragraph. Describes geography and
@@ -83,7 +106,7 @@ export const CORRIDORS: Corridor[] = [
     name: 'QEW West',
     route: 'QEW southwest along the lake to Hamilton',
     hub: 'mississauga',
-    members: ['mississauga', 'oakville', 'burlington', 'hamilton', 'stoney-creek', 'grimsby'],
+    members: ['mississauga', 'oakville', 'burlington', 'hamilton', 'grimsby'],
     summary:
       'The lakeshore run. Housing age drops sharply and then rises again: newer detached stock through Oakville and Burlington, then Hamilton, where much of the stock predates the war and the substrate question changes with it.',
   },
@@ -92,7 +115,7 @@ export const CORRIDORS: Corridor[] = [
     name: '403 / Highway 6 West',
     route: 'Hamilton west and north to Waterloo Region',
     hub: 'hamilton',
-    members: ['hamilton', 'ancaster', 'dundas', 'guelph', 'cambridge', 'kitchener'],
+    members: ['hamilton', 'guelph', 'cambridge', 'kitchener'],
     summary:
       'Past Hamilton toward Guelph and Waterloo Region. Ancaster and Dundas are part of the City of Hamilton rather than separate municipalities, and are modelled that way — they are places, not peer cities.',
   },
@@ -126,8 +149,8 @@ export const CORRIDORS: Corridor[] = [
     route: 'Buffalo outward through the Erie County towns',
     hub: 'buffalo',
     members: [
-      'buffalo', 'amherst', 'williamsville', 'clarence', 'cheektowaga', 'lancaster',
-      'west-seneca', 'tonawanda', 'kenmore', 'grand-island', 'orchard-park', 'hamburg',
+      'buffalo', 'amherst', 'clarence', 'cheektowaga', 'lancaster',
+      'west-seneca', 'tonawanda', 'grand-island', 'orchard-park', 'hamburg',
       'east-aurora',
     ],
     summary:

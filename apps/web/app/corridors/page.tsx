@@ -1,14 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CORRIDORS, MARKETS, marketBySlug, assess } from '@/lib/geo';
+import { CORRIDORS, MARKETS, marketBySlug, assess, corridorMarkets } from '@/lib/geo';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
-import { SchemaScript } from '@/lib/schema/components';
+import { buildCorridorsIndexSchema } from '@/lib/schema/corridor-schema';
+import { SchemaScripts } from '@/lib/schema/components';
 
 export const metadata: Metadata = {
   title: 'Where we drive — the corridors this work is routed along',
   description: `The ${CORRIDORS.length} routes Ecowoods works out from Toronto, the municipalities on each, and exactly what coverage means in every one of them.`,
-  alternates: { canonical: '/corridors' },
+  alternates: {
+    canonical: '/corridors',
+    /* The machine edition (GEO-002): the routes, their stops and every
+       operational statement, as Markdown rather than as a parsed table. */
+    types: { 'text/markdown': '/corridors.md' },
+  },
 };
 
 /**
@@ -35,11 +41,14 @@ export default function CorridorsPage() {
 
   return (
     <div className="tlx-page">
-      <SchemaScript
-        schema={buildBreadcrumbList([
-          { name: 'Home', url: SITE_URL },
-          { name: 'Corridors', url: `${SITE_URL}/corridors` },
-        ])}
+      <SchemaScripts
+        schemas={[
+          buildBreadcrumbList([
+            { name: 'Home', url: SITE_URL },
+            { name: 'Corridors', url: `${SITE_URL}/corridors` },
+          ]),
+          buildCorridorsIndexSchema(),
+        ]}
       />
 
       <header className="tlx-hero">
@@ -76,7 +85,10 @@ export default function CorridorsPage() {
                   <p className="tlx-kicker">{c.route}</p>
                   <p className="tlx-body">{c.summary}</p>
                   <p className="pj-note">
-                    Out from {hub?.name ?? c.hub} · {c.members.length} markets
+                    Out from {hub?.name ?? c.hub} · {c.members.length} municipalities
+                    {corridorMarkets(c.id).length > c.members.length && (
+                      <> · {corridorMarkets(c.id).length - c.members.length} districts inside them</>
+                    )}
                   </p>
                 </li>
               );
@@ -133,6 +145,15 @@ export default function CorridorsPage() {
               substrate, the practical constraint that actually differs there — and until then it lives here,
               in the corridor it belongs to, findable and linked. The list of which markets are next is
               computed, not guessed: see <Link href="/api/v1/markets">the markets API</Link>.
+            </p>
+            <p>
+              A corridor names municipalities. The districts and communities inside one — Ancaster and Dundas
+              inside Hamilton, Kenmore inside Tonawanda — are shown under the municipality they belong to
+              rather than beside it, on this page, in the route pages, in{' '}
+              <Link href="/api/v1/corridors">the corridors API</Link> and in the structured data. One
+              geography, one shape, read the same way by a person and by a machine. Every route page is also
+              served as clean Markdown at the same URL with <code>.md</code> appended, and this page is at{' '}
+              <Link href="/corridors.md">/corridors.md</Link>.
             </p>
           </div>
         </div>

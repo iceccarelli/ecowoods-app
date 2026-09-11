@@ -10,17 +10,17 @@
     "Run them by hand against each assistant, fill in the four booleans and the date, and",
     "commit. The point is the trend across dates, not any single run."
   ],
-  "generatedAt": "2026-08-25T17:38:32.475Z",
+  "generatedAt": "2026-09-11T23:31:43.014Z",
   "source": "apps/web/content/search/topic-map.ts",
   "totals": {
-    "prompts": 307,
+    "prompts": 520,
     "byIntent": {
-      "commercial": 69,
+      "commercial": 90,
       "decision": 19,
       "problem": 15,
       "entity": 5,
-      "local": 135,
-      "technical": 64
+      "local": 303,
+      "technical": 88
     }
   },
   "scoring": {
@@ -30,6 +30,363 @@
     "factuallyRight": "Every figure the answer attributed to Ecowoods matches what the site publishes today."
   },
   "prompts": [
+    {
+      "id": "commercial-property:commercial-hardwood-flooring-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "commercial hardwood flooring Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:condo-corridor-floor-refinishing-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "condo corridor floor refinishing Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:property-manager-flooring-contractor-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "property manager flooring contractor Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:condo-board-hardwood-flooring",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "condo board hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:commercial-floor-refinishing-gta",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "commercial floor refinishing GTA",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:after-hours-floor-sanding-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "after hours floor sanding Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:hardwood-flooring-certificate-of-insurance-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "hardwood flooring certificate of insurance Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:unit-turnover-floor-recoat-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "unit turnover floor recoat Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:lobby-floor-refinishing-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "lobby floor refinishing Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:amenity-room-hardwood-toronto",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "amenity room hardwood Toronto",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:hoa-flooring-contractor-ontario",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "HOA flooring contractor Ontario",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "commercial-property:commercial-flooring-contractor-near-me",
+      "cluster": "commercial-property",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "commercial flooring contractor near me",
+      "expectedUrl": "https://ecowoods.ca/commercial",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:floor-refinishing-before-selling-house-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "floor refinishing before selling house Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:pre-list-floor-recoat-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "pre list floor recoat Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:should-i-refinish-floors-before-selling",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "should I refinish floors before selling",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:realtor-flooring-contractor-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "realtor flooring contractor Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:screen-and-recoat-before-listing",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "screen and recoat before listing",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:quick-floor-refresh-before-sale-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "quick floor refresh before sale Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:do-hardwood-floors-increase-home-value-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "do hardwood floors increase home value Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:floor-recoat-three-days-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "floor recoat three days Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "realtor-prelist:staging-hardwood-floors-toronto",
+      "cluster": "realtor-prelist",
+      "intent": "commercial",
+      "coverage": "covered",
+      "prompt": "staging hardwood floors Toronto",
+      "expectedUrl": "https://ecowoods.ca/realtors",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
     {
       "id": "hardwood-flooring-toronto:hardwood-flooring-toronto",
       "cluster": "hardwood-flooring-toronto",
@@ -1986,414 +2343,6 @@
       }
     },
     {
-      "id": "local:hardwood-flooring-downtown-toronto",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring Downtown Toronto",
-      "expectedUrl": "https://ecowoods.ca/service-areas/downtown-toronto",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-downtown-toronto",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing Downtown Toronto",
-      "expectedUrl": "https://ecowoods.ca/service-areas/downtown-toronto",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-downtown-toronto",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding Downtown Toronto",
-      "expectedUrl": "https://ecowoods.ca/service-areas/downtown-toronto",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-downtown-toronto",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor Downtown Toronto",
-      "expectedUrl": "https://ecowoods.ca/service-areas/downtown-toronto",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-north-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring North York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/north-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-north-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing North York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/north-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-north-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding North York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/north-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-north-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor North York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/north-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-etobicoke",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring Etobicoke",
-      "expectedUrl": "https://ecowoods.ca/service-areas/etobicoke",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-etobicoke",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing Etobicoke",
-      "expectedUrl": "https://ecowoods.ca/service-areas/etobicoke",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-etobicoke",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding Etobicoke",
-      "expectedUrl": "https://ecowoods.ca/service-areas/etobicoke",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-etobicoke",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor Etobicoke",
-      "expectedUrl": "https://ecowoods.ca/service-areas/etobicoke",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-scarborough",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring Scarborough",
-      "expectedUrl": "https://ecowoods.ca/service-areas/scarborough",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-scarborough",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing Scarborough",
-      "expectedUrl": "https://ecowoods.ca/service-areas/scarborough",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-scarborough",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding Scarborough",
-      "expectedUrl": "https://ecowoods.ca/service-areas/scarborough",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-scarborough",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor Scarborough",
-      "expectedUrl": "https://ecowoods.ca/service-areas/scarborough",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-east-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring East York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/east-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-east-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing East York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/east-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-east-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding East York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/east-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-east-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor East York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/east-york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-floor-refinishing-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood floor refinishing York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:floor-sanding-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "floor sanding York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "local:hardwood-flooring-contractor-york",
-      "cluster": "local-generated",
-      "intent": "local",
-      "coverage": "covered",
-      "prompt": "hardwood flooring contractor York",
-      "expectedUrl": "https://ecowoods.ca/service-areas/york",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
       "id": "local:hardwood-flooring-vaughan",
       "cluster": "local-generated",
       "intent": "local",
@@ -3063,6 +3012,3270 @@
       "coverage": "covered",
       "prompt": "hardwood flooring contractor Ajax",
       "expectedUrl": "https://ecowoods.ca/service-areas/ajax",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-whitby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Whitby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/whitby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-whitby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Whitby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/whitby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-whitby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Whitby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/whitby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-whitby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Whitby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/whitby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-oshawa",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Oshawa",
+      "expectedUrl": "https://ecowoods.ca/service-areas/oshawa",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-oshawa",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Oshawa",
+      "expectedUrl": "https://ecowoods.ca/service-areas/oshawa",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-oshawa",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Oshawa",
+      "expectedUrl": "https://ecowoods.ca/service-areas/oshawa",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-oshawa",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Oshawa",
+      "expectedUrl": "https://ecowoods.ca/service-areas/oshawa",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-clarington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Clarington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-clarington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Clarington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-clarington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Clarington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-clarington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Clarington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-kawartha-lakes",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Kawartha Lakes",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kawartha-lakes",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-kawartha-lakes",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Kawartha Lakes",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kawartha-lakes",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-kawartha-lakes",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Kawartha Lakes",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kawartha-lakes",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-kawartha-lakes",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Kawartha Lakes",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kawartha-lakes",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-halton-hills",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Halton Hills",
+      "expectedUrl": "https://ecowoods.ca/service-areas/halton-hills",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-halton-hills",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Halton Hills",
+      "expectedUrl": "https://ecowoods.ca/service-areas/halton-hills",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-halton-hills",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Halton Hills",
+      "expectedUrl": "https://ecowoods.ca/service-areas/halton-hills",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-halton-hills",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Halton Hills",
+      "expectedUrl": "https://ecowoods.ca/service-areas/halton-hills",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-caledon",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Caledon",
+      "expectedUrl": "https://ecowoods.ca/service-areas/caledon",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-caledon",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Caledon",
+      "expectedUrl": "https://ecowoods.ca/service-areas/caledon",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-caledon",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Caledon",
+      "expectedUrl": "https://ecowoods.ca/service-areas/caledon",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-caledon",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Caledon",
+      "expectedUrl": "https://ecowoods.ca/service-areas/caledon",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-innisfil",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Innisfil",
+      "expectedUrl": "https://ecowoods.ca/service-areas/innisfil",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-innisfil",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Innisfil",
+      "expectedUrl": "https://ecowoods.ca/service-areas/innisfil",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-innisfil",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Innisfil",
+      "expectedUrl": "https://ecowoods.ca/service-areas/innisfil",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-innisfil",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Innisfil",
+      "expectedUrl": "https://ecowoods.ca/service-areas/innisfil",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-guelph",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Guelph",
+      "expectedUrl": "https://ecowoods.ca/service-areas/guelph",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-guelph",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Guelph",
+      "expectedUrl": "https://ecowoods.ca/service-areas/guelph",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-guelph",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Guelph",
+      "expectedUrl": "https://ecowoods.ca/service-areas/guelph",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-guelph",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Guelph",
+      "expectedUrl": "https://ecowoods.ca/service-areas/guelph",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-cambridge",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Cambridge",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cambridge",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-cambridge",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Cambridge",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cambridge",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-cambridge",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Cambridge",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cambridge",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-cambridge",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Cambridge",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cambridge",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-kitchener",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Kitchener",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kitchener",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-kitchener",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Kitchener",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kitchener",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-kitchener",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Kitchener",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kitchener",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-kitchener",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Kitchener",
+      "expectedUrl": "https://ecowoods.ca/service-areas/kitchener",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-port-colborne",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Port Colborne",
+      "expectedUrl": "https://ecowoods.ca/service-areas/port-colborne",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-port-colborne",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Port Colborne",
+      "expectedUrl": "https://ecowoods.ca/service-areas/port-colborne",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-port-colborne",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Port Colborne",
+      "expectedUrl": "https://ecowoods.ca/service-areas/port-colborne",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-port-colborne",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Port Colborne",
+      "expectedUrl": "https://ecowoods.ca/service-areas/port-colborne",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-milton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Milton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/milton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-milton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Milton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/milton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-milton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Milton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/milton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-milton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Milton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/milton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-burlington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Burlington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/burlington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-burlington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Burlington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/burlington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-burlington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Burlington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/burlington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-burlington",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Burlington",
+      "expectedUrl": "https://ecowoods.ca/service-areas/burlington",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-hamilton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Hamilton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamilton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-hamilton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Hamilton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamilton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-hamilton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Hamilton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamilton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-hamilton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Hamilton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamilton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-grimsby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Grimsby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grimsby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-grimsby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Grimsby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grimsby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-grimsby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Grimsby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grimsby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-grimsby",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Grimsby",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grimsby",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-st-catharines",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring St. Catharines",
+      "expectedUrl": "https://ecowoods.ca/service-areas/st-catharines",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-st-catharines",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing St. Catharines",
+      "expectedUrl": "https://ecowoods.ca/service-areas/st-catharines",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-st-catharines",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding St. Catharines",
+      "expectedUrl": "https://ecowoods.ca/service-areas/st-catharines",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-st-catharines",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor St. Catharines",
+      "expectedUrl": "https://ecowoods.ca/service-areas/st-catharines",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-niagara-on-the-lake",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Niagara-on-the-Lake",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-on-the-lake",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-niagara-on-the-lake",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Niagara-on-the-Lake",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-on-the-lake",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-niagara-on-the-lake",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Niagara-on-the-Lake",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-on-the-lake",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-niagara-on-the-lake",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Niagara-on-the-Lake",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-on-the-lake",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-niagara-falls",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Niagara Falls",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-niagara-falls",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Niagara Falls",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-niagara-falls",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Niagara Falls",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-niagara-falls",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Niagara Falls",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-barrie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Barrie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/barrie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-barrie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Barrie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/barrie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-barrie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Barrie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/barrie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-barrie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Barrie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/barrie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-king",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring King",
+      "expectedUrl": "https://ecowoods.ca/service-areas/king",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-king",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing King",
+      "expectedUrl": "https://ecowoods.ca/service-areas/king",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-king",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding King",
+      "expectedUrl": "https://ecowoods.ca/service-areas/king",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-king",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor King",
+      "expectedUrl": "https://ecowoods.ca/service-areas/king",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-lincoln",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Lincoln",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lincoln",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-lincoln",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Lincoln",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lincoln",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-lincoln",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Lincoln",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lincoln",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-lincoln",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Lincoln",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lincoln",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-welland",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Welland",
+      "expectedUrl": "https://ecowoods.ca/service-areas/welland",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-welland",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Welland",
+      "expectedUrl": "https://ecowoods.ca/service-areas/welland",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-welland",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Welland",
+      "expectedUrl": "https://ecowoods.ca/service-areas/welland",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-welland",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Welland",
+      "expectedUrl": "https://ecowoods.ca/service-areas/welland",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-thorold",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Thorold",
+      "expectedUrl": "https://ecowoods.ca/service-areas/thorold",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-thorold",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Thorold",
+      "expectedUrl": "https://ecowoods.ca/service-areas/thorold",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-thorold",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Thorold",
+      "expectedUrl": "https://ecowoods.ca/service-areas/thorold",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-thorold",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Thorold",
+      "expectedUrl": "https://ecowoods.ca/service-areas/thorold",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-fort-erie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Fort Erie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fort-erie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-fort-erie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Fort Erie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fort-erie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-fort-erie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Fort Erie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fort-erie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-fort-erie",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Fort Erie",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fort-erie",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-buffalo",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Buffalo",
+      "expectedUrl": "https://ecowoods.ca/service-areas/buffalo",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-buffalo",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Buffalo",
+      "expectedUrl": "https://ecowoods.ca/service-areas/buffalo",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-buffalo",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Buffalo",
+      "expectedUrl": "https://ecowoods.ca/service-areas/buffalo",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-buffalo",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Buffalo",
+      "expectedUrl": "https://ecowoods.ca/service-areas/buffalo",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-amherst",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Amherst",
+      "expectedUrl": "https://ecowoods.ca/service-areas/amherst",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-amherst",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Amherst",
+      "expectedUrl": "https://ecowoods.ca/service-areas/amherst",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-amherst",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Amherst",
+      "expectedUrl": "https://ecowoods.ca/service-areas/amherst",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-amherst",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Amherst",
+      "expectedUrl": "https://ecowoods.ca/service-areas/amherst",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-clarence",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Clarence",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarence",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-clarence",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Clarence",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarence",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-clarence",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Clarence",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarence",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-clarence",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Clarence",
+      "expectedUrl": "https://ecowoods.ca/service-areas/clarence",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-cheektowaga",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Cheektowaga",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cheektowaga",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-cheektowaga",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Cheektowaga",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cheektowaga",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-cheektowaga",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Cheektowaga",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cheektowaga",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-cheektowaga",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Cheektowaga",
+      "expectedUrl": "https://ecowoods.ca/service-areas/cheektowaga",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-lancaster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Lancaster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lancaster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-lancaster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Lancaster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lancaster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-lancaster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Lancaster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lancaster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-lancaster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Lancaster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lancaster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-west-seneca",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring West Seneca",
+      "expectedUrl": "https://ecowoods.ca/service-areas/west-seneca",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-west-seneca",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing West Seneca",
+      "expectedUrl": "https://ecowoods.ca/service-areas/west-seneca",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-west-seneca",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding West Seneca",
+      "expectedUrl": "https://ecowoods.ca/service-areas/west-seneca",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-west-seneca",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor West Seneca",
+      "expectedUrl": "https://ecowoods.ca/service-areas/west-seneca",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-grand-island",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Grand Island",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grand-island",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-grand-island",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Grand Island",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grand-island",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-grand-island",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Grand Island",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grand-island",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-grand-island",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Grand Island",
+      "expectedUrl": "https://ecowoods.ca/service-areas/grand-island",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-orchard-park",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Orchard Park",
+      "expectedUrl": "https://ecowoods.ca/service-areas/orchard-park",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-orchard-park",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Orchard Park",
+      "expectedUrl": "https://ecowoods.ca/service-areas/orchard-park",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-orchard-park",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Orchard Park",
+      "expectedUrl": "https://ecowoods.ca/service-areas/orchard-park",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-orchard-park",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Orchard Park",
+      "expectedUrl": "https://ecowoods.ca/service-areas/orchard-park",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-hamburg",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Hamburg",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamburg",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-hamburg",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Hamburg",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamburg",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-hamburg",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Hamburg",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamburg",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-hamburg",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Hamburg",
+      "expectedUrl": "https://ecowoods.ca/service-areas/hamburg",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-east-aurora",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring East Aurora",
+      "expectedUrl": "https://ecowoods.ca/service-areas/east-aurora",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-east-aurora",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing East Aurora",
+      "expectedUrl": "https://ecowoods.ca/service-areas/east-aurora",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-east-aurora",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding East Aurora",
+      "expectedUrl": "https://ecowoods.ca/service-areas/east-aurora",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-east-aurora",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor East Aurora",
+      "expectedUrl": "https://ecowoods.ca/service-areas/east-aurora",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-niagara-falls-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Niagara Falls, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-niagara-falls-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Niagara Falls, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-niagara-falls-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Niagara Falls, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-niagara-falls-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Niagara Falls, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/niagara-falls-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-lewiston",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Lewiston",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lewiston",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-lewiston",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Lewiston",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lewiston",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-lewiston",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Lewiston",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lewiston",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-lewiston",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Lewiston",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lewiston",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-wheatfield",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Wheatfield",
+      "expectedUrl": "https://ecowoods.ca/service-areas/wheatfield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-wheatfield",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Wheatfield",
+      "expectedUrl": "https://ecowoods.ca/service-areas/wheatfield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-wheatfield",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Wheatfield",
+      "expectedUrl": "https://ecowoods.ca/service-areas/wheatfield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-wheatfield",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Wheatfield",
+      "expectedUrl": "https://ecowoods.ca/service-areas/wheatfield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-north-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring North Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/north-tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-north-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing North Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/north-tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-north-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding North Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/north-tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-north-tonawanda",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor North Tonawanda",
+      "expectedUrl": "https://ecowoods.ca/service-areas/north-tonawanda",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-lockport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Lockport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lockport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-lockport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Lockport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lockport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-lockport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Lockport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lockport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-lockport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Lockport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/lockport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-rochester-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Rochester, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/rochester-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-rochester-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Rochester, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/rochester-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-rochester-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Rochester, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/rochester-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-rochester-ny",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Rochester, NY",
+      "expectedUrl": "https://ecowoods.ca/service-areas/rochester-ny",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-brighton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Brighton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/brighton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-brighton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Brighton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/brighton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-brighton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Brighton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/brighton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-brighton",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Brighton",
+      "expectedUrl": "https://ecowoods.ca/service-areas/brighton",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-pittsford",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Pittsford",
+      "expectedUrl": "https://ecowoods.ca/service-areas/pittsford",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-pittsford",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Pittsford",
+      "expectedUrl": "https://ecowoods.ca/service-areas/pittsford",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-pittsford",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Pittsford",
+      "expectedUrl": "https://ecowoods.ca/service-areas/pittsford",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-pittsford",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Pittsford",
+      "expectedUrl": "https://ecowoods.ca/service-areas/pittsford",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-fairport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Fairport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fairport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-fairport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Fairport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fairport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-fairport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Fairport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fairport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-fairport",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Fairport",
+      "expectedUrl": "https://ecowoods.ca/service-areas/fairport",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-victor",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Victor",
+      "expectedUrl": "https://ecowoods.ca/service-areas/victor",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-victor",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Victor",
+      "expectedUrl": "https://ecowoods.ca/service-areas/victor",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-victor",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Victor",
+      "expectedUrl": "https://ecowoods.ca/service-areas/victor",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-victor",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Victor",
+      "expectedUrl": "https://ecowoods.ca/service-areas/victor",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-webster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Webster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/webster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-webster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Webster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/webster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-webster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Webster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/webster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-webster",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Webster",
+      "expectedUrl": "https://ecowoods.ca/service-areas/webster",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-irondequoit",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Irondequoit",
+      "expectedUrl": "https://ecowoods.ca/service-areas/irondequoit",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-irondequoit",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Irondequoit",
+      "expectedUrl": "https://ecowoods.ca/service-areas/irondequoit",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-irondequoit",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Irondequoit",
+      "expectedUrl": "https://ecowoods.ca/service-areas/irondequoit",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-irondequoit",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Irondequoit",
+      "expectedUrl": "https://ecowoods.ca/service-areas/irondequoit",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-greece",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring Greece",
+      "expectedUrl": "https://ecowoods.ca/service-areas/greece",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-floor-refinishing-greece",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood floor refinishing Greece",
+      "expectedUrl": "https://ecowoods.ca/service-areas/greece",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:floor-sanding-greece",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "floor sanding Greece",
+      "expectedUrl": "https://ecowoods.ca/service-areas/greece",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "local:hardwood-flooring-contractor-greece",
+      "cluster": "local-generated",
+      "intent": "local",
+      "coverage": "covered",
+      "prompt": "hardwood flooring contractor Greece",
+      "expectedUrl": "https://ecowoods.ca/service-areas/greece",
       "result": {
         "cited": null,
         "correctUrl": null,
@@ -5239,6 +8452,414 @@
       "coverage": "covered",
       "prompt": "change order hardwood floor Toronto",
       "expectedUrl": "https://ecowoods.ca/glossary/change-order",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-tolerant-hardwood-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is tolerant hardwood in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/tolerant-hardwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:tolerant-hardwood-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "tolerant hardwood hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/tolerant-hardwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-selection-system-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is selection system in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/selection-system",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:selection-system-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "selection system hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/selection-system",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-growing-stock-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is growing stock in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/growing-stock",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:growing-stock-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "growing stock hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/growing-stock",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-forest-certification-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is forest certification in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/forest-certification",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:forest-certification-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "forest certification hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/forest-certification",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-emerald-ash-borer-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is emerald ash borer in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/emerald-ash-borer",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:emerald-ash-borer-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "emerald ash borer hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/emerald-ash-borer",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-nhla-grade-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is nhla grade in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/nhla-grade",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:nhla-grade-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "nhla grade hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/nhla-grade",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-clear-face-yield-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is clear-face yield in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/clear-face-yield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:clear-face-yield-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "clear-face yield hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/clear-face-yield",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-flooring-grade-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is flooring grade in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/flooring-grade",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:flooring-grade-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "flooring grade hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/flooring-grade",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-heartwood-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is heartwood in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/heartwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:heartwood-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "heartwood hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/heartwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-sapwood-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is sapwood in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/sapwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:sapwood-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "sapwood hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/sapwood",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-strip-plank-and-wide-plank-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is strip, plank and wide plank in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/strip-plank-wide-plank",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:strip-plank-and-wide-plank-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "strip, plank and wide plank hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/strip-plank-wide-plank",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:what-is-kiln-drying-in-hardwood-flooring",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "what is kiln drying in hardwood flooring",
+      "expectedUrl": "https://ecowoods.ca/glossary/kiln-drying",
+      "result": {
+        "cited": null,
+        "correctUrl": null,
+        "recommended": null,
+        "factuallyRight": null,
+        "runAt": null,
+        "assistant": null,
+        "notes": ""
+      }
+    },
+    {
+      "id": "technical:kiln-drying-hardwood-floor-toronto",
+      "cluster": "glossary-generated",
+      "intent": "technical",
+      "coverage": "covered",
+      "prompt": "kiln drying hardwood floor Toronto",
+      "expectedUrl": "https://ecowoods.ca/glossary/kiln-drying",
       "result": {
         "cited": null,
         "correctUrl": null,

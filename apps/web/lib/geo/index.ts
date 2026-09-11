@@ -21,7 +21,7 @@ export { assess, indexableMarkets, contentQueue, expansionScore, expansionOrder 
 export type { Worthiness, ExpansionScore } from './worthiness';
 
 import { MARKETS, isOperational, type Market } from '@/content/geo/markets';
-import { corridorsFor as corridorsForRaw } from '@/content/geo/corridors';
+import { corridorsFor as corridorsForRaw, corridorById as corridorByIdRaw } from '@/content/geo/corridors';
 
 /**
  * The markets that may be emitted as service area.
@@ -40,6 +40,48 @@ export const serviceAreaMarkets = (): Market[] =>
  */
 export const corridorsFor = (slug: string) =>
   corridorsForRaw(slug, (s) => MARKETS.find((x) => x.slug === s)?.partOf);
+
+/**
+ * THE STOPS ON A CORRIDOR, AS THEY ACTUALLY SIT (GEO-002).
+ *
+ * `Corridor.members` names municipalities and nothing else — a corridor is a
+ * drive between municipalities, and a district inherits its membership through
+ * `partOf`. Before GEO-002 five districts were typed into `members` beside the
+ * cities that contain them (GC-016), so the corridor surfaces showed Stoney
+ * Creek as a peer of Hamilton and Kenmore as a peer of Buffalo. Removing them
+ * from the fact list without putting them back somewhere true would have cost
+ * five internal links and made the corridor pages less useful than they were.
+ *
+ * So the display is derived instead: each municipality on the route, in travel
+ * order, carrying the districts inside it. Publish a district and it appears on
+ * its municipality's corridor with no list to update; a district can never
+ * appear without its municipality, because it hangs from it here.
+ *
+ * Nothing here decides whether a place is covered or published. It reads the
+ * market registry's own `partOf` and returns structure; the page and the twin
+ * apply the worthiness gate to decide what becomes a link.
+ */
+export interface CorridorStop {
+  municipality: Market;
+  /** Districts inside it, in registry order. Empty for most municipalities. */
+  districts: Market[];
+}
+
+export const corridorStops = (id: string): CorridorStop[] => {
+  const corridor = corridorByIdRaw(id);
+  if (!corridor) return [];
+  return corridor.members
+    .map((slug) => MARKETS.find((x) => x.slug === slug))
+    .filter((m): m is Market => Boolean(m))
+    .map((municipality) => ({
+      municipality,
+      districts: MARKETS.filter((x) => x.kind === 'district' && x.partOf === municipality.slug),
+    }));
+};
+
+/** Every market on a corridor — municipalities and the districts inside them, flat, in order. */
+export const corridorMarkets = (id: string): Market[] =>
+  corridorStops(id).flatMap((s) => [s.municipality, ...s.districts]);
 
 /** Canonical path for a market that has a page. */
 export const marketPath = (slug: string): string => `/service-areas/${slug}`;

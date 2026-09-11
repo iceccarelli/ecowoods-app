@@ -39,7 +39,7 @@ import {
 import {
   MARKETS,
   CORRIDORS,
-  marketBySlug,
+  corridorStops,
   assess as assessMarket,
   contentQueue,
   expansionOrder,
@@ -1003,7 +1003,8 @@ export async function handleCorridors(request: Request) {
     {
       meta: meta(reg, CORRIDORS.length),
       note:
-        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region.',
+        'The routes this work is organised along. A corridor is a drive — a hub, a highway and the municipalities on it in travel order — not a marketing region. ' +
+        'A member is a MUNICIPALITY. The districts and communities inside one are nested under it in `districts`, never listed beside it: a district is somewhere inside a stop, not another stop.',
       corridors: CORRIDORS.map((c) => ({
         id: c.id,
         name: c.name,
@@ -1011,12 +1012,25 @@ export async function handleCorridors(request: Request) {
         hub: c.hub,
         summary: c.summary,
         page: `${SITE_URL}/corridors/${c.id}`,
-        members: c.members.map((slug) => {
-          const x = marketBySlug(slug);
-          return x
-            ? { slug, name: x.name, country: x.country, status: x.status, verified_at: x.operationalTruth.verifiedAt }
-            : { slug, name: slug, country: null, status: null, verified_at: null };
-        }),
+        markdown: `${SITE_URL}/corridors/${c.id}.md`,
+        members: corridorStops(c.id).map(({ municipality: x, districts }) => ({
+          slug: x.slug,
+          name: x.name,
+          country: x.country,
+          status: x.status,
+          verified_at: x.operationalTruth.verifiedAt,
+          /* GEO-002. Until then five of these sat in `members` as peers of the
+             municipality containing them, and this endpoint reported Kenmore
+             as a stop on the Buffalo metro drive beside Tonawanda, which is the
+             town it is part of (GC-016). */
+          districts: districts.map((d) => ({
+            slug: d.slug,
+            name: d.name,
+            country: d.country,
+            status: d.status,
+            verified_at: d.operationalTruth.verifiedAt,
+          })),
+        })),
       })),
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },

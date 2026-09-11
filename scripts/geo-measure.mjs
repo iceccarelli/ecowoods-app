@@ -215,7 +215,12 @@ async function main() {
     ai_txt_service_areas: areaSlugsIn(fetched.ai.body),
     html_index_links: areaSlugsIn(fetched.index_html.body),
     md_index_links: areaSlugsIn(fetched.index_md.body),
-    corridor_members: [...new Set((corridorsApi.corridors ?? []).flatMap((c) => (c.members ?? []).map((m) => m.slug)))].sort(),
+    /* GEO-002: a corridor's `members` are municipalities, and the districts
+       inside each are nested under it. Both levels are read here, because what
+       this set answers is "which places does the corridor surface name". */
+    corridor_members: [...new Set((corridorsApi.corridors ?? []).flatMap((c) =>
+      (c.members ?? []).flatMap((m) => [m.slug, ...((m.districts ?? []).map((d) => d.slug))]),
+    ))].sort(),
   };
 
   /* The invariant pivot: what the sitemap tells a crawler is a service-area page. */

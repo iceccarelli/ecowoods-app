@@ -35,6 +35,29 @@ Toronto rule: the City of Toronto is a `region` node. It is in the markets
 `in_area_served: true`; it has no `/service-areas/toronto` page, and the graph's
 `serves` edges go to its 23 published districts and neighbourhoods.
 
+## 0b. Status after GEO-002 — the corridors
+
+GEO-002 took the protocol's GEO-013 (corridor normalisation) together with the
+GEO-009 twin decision for the corridor surfaces, and added JSON-LD to them.
+
+| Fact | Owner | Selector / projection |
+|---|---|---|
+| which municipalities a corridor runs through, and in what order | `content/geo/corridors.ts` `Corridor.members` — **municipalities only** | `/corridors`, `/corridors/{id}`, `/api/v1/corridors`, the territory map, `TERRITORY` |
+| which district belongs to which municipality | `content/geo/markets.ts` `partOf` (unchanged) | `lib/geo` `corridorStops()` / `corridorMarkets()` — the one derivation every corridor surface reads |
+| where a corridor's markets are, in JSON-LD | derived — `root-schema.ts` `placeForMarket` (new, same rule as `placeForArea`) | `lib/schema/corridor-schema.ts` → `Service.areaServed`, `ItemList.itemListElement` |
+
+The rule this restores is the registry's own, written on `Market.corridors`: a
+corridor is a drive between municipalities, and a district inherits membership
+through `partOf`. Every district declared `corridors: []` and the guard enforced
+that from the market side, while five districts sat in the corridor's own member
+list where nothing looked (GC-016).
+
+New public surfaces: `/corridors.md`, `/corridors/{id}.md` (11),
+`/where-we-work.md`. Each is declared in `alternates.types`, in the `Link:`
+header from `MARKDOWN_TWINS`, in `/md`, in `/llms.txt`, and — new — in the
+page's own JSON-LD as `encoding` (`MediaObject`, `text/markdown`), so a consumer
+that reads structured data but not `<head>` still finds the machine edition.
+
 Sections 1–10 below describe the GEO-000 baseline and are kept as the record.
 
 ---
@@ -297,8 +320,21 @@ inspection: fact normalisation (002) must land **with output snapshots** so it
 provably changes nothing public, and the Whitby/Oshawa resolution is a
 consequence of the category rule (006), not a separate content decision.
 
+**Shipped so far**, and what each one actually took, because the patch numbers
+below are the protocol's plan and the ones that shipped are wider than it:
+
 ```text
-GEO-000  archaeology: this map, contradiction log, measurement, geo-measure.mjs     ← this patch
+GEO-000  archaeology: this map, the contradiction log, the measurement, geo-measure.mjs
+GEO-001  one geography: 11 municipalities published; took GEO-001…GEO-013's intent for
+         the fact/projection split, the counts, the API, the JSON-LD and the twins
+UI-NAV-01 the mega-menu you can reach, and one mobile drawer (not a GEO patch)
+GEO-002  corridors: districts out of the member lists (GEO-013), corridor JSON-LD, and
+         the twins for /corridors, /corridors/{id} and /where-we-work (GEO-009 decision)
+```
+
+**The protocol's plan, for the record:**
+
+```text
 GEO-001  contract: GeoCategory + category() + selectors in lib/geo; snapshot tests pin every
          current output (C, D, B, locations, graph, llms, org JSON-LD). No output changes.
 GEO-002  fact normalisation: F3 lists → Market.published/kind; F5 assessment list, aliases and
@@ -318,6 +354,7 @@ GEO-010  Buffalo / New York: whatever of GC-004 is left after 005–009, closed 
 GEO-011  Toronto (D2) and the twelve OPERATIONAL_CORRIDOR municipalities (D1).
 GEO-012  Waterloo / Brantford / Kitchener entity normalisation (discovery records, no pages).
 GEO-013  corridor normalisation (districts out of member lists; Brantford/Waterloo decision D4).
+         ← districts done in GEO-002; the Brantford/Waterloo decision (D4) is still open.
 GEO-014+ controlled publication, one municipality per patch, only with owner content (D1).
 GEO-022  production gate: geo-measure --strict in scripts/verify-live.sh.
 GEO-023  regression suite completion.

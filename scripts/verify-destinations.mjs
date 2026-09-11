@@ -148,6 +148,33 @@ for (const [file, route] of [
   if (fs.existsSync(path.join(APP, file))) staticRoutes.add(route);
 }
 
+/**
+ * THE MARKDOWN TWINS ARE REAL URLS (GEO-002).
+ *
+ * `/service-areas.md` and its fifteen siblings are served by handlers under
+ * app/md/, reached through a rewrite in next.config.js. The walk above sees
+ * `/md/service-areas` and never `/service-areas.md`, so every link to a twin
+ * read as "no route, no public file, no manifest entry" — and until a page
+ * linked to one, nothing noticed. This widens the route table rather than
+ * excusing the link: the config is asked (not regexed, for the reason §5 gives
+ * below), and a literal `.md` source counts as a route only when its
+ * destination is one. A rewrite pointing at nothing still fails.
+ */
+{
+  const require_ = createRequire(path.join(WEB, 'next.config.js'));
+  const cfg = require_(path.join(WEB, 'next.config.js'));
+  const list = typeof cfg.rewrites === 'function' ? await cfg.rewrites() : [];
+  if (!list.length) {
+    console.error('verify-destinations: next.config.js returned no rewrites — the markdown twins are invisible. Fix the reader.');
+    process.exit(2);
+  }
+  for (const r of list) {
+    if (typeof r.source !== 'string' || typeof r.destination !== 'string') continue;
+    if (r.source.includes(':') || r.source.includes('(')) continue;   // dynamic: handled by the manifests
+    if (staticRoutes.has(r.destination)) staticRoutes.add(r.source);
+  }
+}
+
 /* ── 2. public/ ──────────────────────────────────────────────────────────── */
 const publicFiles = new Set();
 const PUBLIC_DIRS = [path.join(WEB, 'public'), path.join(ROOT, 'public')];

@@ -69,6 +69,10 @@ import {
 import { TERRITORY, PUBLISHED_PARTITION } from '@/lib/geo/territory';
 import { DISCOVERY } from '@/content/geo/regions';
 import {
+  CORRIDORS, corridorById, corridorStops, corridorMarkets, marketBySlug, assess, type Corridor,
+} from '@/lib/geo';
+import { WORK_PLACES } from '@/content/work-map';
+import {
   getServicePages,
   getServicePage,
   serviceFor,
@@ -663,6 +667,260 @@ export const areasHubToMarkdown = (): string => {
   return out.join('\n');
 };
 
+/* ── corridors ──────────────────────────────────────────────── */
+
+/**
+ * THE ROUTES, AS MACHINE TEXT (GEO-002).
+ *
+ * `/corridors` is the page that answers the question a service-area list
+ * cannot: not "do you have a page for my town" but "how would you get here".
+ * It had no Markdown twin and none was advertised (GC-022), so the one surface
+ * that carries routing, hubs and the per-market operational statement was the
+ * one an agent had to scrape a table out of.
+ *
+ * Both files below are projections of content/geo/corridors.ts and
+ * content/geo/markets.ts. The status sentence in each row is
+ * `operationalTruth.statement` verbatim, with the date the owner confirmed it;
+ * nothing is summarised, because summarising is where an export starts making
+ * claims of its own.
+ *
+ * Districts sit in a column of their own, under the municipality that contains
+ * them. A reader — human or machine — can no more take Ancaster for a peer of
+ * Guelph here than on the page.
+ */
+const statusSentence = (slug: string): string => {
+  const m = marketBySlug(slug);
+  if (!m) return '';
+  const stated =
+    m.operationalTruth.statement ||
+    'No confirmed operational position. On the route and in the plan; ask before assuming a date.';
+  return m.operationalTruth.verifiedAt ? `${stated} (confirmed ${m.operationalTruth.verifiedAt})` : stated;
+};
+
+const marketCell = (slug: string, name: string): string => {
+  const m = marketBySlug(slug);
+  const linked = m && assess(m).indexable && cityContent(slug) ? link(name, `/service-areas/${slug}`) : name;
+  return m?.country === 'US' ? `${linked} (NY)` : linked;
+};
+
+/** /corridors.md — every route, and where to read each one in full. */
+export const corridorsHubToMarkdown = (): string => {
+  const canonical = abs('/corridors');
+  const out: string[] = [
+    `# Coverage by corridor — the ${CORRIDORS.length} routes this work is organised along`,
+    '',
+    identitySentence(),
+    '',
+    '> A corridor is a drive: a hub, a highway, and the municipalities strung along it in the order a crew',
+    `> would reach them. It is not a marketing region. Territory: ${TERRITORY}.`,
+    '',
+    '## The routes',
+    '',
+    ...table(
+      ['Route', 'Follows', 'Out from', 'Municipalities', 'Districts inside them', 'Confirmed', 'With a page', 'Markdown'],
+      CORRIDORS.map((c) => {
+        const all = corridorMarkets(c.id);
+        return [
+          link(c.name, `/corridors/${c.id}`),
+          c.route,
+          marketBySlug(c.hub)?.name ?? c.hub,
+          String(c.members.length),
+          String(all.length - c.members.length),
+          String(all.filter((m) => m.operationalTruth.verifiedAt).length),
+          String(all.filter((m) => assess(m).indexable).length),
+          md(`/corridors/${c.id}`),
+        ];
+      }),
+    ),
+    '## What a member is, and what it is not',
+    '',
+    'A member of a corridor is a MUNICIPALITY. The districts and communities inside one — Ancaster and',
+    'Dundas inside Hamilton, Kenmore inside Tonawanda, Stoney Creek inside Hamilton — are reported under',
+    'the municipality they belong to and never beside it. A district is somewhere inside a stop, not',
+    'another stop on the drive.',
+    '',
+    '## What the statuses mean',
+    '',
+    '- **Routine.** Worked from the Toronto shop as a matter of course, within the daily-return radius.',
+    '- **Active.** Taking work; coverage established but not yet routine.',
+    '- **In the corridor.** On the route and in the plan, with no confirmed operational position yet.',
+    '- **By confirmation.** Outside the daily-return radius; the job is scheduled as a trip, and that sits',
+    '  in the written price rather than appearing later.',
+    '- **New York State.** Ecowoods takes this work. The shop, the showroom and the telephone number are',
+    '  the single Toronto ones; what crosses the border is the job.',
+    '',
+    '## Coverage is not proof',
+    '',
+    'A confirmed operational position means the owner of this business stated, on a date, what coverage of',
+    'that municipality means. It does not mean a job there has been photographed and published. Both are on',
+    `the record and they are not the same thing: the dates are in ${abs('/api/v1/markets')}, and the`,
+    `published jobs are at ${abs('/where-we-work')} (markdown: ${md('/where-we-work')}).`,
+    '',
+    '## Where a page comes from',
+    '',
+    'A municipality gets a page of its own when it has something specific to say — the housing stock, the',
+    'substrate, the constraint that actually differs there. Until then it lives on its corridor, findable',
+    `and linked. The published areas are at ${abs('/service-areas')} (markdown: ${md('/service-areas')}).`,
+    '',
+  ];
+  out.push(
+    ...provenance(canonical, [
+      `- Structured data: ${abs('/api/v1/corridors')}`,
+      `- Market registry: ${abs('/api/v1/markets')}`,
+    ]),
+  );
+  return out.join('\n');
+};
+
+/** /corridors/{id}.md — one route, every stop, every operational statement. */
+export const corridorToMarkdown = (c: Corridor): string => {
+  const canonical = abs(`/corridors/${c.id}`);
+  const stops = corridorStops(c.id);
+  const all = corridorMarkets(c.id);
+  const hub = marketBySlug(c.hub);
+  const out: string[] = [
+    `# ${c.name}`,
+    '',
+    `> ${c.route}. Out from ${hub?.name ?? c.hub}.`,
+    '',
+    c.summary,
+    '',
+    `${stops.length} municipalities on the route` +
+      (all.length > stops.length ? `, with ${all.length - stops.length} districts and communities inside them` : '') +
+      `. ${all.filter((m) => m.operationalTruth.verifiedAt).length} of the ${all.length} have a confirmed ` +
+      `operational position; ${all.filter((m) => assess(m).indexable).length} have a page of local detail.`,
+    '',
+    '## Along the route, in travel order',
+    '',
+    ...table(
+      ['#', 'Municipality', 'Within it', 'Status', 'What that means here'],
+      stops.map((stop, i) => [
+        String(i + 1),
+        marketCell(stop.municipality.slug, stop.municipality.name),
+        stop.districts.length ? stop.districts.map((d) => marketCell(d.slug, d.name)).join(', ') : '—',
+        stop.municipality.status,
+        statusSentence(stop.municipality.slug),
+      ]),
+    ),
+  ];
+
+  const districts = all.filter((m) => m.kind === 'district');
+  if (districts.length) {
+    out.push(
+      '## The districts and communities on this route',
+      '',
+      'Each is part of the municipality named beside it, not a municipality of its own.',
+      '',
+      ...table(
+        ['District or community', 'Part of', 'Status', 'What that means here'],
+        districts.map((d) => [
+          marketCell(d.slug, d.name),
+          marketBySlug(d.partOf ?? '')?.name ?? (d.partOf ?? '—'),
+          d.status,
+          statusSentence(d.slug),
+        ]),
+      ),
+    );
+  }
+
+  if (all.some((m) => m.country === 'US')) {
+    out.push(
+      '## Working in New York State',
+      '',
+      `Ecowoods serves these municipalities. The shop and showroom are at ${BUSINESS_ADDRESS_LINE}, and that`,
+      'is the only address this company has: there is no second office, no local telephone number and no',
+      'separate crew in New York State. The crews are the same salaried employees who work in Toronto. What',
+      'travels is the work, not a storefront; the published price is fixed after a free in-home measure,',
+      'exactly as it is in Ontario.',
+      '',
+    );
+  }
+
+  out.push(
+    '## Before you call about a market on this route',
+    '',
+    `The published price bands are the same everywhere: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
+    'Distance shows up in the written price after the measure, not as a different rate card.',
+    '',
+    `Every route: ${link('Corridors', '/corridors')} (markdown: ${md('/corridors')}).`,
+    '',
+  );
+  out.push(
+    ...provenance(canonical, [
+      `- Structured data: ${abs('/api/v1/corridors')}`,
+      `- This route as data: ${abs(`/api/v1/markets?corridor=${c.id}`)}`,
+    ]),
+  );
+  return out.join('\n');
+};
+
+export const corridorMarkdown = (id: string): string | null => {
+  const c = corridorById(id);
+  return c ? corridorToMarkdown(c) : null;
+};
+
+/* ── where the work has been done ───────────────────────────────── */
+
+/**
+ * /where-we-work.md — proof, kept apart from coverage.
+ *
+ * The corridor pages say where this business will drive. This one says where it
+ * has demonstrably worked, and a pin may only exist if it points at a published
+ * case study with the measurements in it (content/work-map.ts,
+ * scripts/verify-work-map.mjs). The twin publishes the same five facts the page
+ * does and deliberately not the sixth: no coordinate appears here, because
+ * COORDS_VERIFIED is false and a drawn map at sixty kilometres wide tolerates a
+ * three-hundred-metre error where a machine-readable claim does not.
+ */
+export const whereWeWorkToMarkdown = (): string => {
+  const canonical = abs('/where-we-work');
+  const years = WORK_PLACES.map((w) => w.year);
+  const out: string[] = [
+    '# Where the work has been done',
+    '',
+    identitySentence(),
+    '',
+    `> ${WORK_PLACES.length} published jobs, ${Math.min(...years)}–${Math.max(...years)}, each one linked to`,
+    '> the case study that carries its measurements. Neighbourhood precision only: no customer address is',
+    '> published, and none is held in the data this file is generated from.',
+    '',
+    '## Coverage and proof are two different statements',
+    '',
+    `A service-area page is a claim: ${PUBLISHED_PARTITION.total} of them say this business works in those`,
+    'places. This file is the other kind of statement — here is a job, here is the year, here is the square',
+    'footage, and here is the document with the readings in it. A place can be covered without appearing',
+    `below, and the corridors at ${abs('/corridors')} say which (markdown: ${md('/corridors')}).`,
+    '',
+    '## The published jobs',
+    '',
+    /* The label is the neighbourhood the job was in; the link is the published
+       area page that neighbourhood belongs to, and they are two columns rather
+       than one because "Distillery District" pointing at /service-areas/
+       downtown-toronto reads, collapsed into a single cell, as a claim that the
+       Distillery District is a service area of its own. It is not. */
+    ...table(
+      ['Neighbourhood', 'Area page', 'Year', 'Floor area (sq ft)', 'Service', 'What it was', 'Case study'],
+      WORK_PLACES.map((w) => [
+        w.label,
+        marketCell(w.areaSlug, marketBySlug(w.areaSlug)?.name ?? w.areaSlug),
+        String(w.year),
+        String(w.sqft),
+        link(SERVICES.find((x) => x.slug === w.serviceSlug)?.name ?? w.serviceSlug, `/services/${w.serviceSlug}`),
+        w.summary,
+        abs(`/case-studies/${w.caseStudySlug}`),
+      ]),
+    ),
+    '## Why it is thin, and what makes it thick',
+    '',
+    'A pin may only exist if it points at a published case study with the measurements in it. That is the',
+    'whole design: this list cannot be padded, and it gets denser the way everything else here does — by',
+    'publishing the next job.',
+    '',
+  ];
+  out.push(...provenance(canonical, [`- Published areas: ${abs('/service-areas')}`]));
+  return out.join('\n');
+};
+
 /* /pricing.md — table first, conditions second, the written price third. */
 export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string => {
   const canonical = abs('/pricing');
@@ -943,6 +1201,15 @@ export const mirrorIndexToMarkdown = (): string => {
       ['All service areas', '/service-areas'],
       ...SERVICE_AREAS.map((c): [string, string] => [c.name, `/service-areas/${c.slug}`]),
     ]),
+    /* The routing spine and the proof map (GEO-002). Both were HTML-only until
+       then: the one page that says how a crew would get to a place, and the one
+       that says where work has demonstrably been done, were the two surfaces an
+       agent had to scrape. */
+    ...group('Corridors — how the work is routed', [
+      ['All corridors', '/corridors'],
+      ...CORRIDORS.map((c): [string, string] => [c.name, `/corridors/${c.id}`]),
+    ]),
+    ...group('Proof of work', [['Where the work has been done', '/where-we-work']]),
     ...group('Technical papers', getPapers().map((p): [string, string] => [p.title, `/papers/${p.slug}`])),
     ...group('Decision guides and reference installations', getGuides().map((g): [string, string] => [g.seoTitle ?? g.title, `/guides/${g.slug}`])),
     ...group('Glossary', getTerms().map((t): [string, string] => [t.term, `/glossary/${t.slug}`])),

@@ -82,6 +82,43 @@ content instead of more than five (eleven were written).
 
 ---
 
+## Status after GEO-002 — the corridors
+
+GEO-002 closed the two corridor entries and added no guard.
+
+| ID | Status | How |
+|---|---|---|
+| GC-016 | fixed | the five districts are out of `Corridor.members`; `corridorStops()` derives them from `partOf` and every corridor surface — page, API, twin, JSON-LD — nests them under the municipality that contains them |
+| GC-022 | closed | `/corridors.md`, `/corridors/{id}.md` and `/where-we-work.md` are served, advertised in `<head>` (`alternates.types`), in the `Link:` header, in `/md`, in `/llms.txt` and in the page's own JSON-LD (`encoding`) |
+
+Measured in the repository after the change:
+
+| Set | Before | After |
+|---|---|---|
+| districts listed as corridor members | 5 | 0 |
+| districts named by a corridor surface | 5 | 42 (every district in the registry, through its municipality) |
+| markets named by a corridor surface | 64 (59 municipalities + 5 districts) | 101 (every market) |
+| service-area links on `/corridors/core-gta` | 7 | 40 |
+| corridor pages with JSON-LD beyond a breadcrumb | 0 | 11 (`WebPage` + `Service` + `ItemList`) |
+| Markdown twins | 100 areas + 15 other surfaces | + `/corridors`, 11 route twins, `/where-we-work` |
+| `Service.areaServed` nodes with no province/state or country | — | 0 (every node from `placeForMarket`) |
+| guards / tests | 66 / 336 | 66 / 336 |
+
+`itemListElement` and `areaServed` were kept deliberately different: the first
+is the drive (municipalities, in travel order), the second is coverage (every
+market on the route, districts included, whose operational position the owner
+has confirmed on a date). A market nobody has confirmed appears on the page,
+with the sentence saying so, and in neither list.
+
+One existing check was edited, and the edit widens: `scripts/verify-destinations.mjs`
+now asks `next.config.js` for its `rewrites()` and counts a literal `.md` source
+as a route when its destination is one. It could not see any of the sixteen
+markdown twins — a link to `/service-areas.md` read as "no route, no public
+file, no manifest entry" — and nothing had noticed because until GEO-002 no page
+linked to a twin in prose. A rewrite pointing at nothing still fails.
+
+---
+
 ## Summary
 
 | ID | Sev | Class | One line | Entities | Resolution |

@@ -324,6 +324,12 @@ md_check "/guides/{slug}.md"   "$BASE/guides/solid-vs-engineered-hardwood-toront
 md_check "/glossary/{slug}.md" "$BASE/glossary/acclimation.md"                              "## Provenance"
 md_check "/services/{slug}.md"      "$BASE/services/floor-refinishing.md"     "## Provenance"
 md_check "/service-areas/{slug}.md" "$BASE/service-areas/etobicoke.md"        "## Provenance"
+# GEO-002 shipped three more twins, and a twin nobody probes is a twin that can
+# 404 quietly for a week. These three probe the surfaces that patch added: the
+# corridor hub, one route, and the proof map. Same shape as the five above.
+md_check "/corridors.md"           "$BASE/corridors.md"                      "## Provenance"
+md_check "/corridors/{id}.md"      "$BASE/corridors/niagara-belt.md"         "## Provenance"
+md_check "/where-we-work.md"       "$BASE/where-we-work.md"                  "## Provenance"
 # The want string here is checked against the generator, offline, by
 # scripts/verify-live-contract.mjs. It said "complete technical corpus" for
 # as long as the generator has said "complete published corpus", so this line

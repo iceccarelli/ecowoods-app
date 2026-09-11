@@ -15,7 +15,13 @@ export const metadata: Metadata = {
   description:
     `Completed hardwood work across ${BUSINESS_NAP.region}, plotted by neighbourhood and linked to the ` +
     `measurements taken on each job. Neighbourhood precision only — no customer address is published.`,
-  alternates: { canonical: '/where-we-work' },
+  alternates: {
+    canonical: '/where-we-work',
+    /* The machine edition (GEO-002). Proof of work was HTML-only: an agent
+       deciding whether to recommend this business could read the coverage
+       claim and not the evidence. No coordinate is emitted — see the twin. */
+    types: { 'text/markdown': '/where-we-work.md' },
+  },
   openGraph: {
     title: `Where ${BUSINESS_NAP.shortName} has worked`,
     description: `Published jobs across ${BUSINESS_NAP.region}, ${SPAN}, each one linked to what was measured.`,

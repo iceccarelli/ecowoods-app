@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  CORRIDORS, corridorById, marketBySlug, assess, marketPath, type Market,
+  CORRIDORS, corridorById, corridorStops, corridorMarkets, marketBySlug, assess, marketPath,
 } from '@/lib/geo';
 import { SITE_URL, cityContent, BUSINESS } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
-import { SchemaScript } from '@/lib/schema/components';
+import { buildCorridorSchema } from '@/lib/schema/corridor-schema';
+import { SchemaScripts } from '@/lib/schema/components';
 
 export const dynamicParams = false;
 export const generateStaticParams = () => CORRIDORS.map((c) => ({ id: c.id }));
@@ -18,7 +19,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${c.name} — hardwood flooring coverage along ${c.route}`,
     description: `${c.members.length} municipalities on the ${c.name} route, what coverage means in each, and where Ecowoods actually works. No claim of coverage that has not been confirmed.`,
-    alternates: { canonical: `/corridors/${c.id}` },
+    alternates: {
+      canonical: `/corridors/${c.id}`,
+      /* The machine edition (GEO-002). next.config.js rewrites
+         /corridors/:id.md onto app/md/corridors/[id]; declaring it here is
+         what lets an agent discover it instead of guessing the convention. */
+      types: { 'text/markdown': `/corridors/${c.id}.md` },
+    },
   };
 }
 
@@ -61,9 +68,15 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
   if (!corridor) notFound();
 
   const hub = marketBySlug(corridor.hub);
-  const members = corridor.members
-    .map((s) => marketBySlug(s))
-    .filter((x): x is Market => Boolean(x));
+  /* The stops are municipalities, in travel order, each carrying the districts
+     inside it. Until GEO-002 five districts were typed into the corridor's own
+     member list and rendered as peers of the cities that contain them
+     (GC-016); they are still every one of them on this page, under the
+     municipality they belong to, which is where they were always true. */
+  const stops = corridorStops(corridor.id);
+  const municipalities = stops.map((s) => s.municipality);
+  const members = corridorMarkets(corridor.id);
+  const districts = members.filter((x) => x.kind === 'district');
 
   const withPages = members.filter((x) => assess(x).indexable);
   const confirmed = members.filter((x) => x.operationalTruth.verifiedAt);
@@ -71,12 +84,15 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="tlx-page">
-      <SchemaScript
-        schema={buildBreadcrumbList([
-          { name: 'Home', url: SITE_URL },
-          { name: 'Corridors', url: `${SITE_URL}/corridors` },
-          { name: corridor.name, url: `${SITE_URL}/corridors/${corridor.id}` },
-        ])}
+      <SchemaScripts
+        schemas={[
+          buildBreadcrumbList([
+            { name: 'Home', url: SITE_URL },
+            { name: 'Corridors', url: `${SITE_URL}/corridors` },
+            { name: corridor.name, url: `${SITE_URL}/corridors/${corridor.id}` },
+          ]),
+          buildCorridorSchema(corridor),
+        ]}
       />
 
       <header className="tlx-hero">
@@ -90,9 +106,10 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
           <h1 className="tlx-title">{corridor.name}</h1>
           <p className="tlx-lede">{corridor.summary}</p>
           <p className="tlx-note">
-            Out from {hub?.name ?? corridor.hub}. {members.length} markets on the route,{' '}
-            {confirmed.length} with a confirmed operational position, {withPages.length} with a page of local
-            detail.
+            Out from {hub?.name ?? corridor.hub}. {municipalities.length} municipalities on the route
+            {districts.length > 0 && <>, {districts.length} districts and communities inside them</>}.{' '}
+            {confirmed.length} of the {members.length} have a confirmed operational position,{' '}
+            {withPages.length} have a page of local detail.
           </p>
           <p className="tlx-note">
             A confirmed position means the owner of this business stated, on a date, what coverage of that
@@ -107,7 +124,7 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
         <div className="shell">
           <h2 className="tlx-h2">Along the route</h2>
           <div className="tlx-table-wrap" role="region" tabIndex={0} aria-label={`Markets on the ${corridor.name} route`}>
-            <table className="wm-table">
+            <table className="wm-table cr-table">
               <thead>
                 <tr>
                   <th scope="col">Market</th>
@@ -116,20 +133,33 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
                 </tr>
               </thead>
               <tbody>
-                {members.map((x) => {
+                {stops.map(({ municipality: x, districts: inside }) => {
                   const worthy = assess(x).indexable;
                   const cc = cityContent(x.slug);
                   return (
                     <tr key={x.slug}>
                       <th scope="row">
                         {worthy && cc ? <Link href={marketPath(x.slug)}>{x.name}</Link> : x.name}
-                        {x.kind === 'district' && x.partOf && (
-                          <> <span className="tlx-kicker">part of {marketBySlug(x.partOf)?.name ?? x.partOf}</span></>
-                        )}
                         {x.country === 'US' && <> <span className="tlx-kicker">NY</span></>}
+                        {/* The districts inside this municipality — named as what they
+                            are, under it, never as another stop on the drive. */}
+                        {inside.length > 0 && (
+                          <span className="tlx-kicker cr-within">
+                            <span className="cr-within-label">within it</span>{' '}
+                            {inside.map((d, i) => {
+                              const linked = assess(d).indexable && cityContent(d.slug);
+                              return (
+                                <span key={d.slug}>
+                                  {i > 0 && ', '}
+                                  {linked ? <Link href={marketPath(d.slug)}>{d.name}</Link> : d.name}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        )}
                       </th>
-                      <td>{STATUS_LABEL[x.status] ?? x.status}</td>
-                      <td>
+                      <td data-label="Status">{STATUS_LABEL[x.status] ?? x.status}</td>
+                      <td data-label="What that means here">
                         {x.operationalTruth.statement ||
                           'No confirmed operational position. On the route and in the plan; call and ask before assuming a date.'}
                         {x.operationalTruth.verifiedAt && (
@@ -179,7 +209,9 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
             </p>
             <p>
               Everything on <Link href="/corridors">the other routes</Link>, and the full model behind these
-              statuses, is readable as data at <Link href="/api/v1/markets">/api/v1/markets</Link>.
+              statuses, is readable as data at <Link href="/api/v1/markets">/api/v1/markets</Link> and{' '}
+              <Link href="/api/v1/corridors">/api/v1/corridors</Link>. This page is served as clean Markdown
+              at <Link href={`/corridors/${corridor.id}.md`}>{`/corridors/${corridor.id}.md`}</Link>.
             </p>
           </div>
         </div>

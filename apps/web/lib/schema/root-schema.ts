@@ -184,6 +184,39 @@ export function placeForArea(city: City): AreaServedCity | AreaServedPlace {
 }
 
 /**
+ * THE SAME NODE, FOR A MARKET THAT MAY HAVE NO PAGE (GEO-002).
+ *
+ * `placeForArea` takes a published `City` — it is what the service-area and
+ * commercial pages have. The corridor pages are about the ROUTE, and a route
+ * names markets whether or not each has earned a page yet, so they need the
+ * identical hierarchy rule keyed by market slug instead.
+ *
+ * It is the same rule, not a second one: a district is a Place inside the City
+ * it is `partOf`, and that City names its province or state and country; a
+ * municipality is a City that names its province or state and country. Both
+ * branches call the same `cityNode`, so a corridor can no more put Kenmore
+ * beside Buffalo, or Buffalo in Ontario, than an area page can.
+ *
+ * Returns null for a slug that is not a market, so a caller cannot invent a
+ * place by misspelling one.
+ */
+export function placeForMarket(slug: string): AreaServedCity | AreaServedPlace | null {
+  const market = marketBySlug(slug);
+  if (!market) return null;
+  if (market.kind === 'district' && market.partOf) {
+    const parent = marketBySlug(market.partOf);
+    if (parent) {
+      return {
+        '@type': 'Place',
+        name: market.name,
+        containedInPlace: cityNode(parent.name, parent.slug),
+      };
+    }
+  }
+  return cityNode(market.name, market.slug);
+}
+
+/**
  * KEYED IDENTIFIERS, FROM THE CONSTANTS.
  *
  * The place id, the CID and the HomeStars profile id are how Google and

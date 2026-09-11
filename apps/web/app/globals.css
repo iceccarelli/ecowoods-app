@@ -11274,3 +11274,35 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   border-bottom: 0;
   justify-content: flex-start;
 }
+
+/* ── GEO-002 · the districts inside a corridor stop ─────────────────────────
+   A corridor names municipalities; the districts and communities inside one
+   are listed under it, never beside it. The cell needs to read as a second
+   line under the municipality rather than as a continuation of its name, and
+   the links inside it have to stay reachable — .tlx-kicker is uppercase mono
+   at 0.72rem, which is a label, not a list of destinations. */
+.cr-within { display: block; margin-top: 0.35rem; text-transform: none;
+  font-family: var(--font-body); font-size: 0.82rem; letter-spacing: 0;
+  line-height: 1.6; color: var(--ink-soft); font-weight: 400; }
+.cr-within-label { font-family: var(--font-mono); font-size: 0.68rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-soft); }
+
+/* The route table, on a phone. Three columns of prose inside 390px compress to
+   two or three words a line, and the widest cell on this table is a sentence.
+   So below 640px the rows stack: each municipality becomes a block with its own
+   labelled fields. Scoped to .cr-table — .wm-table is the work map's too, and
+   that one is four short numeric columns that do fit. */
+@media (max-width: 640px) {
+  .cr-table thead { position: absolute; width: 1px; height: 1px; padding: 0;
+    margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .cr-table tr { display: block; padding: 1rem 0 1.1rem;
+    border-bottom: 1px solid var(--line); }
+  .cr-table th[scope='row'], .cr-table td { display: block; padding: 0; border-bottom: 0; }
+  .cr-table td { margin-top: 0.7rem; }
+  .cr-table td::before { content: attr(data-label); display: block;
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted-soft); margin-bottom: 0.25rem; }
+}
+.cr-within a { color: var(--ink-soft); text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.cr-within a:hover, .cr-within a:focus-visible { color: var(--copper-text); }
