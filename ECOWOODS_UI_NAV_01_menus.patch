@@ -1,0 +1,574 @@
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 431f800..6bf192e 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -109,6 +109,10 @@ const SERVICES_MENU: MegaColumn[] = [
+       { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
+       { label: 'Mississauga', href: '/service-areas/mississauga' },
+       { label: 'Hamilton', href: '/service-areas/hamilton' },
++      /* The corridor page, not one town: it lists every Niagara municipality
++         with a page, from Grimsby to Fort Erie, in the order a crew reaches them. */
++      { label: 'Niagara', href: '/corridors/niagara-belt', note: 'Grimsby to Fort Erie, on the QEW' },
++      { label: 'Kitchener', href: '/service-areas/kitchener', note: 'On the 403 and Highway 6, with Cambridge and Guelph' },
+       { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
+     ],
+   },
+@@ -118,8 +122,6 @@ const SERVICES_MENU: MegaColumn[] = [
+     items: [
+       { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+       { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
+-      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, and what coverage means` },
+-      { label: 'Score a quote you already have', href: '/framework/assess', note: '27 criteria' },
+       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
+       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
+@@ -129,6 +131,15 @@ const SERVICES_MENU: MegaColumn[] = [
+   },
+ ];
+ 
++/* Where each group sits in the desktop panel: four columns, groups stacked.
++   The mobile drawer lists SERVICES_MENU in its own order. */
++const SERVICES_LAYOUT: string[][] = [
++  ['Start here', 'By who you are'],
++  ['By the job', 'By the problem'],
++  ['Where we work'],
++  ['Before you decide'],
++];
++
+ const LIBRARY_MENU: MegaColumn[] = [
+   {
+     title: 'Technical papers',
+@@ -205,6 +216,15 @@ const ADMIN_NAV = [
+   { href: '/admin/settings', label: 'Settings' },
+ ];
+ 
++/* The drawer's accordions, in drawer order. */
++const MOBILE_GROUPS = [
++  { key: 'services', label: 'Services', cols: SERVICES_MENU },
++  { key: 'library', label: 'Library', cols: LIBRARY_MENU },
++];
++
++/** Row numbers for the drawer: 01, 02 … 10 — never "010". */
++const rowNum = (i: number) => String(i + 1).padStart(2, '0');
++
+ const PHONE_DISPLAY = BUSINESS_NAP.phoneDisplay;
+ const PHONE_HREF = BUSINESS_NAP.phoneHref;
+ 
+@@ -243,9 +263,13 @@ export default function Header() {
+     };
+   }, [mobileOpen]);
+ 
+-  // Reset portal sub-menu when mobile sheet closes
++  // Reset the portal sub-menu and the accordions when the mobile sheet closes,
++  // so the drawer opens the same way every time.
+   useEffect(() => {
+-    if (!mobileOpen) setPortalExpanded(false);
++    if (!mobileOpen) {
++      setPortalExpanded(false);
++      setOpenGroup(null);
++    }
+   }, [mobileOpen]);
+ 
+   // Track active section on scroll
+@@ -296,7 +320,7 @@ export default function Header() {
+   const isLoggedIn = status === 'authenticated';
+   const portalLabel = isAdmin ? 'Admin' : 'My Page';
+   const portalNav = isAdmin ? ADMIN_NAV : MYPAGE_NAV;
+-  const portalIndex = navigation.length + 2;
++  const portalIndex = rowNum(navigation.length + MOBILE_GROUPS.length + 2);
+ 
+   return (
+     <>
+@@ -334,7 +358,7 @@ export default function Header() {
+ 
+           {/* Primary Nav */}
+           <nav className="topbar-nav" aria-label="Primary">
+-            <MegaMenu label="Services" id="services" columns={SERVICES_MENU} footer={{ label: 'All six services', href: '/services' }} />
++            <MegaMenu label="Services" id="services" columns={SERVICES_MENU} layout={SERVICES_LAYOUT} footer={{ label: 'All six services', href: '/services' }} />
+             <MegaMenu label="Library" id="library" columns={LIBRARY_MENU} footer={{ label: 'Everything published here', href: '/resources' }} />
+             {navigation.map((item) => {
+               // Check if this is an anchor link or a page link
+@@ -500,6 +524,9 @@ export default function Header() {
+         inert={!mobileOpen}
+       >
+         <nav aria-label="Mobile navigation">
++          {/* One list, one numbering. Services, Library and Service areas were
++              a second, smaller list wedged between 04 and 05 with no numbers,
++              so the drawer read as two menus stapled together (UI-NAV-01). */}
+           {navigation.map((item, idx) => {
+             const href = item.href.startsWith('#') ? `${baseUrl}${item.href}` : item.href;
+             return (
+@@ -509,32 +536,33 @@ export default function Header() {
+                 onClick={() => setMobileOpen(false)}
+               >
+                 {item.label}
+-                <span className="num">0{idx + 1}</span>
++                <span className="num">{rowNum(idx)}</span>
+               </a>
+             );
+           })}
+-          {[
+-            { key: 'services', label: 'Services', cols: SERVICES_MENU },
+-            { key: 'library', label: 'Library', cols: LIBRARY_MENU },
+-          ].map((group) => (
++          {MOBILE_GROUPS.map((group, gi) => (
+             <div className="mnav-group" key={group.key}>
+               <button
+                 type="button"
+                 className="mnav-group-trigger"
+                 aria-expanded={openGroup === group.key}
++                aria-controls={`mnav-${group.key}`}
+                 onClick={() => setOpenGroup((v) => (v === group.key ? null : group.key))}
+               >
+                 <span>{group.label}</span>
+-                <span className="mnav-group-sign" aria-hidden="true">{openGroup === group.key ? '\u2212' : '+'}</span>
++                <span className="mnav-group-right">
++                  <span className="mnav-group-sign" aria-hidden="true">{openGroup === group.key ? '\u2212' : '+'}</span>
++                  <span className="num">{rowNum(navigation.length + gi)}</span>
++                </span>
+               </button>
+               {openGroup === group.key && (
+-                <div className="mnav-group-body">
++                <div className="mnav-group-body" id={`mnav-${group.key}`}>
+                   {group.cols.map((col) => (
+                     <div key={col.title}>
+                       <p className="mnav-group-title">{col.title}</p>
+                       <ul>
+                         {col.items.map((it) => (
+-                          <li key={it.href}>
++                          <li key={`${it.href}|${it.label}`}>
+                             <Link href={it.href} onClick={() => setMobileOpen(false)}>{it.label}</Link>
+                           </li>
+                         ))}
+@@ -546,16 +574,21 @@ export default function Header() {
+             </div>
+           ))}
+ 
++          <a href="/service-areas" onClick={() => setMobileOpen(false)}>
++            Service areas
++            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length)}</span>
++          </a>
++
+           <a href={`${baseUrl}#estimate`} onClick={() => setMobileOpen(false)}>
+             Get a written price
+-            <span className="num">0{navigation.length + 1}</span>
++            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length + 1)}</span>
+           </a>
+ 
+           {/* Portal section — Login or My Page / Admin */}
+           {!isLoggedIn && status !== 'loading' ? (
+             <a href="/login" onClick={() => setMobileOpen(false)}>
+               Login
+-              <span className="num">0{portalIndex}</span>
++              <span className="num">{portalIndex}</span>
+             </a>
+           ) : isLoggedIn ? (
+             <div className="mobile-portal-section">
+@@ -574,7 +607,7 @@ export default function Header() {
+                       <path d="M6 9l6 6 6-6" />
+                     </svg>
+                   </span>
+-                  <span className="num" style={{ position: 'static' }}>0{portalIndex}</span>
++                  <span className="num" style={{ position: 'static' }}>{portalIndex}</span>
+                 </span>
+               </button>
+               {portalExpanded && (
+diff --git a/apps/web/app/components/MegaMenu.tsx b/apps/web/app/components/MegaMenu.tsx
+index b6c380a..5ea9598 100644
+--- a/apps/web/app/components/MegaMenu.tsx
++++ b/apps/web/app/components/MegaMenu.tsx
+@@ -1,6 +1,7 @@
+ 'use client';
+ 
+ import { useEffect, useRef, useState } from 'react';
++import type { PointerEvent as ReactPointerEvent, FocusEvent as ReactFocusEvent } from 'react';
+ import Link from 'next/link';
+ 
+ /**
+@@ -31,7 +32,7 @@ import Link from 'next/link';
+  *
+  * The trigger is a real <button> with aria-expanded and aria-controls, not a
+  * div with a mouse handler. Escape closes and returns focus. Click-outside
+- * closes. Hover opens on a pointer device only — a touch tap must not open and
++ * closes. Hover opens for a mouse only — a touch tap must not open and
+  * immediately navigate, which is the classic mega-menu bug on phones. Every
+  * link inside is a real anchor, so the whole tree is crawlable whether or not
+  * the panel has ever been opened.
+@@ -44,54 +45,158 @@ export type MegaColumn = {
+   items: { label: string; href: string; note?: string }[];
+ };
+ 
++/*
++ * HOVER THAT A HUMAN CAN ACTUALLY FOLLOW (UI-NAV-01).
++ *
++ * The panel opened on mouseenter and closed on mouseleave of the wrapper, with
++ * no delay. The trigger sits in the middle of a 72px bar and the panel hangs
++ * from the BOTTOM of the bar, so between the two there is a band of header that
++ * belongs to neither. Moving the pointer down from "Services" to the first link
++ * crossed that band, fired mouseleave, and the panel vanished under the cursor
++ * before it arrived. Nobody could reach a link except by clicking the trigger,
++ * and clicking a hover-opened trigger TOGGLED it — closed. That is the report,
++ * in full: "it disappears by itself and I cannot click the dropdown".
++ *
++ * What replaces it is the behaviour of every mega-menu that works:
++ *
++ *   · a close DELAY. Leaving starts a timer; coming back into the trigger, the
++ *     band or the panel cancels it. The pointer can take a diagonal, slow path.
++ *   · a hover BRIDGE (.mm-bridge in globals.css) that fills the band, so
++ *     the pointer is never actually outside the menu on the way down.
++ *   · ONE PANEL AT A TIME. Sliding from Services to Library swaps immediately
++ *     instead of stacking two panels for the length of the close delay.
++ *   · CLICK PINS. A click on the trigger opens the panel and keeps it open until
++ *     an outside click, Escape, the close button or a link; a click on a panel
++ *     that hover already opened pins it rather than closing it.
++ *   · touch never hovers: pointerType is checked, not guessed from the viewport.
++ */
++const OPEN_DELAY = 70;
++const CLOSE_DELAY = 350;
++const OPEN_EVENT = 'ecw:mega-open';
++let activeMenu: string | null = null;
++
+ export function MegaMenu({
+   label,
+   id,
+   columns,
+   footer,
++  layout,
+ }: {
+   label: string;
+   id: string;
+   columns: MegaColumn[];
+   footer?: { label: string; href: string };
++  /**
++   * Visual columns, each a list of column titles stacked top to bottom. Six
++   * groups in an auto-fit grid wrapped to five plus one orphan row with a
++   * screen of empty space beside it; the layout says where each group goes.
++   * The mobile drawer reads `columns` in their own order and ignores this.
++   */
++  layout?: string[][];
+ }) {
+   const [open, setOpen] = useState(false);
++  const [pinned, setPinned] = useState(false);
+   const wrap = useRef<HTMLDivElement>(null);
+   const trigger = useRef<HTMLButtonElement>(null);
++  const timer = useRef<number | null>(null);
++
++  const clearTimer = () => {
++    if (timer.current !== null) {
++      window.clearTimeout(timer.current);
++      timer.current = null;
++    }
++  };
++  const show = (pin: boolean) => {
++    clearTimer();
++    setOpen(true);
++    if (pin) setPinned(true);
++    activeMenu = id;
++    window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: id }));
++  };
++  const hide = () => {
++    clearTimer();
++    setOpen(false);
++    setPinned(false);
++    if (activeMenu === id) activeMenu = null;
++  };
++
++  /* One panel at a time. */
++  useEffect(() => {
++    const onOther = (e: Event) => {
++      if ((e as CustomEvent<string>).detail !== id) {
++        clearTimer();
++        setOpen(false);
++        setPinned(false);
++      }
++    };
++    window.addEventListener(OPEN_EVENT, onOther);
++    return () => {
++      window.removeEventListener(OPEN_EVENT, onOther);
++      clearTimer();
++    };
++  }, [id]);
+ 
+   useEffect(() => {
+     if (!open) return;
+     const onKey = (e: KeyboardEvent) => {
+-      if (e.key === 'Escape') { setOpen(false); trigger.current?.focus(); }
++      if (e.key === 'Escape') { hide(); trigger.current?.focus(); }
+     };
+-    const onClick = (e: MouseEvent) => {
+-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
++    const onDown = (e: PointerEvent) => {
++      if (wrap.current && !wrap.current.contains(e.target as Node)) hide();
+     };
+     document.addEventListener('keydown', onKey);
+-    document.addEventListener('mousedown', onClick);
++    document.addEventListener('pointerdown', onDown);
+     return () => {
+       document.removeEventListener('keydown', onKey);
+-      document.removeEventListener('mousedown', onClick);
++      document.removeEventListener('pointerdown', onDown);
+     };
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [open]);
+ 
+-  /* Hover opens on a pointer device only. On a touchscreen the first tap must
+-     open the panel and nothing else; a hover-open there fires and closes in the
+-     same gesture, which is why so many mega-menus are unusable on a phone. */
+-  const pointerProps = {
+-    onMouseEnter: () => { if (window.matchMedia('(hover: hover)').matches) setOpen(true); },
+-    onMouseLeave: () => { if (window.matchMedia('(hover: hover)').matches) setOpen(false); },
++  const isMouse = (e: ReactPointerEvent) => e.pointerType === 'mouse' || e.pointerType === 'pen';
++
++  const onPointerEnter = (e: ReactPointerEvent) => {
++    if (!isMouse(e)) return;
++    clearTimer();
++    if (open) return;
++    /* Sliding across from the other panel: swap now. From the page: a short
++       intent delay, so a pointer passing over the bar does not flash a panel. */
++    if (activeMenu && activeMenu !== id) show(false);
++    else timer.current = window.setTimeout(() => show(false), OPEN_DELAY);
++  };
++  const onPointerLeave = (e: ReactPointerEvent) => {
++    if (!isMouse(e)) return;
++    clearTimer();
++    if (pinned) return;
++    timer.current = window.setTimeout(hide, CLOSE_DELAY);
++  };
++
++  /* Keyboard: leaving the whole menu with Tab closes it. */
++  const onBlur = (e: ReactFocusEvent) => {
++    if (wrap.current && e.relatedTarget && !wrap.current.contains(e.relatedTarget as Node)) hide();
+   };
+ 
++  const onTriggerClick = () => {
++    if (!open) show(true);
++    else if (!pinned) setPinned(true);
++    else hide();
++  };
++
++  const stacks: MegaColumn[][] = layout
++    ? layout
++        .map((titles) => titles.map((t) => columns.find((c) => c.title === t)).filter((c): c is MegaColumn => Boolean(c)))
++        .filter((s) => s.length > 0)
++    : columns.map((c) => [c]);
++
+   return (
+-    <div className="mm" ref={wrap} {...pointerProps}>
++    <div className="mm" ref={wrap} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave} onBlur={onBlur}>
+       <button
+         type="button"
+         ref={trigger}
+         className={`mm-trigger ${open ? 'is-open' : ''}`}
+         aria-expanded={open}
+         aria-controls={`mm-${id}`}
+-        onClick={() => setOpen((v) => !v)}
++        onClick={onTriggerClick}
+       >
+         {label}
+         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+@@ -99,6 +204,7 @@ export function MegaMenu({
+         </svg>
+       </button>
+ 
++      {open && <span className="mm-bridge" aria-hidden="true" />}
+       <div id={`mm-${id}`} className="mm-panel" hidden={!open}>
+         <div className="mm-panel-inner">
+           {/* Escape closed this panel and outside-click closed it, and neither
+@@ -109,32 +215,36 @@ export function MegaMenu({
+           <button
+             type="button"
+             className="mm-close"
+-            onClick={() => { setOpen(false); trigger.current?.focus(); }}
++            onClick={() => { hide(); trigger.current?.focus(); }}
+             aria-label={`Close the ${label} menu`}
+           >
+             ✕
+           </button>
+-          <div className="mm-cols">
+-            {columns.map((col) => (
+-              <div className="mm-col" key={col.title}>
+-                <p className="mm-col-title">
+-                  {col.href ? <Link href={col.href} onClick={() => setOpen(false)}>{col.title}</Link> : col.title}
+-                </p>
+-                <ul>
+-                  {col.items.map((it) => (
+-                    <li key={it.href}>
+-                      <Link href={it.href} onClick={() => setOpen(false)}>
+-                        <span className="mm-label">{it.label}</span>
+-                        {it.note && <span className="mm-note">{it.note}</span>}
+-                      </Link>
+-                    </li>
+-                  ))}
+-                </ul>
++          <div className="mm-cols" data-cols={stacks.length}>
++            {stacks.map((stack) => (
++              <div className="mm-stack" key={stack.map((c) => c.title).join('|')}>
++                {stack.map((col) => (
++                  <div className="mm-col" key={col.title}>
++                    <p className="mm-col-title">
++                      {col.href ? <Link href={col.href} onClick={hide}>{col.title}</Link> : col.title}
++                    </p>
++                    <ul>
++                      {col.items.map((it) => (
++                        <li key={`${it.href}|${it.label}`}>
++                          <Link href={it.href} onClick={hide}>
++                            <span className="mm-label">{it.label}</span>
++                            {it.note && <span className="mm-note">{it.note}</span>}
++                          </Link>
++                        </li>
++                      ))}
++                    </ul>
++                  </div>
++                ))}
+               </div>
+             ))}
+           </div>
+           {footer && (
+-            <Link className="mm-footer" href={footer.href} onClick={() => setOpen(false)}>
++            <Link className="mm-footer" href={footer.href} onClick={hide}>
+               {footer.label} <span aria-hidden="true">→</span>
+             </Link>
+           )}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index b04c248..1c0bd42 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -809,7 +809,7 @@ p {
+   min-width: 0;
+ }
+ 
+-.topbar-nav a {
++.topbar-nav > a {
+   /* Padding and type scale with the viewport instead of forcing an overflow. */
+   padding: 0.5rem clamp(0.3rem, 0.8vw, 0.625rem);
+   font-size: clamp(0.78rem, 0.45vw + 0.55rem, 0.875rem);
+@@ -821,12 +821,12 @@ p {
+   transition: all 200ms var(--ease-out-quart);
+ }
+ 
+-.topbar-nav a:hover {
++.topbar-nav > a:hover {
+   color: var(--ink);
+   background: var(--hover-tint);
+ }
+ 
+-.topbar-nav a.active {
++.topbar-nav > a.active {
+   color: var(--copper-deep);
+ }
+ 
+@@ -4577,12 +4577,12 @@ p {
+   padding-top: 0.7rem;
+   padding-bottom: 0.7rem;
+ }
+-.topbar-nav a {
++.topbar-nav > a {
+   font-size: var(--fs-sm);
+   letter-spacing: 0.005em;
+   border-radius: var(--radius-md, 8px);
+ }
+-.topbar-nav a.active {
++.topbar-nav > a.active {
+   background: rgba(176, 109, 58, 0.08);
+ }
+ .brand-mark {
+@@ -11178,3 +11178,99 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ .mm-close:hover { color: var(--ink); border-color: var(--ink); }
+ .mm-close:focus-visible { outline: 3px solid var(--copper-bright, var(--copper)); outline-offset: 2px; }
+ .mm-panel-inner { position: relative; }
++
++/* ═══════════════════════════════════════════════════════════════════════
++   UI-NAV-01 — the mega-menu a hand can follow, and a drawer that matches it
++   ═══════════════════════════════════════════════════════════════════════ */
++
++/* The two triggers look and behave like the four links beside them: same
++   type size, same pill hover. They were a different size with an underline,
++   so the bar read as two kinds of thing. */
++.mm-trigger {
++  padding: 0.5rem clamp(0.3rem, 0.8vw, 0.625rem);
++  font-size: var(--fs-sm);
++  font-weight: 500;
++  letter-spacing: 0.005em;
++  color: var(--ink-soft);
++  border-bottom: 0;
++  border-radius: var(--radius-md, 8px);
++  white-space: nowrap;
++  transition: color 160ms ease, background-color 160ms ease;
++}
++.mm-trigger:hover { color: var(--ink); background: var(--hover-tint); }
++.mm-trigger.is-open { color: var(--copper-text); background: var(--hover-tint); }
++
++/* THE BRIDGE. The panel hangs from the bottom of the bar and the trigger sits
++   in its middle; this invisible strip fills the band between them, so the
++   pointer is inside the menu on the way down. A sibling of the panel rather
++   than a ::before on it, because the panel scrolls (overflow-y: auto) and would
++   clip a pseudo-element hanging above its own top edge. Rendered only while
++   the panel is open, and positioned against .topbar-inner like the panel. */
++.mm-bridge {
++  position: absolute;
++  left: 0;
++  right: 0;
++  top: calc(100% - 0.85rem);
++  height: 0.8rem;
++  z-index: 119;
++}
++
++/* Explicit columns. `auto-fit, minmax(210px, 1fr)` put five groups on the first
++   row and the sixth alone on a second row, with a screen of empty panel beside
++   it; the Services layout now stacks groups into four columns. */
++.mm-cols[data-cols='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
++.mm-cols[data-cols='4'] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
++.mm-cols[data-cols='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
++.mm-stack { display: grid; align-content: start; gap: 1.6rem; min-width: 0; }
++.mm-col { min-width: 0; }
++.mm-col a { white-space: normal; overflow-wrap: anywhere; }
++/* A column heading that is a link was picked up by `.mm-col a` — block, padded,
++   ink-coloured, haloed on hover — so "By the job" sat lower and darker than
++   "Start here", which is not a link. A heading is a heading either way. */
++.mm-col .mm-col-title a {
++  display: inline;
++  padding: 0;
++  margin: 0;
++  border-radius: 0;
++  color: inherit;
++  background: none;
++  box-shadow: none;
++}
++.mm-col .mm-col-title a:hover,
++.mm-col .mm-col-title a:focus-visible {
++  color: var(--copper-text);
++  background: none;
++  box-shadow: none;
++  text-decoration: underline;
++}
++
++/* The mobile drawer: Services, Library and Service areas are rows of the same
++   list as Refinishing and Installation, in the same serif, numbered in the same
++   sequence. They were a smaller sans with no number, between 04 and 05, and the
++   list read as two lists. */
++.mobile-sheet .mnav-group { border-top: 0; border-bottom: 1px solid var(--line); }
++.mobile-sheet .mnav-group-trigger {
++  min-height: 0;
++  padding: 1.1rem 0;
++  font-family: var(--font-display);
++  font-size: 1.85rem;
++  font-weight: 400;
++  letter-spacing: -0.01em;
++  color: var(--ink);
++}
++.mnav-group-right { display: inline-flex; align-items: center; gap: 0.9rem; }
++.mnav-group-right .num {
++  font-family: var(--font-mono);
++  font-size: var(--fs-2xs);
++  color: var(--muted-soft);
++  font-weight: 400;
++  letter-spacing: 0.05em;
++}
++.mobile-sheet .mnav-group-body { padding: 0 0 1.25rem; }
++.mobile-sheet .mnav-group-body li a {
++  font-family: inherit;
++  font-size: 1rem;
++  padding: 0;
++  border-bottom: 0;
++  justify-content: flex-start;
++}
