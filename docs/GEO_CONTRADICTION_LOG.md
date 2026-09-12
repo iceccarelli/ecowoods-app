@@ -79,6 +79,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
 | LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
 | VIS-04 | **closed by VIS-04** | the verify screen showed the visitor's ORIGINAL photograph with drag-corners on it, so "the floor did not change" was a true report of what they saw — it now paints the composite, and the primary action goes straight to the studio |
+| MACH-01 | **closed by MACH-01** | llms.txt and ai.txt — the two files that exist only to tell an AI system what this site offers — named Floor Studio zero times, and no tool a visitor can operate; they have a Tools section now, and a test |
 | SIG-01 | **closed by VIS-04** | ecowoods.ca, the mark, the floor's name and the range are drawn INTO every rendered surface and into the downloaded PNG — a screenshot carries no DOM |
 | TEX-01 | **built, dormant, documented** | photographic wood cut from the real product shots: it does not beat the drawn grain at room scale yet, so it is not wired to the interface and the reason is written down |
 | AS-01 | **closed by ASSIST-01** | the assistant's 6,230-character prompt named zero pages and none of its five tools could return one; it now carries a derived site map and a find_on_site tool |
@@ -1223,3 +1224,61 @@ stripes. The crops are named by hand now, in the script, each with the reason.
 Shipping it in this state would make the product worse, which is the one thing
 this repository is not allowed to do. It is in, under test, dormant, and the
 reason is in the docblock.
+
+---
+
+## MACH-01 · the machine surfaces did not know what this site can DO
+
+ASSIST-01 found that the chatbot's 6,230-character prompt named zero pages. The
+same question, asked of the two files that exist for machines and nothing else,
+gives the same answer.
+
+### Measured
+
+`llms.txt` named twenty-nine paths — services, the price bands, the areas, the
+evidence, every machine interface, the citation targets. Not one of them is a
+thing a person can operate:
+
+```
+floor-studio 0 · camera 0 · /design 0 · /tools/floor-movement 0
+```
+
+`ai.txt` the same. Against the site's own navigation, twenty-six of fifty-five
+chrome destinations were absent, and the material ones were HUBS: `/services`,
+`/guides`, `/glossary`, `/resources`, `/technical-library`, `/library` — so a
+machine could read one guide and never learn that sixteen more existed.
+
+So an assistant asked *"can I see what walnut would look like in my living
+room"* had no way to discover that this site will render it, live, from a phone
+camera, for free — the one capability in this market nobody else has built, and
+the whole reason the last three patches exist.
+
+### Closed
+
+A `## Tools you can use on this site` section in `llms.txt` and a `## What a
+visitor can DO here, not only read` section in `ai.txt`, each naming Floor
+Studio with the live-camera fragment, the configurator, the movement
+calculator, the quote comparator and the framework assessor. The six missing
+hubs are named. Three citation-target lines were added for the queries only
+this site can answer — *"see hardwood in my room"*, *"hardwood floor
+visualizer"*, *"what would oak look like in my living room"*.
+
+Both surfaces carry the three sentences an assistant most needs to repeat
+correctly, because getting them wrong is worse than silence:
+
+- **no generative image model is involved** — it is rendering, not generation,
+  which is why the range under the picture corresponds to a real product;
+- **camera frames and photographs are analysed on the device and discarded**,
+  and there is no endpoint that accepts one;
+- **Ontario in Canadian dollars, New York State in United States dollars** — so
+  an assistant answering a Buffalo homeowner does not quote them CAD.
+
+`lib/machine-surfaces.test.ts` holds it: every tool and every hub must appear in
+both files, the camera fragment must be there, and the three sentences must be
+there. It reads the route source rather than calling the handlers, because the
+handlers reach for a database and the thing under test is what the file says.
+
+After: seventeen chrome destinations remain unnamed in `llms.txt`, and every one
+is a detail page under a hub that IS named — an individual paper, guide, city or
+corridor, emitted through a template. That is the file working as intended: it
+is the concise brief, `llms-full.txt` carries the corpus, and the hubs route.

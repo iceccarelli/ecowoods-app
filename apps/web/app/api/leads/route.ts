@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
+import { designIdOf } from '@/lib/floor-studio/design-id';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -197,6 +198,12 @@ export async function POST(request: Request) {
         squareFeet: lead.sqft ? Number(lead.sqft) : null,
         timeline: lead.timeline ? String(lead.timeline) : null,
         notes: leadNotes(lead),
+        /* MEAS-01. Validated by leadSchema before it reaches here, and
+           validated AGAIN on the way in, because this is the field the whole
+           attribution chain hangs on and a wrong value is worse than a null
+           one: null says "we do not know", a bad id says "we know, and it was
+           this design". */
+        designId: designIdOf(lead.designId) ?? null,
         userId: session?.user?.id ?? null,
       },
     });

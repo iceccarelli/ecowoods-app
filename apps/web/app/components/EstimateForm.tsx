@@ -1,5 +1,6 @@
 'use client';
 
+import { designIdOf } from '@/lib/floor-studio/design-id';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
@@ -106,6 +107,9 @@ export function EstimateForm({
   const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [design, setDesign] = useState<DesignConfig | null>(null);
   const [studio, setStudio] = useState<StudioDesign | null>(null);
+  /* MEAS-01 — the join key, tracked separately from the design it belongs to
+     so that a design which fails to decode still yields an attributable lead. */
+  const [designId, setDesignId] = useState<string | undefined>(undefined);
   const [recoverConsent, setRecoverConsent] = useState(false);
   const recoverySent = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -125,8 +129,17 @@ export function EstimateForm({
   useEffect(() => {
     setDesign(readDesignConfig());
     try {
-      const code = new URLSearchParams(window.location.search).get('design');
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('design');
       if (code) setStudio(decodeStudioDesign(code));
+      /* MEAS-01 — `did` is read INDEPENDENTLY of `design`, on purpose. If the
+         share code fails validation (a floor we have retired, a truncated
+         link) the configuration is correctly discarded, but the fact that this
+         person came from a studio design is still true and still worth
+         knowing. Losing the origin along with the configuration would make
+         attribution quietly worse exactly where the funnel is already
+         leaking. */
+      setDesignId(designIdOf(params.get('did')));
     } catch {
       /* a malformed querystring is not a reason to fail the form */
     }
@@ -264,7 +277,16 @@ export function EstimateForm({
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        track('quote_submit', { source, form_track: 'measure' });
+        /* MEAS-01 — the client half of the join. The authoritative record is
+           the designId column on QuoteRequest, written server-side by
+           /api/leads; this is what lets GA4 supply the denominator (how many
+           designs were made) for the conversion the database supplies the
+           numerator of. */
+        track('quote_submit', {
+          source,
+          form_track: 'measure',
+          design_id: studio?.designId ?? designId,
+        });
         setSentTrack('measure');
         setState('sent');
         form.reset();
@@ -417,6 +439,14 @@ export function EstimateForm({
               /api/leads stores the code verbatim; the estimating desk pastes it
               back into /floor-studio and sees the floor the visitor chose. */}
           {studio && <input type="hidden" name="design" value={encodeStudioDesign(studio)} />}
+          {/* MEAS-01 — the design id as its own field, so /api/leads never has
+              to parse the share code to find it, and so it survives a code
+              that did not decode. The id inside the decoded design wins when
+              both are present: it came through validation attached to a floor
+              we still lay. */}
+          {(studio?.designId ?? designId) && (
+            <input type="hidden" name="designId" value={studio?.designId ?? designId} />
+          )}
 
           <div className="ef-row">
             <label className="ef-field">

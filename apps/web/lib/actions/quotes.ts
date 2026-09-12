@@ -274,6 +274,11 @@ export async function convertQuoteToProject(
       province: quote.province,
       species: quote.species as import('@prisma/client').Prisma.InputJsonValue | undefined ?? undefined,
       squareFeet: quote.squareFeet,
+      /* MEAS-01 — carry the design forward. This single line is what makes
+         "of the last 100 deposits, how many began in Floor Studio" answerable
+         without walking Payment → Invoice → Project → QuoteRequest. Copied
+         once, here, at the moment a request becomes a job. */
+      designId: quote.designId,
       contractValue: projectData.contractValue,
       depositPct: projectData.depositPct ?? settings?.defaultDepositPct ?? 30,
       midpointPct: projectData.midpointPct ?? settings?.defaultMidpointPct ?? 40,

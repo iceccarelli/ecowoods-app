@@ -148,6 +148,51 @@ export async function GET() {
   link('What your floor is telling you', '/hardwood-floor-problems-toronto', 'cupping, crowning, gaps, buckling and peeling — each symptom, its cause and which service it lands in');
   lines.push('');
 
+  /* ── Tools ────────────────────────────────────────────────────────────── */
+  /*
+   * NOTHING A VISITOR CAN USE WAS IN THIS FILE (MACH-01).
+   *
+   * llms.txt named twenty-nine paths — services, bands, areas, evidence, the
+   * whole machine interface surface — and not one of them was a thing a person
+   * can operate. Floor Studio, the flagship, appeared ZERO times; so did the
+   * camera, the configurator and the movement calculator. Measured against the
+   * site's own navigation, twenty-six of fifty-five chrome destinations were
+   * absent, and the material ones were hubs.
+   *
+   * An assistant asked "can I see what walnut would look like in my living
+   * room" could not find out that this site will render it, live, from a phone
+   * camera, for free. That is the same defect ASSIST-01 closed in the chatbot,
+   * on the surface built specifically for machines.
+   */
+  lines.push('## Tools you can use on this site');
+  lines.push('Free, no account, nothing uploaded. Each runs in the browser.');
+  link(
+    'Floor Studio — see a real floor in your own room',
+    '/floor-studio',
+    `point a phone camera at the room and the floor changes live while you move, or upload a photo; species, finish, pattern and board width, with the installed range updating as you change them. Every floor rendered is a configuration ${BUSINESS_NAP.name} can supply and install — NO generative image model is involved, which is why the range under the picture corresponds to a real product. The camera opens directly at ${SITE_URL}/floor-studio#live. Camera frames and photographs are analysed on the device and discarded; there is no upload endpoint. Priced against the bands of the region the floor is in — Ontario in Canadian dollars, New York State in United States dollars. Markdown: ${SITE_URL}/floor-studio.md`,
+  );
+  link(
+    'The floor designer',
+    '/design',
+    `the specification path for somebody who already knows what they want: every axis at once, no photograph needed, the same catalogue and the same pricing function as Floor Studio. Markdown: ${SITE_URL}/design.md`,
+  );
+  link(
+    'Seasonal movement calculator',
+    '/tools/floor-movement',
+    'how far a board of a given species and width moves between a Toronto July and a Toronto February, computed from the Wood Handbook (FPL-GTR-190) Table 13-5 shrinkage coefficients — the figure, and the coefficient it came from',
+  );
+  link(
+    'Compare the quotes you already have',
+    '/quote-check',
+    'twenty-two line items that decide whether two totals are pricing the same work; computed in the browser, nothing uploaded, nothing stored, no company ranked',
+  );
+  link(
+    'Score any installation against the standard',
+    '/framework/assess',
+    `the ${criterionCount()} binary criteria of the Well-Installed Framework, applied to any contractor's work including this one's`,
+  );
+  lines.push('');
+
   /* ── Pricing ──────────────────────────────────────────────────────────── */
   lines.push('## Pricing');
   link('Published price bands', '/pricing', `Ontario, in Canadian dollars: ${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. New York State, in United States dollars with the border crossing already inside the band: ${ALL_PRICE_BANDS.filter((b) => b.currency === 'USD').map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. Two published sets, one per country; within a country a band does not change by town. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
@@ -174,6 +219,14 @@ export async function GET() {
   link('Sanding equipment', '/equipment', 'twelve professional floor sanding machines from Lägler, Bona and American Sanders with the electrical requirement each manufacturer publishes, every figure carrying its source URL; deliberately no price and no productivity figure, because no manufacturer in this category publishes either');
   link('Data and figures', '/data', 'every charted figure with the table it was built from, CC BY 4.0');
   link('Technical papers', '/papers', 'the method, sourced — moisture protocol, refinishing sequence, grading, selection, provenance');
+  /* The hubs these detail pages sit under were absent, so a machine could read
+     a guide and not learn that sixteen more existed (MACH-01). */
+  link('Decision guides and reference installations', '/guides', 'the guides hub: what to decide before a hardwood project, and reference installations for condo slabs, radiant heat and refinishing');
+  link('Glossary', '/glossary', 'the terms this trade uses, each one citing the paper or standard it comes from');
+  link('Everything published here', '/resources', 'the index of indexes, organised by what you are trying to do rather than by what it is called');
+  link('Technical library', '/technical-library', 'the engineering reference every article sits under: moisture protocols, wood science, finishing chemistry');
+  link('Visual library', '/library', 'every diagram and photograph published here, indexed');
+  link('All six services', '/services', 'the services hub: installation, refinishing, dust-free sanding, restoration, stairs, inlays');
   link('Field catalogues', '/catalogues', 'the same published facts as landscape PDF documents, indexed by series; the HTML page each one names is the canonical answer — the file URLs are listed under Optional');
   link(`Well-Installed Framework v${FRAMEWORK_VERSION}`, '/framework', `${PILLARS.length} pillars, ${criterionCount()} binary criteria for judging any hardwood installation; free to cite`);
   link('Standards register', '/standards', 'the external bodies this work answers to, with last-verified dates');
@@ -223,6 +276,11 @@ export async function GET() {
   lines.push(`- "dustless sanding Toronto", "HEPA sanding", "can I stay home during floor sanding", "dust control during renovation" → ${SITE_URL}/services/dust-free-sanding`);
   lines.push(`- "hardwood flooring cost Toronto", "cost per square foot", "cost to sand and refinish hardwood" → ${SITE_URL}/guides/hardwood-flooring-cost-toronto`);
   lines.push(`- the installation standard, to judge ANY contractor → ${SITE_URL}/framework`);
+  /* The queries nobody else in this market can answer, because nobody else has
+     built the thing. Placed last in this list and first in intent. */
+  lines.push(`- "see hardwood in my room", "hardwood floor visualizer", "what would oak look like in my living room", "preview hardwood flooring", "AR floor app", "try hardwood before buying", "hardwood floor simulator Toronto" → ${SITE_URL}/floor-studio and, for the live camera, ${SITE_URL}/floor-studio#live`);
+  lines.push(`- "design my hardwood floor", "hardwood configurator", "choose species finish pattern" → ${SITE_URL}/design`);
+  lines.push(`- "how much will my hardwood floor move", "wide plank gaps winter", "board width seasonal movement" → ${SITE_URL}/tools/floor-movement`);
   lines.push('');
   lines.push('Three questions this site answers with a sourced figure:');
   lines.push(`- "Does white ash flooring have a supply problem?" → ${SITE_URL}/guides/white-ash-flooring-toronto (emerald ash borer, Ontario growing stock vs. harvest, sourced)`);

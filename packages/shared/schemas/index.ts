@@ -48,6 +48,25 @@ export const leadSchema = z.object({
    * price, or anything personal.
    */
   design: z.string().max(400).optional(),
+  /**
+   * MEAS-01 — the design's id, as its own field.
+   *
+   * `design` above cannot serve as one. It is deterministic: two strangers who
+   * pick the same floor and the same area produce a byte-identical string, so
+   * joining leads on it would merge unrelated people, and merge them harder
+   * the better a floor sells. This is minted, random, and names a design
+   * rather than a person.
+   *
+   * Shape is checked here as well as at the call site: 12 characters from
+   * Crockford base32 (no i, l, o or u). Anything else is not something we
+   * minted, and a `designId` that we did not mint joins to nothing, so it is
+   * rejected rather than stored. Optional, because a lead from a phone call or
+   * a service page has no design and is still a lead.
+   */
+  designId: z
+    .string()
+    .regex(/^[0-9abcdefghjkmnpqrstvwxyz]{12}$/, 'not a design id')
+    .optional(),
   /** The "email me if I leave this unfinished" checkbox — 'on' when ticked. */
   recoverConsent: z.union([z.string().max(10), z.boolean()]).optional(),
   // sqft comes in as a number (valueAsNumber) or NaN when left blank

@@ -312,6 +312,16 @@ model QuoteRequest {
   notes       String?     @db.Text
   attachments Json?       @db.JsonB
   status      QuoteStatus @default(PENDING)
+
+  /// MEAS-01 — the design this request came from, if it came from one.
+  ///
+  /// Minted in the browser by lib/floor-studio/design-id.ts, 12 Crockford
+  /// base32 characters, validated before it is written. It names a DESIGN, not
+  /// a person: a share link passed to a spouse carries the same id, which is
+  /// the point. Nullable because a request can arrive from a phone call, a
+  /// service page or the chat assistant, and a lead without a design is a
+  /// perfectly good lead — it is simply not attributable to the studio.
+  designId    String?     @db.VarChar(16)
   adminNotes  String?     @db.Text
 
   stripeCheckoutSessionId String?
@@ -337,6 +347,7 @@ model QuoteRequest {
   @@index([email])
   @@index([status])
   @@index([userId])
+  @@index([designId])
   @@schema("ecowoods")
 }
 
@@ -375,6 +386,17 @@ model Project {
   /// project, identical for every customer — see lib/review-request.ts.
   reviewRequestedAt DateTime? @db.Timestamptz
 
+  /// MEAS-01 — copied forward from the QuoteRequest this project was converted
+  /// from, so revenue joins to the design without a three-table hop.
+  ///
+  /// Denormalised on purpose. The alternative is joining Payment → Invoice →
+  /// Project → QuoteRequest on every attribution question, and the question
+  /// "of the last 100 deposits, how many began in Floor Studio" is one this
+  /// business needs to be able to ask cheaply and often. It is copied once at
+  /// conversion and never updated, because the design that produced a job does
+  /// not change after the job exists.
+  designId          String?   @db.VarChar(16)
+
   invoices Invoice[]
   notes    ProjectNote[]
 
@@ -384,6 +406,7 @@ model Project {
   @@index([userId])
   @@index([status])
   @@index([reviewRequestedAt])
+  @@index([designId])
   @@schema("ecowoods")
 }
 

@@ -38,6 +38,21 @@
  *   studio_live_blocked  — it did not, and why (six possible reasons)
  *   studio_live_captured — a live frame was frozen into the studio
  *   studio_region_changed — the visitor moved between the Ontario and New York bands
+ *
+ * THE `design_id` PARAMETER (MEAS-01)
+ *
+ * `studio_visualised`, `studio_share`, `studio_estimate_handoff`,
+ * `studio_samples_request` and `quote_submit` carry `design_id` — the minted
+ * identifier from lib/floor-studio/design-id.ts, the same value written to
+ * QuoteRequest.designId server-side.
+ *
+ * It is what finally makes the two halves of this business joinable: GA4 knows
+ * how many designs were made, the database knows which of them became deposits,
+ * and until now nothing connected the two. Note what it is NOT: not a user id,
+ * not a session id, not a device id. It names a DESIGN, so a link shared with a
+ * spouse reports one design and not two people — undercounting sessions, never
+ * inventing them. Do not repurpose it as a visitor identifier; that is a
+ * different field with different consent obligations.
  */
 
 export type AnalyticsEvent =
@@ -93,17 +108,29 @@ export type AnalyticsEvent =
      place. */
   | 'studio_region_changed';
 
-export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+export function track(
+  event: AnalyticsEvent,
+  /* `undefined` is accepted so a call site can write `design_id: design.designId`
+     without a ternary at every one of them. It is STRIPPED below rather than
+     sent: a parameter present with no value is worse than an absent one,
+     because it registers in GA4 as a dimension that exists and is always
+     empty, and somebody eventually builds a report on it. */
+  params?: Record<string, string | number | boolean | undefined>,
+): void {
   if (typeof window === 'undefined') return;
   try {
     const w = window as Window & {
       gtag?: (...args: unknown[]) => void;
       dataLayer?: unknown[];
     };
+    const clean: Record<string, string | number | boolean> = {};
+    for (const [k, v] of Object.entries(params ?? {})) {
+      if (v !== undefined) clean[k] = v;
+    }
     if (typeof w.gtag === 'function') {
-      w.gtag('event', event, params ?? {});
+      w.gtag('event', event, clean);
     } else if (Array.isArray(w.dataLayer)) {
-      w.dataLayer.push({ event, ...params });
+      w.dataLayer.push({ event, ...clean });
     }
   } catch {
     /* an analytics failure must never surface to the visitor */

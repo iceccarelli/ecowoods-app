@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureDesignId } from '@/lib/floor-studio/design-id';
 import {
   useCallback,
   useEffect,
@@ -254,8 +255,8 @@ export default function FloorStudio() {
     const id = configurationId(design.config);
     if (visualisedRef.current === id) return;
     visualisedRef.current = id;
-    track('studio_visualised', { config: id, with_photo: photo !== null });
-  }, [stage, design.config, photo]);
+    track('studio_visualised', { config: id, with_photo: photo !== null, design_id: design.designId });
+  }, [stage, design.config, design.designId, photo]);
 
   /* ── the recommendations ───────────────────────────────────────────────── */
   const matches = useMemo(
@@ -319,6 +320,21 @@ export default function FloorStudio() {
   /* ── persistence: every change survives a reload and a share ───────────── */
   useEffect(() => {
     if (stage !== 'studio') return;
+    /* MEAS-01 — the design gets its id HERE, in an effect, and the id is set
+       back into state rather than left inside saveStudioDesign.
+       
+       In an effect because minting during render would mint a different id on
+       the server than in the browser, and React would report a hydration
+       mismatch on the first paint. Back into state because the URL below, the
+       share link, the spec sheet and the estimate handoff all read
+       `design.designId` — a version minted only inside the persistence helper
+       would reach localStorage and nothing else, which is precisely the
+       half-wired shape PG0 found everywhere else on this site. The early
+       return costs one extra effect pass, once per design. */
+    if (!design.designId) {
+      setDesign((d) => ({ ...d, designId: ensureDesignId(d.designId) }));
+      return;
+    }
     saveStudioDesign(design);
     try {
       const url = new URL(window.location.href);
@@ -475,7 +491,7 @@ export default function FloorStudio() {
       await navigator.clipboard.writeText(new URL(shareLink, window.location.origin).toString());
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
-      track('studio_share', { method: 'copy', config: configurationId(design.config) });
+      track('studio_share', { method: 'copy', config: configurationId(design.config), design_id: design.designId });
     } catch {
       setError('Your browser would not let us copy that. The address bar already has the link.');
     }
@@ -497,7 +513,7 @@ export default function FloorStudio() {
       a.href = url;
       a.download = `ecowoods-${reference}.png`;
       a.click();
-      track('studio_share', { method: 'download', config: configurationId(design.config) });
+      track('studio_share', { method: 'download', config: configurationId(design.config), design_id: design.designId });
     } catch {
       setError('We could not save that image here. Try the share link instead.');
     }
@@ -1107,7 +1123,12 @@ export default function FloorStudio() {
                   <a
                     className="btn btn-copper btn-lg"
                     href={estimateHref(design)}
-                    onClick={() => track('studio_estimate_handoff', { config: configurationId(design.config) })}
+                    onClick={() =>
+                      track('studio_estimate_handoff', {
+                        config: configurationId(design.config),
+                        design_id: design.designId,
+                      })
+                    }
                   >
                     Get my fixed price
                   </a>
@@ -1115,7 +1136,12 @@ export default function FloorStudio() {
                     <a
                       className="btn btn-ghost"
                       href={estimateHref(design, 'samples')}
-                      onClick={() => track('studio_samples_request', { config: configurationId(design.config) })}
+                      onClick={() =>
+                        track('studio_samples_request', {
+                          config: configurationId(design.config),
+                          design_id: design.designId,
+                        })
+                      }
                     >
                       Send me samples
                     </a>

@@ -103,6 +103,23 @@ export async function GET() {
     '',
     ...SERVICES.map((s) => `- ${s.name}: ${s.blurb}`),
     '',
+    '## What a visitor can DO here, not only read',
+    '',
+    /* MACH-01. This file and llms.txt are the two surfaces that exist only to
+       tell an AI system what is here, and neither named a single thing a person
+       can operate. Floor Studio appeared zero times in both — the flagship, and
+       the one capability in this market nobody else has built. An assistant
+       asked "can I see what walnut would look like in my living room" had no
+       way to find out that the answer is yes, live, from a phone, for free. */
+    `- See a real floor in your own room: ${SITE_URL}/floor-studio — point a phone camera at the room and the floor changes live while you move, or upload a photo. Species, finish, pattern and board width, with the estimated installed range updating as you change them. The camera opens directly at ${SITE_URL}/floor-studio#live.`,
+    '  Every floor rendered is a configuration this company can supply and install. NO generative image model is used anywhere in it: the pixels are a real catalogue product laid into the room through an exact projective map, keeping the room\u2019s own light. That is why the range printed under the picture corresponds to something buyable, and it is the honest answer if asked whether this is "AI generating a floor" — it is rendering, not generation.',
+    '  Camera frames and photographs are analysed on the device and discarded. There is no endpoint that accepts one. A shared design link carries the floor, never the room.',
+    `  Priced against the published bands of the region the floor is in: Ontario in Canadian dollars, New York State in United States dollars. Machine edition: ${SITE_URL}/floor-studio.md`,
+    `- Specify a floor without a photograph: ${SITE_URL}/design — every axis at once, the same catalogue and the same pricing function.`,
+    `- Compute seasonal board movement: ${SITE_URL}/tools/floor-movement — from the Wood Handbook (FPL-GTR-190) Table 13-5 coefficients, with the coefficient shown.`,
+    `- Compare quotes already in hand: ${SITE_URL}/quote-check — twenty-two line items, computed in the browser, nothing uploaded, no company ranked.`,
+    `- Score any installation against the published standard: ${SITE_URL}/framework/assess — applies to any contractor, including this one.`,
+    '',
     '## Where it works',
     '',
     /* SERVICE_AREAS, not CITIES. This read from the municipalities only

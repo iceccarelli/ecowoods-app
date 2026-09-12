@@ -50,6 +50,7 @@ import { ROOM_TYPES, isFeelTag, roomTypeById, type FeelTag } from './match';
 import type { LightLevel, RoomReading } from './room';
 import type { ToneKey, UndertoneKey } from './catalog';
 import type { PriceCountry } from '@/content/constants/pricing';
+import { designIdOf, ensureDesignId, formatDesignId } from './design-id';
 
 export const STUDIO_CONFIG_KEY = 'ew-studio-v1';
 
@@ -90,6 +91,17 @@ export type StudioDesign = {
    * share code carries it so a link opens in the currency it was built in.
    */
   country: PriceCountry;
+  /**
+   * THE JOIN KEY (MEAS-01).
+   *
+   * Minted, not derived — see lib/floor-studio/design-id.ts for why the share
+   * code cannot serve as one. It travels with the design through the share
+   * link, the estimate form, /api/leads and onto QuoteRequest, so a deposit
+   * taken six weeks later can be traced back to the studio session that
+   * started it. Optional on the type because every design saved before this
+   * patch has none, and a design without an id must still open.
+   */
+  designId?: string;
   /** The optional budget the visitor typed, in the currency of `country`. */
   budgetCad?: number;
   /** ISO timestamp of the last edit. */
@@ -120,8 +132,16 @@ const LIGHT_LEVELS: LightLevel[] = ['dim', 'balanced', 'bright'];
 const UNDERTONES: UndertoneKey[] = ['warm', 'neutral', 'cool'];
 const TONES: ToneKey[] = ['light', 'mid', 'dark'];
 
-/** `c=…&a=…&f=…` — the whole design, in a querystring a person can read. */
-export function encodeStudioDesign(design: StudioDesign): string {
+/**
+ * The design itself, WITHOUT its id.
+ *
+ * `studioRef` hashes this rather than the full code, so the FS- reference
+ * stays a property of the floor. Two people on one share link must read the
+ * same reference aloud — that guarantee predates MEAS-01 and adding a random
+ * id to the hash input would have quietly ended it, giving every reload a new
+ * "reference" for an unchanged floor.
+ */
+function encodeDesignContent(design: StudioDesign): string {
   const params = new URLSearchParams();
   const { productId, finishId, patternId, widthId } = design.config;
   params.set('c', [productId, finishId, patternId, widthId].join('.'));
@@ -138,6 +158,15 @@ export function encodeStudioDesign(design: StudioDesign): string {
      it was before GEO-006 and a New York one says so out loud. */
   if (design.country === 'US') params.set('n', 'US');
   return params.toString();
+}
+
+/**
+ * `c=…&a=…&d=…` — the whole design plus its id, in a querystring a person can
+ * read. This is what the share link and the estimate handoff carry.
+ */
+export function encodeStudioDesign(design: StudioDesign): string {
+  const content = encodeDesignContent(design);
+  return design.designId ? `${content}&d=${design.designId}` : content;
 }
 
 /**
@@ -185,6 +214,9 @@ export function decodeStudioDesign(input: string, now = new Date()): StudioDesig
       : undefined;
 
   const budget = Number(params.get('b'));
+  /* Validated, never trusted: a `d` that we did not mint is dropped, because
+     joining on a value of unknown provenance is joining on noise. */
+  const designId = designIdOf(params.get('d'));
 
   return {
     config,
@@ -193,6 +225,11 @@ export function decodeStudioDesign(input: string, now = new Date()): StudioDesig
     roomTypeId: roomTypeId && roomTypeById(roomTypeId) ? roomTypeId : undefined,
     room,
     budgetCad: Number.isFinite(budget) && budget > 0 ? Math.round(budget) : undefined,
+    /* SPREAD, not `designId: undefined`. A design decoded from a pre-MEAS-01
+       link must come back byte-identical to what it was, without growing a key
+       that is always empty. vitest's toEqual would have hidden the difference;
+       two existing round-trip assertions did not. */
+    ...(designId ? { designId } : {}),
     country: countryOf(params.get('n')),
     savedAt: now.toISOString(),
   };
@@ -207,7 +244,7 @@ export function decodeStudioDesign(input: string, now = new Date()): StudioDesig
  * design board and on the note the estimator reads before knocking.
  */
 export function studioRef(design: StudioDesign): string {
-  const code = encodeStudioDesign(design);
+  const code = encodeDesignContent(design);
   let hash = 0x811c9dc5;
   for (let i = 0; i < code.length; i += 1) {
     hash ^= code.charCodeAt(i);
@@ -226,7 +263,14 @@ export function studioRef(design: StudioDesign): string {
  */
 export function saveStudioDesign(design: StudioDesign): void {
   if (typeof window === 'undefined') return;
-  const full: StudioDesign = { ...design, savedAt: new Date().toISOString() };
+  /* The design becomes real here, so this is where it gets its id. Minting in
+     an effect or a handler rather than during render is deliberate: two server
+     renders would mint two ids and React would report a hydration mismatch. */
+  const full: StudioDesign = {
+    ...design,
+    designId: ensureDesignId(design.designId),
+    savedAt: new Date().toISOString(),
+  };
   try {
     window.localStorage.setItem(STUDIO_CONFIG_KEY, JSON.stringify(full));
   } catch {
@@ -259,6 +303,10 @@ export function readStudioDesign(now = Date.now()): StudioDesign | null {
       roomTypeId: parsed.roomTypeId && roomTypeById(parsed.roomTypeId) ? parsed.roomTypeId : undefined,
       room: parsed.room,
       budgetCad: typeof parsed.budgetCad === 'number' && parsed.budgetCad > 0 ? parsed.budgetCad : undefined,
+      /* A design saved before MEAS-01 has none. It is not minted here — that
+         would hand a new id to a design every time the page merely READS it.
+         `saveStudioDesign` mints, on the next edit. */
+      ...(designIdOf(parsed.designId) ? { designId: designIdOf(parsed.designId) } : {}),
       country: countryOf(typeof parsed.country === 'string' ? parsed.country : null),
       savedAt: parsed.savedAt,
     };
@@ -301,7 +349,9 @@ export function describeStudioDesign(design: StudioDesign): string {
 export function studioLeadNote(design: StudioDesign): string {
   const estimate = priceConfiguration(design.config, design.squareFeet, design.country);
   const lines = [
-    `Floor Studio ${studioRef(design)}`,
+    design.designId
+      ? `Floor Studio ${studioRef(design)} · design ${formatDesignId(design.designId)}`
+      : `Floor Studio ${studioRef(design)}`,
     describeStudioDesign(design),
     `Estimated installed range at ${estimate.perSqftCad} — ESTIMATE, fixed in writing after the measure.`,
   ];
@@ -342,6 +392,11 @@ export function estimateHref(design: StudioDesign, service = 'installation'): st
        wrong one. GEO-006. */
     region: design.country,
   });
+  /* Its own parameter as well as being inside `design`. The form posts it as a
+     first-class field so /api/leads never has to parse the share code to find
+     it, and so a code that fails validation still yields the join key rather
+     than losing the lead's origin along with its configuration. */
+  if (design.designId) params.set('did', design.designId);
   return `/estimate?${params.toString()}#form`;
 }
 
