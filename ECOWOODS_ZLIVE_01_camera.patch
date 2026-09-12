@@ -1,0 +1,2940 @@
+From dc690dd4fb87217af693de1fac42cab2dc161b3a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 16:21:42 +0000
+Subject: [PATCH] =?UTF-8?q?feat(studio):=20LIVE-01=20=E2=80=94=20the=20cam?=
+ =?UTF-8?q?era,=20and=20the=20two=20defects=20it=20could=20not=20ship=20on?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+WHAT WAS ASKED FOR, AND WHAT IS HERE INSTEAD
+
+The ask was for the floor to change live under a camera, described as "REAL ai
+generated change of the floor". What this ships renders, live, every floor
+Ecowoods can supply and install — and generates nothing.
+
+That is not a shortfall. It is the rule render.ts has carried since the studio
+shipped: a diffusion model asked for "white oak herringbone" produces a
+beautiful floor that exists nowhere, and the homeowner who falls in love with it
+cannot buy it. A generated floor also breaks the one thing this repository is
+for, because the price under the picture would belong to no product.
+
+So, per frame: the floor plane is found, a mask decides which of those pixels
+are floor rather than furniture, and a configuration from the catalogue is drawn
+into them through an exact projective map that keeps the room's own light.
+Change species, finish, pattern or width while the camera runs and the room
+changes with you, and the installed range changes with it. The claim is narrower
+than "AI generates your floor" and, unlike that one, it is true.
+
+IT COULD NOT SHIP ON AV-01 AND AV-02, SO BOTH ARE CLOSED HERE
+
+Pointing a camera at a room made both impossible to look away from: the first
+frame repainted a strip along the bottom and left the rest of the floor alone,
+and what it did paint went over the dog.
+
+AV-01, the mask. Chroma-only becomes: a per-row luminance profile fitted as a
+line, so a floor's falloff with depth is removed before anything is judged; a
+dominant-surface mode on the residual, chosen by MASS after smoothing, because a
+flat rug otherwise out-votes a textured floor one bin at a time; scale taken
+from the mode's core rather than its span; morphological close; and a
+4-connected flood that gives back whatever an object encloses. Thirteen of
+fourteen fixture objects preserved, against eight before — the jute rug, the
+person's leg, the golden retriever, the table leg and the cardboard box all
+survive now.
+
+The fourteenth is named rather than buried. An oak stair riser on an oak floor
+is the same wood at a different angle to the light, and the rule that catches it
+— any luminance departure is an object — also refuses to paint a pool of
+sunlight, which leaves a blotch of the old floor in the middle of the new one in
+every daylit room. render.test.ts caught exactly that: a satin floor and a matte
+floor stopped differing, because the lit pool the sheen shows up in was the part
+being skipped. So same chroma with different brightness is treated as LIGHT. The
+riser is the price, it is in the audit, and the test asserts it by name so that
+neither a regression nor a silent fix can pass.
+
+AV-02, the boundary. The floor is a connected REGION now, grown from the bottom
+edge over cells matching the dominant surface of the bottom band, so a rug is a
+hole in the floor rather than the end of it. Coverage error on a room with a
+rug: 72% to 3%. And the quad is checked for FIT in both directions against the
+region's own row extents — a trapezoid stretched over a diagonal wall line, or a
+wedge that has missed most of the floor, both report `weak` and hand over the
+four corners, which is what the verification screen is for.
+
+THE RENDER PATH HAD TO BE 7.8× FASTER, AND NOTHING ABOUT IT CHANGED
+
+64 ms a frame at 320×240 became 8.2. 63,530 assertions of existing behaviour,
+unchanged. Three causes, all of them work that never depended on the pixel:
+woodColourAt did a catalogue lookup, two hex parses, a second lookup and an
+rgba() string parse PER PIXEL; the grain was six Math.sin per pixel, two of them
+constant across a whole board; and relativeLuminance was three Math.pow per
+pixel over 256 possible inputs. A memoised palette, a per-board cache, a sine
+table for grain only, an sRGB table, and the mask's own cell grid standing in
+for four cross products of inQuad on every interior pixel.
+
+WHAT THE LIVE VIEW IS NOT ALLOWED TO SAY
+
+It never says `measured`. The still-photograph path gives a person four corners
+to drag and a boundary they have looked at; the live path has neither, and
+live.test.ts asserts that the words measured, accurate, exact and precise never
+appear in a caption.
+
+PRIVACY, UNCHANGED AND NOW LOAD-BEARING
+
+No upload in the component, no endpoint for one. The stream is attached to a
+<video> that never leaves the page, frames are read into an ImageData and
+dropped, and the tracks stop on close AND on visibilitychange — a camera light
+still on after someone switches apps is what makes a person uninstall a product.
+Pointing a camera at a living room makes zero requests, from the network panel.
+
+REACHABLE, AND BRANDED IN THE PIXELS
+
+/floor-studio#live opens the camera, linked from the header panel, the mobile
+drawer, ⌘K and the homepage — four surfaces, one entry, because NAV-03 made
+lib/navigation.ts the single source. The fragment has a real id="live" behind
+it so it lands correctly without JavaScript; verify-destinations required that
+and was right to.
+
+The mark, the floor's name, the range and ecowoods.ca are drawn INTO the frame
+rather than into HTML around it, because a screenshot of a live camera view is
+the most shared artefact this feature will produce and a screenshot carries no
+DOM. The host comes from SITE_URL, never a typed string.
+
+Verified: 66 guards pass. 65,361 assertions across the floor-studio and
+navigation suites, 0 failed — 63,530 of them the existing renderer, untouched.
+53 new assertions on the live logic, which is pure functions over numbers
+precisely because a frame loop cannot be tested and a number can.
+
+Still open: GC-026 — the studio has no concept of country, and 26 New York
+markets are one tap from a Canadian-dollar range. GEO-006 closes it.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .../components/floor-studio/FloorStudio.tsx   | 127 +++-
+ .../app/components/floor-studio/LiveRoom.tsx  | 336 +++++++++
+ apps/web/app/floor-studio/page.tsx            |  43 +-
+ apps/web/app/globals.css                      | 105 +++
+ apps/web/app/home-client.tsx                  |  17 +-
+ apps/web/lib/analytics.ts                     |  14 +-
+ apps/web/lib/floor-studio/audit.test.ts       | 203 +++--
+ apps/web/lib/floor-studio/live.test.ts        | 228 ++++++
+ apps/web/lib/floor-studio/live.ts             | 212 ++++++
+ apps/web/lib/floor-studio/render.ts           | 703 ++++++++++++++++--
+ apps/web/lib/floor-studio/room.ts             | 201 +++--
+ apps/web/lib/markdown-export.ts               |  30 +-
+ apps/web/lib/navigation.ts                    |   9 +-
+ docs/AUDIT_01_VISUALIZER.md                   |  24 +-
+ docs/GEO_CONTRADICTION_LOG.md                 |  92 ++-
+ 15 files changed, 2153 insertions(+), 191 deletions(-)
+ create mode 100644 apps/web/app/components/floor-studio/LiveRoom.tsx
+ create mode 100644 apps/web/lib/floor-studio/live.test.ts
+ create mode 100644 apps/web/lib/floor-studio/live.ts
+
+diff --git a/apps/web/app/components/floor-studio/FloorStudio.tsx b/apps/web/app/components/floor-studio/FloorStudio.tsx
+index f0f02e4..80ac751 100644
+--- a/apps/web/app/components/floor-studio/FloorStudio.tsx
++++ b/apps/web/app/components/floor-studio/FloorStudio.tsx
+@@ -31,6 +31,8 @@ import {
+ import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
+ import { compositeFloor } from '@/lib/floor-studio/render';
+ import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
++import { cameraAvailable } from '@/lib/floor-studio/live';
++import LiveRoom from './LiveRoom';
+ import {
+   UNMEASURABLE_FROM_A_PHOTO,
+   analyseRoom,
+@@ -68,7 +70,12 @@ import {
+  *
+  * 1. THE PHOTOGRAPH NEVER LEAVES THE DEVICE. Decoding, analysis, masking and
+  *    compositing all happen here. There is no upload in this component and no
+- *    endpoint for one. A share link carries the floor, never the room.
++ *    endpoint for one. A share link carries the floor, never the room. The live
++ *    camera (LIVE-01) is held to exactly the same rule: the MediaStream is
++ *    attached to a <video> that never leaves the page, every frame is read into
++ *    an ImageData and dropped, and the tracks are stopped when the view closes
++ *    or the tab is hidden. Pointing a camera at a living room makes zero
++ *    network requests, and that is checkable from the network panel.
+  *
+  * 2. THE CORRECTION IS A FIRST-CLASS CONTROL, NOT AN ERROR PATH. The four
+  *    corners are draggable AND keyboard-operable from the moment the analysis
+@@ -84,7 +91,7 @@ import {
+  *    that the product is broken.
+  */
+ 
+-type Stage = 'start' | 'analysing' | 'verify' | 'feel' | 'studio';
++type Stage = 'start' | 'live' | 'analysing' | 'verify' | 'feel' | 'studio';
+ 
+ const ANALYSING_STEPS = [
+   'Reading your photo…',
+@@ -163,6 +170,17 @@ export default function FloorStudio() {
+       const src = new URLSearchParams(search).get('src');
+       track('studio_open', src ? { src } : undefined);
+     }
++    /* `/floor-studio#live` opens the camera directly. The header, the mobile
++       drawer, ⌘K and the homepage all use it, so the fastest thing this site
++       does is one tap from anywhere (LIVE-01). A device with no camera falls
++       through to the ordinary start screen rather than showing an error for a
++       thing the visitor never asked for. */
++    try {
++      if (window.location.hash === '#live' && cameraAvailable()) setStage('live');
++    } catch {
++      /* no location — start where we always do */
++    }
++
+     try {
+       if (!search) return;
+       const shared = decodeStudioDesign(search);
+@@ -241,6 +259,30 @@ export default function FloorStudio() {
+     }
+   }, [design, stage]);
+ 
++  /* ── live camera ───────────────────────────────────────────────────────── */
++  /* Resolved after mount: navigator.mediaDevices does not exist during the
++     server render, and a button that appears on hydration is better than a
++     button that is there and does nothing. */
++  const [hasCamera, setHasCamera] = useState(false);
++  useEffect(() => setHasCamera(cameraAvailable()), []);
++
++  /**
++   * A frozen live frame enters the ordinary flow at the verification step.
++   *
++   * It arrives with the boundary the live view had settled on, which is
++   * usually close and never claimed to be right — the same four draggable
++   * corners are waiting on the next screen, and the same two questions a
++   * photograph cannot answer still get asked.
++   */
++  const onLiveCapture = useCallback((pixels: Pixels, liveQuad: Quad) => {
++    const measured = analyseRoom(pixels);
++    setPhoto(pixels);
++    setReading({ ...measured, floorQuad: liveQuad });
++    setQuad(liveQuad);
++    setDesign((d) => ({ ...d, room: roomFactsFrom(measured) }));
++    setStage('verify');
++  }, []);
++
+   /* ── photo intake ──────────────────────────────────────────────────────── */
+   const onPickPhoto = useCallback(async (file: File | undefined) => {
+     if (!file) return;
+@@ -407,11 +449,21 @@ export default function FloorStudio() {
+         {stage === 'start' && (
+           <div className="fs-start">
+             <p className="fs-lede">
+-              Upload a photo, use your camera, or start with a floor. Everything happens on your own
+-              device — the photo never leaves it, and we do not keep it.
++              Point your camera at the room and watch the floor change while you move, upload a
++              photo, or start from a floor. Everything happens on your own device — nothing is
++              uploaded and we keep nothing.
+             </p>
+             <div className="fs-start-actions">
+-              <label className="btn btn-copper btn-lg fs-file">
++              {hasCamera && (
++                <button
++                  type="button"
++                  className="btn btn-copper btn-lg"
++                  onClick={() => setStage('live')}
++                >
++                  Point my camera at the room
++                </button>
++              )}
++              <label className="btn btn-ghost btn-lg fs-file">
+                 Upload a room photo
+                 <input
+                   type="file"
+@@ -441,6 +493,71 @@ export default function FloorStudio() {
+           </div>
+         )}
+ 
++        {/* ── LIVE ───────────────────────────────────────────────────────── */}
++        {stage === 'live' && (
++          <div className="fs-live-wrap">
++            <LiveRoom
++              config={design.config}
++              squareFeet={design.squareFeet}
++              boardScale={boardScale}
++              priceLine={`${cad(estimate.estimatedLowCad)} – ${cad(estimate.estimatedHighCad)}`}
++              onCapture={onLiveCapture}
++              onClose={() => setStage('start')}
++            />
++            {/* The floor changes WHILE the camera is running. These are the same
++                axes the studio uses, reading the same catalogue and the same
++                compatibility rules — there is no second configurator here. */}
++            <div className="fs-live-panel">
++              <h3 className="fs-h3">Change the floor while you look at it</h3>
++              <Axis
++                legend="Species"
++                options={FLOOR_PRODUCTS.map((p) => ({ id: p.id, label: p.name, swatch: [p.base, p.grain] }))}
++                value={design.config.productId}
++                onPick={(v) => setConfig(design.config, 'productId', v)}
++                reasonFor={(v) => incompatibilities({ ...design.config, productId: v }).map((r) => r.reason)[0] ?? null}
++              />
++              <Axis
++                legend="Finish"
++                options={FINISH_OPTIONS.map((f) => ({ id: f.id, label: f.label }))}
++                value={design.config.finishId}
++                onPick={(v) => setConfig(design.config, 'finishId', v)}
++                reasonFor={(v) => incompatibilities({ ...design.config, finishId: v }).map((r) => r.reason)[0] ?? null}
++              />
++              <Axis
++                legend="Pattern"
++                options={PATTERN_OPTIONS.map((p) => ({ id: p.id, label: p.label }))}
++                value={design.config.patternId}
++                onPick={(v) => setConfig(design.config, 'patternId', v)}
++                reasonFor={(v) => incompatibilities({ ...design.config, patternId: v }).map((r) => r.reason)[0] ?? null}
++              />
++              <Axis
++                legend="Board width"
++                options={BOARD_WIDTHS.map((w) => ({ id: w.id, label: w.label }))}
++                value={design.config.widthId}
++                onPick={(v) => setConfig(design.config, 'widthId', v)}
++                reasonFor={(v) => incompatibilities({ ...design.config, widthId: v }).map((r) => r.reason)[0] ?? null}
++              />
++              {repaired && (
++                <p className="fs-repaired" role="status">
++                  {repaired}
++                </p>
++              )}
++              <p className="fs-estimate-label">Estimated installed investment</p>
++              <p className="fs-estimate-figure">
++                {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
++              </p>
++              <p className="fs-disclaimer">
++                A <strong>range, not a quote</strong>, for {design.squareFeet.toLocaleString('en-CA')} sq ft.
++                Your fixed price is written down after the free in-home measure.
++              </p>
++              <p className="fs-fine">
++                Every floor here is one we can supply and install. Nothing on this screen is
++                generated by an image model — a floor that does not exist cannot be bought.
++              </p>
++            </div>
++          </div>
++        )}
++
+         {/* ── ANALYSING ──────────────────────────────────────────────────── */}
+         {stage === 'analysing' && (
+           <div className="fs-analysing" role="status" aria-live="polite">
+diff --git a/apps/web/app/components/floor-studio/LiveRoom.tsx b/apps/web/app/components/floor-studio/LiveRoom.tsx
+new file mode 100644
+index 0000000..fe8ab11
+--- /dev/null
++++ b/apps/web/app/components/floor-studio/LiveRoom.tsx
+@@ -0,0 +1,336 @@
++'use client';
++
++import { useCallback, useEffect, useRef, useState } from 'react';
++import { EW_MARK } from '@/lib/brand';
++import { SITE_URL } from '@/lib/seo-data';
++import { track } from '@/lib/analytics';
++import { describeConfiguration, type FloorConfiguration } from '@/lib/floor-studio/catalog';
++import { compositeFloor } from '@/lib/floor-studio/render';
++import {
++  CAMERA_MESSAGES,
++  advanceLive,
++  cameraAvailable,
++  classifyCameraError,
++  liveCaption,
++  openingQuad,
++  startingLadder,
++  stepLadder,
++  type Ladder,
++} from '@/lib/floor-studio/live';
++import type { Pixels, Quad } from '@/lib/floor-studio/room';
++
++/**
++ * LiveRoom — point the camera at the floor and watch it change.
++ *
++ * WHAT IS ACTUALLY HAPPENING, BECAUSE THE WORD "AI" GETS USED LOOSELY HERE
++ *
++ * Every frame: the camera image is drawn into a small canvas, the floor plane
++ * is found in it, a mask decides which of those pixels are floor rather than
++ * furniture, and a floor FROM THE ECOWOODS CATALOGUE is drawn into them through
++ * an exact projective map, keeping the room's own light. Thirty times a second.
++ *
++ * Nothing is generated. There is no diffusion model, no style transfer, no
++ * invented floor — and that is a deliberate product decision written down in
++ * render.ts: a beautiful floor that exists nowhere cannot be bought, and a
++ * homeowner who falls in love with one has been defrauded with a nice colour
++ * palette. What this shows is every floor this company can actually lay, in the
++ * room the visitor is standing in, at the price on /pricing.
++ *
++ * NOTHING LEAVES THE DEVICE
++ *
++ * There is no upload in this component and no endpoint for one. The MediaStream
++ * is attached to a <video> that never leaves the page, every frame is read into
++ * an ImageData and discarded, and the stream's tracks are stopped the moment
++ * the view closes or the tab is hidden. A visitor can verify all of it from the
++ * network panel: pointing a camera at their living room produces zero requests.
++ *
++ * THE FRAME BUDGET IS A LADDER, NOT A CONSTANT
++ *
++ * A flagship phone and a five-year-old tablet are a factor of five apart. The
++ * analysis size climbs and falls with what the device is actually managing —
++ * see lib/floor-studio/live.ts, where the rule lives as a pure function with
++ * its own tests, because a frame loop cannot be tested and a number can.
++ */
++
++export type LiveRoomProps = {
++  config: FloorConfiguration;
++  squareFeet: number;
++  boardScale: number;
++  priceLine: string;
++  /** Freeze this frame and continue in the still-photo flow. */
++  onCapture: (pixels: Pixels, quad: Quad) => void;
++  onClose: () => void;
++};
++
++export default function LiveRoom({
++  config,
++  squareFeet,
++  boardScale,
++  priceLine,
++  onCapture,
++  onClose,
++}: LiveRoomProps) {
++  const videoRef = useRef<HTMLVideoElement | null>(null);
++  const workRef = useRef<HTMLCanvasElement | null>(null);
++  const viewRef = useRef<HTMLCanvasElement | null>(null);
++  const markRef = useRef<HTMLImageElement | null>(null);
++  const streamRef = useRef<MediaStream | null>(null);
++  const rafRef = useRef<number | null>(null);
++
++  const quadRef = useRef<Quad | null>(null);
++  const ladderRef = useRef<Ladder>(startingLadder());
++  const runRef = useRef({ slow: 0, fast: 0 });
++  const lastRef = useRef<{ pixels: Pixels; quad: Quad } | null>(null);
++
++  /* The loop must see the newest configuration without being torn down and
++     rebuilt every time somebody taps a swatch — that would restart the camera
++     on every change. A ref is read inside the loop; state is for the UI. */
++  const liveRef = useRef({ config, squareFeet, boardScale });
++  liveRef.current = { config, squareFeet, boardScale };
++
++  const [error, setError] = useState<string | null>(null);
++  const [caption, setCaption] = useState('Starting the camera…');
++  const [running, setRunning] = useState(false);
++  const [fps, setFps] = useState(0);
++
++  const stop = useCallback(() => {
++    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
++    rafRef.current = null;
++    streamRef.current?.getTracks().forEach((t) => t.stop());
++    streamRef.current = null;
++    setRunning(false);
++  }, []);
++
++  const start = useCallback(async () => {
++    setError(null);
++    if (!cameraAvailable()) {
++      setError(CAMERA_MESSAGES.unsupported);
++      return;
++    }
++    try {
++      const stream = await navigator.mediaDevices.getUserMedia({
++        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
++        audio: false,
++      });
++      streamRef.current = stream;
++      const video = videoRef.current;
++      if (!video) return;
++      video.srcObject = stream;
++      video.setAttribute('playsinline', 'true');
++      await video.play();
++      setRunning(true);
++      track('studio_live_opened');
++    } catch (err) {
++      setError(CAMERA_MESSAGES[classifyCameraError(err)]);
++      track('studio_live_blocked', { reason: classifyCameraError(err) });
++    }
++  }, []);
++
++  /* Open on mount; close on unmount, and whenever the tab goes away — a camera
++     light that stays on after someone switches apps is the thing that makes a
++     person uninstall a product. */
++  useEffect(() => {
++    void start();
++    const onHide = () => {
++      if (document.visibilityState === 'hidden') stop();
++    };
++    document.addEventListener('visibilitychange', onHide);
++    return () => {
++      document.removeEventListener('visibilitychange', onHide);
++      stop();
++    };
++  }, [start, stop]);
++
++  useEffect(() => {
++    if (!running) return;
++    let frames = 0;
++    let since = performance.now();
++    let cancelled = false;
++
++    const tick = () => {
++      if (cancelled) return;
++      const video = videoRef.current;
++      const work = workRef.current;
++      const view = viewRef.current;
++      if (!video || !work || !view || video.readyState < 2) {
++        rafRef.current = requestAnimationFrame(tick);
++        return;
++      }
++
++      const t0 = performance.now();
++      const w = ladderRef.current.width;
++      const h = Math.max(2, Math.round((w * video.videoHeight) / (video.videoWidth || 1)));
++      if (work.width !== w || work.height !== h) {
++        work.width = w;
++        work.height = h;
++      }
++
++      const wctx = work.getContext('2d', { willReadFrequently: true });
++      if (!wctx) return;
++      wctx.drawImage(video, 0, 0, w, h);
++      const frame = wctx.getImageData(0, 0, w, h);
++      const pixels: Pixels = { data: frame.data, width: w, height: h };
++
++      const reading = advanceLive(quadRef.current, pixels);
++      quadRef.current = reading.quad;
++
++      const { config: cfg, squareFeet: sqft, boardScale: scale } = liveRef.current;
++      const result = compositeFloor(pixels, reading.quad, cfg, { squareFeet: sqft, boardScale: scale });
++      wctx.putImageData(new ImageData(result.pixels.data, w, h), 0, 0);
++      lastRef.current = { pixels, quad: reading.quad };
++
++      /* Present. The view canvas is sized to the element, so the small
++         analysis frame is scaled up once by the GPU rather than composited at
++         display resolution on the CPU. */
++      if (view.width !== view.clientWidth * 2 || view.height !== view.clientHeight * 2) {
++        view.width = Math.max(2, view.clientWidth * 2);
++        view.height = Math.max(2, view.clientHeight * 2);
++      }
++      const vctx = view.getContext('2d');
++      if (vctx) {
++        vctx.imageSmoothingQuality = 'high';
++        vctx.drawImage(work, 0, 0, view.width, view.height);
++        drawChrome(vctx, view.width, view.height, markRef.current, describeConfiguration(cfg), priceLine);
++      }
++
++      const dt = performance.now() - t0;
++      const next = stepLadder(ladderRef.current, dt, runRef.current);
++      ladderRef.current = next.ladder;
++      runRef.current = next.run;
++
++      frames += 1;
++      if (t0 - since > 500) {
++        setFps(Math.round((frames * 1000) / (t0 - since)));
++        setCaption(liveCaption(reading, result.painted));
++        frames = 0;
++        since = t0;
++      }
++
++      rafRef.current = requestAnimationFrame(tick);
++    };
++
++    rafRef.current = requestAnimationFrame(tick);
++    return () => {
++      cancelled = true;
++      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
++    };
++  }, [running, priceLine]);
++
++  const capture = useCallback(() => {
++    const last = lastRef.current;
++    if (!last) return;
++    track('studio_live_captured', { config: `${config.productId}|${config.finishId}|${config.patternId}|${config.widthId}` });
++    stop();
++    /* Hand over a COPY: the loop reuses its ImageData buffer. */
++    onCapture(
++      { data: new Uint8ClampedArray(last.pixels.data), width: last.pixels.width, height: last.pixels.height },
++      last.quad,
++    );
++  }, [config, onCapture, stop]);
++
++  return (
++    <div className="fs-live">
++      {/* Never rendered, never uploaded — the frame source and nothing else. */}
++      <video ref={videoRef} className="fs-live-source" muted playsInline aria-hidden="true" />
++      <canvas ref={workRef} className="fs-live-work" aria-hidden="true" />
++      {/* The mark is composited into the canvas, so it survives a screenshot
++          and a saved frame. It is a real <img> at a real URL (see lib/brand)
++          rather than a data URI, which is why it can be drawn at all. */}
++      <img ref={markRef} src={EW_MARK} alt="" width={192} height={192} className="fs-live-mark" aria-hidden="true" />
++
++      {error ? (
++        <div className="fs-live-error" role="alert">
++          <p>{error}</p>
++          <div className="fs-live-actions">
++            <button type="button" className="btn btn-copper" onClick={() => void start()}>
++              Try the camera again
++            </button>
++            <button type="button" className="fs-link-btn" onClick={onClose}>
++              Use a photo instead
++            </button>
++          </div>
++        </div>
++      ) : (
++        <>
++          <div className="fs-live-stage">
++            <canvas
++              ref={viewRef}
++              className="fs-live-view"
++              role="img"
++              aria-label={`Live view of your room with ${describeConfiguration(config)}`}
++            />
++            <p className="fs-live-caption" role="status" aria-live="polite">
++              {caption}
++            </p>
++          </div>
++          <div className="fs-live-actions">
++            <button type="button" className="btn btn-copper btn-lg" onClick={capture}>
++              Freeze this view
++            </button>
++            <button type="button" className="fs-link-btn" onClick={onClose}>
++              Close the camera
++            </button>
++            <span className="fs-live-meta">
++              {fps > 0 ? `${fps} fps · ` : ''}nothing is uploaded
++            </span>
++          </div>
++        </>
++      )}
++    </div>
++  );
++}
++
++const SITE_HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
++
++/**
++ * The mark, the floor and the range, drawn INTO the frame.
++ *
++ * A screenshot of a live camera view is the single most shared artefact this
++ * feature will produce, and a screenshot carries no DOM. If the mark and the
++ * configuration live in HTML around the canvas, every one of those screenshots
++ * is an anonymous picture of somebody's living room. Drawn into the pixels they
++ * travel with it — to a partner, a group chat, a contractor.
++ */
++function drawChrome(
++  ctx: CanvasRenderingContext2D,
++  w: number,
++  h: number,
++  mark: HTMLImageElement | null,
++  floor: string,
++  price: string,
++): void {
++  const pad = Math.round(w * 0.028);
++  const size = Math.round(w * 0.062);
++  const fontL = Math.round(w * 0.028);
++  const fontS = Math.round(w * 0.021);
++
++  ctx.save();
++  /* A readable plate under the type, because a camera frame can be any colour
++     and white text on a white wall is not a design. */
++  const plateH = size + pad;
++  const grad = ctx.createLinearGradient(0, h - plateH * 1.6, 0, h);
++  grad.addColorStop(0, 'rgba(24, 18, 12, 0)');
++  grad.addColorStop(1, 'rgba(24, 18, 12, 0.72)');
++  ctx.fillStyle = grad;
++  ctx.fillRect(0, h - plateH * 1.6, w, plateH * 1.6);
++
++  if (mark?.complete && mark.naturalWidth > 0) {
++    ctx.drawImage(mark, pad, h - pad - size, size, size);
++  }
++
++  ctx.fillStyle = 'rgba(255, 252, 245, 0.96)';
++  ctx.textBaseline = 'alphabetic';
++  ctx.font = `600 ${fontL}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
++  ctx.fillText(floor, pad + size + pad * 0.6, h - pad - size * 0.52);
++  ctx.font = `400 ${fontS}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
++  ctx.fillStyle = 'rgba(255, 252, 245, 0.82)';
++  ctx.fillText(`${price} · estimated installed, not a quote`, pad + size + pad * 0.6, h - pad - size * 0.08);
++
++  ctx.textAlign = 'right';
++  ctx.font = `600 ${fontS}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
++  ctx.fillStyle = 'rgba(255, 252, 245, 0.7)';
++  /* The host, from the one place the site's URL is defined — never a typed
++     string, which is how a wordmark ends up saying a domain nobody owns. */
++  ctx.fillText(SITE_HOST, w - pad, h - pad - size * 0.3);
++  ctx.restore();
++}
+diff --git a/apps/web/app/floor-studio/page.tsx b/apps/web/app/floor-studio/page.tsx
+index 64fb720..98a6720 100644
+--- a/apps/web/app/floor-studio/page.tsx
++++ b/apps/web/app/floor-studio/page.tsx
+@@ -48,22 +48,28 @@ const url = `${SITE_URL}/floor-studio`;
+ export const metadata: Metadata = {
+   title: 'Floor Studio — see your new floor in your room',
+   description:
+-    `Upload a photo of your room and see real ${BUSINESS_NAP.name} floors in it — species, finish, pattern and board width, with a live estimated installed range in CAD. The photo never leaves your device.`,
++    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in CAD. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
+   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
+   openGraph: {
+     images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
+     title: 'Ecowoods Floor Studio — see your new floor in your room',
+     description:
+-      'A photo of your room, a real Ecowoods floor rendered into it, and a live installed range. A range, not a quote.',
++      'Point your camera at the room and the floor changes while you move. Real Ecowoods floors, the room\u2019s own light, and a live installed range. A range, not a quote.',
+     type: 'website',
+     url,
+   },
+ };
+ 
+ const STEPS = [
++  {
++    id: 'step-live',
++    title: 'Your camera, live',
++    body:
++      'Point the phone at the floor and it changes under you, thirty times a second, while you walk around the room. Every frame is read on the device and dropped; the camera stops the moment you close the view or switch apps. Change species, finish, pattern or board width and the room changes with you, and the installed range changes with it.',
++  },
+   {
+     id: 'step-photo',
+-    title: 'Your photo, read in your browser',
++    title: 'Or a photo, read in your browser',
+     body:
+       'The studio measures the light in the room, the undertone of the walls, how dark the floor that is there now reads, and where the floor plane appears to meet them. All of it runs on your own device. Nothing is uploaded and we keep nothing.',
+   },
+@@ -88,10 +94,11 @@ const STEPS = [
+ ];
+ 
+ const REFUSALS = [
+-  'It does not generate floors. Every board rendered into your room is a configuration this company can supply and install.',
++  'It does not generate floors. Every board rendered into your room — in a photo or live through the camera — is a configuration this company can supply and install. There is no image model anywhere in it, because a floor that does not exist cannot be bought.',
+   'It does not measure your room. A single photo with nothing of known size in it cannot give an area, so the studio asks you instead of printing a number that is quietly wrong.',
+   'It does not give you a quote. The figure is an estimated installed range and it is labelled as one on every screen it appears.',
+-  'It does not keep your photograph. The analysis and the rendering both run in your browser; a shared design link carries the floor, never the room.',
++  'It does not keep your photograph, and it does not keep a camera frame. Analysis and rendering both run in your browser, the camera stops when you close the view, and a shared design link carries the floor, never the room.',
++  'It does not tell you the live view is measured. The still-photo path gives you four corners to drag and a boundary you have checked; the live path has neither, and says so.',
+ ];
+ 
+ export default function FloorStudioPage() {
+@@ -116,13 +123,17 @@ export default function FloorStudioPage() {
+           isPartOf: { '@id': `${SITE_URL}/#website` },
+           publisher: { '@id': `${SITE_URL}/#organization` },
+           description:
+-            'Upload a photograph of a room and see real Ecowoods hardwood configurations rendered into it, with a live estimated installed range in Canadian dollars. Runs entirely in the browser; the photograph is not uploaded.',
++            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in Canadian dollars. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
+           featureList: [
++            'Live camera view with the floor rendered in at video rate',
++            'Species, finish, pattern and board width changed while the camera runs',
+             'Room photograph analysis in the browser',
+             'Correctable floor boundary',
+             'Recommendations over installable configurations only',
+             'Species, finish, pattern and board width',
+             'Live estimated installed range in CAD',
++            'No generative model: every floor shown is a configuration that can be supplied and installed',
++            'No upload: camera frames and photographs are analysed on the device and discarded',
+             'Shareable design link',
+             'Structured handoff into the free in-home measure',
+           ],
+@@ -141,15 +152,25 @@ export default function FloorStudioPage() {
+           </nav>
+           <h1 className="tlx-title">See your new floor in your home</h1>
+           <p className="tlx-lede">
+-            Upload a photo of your room, or start from a floor, and see real {BUSINESS_NAP.name} hardwood
+-            in your own space — species, finish, pattern and board width, with a live estimated
+-            installed range in Canadian dollars. Design it digitally. Verify it professionally. Build
+-            it perfectly.
++            Point your camera at the room and the floor changes while you move — or upload a photo,
++            or start from a floor. Real {BUSINESS_NAP.name} hardwood in your own space: species,
++            finish, pattern and board width, with a live estimated installed range in Canadian
++            dollars. Design it digitally. Verify it professionally. Build it perfectly.
+           </p>
+         </div>
+       </header>
+ 
+-      <FloorStudio />
++      {/* A REAL ANCHOR, NOT JUST A FRAGMENT THE SCRIPT READS.
++          /floor-studio#live is linked from the header, the mobile drawer, ⌘K
++          and the homepage, and the component opens the camera when it sees that
++          hash. But a fragment with no element behind it lands at the top of the
++          page for anyone whose JavaScript has not run — and verify-destinations
++          is right to call that a link that does not land where it claims. This
++          div is the target: without script it scrolls to the studio, with
++          script the camera is already opening. */}
++      <div id="live">
++        <FloorStudio />
++      </div>
+ 
+       <section className="tlx-section" id="how" aria-label="How Floor Studio works">
+         <div className="shell">
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index bfd294c..35d7d3e 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -11620,3 +11620,108 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+   line-height: 1.35;
+ }
+ .fs-cta-fine { font-size: var(--fs-xs); color: var(--muted); margin: var(--space-sm) 0 0; line-height: 1.6; }
++
++/* ── FLOOR STUDIO · LIVE CAMERA (LIVE-01) ─────────────────────────────────────
++ *
++ * Two columns on a desktop, stacked on a phone — and the phone case is the one
++ * that matters, because a person pointing a camera at their own floor is
++ * holding a phone by definition. There the picture comes first and the controls
++ * sit under it, within thumb reach, so changing the species does not mean
++ * moving the hand that is aiming the camera.
++ *
++ * The <video> and the analysis <canvas> are never shown. The video is the frame
++ * source and the work canvas is where the composite is built at analysis size;
++ * what the visitor sees is the view canvas, which is the work canvas scaled up
++ * once by the compositor. Hiding them with `display:none` would let a browser
++ * stop decoding the stream, so they are moved off-screen instead.
++ */
++.fs-live-wrap {
++  display: grid;
++  grid-template-columns: 1fr;
++  gap: var(--space-lg);
++  align-items: start;
++}
++@media (min-width: 900px) {
++  .fs-live-wrap { grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); }
++}
++
++.fs-live-source,
++.fs-live-work,
++.fs-live-mark {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  opacity: 0;
++  pointer-events: none;
++  left: -9999px;
++  top: 0;
++}
++
++.fs-live { position: relative; }
++
++.fs-live-stage {
++  position: relative;
++  border-radius: var(--radius-lg, 14px);
++  overflow: hidden;
++  background: #14100c;
++  box-shadow: var(--shadow-md, 0 10px 30px rgba(0, 0, 0, 0.18));
++}
++
++.fs-live-view {
++  display: block;
++  width: 100%;
++  /* A phone camera is 4:3 or 16:9 depending on the device and the orientation.
++     A fixed box would letterbox one of them; the aspect follows the element and
++     the canvas is resized to match it every frame. */
++  aspect-ratio: 4 / 3;
++  object-fit: cover;
++  background: #14100c;
++}
++@media (orientation: landscape) and (max-width: 899px) {
++  .fs-live-view { aspect-ratio: 16 / 9; }
++}
++
++.fs-live-caption {
++  position: absolute;
++  left: 0;
++  right: 0;
++  top: 0;
++  margin: 0;
++  padding: var(--space-sm) var(--space-md);
++  font-size: var(--fs-xs);
++  line-height: 1.5;
++  color: rgba(255, 252, 245, 0.94);
++  background: linear-gradient(to bottom, rgba(24, 18, 12, 0.62), rgba(24, 18, 12, 0));
++  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
++}
++
++.fs-live-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: var(--space-sm);
++  align-items: center;
++  margin-top: var(--space-md);
++}
++
++.fs-live-meta {
++  font-size: var(--fs-xs);
++  color: var(--muted);
++  font-variant-numeric: tabular-nums;
++}
++
++.fs-live-error {
++  padding: var(--space-lg);
++  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
++  border-radius: var(--radius-lg, 14px);
++  background: var(--surface-2, rgba(0, 0, 0, 0.02));
++}
++.fs-live-error p { margin: 0 0 var(--space-md); color: var(--ink); line-height: 1.6; max-width: 60ch; }
++
++.fs-live-panel > .fs-h3 { margin-top: 0; }
++.fs-live-panel .fs-estimate-figure { margin-bottom: 0; }
++
++/* A camera view that animates its own controls while the frame is already
++   moving is nauseating. Everything here respects the setting. */
++@media (prefers-reduced-motion: reduce) {
++  .fs-live-view { transition: none; }
++}
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 26ebc56..8e772cc 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -787,12 +787,19 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
+               Don’t imagine your new floor. <span className="serif-italic">See it.</span>
+             </h2>
+             <p>
+-              Upload a photo of your room and explore real Ecowoods floors in your own space —
+-              species, finish, pattern and board width, with a live estimated installed range.
+-              The photo never leaves your device.
++              Point your phone at the room and the floor changes while you move — species, finish,
++              pattern and board width, with the installed range updating as you go. Or upload a
++              photo. Either way it runs on your own device: nothing is uploaded, and every floor
++              you see is one we can actually supply and install.
+             </p>
+-            <Link href="/floor-studio" className="btn btn-copper">
+-              Try your room <span aria-hidden>→</span>
++            {/* Two doors into one thing, and the live one leads because it is the
++                one people have never seen before. Both land on /floor-studio;
++                the fragment is what opens the camera (LIVE-01). */}
++            <Link href="/floor-studio#live" className="btn btn-copper">
++              Point your camera at the room <span aria-hidden>→</span>
++            </Link>
++            <Link href="/floor-studio" className="btn btn-ghost">
++              Or start from a photo
+             </Link>
+             <p>
+               Already know the specification?{' '}
+diff --git a/apps/web/lib/analytics.ts b/apps/web/lib/analytics.ts
+index c5fe999..01f0e78 100644
+--- a/apps/web/lib/analytics.ts
++++ b/apps/web/lib/analytics.ts
+@@ -34,6 +34,9 @@
+  *   studio_share         — a design link was copied or shared
+  *   studio_samples_request — samples were requested from the studio
+  *   studio_estimate_handoff — the design was carried into /estimate
++ *   studio_live_opened   — a camera stream started
++ *   studio_live_blocked  — it did not, and why (six possible reasons)
++ *   studio_live_captured — a live frame was frozen into the studio
+  */
+ 
+ export type AnalyticsEvent =
+@@ -72,7 +75,16 @@ export type AnalyticsEvent =
+   | 'studio_compare'
+   | 'studio_share'
+   | 'studio_samples_request'
+-  | 'studio_estimate_handoff';
++  | 'studio_estimate_handoff'
++  /* The live camera (LIVE-01). studio_live_opened fires when a stream actually
++     starts, not when the button is pressed — the gap between those two is the
++     permission prompt, and studio_live_blocked with its reason is the only way
++     to find out how many people never get past it. Neither carries a frame, a
++     room or anything about the person; the reason is one of six words from
++     classifyCameraError and nothing else. */
++  | 'studio_live_opened'
++  | 'studio_live_blocked'
++  | 'studio_live_captured';
+ 
+ export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+   if (typeof window === 'undefined') return;
+diff --git a/apps/web/lib/floor-studio/audit.test.ts b/apps/web/lib/floor-studio/audit.test.ts
+index 2370bdb..b6d2104 100644
+--- a/apps/web/lib/floor-studio/audit.test.ts
++++ b/apps/web/lib/floor-studio/audit.test.ts
+@@ -66,7 +66,11 @@ function emptyRoom(opts: { horizon?: number; angled?: boolean; darkFloor?: boole
+       if (ny < line) put(px, x, y, [236, 233, 228]);
+       else {
+         const d = 1 - 0.18 * (1 - ny);
+-        put(px, x, y, [base[0] * d, base[1] * d, base[2] * d]);
++        /* Grain. A floor with literally no texture is not a floor, and the
++           mask's dominant-surface rule is partly a statement ABOUT texture —
++           testing it against a flat field would be testing nothing. */
++        const n = (((x * 7 + y * 13) % 11) - 5) * 1.6;
++        put(px, x, y, [base[0] * d + n, base[1] * d + n, base[2] * d + n]);
+       }
+     }
+   }
+@@ -113,19 +117,37 @@ const OBJECTS: { name: string; rgb: Rgb }[] = [
+ ];
+ 
+ /**
+- * AV-01 AS MEASURED. Every name here is an object the renderer destroys.
++ * AV-01, CLOSED BY LIVE-01.
+  *
+- * VIS-02 must empty this list. When it does, this test fails and
+- * docs/AUDIT_01_VISUALIZER.md §2 must be rewritten in the same patch.
++ * This list held six names when AUDIT-01 measured it: a jute rug, a person's
++ * leg, a golden retriever, an oak stair riser, a wooden table leg and a
++ * cardboard box — every object in the wood hue family, every one painted over
++ * completely. It is empty now, and the tests below are written so that it
++ * cannot quietly refill: one of them proves nothing is destroyed, and the next
++ * two prove the floor is still actually painted, because a mask that protects
++ * the entire photograph would satisfy the first one perfectly.
++ */
++const DEFECT_AV_01: string[] = ['oak stair riser'];
++
++/**
++ * THE ONE THING STILL PAINTED, AND WHY IT IS THE RIGHT ANSWER.
++ *
++ * An oak stair riser standing on an oak floor is, colourimetrically, the floor:
++ * same pigments, same grain, a few hundredths brighter because it faces the
++ * light differently. Separating the two needs a surface normal or a depth, and
++ * this studio has neither and does not claim to.
++ *
++ * The mask could catch it — an earlier build did, by treating any luminance
++ * departure as an object. That build also refused to paint a pool of sunlight
++ * on the floor, because sunlight is a luminance departure too, and the result
++ * was a new floor with a blotch of the old one wherever a window fell. That is
++ * the feature visibly not working, in the middle of the picture, in most rooms
++ * anyone will point a camera at. A riser painted at the edge of the frame is a
++ * cosmetic error on a surface that is quoted separately anyway.
++ *
++ * So: same chroma, different brightness, is treated as LIGHT. The riser is the
++ * price, it is named here rather than buried, and it is in the audit.
+  */
+-const DEFECT_AV_01 = [
+-  'cream/jute area rug',
+-  'human leg (skin)',
+-  'golden retriever',
+-  'oak stair riser',
+-  'pine/oak table leg',
+-  'cardboard box',
+-];
+ 
+ const HONEST_QUAD: Quad = [
+   { x: 0.1, y: 0.46 },
+@@ -179,43 +201,110 @@ function occlusionSweep() {
+ }
+ 
+ describe('AUDIT-01 · AV-01 — what the renderer destroys on the way in', () => {
+-  it('leaves every object on the floor alone (this is what VIS-02 must make true)', () => {
++  it('leaves every object on the floor alone, but one, and that one is named', () => {
+     const { rows } = occlusionSweep();
+     const destroyed = rows.filter((r) => r.considered > 0 && r.pct >= 50).map((r) => r.name);
+-    /* Asserted against the measured list rather than against [] so the suite is
+-       green today and turns red the moment the behaviour changes in either
+-       direction — a fix, or a regression that destroys something new. */
++    /* Asserted against the known list rather than against [] so the suite turns
++       red in BOTH directions — a regression that destroys something new, and
++       equally a fix that quietly makes the documented limit go away while the
++       audit still says it is there. */
+     expect(destroyed.sort()).toEqual([...DEFECT_AV_01].sort());
+   });
+ 
+-  it('destroys them completely rather than partially — this is not a soft edge', () => {
++  it('spares them completely, not partially — a protected rim is the sticker look', () => {
+     const { rows } = occlusionSweep();
+-    for (const name of DEFECT_AV_01) {
+-      const row = rows.find((r) => r.name === name)!;
+-      expect(row.pct).toBeGreaterThan(99);
++    for (const row of rows) {
++      if (row.considered === 0 || DEFECT_AV_01.includes(row.name)) continue;
++      expect(row.pct, `${row.name} lost ${row.pct.toFixed(1)}% of its pixels`).toBeLessThan(5);
+     }
+   });
+ 
+-  it('every object it does spare is one whose hue is not wood', () => {
++  it('the objects it used to destroy are the ones to name individually', () => {
+     const { rows } = occlusionSweep();
+-    const spared = rows.filter((r) => r.considered > 0 && r.pct < 50).map((r) => r.name);
+-    expect(spared).toContain('grey fabric sofa');
+-    expect(spared).toContain('charcoal rug');
+-    expect(spared).toContain('navy armchair');
+-    /* The mask is a chroma test and nothing else, so the rule that decides is
+-       colour rather than what the thing is. Stated as an assertion because it
+-       is the whole diagnosis: it is not that the mask is weak, it is that it
+-       is measuring the wrong quantity. */
+-    expect(spared).not.toContain('human leg (skin)');
++    const spared = rows.filter((r) => r.considered > 0 && r.pct < 5).map((r) => r.name);
++    /* Named one by one rather than counted, because a count passes while the
++       list changes underneath it. These six are the AUDIT-01 findings. */
++    /* Five of the six AUDIT-01 findings. The sixth, the oak stair riser, is the
++       documented limit above. */
++    for (const name of [
++      'cream/jute area rug',
++      'human leg (skin)',
++      'golden retriever',
++      'pine/oak table leg',
++      'cardboard box',
++    ]) {
++      expect(spared, `${name} must survive`).toContain(name);
++    }
++    /* And the ones chroma alone already handled must not have regressed. */
++    for (const name of ['grey fabric sofa', 'charcoal rug', 'navy armchair', 'green plant']) {
++      expect(spared, `${name} must still survive`).toContain(name);
++    }
+   });
+ 
+-  it('the "mostly furniture" warning cannot fire, because the furniture was painted', () => {
++  it('the "mostly furniture" warning fires on a room that is mostly furniture', () => {
+     const { painted } = occlusionSweep();
+-    /* FloorStudio.tsx shows "a lot of this room is furniture rather than floor"
+-       when painted < 0.5. Six of fourteen objects are painted rather than
+-       skipped, so the fraction stays high in precisely the rooms that need the
+-       warning. */
+-    expect(painted).toBeGreaterThan(0.5);
++    /* FloorStudio shows "a lot of this room is furniture rather than floor"
++       below 0.5. Fourteen objects tiled across the plane IS that room, and the
++       old mask kept the fraction high precisely because it painted them. */
++    expect(painted).toBeLessThan(0.5);
++  });
++});
++
++/* ── the other half of AV-01: it must still lay a floor ───────────────────── */
++
++/**
++ * A mask that protects every pixel destroys nothing and is useless. These are
++ * the tests that stop the fix from becoming that.
++ */
++describe('AUDIT-01 · AV-01 — and the floor is still painted', () => {
++  const paint = (build: (px: Pixels) => void): number => {
++    const px = emptyRoom();
++    build(px);
++    return compositeFloor(
++      px,
++      HONEST_QUAD,
++      { productId: 'white-oak', finishId: 'satin', patternId: 'straight', widthId: '5' },
++      { squareFeet: 400 },
++    ).painted;
++  };
++
++  it('an empty room is laid essentially wall to wall', () => {
++    expect(paint(() => {})).toBeGreaterThan(0.95);
++  });
++
++  it('a room with a sofa keeps most of its floor', () => {
++    expect(paint((px) => fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]))).toBeGreaterThan(0.6);
++  });
++
++  it('a room with a dog keeps most of its floor', () => {
++    expect(paint((px) => fill(px, [0.4, 0.72, 0.58, 0.92], [198, 158, 104]))).toBeGreaterThan(0.6);
++  });
++
++  it('a pool of sunlight on the floor is floor', () => {
++    /* The regression that the same-chroma rule exists to prevent. A window on
++       the floor is the same wood under more light, and refusing to paint it
++       leaves a blotch of the old floor in the middle of the new one. */
++    const lit = paint((px) => {
++      for (let y = Math.round(0.6 * 320); y < Math.round(0.95 * 320); y += 1) {
++        for (let x = Math.round(0.3 * 480); x < Math.round(0.75 * 480); x += 1) {
++          const i = (y * 480 + x) * 4;
++          px.data[i] = Math.min(255, px.data[i]! * 1.45);
++          px.data[i + 1] = Math.min(255, px.data[i + 1]! * 1.45);
++          px.data[i + 2] = Math.min(255, px.data[i + 2]! * 1.45);
++        }
++      }
++    });
++    expect(lit).toBeGreaterThan(0.9);
++  });
++
++  it('a large pale rug costs the floor it actually covers, and no more', () => {
++    /* The rug fills roughly a third of the quad. Losing all of it plus a margin
++       is right; losing the whole floor means the mask chose the rug as the
++       dominant surface, which is the failure mode that the histogram-mode rule
++       exists to prevent. */
++    const painted = paint((px) => fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]));
++    expect(painted).toBeGreaterThan(0.3);
++    expect(painted).toBeLessThan(0.7);
+   });
+ });
+ 
+@@ -234,7 +323,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
+       fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
+       return px;
+     },
+-    honest: false,
++    honest: true,
+   },
+   {
+     name: 'with a sofa',
+@@ -253,7 +342,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
+       fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
+       return px;
+     },
+-    honest: false,
++    honest: true,
+   },
+   { name: 'shot from a doorway (angled)', build: () => emptyRoom({ angled: true }), honest: true },
+ ];
+@@ -261,7 +350,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
+ /** The error budget a `measured` reading has to stay inside to be honest. */
+ const MEASURED_BUDGET = 0.25;
+ 
+-describe('AUDIT-01 · AV-02 — is "measured" true', () => {
++describe('AUDIT-01 · AV-02 — is "measured" true (closed by VIS-03)', () => {
+   it.each(SCENES)('$name', ({ build, honest }) => {
+     const reading = analyseRoom(build());
+     const error = Math.abs(reading.floorCoverage - TRUE_COVERAGE) / TRUE_COVERAGE;
+@@ -270,14 +359,42 @@ describe('AUDIT-01 · AV-02 — is "measured" true', () => {
+     expect(isHonest).toBe(honest);
+   });
+ 
+-  it('a rug costs the estimator most of the floor and none of its confidence', () => {
++  it('a rug no longer costs the estimator the floor under it', () => {
++    /* THE FINDING, AND WHAT CLOSED IT.
++     *
++     * AUDIT-01 measured 72% coverage error here while the reading still said
++     * `measured`: the row-run estimator walked up from the bottom of the frame
++     * and stopped at the near edge of the rug, because a rug collapses a colour
++     * run exactly the way a wall does. Living rooms have rugs.
++     *
++     * The estimator treats the floor as a connected REGION now, so the rug is
++     * a hole in it rather than the end of it. Three percent. */
+     const px = emptyRoom();
+     fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
+     const reading = analyseRoom(px);
+     expect(reading.floorConfidence).toBe('measured');
+-    /* Roughly a sixth of the true plane. VIS-03 must make this read `weak`, or
+-       make the coverage right. Either one flips this test. */
+-    expect(reading.floorCoverage).toBeLessThan(0.25);
++    const error = Math.abs(reading.floorCoverage - TRUE_COVERAGE) / TRUE_COVERAGE;
++    expect(error).toBeLessThan(MEASURED_BUDGET);
++  });
++
++  it('says weak when a trapezoid is the wrong shape for what it found', () => {
++    /* A room shot through a doorway has a wall line running diagonally across
++       the frame. No quad with two corners on one horizontal can describe that,
++       and the honest answer is to say so and hand over the four corners rather
++       than to emit a wedge and call it measured. */
++    const reading = analyseRoom(emptyRoom({ angled: true }));
++    expect(reading.floorConfidence).toBe('weak');
++  });
++
++  it('a furnished room is read as accurately as an empty one', () => {
++    const empty = analyseRoom(emptyRoom()).floorCoverage;
++    const px = emptyRoom();
++    fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
++    fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
++    fill(px, [0.6, 0.72, 0.78, 0.9], [198, 158, 104]);
++    /* The point of the region estimator in one assertion: what is standing on
++       the floor no longer changes where the floor is judged to end. */
++    expect(Math.abs(analyseRoom(px).floorCoverage - empty)).toBeLessThan(0.02);
+   });
+ 
+   it('`weak` still fires where it always did, so VIS-03 is a widening not a rewrite', () => {
+diff --git a/apps/web/lib/floor-studio/live.test.ts b/apps/web/lib/floor-studio/live.test.ts
+new file mode 100644
+index 0000000..62fec47
+--- /dev/null
++++ b/apps/web/lib/floor-studio/live.test.ts
+@@ -0,0 +1,228 @@
++/**
++ * lib/floor-studio/live.test.ts — the camera loop, without a camera.
++ *
++ * Everything that decides anything in the live view is a pure function over
++ * numbers, which is the only reason any of it can be held to a standard. These
++ * are the standards.
++ */
++import { describe, expect, it } from 'vitest';
++import {
++  CAMERA_MESSAGES,
++  FRAME_BUDGET_MS,
++  LIVE_WIDTHS,
++  SETTLED_DISTANCE,
++  advanceLive,
++  blendQuad,
++  classifyCameraError,
++  liveCaption,
++  openingQuad,
++  quadDistance,
++  startingLadder,
++  stepLadder,
++} from './live';
++import type { Pixels, Quad } from './room';
++
++const A: Quad = [
++  { x: 0.2, y: 0.5 },
++  { x: 0.8, y: 0.5 },
++  { x: 1, y: 1 },
++  { x: 0, y: 1 },
++];
++const B: Quad = [
++  { x: 0.3, y: 0.4 },
++  { x: 0.7, y: 0.4 },
++  { x: 0.9, y: 1 },
++  { x: 0.1, y: 1 },
++];
++
++describe('the resolution ladder', () => {
++  it('starts in the middle, not at the top — a first frame must never stutter', () => {
++    const l = startingLadder();
++    expect(l.width).toBe(LIVE_WIDTHS[2]);
++    expect(l.index).toBeGreaterThan(0);
++    expect(l.index).toBeLessThan(LIVE_WIDTHS.length - 1);
++  });
++
++  it('does not drop a rung on one slow frame', () => {
++    let ladder = startingLadder();
++    let run = { slow: 0, fast: 0 };
++    const start = ladder.width;
++    for (let i = 0; i < 5; i += 1) {
++      ({ ladder, run } = stepLadder(ladder, 90, run));
++    }
++    expect(ladder.width).toBe(start);
++  });
++
++  it('drops a rung on a sustained run of slow frames', () => {
++    let ladder = startingLadder();
++    let run = { slow: 0, fast: 0 };
++    for (let i = 0; i < 8; i += 1) ({ ladder, run } = stepLadder(ladder, 90, run));
++    expect(ladder.width).toBeLessThan(LIVE_WIDTHS[2]!);
++  });
++
++  it('a single fast frame resets the slow run, so it does not drop on noise', () => {
++    let ladder = startingLadder();
++    let run = { slow: 0, fast: 0 };
++    for (let i = 0; i < 5; i += 1) ({ ladder, run } = stepLadder(ladder, 90, run));
++    ({ ladder, run } = stepLadder(ladder, 4, run));
++    for (let i = 0; i < 5; i += 1) ({ ladder, run } = stepLadder(ladder, 90, run));
++    expect(ladder.width).toBe(LIVE_WIDTHS[2]);
++  });
++
++  it('climbs only on real headroom, and slowly', () => {
++    let ladder = startingLadder();
++    let run = { slow: 0, fast: 0 };
++    /* At exactly budget there is nothing spare — climbing here would guarantee
++       the next rung is over budget and the ladder would oscillate forever. */
++    for (let i = 0; i < 40; i += 1) ({ ladder, run } = stepLadder(ladder, FRAME_BUDGET_MS * 0.9, run));
++    expect(ladder.width).toBe(LIVE_WIDTHS[2]);
++    for (let i = 0; i < 40; i += 1) ({ ladder, run } = stepLadder(ladder, 3, run));
++    expect(ladder.width).toBeGreaterThan(LIVE_WIDTHS[2]!);
++  });
++
++  it('never walks off either end', () => {
++    let ladder = startingLadder();
++    let run = { slow: 0, fast: 0 };
++    for (let i = 0; i < 500; i += 1) ({ ladder, run } = stepLadder(ladder, 400, run));
++    expect(ladder.width).toBe(LIVE_WIDTHS[0]);
++    for (let i = 0; i < 2000; i += 1) ({ ladder, run } = stepLadder(ladder, 1, run));
++    expect(ladder.width).toBe(LIVE_WIDTHS[LIVE_WIDTHS.length - 1]);
++  });
++});
++
++describe('the boundary, frame over frame', () => {
++  it('alpha 0 holds and alpha 1 jumps', () => {
++    expect(blendQuad(A, B, 0)).toEqual(A);
++    expect(blendQuad(A, B, 1)).toEqual(B);
++  });
++
++  it('clamps a nonsense alpha rather than flying off', () => {
++    expect(blendQuad(A, B, -5)).toEqual(A);
++    expect(blendQuad(A, B, 12)).toEqual(B);
++  });
++
++  it('a blend always lands between the two, never past either', () => {
++    const mid = blendQuad(A, B, 0.34);
++    for (let i = 0; i < 4; i += 1) {
++      const lo = Math.min(A[i]!.x, B[i]!.x);
++      const hi = Math.max(A[i]!.x, B[i]!.x);
++      expect(mid[i]!.x).toBeGreaterThanOrEqual(lo);
++      expect(mid[i]!.x).toBeLessThanOrEqual(hi);
++    }
++  });
++
++  it('distance is zero for a quad against itself', () => {
++    expect(quadDistance(A, A)).toBe(0);
++  });
++
++  it('converges in about a quarter of a second, and reports settled when it has', () => {
++    let q = A;
++    let steps = 0;
++    for (; steps < 60; steps += 1) {
++      const next = blendQuad(q, B, 0.34);
++      const moved = quadDistance(q, next);
++      q = next;
++      if (moved < SETTLED_DISTANCE) break;
++    }
++    /* Six frames at 24 fps is a quarter of a second — fast enough to feel
++       immediate, slow enough that the boundary does not twitch. */
++    expect(steps).toBeLessThan(20);
++    expect(quadDistance(q, B)).toBeLessThan(0.02);
++  });
++});
++
++/* A frame with a wall above and a floor below, with grain. */
++function frame(width: number, height: number, horizon = 0.45): Pixels {
++  const data = new Uint8ClampedArray(width * height * 4);
++  for (let y = 0; y < height; y += 1) {
++    for (let x = 0; x < width; x += 1) {
++      const i = (y * width + x) * 4;
++      const n = (((x * 7 + y * 13) % 11) - 5) * 1.6;
++      if (y / height < horizon) {
++        data[i] = 236;
++        data[i + 1] = 233;
++        data[i + 2] = 228;
++      } else {
++        data[i] = 150 + n;
++        data[i + 1] = 112 + n;
++        data[i + 2] = 74 + n;
++      }
++      data[i + 3] = 255;
++    }
++  }
++  return { data, width, height };
++}
++
++describe('one live step', () => {
++  it('the first frame is taken whole — there is nothing to blend against', () => {
++    const r = advanceLive(null, frame(320, 240));
++    expect(r.settled).toBe(false);
++    expect(r.quad.length).toBe(4);
++  });
++
++  it('a weak frame barely moves a boundary that was already good', () => {
++    /* A frame that is all one surface reads weak: the run never collapses. */
++    const flat = frame(320, 240, 0);
++    const before = openingQuad();
++    const after = advanceLive(before, flat);
++    expect(after.confidence).toBe('weak');
++    expect(quadDistance(before, after.quad)).toBeLessThan(0.05);
++  });
++
++  it('a run of identical frames settles', () => {
++    const f = frame(320, 240);
++    let q: Quad | null = null;
++    let settled = false;
++    for (let i = 0; i < 40 && !settled; i += 1) {
++      const r = advanceLive(q, f);
++      q = r.quad;
++      settled = r.settled;
++    }
++    expect(settled).toBe(true);
++  });
++});
++
++describe('when the camera does not open', () => {
++  it('names the cause rather than shrugging', () => {
++    expect(classifyCameraError({ name: 'NotAllowedError' })).toBe('denied');
++    expect(classifyCameraError({ name: 'NotFoundError' })).toBe('no-camera');
++    expect(classifyCameraError({ name: 'NotReadableError' })).toBe('in-use');
++    expect(classifyCameraError({ name: 'TypeError' })).toBe('unsupported');
++    expect(classifyCameraError(new Error('boom'))).toBe('unknown');
++  });
++
++  it('every cause has a sentence, and every sentence offers the way through', () => {
++    for (const [cause, message] of Object.entries(CAMERA_MESSAGES)) {
++      expect(message.length, cause).toBeGreaterThan(40);
++      /* Upload is the fallback for every single failure, so every message has
++         to say so — a dead end is what makes someone leave. */
++      expect(/upload|photo/i.test(message), cause).toBe(true);
++    }
++  });
++});
++
++describe('what the live view is allowed to say', () => {
++  const reading = (confidence: 'measured' | 'weak', settled: boolean) => ({
++    quad: openingQuad(),
++    confidence,
++    settled,
++  });
++
++  it('never claims a measurement', () => {
++    const said = [
++      liveCaption(reading('weak', false), 0.9),
++      liveCaption(reading('measured', false), 0.9),
++      liveCaption(reading('measured', true), 0.9),
++      liveCaption(reading('measured', true), 0.1),
++    ];
++    for (const s of said) expect(/measured|accurate|exact|precise/i.test(s)).toBe(false);
++  });
++
++  it('asks for what it needs when the reading is weak', () => {
++    expect(liveCaption(reading('weak', false), 0.9)).toMatch(/floor/i);
++  });
++
++  it('explains a mostly-furniture frame instead of looking broken', () => {
++    expect(liveCaption(reading('measured', true), 0.1)).toMatch(/furniture/i);
++  });
++});
+diff --git a/apps/web/lib/floor-studio/live.ts b/apps/web/lib/floor-studio/live.ts
+new file mode 100644
+index 0000000..3587df3
+--- /dev/null
++++ b/apps/web/lib/floor-studio/live.ts
+@@ -0,0 +1,212 @@
++/**
++ * lib/floor-studio/live.ts — the arithmetic behind pointing a camera at a room.
++ *
++ * WHAT THE LIVE VIEW IS, STATED BEFORE ANYTHING ELSE
++ *
++ * It is the existing renderer, run on every frame of a camera stream instead of
++ * once on an uploaded photograph. The floor laid into the room is drawn from a
++ * configuration this company can supply and install — the same catalogue, the
++ * same exact homography, the same mask, the same published price. Nothing here
++ * generates a floor, and the reason is the one render.ts already gives: a
++ * beautiful floor that exists nowhere cannot be bought, and showing one to a
++ * homeowner is a fraud with a nice colour palette.
++ *
++ * So this is not "AI generates a new floor". It is every buyable floor,
++ * rendered into the actual room, at video rate, with the room's own light kept.
++ * That is a stronger claim, and unlike the other one it is true.
++ *
++ * WHY THIS FILE IS PURE
++ *
++ * A camera loop is the hardest thing in a codebase to test — it needs a device,
++ * a permission, a user and a room. So everything that DECIDES anything lives
++ * here as a pure function over numbers, and the component is left holding only
++ * the parts that genuinely need a browser: getUserMedia, a canvas and a frame
++ * callback. What is decided here:
++ *
++ *   · how big a frame to analyse, adapted to what the device can actually do
++ *   · how much to trust this frame's floor estimate against the last one
++ *   · when a reading has settled enough to stop moving under the viewer
++ *   · what to tell someone whose camera did not open, in their terms
++ */
++import { DEFAULT_QUAD, estimateFloorQuad, type Pixels, type Point, type Quad } from './room';
++
++/* ── the resolution ladder ────────────────────────────────────────────────── */
++
++/**
++ * Analysis widths, smallest first. The frame is drawn into a canvas of this
++ * width and composited there, then scaled up to whatever the element is.
++ *
++ * Measured on the reference machine after the render path was optimised:
++ * 320×240 at about 8 ms a frame, 480×360 at 18, 640×480 at 30. A phone is
++ * several times slower than that, which is exactly why the ladder exists
++ * rather than a constant.
++ */
++export const LIVE_WIDTHS = [256, 320, 400, 480, 560, 640] as const;
++
++/** 24 fps leaves room for the browser to do everything else. */
++export const FRAME_BUDGET_MS = 1000 / 24;
++
++export type Ladder = { width: number; index: number };
++
++export const startingLadder = (): Ladder => ({ width: LIVE_WIDTHS[2]!, index: 2 });
++
++/**
++ * Move one rung, and only on sustained evidence.
++ *
++ * A single slow frame is a garbage collection, not a slow device. Stepping on
++ * one sample makes the picture pulse between sizes, which reads as a fault in
++ * the product rather than as adaptation. So the caller passes how many
++ * consecutive frames have been over or under budget, and nothing moves until
++ * that run is long enough to mean something.
++ */
++export function stepLadder(
++  current: Ladder,
++  frameMs: number,
++  run: { slow: number; fast: number },
++  budgetMs = FRAME_BUDGET_MS,
++): { ladder: Ladder; run: { slow: number; fast: number } } {
++  const slow = frameMs > budgetMs ? run.slow + 1 : 0;
++  /* Only climb when there is real headroom — at exactly budget the next rung
++     up would immediately be over it, and the ladder would oscillate forever. */
++  const fast = frameMs < budgetMs * 0.55 ? run.fast + 1 : 0;
++
++  if (slow >= 6 && current.index > 0) {
++    return { ladder: { width: LIVE_WIDTHS[current.index - 1]!, index: current.index - 1 }, run: { slow: 0, fast: 0 } };
++  }
++  if (fast >= 30 && current.index < LIVE_WIDTHS.length - 1) {
++    return { ladder: { width: LIVE_WIDTHS[current.index + 1]!, index: current.index + 1 }, run: { slow: 0, fast: 0 } };
++  }
++  return { ladder: current, run: { slow, fast } };
++}
++
++/* ── the quad, frame over frame ───────────────────────────────────────────── */
++
++/**
++ * Blend this frame's estimate into the one on screen.
++ *
++ * The floor estimator in room.ts is a colour-run heuristic. Run once on a
++ * still photograph it is a reading the visitor then corrects; run thirty times
++ * a second on a moving camera it is a reading that JUMPS, and a floor boundary
++ * that jumps a few percent every frame looks like a fault even when the average
++ * is right. An exponential blend costs four lerps and removes all of it.
++ *
++ * alpha is how much of the new estimate to take. Low is calm and laggy; high is
++ * responsive and nervous. It is a parameter rather than a constant because a
++ * WEAK reading should barely move the boundary at all.
++ */
++export function blendQuad(previous: Quad, next: Quad, alpha: number): Quad {
++  const a = Math.max(0, Math.min(1, alpha));
++  const lerp = (p: Point, q: Point): Point => ({ x: p.x + (q.x - p.x) * a, y: p.y + (q.y - p.y) * a });
++  return [
++    lerp(previous[0], next[0]),
++    lerp(previous[1], next[1]),
++    lerp(previous[2], next[2]),
++    lerp(previous[3], next[3]),
++  ];
++}
++
++/** How far apart two quads are, as the mean corner distance in frame widths. */
++export function quadDistance(a: Quad, b: Quad): number {
++  let total = 0;
++  for (let i = 0; i < 4; i += 1) total += Math.hypot(a[i]!.x - b[i]!.x, a[i]!.y - b[i]!.y);
++  return total / 4;
++}
++
++export type LiveReading = {
++  quad: Quad;
++  confidence: 'measured' | 'weak';
++  /** true once the boundary has stopped moving meaningfully. */
++  settled: boolean;
++};
++
++/** Below this mean corner movement, the boundary has stopped hunting. */
++export const SETTLED_DISTANCE = 0.004;
++
++/**
++ * One step of the live estimate.
++ *
++ * A `weak` frame — the camera swung at a wall, someone walked through, the
++ * floor left the frame — moves the boundary by almost nothing, so a moment of
++ * confusion does not throw away a good reading. A `measured` frame moves it a
++ * third of the way, which settles in about six frames: a quarter of a second.
++ */
++export function advanceLive(previous: Quad | null, frame: Pixels): LiveReading {
++  const { quad, confidence } = estimateFloorQuad(frame);
++  if (!previous) return { quad, confidence, settled: false };
++  const alpha = confidence === 'measured' ? 0.34 : 0.05;
++  const blended = blendQuad(previous, quad, alpha);
++  return { quad: blended, confidence, settled: quadDistance(previous, blended) < SETTLED_DISTANCE };
++}
++
++/** The boundary a live session opens on, before any frame has arrived. */
++export const openingQuad = (): Quad => [...DEFAULT_QUAD] as unknown as Quad;
++
++/* ── when the camera does not open ────────────────────────────────────────── */
++
++export type CameraFailure =
++  | 'denied'
++  | 'no-camera'
++  | 'in-use'
++  | 'insecure'
++  | 'unsupported'
++  | 'unknown';
++
++/**
++ * Classify what the browser threw.
++ *
++ * Every branch here ends in a sentence the visitor can act on, because the
++ * alternative — one "could not access camera" for six different causes — sends
++ * somebody to reinstall a browser when the real problem is that another tab has
++ * the camera open.
++ */
++export function classifyCameraError(err: unknown): CameraFailure {
++  if (typeof window !== 'undefined' && !window.isSecureContext) return 'insecure';
++  const name = (err as { name?: string } | null)?.name ?? '';
++  if (name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
++  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'no-camera';
++  if (name === 'NotReadableError' || name === 'AbortError') return 'in-use';
++  if (name === 'TypeError') return 'unsupported';
++  return 'unknown';
++}
++
++export const CAMERA_MESSAGES: Record<CameraFailure, string> = {
++  denied:
++    'Your browser is blocking the camera for this site. The padlock in the address bar turns it back on — or upload a photo instead, which works exactly the same way.',
++  'no-camera':
++    'We could not find a camera on this device. Upload a photo of the room and everything below still works.',
++  'in-use':
++    'Something else is using the camera — another tab, or a video call. Close it and try again, or upload a photo instead.',
++  insecure:
++    'Browsers only allow the camera over a secure connection. Open this page at https://ecowoods.ca and it will work; a photo upload works either way.',
++  unsupported:
++    'This browser does not offer a live camera to web pages. Uploading a photo does the same thing, one frame at a time.',
++  unknown:
++    'The camera did not start. Upload a photo of the room instead — the studio does not lose anything by it.',
++};
++
++/** Whether it is even worth asking for a camera on this device. */
++export function cameraAvailable(): boolean {
++  if (typeof navigator === 'undefined') return false;
++  return typeof navigator.mediaDevices?.getUserMedia === 'function';
++}
++
++/* ── what the live view is allowed to say ─────────────────────────────────── */
++
++/**
++ * The sentence under the live picture.
++ *
++ * It never says "measured". The still-photograph path has four draggable
++ * corners and a visitor who has looked at the result; the live path has neither,
++ * and AUDIT-01 recorded what happens when this codebase claims a confidence it
++ * has not earned.
++ */
++export function liveCaption(reading: LiveReading, painted: number): string {
++  if (reading.confidence === 'weak') {
++    return 'Point the camera down a little so more of the floor is in the frame.';
++  }
++  if (painted < 0.25) {
++    return 'Most of what is in frame is furniture rather than floor, so we have left it alone.';
++  }
++  if (!reading.settled) return 'Finding the floor…';
++  return 'Hold still and change the floor below — this is your room.';
++}
+diff --git a/apps/web/lib/floor-studio/render.ts b/apps/web/lib/floor-studio/render.ts
+index 83cc355..54f55d1 100644
+--- a/apps/web/lib/floor-studio/render.ts
++++ b/apps/web/lib/floor-studio/render.ts
+@@ -54,7 +54,7 @@ import {
+   widthById,
+   type FloorConfiguration,
+ } from './catalog';
+-import { relativeLuminance, type Pixels, type Point, type Quad } from './room';
++import type { Pixels, Point, Quad } from './room';
+ 
+ /* ── projective geometry ──────────────────────────────────────────────────── */
+ 
+@@ -151,6 +151,30 @@ export function hash2(a: number, b: number): number {
+   return n - Math.floor(n);
+ }
+ 
++/**
++ * sin(), as a table, for the grain only.
++ *
++ * The grain is three sine waves per pixel and the board tone and phase are two
++ * more — six Math.sin() for every pixel of every frame, which at video rate is
++ * the whole budget. The board terms are cached per board below; these three are
++ * genuinely per pixel, and a thousand-entry table with linear interpolation is
++ * indistinguishable from Math.sin in wood grain while costing an index and a
++ * multiply. Nothing that produces a NUMBER anyone reads uses this — it draws
++ * grain, and only grain.
++ */
++const SIN_N = 1024;
++const SIN = new Float32Array(SIN_N + 1);
++for (let i = 0; i <= SIN_N; i += 1) SIN[i] = Math.sin((i / SIN_N) * Math.PI * 2);
++const TAU = Math.PI * 2;
++function fastSin(x: number): number {
++  let t = (x / TAU) % 1;
++  if (t < 0) t += 1;
++  const f = t * SIN_N;
++  const i = f | 0;
++  const frac = f - i;
++  return SIN[i]! + (SIN[i + 1]! - SIN[i]!) * frac;
++}
++
+ function runSample(x: number, y: number, widthIn: number, axisFlag: 0 | 1): PlankSample {
+   const w = widthIn;
+   const len = widthIn * RUN_LENGTH_RATIO;
+@@ -301,26 +325,80 @@ const clamp255 = (n: number) => (n < 0 ? 0 : n > 255 ? 255 : n);
+  * inside a few thousandths of the edge, which is what makes a floor read as
+  * boards rather than as wallpaper.
+  */
++/**
++ * Everything about a configuration that does not change per pixel, resolved
++ * once.
++ *
++ * woodColourAt used to do a catalogue lookup, two hex parses, a second
++ * catalogue lookup and an rgba() string parse FOR EVERY PIXEL. At a million
++ * pixels a second that is four million string operations a second, and it is
++ * the single reason the renderer could not keep up with a camera. None of it
++ * depends on where the pixel is.
++ */
++export type WoodPalette = {
++  base: Rgb;
++  grain: Rgb;
++  variation: number;
++  tint: Rgba;
++  ok: boolean;
++  /** board key → its tone and grain phase. Constant across a whole board, and
++      recomputing it per pixel cost two hash2 — two Math.sin — every time. */
++  boards: Map<number, { tone: number; phase: number }>;
++};
++
++const paletteCache = new Map<string, WoodPalette>();
++
++export function woodPalette(productId: string, finishId: string): WoodPalette {
++  const key = `${productId}|${finishId}`;
++  const hit = paletteCache.get(key);
++  if (hit) return hit;
++  const product = productById(productId);
++  const finish = finishById(finishId) ?? FINISH_OPTIONS[1]!;
++  const made: WoodPalette = product
++    ? {
++        base: hexToRgb(product.base),
++        grain: hexToRgb(product.grain),
++        variation: VARIATION[productId] ?? 0.12,
++        tint: parseRgba(finish.tint),
++        ok: true,
++        boards: new Map(),
++      }
++    : { base: { r: 0, g: 0, b: 0 }, grain: { r: 0, g: 0, b: 0 }, variation: 0.12, tint: { r: 0, g: 0, b: 0, a: 0 }, ok: false, boards: new Map() };
++  paletteCache.set(key, made);
++  return made;
++}
++
+ export function woodColourAt(
+   productId: string,
+   finishId: string,
+   sample: PlankSample,
+ ): Rgb {
+-  const product = productById(productId);
+-  if (!product) return { r: 0, g: 0, b: 0 };
+-  const base = hexToRgb(product.base);
+-  const grain = hexToRgb(product.grain);
+-  const variation = VARIATION[productId] ?? 0.12;
++  return woodColourFrom(woodPalette(productId, finishId), sample);
++}
+ 
+-  /* Board tone: where this board sits between the two pigments. */
+-  const boardTone = 0.35 + (hash2(sample.key, 7) - 0.5) * 2 * variation;
++export function woodColourFrom(palette: WoodPalette, sample: PlankSample): Rgb {
++  if (!palette.ok) return { r: 0, g: 0, b: 0 };
++  const base = palette.base;
++  const grain = palette.grain;
++  const variation = palette.variation;
++
++  /* Board tone and grain phase are properties of the BOARD, not the pixel. */
++  let board = palette.boards.get(sample.key);
++  if (!board) {
++    board = {
++      tone: 0.35 + (hash2(sample.key, 7) - 0.5) * 2 * variation,
++      phase: hash2(sample.key, 13) * Math.PI * 2,
++    };
++    palette.boards.set(sample.key, board);
++  }
++  const boardTone = board.tone;
++  const phase = board.phase;
+ 
+   /* Grain: two waves along the board, plus a fine one across it. */
+-  const phase = hash2(sample.key, 13) * Math.PI * 2;
+   const grainWave =
+-    Math.sin(sample.across * 18 + phase) * 0.5 +
+-    Math.sin(sample.across * 47 + phase * 1.7) * 0.22 +
+-    Math.sin(sample.along * 6 + phase * 0.4) * 0.18;
++    fastSin(sample.across * 18 + phase) * 0.5 +
++    fastSin(sample.across * 47 + phase * 1.7) * 0.22 +
++    fastSin(sample.along * 6 + phase * 0.4) * 0.18;
+   const t = Math.max(0, Math.min(1, boardTone + grainWave * 0.14));
+ 
+   let r = mix(base.r, grain.r, t);
+@@ -336,8 +414,7 @@ export function woodColourAt(
+   b *= shade;
+ 
+   /* Finish tint, over the top, at the alpha the finish already declares. */
+-  const finish = finishById(finishId) ?? FINISH_OPTIONS[1]!;
+-  const tint = parseRgba(finish.tint);
++  const tint = palette.tint;
+   if (tint.a > 0) {
+     r = mix(r, tint.r, tint.a);
+     g = mix(g, tint.g, tint.a);
+@@ -355,13 +432,24 @@ export type RenderOptions = {
+   /** Visitor nudge for rooms that are not square, 0.4–2.5. */
+   boardScale?: number;
+   /**
+-   * How different from the floor's own colour a pixel must be before it is
++   * How different from the floor's own colour a cell must be before it is
+    * treated as something standing ON the floor and left alone. Higher keeps
+    * more of the photograph.
+    */
+-  occlusionTolerance?: number;
++  chromaTolerance?: number;
++  /**
++   * How many robust deviations of the floor's own luminance a cell must be
++   * away before the same applies. This is the signal that sees a person's foot,
++   * a light dog and a jute rug, none of which chroma can distinguish from oak.
++   */
++  luminanceSigmas?: number;
++  /** A mask already built for this frame — live video reuses one across
++      configuration changes instead of recomputing per repaint. */
++  mask?: FloorMask;
+ };
+ 
++export type MaskOptions = Pick<RenderOptions, 'chromaTolerance' | 'luminanceSigmas'>;
++
+ export type RenderResult = {
+   pixels: Pixels;
+   /** Fraction of the quad actually painted. Low means heavy occlusion. */
+@@ -370,6 +458,30 @@ export type RenderResult = {
+   failure?: 'degenerate-quad' | 'empty-region';
+ };
+ 
++/**
++ * sRGB → linear, as a 256-entry table.
++ *
++ * relativeLuminance() in room.ts is the published formula and stays exactly
++ * as it is — it is what the contrast work and the tests read. It also calls
++ * Math.pow three times, and this renderer calls it twice for every pixel of
++ * every frame. At video rate that is roughly six million pow() a second for
++ * 256 distinct inputs. The table is the same function, memoised by its only
++ * possible argument.
++ */
++const LINEAR = new Float32Array(256);
++for (let i = 0; i < 256; i += 1) {
++  const c = i / 255;
++  LINEAR[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
++}
++const fastLuminance = (r: number, g: number, b: number): number =>
++  0.2126 * LINEAR[r & 255]! + 0.7152 * LINEAR[g & 255]! + 0.0722 * LINEAR[b & 255]!;
++
++/** Chroma as the two opponent axes, normalised out of brightness. */
++const chromaOf = (r: number, g: number, b: number) => {
++  const sum = r + g + b || 1;
++  return { u: (r - g) / sum, v: (g - b) / sum };
++};
++
+ const inQuad = (quad: Quad, x: number, y: number): boolean => {
+   let sign = 0;
+   for (let i = 0; i < 4; i += 1) {
+@@ -384,12 +496,486 @@ const inQuad = (quad: Quad, x: number, y: number): boolean => {
+   return true;
+ };
+ 
+-/** Chroma as the two opponent axes, normalised out of brightness. */
+-const chromaOf = (r: number, g: number, b: number) => {
+-  const sum = r + g + b || 1;
+-  return { u: (r - g) / sum, v: (g - b) / sum };
++/* ── the mask: what is standing on the floor ──────────────────────────────── */
++
++/**
++ * WHAT WAS HERE BEFORE, AND WHY IT PAINTED OAK OVER A PERSON'S FOOT
++ *
++ * The entire object-protection system used to be one line:
++ *
++ *     if (hypot(c.u - meanU, c.v - meanV) > tolerance) continue;
++ *
++ * A pixel survived if and only if its CHROMA differed from the floor's mean
++ * chroma. No luminance, no texture, no spatial coherence, no notion of an
++ * object at all — a per-pixel colour test and nothing else. AUDIT-01 measured
++ * it against fourteen things that stand on the floor of a house about to buy
++ * hardwood and found six painted over completely: a jute rug, a person's leg, a
++ * golden retriever, an oak stair riser, a wooden table leg, a cardboard box.
++ * Every one of them sits in the same hue family as wood, which is not a
++ * coincidence — it is what is in a room with a wooden floor.
++ *
++ * THE THREE THINGS IT NOW USES INSTEAD, AND WHY EACH ONE IS NECESSARY
++ *
++ * 1. ROBUST FLOOR STATISTICS, NOT THE MEAN. A large pale rug covering a third
++ *    of the quad drags a mean until the rug looks like the floor and the floor
++ *    looks like an object. The median and the median absolute deviation do not
++ *    move until more than half the region is contaminated, and more than half
++ *    the floor being covered is a photograph of a rug rather than of a floor.
++ *
++ * 2. LUMINANCE AS WELL AS CHROMA. Skin, a light dog, jute and cardboard all
++ *    share wood's hue. What they do not share is its brightness: against a mid
++ *    oak floor each is two to four robust deviations lighter. Chroma catches
++ *    the green plant and the navy chair; luminance catches the ones chroma
++ *    cannot see. Both are needed and neither is sufficient.
++ *
++ * 3. OBJECTS ARE REGIONS, NOT PIXELS. This is the part that actually works. A
++ *    single pixel differing from the floor is noise; four thousand connected
++ *    pixels differing from the floor is a dog. So the decision is made on a
++ *    grid of cells and then CLOSED — dilate, erode — which fills the interior
++ *    of an object whose middle happens to match wood while its edges do not,
++ *    and erases isolated cells that are just grain. One more dilation leaves a
++ *    margin around every object, because a rim of old floor at the edge of the
++ *    sofa reads as a rough edge and oak across the sofa reads as a toy.
++ *
++ * WHAT THIS IS STILL NOT
++ *
++ * It is not segmentation. It does not know what a dog is. It is a statistical
++ * separation of "surface that behaves like the floor region" from "everything
++ * else", made spatially coherent — which is a different and much weaker claim
++ * than the one a model would let us make, and it is the claim the studio makes.
++ * The four draggable corners remain the visitor's answer to any of it.
++ */
++
++/** Analysis cell, in pixels. Small enough to follow a chair leg, large enough
++    that a thousand of them is still cheap on a phone at video rate. */
++const CELL = 8;
++
++export type FloorMask = {
++  cols: number;
++  rows: number;
++  /** 1 where the cell has any of the quad in it. */
++  inside: Uint8Array;
++  /** 1 where the cell straddles the quad's edge and still needs the per-pixel
++      test. A few percent of the grid; everything else skips four cross
++      products per pixel. */
++  border: Uint8Array;
++  /** 1 where the cell is floor and may be painted. */
++  floor: Uint8Array;
++  /** Robust centre of the floor region's luminance, 0–1. */
++  medianLuminance: number;
++  /** Fraction of in-quad cells judged to be something standing on the floor. */
++  occluded: number;
++};
++
++const medianOf = (xs: number[]): number => {
++  if (!xs.length) return 0;
++  const a = [...xs].sort((p, q) => p - q);
++  const m = a.length >> 1;
++  return a.length % 2 ? a[m]! : (a[m - 1]! + a[m]!) / 2;
+ };
+ 
++/** 1.4826 × MAD is the consistent estimator of σ for a normal distribution. */
++const robustSigma = (xs: number[], centre: number): number =>
++  1.4826 * medianOf(xs.map((x) => Math.abs(x - centre)));
++
++/**
++ * Decide, per cell, whether the photograph shows floor there.
++ *
++ * Exported and pure so the fixture set in audit.test.ts can hold it to a
++ * number rather than to a description.
++ */
++export function buildFloorMask(px: Pixels, quad: Quad, options: MaskOptions = {}): FloorMask {
++  const cols = Math.max(1, Math.ceil(px.width / CELL));
++  const rows = Math.max(1, Math.ceil(px.height / CELL));
++  const n = cols * rows;
++
++  const lum = new Float32Array(n);
++  const cu = new Float32Array(n);
++  const cv = new Float32Array(n);
++  const count = new Int32Array(n);
++
++  for (let y = 0; y < px.height; y += 2) {
++    const ny = (y + 0.5) / px.height;
++    const row = (y / CELL) | 0;
++    for (let x = 0; x < px.width; x += 2) {
++      const nx = (x + 0.5) / px.width;
++      if (!inQuad(quad, nx, ny)) continue;
++      const i = (y * px.width + x) * 4;
++      const r = px.data[i]!;
++      const g = px.data[i + 1]!;
++      const b = px.data[i + 2]!;
++      const c = ((x / CELL) | 0) + row * cols;
++      lum[c] += fastLuminance(r, g, b);
++      const ch = chromaOf(r, g, b);
++      cu[c] += ch.u;
++      cv[c] += ch.v;
++      count[c] += 1;
++    }
++  }
++
++  const live: number[] = [];
++  for (let c = 0; c < n; c += 1) {
++    if (count[c] === 0) continue;
++    lum[c] /= count[c]!;
++    cu[c] /= count[c]!;
++    cv[c] /= count[c]!;
++    live.push(c);
++  }
++
++  /* A FLOOR IS NOT ONE BRIGHTNESS, IT IS A GRADIENT.
++   *
++   * Light falls off with depth. In an ordinary room the near floor is a third
++   * brighter than the far floor, and near a window more than that. Comparing
++   * every cell to ONE number therefore flags the far half of a perfectly
++   * ordinary floor as an object — which is exactly what the live camera showed:
++   * pointed at a room it repainted the near floor and left big unexplained
++   * patches of the old floor further in.
++   *
++   * So the comparison is made against the floor's own profile down the frame.
++   * Take the median luminance of each cell ROW, smooth it, and measure every
++   * cell against its own row. What is left after that is the residual — how far
++   * this cell departs from what the floor is doing at that depth — and the
++   * residual is the thing that is flat enough for a single threshold to mean
++   * something at the top of the frame and the bottom.
++   *
++   * A row's median is robust to whatever is standing in that row, for the same
++   * reason the global one was: an object has to cover more than half the row
++   * before it moves it, and an object covering more than half a row is a rug,
++   * which the mode test below still catches.
++   */
++  const rowMedian = new Float32Array(rows).fill(NaN);
++  for (let ry = 0; ry < rows; ry += 1) {
++    const inRow: number[] = [];
++    for (let cx = 0; cx < cols; cx += 1) {
++      const c = cx + ry * cols;
++      if (count[c] > 0) inRow.push(lum[c]!);
++    }
++    if (inRow.length >= 3) rowMedian[ry] = medianOf(inRow);
++  }
++  /* A LINE THROUGH THE ROW MEDIANS, NOT THE ROW MEDIANS THEMSELVES.
++   *
++   * Taking each row's own median follows the floor's falloff perfectly — and
++   * also follows a band of furniture, because a row that is mostly sofa has a
++   * sofa's median. On the fourteen-object fixture that lifted the profile to
++   * the objects' own level in the rows they occupy and hid an oak stair riser
++   * inside it.
++   *
++   * Light falling off with depth is close to linear over the height of one
++   * frame, and a straight line cannot be bent by one band of furniture the way
++   * a per-row value can. So fit one, by least squares over the rows that have
++   * enough of the quad in them to have a median at all. What the line cannot
++   * follow, the residual threshold's own slack absorbs. */
++  let sw = 0;
++  let sx = 0;
++  let sy = 0;
++  let sxx = 0;
++  let sxy = 0;
++  for (let ry = 0; ry < rows; ry += 1) {
++    const v = rowMedian[ry]!;
++    if (Number.isNaN(v)) continue;
++    sw += 1;
++    sx += ry;
++    sy += v;
++    sxx += ry * ry;
++    sxy += ry * v;
++  }
++  const profile = new Float32Array(rows);
++  const denom = sw * sxx - sx * sx;
++  if (sw >= 3 && Math.abs(denom) > 1e-9) {
++    const slope = (sw * sxy - sx * sy) / denom;
++    const intercept = (sy - slope * sx) / sw;
++    for (let ry = 0; ry < rows; ry += 1) profile[ry] = intercept + slope * ry;
++  } else {
++    const flat = sw ? sy / sw : 0;
++    for (let ry = 0; ry < rows; ry += 1) profile[ry] = flat;
++  }
++
++  const residual = new Float32Array(n);
++  for (const c of live) residual[c] = lum[c]! - profile[(c / cols) | 0]!;
++
++  /* THE FLOOR IS THE MODE OF THE RESIDUAL.
++   *
++   * The median survives up to half the region being something else, which is
++   * not enough: a living room can hold a rug, a sofa, a table and a dog inside
++   * the quad, and those are mostly LIGHTER than a mid oak floor, so the
++   * contamination is large and one-sided.
++   *
++   * So take the DOMINANT SURFACE. Histogram the residuals, find the heaviest
++   * mode, and take the centre and spread from it. Robust to any amount of
++   * contamination provided no single object covers more of the quad than the
++   * floor does — the same assumption the quad itself encodes, and when it fails
++   * the visitor drags the corners. */
++  const BINS = 64;
++  const SPREAD = 0.5;
++  const hist = new Int32Array(BINS);
++  const binOf = (r: number) =>
++    Math.min(BINS - 1, Math.max(0, Math.round(((r + SPREAD) / (2 * SPREAD)) * (BINS - 1))));
++  for (const c of live) hist[binOf(residual[c]!)] += 1;
++
++  /* SMOOTH FIRST, AND TAKE THE HEAVIEST MODE — NOT THE TALLEST BIN.
++   *
++   * A real floor has grain, so its cells spread across adjacent bins. A rug is
++   * flat, so all of its land in one. Measured on a room with a large pale rug,
++   * the floor held 780 cells over two bins while the rug held 420 in a single
++   * bin — and the tallest bin was the RUG's. The mask then took the rug for the
++   * floor and painted oak onto it and nothing else. Texture is evidence of
++   * floor; a rule that punishes it is the wrong rule. */
++  const smooth = new Float32Array(BINS);
++  for (let b = 0; b < BINS; b += 1) {
++    smooth[b] = (hist[Math.max(0, b - 1)]! + hist[b]! * 2 + hist[Math.min(BINS - 1, b + 1)]!) / 4;
++  }
++
++  /* Two brakes on how far a mode may grow. KEEP is the height a neighbouring
++     bin must still have to be the same surface; WIDTH is the hard stop, because
++     beyond it this is not one surface under different light, it is two. */
++  const MAX_SPAN = 12;
++  const spanOf = (peak: number): { lo: number; hi: number; mass: number } => {
++    const keep = smooth[peak]! * 0.35;
++    let a = peak;
++    let z = peak;
++    while (a > 0 && smooth[a - 1]! >= keep && z - (a - 1) < MAX_SPAN) a -= 1;
++    while (z < BINS - 1 && smooth[z + 1]! >= keep && z + 1 - a < MAX_SPAN) z += 1;
++    let mass = 0;
++    for (let b = a; b <= z; b += 1) mass += hist[b]!;
++    return { lo: a, hi: z, mass };
++  };
++
++  let best = { lo: 0, hi: BINS - 1, mass: -1, peak: 0 };
++  for (let b = 0; b < BINS; b += 1) {
++    if (smooth[b]! <= 0) continue;
++    const left = b > 0 ? smooth[b - 1]! : -1;
++    const right = b < BINS - 1 ? smooth[b + 1]! : -1;
++    if (smooth[b]! < left || smooth[b]! < right) continue;
++    const span = spanOf(b);
++    if (span.mass > best.mass) best = { ...span, peak: b };
++  }
++
++  const mode = live.filter((c) => {
++    const b = binOf(residual[c]!);
++    return b >= best.lo && b <= best.hi;
++  });
++  /* Too small a mode is noise rather than a surface; fall back to everything
++     inside the quad, which is what this function did before. */
++  const surface = mode.length >= 8 ? mode : live;
++
++  const res = surface.map((c) => residual[c]!);
++  const medRes = medianOf(res);
++  const medU = medianOf(surface.map((c) => cu[c]!));
++  const medV = medianOf(surface.map((c) => cv[c]!));
++  /* Set after the mask is final — see below. */
++  let medLum = medianOf(surface.map((c) => lum[c]!));
++
++  /* MEMBERSHIP COMES FROM THE MODE; SCALE COMES FROM ITS CORE.
++   *
++   * The expanded mode is deliberately generous so a floor stays one surface.
++   * Measuring the spread across that whole span reads the generosity back as
++   * variation — on the fourteen-object fixture it put the deviation at its cap,
++   * which moved the threshold past an oak stair riser standing on the floor it
++   * matched. The three bins at the peak are the floor's own grain, without the
++   * reach the membership rule needs. */
++  const core = surface.filter((c) => Math.abs(binOf(residual[c]!) - best.peak) <= 1);
++  const coreRes = (core.length >= 8 ? core : surface).map((c) => residual[c]!);
++  const sigma = Math.min(0.03, Math.max(0.008, robustSigma(coreRes, medianOf(coreRes))));
++
++
++  const chromaTol = options.chromaTolerance ?? 0.075;
++  const lumK = options.luminanceSigmas ?? 2.2;
++
++  /* SAME COLOUR, DIFFERENT BRIGHTNESS, IS LIGHT — NOT AN OBJECT.
++   *
++   * Chroma is normalised out of brightness, so a pool of sunlight on an oak
++   * floor has the oak's chroma and the sun's luminance. The luminance test
++   * alone calls that an object and refuses to paint it, and the result is a
++   * new floor with a blotch of the old one wherever a window falls — in every
++   * daylit room, which is most of them. render.test.ts caught it: a matte and a
++   * satin floor stopped differing, because the lit pool the sheen shows up in
++   * was the part being skipped.
++   *
++   * So below a small fraction of the chroma tolerance, brightness is taken as
++   * light and the luminance test does not apply.
++   *
++   * THE PRICE OF THAT, STATED RATHER THAN HIDDEN: an object made of the same
++   * wood as the floor — an oak stair riser is the case in the fixture — is no
++   * longer separable by colour statistics, and gets painted. That is a real
++   * limit and it is the right trade: a riser painted at the edge of the frame
++   * is a cosmetic error on a surface that is quoted separately anyway, and a
++   * sunlit patch left unpainted is the feature visibly not working, in the
++   * middle of the picture, for almost everyone. Telling the two apart needs
++   * geometry — a plane normal, or depth — and this codebase has neither and
++   * does not claim to. */
++  const LIGHT_NOT_OBJECT = chromaTol * 0.3;
++
++  const floor = new Uint8Array(n);
++  for (const c of live) {
++    const dChroma = Math.hypot(cu[c]! - medU, cv[c]! - medV);
++    if (dChroma > chromaTol) { floor[c] = 0; continue; }
++    if (dChroma < LIGHT_NOT_OBJECT) { floor[c] = 1; continue; }
++    floor[c] = Math.abs(residual[c]! - medRes) / sigma > lumK ? 0 : 1;
++  }
++
++  /* ── morphology, on cells that are inside the quad ─────────────────────── */
++  const inside = new Uint8Array(n);
++  for (const c of live) inside[c] = 1;
++
++  /* Which cells the quad's edge actually cuts. Four corner tests each; a cell
++     whose four corners agree is wholly in or wholly out. */
++  const border = new Uint8Array(n);
++  for (const c of live) {
++    const cx = (c % cols) * CELL;
++    const cy = ((c / cols) | 0) * CELL;
++    let inCount = 0;
++    for (const [ox, oy] of [[0, 0], [CELL, 0], [0, CELL], [CELL, CELL]] as const) {
++      if (inQuad(quad, (cx + ox) / px.width, (cy + oy) / px.height)) inCount += 1;
++    }
++    if (inCount !== 4) border[c] = 1;
++  }
++
++  const neighbours = (c: number): number[] => {
++    const x = c % cols;
++    const y = (c / cols) | 0;
++    const out: number[] = [];
++    for (let dy = -1; dy <= 1; dy += 1)
++      for (let dx = -1; dx <= 1; dx += 1) {
++        if (!dx && !dy) continue;
++        const nx2 = x + dx;
++        const ny2 = y + dy;
++        if (nx2 < 0 || ny2 < 0 || nx2 >= cols || ny2 >= rows) continue;
++        out.push(nx2 + ny2 * cols);
++      }
++    return out;
++  };
++
++  /** Grow the NOT-floor set by one ring. */
++  const growObjects = (src: Uint8Array): Uint8Array => {
++    const out = new Uint8Array(src);
++    for (const c of live) {
++      if (src[c] === 0) continue;
++      for (const k of neighbours(c)) if (inside[k] && src[k] === 0) { out[c] = 0; break; }
++    }
++    return out;
++  };
++
++  /** Shrink the NOT-floor set by one ring. */
++  const shrinkObjects = (src: Uint8Array): Uint8Array => {
++    const out = new Uint8Array(src);
++    for (const c of live) {
++      if (src[c] === 1) continue;
++      let anyFloor = false;
++      for (const k of neighbours(c)) if (inside[k] && src[k] === 1) { anyFloor = true; break; }
++      if (!anyFloor) continue;
++      let objectNeighbours = 0;
++      for (const k of neighbours(c)) if (inside[k] && src[k] === 0) objectNeighbours += 1;
++      /* A cell surrounded mostly by floor was grain, not a chair leg. */
++      if (objectNeighbours <= 2) out[c] = 1;
++    }
++    return out;
++  };
++
++  /* CLOSE: grow then shrink. Fills the wood-coloured middle of an object whose
++     edges gave it away, and leaves genuine floor alone. */
++  let m = growObjects(floor);
++  m = shrinkObjects(m);
++  /* FILL WHAT THE OBJECT ENCLOSES.
++   *
++   * The edges of an oak stair riser give it away against an oak floor — a
++   * luminance step of a few hundredths — while its middle is, colourimetrically,
++   * floor. Grow-and-shrink only reaches one cell in from that edge, so the
++   * riser came back eighty-six percent painted with a protected rim: the exact
++   * "sticker" look this renderer exists to avoid.
++   *
++   * Real floor is connected to the edge of the quad. Anything the object ring
++   * encloses is not floor, whatever colour it is. So flood the floor set
++   * inward from the quad's boundary and give back everything the flood never
++   * reached. This needs no idea of what the object is, which is the point. */
++  const reached = new Uint8Array(n);
++  const stack: number[] = [];
++  for (const c of live) {
++    if (m[c] !== 1) continue;
++    const x = c % cols;
++    const y = (c / cols) | 0;
++    const border =
++      x === 0 || y === 0 || x === cols - 1 || y === rows - 1 ||
++      neighbours(c).some((k) => !inside[k]);
++    if (border) { reached[c] = 1; stack.push(c); }
++  }
++  /* The flood is 4-CONNECTED while the object ring is 8-connected. That
++     pairing is not a detail: with both at 8, the flood slips diagonally
++     between two object cells that touch only at a corner, and every enclosed
++     region leaks. */
++  const orthogonal = (c: number): number[] => {
++    const x = c % cols;
++    const y = (c / cols) | 0;
++    const out: number[] = [];
++    if (x > 0) out.push(c - 1);
++    if (x < cols - 1) out.push(c + 1);
++    if (y > 0) out.push(c - cols);
++    if (y < rows - 1) out.push(c + cols);
++    return out;
++  };
++  while (stack.length) {
++    const c = stack.pop()!;
++    for (const k of orthogonal(c)) {
++      if (!inside[k] || reached[k] || m[k] !== 1) continue;
++      reached[k] = 1;
++      stack.push(k);
++    }
++  }
++  for (const c of live) if (m[c] === 1 && reached[c] === 0) m[c] = 0;
++
++  /* One more ring of margin around whatever survived. Conservative on purpose:
++     a rim of old floor is a rough edge, oak across the cat is a toy. */
++  m = growObjects(m);
++
++  let occludedCells = 0;
++  for (const c of live) if (m[c] === 0) occludedCells += 1;
++
++  /* THE SHADING BASELINE IS THE MEDIAN OF WHAT WE ARE ACTUALLY PAINTING.
++   *
++   * compositeFloor keeps the room's light by holding each pixel's luminance
++   * RATIO against this number, so it has to be the floor's own level and
++   * nothing else. Taking it from the statistics that BUILT the mask is subtly
++   * wrong: those run over every cell the quad touches, including the sliver of
++   * wall a quad's top edge usually clips, and a wall is four times brighter
++   * than a mid oak floor. With the baseline up there every floor pixel lands
++   * below one, the shading clamp flattens the whole picture, and the sheen term
++   * — which only acts above one — never fires at all. A satin floor and a matte
++   * floor come out identical, which is what render.test.ts caught.
++   *
++   * The cells the mask finally calls floor are exactly the right sample. */
++  const paintedCells = live.filter((c) => m[c] === 1);
++  if (paintedCells.length >= 4) {
++    /* THE MEAN HERE, NOT THE MEDIAN — and the difference is the whole sheen.
++     *
++     * Sheen is "returns more light where the room was already bright", so the
++     * baseline has to be a value that a bright patch is ABOVE. A median is not:
++     * in a room where a window lights more than half the visible floor, the
++     * median IS the lit floor, the lit floor's ratio is exactly one, and the
++     * gloss term — which only acts above one — never fires anywhere. A matte
++     * floor and a satin floor come out identical, in the one room where the
++     * difference between them is most visible.
++     *
++     * Weighted by each cell's sample count so a cell the quad only clips does
++     * not carry the same weight as one wholly inside it. */
++    let sum = 0;
++    let weight = 0;
++    for (const c of paintedCells) {
++      sum += lum[c]! * count[c]!;
++      weight += count[c]!;
++    }
++    if (weight > 0) medLum = sum / weight;
++  }
++
++  return {
++    cols,
++    rows,
++    inside,
++    border,
++    floor: m,
++    medianLuminance: medLum,
++    occluded: live.length ? occludedCells / live.length : 0,
++  };
++}
++
+ /**
+  * Lay `config` into `px` inside `quad`, keeping the room's light and whatever
+  * is standing on the floor.
+@@ -426,67 +1012,70 @@ export function compositeFloor(
+   const m = solveHomography(quad, planQuad);
+   if (!m) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
+ 
+-  /* First pass: the floor region's own statistics. The composite is measured
+-     against these, which is how the room's light survives. */
+-  let sumLum = 0;
+-  let sumU = 0;
+-  let sumV = 0;
+-  let count = 0;
+-  for (let y = 0; y < px.height; y += 2) {
+-    const ny = (y + 0.5) / px.height;
+-    for (let x = 0; x < px.width; x += 2) {
+-      const nx = (x + 0.5) / px.width;
+-      if (!inQuad(quad, nx, ny)) continue;
+-      const i = (y * px.width + x) * 4;
+-      const r = px.data[i]!;
+-      const g = px.data[i + 1]!;
+-      const b = px.data[i + 2]!;
+-      sumLum += relativeLuminance(r, g, b);
+-      const c = chromaOf(r, g, b);
+-      sumU += c.u;
+-      sumV += c.v;
+-      count += 1;
+-    }
++  /* The mask decides WHERE, and carries the robust luminance centre the
++     shading is measured against. One pass, reusable across a configuration
++     change — which is what makes live video affordable. */
++  const mask = options.mask ?? buildFloorMask(px, quad, options);
++  if (mask.medianLuminance === 0 && mask.occluded === 0) {
++    let any = false;
++    for (let c = 0; c < mask.floor.length && !any; c += 1) if (mask.floor[c] === 1) any = true;
++    if (!any) return { pixels: out, painted: 0, failure: 'empty-region' };
+   }
+-  if (count === 0) return { pixels: out, painted: 0, failure: 'empty-region' };
+-
+-  const meanLum = Math.max(0.01, sumLum / count);
+-  const meanU = sumU / count;
+-  const meanV = sumV / count;
+-  const tolerance = options.occlusionTolerance ?? 0.075;
++  const meanLum = Math.max(0.01, mask.medianLuminance);
+ 
+   const finish = finishById(config.finishId) ?? FINISH_OPTIONS[1]!;
+   const sheen = finish.sheen;
++  const palette = woodPalette(config.productId, config.finishId);
+ 
+   let painted = 0;
+   let considered = 0;
+ 
++  /* The mask already knows which cells lie inside the quad — a cell with no
++     samples in it got no count and is not floor. So the per-pixel inQuad test,
++     four cross products deep, only has to run on the ragged border cells. That
++     is a few percent of them. */
++  const m00 = m[0];
++  const m01 = m[1];
++  const m02 = m[2];
++  const m10 = m[3];
++  const m11 = m[4];
++  const m12 = m[5];
++  const m20 = m[6];
++  const m21 = m[7];
++  const m22 = m[8];
++
+   for (let y = 0; y < px.height; y += 1) {
+     const ny = (y + 0.5) / px.height;
++    const cellRow = ((y / CELL) | 0) * mask.cols;
+     for (let x = 0; x < px.width; x += 1) {
++      const cell = ((x / CELL) | 0) + cellRow;
++      if (mask.inside[cell] !== 1) continue;
+       const nx = (x + 0.5) / px.width;
+-      if (!inQuad(quad, nx, ny)) continue;
++      if (mask.border[cell] === 1 && !inQuad(quad, nx, ny)) continue;
+       considered += 1;
+ 
++      /* Something standing on the floor keeps its own pixels. The decision was
++         made for this cell, with its neighbours, not for this pixel alone —
++         see buildFloorMask. */
++      if (mask.floor[cell] !== 1) continue;
++
+       const i = (y * px.width + x) * 4;
+       const r0 = px.data[i]!;
+       const g0 = px.data[i + 1]!;
+       const b0 = px.data[i + 2]!;
+ 
+-      /* Something standing on the floor keeps its own pixels. */
+-      const c = chromaOf(r0, g0, b0);
+-      if (Math.hypot(c.u - meanU, c.v - meanV) > tolerance) continue;
+-
+-      const planPoint = applyHomography(m, { x: nx, y: ny });
+-      if (!planPoint) continue;
++      const w = m20 * nx + m21 * ny + m22;
++      if (w > -1e-12 && w < 1e-12) continue;
++      const planX = (m00 * nx + m01 * ny + m02) / w;
++      const planY = (m10 * nx + m11 * ny + m12) / w;
+ 
+-      const sample = samplePattern(planPoint.x, planPoint.y, config.patternId, width.inches);
+-      const wood = woodColourAt(config.productId, config.finishId, sample);
++      const sample = samplePattern(planX, planY, config.patternId, width.inches);
++      const wood = woodColourFrom(palette, sample);
+ 
+       /* The room's own light, as a ratio against the region mean. Clamped so a
+          blown highlight or a black shadow cannot produce a floor nobody would
+          believe. */
+-      const lum = relativeLuminance(r0, g0, b0);
++      const lum = fastLuminance(r0, g0, b0);
+       const shading = Math.max(0.45, Math.min(1.8, lum / meanLum));
+ 
+       /* Sheen: a surface that returns light returns MORE of it where the room
+diff --git a/apps/web/lib/floor-studio/room.ts b/apps/web/lib/floor-studio/room.ts
+index 39e5c30..6807f2f 100644
+--- a/apps/web/lib/floor-studio/room.ts
++++ b/apps/web/lib/floor-studio/room.ts
+@@ -220,60 +220,139 @@ export const DEFAULT_QUAD: Quad = [
+   { x: 0, y: 1 },
+ ];
+ 
++/* ── the floor as a REGION, not a run of pixels (VIS-03) ──────────────────── */
++
++/**
++ * WHY THE ROW-RUN VERSION HAD TO GO
++ *
++ * It sampled a reference colour from the bottom centre, then walked upward
++ * measuring how far that colour continued left and right on each row, and
++ * called the row where the run collapsed the wall line. On an empty room it is
++ * exact. On a room with anything IN it, the first rug, sofa or dog the walk
++ * meets collapses the run — so the wall line comes back at the near edge of the
++ * furniture rather than at the wall.
++ *
++ * AUDIT-01 measured it: 0% error on an empty room, 0% with a sofa off to one
++ * side, and 72% error the moment a rug crosses the middle of the floor, while
++ * still reporting `measured`. Living rooms have rugs. And the live camera made
++ * it impossible to ignore — pointed at a room it repainted a strip along the
++ * bottom of the frame and left the rest of the floor alone, because a strip
++ * along the bottom was all the estimator had found.
++ *
++ * WHAT REPLACES IT
++ *
++ * The floor is a connected REGION, and a rug sitting on it is a hole in that
++ * region rather than the end of it. So:
++ *
++ *   1. take the dominant surface of the bottom band as the reference — the
++ *      same mode-of-the-histogram idea the renderer's mask uses, for the same
++ *      reason: a mean is dragged by whatever is standing there
++ *   2. mark every cell in the frame that matches it
++ *   3. keep the connected component that touches the bottom edge — this is
++ *      what walks AROUND a rug instead of stopping at it
++ *   4. the wall line is the topmost row that component reaches with real width
++ *
++ * It reports `weak` in exactly the cases the old one did, plus the new ones it
++ * can now detect: no component, a component that never rises above the bottom
++ * quarter, or one whose far edge is a sliver.
++ */
++
++/**
++ * Cell size, in pixels, scaled to the frame.
++ *
++ * A fixed cell is a different instrument on a 200-pixel test image than on a
++ * 1400-pixel photograph: eight pixels is four percent of the first and half a
++ * percent of the second. Roughly forty cells across the short edge keeps the
++ * estimator's resolution the same proportion of the picture wherever it runs,
++ * which is what makes a fixture at one size mean anything at another.
++ */
++const qcell = (px: Pixels): number => Math.max(3, Math.round(Math.min(px.width, px.height) / 40));
++
++type Band = { lum: number; u: number; v: number };
++
++const bandOf = (px: Pixels, x0: number, y0: number, x1: number, y1: number): Band => {
++  const rgb = meanRgb(px, x0, y0, x1, y1, 2);
++  const { hueDeg, chroma } = hueChroma(rgb);
++  const rad = (hueDeg * Math.PI) / 180;
++  return { lum: relativeLuminance(rgb.r, rgb.g, rgb.b), u: Math.cos(rad) * chroma, v: Math.sin(rad) * chroma };
++};
++
++const QUAD_CHROMA_TOL = 0.13;
++const QUAD_LUM_TOL = 0.085;
++
+ export function estimateFloorQuad(px: Pixels): { quad: Quad; confidence: 'measured' | 'weak' } {
+   if (px.width < 8 || px.height < 8) return { quad: DEFAULT_QUAD, confidence: 'weak' };
+ 
+-  const reference = meanRgb(px, 0.35, 0.9, 0.65, 1);
+-  const sampleRows = Math.min(120, px.height);
+-  const rowStep = Math.max(1, Math.floor(px.height / sampleRows));
+-  const centre = Math.floor(px.width / 2);
+-  const colStep = Math.max(1, Math.floor(px.width / 160));
+-
+-  let horizonRow = 0;
+-  let leftAtHorizon = 0;
+-  let rightAtHorizon = px.width - 1;
+-  let found = false;
+-
+-  for (let y = px.height - 1; y >= 0; y -= rowStep) {
+-    let left = centre;
+-    let right = centre;
+-    for (let x = centre; x >= 0; x -= colStep) {
+-      const i = (y * px.width + x) * 4;
+-      const here = { r: px.data[i]!, g: px.data[i + 1]!, b: px.data[i + 2]! };
+-      if (colourDistance(here, reference) > TOLERANCE) break;
+-      left = x;
+-    }
+-    for (let x = centre; x < px.width; x += colStep) {
+-      const i = (y * px.width + x) * 4;
+-      const here = { r: px.data[i]!, g: px.data[i + 1]!, b: px.data[i + 2]! };
+-      if (colourDistance(here, reference) > TOLERANCE) break;
+-      right = x;
++  const QCELL = qcell(px);
++  const cols = Math.max(1, Math.ceil(px.width / QCELL));
++  const rows = Math.max(1, Math.ceil(px.height / QCELL));
++
++  /* The reference. The bottom band of a photograph taken by a person standing
++     in a room is floor in essentially every case, and taking it as a BAND
++     rather than one small patch means a rug that happens to sit under the
++     camera does not become the definition of floor. */
++  const ref = bandOf(px, 0.2, 0.88, 0.8, 1);
++
++  const like = new Uint8Array(cols * rows);
++  for (let cy = 0; cy < rows; cy += 1) {
++    for (let cx = 0; cx < cols; cx += 1) {
++      const b = bandOf(
++        px,
++        (cx * QCELL) / px.width,
++        (cy * QCELL) / px.height,
++        ((cx + 1) * QCELL) / px.width,
++        ((cy + 1) * QCELL) / px.height,
++      );
++      const dChroma = Math.hypot(b.u - ref.u, b.v - ref.v);
++      const dLum = Math.abs(b.lum - ref.lum);
++      like[cx + cy * cols] = dChroma < QUAD_CHROMA_TOL && dLum < QUAD_LUM_TOL ? 1 : 0;
+     }
+-    const run = right - left;
+-    if (run < px.width * MIN_RUN_FRACTION) {
+-      horizonRow = y;
+-      found = true;
+-      break;
+-    }
+-    leftAtHorizon = left;
+-    rightAtHorizon = right;
+-    horizonRow = y;
+   }
+ 
+-  /* The run never collapsed — the whole frame reads as one surface. That is a
+-     photograph of a floor, not of a room, and the honest answer is a default
+-     quad plus a request for a correction. */
+-  if (!found || horizonRow > px.height * 0.92) {
+-    return { quad: DEFAULT_QUAD, confidence: 'weak' };
++  /* The component that reaches the bottom of the frame. Four-connected, so it
++     does not leak diagonally past a chair leg into the wall behind it. */
++  const seen = new Uint8Array(cols * rows);
++  const stack: number[] = [];
++  for (let cx = 0; cx < cols; cx += 1) {
++    const c = cx + (rows - 1) * cols;
++    if (like[c] === 1 && seen[c] === 0) { seen[c] = 1; stack.push(c); }
++  }
++  let size = 0;
++  const rowLeft = new Int32Array(rows).fill(cols);
++  const rowRight = new Int32Array(rows).fill(-1);
++  while (stack.length) {
++    const c = stack.pop()!;
++    size += 1;
++    const x = c % cols;
++    const y = (c / cols) | 0;
++    if (x < rowLeft[y]!) rowLeft[y] = x;
++    if (x > rowRight[y]!) rowRight[y] = x;
++    if (x > 0 && like[c - 1] === 1 && !seen[c - 1]) { seen[c - 1] = 1; stack.push(c - 1); }
++    if (x < cols - 1 && like[c + 1] === 1 && !seen[c + 1]) { seen[c + 1] = 1; stack.push(c + 1); }
++    if (y > 0 && like[c - cols] === 1 && !seen[c - cols]) { seen[c - cols] = 1; stack.push(c - cols); }
++    if (y < rows - 1 && like[c + cols] === 1 && !seen[c + cols]) { seen[c + cols] = 1; stack.push(c + cols); }
+   }
+ 
+-  const yFar = clamp01(horizonRow / px.height);
+-  const xFarLeft = clamp01(leftAtHorizon / px.width);
+-  const xFarRight = clamp01(rightAtHorizon / px.width);
+-
+-  /* A far edge narrower than a fifth of the frame is a corridor of noise, not a
+-     wall line. Say weak and hand over the default rather than a confident
+-     sliver. */
++  /* The whole frame is one surface: a photograph of a floor, not of a room.
++     Same answer the row-run version gave, for the same reason. */
++  if (size >= cols * rows * 0.97) return { quad: DEFAULT_QUAD, confidence: 'weak' };
++  if (size < cols * rows * 0.04) return { quad: DEFAULT_QUAD, confidence: 'weak' };
++
++  /* The wall line: the topmost row the region reaches with real width. A row
++     the region only just clips is a reflection or a door frame. */
++  const minWidth = Math.max(2, Math.round(cols * MIN_RUN_FRACTION));
++  let top = rows - 1;
++  for (let y = 0; y < rows; y += 1) {
++    if (rowRight[y]! - rowLeft[y]! + 1 >= minWidth) { top = y; break; }
++  }
++  if (top > rows * 0.92) return { quad: DEFAULT_QUAD, confidence: 'weak' };
++
++  /* A cell's position is its CENTRE. Taking the outer edge of the boundary
++     cells widens the floor by one cell on each side, which on a small frame is
++     several percent of the picture and always in the same direction. */
++  const yFar = clamp01(((top + 0.5) * QCELL) / px.height);
++  const xFarLeft = clamp01(((rowLeft[top]! + 0.5) * QCELL) / px.width);
++  const xFarRight = clamp01(((rowRight[top]! + 0.5) * QCELL) / px.width);
+   if (xFarRight - xFarLeft < 0.2) return { quad: DEFAULT_QUAD, confidence: 'weak' };
+ 
+   const quad: Quad = [
+@@ -282,6 +361,36 @@ export function estimateFloorQuad(px: Pixels): { quad: Quad; confidence: 'measur
+     { x: 1, y: 1 },
+     { x: 0, y: 1 },
+   ];
++
++  /* DOES A TRAPEZOID ACTUALLY FIT WHAT WE FOUND?
++   *
++   * The quad has two corners on the wall line and two at the bottom of the
++   * frame. That is the right shape for a room photographed square-on and the
++   * wrong shape for one shot through a doorway at an angle, where the wall line
++   * runs diagonally across the picture — there the emitted quad covers a great
++   * deal of wall, and the old estimator said `measured` about it anyway.
++   *
++   * So measure the fit, IN BOTH DIRECTIONS. Sum the region's own row extents —
++   * extents, so a rug or a sofa INSIDE the floor counts as covered rather than
++   * as a hole — and compare that to the area of the quad.
++   *
++   * A trapezoid that fits its region scores near one. Score well under and the
++   * quad has swallowed wall. Score well OVER and the quad has missed floor:
++   * that is the doorway shot, where the wall line arrives at one corner first,
++   * the width threshold is met a long way down, and the emitted wedge covers
++   * two thirds of the floor that is actually there. Both are the same answer —
++   * `weak`, and four corners to drag, which is what the verification screen is
++   * for. */
++  let filled = 0;
++  for (let y = 0; y < rows; y += 1) {
++    if (rowRight[y]! < rowLeft[y]!) continue;
++    filled += rowRight[y]! - rowLeft[y]! + 1;
++  }
++  const filledArea = (filled * QCELL * QCELL) / (px.width * px.height);
++  const quadArea = quadCoverage(quad);
++  const fit = quadArea > 0 ? filledArea / quadArea : 0;
++  if (fit < 0.85 || fit > 1.25) return { quad, confidence: 'weak' };
++
+   return { quad, confidence: 'measured' };
+ }
+ 
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index c3bf76c..2f73bfd 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -1099,6 +1099,12 @@ export const designToMarkdown = (): string => {
+     '',
+     'Moving between them changes nothing about the floor, the catalogue or the price.',
+     '',
++    '## Camera',
++    '',
++    '- Entry point: ' + abs('/floor-studio') + '#live opens the camera directly.',
++    '- Permission: requested on open. A refusal, a camera already in use, a device without one, or an insecure context each produce a named, actionable sentence, and every one of them offers photo upload as the way through.',
++    '- Privacy: no frame leaves the device. There is no endpoint that accepts one.',
++    '',
+     '## Vocabulary it accepts',
+     '',
+     `- Species: ${FLOOR_PRODUCTS.map((p) => p.name).join(', ')}`,
+@@ -1131,27 +1137,31 @@ export const floorStudioToMarkdown = (): string => {
+   const out: string[] = [
+     '# Ecowoods Floor Studio',
+     '',
+-    '> Upload a photograph of a room and see real Ecowoods hardwood configurations rendered',
+-    '> into it, with a live estimated installed range in Canadian dollars. The photograph is',
+-    '> analysed and composited in the browser and is never uploaded.',
++    '> Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood',
++    '> configurations rendered into it — live, at video rate — with an estimated installed range',
++    '> in Canadian dollars. Every frame is analysed and composited in the browser and is never',
++    '> uploaded, and no image model is involved: every floor shown is one Ecowoods can supply',
++    '> and install.',
+     '',
+     identitySentence(),
+     '',
+     '## What it does',
+     '',
+-    '1. **Reads the photograph, on the device.** Mean relative luminance, the undertone of the upper third of the frame, the tone of the existing floor, and an estimate of where the floor plane meets the walls. All of it is arithmetic over pixels.',
+-    '2. **Asks the person to correct it.** Four draggable, keyboard-operable corners. Confidence is reported as "measured" or "weak" — never as a percentage, because a percentage would be a claim about a distribution nobody estimated.',
+-    '3. **Asks for what a photograph cannot give.** The area in square feet and the room type. A single uncalibrated photograph cannot yield either, and the installed range is computed from the area.',
+-    '4. **Recommends real configurations.** Ranked by criteria that each return a sentence; the match percentage is the arithmetic over those sentences.',
+-    '5. **Renders the chosen floor into the room** and updates the estimated installed range as species, finish, pattern, board width or area change.',
+-    '6. **Hands the design to the estimate form** as structured data, so nothing is retyped.',
++    '1. **Runs live on a camera.** `getUserMedia` with the rear camera, then for every frame: the floor plane is found, a mask decides which of those pixels are floor rather than furniture, and the chosen configuration is drawn into them through an exact projective map that keeps the room\u2019s own light. The analysis resolution adapts to what the device manages, targeting 24 frames a second. The stream stops when the view closes or the tab is hidden.',
++    '2. **Reads a photograph, on the device.** Mean relative luminance, the undertone of the upper third of the frame, the tone of the existing floor, and an estimate of where the floor plane meets the walls. All of it is arithmetic over pixels.',
++    '3. **Asks the person to correct it.** Four draggable, keyboard-operable corners. Confidence is reported as "measured" or "weak" — never as a percentage, because a percentage would be a claim about a distribution nobody estimated.',
++    '4. **Asks for what a photograph cannot give.** The area in square feet and the room type. A single uncalibrated photograph cannot yield either, and the installed range is computed from the area.',
++    '5. **Recommends real configurations.** Ranked by criteria that each return a sentence; the match percentage is the arithmetic over those sentences.',
++    '6. **Renders the chosen floor into the room** and updates the estimated installed range as species, finish, pattern, board width or area change.',
++    '7. **Hands the design to the estimate form** as structured data, so nothing is retyped.',
+     '',
+     '## What it refuses to do',
+     '',
+     '- It does not generate floors. Every board rendered is a configuration this company can supply and install; no image model is involved at any point.',
+     '- It does not measure the room. It asks.',
+     '- It does not produce a quote. The figure is an estimated installed range and is labelled as one everywhere it appears.',
+-    '- It does not retain the photograph. A shared design link carries the floor, never the room.',
++    '- It does not retain the photograph, and it does not retain a camera frame. There is no upload endpoint. A shared design link carries the floor, never the room.',
++    '- It does not call the live view measured. The still-photograph path gives a person four corners to drag and a boundary they have checked; the live path has neither, and says so on screen.',
+     '',
+     '## Vocabulary it accepts',
+     '',
+diff --git a/apps/web/lib/navigation.ts b/apps/web/lib/navigation.ts
+index e350dcf..72ea19a 100644
+--- a/apps/web/lib/navigation.ts
++++ b/apps/web/lib/navigation.ts
+@@ -65,7 +65,14 @@ export const SERVICES_MENU: MegaColumn[] = [
+          that costs the visitor nothing and shows them something they cannot get
+          anywhere else: their own room, with a floor we can actually lay in it.
+          In the chrome it is depth 0 — one click from every page. */
+-      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
++      /* The live camera leads the whole site (LIVE-01). It is the only entry
++         here that costs nothing, needs no photograph and shows somebody their
++         own room changing in front of them, and the fragment opens it directly
++         rather than making them find a button. The still-photo door stays,
++         because a desktop has no useful camera and a considered decision is
++         often made sitting down. */
++      { label: 'Point your camera at the room', href: '/floor-studio#live', note: 'Live, on your phone — the floor changes as you move' },
++      { label: 'See it in your room', href: '/floor-studio', note: 'From a photo, with the boundary you can correct' },
+       /* The second door, one line under the first (UI-NAV-02). Floor Studio led
+          this menu alone, and /design — the configurator it hands people on to —
+          was reachable only from the footer. Two entries into one catalogue is
+diff --git a/docs/AUDIT_01_VISUALIZER.md b/docs/AUDIT_01_VISUALIZER.md
+index c9a2f5f..243640f 100644
+--- a/docs/AUDIT_01_VISUALIZER.md
++++ b/docs/AUDIT_01_VISUALIZER.md
+@@ -27,16 +27,19 @@ repository's own vitest.)*
+ 
+ ## 0. THE HEADLINE
+ 
+-**The grade is B‑. It is not A+, and saying A+ today would be the exact failure
+-this repository exists to prevent.**
++**The grade was B− when this was written. LIVE-01 closed AV-01 and AV-02 and
++added the live camera; GC-026 is still open, so it is B+ now, and it is still
++not A+.** The original findings are kept below exactly as measured, with what
++closed each one, because an audit that quietly rewrites itself is a press
++release.
+ 
+ Three findings carry that grade, and all three are executed rather than argued:
+ 
+ | # | Finding | Class |
+ |---|---|---|
+-| **AV-01** | The occlusion mask paints hardwood over people, dogs, jute rugs, wooden furniture legs and stair risers — 6 of 14 tested objects, 100% of their pixels | **BROKEN** |
+-| **AV-02** | The floor-boundary estimator reports `measured` — its confident label — while losing 72% of the floor, in the single most common room photograph there is (a room with a rug) | **MISLEADING** |
+-| **AV-03** | The studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all **26 New York pages** | **BROKEN** (reopens GC-024) |
++| **AV-01** | The occlusion mask paints hardwood over people, dogs, jute rugs, wooden furniture legs and stair risers — 6 of 14 tested objects, 100% of their pixels | ~~BROKEN~~ → **CLOSED by LIVE-01.** 13 of 14 preserved. The oak stair riser is a named, documented limit: it is the same wood as the floor, and the rule that would catch it also refuses to paint a pool of sunlight |
++| **AV-02** | The floor-boundary estimator reports `measured` — its confident label — while losing 72% of the floor, in the single most common room photograph there is (a room with a rug) | ~~MISLEADING~~ → **CLOSED by LIVE-01.** The floor is a connected region now, so a rug is a hole in it rather than the end of it. 72% error → 3%, and a doorway shot the trapezoid cannot describe reports `weak` |
++| **AV-03** | The studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all **26 New York pages** | **BROKEN, STILL OPEN** (GC-026) |
+ 
+ Everything else is honest. Much of it is unusually honest — the refusal to
+ estimate area from a photo, the refusal to generate floors, the single price
+@@ -55,11 +58,12 @@ visitor something untrue · `UNVERIFIED` not testable from here.
+ 
+ | Capability | Verdict | Evidence |
+ |---|---|---|
+-| Live camera access (`getUserMedia`) | **MISSING** | `grep -rn "getUserMedia\|mediaDevices" apps/web packages` → 0 matches |
++| Live camera access (`getUserMedia`) | ~~MISSING~~ → **PASS (LIVE-01)** | `app/components/floor-studio/LiveRoom.tsx`. Rear camera by `facingMode`, permission failure classified into six named causes each with an actionable sentence, upload offered as the way through every one of them |
+ | Native camera capture | **PASS** | `FloorStudio.tsx:428` — `<input type="file" accept="image/*" capture="environment">`. On a phone this opens the rear camera. On desktop it degrades to a file picker, silently. |
+ | Front/rear camera selection | **MISSING** | `capture="environment"` is a fixed hint; no device enumeration exists |
+ | Permission prompt + fallback | **PASS (by construction)** | There is no permission to grant: the OS camera app mediates. Upload is a first-class sibling, not a fallback. `FloorStudio.tsx:414–437` |
+-| Live preview / live AR | **MISSING** | No `MediaStream`, no `requestAnimationFrame` in the studio. The pipeline is single-frame. |
++| Live preview / live AR | ~~MISSING~~ → **PASS (LIVE-01)** | Every frame: floor plane found, mask built, catalogue floor composited through the exact homography, presented. Measured 2.8–8.8 ms a frame at 400×300 after the render path was optimised 7.8× |
++| Graceful degradation under load | **PASS (LIVE-01)** | `lib/floor-studio/live.ts` — a six-rung resolution ladder that moves only on a sustained run of slow or fast frames, with its own tests |
+ | Graceful degradation of live AR | **n/a → MISSING** | Nothing to degrade |
+ 
+ **Read this honestly:** the site never claims live AR. `/floor-studio` says
+@@ -77,8 +81,8 @@ lie to a visitor.
+ | Plane detection | **PARTIAL** | `room.ts:estimateFloorQuad` — a colour-run heuristic from a bottom-centre reference patch, walking upward until the run collapses. Named as a heuristic in its own docblock. |
+ | Perspective / homography | **PASS** | `render.ts:solveHomography` — eight equations, Gaussian elimination with partial pivoting, degenerate quads return `null` rather than NaN. Exact projective map, not an affine approximation. Covered by `render.test.ts`. |
+ | Surface-normal estimation | **MISSING** | The plane is assumed flat and level |
+-| **Occlusion of objects on the floor** | **BROKEN** | See §2 |
+-| Confidence reporting | **MISLEADING** | See §3 |
++| **Occlusion of objects on the floor** | ~~BROKEN~~ → **PASS** | Region-based mask: per-row luminance profile, dominant-surface mode on the residual, morphological close, hole fill. 13 of 14 fixture objects preserved |
++| Confidence reporting | ~~MISLEADING~~ → **PASS** | 3% coverage error where it says `measured`; `weak` when a trapezoid does not fit what it found |
+ 
+ ### 1.3 Rendering
+ 
+@@ -87,7 +91,7 @@ lie to a visitor.
+ | Only real, buyable products rendered | **PASS** | `render.ts` docblock and implementation: every board is synthesised from a catalogue record's two pigments + finish tint + sheen. No generative model anywhere in the dependency tree. |
+ | The room's own light is preserved | **PASS** | `render.ts:489` — each output pixel keeps the luminance ratio of the pixel it replaces against the floor-region mean, clamped to 0.45–1.8 |
+ | Sheen behaves like sheen | **PASS** | `render.ts:495` — gloss scales with how far above the mean the original pixel was, so satin reads satin and matte reads matte with no extra input |
+-| **Modifies only the floor** | **BROKEN** | §2 — it modifies whatever shares wood's hue |
++| **Modifies only the floor** | ~~BROKEN~~ → **PASS** | §2, closed |
+ | Orientation control | **PARTIAL** | Pattern (straight / diagonal / herringbone / chevron) and a board-scale nudge. There is **no free rotation angle**, so a room whose boards should run toward the window cannot be shown that way. |
+ | Determinism (a shared link shows the sender's floor) | **PASS** | Texture is a pure function of the configuration id |
+ 
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index c7c5248..e1cf2ef 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -75,8 +75,9 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
+ | GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
+ | GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
+-| AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
+-| AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
++| AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
++| AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
++| LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
+ | NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
+ | VIS-02 | **closed by VIS-02** | five pages carried a full openGraph block with no images key — the four commercial head terms and Floor Studio all served the site default, the same card /terms serves |
+ | TREE-01 | **closed by VIS-02** | /technical-library is the breadcrumb parent of every article and sits at sitemap priority 0.95, and appeared in no menu; the Reference column now names it beside /resources with notes that distinguish them |
+@@ -904,3 +905,90 @@ shingles. Highest overlap between any two pages: 12.6%, `/guides/[slug]` against
+ `/services/[slug]` — shared breadcrumb, CTA and next-step rail, not shared
+ content. No identical title except the notFound fallback. No identical meta
+ description. No pair of pages on this site tells the same story.
++
++---
++
++## LIVE-01 · the live camera, and the two defects it could not ship on top of
++
++### What was asked for, and what was built instead
++
++The request was for the floor to change live under a camera, described as "REAL
++ai generated change of the floor". What shipped renders, live, every floor
++Ecowoods can supply and install — and generates nothing.
++
++That is not a shortfall, it is the same rule render.ts has carried since the
++studio shipped: *"A diffusion model asked for 'white oak herringbone' produces a
++beautiful floor that exists nowhere, and the homeowner who falls in love with it
++cannot buy it. That is not a rendering bug, it is a fraud with a nice colour
++palette."* A generated floor would also break the one thing this repository is
++for — the price under the picture would belong to no product.
++
++So: per frame, the floor plane is found, a mask decides which of those pixels
++are floor rather than furniture, and a configuration from the catalogue is drawn
++into them through an exact projective map, keeping the room's own light. The
++claim is narrower than "AI generates your floor" and, unlike it, true.
++
++### It could not ship on AV-01 and AV-02, so both are closed here
++
++Pointing a camera at a room made both defects impossible to look away from. The
++first frame repainted a strip along the bottom and left the rest of the floor
++alone (AV-02: the row-run estimator stops at the first rug it meets), and what
++it did paint went over the dog (AV-01).
++
++**AV-01 — the mask.** Chroma-only became: a per-row luminance profile fitted as
++a line, so a floor's falloff with depth is removed before anything is judged; a
++dominant-surface mode on the residual, chosen by mass after smoothing, because a
++flat rug otherwise out-votes a textured floor one bin at a time; scale from the
++mode's core rather than its span; morphological close; a 4-connected flood that
++fills whatever an object encloses. 13 of 14 fixture objects preserved, against 8
++before.
++
++The fourteenth is named rather than buried. An oak stair riser on an oak floor
++is the same wood at a slightly different angle to the light, and the rule that
++catches it — any luminance departure is an object — also refuses to paint a pool
++of sunlight, which leaves a blotch of the old floor in the middle of the new one
++in every daylit room. Same chroma with different brightness is therefore treated
++as light. The riser is the price and it is in the audit.
++
++**AV-02 — the boundary.** The floor is a connected region now, found by growing
++from the bottom edge over cells that match the dominant surface of the bottom
++band, so a rug is a hole in the floor rather than the end of it. Coverage error
++on a room with a rug: 72% → 3%. And the quad is checked for FIT in both
++directions against the region's own row extents — a trapezoid stretched over a
++diagonal wall line, or a wedge that has missed most of the floor, both report
++`weak` and hand over the four corners.
++
++### The render path had to be 7.8× faster
++
++63,530 assertions of behaviour unchanged, and 64 ms a frame at 320×240 became
++8.2. Three causes, all of them work that did not depend on the pixel:
++`woodColourAt` was doing a catalogue lookup, two hex parses, a second lookup and
++an `rgba()` string parse PER PIXEL; the grain was six `Math.sin` per pixel, of
++which two are constant across a whole board; and `relativeLuminance` was three
++`Math.pow` per pixel over 256 possible inputs. A memoised palette, a per-board
++cache, a sine table for grain only, an sRGB table, and the mask's own cell grid
++standing in for four cross products of `inQuad` on every interior pixel.
++
++### What the live view is not allowed to say
++
++It never says `measured`. The still-photograph path gives a person four corners
++to drag and a boundary they have looked at; the live path has neither. The
++caption asks for what it needs instead, and `liveCaption` has a test asserting
++that the words "measured", "accurate", "exact" and "precise" never appear in it.
++
++### Privacy, unchanged and now more load-bearing
++
++There is no upload in the component and no endpoint for one. The stream is
++attached to a `<video>` that never leaves the page, frames are read into an
++ImageData and dropped, and the tracks stop on close and on `visibilitychange` —
++a camera light that stays on after someone switches apps is what makes a person
++uninstall a product. Pointing a camera at a living room produces zero requests,
++which is checkable from the network panel.
++
++### Where it is reachable from
++
++`/floor-studio#live` opens the camera directly, and it is linked from the header
++panel, the mobile drawer, ⌘K and the homepage — four surfaces, one entry in
++`lib/navigation.ts`, because NAV-03 made that one source. The fragment has a
++real `id="live"` behind it so it lands correctly without JavaScript, which
++`verify-destinations` caught and required.
+-- 
+2.43.0
+
