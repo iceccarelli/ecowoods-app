@@ -15,6 +15,7 @@ import { saveDesignConfig } from '@/lib/design-config';
 import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { track } from '@/lib/analytics';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
+import { bandForWork } from '@/content/constants/pricing';
 
 /* ────────────────────────────────────────────────────────────────────────────
    DESIGN YOUR FLOOR
@@ -149,7 +150,7 @@ export default function FloorConfigurator() {
   const pattern = PATTERN_OPTIONS.find((p) => p.id === patternId) ?? PATTERN_OPTIONS[0];
 
   const estimate = useMemo(
-    () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId }),
+    () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId, band: bandForWork(speciesId) }),
     [speciesId, sqft, finishId, patternId],
   );
 

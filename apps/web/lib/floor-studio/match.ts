@@ -249,17 +249,59 @@ const CRITERIA: Criterion[] = [
     weight: 3,
     evaluate: (ctx) => {
       if (!has(ctx, 'value')) return null;
-      /* Value is measured against the cheapest layable version of this
-         catalogue, not asserted. Straight plank in a plain finish is the
-         floor that costs the least to lay, and the arithmetic says so. */
-      const plainest = priceConfiguration(
-        { ...ctx.config, finishId: 'natural-matte', patternId: 'straight' },
-        ctx.input.squareFeet,
-      );
-      const premium = ctx.estimate.estimatedHighCad / Math.max(1, plainest.estimatedHighCad);
-      if (premium <= 1.01) return { delta: 1, sentence: `${describeConfiguration(ctx.config)} is the least expensive way to lay this species — no pattern waste, no extra finishing passes.` };
-      if (premium <= 1.15) return { delta: 0.3, sentence: 'A small premium over the plainest version of this floor, for a finish that earns it.' };
-      return { delta: -0.8, sentence: `The pattern and finish add roughly ${Math.round((premium - 1) * 100)}% over the plainest version of the same wood.` };
+      /*
+       * VALUE IS MEASURED IN WORK, NOT IN A PRICE (GEO-005).
+       *
+       * This divided one estimate by another and reported the difference as a
+       * percentage: "the pattern and finish add roughly 38% over the plainest
+       * version". That number came from the finish and pattern multipliers in
+       * packages/shared/ai, which the file itself labelled PLACEHOLDER — NOT
+       * Ecowoods' real numbers. A placeholder became a percentage, the
+       * percentage became a sentence, and the sentence was shown to a visitor
+       * as a fact about what a floor costs.
+       *
+       * The published band does not move with the cut, so the arithmetic now
+       * returns 1.0 for every configuration and the old code would have called
+       * a chevron "the least expensive way to lay this species". What IS true
+       * is a fact about the labour: a straight lay in a plain finish is the
+       * fewest cuts, the least waste and the fewest passes, and a chevron is
+       * the most of all three. That is stated, and where it shows up — inside
+       * the band, in the written price after the measure — is stated with it.
+       */
+      /* The ladder is the catalogue's own description of the work, in order:
+         a straight lay is long quiet lines, a diagonal "costs waste, buys
+         movement", herringbone is the one people photograph and a chevron is
+         "the hardest floor we lay". None of that is a price. */
+      const CUT_LABOUR: Record<string, number> = { straight: 0, diagonal: 1, herringbone: 2, chevron: 3 };
+      const EXTRA_PASS_FINISHES = new Set(['wire-brushed', 'smoked', 'hand-scraped']);
+      const cut = CUT_LABOUR[ctx.config.patternId] ?? 0;
+      const heavyFinish = EXTRA_PASS_FINISHES.has(ctx.config.finishId);
+      const label = patternById(ctx.config.patternId)?.label ?? 'This pattern';
+      const inside =
+        'The published band does not move with the cut or the finish; where the written price lands inside it does.';
+
+      if (cut === 0 && !heavyFinish) {
+        return {
+          delta: 1,
+          sentence: `${describeConfiguration(ctx.config)} is the plainest way to lay this species — the fewest cuts, the least waste and the fewest finishing passes. ${inside}`,
+        };
+      }
+      if (cut >= 2) {
+        return {
+          delta: heavyFinish ? -0.9 : -0.6,
+          sentence: `${label} is among the most labour-intensive cuts in the catalogue${heavyFinish ? ', and the finish adds passes on top of it' : ''}. ${inside}`,
+        };
+      }
+      if (cut === 1) {
+        return {
+          delta: -0.3,
+          sentence: `${label} costs waste a straight lay does not — every board meets the wall on an angle. ${inside}`,
+        };
+      }
+      return {
+        delta: 0.2,
+        sentence: `A straight lay with a finish that takes extra passes — more work than the plainest version of this floor. ${inside}`,
+      };
     },
   },
 

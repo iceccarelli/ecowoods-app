@@ -220,6 +220,69 @@ Still open: GC-021 (job cards keyed by display name) and GC-023 (cache windows).
 
 ---
 
+## GC-025 · P0 · two published prices for the same work
+
+Found 2026-09-12, immediately after the floor-studio series shipped. **Closed by
+GEO-005 the same day.**
+
+**A says** `/pricing`, `/pricing.md`, `/api/v1/pricing`, `/llms.txt`, `/ai.txt`
+and the organisation's `OfferCatalog`: a new hardwood install is one published
+band, and a full sand and finish is another.
+**B says** the configurator, `/design`, the spec sheet, `/api/estimate`,
+`/api/chat`'s `estimate_project` tool and — from 2026-09-12 — `/floor-studio`:
+an installed rate per species, multiplied by a finish factor and a pattern
+factor.
+
+B was `FLOORING_RATES_CAD_PER_SQFT` in `packages/shared/ai/index.ts`, and it was
+never derived from the bands. Four of its six install rates fell outside the
+published band — red oak $2/sq ft under the floor, maple $1 under, engineered $3
+under, black walnut $4 over the ceiling — and its refinishing range missed the
+published full-sand band at both ends. At 800 sq ft a walnut floor came back
+above what the same site publishes as its ceiling.
+
+The multipliers were not merely underived. The file labelled them itself:
+
+> ⚠ ACTION REQUIRED BEFORE LAUNCH … The FINISH_ and PATTERN_ multipliers below
+> are PLACEHOLDERS I chose to make the model structurally correct — they are NOT
+> Ecowoods' real numbers. Have the estimator confirm them, **or the site will
+> quote prices nobody has agreed to honour.**
+
+The confirmation never happened and the numbers shipped. Asked directly on
+2026-09-12 whether they were rates he would honour, the owner said no.
+
+**Resolution (GEO-005).** The rate table and both multiplier sets are deleted.
+`estimateInstalledRangeCad` takes a `PublishedBand` and multiplies it by an
+area; it calculates no rate. `packages/shared` cannot import the bands — it is
+upstream of `apps/web`, where `content/constants/pricing.ts` lives for the guard
+that exempts it by path — so the band travels IN, from
+`bandForWork(work, country)`. One source, one direction.
+
+| | Before | After |
+|---|---|---|
+| price sources on the site | 2 | 1 |
+| install rates outside the published band | 4 of 6 | 0 |
+| unconfirmed multipliers reaching a visitor | 9 | 0 |
+| surfaces quoting the underived table | 6 | 0 |
+| guards / tests | 66 / 465 | 66 / 465 |
+
+**What removing the invented numbers exposed.** The "best value" recommendation
+in `lib/floor-studio/match.ts` divided one estimate by another and told the
+visitor "the pattern and finish add roughly 38% over the plainest version". That
+percentage was the placeholder multipliers, restated as a fact about money. With
+them gone the ratio is 1.0 for every configuration, and the old code would have
+called a chevron "the least expensive way to lay this species". It now ranks the
+cut by the labour the catalogue itself describes — a straight lay is the fewest
+cuts and the least waste, a diagonal costs waste, a chevron is "the hardest floor
+we lay" — and says where that shows up: inside the band, in the written price
+after the measure. No percentage, and the same recommendation for a true reason.
+
+Still open: the studio prices in Canadian dollars on a page linked from the
+header and footer of all 26 New York pages. Owner decision taken 2026-09-12: a
+region control in the studio, driving currency and band together. That is
+GEO-006.
+
+---
+
 ## Summary
 
 | ID | Sev | Class | One line | Entities | Resolution |

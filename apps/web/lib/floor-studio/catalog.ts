@@ -80,6 +80,7 @@ import {
   type PatternOption,
 } from '@ecowoods/shared/ai';
 import { SPECIES as WOOD_SPECIES, computeMovement, type WoodSpecies } from '@/lib/wood';
+import { bandForWork } from '@/content/constants/pricing';
 
 /* ── the axes ─────────────────────────────────────────────────────────────── */
 
@@ -122,8 +123,11 @@ export type FloorProduct = {
   id: string;
   name: string;
   /**
-   * The key into FLOORING_RATES_CAD_PER_SQFT. This is the ONLY link between a
-   * catalogue entry and money, and it is a lookup rather than a number.
+   * The word this product is priced by. Since GEO-005 it selects a PUBLISHED
+   * BAND (content/constants/pricing.ts → bandForWork), not a per-species rate:
+   * there is one published band for an install, and walnut does not have a
+   * different one from red oak. It is still the only link between a catalogue
+   * entry and money, and it is still a lookup rather than a number.
    */
   rateKey: string;
   /** The id in lib/wood SPECIES, so movement is computed, never stored. */
@@ -416,11 +420,13 @@ export function describeConfiguration(c: FloorConfiguration): string {
  */
 export function priceConfiguration(c: FloorConfiguration, squareFeet: number): EstimateResult {
   const product = productById(c.productId);
+  const work = product?.rateKey ?? FLOOR_PRODUCTS[0].rateKey;
   return estimateInstalledRangeCad({
-    species: product?.rateKey ?? FLOOR_PRODUCTS[0].rateKey,
+    species: work,
     squareFeet,
     finish: c.finishId,
     pattern: c.patternId,
+    band: bandForWork(work),
   });
 }
 

@@ -16,6 +16,7 @@ import {
 } from '@ecowoods/shared/ai';
 import { chatRequestSchema, CHAT_MAX_BODY_BYTES } from '@ecowoods/shared/schemas';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
+import { bandForWork } from '@/content/constants/pricing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -157,7 +158,7 @@ export async function POST(req: Request) {
         }),
         execute: async ({ species, squareFeet, finish, pattern }) => {
           // Same function the configurator calls in the browser. Single source of truth.
-          const r = estimateInstalledRangeCad({ species, squareFeet, finish, pattern });
+          const r = estimateInstalledRangeCad({ species, squareFeet, finish, pattern, band: bandForWork(species) });
           return {
             species: r.species,
             squareFeet: r.squareFeet,

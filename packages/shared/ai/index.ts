@@ -68,39 +68,68 @@ Be helpful, not pushy — and understand that those are not in tension here. Pus
 
 End every turn with one clear next step, and make that step something Ecowoods does.`;
 
-export const FLOORING_RATES_CAD_PER_SQFT: Record<string, { low: number; high: number; note: string }> = {
-  'red oak':     { low: 9,  high: 14, note: 'classic, widely available' },
-  'white oak':   { low: 11, high: 17, note: 'premium grain, very popular' },
-  'maple':       { low: 10, high: 15, note: 'hard, light tone' },
-  'walnut':      { low: 14, high: 22, note: 'high-end dark hardwood' },
-  'hickory':     { low: 11, high: 16, note: 'very hard, rustic character' },
-  'refinishing': { low: 4,  high: 7,  note: 'sand + refinish existing floors' },
-  'engineered':  { low: 8,  high: 14, note: 'engineered hardwood install' },
-};
+/* ════════════════════════════════════════════════════════════════════════════
+   THE PRICE COMES FROM THE PUBLISHED BAND. IT IS NOT CALCULATED HERE.  (GEO-005)
+   ════════════════════════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SHARED PRICING MODEL
-// ═══════════════════════════════════════════════════════════════════════════
-// One source of truth for the browser configurator AND the estimate_project
-// tool in /api/chat. If these ever diverge, a homeowner sees $14,200 on the
-// page and EcowoodsGuide says $11,800 thirty seconds later — and a 25-year
-// reputation takes the hit. So: one module, imported by both.
-//
-// ⚠️  ACTION REQUIRED BEFORE LAUNCH
-//     FLOORING_RATES_CAD_PER_SQFT above was already in this repo.
-//     The FINISH_ and PATTERN_ multipliers below are PLACEHOLDERS I chose to
-//     make the model structurally correct — they are NOT Ecowoods' real
-//     numbers. Have the estimator confirm them, or the site will quote prices
-//     nobody has agreed to honour. They are isolated here so that is a
-//     two-minute edit, not a code change.
-// ═══════════════════════════════════════════════════════════════════════════
+   WHAT WAS HERE, AND WHY IT IS GONE
+
+   A table called FLOORING_RATES_CAD_PER_SQFT gave an installed rate per
+   species, multiplied by a finish factor and a pattern factor. Four of its six
+   ranges fell OUTSIDE the install band this business publishes on /pricing:
+   red oak started $2/sq ft under the floor, maple $1 under, engineered $3
+   under, and walnut ran $4 over the ceiling. Refinishing was quoted below the
+   published full-sand band at both ends.
+
+   The bands themselves are deliberately not repeated here. They live in
+   content/constants/pricing.ts, one copy, and a comment that quoted them would
+   be a second copy that goes stale — which is what
+   scripts/verify-pricing-source.mjs exists to prevent, and it caught this
+   comment when it did.
+
+   So the site stated two different prices for the same work, and the one a
+   visitor met first — in the configurator, on /design, in the spec sheet, from
+   the chat tool and, from 2026-09-12, on /floor-studio, which is linked from
+   the header and footer of every page — was the one nobody had published.
+
+   The multipliers were worse, and the file said so itself:
+
+       ⚠  ACTION REQUIRED BEFORE LAUNCH … The FINISH_ and PATTERN_ multipliers
+          below are PLACEHOLDERS I chose to make the model structurally correct
+          — they are NOT Ecowoods' real numbers. Have the estimator confirm
+          them, or the site will quote prices nobody has agreed to honour.
+
+   That confirmation never came, and the numbers shipped anyway. The owner was
+   asked directly on 2026-09-12 and answered: they are not prices he would
+   honour. So they are not prices this site states.
+
+   WHAT REPLACES IT
+
+   Nothing calculates a rate any more. The caller passes the PUBLISHED BAND and
+   this function multiplies it by an area. Species, finish and pattern still
+   travel with the estimate because they describe the floor — they no longer
+   move the number, which is exactly what /pricing has always said about them:
+   they move it INSIDE the band, and the fixed price is written after the free
+   in-home measure.
+
+   This module cannot import the bands: packages/shared is upstream of
+   apps/web, and content/constants/pricing.ts lives there for the guard that
+   exempts it by path. The band travels IN, which keeps one source of truth and
+   one direction of dependency.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** The shape of a published band, passed in by the app that owns the constants. */
+export interface PublishedBand {
+  readonly min: number;
+  readonly max: number;
+  /** ISO 4217, carried so a result can say which dollars it is in. */
+  readonly currency: string;
+}
 
 export interface FinishOption {
   id: string;
   label: string;
   blurb: string;
-  /** Multiplier on the installed per-sqft rate. PLACEHOLDER — confirm. */
-  multiplier: number;
   /** Swatch used by the configurator preview. */
   tint: string;
   sheen: number;
@@ -110,24 +139,32 @@ export interface PatternOption {
   id: string;
   label: string;
   blurb: string;
-  /** Extra labour + waste for the cut. PLACEHOLDER — confirm. */
-  multiplier: number;
 }
 
 export const FINISH_OPTIONS: readonly FinishOption[] = [
-  { id: 'natural-matte',  label: 'Natural Matte',   blurb: 'The grain, unedited. Hides everyday life.', multiplier: 1.0,  tint: 'rgba(196, 152, 106, 0.00)', sheen: 0.06 },
-  { id: 'satin',          label: 'Satin',           blurb: 'A soft returning light. The default for a reason.', multiplier: 1.03, tint: 'rgba(196, 152, 106, 0.06)', sheen: 0.16 },
-  { id: 'wire-brushed',   label: 'Wire-Brushed',    blurb: 'Texture you feel barefoot. Forgives dogs.', multiplier: 1.1,  tint: 'rgba(120, 84, 54, 0.10)', sheen: 0.1 },
-  { id: 'smoked',         label: 'Fumed & Smoked',  blurb: 'Ammonia-reacted tannins. Deep, permanent, moody.', multiplier: 1.22, tint: 'rgba(52, 32, 18, 0.34)', sheen: 0.13 },
-  { id: 'hand-scraped',   label: 'Hand-Scraped',    blurb: 'Every board touched by a person. Slow, and it shows.', multiplier: 1.3, tint: 'rgba(96, 64, 38, 0.16)', sheen: 0.09 },
+  { id: 'natural-matte',  label: 'Natural Matte',   blurb: 'The grain, unedited. Hides everyday life.',  tint: 'rgba(196, 152, 106, 0.00)', sheen: 0.06 },
+  { id: 'satin',          label: 'Satin',           blurb: 'A soft returning light. The default for a reason.', tint: 'rgba(196, 152, 106, 0.06)', sheen: 0.16 },
+  { id: 'wire-brushed',   label: 'Wire-Brushed',    blurb: 'Texture you feel barefoot. Forgives dogs.',  tint: 'rgba(120, 84, 54, 0.10)', sheen: 0.1 },
+  { id: 'smoked',         label: 'Fumed & Smoked',  blurb: 'Ammonia-reacted tannins. Deep, permanent, moody.', tint: 'rgba(52, 32, 18, 0.34)', sheen: 0.13 },
+  { id: 'hand-scraped',   label: 'Hand-Scraped',    blurb: 'Every board touched by a person. Slow, and it shows.', tint: 'rgba(96, 64, 38, 0.16)', sheen: 0.09 },
 ] as const;
 
 export const PATTERN_OPTIONS: readonly PatternOption[] = [
-  { id: 'straight',    label: 'Straight Plank', blurb: 'Long, quiet lines. Makes a room read larger.', multiplier: 1.0 },
-  { id: 'diagonal',    label: 'Diagonal',       blurb: '45° across the joists. Costs waste, buys movement.', multiplier: 1.12 },
-  { id: 'herringbone', label: 'Herringbone',    blurb: 'The one people photograph.', multiplier: 1.38 },
-  { id: 'chevron',     label: 'Chevron',        blurb: 'Mitred point-to-point. The hardest floor we lay.', multiplier: 1.52 },
+  { id: 'straight',    label: 'Straight Plank', blurb: 'Long, quiet lines. Makes a room read larger.' },
+  { id: 'diagonal',    label: 'Diagonal',       blurb: '45° across the joists. Costs waste, buys movement.' },
+  { id: 'herringbone', label: 'Herringbone',    blurb: 'The one people photograph.' },
+  { id: 'chevron',     label: 'Chevron',        blurb: 'Mitred point-to-point. The hardest floor we lay.' },
 ] as const;
+
+/**
+ * The species this site names. Labelling only: since GEO-005 the species does
+ * not select a rate, because there is one published band for an install and one
+ * for a refinish, and this is the list that decides whether a string is a floor
+ * we talk about or one we do not.
+ */
+export const NAMED_SPECIES: ReadonlySet<string> = new Set([
+  'red oak', 'white oak', 'maple', 'walnut', 'hickory', 'engineered', 'refinishing',
+]);
 
 export const DEFAULT_SPECIES = 'white oak';
 export const DEFAULT_FINISH = FINISH_OPTIONS[1].id;
@@ -138,6 +175,12 @@ export interface EstimateInput {
   squareFeet: number;
   finish?: string;
   pattern?: string;
+  /**
+   * The published band this work is priced at. Required: there is no default,
+   * because a default would be a rate invented in this file, which is the
+   * whole defect GEO-005 removed.
+   */
+  band: PublishedBand;
 }
 
 export interface EstimateResult {
@@ -150,7 +193,9 @@ export interface EstimateResult {
   estimatedLowCad: number;
   estimatedHighCad: number;
   perSqftCad: string;
-  /** True when we fell back to red oak because the species wasn't recognised. */
+  /** ISO 4217 of every figure above, from the band that was passed in. */
+  currency: string;
+  /** True when the species string was not one this site names. Labelling only — it has not moved a price since GEO-005. */
   speciesFallback: boolean;
   disclaimer: string;
 }
@@ -163,24 +208,22 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult {
   const speciesKey = input.species.toLowerCase().trim();
-  const known = FLOORING_RATES_CAD_PER_SQFT[speciesKey];
-  const rate = known ?? FLOORING_RATES_CAD_PER_SQFT['red oak'];
+  const known = NAMED_SPECIES.has(speciesKey);
 
   const finish = FINISH_OPTIONS.find((f) => f.id === input.finish);
   const pattern = PATTERN_OPTIONS.find((p) => p.id === input.pattern);
-  const mult = (finish?.multiplier ?? 1) * (pattern?.multiplier ?? 1);
 
-  // Refinishing is a labour service on an existing floor: install patterns
-  // don't apply, so we never let a chevron multiplier inflate a sanding quote.
+  /* Refinishing is a labour service on an existing floor; an install pattern
+     does not apply to it. The distinction is kept because it describes the
+     work, not because it prices it. */
   const patternApplies = speciesKey !== 'refinishing';
-  const effective = patternApplies ? mult : (finish?.multiplier ?? 1);
 
   const sqft = Math.max(0, input.squareFeet);
-  const low = round2(rate.low * effective);
-  const high = round2(rate.high * effective);
+  const low = round2(input.band.min);
+  const high = round2(input.band.max);
 
   return {
-    species: known ? speciesKey : 'red oak',
+    species: known ? speciesKey : DEFAULT_SPECIES,
     squareFeet: sqft,
     finish: finish?.id ?? DEFAULT_FINISH,
     pattern: patternApplies ? (pattern?.id ?? DEFAULT_PATTERN) : DEFAULT_PATTERN,
@@ -189,10 +232,12 @@ export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult 
     estimatedLowCad: Math.round(low * sqft),
     estimatedHighCad: Math.round(high * sqft),
     perSqftCad: `$${low}-$${high}/sqft`,
+    currency: input.band.currency,
     speciesFallback: !known,
     disclaimer:
-      'Rough range only, based on typical GTA conditions. Subfloor, stairs, transitions and moisture ' +
-      'all move the number. Final price is fixed in writing after a free in-home measure.',
+      'This is the published band for this work applied to the area given — not a quote. Species, ' +
+      'finish, pattern, substrate, stairs and transitions move the number inside the band. The fixed ' +
+      'price is written after a free in-home measure.',
   };
 }
 

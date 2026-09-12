@@ -13,6 +13,7 @@ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/share
 import { PRICE_PROMISE } from '@/lib/pricing';
 import { readDesignConfig, saveDesignConfig } from '@/lib/design-config';
 import { track } from '@/lib/analytics';
+import { bandForWork } from '@/content/constants/pricing';
 
 /**
  * SpecSheet — the configuration, rendered as a document.
@@ -92,6 +93,7 @@ export function SpecSheet() {
     squareFeet: cfg.sqft,
     finish: cfg.finish,
     pattern: cfg.pattern,
+    band: bandForWork(cfg.species),
   });
 
   const summary = `${species.name} · ${finish?.label} finish · ${pattern?.label} · ${cfg.sqft} sq ft`;

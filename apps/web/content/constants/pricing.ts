@@ -189,6 +189,19 @@ export const bandsForCountry = (country: PriceCountry): readonly PriceBand[] =>
 export const bandForCountry = (key: PriceBandKey, country: PriceCountry): PriceBand =>
   country === 'US' ? US_PRICE_BANDS_BY_KEY[key] : PRICE_BANDS_BY_KEY[key];
 
+/**
+ * The band that prices a piece of work, by the words the rest of the app uses
+ * for it (GEO-005). `estimateInstalledRangeCad` in packages/shared takes a band
+ * rather than owning a rate table; this is where callers get the band from.
+ *
+ * "refinishing" is a full sand and finish, which is what the configurator, the
+ * spec sheet and the chat tool have always meant by it. Everything else laid as
+ * a new floor is the install band — there is one published install band, and
+ * the species does not change it.
+ */
+export const bandForWork = (work: string, country: PriceCountry = 'CA'): PriceBand =>
+  bandForCountry(work.toLowerCase().trim() === 'refinishing' ? 'fullSandAndFinish' : 'newInstall', country);
+
 /** Every published band, both countries — for the surfaces that enumerate all prices. */
 export const ALL_PRICE_BANDS: readonly PriceBand[] = [...PRICE_BANDS, ...US_PRICE_BANDS];
 

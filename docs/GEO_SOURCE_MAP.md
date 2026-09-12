@@ -335,6 +335,9 @@ GEO-003  currency made explicit. No public output change at all — 34 surfaces 
 GEO-004  New York priced in New York (D6). Closes GC-024: three USD bands, the offer catalog
          split by country, a New York FAQ, and eleven "one rate card everywhere" sentences
          rescoped to "within a country" so the promise and the prices agree.
+FS-001–7  the floor studio (another agent's series), rebased onto GEO-004 and landed.
+GEO-005  one price source again. Closes GC-025: the per-species rate table and the placeholder
+         finish/pattern multipliers are deleted; every estimator takes a published band.
 ```
 
 **The protocol's plan, for the record:**

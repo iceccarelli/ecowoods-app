@@ -7,6 +7,7 @@ import {
 import { PRICING, PRICE_PROMISE, estimateServiceBandCad } from '@/lib/pricing';
 import { SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { bandForWork } from '@/content/constants/pricing';
 
 /**
  * GET/POST /api/estimate — public rough-range endpoint for humans, tools, and AI agents.
@@ -110,7 +111,7 @@ function handle(input: Record<string, unknown>, request: Request, headers: Recor
     return NextResponse.json({ ok: true, ...band, ...bandPayload() }, { headers });
   }
 
-  const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern });
+  const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern, band: bandForWork(species) });
   return NextResponse.json({ ok: true, estimate: { ...result, is_quote: false }, ...bandPayload() }, { headers });
 }
 

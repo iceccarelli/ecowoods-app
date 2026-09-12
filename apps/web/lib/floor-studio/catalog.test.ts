@@ -18,10 +18,10 @@ import { describe, expect, it } from 'vitest';
 import {
   FINISH_OPTIONS,
   PATTERN_OPTIONS,
-  FLOORING_RATES_CAD_PER_SQFT,
   estimateInstalledRangeCad,
 } from '@ecowoods/shared/ai';
 import { SPECIES as WOOD_SPECIES } from '@/lib/wood';
+import { bandForWork, PRICE_BANDS } from '@/content/constants/pricing';
 import {
   BOARD_WIDTHS,
   DEFAULT_CONFIGURATION,
@@ -40,9 +40,15 @@ import {
 } from './catalog';
 
 describe('catalogue integrity', () => {
-  it('every product resolves to a real rate key', () => {
+  it('every product resolves to a published band', () => {
+    /* GEO-005. This asserted against FLOORING_RATES_CAD_PER_SQFT, a per-species
+       rate table that was not the published band and disagreed with it by up to
+       $4/sq ft. There is no rate table now: a product names the work, and the
+       work selects a band this business actually publishes. */
     for (const p of FLOOR_PRODUCTS) {
-      expect(FLOORING_RATES_CAD_PER_SQFT[p.rateKey], `${p.id} → ${p.rateKey}`).toBeDefined();
+      const band = bandForWork(p.rateKey);
+      expect(band, `${p.id} → ${p.rateKey}`).toBeDefined();
+      expect(PRICE_BANDS.some((b) => b.min === band.min && b.max === band.max), `${p.id} band is published`).toBe(true);
     }
   });
 
@@ -182,6 +188,7 @@ describe('price is a delegation, not a calculation', () => {
       squareFeet: 900,
       finish: 'wire-brushed',
       pattern: 'herringbone',
+      band: bandForWork(productById('black-walnut')!.rateKey),
     });
     expect(mine).toEqual(theirs);
   });
