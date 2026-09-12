@@ -1,0 +1,669 @@
+From e2c34acb13a037d5d1f4489c59d258295d82a577 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 22:29:45 +0000
+Subject: [PATCH] =?UTF-8?q?docs(audit):=20PG0=20=E2=80=94=20the=20forensic?=
+ =?UTF-8?q?=20audit,=20before=20a=20line=20of=20program=20code?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The transformation brief's last page says DO NOT BUILD FIRST, UNDERSTAND
+FIRST, and its PATCH GROUP 0 is an audit with no production changes. This
+is that patch. Four parallel read-only agents over apps/web, packages,
+apps/admin, apps/mobile, backend, scripts and prisma; every load-bearing
+claim re-verified by hand against the file before it was written down.
+
+THE FINDING
+
+Ecowoods has a real commercial pipeline. Quote converts to project
+(lib/actions/quotes.ts:267), project generates staged invoices, Stripe's
+signature-verified webhook writes Payment, JobOutcome captures actuals and
+closes the matching Prediction. A customer portal exists at (portal)/mypage
+with six real pages, and anonymous quotes attach themselves to an account
+on email verification (lib/actions/auth.ts:159-163). The brief assumes far
+less exists than does.
+
+And none of it can be attributed to anything.
+
+There is no visitor id, no session id, no UTM capture. Verified: the only
+utm_ strings in the entire repository are outbound credit links to Unsplash
+in RotatingBackground.tsx:90,120 — the site attributes other people and
+captures nothing for itself. The `design` field that reaches /api/leads is
+a deterministic configuration fingerprint, so two visitors who pick the same
+floor produce the identical string; it cannot join a lead to a session. It
+lands in free-text QuoteRequest.notes, and no code under app/admin/ decodes
+it — studio-config.ts:330 says so in its own comment: "the desk pastes it
+back into /floor-studio and sees the floor."
+
+Of the brief's 21 canonical funnel events, 6 exist, 6 are partial, 9 are
+missing. The last five — appointment, estimate, acceptance, deposit,
+job_complete — are structurally unreachable: they are server writes, and
+track() returns early on the server (lib/analytics.ts:97).
+
+WHAT I WOULD HAVE BROKEN
+
+FloorRecord — the Floor Passport the brief asks us to build — is already in
+the schema, well designed, and has never held a row: zero create/update/
+upsert calls in the whole repository. JobOutcome, which the brief asks us to
+build for Program 2, is live and wired. Building either from scratch would
+have duplicated working infrastructure, which is the brief's Rule #5.
+
+THE ONE THAT LIES
+
+SpecSheet.tsx:97 builds `/#quote?spec=...` — the query string placed after
+the hash, so it is part of the fragment and is silently discarded on
+arrival. It does not visibly break only because :62-69 re-saves to
+localStorage as a side effect. And :156 fires design_handoff on that click,
+so analytics records a successful handoff on the one CTA that loses its
+payload. A metric that lies in the optimistic direction is worse than no
+metric, and this is the first thing PATCH GROUP 1 fixes.
+
+DELIVERED
+
+All ten required deliverables: website and repository maps, capability
+matrix in the seven specified states, duplication report, data-flow map
+(seven breaks, five of them joins never made between systems that already
+exist), four-program gap analysis, monetization model, priority matrix,
+patch roadmap, success measurement plan.
+
+The success test is a question the business cannot answer today at any
+price: of the last 100 deposits, how many began in Floor Studio, and what
+was the margin on those versus the rest.
+
+Verified: repo hygiene, links (46 routes, 0 orphans), markdown editions
+(20 surfaces), claims, business facts (479 files + 11 PDFs), pricing source
+— all pass. No production code touched.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ docs/audit/PG0_DATA_MODEL.md       | 137 ++++++++++++++++
+ docs/audit/PG0_FORENSIC_AUDIT.md   | 254 +++++++++++++++++++++++++++++
+ docs/audit/PG0_MEASUREMENT.md      |  90 ++++++++++
+ docs/audit/PG0_TOOLS_CONTINUITY.md |  72 ++++++++
+ 4 files changed, 553 insertions(+)
+ create mode 100644 docs/audit/PG0_DATA_MODEL.md
+ create mode 100644 docs/audit/PG0_FORENSIC_AUDIT.md
+ create mode 100644 docs/audit/PG0_MEASUREMENT.md
+ create mode 100644 docs/audit/PG0_TOOLS_CONTINUITY.md
+
+diff --git a/docs/audit/PG0_DATA_MODEL.md b/docs/audit/PG0_DATA_MODEL.md
+new file mode 100644
+index 0000000..cd791bb
+--- /dev/null
++++ b/docs/audit/PG0_DATA_MODEL.md
+@@ -0,0 +1,137 @@
++# PG0 — Data Model Forensic Audit
++
++Scope: `apps/web/prisma/schema.prisma` (1,060 lines, 26 models, 12 enums).
++Method: `grep -rn 'db\.<model>\.'` against `apps/web` (the Prisma client is
++exported as `db` from `apps/web/lib/db.ts`, not `prisma` — the schema-only
++`prisma.<model>` search specified in the brief returns zero hits everywhere;
++`db.<model>` is the real call site). Every claim below has a `file:line`.
++Reachability was checked by tracing each write/read call up to a route file
++under `app/api/**` or `app/**/page.tsx`, then confirming that route/page is
++linked from a nav array or another page (`app/admin/layout.tsx` for admin,
++public pages for public tools).
++
++---
++
++## 1. Model-by-model classification
++
++| Model | Written | Read | Reachable | Verdict |
++|---|---|---|---|---|
++| User | `lib/actions/auth.ts:142` (`upsert`, signup), `lib/auth.ts:169` (verify) | `lib/actions/quotes.ts` etc. via relations, `app/admin/users/page.tsx` | Yes — `/register`, `/login`, `/admin/users` | LIVE |
++| EmailVerificationToken | `lib/actions/auth.ts:40` | `lib/actions/auth.ts` (findUnique on verify) | Yes — email verify link | LIVE |
++| Account | `prisma/seed.ts:31` (`deleteMany` only) | none found | NextAuth `PrismaAdapter` manages this table directly (not through `db.account.*` app code) — no direct app-level read/write | ORPHANED (app code) — adapter-owned, out of grep's reach by design |
++| Session | `prisma/seed.ts:30` (`deleteMany` only) | none found | Same — NextAuth adapter-owned | ORPHANED (app code) |
++| VerificationToken | none found | none found | NextAuth adapter model, unused by this app's magic-link-free auth flow (password + separate `EmailVerificationToken` used instead) | ORPHANED |
++| PilotLead | `app/api/pilot-leads/route.ts:96` | none found (no admin list/detail view reads it) | Write path reachable — `/products/floorforge` form posts here. No read UI exists. | WRITE-ONLY |
++| QuoteRecovery | `app/api/quote-recovery/route.ts:68,80`; `app/api/cron/quote-recovery/route.ts:69`; converted-flag set at `app/api/leads/route.ts:222` | `app/api/quote-recovery/route.ts:62`; `app/api/cron/quote-recovery/route.ts:45` | Write reachable from `EstimateForm.tsx`; read only by its own cron (`/api/cron/quote-recovery`), no admin UI | LIVE (machine-to-machine; no human-facing read) |
++| QuoteRequest | `lib/actions/quotes.ts:38`, `app/api/leads/route.ts:189`, `app/api/photo-triage/route.ts:169`, `app/api/chat/route.ts:307`, `app/api/appointments/route.ts:97` (in `$transaction`) | `app/admin/quotes/page.tsx:23`, `app/(portal)/mypage/quotes/page.tsx:11`, `app/docs/quote/[id]/page.tsx:23` | Yes — public quote form, admin quotes list, customer MyPage | LIVE |
++| Project | `lib/actions/quotes.ts:267` (convert), `lib/actions/projects.ts:37,66,98,168` | `app/admin/projects/page.tsx:31`, `app/(portal)/mypage/projects/page.tsx:37`, `app/admin/floor-graph/page.tsx:69` | Yes — admin projects UI, MyPage | LIVE |
++| ProjectNote | `lib/actions/projects.ts:114` | none found (no page selects `notes`) | Write reachable from admin project page; nothing renders it back | WRITE-ONLY |
++| Invoice | `lib/actions/invoices.ts:74,102,124,165,210,275,333,365` | `app/admin/invoices/page.tsx:29`, `app/(portal)/mypage/invoices/page.tsx:27`, `app/docs/invoice/[id]/page.tsx:39` | Yes | LIVE |
++| Payment | `lib/actions/invoices.ts:171,254`, `app/api/webhooks/stripe/route.ts:109` | `app/admin/page.tsx:33`, `app/admin/invoices/page.tsx:37` | Yes — Stripe webhook + manual bank/cash confirmation, shown on admin dashboard | LIVE |
++| Inquiry | `lib/actions/inquiries.ts:33` | `app/admin/inquiries` (list/detail, via `db.inquiry.findMany/findUnique`) | Yes — public contact form, admin inquiries UI | LIVE |
++| InquiryReply | `lib/actions/inquiries.ts:60` | rendered on `app/admin/inquiries/[id]/page.tsx` (via `inquiry.replies` relation include) | Yes | LIVE |
++| Settings | `lib/actions/inquiries.ts:121,123` (`updateSettings`, misnamed file) | `lib/actions/quotes.ts:161`, `app/admin/page.tsx`, 17 call sites total | Yes — `/admin/settings` | LIVE |
++| Appointment | `app/api/appointments/route.ts:109` (in `$transaction`) | `app/api/availability/route.ts:34`, `app/api/appointments/route.ts:76`, `app/api/chat/route.ts:109,223` | Yes — public booking widget on quote form | LIVE |
++| Product | `prisma/seed-products.ts:74,103`, `prisma/seed-product-images.ts:80` — **seed scripts only, no admin route** | `app/api/shop/checkout/route.ts`, storefront pages (`db.product.findMany`) | Read side reachable (storefront). **No reachable write path** — there is no admin product-management UI or route; the only mutators are one-off seed scripts run manually | READ-ONLY (in terms of live application code) |
++| Order | `app/api/shop/checkout/route.ts:87,136`, `app/api/webhooks/stripe/route.ts:67`, `lib/actions/orders.ts:16` | `app/admin/orders/page.tsx`, `app/(portal)/mypage` (order history) | Yes | LIVE |
++| OrderItem | nested create inside `app/api/shop/checkout/route.ts:94` (`items: { create: itemsToCreate }`) | included via `order` relation on admin/orders and mypage order pages | Yes | LIVE |
++| ConsentRecord | `lib/floor-graph/consent.ts:65,101` (`grantConsent`/`withdrawConsent`), called from `app/api/photo-triage/route.ts:238` (purpose `ASSESSMENT_PHOTOS`) and `app/api/framework-scoring/route.ts:123` (purpose `BENCHMARK_CONTRIBUTION`) | `lib/floor-graph/consent.ts:123` (`hasLiveConsent`) — **defined but never called anywhere** | Write reachable via two public tools. `MODEL_TRAINING` and `FLOOR_RECORD` purposes are defined in `wording.ts:44,55` but no call site ever passes them — dead purposes. | LIVE (2 of 4 purposes only), READ path unused |
++| FloorRecord | **none** — `db.floorRecord.create`/`update` do not exist anywhere in the app; only `db.floorRecord.count()` at `lib/floor-graph/index.ts:187` (inside `nextFloorRecordRef`, itself never called) and `app/admin/floor-graph/page.tsx:55` | `app/admin/floor-graph/page.tsx:55` (count only) | The generator for its `publicRef` exists but has zero callers | ORPHANED — schema-only, no row can ever be created by current code |
++| FloorAssessment | `lib/floor-graph/index.ts:71` (`recordAssessment`), called from `app/api/photo-triage/route.ts:226` | `app/admin/floor-graph/page.tsx:56` (count only) | Yes, write side — every photo-triage submission | WRITE-ONLY (nothing lists/reviews individual assessments; `AssessmentStatus`/`reviewedBy` fields imply an intended admin triage queue that does not exist) |
++| AssessmentPhoto | `lib/floor-graph/index.ts:112` (`storeAssessmentPhotos`), called from `app/api/photo-triage/route.ts:264` | `app/admin/floor-graph/page.tsx:57` (count only) | Yes, write side | WRITE-ONLY (no viewer for retained photos) |
++| FrameworkScoring | `lib/floor-graph/index.ts:161` (`recordFrameworkScoring`), called from `app/api/framework-scoring/route.ts:129` | `app/admin/floor-graph/page.tsx:58` (count only); the route's own `GET` handler (`route.ts:145`) deliberately refuses to serve a read endpoint | Yes, write side — `/framework/assess` | WRITE-ONLY by design (see code comment: "no read endpoint ... until the corpus is large enough") |
++| JobOutcome | `app/api/admin/floor-graph/outcome/route.ts:85`, driven by `app/admin/floor-graph/[projectId]/OutcomeForm.tsx` | `app/admin/floor-graph/page.tsx:59,76`, `app/admin/floor-graph/[projectId]/page.tsx:73` | Yes — full admin UI at `/admin/floor-graph/[projectId]`, linked from `/admin/floor-graph`, linked from nav (`app/admin/layout.tsx:24`) | LIVE |
++| Prediction | `lib/floor-graph/prediction.ts:75` (`recordPrediction`), called **only** from `lib/actions/quotes.ts:131` (`saveEstimate`, kind `PRICE_CAD`) | `lib/floor-graph/prediction.ts:162,166` (`accuracySummary`), surfaced on `/admin/floor-graph`; closed via `closePrediction` at `app/api/admin/floor-graph/outcome/route.ts:128,141` | Yes | LIVE — but only for `PRICE_CAD`; `LABOUR_HOURS`, `MATERIAL_SQFT`, `SCHEDULE_DAYS` are never written by `recordPrediction` (grep for `recordPrediction(` finds exactly one call site) even though `closePrediction` code exists to close a `SCHEDULE_DAYS` row (`outcome/route.ts:135-144`) that can never exist |
++
++---
++
++## A. QuoteRequest → Project → Invoice → Payment → Appointment: is there a real pipeline?
++
++**Yes, fully wired, not just tables.** Traced end to end:
++
++1. Visitor submits the public quote form → `submitQuoteRequest()` creates a `QuoteRequest` row (`lib/actions/quotes.ts:38`).
++2. Admin opens `/admin/quotes/[id]` (linked from nav → `/admin/quotes`, `app/admin/layout.tsx:18`) and builds an estimate via `EstimateBuilder.tsx` → `saveEstimate()` (`lib/actions/quotes.ts:81-146`), which also writes a `PRICE_CAD` `Prediction` row.
++3. Admin clicks convert via `ConvertToProjectForm.tsx` → `convertQuoteToProject()` (`lib/actions/quotes.ts:245-296`) — this **actually creates a `Project` row** (`quotes.ts:267`) and links it back with `quoteRequest.update({ projectId, status: 'ACCEPTED' })` (`quotes.ts:287`).
++4. On the project page (`/admin/projects/[id]`), `ProjectStatusForm.tsx` drives `updateProjectStatus`/status transitions (`lib/actions/projects.ts:66,98`), and `InvoiceIssueForm.tsx` drives `generateStagedInvoices()` (`lib/actions/invoices.ts:191-234`), which creates `Invoice` rows split by deposit/midpoint/final percentages.
++5. Customer pays via Stripe checkout (`app/api/invoices/[id]/checkout/route.ts`) → `app/api/webhooks/stripe/route.ts:88-109` marks the `Invoice` paid and creates a `Payment` row; OR admin manually confirms a bank/cash payment via `markInvoicePaid()` (`lib/actions/invoices.ts:156-188`).
++6. `Appointment` is a separate, parallel booking flow off `QuoteRequest`: `app/api/appointments/route.ts:96-121` creates both a `QuoteRequest` and an `Appointment` in one `$transaction`, driven by the public booking widget and shown to admin via `db.appointment.findMany` in `app/api/availability/route.ts` and `app/api/chat/route.ts`.
++
++Conclusion: this is a real, reachable commercial pipeline with an admin UI at every step, not dead schema.
++
++## B. JobOutcome — is the "flooring economics engine" wired or empty?
++
++**Genuinely wired**, not just present. `JobOutcome` holds both execution fields (`labourHours`, `machineHours`, `crewSize`, `gritSequence`, `finishCoats`, `cureHours`, `materialSqFt`, `wastePct`, `finishLitres`) and economics fields (`materialCostCad`, `labourCostCad`, `sellingPriceCad` — schema.prisma:977-993), plus consequence fields (`scheduleDays`, `defects`, `callbackAt`, `warrantyClaimAt`).
++
++Write path: `POST /api/admin/floor-graph/outcome` (`app/api/admin/floor-graph/outcome/route.ts:85`) is called from a real form, `app/admin/floor-graph/[projectId]/OutcomeForm.tsx`, on a real page (`app/admin/floor-graph/[projectId]/page.tsx`) that is one click (`/admin/floor-graph` → "Close" button, `page.tsx:185-187`) from the admin nav (`Floor Graph`, `app/admin/layout.tsx:24`).
++
++It is not, however, an "estimated vs. actual" comparison in the sense of storing the *estimate* on the same row — the estimate side lives in `Prediction` (kind `PRICE_CAD`), and `JobOutcome` only stores the actual. The two are joined by `closePrediction()` (`lib/floor-graph/prediction.ts:101-132`), invoked automatically from the outcome route (`outcome/route.ts:114-131`) when `sellingPriceCad` is submitted — this is the "predicted vs actual" comparison the schema comment describes, and it is real, not aspirational.
++
++Caveat: labour/material **cost** fields have no corresponding *predicted* cost anywhere — only price is predicted (see C below), so margin variance (predicted margin vs actual margin) cannot currently be computed even though the actual-side columns exist.
++
++## C. Prediction / PredictionKind — inference path or empty promise?
++
++Half-wired. `PredictionKind` has four values: `PRICE_CAD`, `LABOUR_HOURS`, `MATERIAL_SQFT`, `SCHEDULE_DAYS` (schema.prisma:747-754). `recordPrediction()` (`lib/floor-graph/prediction.ts:71`) has exactly **one caller in the whole codebase**: `saveEstimate()` in `lib/actions/quotes.ts:131-142`, which always passes `kind: 'PRICE_CAD'`. Grep for `recordPrediction(` confirms this is the only call site.
++
++`LABOUR_HOURS` and `MATERIAL_SQFT` are never produced anywhere. `SCHEDULE_DAYS` is not produced either, but the outcome route still contains dead code to close it (`app/api/admin/floor-graph/outcome/route.ts:135-144`, `db.prediction.findMany({ where: { kind: 'SCHEDULE_DAYS', ... } })`) — this query will always return an empty set today because nothing ever creates a `SCHEDULE_DAYS` row. There is no model/AI inference anywhere in this path — `model: 'estimator'` (a human-typed literal, `quotes.ts:133`) is the only value ever written to `Prediction.model`; no ML or algorithmic predictor exists. This is a working **price accuracy ledger**, not an inference engine.
++
++## D. FloorRecord — Floor Passport or empty table?
++
++**Empty table — nothing writes it.** `db.floorRecord.create` and `db.floorRecord.update` do not exist anywhere in `apps/web`. The only mutating-adjacent code is `nextFloorRecordRef()` (`lib/floor-graph/index.ts:184-189`), which computes the next `publicRef` (e.g. `FR-2026-0001`) by counting existing rows — and that function itself has **zero callers** (confirmed by grep). The only other reference is `db.floorRecord.count()` on the admin dashboard (`app/admin/floor-graph/page.tsx:55`), which will report 0 forever under current code.
++
++Fields present (schema.prisma:790-837): `publicRef`, coarse location (`city`, `province`, `postalPrefix`, `propertyType`, `storey`), floor spec (`areaSqFt`, `species`, `boardWidthMm`, `boardThickMm`, `pattern`, `finishSystem`, `substrate`, `installMethod`, `installedOn`), soft links (`originQuoteRequestId`, `originProjectId`), relations to `assessments`/`outcomes`, and `erasedAt` for right-to-erasure.
++
++Relative to a real "Floor Passport" (customer + property + installed spec + warranty + service history), what exists in the schema but is unpopulated:
++- Installed floor spec fields exist (species, dimensions, finish, substrate, install method/date) — schema-complete, but never populated.
++- No warranty terms/expiry/document fields at all (only `JobOutcome.warrantyClaimAt`, which records a *claim*, not coverage terms or an expiry date).
++- No customer/property identity — by deliberate design (schema.prisma:679-702 explains the no-hard-FK decision), only coarse `city`/`province`/`postalPrefix`; full address and owner identity live only on the soft-linked `Project`/`QuoteRequest`, and there is no code that ever joins them into a FloorRecord row.
++- No explicit recurring "service visit"/maintenance-history model — only `FloorAssessment` (a look at a floor) and `JobOutcome` (one completed job) relate to it, so a passport's "service history" would have to be assembled from those, and since neither ever sets `floorRecordId` (grep shows `floorRecordId` is never assigned a value in any `create` call), even that assembly is currently impossible.
++- No ownership-transfer / handoff-to-new-owner tracking, despite the `FLOOR_RECORD` consent purpose wording explicitly promising this (`lib/floor-graph/wording.ts:55-59`: "can be handed to a future owner").
++
++Conclusion: this is the schema for a Floor Passport with correctly-designed columns, but it is currently 100% aspirational — an empty table with no write path, and the consent purpose that would gate its creation (`FLOOR_RECORD` in `ConsentPurpose`) is itself never granted anywhere (`grantConsent` is called only with `ASSESSMENT_PHOTOS` and `BENCHMARK_CONTRIBUTION` — see section F).
++
++## E. FloorAssessment / AssessmentPhoto / FrameworkScoring — connected to public tools, or browser-only?
++
++**Connected — this is the one part of the Floor Graph that is genuinely live end-to-end for capture.**
++
++- The photo-based estimate track (`/api/photo-triage`, `app/api/photo-triage/route.ts`) writes a `QuoteRequest` (line 169), then downstream and non-blocking (lines 225-276) writes a `FloorAssessment` via `recordAssessment()` (line 226), and — only if the visitor ticked the retention checkbox — grants an `ASSESSMENT_PHOTOS` `ConsentRecord` (line 238) before storing `AssessmentPhoto` rows (line 264).
++- The Well-Installed Framework tool at `/framework/assess` (`app/framework/assess/AssessClient.tsx`) explicitly does **not** persist the raw answers by design (its own header comment says so) but does offer an opt-in "contribute to the benchmark" action that posts to `/api/framework-scoring` (`app/api/framework-scoring/route.ts`), which grants a `BENCHMARK_CONTRIBUTION` consent row (line 123) and writes a `FrameworkScoring` row (line 129).
++
++So it is not "purely browser-side with no persistence" — persistence exists and is reachable from both public tools, gated correctly behind consent. What is missing is the *review/read* side: nobody ever queries an individual `FloorAssessment` or `AssessmentPhoto` back out (admin dashboard only shows aggregate counts, `app/admin/floor-graph/page.tsx:56-57`), so photographs and triage data are captured but currently unreviewable through any UI — a data sink, not yet a working triage queue, despite `FloorAssessment.status`/`reviewedBy`/`reviewedAt` fields implying one was planned.
++
++## F. ConsentRecord / ConsentPurpose — working system?
++
++Working, but only 2 of 4 purposes are ever exercised. `ConsentPurpose` enum defines: `ASSESSMENT_PHOTOS`, `MODEL_TRAINING`, `BENCHMARK_CONTRIBUTION`, `FLOOR_RECORD` (schema.prisma:704-715). `grantConsent()`/`withdrawConsent()`/`hasLiveConsent()` are fully implemented in `lib/floor-graph/consent.ts` with a real append-only ledger design (grant + separate withdrawal row, never an update).
++
++Grep for actual call sites of `grantConsent(` finds exactly two:
++- `purpose: 'ASSESSMENT_PHOTOS'` — `app/api/photo-triage/route.ts:238`
++- `purpose: 'BENCHMARK_CONTRIBUTION'` — `app/api/framework-scoring/route.ts:123`
++
++`MODEL_TRAINING` and `FLOOR_RECORD` have wording drafted (`lib/floor-graph/wording.ts:44-49,55-59`) but are never granted anywhere — no UI offers them, consistent with there being no model-training feature and no FloorRecord writer (section D). `hasLiveConsent()` and `withdrawConsent()` are fully implemented but have **zero callers anywhere in the app** — there is no consent-withdrawal UI/route for a visitor to exercise the right the ledger is designed to support.
++
++## G. PilotLead / QuoteRecovery — duplicating QuoteRequest?
++
++**Not duplicates; three genuinely distinct entities with distinct purposes and distinct write paths:**
++
++- **QuoteRequest** — the real lead / quote pipeline (section A).
++- **PilotLead** (`schema.prisma:220-244`) — interest capture for the separate "FloorForge" pilot program, written from `app/api/pilot-leads/route.ts:96`, sourced from `app/products/floorforge/page.tsx`. Distinct fields (`role`, `program`, `company`) that don't exist on `QuoteRequest`. It is WRITE-ONLY: no admin list/detail page reads `PilotLead` back (no `db.pilotLead.findMany`/`findUnique` anywhere) — leads are captured and then only ever reachable via the admin notification email (`sendAdminNewPilotLeadEmail`) or an optional external webhook (`PILOT_LEADS_WEBHOOK_URL`), never in-app.
++- **QuoteRecovery** (`schema.prisma:246-292`) — not a lead at all; it is an abandoned-form reminder ledger for someone who typed an email into the estimate form and left without submitting, gated on an explicit `consentedAt` checkbox. Written from `/api/quote-recovery` (`app/api/quote-recovery/route.ts:68,80`) while the visitor is still typing, read and actioned only by its own cron job `/api/cron/quote-recovery` (`app/api/cron/quote-recovery/route.ts:45,69`) which sends exactly one email. The explicit anti-duplication mechanism works: when a real `QuoteRequest` is later submitted for the same email, `app/api/leads/route.ts:221-222` sets `convertedAt`, which the recovery cron's query excludes (`convertedAt: null` filter, `cron/quote-recovery/route.ts:48`), so a converted visitor is never emailed a "did you forget?" reminder. This is a deliberate three-table separation, not accidental duplication.
++
++## H. Migrations — exist? drift?
++
++`apps/web/prisma/migrations/` contains **7 migrations**: `20260620000002_init_ecowoods_schema`, `20260720000000_add_shop_orders`, `20260720222126_add_product_image_credit`, `20260806164120_add_pilot_lead`, `20260831000000_add_quote_recovery`, `20260904000000_add_project_review_requested_at`, `20260908120000_add_floor_graph`.
++
++Counted `CREATE TABLE "ecowoods"."<Name>"` across all migration.sql files: **26 tables**. Counted `^model <Name>` in `schema.prisma`: **26 models**. Every model name in the schema has a matching `CREATE TABLE` in the migration history and vice versa (diffed both lists — identical sets). **No drift detected** between the schema and the last migration (`20260908120000_add_floor_graph`, which added the seven Floor Graph tables/enums additively, per its own header comment, and touches nothing pre-existing).
++
++---
++
++## Summary of dead/live data
++
++**LIVE (written + read + reachable):** User, EmailVerificationToken, QuoteRequest, Project, Invoice, Payment, Inquiry, InquiryReply, Settings, Appointment, Order, OrderItem, JobOutcome, Prediction (PRICE_CAD only), QuoteRecovery (machine-only read).
++
++**WRITE-ONLY (dead data — captured, never read back):** PilotLead, ProjectNote, FloorAssessment, AssessmentPhoto, FrameworkScoring (by design, per its own route comment).
++
++**READ-ONLY (dead queries / no reachable write path):** Product (mutated only by manual seed scripts, never by app code).
++
++**ORPHANED (schema-only or adapter-only, no app-level read/write):** Account, Session, VerificationToken (NextAuth-adapter-owned), FloorRecord (zero rows possible under current code).
++
++The single highest-leverage finding: **FloorRecord — the "Floor Passport" spine — cannot have a single row today.** Its own ID-generator function (`nextFloorRecordRef`) is dead code with no caller. Everything built on top of it in the schema comments (warranty, service history, future-owner handoff) is schema-only. By contrast, `JobOutcome`, `Prediction`, `FloorAssessment`, `AssessmentPhoto`, `FrameworkScoring`, and `ConsentRecord` are genuinely wired to reachable code — the Floor Graph is real for capture-and-close-the-loop-on-price, but the passport itself does not exist yet.
+diff --git a/docs/audit/PG0_FORENSIC_AUDIT.md b/docs/audit/PG0_FORENSIC_AUDIT.md
+new file mode 100644
+index 0000000..81f1225
+--- /dev/null
++++ b/docs/audit/PG0_FORENSIC_AUDIT.md
+@@ -0,0 +1,254 @@
++# PATCH GROUP 0 — FORENSIC AUDIT
++
++No production changes. This document is the evidence base the four programs are built on.
++
++Commit audited: `d4db913` (MACH-01). Production at time of writing: `1e96f1c`.
++Method: four parallel read-only agents over `/apps/web`, `/packages`, `/apps/admin`,
++`/apps/mobile`, `/backend`, `/scripts`, `/prisma`. Every load-bearing claim below was
++re-verified by hand against the file. Claims that could not be verified are marked
++CANNOT DETERMINE and say what would settle them.
++
++---
++
++## THE ONE-SENTENCE FINDING
++
++Ecowoods has built a genuine commercial pipeline — quote to project to invoice to
++payment to job outcome, all of it real, all of it wired — and has instrumented the
++front of the funnel well; but **there is no identifier anywhere that joins a visitor
++to a lead**, so not one dollar of revenue in the database can be traced to the tool
++that produced it.
++
++Everything in the four programs is downstream of fixing that.
++
++---
++
++## 1. WHAT IS ALREADY REAL (and must not be rebuilt)
++
++The `NO` list in the transformation brief exists because these systems are good. The
++audit confirms they are not just good, they are wired:
++
++| System | Evidence it is real |
++|---|---|
++| Quote → Project conversion | `lib/actions/quotes.ts:267` `convertQuoteToProject()` creates a real `Project` row |
++| Staged invoicing | `generateStagedInvoices()`; `Invoice.stage` enum DEPOSIT/PROGRESS/FINAL |
++| Payments | Stripe Checkout + signature-verified webhook at `app/api/webhooks/stripe/route.ts` writes `Payment` |
++| Appointments | `app/api/appointments/route.ts:96-121` creates `Appointment` + `QuoteRequest` in one transaction |
++| Customer portal | `app/(portal)/mypage/*` — 6 real pages, `middleware.ts:24-40` gates on `isLoggedIn`, not admin |
++| Orphan-lead linking | `lib/actions/auth.ts:159-163` — anonymous quotes attach to an account on email verification |
++| Estimating accuracy ledger | `JobOutcome` written from `/admin/floor-graph/[projectId]`, auto-closes the matching `Prediction` |
++| Assistant with tools | `app/api/chat/route.ts` — Anthropic `streamText` that books real appointments and creates real leads |
++| Consent ledger | `ConsentRecord` + `ConsentPurpose`, correctly gating photo retention and benchmark contribution |
++| 70 verification guards | `scripts/verify-*.mjs`, orchestrated by `verify-all.mjs` |
++
++**The platform brief assumes far less exists than actually does.** Program 2 asks for a
++project data model — it is here. Program 4 asks for a customer account — it is here.
++This changes the priority order, and the brief explicitly permits that:
++*"The agent MUST be willing to change the priority ... if repository evidence proves
++another opportunity is materially more valuable."*
++
++---
++
++## 2. CAPABILITY MATRIX (Deliverable 3)
++
++Seven states, as specified: FULL / PARTIAL / WEAK / DISCONNECTED / UNMEASURED / DUPLICATED / MISSING.
++
++| Capability | State | Evidence |
++|---|---|---|
++| Floor Studio render + configure | **FULL** | Renders, prices, share-code round-trips, 11 events fire |
++| Floor Studio → estimate handoff | **FULL** | `estimateHref()` `studio-config.ts:334`; `EstimateForm.tsx:125-133` decodes it |
++| Floor Studio design → business record | **DISCONNECTED** | Lands as free text in `QuoteRequest.notes`; no column, no admin decoder (verified: zero hits for `decodeStudioDesign` under `app/admin/`) |
++| Floor Designer (`/design`) | **PARTIAL** | Works, but its primary CTA is a bare `/#quote` with no parameters; continuity survives only via localStorage |
++| Spec sheet → quote | **BROKEN** | `SpecSheet.tsx:97` `` `/#quote?spec=${...}` `` — query string placed *after* the hash. Silently discarded. And `design_handoff` fires anyway at `:156`, so analytics records a success on the one CTA that loses its payload |
++| Framework assessment | **FULL** | Score, verdict, shareable `?a=` code, opt-in anonymous benchmark |
++| Quote-check comparator | **UNMEASURED** | Zero `track()` calls (verified) |
++| Movement calculator | **UNMEASURED + DISCONNECTED** | Zero `track()` calls (verified); zero persistence; zero commercial path. Five minutes of input, thrown away on navigation |
++| EcowoodsGuide assistant | **UNMEASURED** | Zero `track()` calls in `ChatWidget.tsx` or `app/api/chat/route.ts` (verified). It books appointments and creates leads, and none of it is counted |
++| Revenue attribution | **MISSING** | No UTM capture, no session id, no client id. Verified: the only `utm_` strings in the repo are *outbound* credit links to Unsplash in `RotatingBackground.tsx:90,120`. The site attributes other people and captures nothing for itself |
++| Server-side funnel events | **MISSING** | `track()` is browser-only (`lib/analytics.ts:97`). Appointment, estimate, acceptance, deposit, job_complete are all server writes and cannot reach GA4 |
++| `FloorRecord` (Floor Passport) | **ORPHANED** | Verified: **0** `floorRecord.create/update/upsert` in the entire repo. Only `.count()` at `admin/floor-graph/page.tsx:55`. The schema is well designed and has never held a row |
++| `Prediction` | **PARTIAL** | One call site, `lib/actions/quotes.ts:131`, always `PRICE_CAD`. `LABOUR_HOURS`/`MATERIAL_SQFT`/`SCHEDULE_DAYS` never produced; dead close-out code for `SCHEDULE_DAYS` at `outcome/route.ts:135-144` |
++| `JobOutcome` margin variance | **PARTIAL** | Actuals are captured; there are no *predicted* cost fields to compare against, so only price accuracy is computable, not labour/material/margin variance |
++| `FloorAssessment` / `AssessmentPhoto` / `FrameworkScoring` | **WRITE-ONLY** | Captured, consent-gated, correct — and never read back. Admin shows counts only |
++| Referral | **WEAK** | Real form + email + logged consent. No `Referral` model, no referral code, no unique link, no reward automation. The 5%/$250 is applied by a human remembering |
++| Consent withdrawal | **MISSING** | `hasLiveConsent`/`withdrawConsent` have zero callers; no withdrawal UI |
++| `commercial_cta`, `realtor_cta` | **DEAD** | Declared in the `AnalyticsEvent` union, zero call sites |
++| `@ecowoods/ui` `/auth` `/config` `/utils` | **ORPHANED** | Verified: every reference is a `package.json` or `tsconfig.json` path entry. Zero code imports. `packages/utils` has no source files at all |
++| `apps/admin` | **DEAD** | No `package.json`, so not a workspace member. Static HTML/JS. Not built by turbo or either `vercel.json` |
++| `apps/mobile/frontend/` | **DUPLICATED** | A second, older React Native app beside the current Expo-router app |
++| `backend/` (Python/FastAPI/SQLite) | **DISCONNECTED** | A third codebase, unrelated to Prisma or Next. The root `.env.example` documents *this* project's variables, not the real ones |
++
++---
++
++## 3. DUPLICATION REPORT (Deliverable 4)
++
++Genuine duplication, ranked by cost:
++
++1. **`.env.example` documents the wrong application.** It lists `POSTGRES_USER`,
++   `SECRET_KEY`, `CORS_ORIGINS` — the dead Python backend. A new contributor
++   configures the wrong system. 38 real variables are documented nowhere.
++2. **Two mobile apps** — `apps/mobile/app/` (Expo Router, current) and
++   `apps/mobile/frontend/` (older, own `package.json`, own `eas.json`).
++3. **Four empty workspace packages** carried in dependency graphs and tsconfig paths.
++4. **Two configurators sharing one localStorage key.** `ew-studio-v1` and `ew-design-v1`
++   — Floor Studio writes into both (`studio-config.ts:227-244`). This is deliberate
++   and works, but it means the two tools have one shared mutable state with no owner.
++
++Explicitly **NOT** duplication, despite appearances: `PilotLead`, `QuoteRecovery` and
++`QuoteRequest` are three distinct entities, and `QuoteRecovery` has a working
++de-duplication via `convertedAt` (`app/api/leads/route.ts:222`).
++
++---
++
++## 4. DATA-FLOW MAP (Deliverable 5) — visitor to actual outcome
++
++```
++VISITOR
++  │   no utm, no client id, no session id captured        ← BREAK 1
++  ▼
++TOOL (studio / design / framework / movement / quote-check / chat)
++  │   studio+design: config carried in URL or localStorage
++  │   movement + quote-check: output discarded on navigate  ← BREAK 2
++  │   chat: transcript discarded on reload, zero events     ← BREAK 3
++  ▼
++ESTIMATE FORM  ──►  POST /api/leads
++  │   design arrives as free text inside notes             ← BREAK 4
++  ▼
++QuoteRequest  (real row, indexed on email/status/userId)
++  │   admin reads notes by eye, retypes species by hand    ← BREAK 5
++  ▼
++Project ──► Invoice ──► Stripe ──► Payment        [REAL, WIRED]
++  │
++  ▼
++JobOutcome (actual cost, actual margin)           [REAL, WIRED]
++  │   closes Prediction(PRICE_CAD) only
++  ▼
++FloorRecord — 0 rows ever written                 ← BREAK 6
++  │
++  ▼
++Maintenance / referral / repeat — no mechanism    ← BREAK 7
++```
++
++Five of the seven breaks are *joins that were never made between systems that already
++exist*. Only breaks 6 and 7 require building something.
++
++---
++
++## 5. FOUR-PROGRAM GAP ANALYSIS (Deliverable 6)
++
++**Program 1 — Digital Sales Engine.** The journey exists end to end. What is missing is
++the *identity* that makes it measurable: a Design ID. The brief's own first item under
++Program 1 is `DESIGN IDENTITY → Design ID`, and that is exactly right — it is the
++single key that closes breaks 1, 4 and 5 at once. `SAVE MY FLOOR` and
++`SPECIFICATION EXPORT` are near-free once an ID exists (the spec sheet is already built).
++
++**Program 2 — Flooring Economics Engine.** Further along than the brief assumes.
++`JobOutcome` is live. The gap is narrow and specific: no *predicted* labour/material
++fields to compare actuals against, and `Prediction` only ever emits `PRICE_CAD`.
++Prediction/ML is correctly gated behind data volume the business does not yet have —
++the brief says *"only when enough clean data exists"*, and it does not.
++
++**Program 3 — Decision Intelligence.** The tools are excellent and the privacy stance is
++a real asset. The gap is that two of them (`movement`, `quote-check`) are invisible and
++inert, and the framework's captured assessments are never read back.
++
++**Program 4 — Customer Ownership.** Auth, portal, invoices, orphan-lead linking all
++exist. `FloorRecord` is a designed-but-empty table. This is an extension, not a build —
++materially cheaper than the brief assumes.
++
++---
++
++## 6. MONETIZATION MODEL (Deliverable 7)
++
++| # | Feature | Behaviour changed | Revenue mechanism | KPI |
++|---|---|---|---|---|
++| 1 | Design ID + attribution | Every lead carries the design and the source that made it | Kills spend on channels that don't convert; desk opens the exact floor instead of retyping | Revenue per visitor; revenue per qualified lead |
++| 2 | Server-side funnel events | Deposit and job completion become countable | Close-rate visibility per tool | Quote→deposit conversion |
++| 3 | Chat instrumentation | The assistant's bookings get counted | Proves or kills the assistant's commercial value | Revenue per chat session |
++| 4 | Save My Floor + spec export | Design survives the session; spouse/designer sees it | Multi-decision-maker purchases close more often | Design→quote conversion |
++| 5 | Fix `SpecSheet` CTA | The spec actually reaches the form | Recovers a leaking CTA | Quote starts from `/design/spec` |
++| 6 | Measure movement + quote-check | Two authority tools become visible | Attribution for top-of-funnel authority traffic | Assisted conversions |
++| 7 | Predicted vs actual labour/material | Estimator learns from variance | Margin protection — the highest-leverage dollar on this list | Gross profit per crew-day |
++| 8 | Floor Passport from JobOutcome | Customer has a durable asset | Maintenance, recoat, repeat rooms, referrals | CLV; repeat revenue |
++| 9 | Referral model + code | Referrals become trackable and rewardable | Lowest-CAC channel becomes measurable | Referral CAC |
++
++---
++
++## 7. PRIORITY MATRIX (Deliverable 8)
++
++Ranked by (revenue × gross profit × data moat) ÷ (complexity × risk).
++
++| Rank | Work | Revenue | Moat | Complexity | Risk | Time to value |
++|---|---|---|---|---|---|---|
++| 1 | **Design ID + attribution join key** | High | High | Medium | Low | Immediate |
++| 2 | **Server-side funnel events** | High | High | Medium | Low | Immediate |
++| 3 | **Chat + calculator instrumentation** | Medium | Medium | Low | Very low | Immediate |
++| 4 | **Fix SpecSheet CTA + lying `design_handoff`** | Low | — | Trivial | None | Immediate |
++| 5 | **Structured design on QuoteRequest + admin decoder** | High | Medium | Medium | Low | Weeks |
++| 6 | **Save My Floor / spec export** | Medium | Medium | Medium | Low | Weeks |
++| 7 | **Predicted labour/material on Prediction** | High | Very high | Medium | Low | Months to pay off |
++| 8 | **Floor Passport from JobOutcome** | Medium | Very high | High | Medium | Months |
++| 9 | **Referral model + code** | Medium | Medium | Medium | Low | Months |
++| — | Prediction/ML layer | — | — | High | High | **Blocked on data volume — do not start** |
++| — | B2B portal / Ecowoods OS | — | — | Very high | Very high | **Not phase 1, per the brief** |
++
++Ranks 1–4 are the measurement foundation. The brief calls this PATCH GROUP 1 and puts
++it before everything, and the evidence agrees: without rank 1, none of ranks 5–9 can be
++proven to have worked.
++
++---
++
++## 8. PATCH ROADMAP (Deliverable 9)
++
++| Patch | Name | Group | Production change |
++|---|---|---|---|
++| **PG0** | This audit | 0 | Docs only |
++| **MEAS-01** | Design ID — one identity from first render to job outcome | 1 | Yes |
++| **MEAS-02** | Server-side funnel events (appointment→deposit→job_complete) | 1 | Yes |
++| **MEAS-03** | The unmeasured tools: chat, movement, quote-check; kill dead events | 1 | Yes |
++| **MEAS-04** | The lying handoff: fix `SpecSheet` CTA, make `design_handoff` truthful | 1 | Yes |
++| **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes |
++| **SALE-02** | Save My Floor + specification export | 2 | Yes |
++| **ECON-01** | Predicted labour/material, so variance is computable | 4 | Yes |
++| **OWN-01** | Floor Passport — first write to `FloorRecord`, from `JobOutcome` | 7 | Yes |
++| **OWN-02** | Referral model, referral code, reward attribution | 7 | Yes |
++| **HYG-01** | Delete the four empty packages, the duplicate mobile app, fix `.env.example` | — | Build only |
++
++Each ships as one `.patch`, independently reviewable, independently reversible,
++with the 66-guard suite green and `tsc` clean. No patch mixes unrelated feature work.
++
++---
++
++## 9. SUCCESS MEASUREMENT PLAN (Deliverable 10)
++
++The test is not "the funnel is instrumented". The test is a question the business
++cannot answer today and will be able to answer after MEAS-01 and MEAS-02:
++
++> **Of the last 100 deposits taken, how many began in Floor Studio, and what was the
++> gross margin on those jobs versus the ones that did not?**
++
++Today that question has no answer at any price. There is no join key. When it has an
++answer, Program 1 has succeeded and Programs 2–4 become measurable in turn.
++
++Secondary, in order of when they become answerable:
++1. Revenue per 1,000 Floor Studio sessions (after MEAS-01/02)
++2. Quote→deposit conversion by originating tool (after MEAS-02)
++3. Labour and material variance by species and crew (after ECON-01, plus ~1 season of jobs)
++4. Referral CAC, calculated not estimated (after OWN-02)
++5. CLV (after OWN-01 plus one maintenance cycle)
++
++---
++
++## 10. WHAT I WILL NOT DO
++
++Per the brief's `NO` list and the evidence:
++
++- Not rebuilding `/floor-studio`, `/design`, the framework, the movement calculator,
++  published pricing, or case studies.
++- Not building a prediction/ML layer. `JobOutcome` does not yet hold enough rows, and
++  the brief gates this on *"enough clean data"*. Starting it now would be a model
++  trained on nothing, presented as intelligence.
++- Not building a subscription, a marketplace, a B2B portal, or Ecowoods OS.
++- Not weakening Floor Studio's on-device privacy. The Design ID in MEAS-01 is a
++  configuration identity, not a person, and no room image will be retained by it.
++- Not turning the framework assessment or quote-check into disguised lead forms.
++  Their neutrality is the asset.
+diff --git a/docs/audit/PG0_MEASUREMENT.md b/docs/audit/PG0_MEASUREMENT.md
+new file mode 100644
+index 0000000..71ab487
+--- /dev/null
++++ b/docs/audit/PG0_MEASUREMENT.md
+@@ -0,0 +1,90 @@
++# PG0 — MEASUREMENT AUDIT
++
++Evidence base for the attribution finding in `PG0_FORENSIC_AUDIT.md`.
++
++## Provider
++
++Google Analytics 4 only. No PostHog, Plausible, Mixpanel, Segment, or Vercel Analytics
++anywhere in the repo.
++
++- `lib/analytics.ts` (111 lines) exports `track(event, params)`.
++- `lib/analytics.ts:96-111` — browser-only (`typeof window === 'undefined'` early return),
++  try/catch wrapped so it can never throw. Calls `window.gtag`, else pushes `dataLayer`.
++  If neither exists (pre-consent) it is a **silent no-op — the event is dropped, not queued**.
++- `CookieConsentBanner.tsx:64-78` — GA loads only after explicit consent. `anonymize_ip: true`.
++  Correct under PIPEDA; it also means pre-consent sessions are invisible.
++- **All events leave to Google. There is no first-party ingest route and no event table.**
++- `AnalyticsEvent` is a closed union (`lib/analytics.ts:43-94`) with per-event comments
++  forbidding PII. `lib/funnels/index.ts` maps events to six funnels, compile-time enforced
++  and checked by `scripts/verify-strategy.mjs`. This is genuinely good discipline.
++
++## Events that fire today (30 call sites)
++
++Estimate: `quote_view`, `quote_start`, `quote_submit`, `photo_triage_submit`,
++`recovery_opt_in`, `photo_retention_opt_in` — `EstimateForm.tsx:153,226,267,302,214,631`.
++Global: `tel_click` — `TelClickTracker.tsx:19`.
++Design: `design_handoff` — `FloorConfigurator.tsx:324`, `SpecSheet.tsx:156`.
++Proof: `jobcard_click` — `JobCard.tsx:85`, `ProofSlider.tsx:233`.
++Framework: `framework_assess_complete` `AssessClient.tsx:150`,
++`framework_benchmark_contribute` `:184`, `quote_review_submit` `QuoteReviewForm.tsx:86`.
++Studio (11): `studio_open` `:195`, `studio_visualised` `:257`, `studio_match_shown` `:278`,
++`studio_photo_analysed` `:374`, `studio_boundary_corrected` `:388`, `studio_config_changed`
++`:446`, `studio_compare` `:459`, `studio_share` `:478,500`, `studio_region_changed` `:1020`,
++`studio_estimate_handoff` `:1110`, `studio_samples_request` `:1118` — all `FloorStudio.tsx`.
++Live camera: `studio_live_opened` `LiveRoom.tsx:122`, `studio_live_blocked` `:125`,
++`studio_live_captured` `:222`.
++
++**Declared but never fired:** `commercial_cta`, `realtor_cta` (`lib/analytics.ts:53-54`).
++
++## Gap against the 21 canonical events
++
++EXISTS (6): `studio_open`, `camera_start`≈`studio_live_opened`,
++`recommendation_view`≈`studio_match_shown`, `share`≈`studio_share`, `quote_start`,
++`quote_complete`≈`quote_submit`.
++
++PARTIAL (6) — fires but cannot be attributed: `photo_upload`≈`studio_photo_analysed`
++(no session id), `boundary_detect`≈`studio_boundary_corrected` (fires only on *manual
++correction*, not on detection), `species_select` / `finish_select` / `pattern_select` /
++`width_select` — all one event `studio_config_changed` with an `axis` param.
++
++MISSING (9): `design_open`, `design_create`, `price_view`, `save`, `appointment`,
++`estimate`, `acceptance`, `deposit`, `job_complete`.
++
++**Structural cause of the last five:** every stage past `quote_submit` is a server write
++(`Appointment`, `Project.status`, `Invoice`, `JobOutcome`) and `track()` is browser-only.
++No amount of client work reaches them. They need a server-side path.
++
++## Attribution — the finding
++
++**No. Revenue cannot be attributed to any tool today.**
++
++- No UTM capture. Verified: the only `utm_` strings in the repo are *outbound* credit
++  links to Unsplash (`RotatingBackground.tsx:90,120`). The site attributes other people
++  and captures nothing for itself.
++- No visitor/session/client id stored anywhere. The only `localStorage` writes are the
++  cookie-consent flag and the two configurator configs.
++- `leadSchema` (`packages/shared/schemas/index.ts:28-58`) accepts:
++  `name, email, phone, postal, city, company(honeypot), service, timeline, message,
++  source, design, recoverConsent, sqft`. No `utm_*`, no `gclid`, no referrer, no session id.
++- `source` is a hardcoded React prop naming the form instance, not a marketing channel.
++- `design` is a **configuration fingerprint, not an identity**: `encodeStudioDesign`
++  (`studio-config.ts:124-139`) is deterministic, so two visitors choosing the same floor
++  produce the identical string. It cannot join a lead to a session.
++- `QuoteRequest` has no `design` column (verified against `schema.prisma:298-347`); the
++  code lands in free-text `notes` via `leadNotes()` (`api/leads/route.ts:79-85`).
++- No downstream model (`Project`, `Invoice`, `Payment`, `Appointment`, `JobOutcome`)
++  carries any attribution column.
++
++## Reporting
++
++No page or API anywhere reports conversion, funnel counts, or revenue by source —
++neither `app/admin/*` nor the static `apps/admin/`. The only rollup is estimating
++accuracy via `Prediction`/`JobOutcome`, which is a different question.
++
++## The assistant is entirely uncounted
++
++`ChatWidget.tsx` and `app/api/chat/route.ts` contain **zero** `track()` calls (verified).
++`ChatWidget.tsx:161-163` has a `console.log` marked *"Dev-only telemetry breadcrumb;
++wire to a real analytics sink for prod."* The assistant books appointments and creates
++`QuoteRequest` rows directly — and none of it is counted, and a booking made through it
++does not fire `quote_submit`.
+diff --git a/docs/audit/PG0_TOOLS_CONTINUITY.md b/docs/audit/PG0_TOOLS_CONTINUITY.md
+new file mode 100644
+index 0000000..d0eb0ef
+--- /dev/null
++++ b/docs/audit/PG0_TOOLS_CONTINUITY.md
+@@ -0,0 +1,72 @@
++# PG0 — TOOL CONTINUITY AUDIT
++
++Does a tool's output survive, and does it reach the business?
++
++| Tool | Output persists? | Reaches the business? | Measured? |
++|---|---|---|---|
++| Floor Studio | Yes — localStorage `ew-studio-v1`, URL share code, `FS-XXXXXXX` ref | Yes, as free text in `notes` | Yes, 14 events |
++| Floor Designer `/design` | Yes — localStorage `ew-design-v1` | Weakly — bare `/#quote`, no params | One event |
++| `/design/spec` sheet | Yes — querystring + localStorage | **No — CTA is broken** | Fires a false success |
++| Framework assess | Yes — `?a=` code in URL | Separate email only, never a lead | Yes |
++| Quote-check | **No — discarded on navigate** | No | **No** |
++| Movement calculator | **No — discarded on navigate** | **No** | **No** |
++| EcowoodsGuide chat | **Transcript discarded on reload** | Yes — writes rows directly | **No** |
++| Estimate form | Yes — `QuoteRequest` row | Yes, this is the endpoint | Yes, 6 events |
++| `/contact` | N/A — static NAP page, no form | Links to `/estimate`, no params | `tel_click` only |
++
++## The broken CTA
++
++`app/design/spec/SpecSheet.tsx:97`
++
++```ts
++const quoteHref = `/#quote?spec=${encodeURIComponent(summary)}`;
++```
++
++The query string is placed **after** the hash fragment, so it is part of the fragment,
++not the search. `EstimateForm.tsx` reads `design` from `window.location.search` and only
++`#photo-triage` from the hash. The `spec` parameter is silently discarded on arrival.
++
++It does not visibly break only because `SpecSheet.tsx:62-69` re-saves the config to
++localStorage as a side effect, so the same data arrives by a different road. The
++purpose-built mechanism on this button has never worked.
++
++Worse: `SpecSheet.tsx:156` fires `design_handoff` on this click. **Analytics records a
++successful handoff on the one CTA that loses its payload.** This is the most dangerous
++finding in the audit, because it is a metric that lies in the optimistic direction.
++
++## The manual bridge
++
++`studio-config.ts:330-332` states the intended workflow in its own comment: *"the desk
++pastes it back into /floor-studio and sees the floor."*
++
++Verified: there is **no** `decodeStudioDesign` or `studioRef` usage anywhere under
++`app/admin/` or the customer portal. The bridge from a customer's design to the
++estimator's screen is a human copying a string out of an email. `QuoteRequest.species`
++(a `Json?` column) is populated only by an admin retyping it (`lib/actions/quotes.ts:23,54`).
++
++## Referral
++
++Real: `/refer` is a native form posting to `/api/referrals`, which validates, logs
++consent with a timestamp (`route.ts:95-106`), and emails the desk with terms from
++`content/referral.ts` (5% credit or $250 CAD).
++
++Missing: no `Referral` model in the schema, no referral code, no unique link, no reward
++automation. Nothing links a later `QuoteRequest` or `Project` back to a referrer. The
++reward is applied by a human remembering, months later.
++
++`/r` is review-routing from a printed card — unrelated to referral, easily conflated.
++
++## Customer account — already exists
++
++`middleware.ts:24-40` gates `/admin/*` on `role==='ADMIN'` and `/mypage/*` on
++`isLoggedIn` only. `app/(portal)/mypage/` has dashboard, quotes, projects, invoices
++(with Stripe pay), orders and inquiries. Self-serve registration with email verification
++(`lib/actions/auth.ts:26-63`).
++
++Critically, `lib/actions/auth.ts:159-163` and `lib/auth.ts:19-29,164-171` attach prior
++**anonymous** `QuoteRequest` rows to a new account on email verification. A customer who
++submitted a quote before registering finds it waiting for them.
++
++**Therefore Floor Passport is an extension of an existing, working account system —
++not a new build.** What is missing is only that the floor the customer designed never
++flows into it as structured data.
+-- 
+2.43.0
+
