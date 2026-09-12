@@ -1,5 +1,5 @@
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
-import { getServicePages, priceBand } from '@/lib/service-pages';
+import { getServicePages, priceBand, bandForPage } from '@/lib/service-pages';
 import { OG_IMAGE_URL } from '@/lib/brand-assets';
 import { buildAdministrativeArea } from './builders';
 import { SERVICE_REGION, placeForArea } from './root-schema';
@@ -73,6 +73,7 @@ export function buildCommercialLandingSchema(
     const page = pages.find((p) => p.slug === slug);
     if (!page) continue;
     const price = priceBand(page);
+    const band = bandForPage(page);
     const node: ServiceNode = {
       '@type': 'Service',
       '@id': `${SITE_URL}/services/${slug}#service`,
@@ -86,12 +87,16 @@ export function buildCommercialLandingSchema(
     /* An Offer only where a band is actually published. A service with no band
        gets no Offer — the absence is the honest signal, and F-195 is why. */
     if (price) {
+      /* The currency is the band's, not a literal typed twice (GEO-003). These
+         commercial pages are Toronto head terms and the band is a Canadian one,
+         which is exactly why the literal survived unnoticed — it was right by
+         coincidence, and a coincidence is not a source. */
       node.offers = {
         '@type': 'Offer',
-        priceCurrency: 'CAD',
+        priceCurrency: band?.currency ?? 'CAD',
         priceSpecification: {
           '@type': 'UnitPriceSpecification',
-          priceCurrency: 'CAD',
+          priceCurrency: band?.currency ?? 'CAD',
           price,
           unitText: 'per square foot',
           valueAddedTaxIncluded: false,

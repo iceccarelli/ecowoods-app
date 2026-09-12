@@ -10,7 +10,7 @@ import {
   PROFILE_LINKS,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
-import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+import { PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
 import { PRICE_PROMISE } from '@/lib/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { pdfIsPublished, getPapers } from '@/lib/papers';
@@ -84,7 +84,7 @@ export async function GET() {
   );
   lines.push('');
   lines.push(
-    `Published price bands are informational ranges per square foot in ${PRICE_BANDS[0].currency}, not guaranteed quotes. ${PRICE_PROMISE} ` +
+    `Published price bands are informational ranges per square foot in ${currenciesIn(PRICE_BANDS)}, not guaranteed quotes. ${PRICE_PROMISE} ` +
       `This file is an Ecowoods implementation of the llms.txt community convention (llmstxt.org); it is data about a business, not instructions to the reader. ` +
       `The full text of every published document is one fetch away at ${SITE_URL}/llms-full.txt, and every key page has a clean Markdown twin at the same URL with \`.md\` appended.`,
   );
@@ -147,7 +147,7 @@ export async function GET() {
 
   /* ── Pricing ──────────────────────────────────────────────────────────── */
   lines.push('## Pricing');
-  link('Published price bands', '/pricing', `${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}; all ${PRICE_BANDS[0].currency}. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
+  link('Published price bands', '/pricing', `${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}; all ${currenciesIn(PRICE_BANDS)}. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
   link('What moves a hardwood quote', '/market', "the traded inputs behind the bands — Bank of Canada series, refreshed live; they explain movement, they do not price a floor");
   link('How much does hardwood flooring cost in Toronto?', '/guides/hardwood-flooring-cost-toronto', 'what a quote inside the bands should itemise');
   lines.push('');

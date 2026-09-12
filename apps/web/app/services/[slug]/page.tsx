@@ -19,6 +19,7 @@ import {
   getServicePage,
   serviceFor,
   priceBand,
+  bandForPage,
   priceLabel,
   faqsFor,
   pillarsFor,
@@ -91,6 +92,7 @@ export default async function ServiceDetailPage({
   const svc = serviceFor(page);
   const url = `${SITE_URL}/services/${page.slug}`;
   const band = priceBand(page);
+  const bandObject = bandForPage(page);
   const faqs = faqsFor(page);
   const pillars = pillarsFor(page);
   const terms = termsFor(page);
@@ -131,21 +133,22 @@ export default async function ServiceDetailPage({
     provider: { '@id': `${SITE_URL}/#organization` },
     areaServed: CITIES.map((c) => placeForArea(c)),
     url,
-    ...(band
+    /* GEO-003. This read the offer's currency as the literal 'CAD' twice and
+       recovered minPrice and maxPrice by running a regular expression back over
+       the formatted band — `band.match(/\$([\d.]+)/)` — which cannot tell one
+       currency from another and silently yields 0 if the format ever changes.
+       The band object carries all three facts; it is read directly. */
+    ...(bandObject
       ? {
           offers: {
             '@type': 'Offer',
-            priceCurrency: 'CAD',
+            priceCurrency: bandObject.currency,
             priceSpecification: {
               '@type': 'UnitPriceSpecification',
-              priceCurrency: 'CAD',
+              priceCurrency: bandObject.currency,
               unitText: 'square foot',
-              ...(page.pricing
-                ? {
-                    minPrice: Number(band.match(/\$([\d.]+)/)?.[1] ?? 0),
-                    maxPrice: Number(band.match(/–\$([\d.]+)/)?.[1] ?? 0),
-                  }
-                : {}),
+              minPrice: bandObject.min,
+              maxPrice: bandObject.max,
             },
             availability: 'https://schema.org/InStock',
             url: `${SITE_URL}/#quote`,

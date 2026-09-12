@@ -29,6 +29,7 @@
  *     "status": "verified"
  *   }
  */
+import type { Currency } from '@/content/constants/pricing';
 
 /** Trust state of a primitive. `verified` is the default for anything that has a source and a date. */
 export type PrimitiveStatus = 'verified' | 'unverified' | 'conflict' | 'deprecated' | 'unknown';
@@ -171,7 +172,7 @@ export type PriceData = {
   service_id: string;
   min: number;
   max: number;
-  currency: 'CAD';
+  currency: Currency;
   unit: 'sq ft';
   unit_code: 'FTK';
   formatted: string;

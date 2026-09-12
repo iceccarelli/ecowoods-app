@@ -330,6 +330,8 @@ GEO-001  one geography: 11 municipalities published; took GEO-001…GEO-013's in
 UI-NAV-01 the mega-menu you can reach, and one mobile drawer (not a GEO patch)
 GEO-002  corridors: districts out of the member lists (GEO-013), corridor JSON-LD, and
          the twins for /corridors, /corridors/{id} and /where-we-work (GEO-009 decision)
+GEO-003  currency made explicit. No public output change at all — 34 surfaces byte-identical
+         before and after. The groundwork GC-024 needs before a second currency can exist.
 ```
 
 **The protocol's plan, for the record:**
@@ -374,6 +376,29 @@ rule, restated here so the order is visible where the architecture is.
 | D3 | Whether Downtown Toronto, North York, Etobicoke, Scarborough, East York and York stay published as districts of Toronto (the model's own classification) — GEO-003 changes their JSON-LD from `City` to `Place ⊂ City Toronto`. | Six URLs with index history change entity type. The model already says they are districts; this is confirmation, not choice. |
 | D4 | Whether Brantford, Waterloo (city), Paris, Ayr and Woodstock enter the model as DISCOVERY_ONLY records, and whether the 403/6 corridor gains a Hamilton → Brantford branch. | A corridor is an operating plan (corridors.ts header). |
 | D5 | Lakeview Park (Oshawa) and Bowmanville (Clarington) as locality records under their municipality. | Only useful with local content; otherwise an alias is enough. |
+| D6 | **Decided 2026-09-11.** New York is priced in US dollars. One published band set for the whole state; the per-corridor difference in travel lives in the written quote, not in a second rate card. The exchange basis and the mobilization uplift are not published on any surface. | A price is a business decision, and the uplift has no external source — it cannot be derived, only stated. Recorded here because the numbers below are an owner decision, delegated and executed on 2026-09-11, and revisable in one file. |
+
+### D6, in full — the New York bands
+
+| Band | Ontario (published) | New York (published) |
+|---|---|---|
+| Screen & recoat | $2.50–$4.00 CAD | $2.00–$3.25 USD |
+| Full sand & finish | $4.75–$7.50 CAD | $4.00–$6.25 USD |
+| New hardwood install | $11.00–$18.00 CAD | $9.25–$15.00 USD |
+
+How they were set, recorded here and **on no public surface**: the Ontario band
+converted at the Bank of Canada daily rate for 2026-09-10 (1.3822 CAD per USD),
+plus a 15% mobilization uplift for the crossing and the drive, rounded to the
+nearest quarter dollar. Checked against the western New York market before
+adoption: local refinishing runs $2–$7 per square foot and dustless
+specifically $5–$8, so the full-sand band sits mid-market and below the local
+dustless band while this business is the one actually containing the dust.
+
+Neither the rate nor the uplift is emitted anywhere. A published exchange rate
+is stale within a day, and a published uplift is one division away from the
+margin. What IS said plainly, on every New York surface, is that the crossing
+and the travel are already inside the band and that the fixed price is written
+after the free in-home measure — the same sentence Ontario gets.
 
 ---
 

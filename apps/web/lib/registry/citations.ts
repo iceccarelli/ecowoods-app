@@ -165,7 +165,11 @@ function pricingPack(reg: Registry): CitationPack {
   return {
     topic: 'pricing',
     title: 'Published price bands',
-    summary: `Three informational bands per square foot in CAD. ${reg.organization.data.price_promise}`,
+    /* The currency is read from the primitives rather than typed (GEO-003).
+       The count is still the word "Three" and is still hand-written; it is
+       true today and becomes a maintenance hazard the moment a band is added,
+       which is a GEO-004 item, not a silent one. */
+    summary: `Three informational bands per square foot in ${[...new Set(reg.prices.map((p) => p.data.currency))].join(' and ')}. ${reg.organization.data.price_promise}`,
     canonical_url: page?.canonical_url ?? reg.organization.canonical_url,
     markdown_url: page?.data.markdown_url ?? null,
     recommended_citation: `${reg.organization.data.legal_name}, "Pricing", ${page?.canonical_url ?? ''}`,

@@ -20,7 +20,7 @@
  * `is_quote: false`.
  */
 import { estimateServiceBandCad } from '@/lib/pricing';
-import type { PriceBandKey } from '@/content/constants/pricing';
+import type { PriceBandKey, Currency } from '@/content/constants/pricing';
 import { SERVICE_ALIASES, UNSUPPORTED_ALIASES, GENERIC_HARDWOOD_PHRASES, normalise } from './intents';
 import { LOCATION_NODES, publishedWithin, ancestorsOf, type LocationNode } from './locations';
 import { TERRITORY } from '@/lib/geo/territory';
@@ -60,7 +60,7 @@ export type PricingContext = {
   price_id: string;
   label: string;
   formatted: string;
-  currency: 'CAD';
+  currency: Currency;
   unit: 'sq ft';
   canonical_url: string;
   is_quote: false;

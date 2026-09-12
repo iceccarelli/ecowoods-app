@@ -72,7 +72,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | GC-021 | open | job cards still keyed by display name |
 | GC-022 | open | no twins for corridors / where-we-work (none advertised) |
 | GC-023 | open | measure after the first geography deploy |
-| GC-024 | open, owner question | area pages in New York show the Ontario price bands in CAD; `markets.ts` says those bands are not a local United States fact. Either state NY pricing or scope the bands to Ontario on NY pages |
+| GC-024 | answered 2026-09-11, open in code | the owner chose to state New York pricing in USD (one published band set, travel inside the band, the arithmetic unpublished — docs/GEO_SOURCE_MAP.md D6). GEO-003 makes currency explicit; GEO-004 publishes the bands |
 
 Two existing checks were edited because they encoded the old geography, and
 both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
@@ -116,6 +116,44 @@ as a route when its destination is one. It could not see any of the sixteen
 markdown twins — a link to `/service-areas.md` read as "no route, no public
 file, no manifest entry" — and nothing had noticed because until GEO-002 no page
 linked to a twin in prose. A rewrite pointing at nothing still fails.
+
+---
+
+## Status after GEO-003 — currency made explicit
+
+GEO-003 closes nothing. It is the patch that makes closing GC-024 safe, and it
+changes no public output: 34 generated surfaces — `/llms.txt`, `/ai.txt`,
+`/llms-full.txt`, every Markdown twin, the organisation JSON-LD, the three
+commercial graphs, the six service-page `Offer` graphs, the registry price
+primitives and the entity answers — are **byte-identical before and after**.
+
+**What was wrong.** `PriceBand.currency` was the literal type `'CAD'` and
+`formatBand` wrote a bare `$`. `$4.75–$7.50` is therefore the same string
+whether it means Canadian or American dollars, and `tests/drift.test.ts`
+asserts that exact string is present on every surface. A band published in the
+wrong currency would have passed `tsc`, all 66 guards, all 336 tests and the
+production build, and been read as a price by a customer. Four more places
+built a price string or a currency by hand:
+
+| Where | Was | Now |
+|---|---|---|
+| `content/constants/pricing.ts` | `currency: 'CAD'` literal type; bare `$` in both formatters | `Currency = 'CAD' \| 'USD'`; a band outside `HOME_CURRENCY` names itself in the string |
+| `lib/service-pages.ts` `priceBand` | built `$${min}–$${max} per sq ft` itself — identical to `formatBand` by coincidence | delegates to `formatBand`; new `bandForPage` returns the object |
+| `app/services/[slug]/page.tsx` | `priceCurrency: 'CAD'` twice; `minPrice`/`maxPrice` recovered by running a regex back over the formatted string | reads the band object |
+| `lib/schema/commercial.ts` | `priceCurrency: 'CAD'` twice | the band's own currency |
+| `lib/registry/types.ts`, `match.ts` | `currency: 'CAD'` literal type | `Currency` |
+| `app/llms.txt/route.ts` | `PRICE_BANDS[0].currency` as "the site's currency", twice | `currenciesIn(PRICE_BANDS)` |
+| `lib/registry/citations.ts` | `"…per square foot in CAD"` typed | read from the primitives |
+
+**Why no new guard.** The currency now travels inside the rendered string, so
+the presence assertions that already exist distinguish the two by construction:
+`formatBand` of a USD band is a different string from `formatBand` of a CAD
+one, and `drift.test.ts` compares exact strings. A guard that has to remember
+to look is worth less than a format that cannot be confused.
+
+Still open after this patch: GC-024 itself (no USD band exists yet — GEO-004),
+GC-021, GC-023, and `openapi.ts:287` `currency: { const: 'CAD' }`, which is
+accurate today and must widen when the second band set lands.
 
 ---
 

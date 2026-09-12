@@ -40,7 +40,8 @@
  * invented to fill a schema block.
  */
 import { SERVICES, type Service } from '@/lib/seo-data';
-import { PRICING, PRICE_PROMISE, type PricingService } from '@/lib/pricing';
+import { PRICING, PRICE_PROMISE, bandFor, type PricingService } from '@/lib/pricing';
+import { formatBand, type PriceBand } from '@/content/constants/pricing';
 import { getGuide } from '@/lib/guides';
 import { getTerm } from '@/lib/glossary';
 import { PILLARS } from '@/lib/framework';
@@ -157,13 +158,29 @@ export const getServicePages = (): ServicePage[] => SERVICE_PAGES;
 export const getServicePage = (slug: string): ServicePage | undefined =>
   SERVICE_PAGES.find((p) => p.slug === slug);
 
-/** The rendered band, or undefined where no band is published.  pricing-allow
- *  (the literal above is the FORMAT this returns, quoted in documentation —
- *  not a price anyone is shown. The value itself comes from PRICING.) */
+/**
+ * The band object behind a service page, or undefined where none is published.
+ *
+ * Added in GEO-003 because two schema emitters needed the NUMBERS and had only
+ * the string: app/services/[slug]/page.tsx was recovering `minPrice` and
+ * `maxPrice` by running a regular expression back over the formatted band, and
+ * that regex has no way to tell one currency from another. A consumer that
+ * needs a price should hold the band, not parse a sentence.
+ */
+export const bandForPage = (page: ServicePage): PriceBand | undefined =>
+  page.pricing ? bandFor(page.pricing) : undefined;
+
+/**
+ * The rendered band, or undefined where no band is published.
+ *
+ * Delegates to `formatBand` since GEO-003. It used to build the string itself
+ * — a fourth hand-written `$`, byte-identical to the formatter's output by
+ * coincidence rather than by construction, and the one that would NOT have
+ * learned to name a second currency.
+ */
 export const priceBand = (page: ServicePage): string | undefined => {
-  if (!page.pricing) return undefined;
-  const p = PRICING[page.pricing];
-  return `$${p.min.toFixed(2)}–$${p.max.toFixed(2)} per sq ft`;
+  const b = bandForPage(page);
+  return b ? formatBand(b) : undefined;
 };
 
 export const priceLabel = (page: ServicePage): string | undefined =>
