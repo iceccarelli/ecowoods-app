@@ -1,0 +1,757 @@
+From 2a65be00cc13501f5d38b1f91ba1f697e0ceda12 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 12:03:11 +0000
+Subject: [PATCH] =?UTF-8?q?docs(audit):=20AUDIT-01=20=E2=80=94=20the=20cam?=
+ =?UTF-8?q?era=20floor=20feature,=20executed=20rather=20than=20read?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The brief was explicit: "Do not assume features exist because documentation
+says they exist. Verify everything from the actual implementation," and "Do NOT
+mark something A+ because it is 'good enough.'"
+
+So nothing in this audit is graded from a comment or a page's own prose. Two
+harnesses build synthetic rooms whose floor plane and object boxes are known by
+construction, run them through the production analyseRoom() and
+compositeFloor(), and count what actually happened. They live in scripts/audit,
+they are NOT guards, they do not run in verify-all and they cannot fail a
+build — they exist so anyone can re-execute a claim on any checkout.
+
+THE GRADE IS B−, AND THREE FINDINGS CARRY IT.
+
+AV-01 · the renderer paints hardwood over people. render.ts:474 is the entire
+object-protection system: a pixel survives if and only if its CHROMA differs
+from the floor's mean chroma by more than 0.075. No luminance, no texture, no
+edge, no spatial coherence, no segmentation. So it is conservative against
+colour, which makes it anti-conservative against exactly what stands on a
+hardwood floor in a hardwood customer's house. Fourteen objects, six painted
+over at 100% of their pixels: a jute rug, a human leg, a golden retriever, an
+oak stair riser, a wooden table leg, a cardboard box. The eight survivors are
+the ones whose hue is not wood. The renderer's own docblock promises the
+opposite ("painting oak across the cat looks like a toy") and the code does not
+meet it. Worse, the "a lot of this room is furniture" warning keys off
+`painted`, which stays high precisely because the furniture was painted.
+
+AV-02 · "measured" is asserted where it is not true. room.ts argues, correctly,
+that a confidence percentage would be a claim about a distribution nobody
+estimated. The argument is right; the boundary is wrong. Six rooms with a true
+floor coverage of 0.55: empty room 0%, dark floor 0%, sofa 0%, angled 24% — and
+a room with a rug 72% error, still labelled `measured`. A rug collapses the
+colour run the way a wall does. `weak` fires only on degeneracies, never on the
+most common photograph a homeowner will upload. The screen headed "We found
+your room" says measured to someone whose floor has been cut to a sixth.
+
+GC-026 · the studio prices a New York room in Canadian dollars. GEO-004 closed
+GC-024 by establishing that a New York surface shows no Canadian figure.
+verify-geo holds that on pages that name a market; the studio names none, so
+the rule never reached it. bandForWork(work) sits at its 'CA' default,
+Intl.NumberFormat is hard-coded to CAD, the WebApplication JSON-LD tells
+machines the range is "in Canadian dollars", and the header and footer link
+/floor-studio from all 26 US markets. A homeowner in Amherst reads USD on their
+city page and is quoted CAD one click later. bandForWork(work, country) already
+takes the argument; nothing calls it with one.
+
+WHAT IS GENUINELY EXCELLENT IS RECORDED TOO, because an audit that only lists
+faults is not an audit: the refusal to estimate area from an uncalibrated photo
+(asked for instead, with the reason beside the field), the refusal to generate
+floors that cannot be bought, the absence of any upload endpoint at all, the
+single price source, the exact homography rather than an affine sticker, and
+every disabled control explaining itself from chemistry rather than
+merchandising.
+
+Live camera, semantic and instance segmentation, monocular depth and surface
+normals are MISSING against the brief — and the site never claims them, which
+is a gap rather than a lie. "Use my camera" is capture="environment" on a file
+input: real on a phone, a silent file picker on desktop.
+
+No application source is touched by this patch. The fix queue it opens is
+VIS-02 (AV-01), VIS-03 (AV-02), GEO-006 (GC-026), one patch each, each making
+the system able to support a claim it is already making.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ docs/AUDIT_01_VISUALIZER.md      | 332 +++++++++++++++++++++++++++++++
+ docs/GEO_CONTRADICTION_LOG.md    |  94 +++++++++
+ scripts/audit/README.md          |  25 +++
+ scripts/audit/boundary.audit.ts  |  51 +++++
+ scripts/audit/occlusion.audit.ts |  80 ++++++++
+ scripts/audit/register.mjs       |   3 +
+ scripts/audit/ts-hook.mjs        |  29 +++
+ 7 files changed, 614 insertions(+)
+ create mode 100644 docs/AUDIT_01_VISUALIZER.md
+ create mode 100644 scripts/audit/README.md
+ create mode 100644 scripts/audit/boundary.audit.ts
+ create mode 100644 scripts/audit/occlusion.audit.ts
+ create mode 100644 scripts/audit/register.mjs
+ create mode 100644 scripts/audit/ts-hook.mjs
+
+diff --git a/docs/AUDIT_01_VISUALIZER.md b/docs/AUDIT_01_VISUALIZER.md
+new file mode 100644
+index 0000000..4c9886f
+--- /dev/null
++++ b/docs/AUDIT_01_VISUALIZER.md
+@@ -0,0 +1,332 @@
++# AUDIT #1 — THE AI CAMERA FLOOR FEATURE
++
++**Scope:** every claim the platform makes about seeing a floor in your own room.
++**Method:** read the implementation, then execute it. Nothing below is graded
++from documentation, a comment, or a page's own prose.
++**Baseline:** `main` @ `7614386`.
++**Harness:** `scripts/audit/` — synthetic rooms with known ground truth, run
++through the real `analyseRoom()` and `compositeFloor()`.
++
++> The instruction this audit was written under: *"Do not assume features exist
++> because documentation says they exist. Verify everything from the actual
++> implementation."* and *"Do NOT mark something A+ because it is 'good enough.'"*
++
++---
++
++## 0. THE HEADLINE
++
++**The grade is B‑. It is not A+, and saying A+ today would be the exact failure
++this repository exists to prevent.**
++
++Three findings carry that grade, and all three are executed rather than argued:
++
++| # | Finding | Class |
++|---|---|---|
++| **AV-01** | The occlusion mask paints hardwood over people, dogs, jute rugs, wooden furniture legs and stair risers — 6 of 14 tested objects, 100% of their pixels | **BROKEN** |
++| **AV-02** | The floor-boundary estimator reports `measured` — its confident label — while losing 72% of the floor, in the single most common room photograph there is (a room with a rug) | **MISLEADING** |
++| **AV-03** | The studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all **26 New York pages** | **BROKEN** (reopens GC-024) |
++
++Everything else is honest. Much of it is unusually honest — the refusal to
++estimate area from a photo, the refusal to generate floors, the single price
++source — and that is *why* these three matter: they are the only places where
++the system asserts something it cannot support.
++
++---
++
++## 1. CAPABILITY MATRIX
++
++`PASS` works and was executed · `PARTIAL` real but incomplete · `MISSING` not
++implemented · `BROKEN` implemented and wrong · `MISLEADING` works but tells the
++visitor something untrue · `UNVERIFIED` not testable from here.
++
++### 1.1 Camera
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Live camera access (`getUserMedia`) | **MISSING** | `grep -rn "getUserMedia\|mediaDevices" apps/web packages` → 0 matches |
++| Native camera capture | **PASS** | `FloorStudio.tsx:428` — `<input type="file" accept="image/*" capture="environment">`. On a phone this opens the rear camera. On desktop it degrades to a file picker, silently. |
++| Front/rear camera selection | **MISSING** | `capture="environment"` is a fixed hint; no device enumeration exists |
++| Permission prompt + fallback | **PASS (by construction)** | There is no permission to grant: the OS camera app mediates. Upload is a first-class sibling, not a fallback. `FloorStudio.tsx:414–437` |
++| Live preview / live AR | **MISSING** | No `MediaStream`, no `requestAnimationFrame` in the studio. The pipeline is single-frame. |
++| Graceful degradation of live AR | **n/a → MISSING** | Nothing to degrade |
++
++**Read this honestly:** the site never claims live AR. `/floor-studio` says
++"Upload a photo of your room, or start from a floor". The button says *"Use my
++camera"* and it does use the camera. This is a **gap against the brief**, not a
++lie to a visitor.
++
++### 1.2 Computer vision
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Semantic segmentation | **MISSING** | No model, no weights, no inference. `grep tensorflow\|onnxruntime\|@mediapipe` → 0 |
++| Instance segmentation | **MISSING** | as above |
++| Monocular depth estimation | **MISSING** | as above |
++| Plane detection | **PARTIAL** | `room.ts:estimateFloorQuad` — a colour-run heuristic from a bottom-centre reference patch, walking upward until the run collapses. Named as a heuristic in its own docblock. |
++| Perspective / homography | **PASS** | `render.ts:solveHomography` — eight equations, Gaussian elimination with partial pivoting, degenerate quads return `null` rather than NaN. Exact projective map, not an affine approximation. Covered by `render.test.ts`. |
++| Surface-normal estimation | **MISSING** | The plane is assumed flat and level |
++| **Occlusion of objects on the floor** | **BROKEN** | See §2 |
++| Confidence reporting | **MISLEADING** | See §3 |
++
++### 1.3 Rendering
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Only real, buyable products rendered | **PASS** | `render.ts` docblock and implementation: every board is synthesised from a catalogue record's two pigments + finish tint + sheen. No generative model anywhere in the dependency tree. |
++| The room's own light is preserved | **PASS** | `render.ts:489` — each output pixel keeps the luminance ratio of the pixel it replaces against the floor-region mean, clamped to 0.45–1.8 |
++| Sheen behaves like sheen | **PASS** | `render.ts:495` — gloss scales with how far above the mean the original pixel was, so satin reads satin and matte reads matte with no extra input |
++| **Modifies only the floor** | **BROKEN** | §2 — it modifies whatever shares wood's hue |
++| Orientation control | **PARTIAL** | Pattern (straight / diagonal / herringbone / chevron) and a board-scale nudge. There is **no free rotation angle**, so a room whose boards should run toward the window cannot be shown that way. |
++| Determinism (a shared link shows the sender's floor) | **PASS** | Texture is a pure function of the configuration id |
++
++### 1.4 Measurement honesty
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Never presents AI-estimated dimensions as measurements of record | **PASS — exemplary** | `room.ts:UNMEASURABLE_FROM_A_PHOTO`. The area is **asked for**, with the reason printed next to the field. The docblock states the principle: *"A single uncalibrated photograph with no reference object of known size cannot yield an area, and every product in this category that claims otherwise is guessing."* |
++| Room type asked rather than inferred | **PASS** | same |
++| Two area modes | **PASS** | Typed square feet (verify screen) + a slider (studio). Both write one field. |
++
++### 1.5 Price
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Uses the real pricing source, not a duplicate | **PASS** | `catalog.ts:421 priceConfiguration` → `estimateInstalledRangeCad(input, bandForWork(work))` → `content/constants/pricing.ts`. One source, enforced by `verify-pricing-source.mjs`. GC-025, closed in GEO-005. |
++| Never called a quote | **PASS** | `FloorStudio.tsx:783` — *"This is a **range, not a quote.**"* on every screen the figure appears |
++| Price shown is explainable | **PASS** | The "Why this price?" disclosure names the published band and links to it rather than retyping it |
++| **Priced in the visitor's currency** | **BROKEN** | §4 |
++
++### 1.6 Recommendation
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Explainable — no bare score | **PASS** | `match.ts` returns `reasons[]` and `caveats[]`; the UI renders the score *and* its sentences. Page copy: *"A percentage with nothing under it is a number you cannot check."* |
++| Ranks over installable configurations only | **PASS** | `incompatibilities()` — fuming needs tannin; herringbone/chevron are cut as blocks |
++| Customer override | **PASS** | Four axes, each disabled option carrying `aria-describedby` prose saying *why*, plus draggable/keyboard corners, area, and board scale |
++| Auto-repair is disclosed | **PASS** | `FloorStudio.tsx:340` — *"We moved the finish and pattern to keep this a floor we can lay."* |
++
++### 1.7 Save, share, hand off
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Before/after comparison, ≥4 options | **PASS** | `MAX_COMPARE = 5`; split-slider before/after plus a side-by-side list |
++| Save (survives reload) | **PASS** | `studio-config.ts:saveStudioDesign` → `localStorage`, 30-day max age |
++| Share link | **PASS** | `encodeStudioDesign` → query string; `history.replaceState` keeps the address bar honest |
++| Download the image | **PASS** | `pixelsToDataUrl` → `<a download>` |
++| **Customer images not exposed publicly** | **PASS — by construction** | There is no upload endpoint. The share link carries the floor, never the room. `decodePhoto` → `analyseRoom` → `compositeFloor` all run on `ImageData` in the tab. |
++| Never silently uploads | **PASS** | as above, and stated on the analysing screen |
++| Quote handoff, nothing retyped | **PASS** | `estimateHref(design)` carries species, finish, pattern, width, area and room into `/estimate` |
++
++### 1.8 Platform
++
++| Capability | Verdict | Evidence |
++|---|---|---|
++| Analytics funnel | **PASS** | 10 studio events, typed in `lib/analytics.ts`, from `studio_open` to `studio_estimate_handoff`. No event carries a photograph, a room, or anything about the person. |
++| SEO / AEO | **PASS** | `WebApplication` JSON-LD with `featureList` and a `QuoteAction`; breadcrumbs; a markdown twin at `/floor-studio.md`; the whole explanation server-rendered rather than hydrated |
++| Security — no keys in the browser | **PASS** | There is no service to hold a key for |
++| Accessibility | **PARTIAL** | Corners are real `<button>`s with arrow-key handling and descriptive labels; axes are `<fieldset>/<legend>` with `aria-pressed`; `role="status"`/`aria-live` on the analysing and repair messages. **Not audited:** colour contrast of the canvas overlay, focus visibility on the corner handles, and the fact that the canvas conveys the entire result to a sighted user with only a one-line `aria-label` for everyone else. |
++| Performance budget | **UNVERIFIED** | `compositeFloor` is O(width × height) per frame in JS on the main thread, re-run on every axis change and on every comparison pane. No worker, no throttle. Not measured on a real device from here. |
++| Observability | **UNVERIFIED** | No error reporting from the studio beyond `setError` into the DOM |
++| Tests | **PARTIAL** | ~1,000 lines across `room.test.ts`, `render.test.ts`, `match.test.ts`, `catalog.test.ts`, `studio-config.test.ts`. **No test covers AV-01 or AV-02** — which is exactly why they shipped. |
++
++---
++
++## 2. AV-01 — THE MASK PAINTS OAK OVER PEOPLE
++
++### What the code does
++
++`render.ts:474` is the entire object-protection system:
++
++```ts
++const c = chromaOf(r0, g0, b0);
++if (Math.hypot(c.u - meanU, c.v - meanV) > tolerance) continue;   // tolerance = 0.075
++```
++
++`chromaOf` normalises brightness out and keeps two opponent axes. So the test is:
++**"is this pixel a different hue from the average floor?"** There is no
++luminance term, no texture term, no edge term, no spatial coherence, no
++segmentation. A pixel is protected if and only if its hue differs from wood.
++
++### What that means in a room
++
++Executed against the real `compositeFloor`, 14 objects placed on a known floor
++inside an honest quad:
++
++```
++OBJECT ON THE FLOOR          in-quad  overwritten     %   VERDICT
++grey fabric sofa                1588            0     0.0   PRESERVED
++cream/jute area rug             3233         3233   100.0   PAINTED OVER
++charcoal rug                    3233            0     0.0   PRESERVED
++green plant                     3233            0     0.0   PRESERVED
++human leg (skin)                3233         3233   100.0   PAINTED OVER
++black cat                       3172            0     0.0   PRESERVED
++golden retriever                1893         1893   100.0   PAINTED OVER
++white cabinet toe-kick          2865            0     0.0   PRESERVED
++oak stair riser                 3233         3233   100.0   PAINTED OVER
++pine/oak table leg              3233         3233   100.0   PAINTED OVER
++cardboard box                   3233         3233   100.0   PAINTED OVER
++navy armchair                   3233            0     0.0   PRESERVED
++terracotta pot                  3172            0     0.0   PRESERVED
++brass floor lamp base           3085            0     0.0   PRESERVED
++```
++
++**6 of 14, every pixel.** The pattern is not random: everything in the
++wood-hue family is destroyed, and the wood-hue family includes **human skin**,
++**a light-coloured dog**, **a jute or sisal rug**, **wooden furniture legs**,
++**oak stair risers** and **cardboard**. Everything outside it survives.
++
++### Why this is BROKEN and not PARTIAL
++
++The renderer's own docblock states the intent:
++
++> *"A sofa leg, a rug, a plant pot inside the quad is not floor and must not be
++> painted over… It is a conservative test and it is meant to be — leaving a
++> little of the old floor showing looks like a rough edge, while painting oak
++> across the cat looks like a toy."*
++
++The implementation does not do what the docblock says. It is conservative
++against *colour*, which makes it anti-conservative against the objects most
++likely to be standing on a hardwood floor in a hardwood-floor customer's house:
++wooden furniture, natural-fibre rugs, a dog, and the homeowner's own feet.
++
++### Additional consequence
++
++`FloorStudio.tsx:625` shows *"A lot of this room is furniture rather than floor"*
++when `painted < 0.5`. Because wooden furniture is **painted**, not skipped,
++`painted` stays high in exactly the rooms where the warning is most needed. The
++safety net is wired to the wrong signal.
++
++---
++
++## 3. AV-02 — "MEASURED" IS ASSERTED WHERE IT IS NOT TRUE
++
++`room.ts` defines two confidence values and explains the choice:
++
++> *"There is no third, confident-sounding value, and there is no percentage: a
++> number like '87% confident' is a claim about a distribution nobody estimated."*
++
++That reasoning is correct. The problem is the boundary between the two.
++
++Executed against the real `analyseRoom`, six synthetic rooms with a known
++floor plane (true coverage 0.55):
++
++```
++SCENE                              confidence   coverage   true    error   label honest?
++empty room, oak floor              measured        0.551    0.55      0%    yes
++dark walnut floor                  measured        0.551    0.55      0%    yes
++with a large pale area rug         measured        0.153    0.55     72%    NO
++with a sofa                        measured        0.551    0.55      0%    yes
++rug + sofa (a real living room)    measured        0.153    0.55     72%    NO
++shot from a doorway (angled)       measured        0.417    0.55     24%    yes
++```
++
++The estimator is **excellent on an empty room** and **wrong by 72% the moment
++there is a rug on the floor** — because a rug collapses the colour run exactly
++the way a wall does, and the algorithm cannot tell the two apart.
++
++`weak` fires only on degeneracies: an image under 8px, a run that never
++collapses, a far edge narrower than a fifth of the frame. It does **not** fire
++on the common case. So the screen that says *"We found your room"* says
++`measured` to a visitor whose floor has been cut to a sixth of its real size.
++
++The corner-drag control is genuinely good and genuinely first-class. But the
++copy around it — *"Drag the four corners onto the floor if we got the edge
++wrong"* — invites a correction the label has just told the visitor is
++unnecessary.
++
++**This is the `MISLEADING` class exactly: it works, and it tells the visitor
++something untrue.**
++
++---
++
++## 4. AV-03 — 26 NEW YORK PAGES OPEN A CANADIAN-DOLLAR DOOR
++
++GEO-004 closed GC-024 by establishing that a New York surface shows no CAD
++figure and an Ontario surface shows no USD figure. `verify-geo` holds that line
++on the pages it knows about.
++
++The studio is not one of them:
++
++```
++$ grep -rn "country\|PriceCountry\|bandForCountry" apps/web/lib/floor-studio/ apps/web/app/components/floor-studio/
++(no matches)
++```
++
++- `catalog.ts:426` — `bandForWork(work)`, with `country` left at its `'CA'` default
++- `FloorStudio.tsx:99` — `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded
++- `FloorStudio.tsx:589` — the budget field is labelled *"optional, CAD"*
++- `floor-studio/page.tsx:117` — the `WebApplication` JSON-LD tells machines the
++  range is *"in Canadian dollars"*
++- `Header.tsx:68` and `SiteFooter.tsx:247` link `/floor-studio` from **every**
++  page, which is all 26 US markets: buffalo, amherst, williamsville, clarence,
++  cheektowaga, lancaster, west-seneca, tonawanda, kenmore, grand-island,
++  orchard-park, hamburg, east-aurora, niagara-falls-ny, lewiston, wheatfield,
++  north-tonawanda, lockport, rochester-ny, brighton, pittsford, fairport,
++  victor, webster, irondequoit, greece
++
++A homeowner in Amherst reads a USD band on `/service-areas/amherst`, clicks
++"See it in your room" in the header, and is quoted in Canadian dollars with no
++explanation. **The system states two different versions of one fact.** GC-024 is
++reopened as **GC-026**.
++
++`bandForWork(work, country)` already takes the argument. Nothing calls it with
++one.
++
++---
++
++## 5. WHAT IS GENUINELY EXCELLENT
++
++Recorded because an audit that only lists faults is not an audit.
++
++1. **The refusal to measure area.** Most of this product category prints
++   "approximately 320 sq ft" under a photo. This one refuses, in a docblock that
++   explains why, and asks instead — with the reason next to the field.
++2. **The refusal to generate.** No diffusion model. Every board rendered is a
++   floor that can be bought. The docblock calls the alternative *"a fraud with a
++   nice colour palette"*, which is the correct description.
++3. **No upload path exists.** Not "we delete it" — there is no endpoint. Privacy
++   by construction, with the PIPEDA reasoning written down at `room.ts:29`.
++4. **One price source.** `priceConfiguration` delegates; `verify-pricing-source`
++   enforces it.
++5. **Every disabled control says why.** `aria-describedby` prose on each
++   incompatible option, from chemistry and geometry rather than merchandising.
++6. **The homography is exact.** Not the affine approximation that makes cheap
++   visualisers look like stickers.
++
++---
++
++## 6. GRADE
++
++| Dimension | Grade | Why |
++|---|---|---|
++| Truthfulness of claims to visitors | **C** | AV-02 asserts confidence it does not have; AV-03 states the wrong currency to 26 markets |
++| Truthfulness of claims about capability | **A** | The site never claims segmentation, depth or live AR |
++| CV / camera capability vs. the brief | **D** | No live camera, no segmentation, no depth, no normals |
++| Rendering fidelity | **B** | Exact perspective and real light; destroyed by AV-01 |
++| Pricing integrity | **B** | One source (A) undone by one currency (F) |
++| Recommendation explainability | **A** | |
++| Privacy | **A+** | Nothing to leak, by construction |
++| Save / share / handoff | **A** | |
++| Analytics | **A** | |
++| SEO / AEO | **A** | |
++| Accessibility | **B‑** | Good bones, unaudited canvas |
++| Performance | **UNVERIFIED** | |
++| Test coverage of the failure modes | **D** | No test covers either defect |
++| **OVERALL** | **B‑** | |
++
++**A+ EVERYWHERE is not true today and this audit does not claim it.** The route
++to it is AV-01, AV-02 and AV-03 — in that order, one patch each, each with a
++guard that fails the build if the defect returns.
++
++---
++
++## 7. THE FIX QUEUE
++
++| Patch | Closes | What it must do |
++|---|---|---|
++| **VIS-02** | AV-01 | Replace the chroma-only mask with a mask that also uses luminance distance, local texture energy and spatial coherence, and verify it against a fixture set that includes skin, a light dog, jute, and wooden legs. Ship the fixture set as a test. |
++| **VIS-03** | AV-02 | Make `measured` mean measured. Cross-check the colour-run horizon against an independent signal (row-wise luminance gradient), and downgrade to `weak` when they disagree. Add the six-scene fixture above as a test with an error budget. |
++| **GEO-006** | AV-03 | Give the studio a country. `bandForWork(work, country)` already accepts it; `Intl.NumberFormat` must follow the band's own currency, the JSON-LD must stop saying "Canadian dollars" unconditionally, and `verify-geo` must widen to cover the studio the way it covers the city pages. |
++
++Nothing in this queue lowers a threshold or suppresses a failure. Each one makes
++the system able to support a claim it is already making.
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index ccfff3e..7846546 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -73,6 +73,10 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | GC-022 | open | no twins for corridors / where-we-work (none advertised) |
+ | GC-023 | open | measure after the first geography deploy |
+ | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
++| GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
++| GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
++| AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
++| AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
+ 
+ Two existing checks were edited because they encoded the old geography, and
+ both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
+@@ -662,3 +666,93 @@ after a real geography deploy rather than assuming.
+   `.md` twin.
+ - The stale preview host `ecowoods-app.vercel.app` returns 404 (lead) and
+   `vercel.json` 301s the legacy domain.
++
++---
++
++## GC-026 · P0 · the studio prices a New York room in Canadian dollars
++
++GEO-004 closed GC-024 by establishing the rule this repository now holds: a New
++York surface shows no Canadian figure and an Ontario surface shows no United
++States one. `verify-geo` enforces it on the city pages, the twins, the
++OfferCatalog and the FAQ.
++
++Floor Studio was never brought under the rule, and the rule never noticed,
++because the guard checks the pages that name a market and the studio names
++none.
++
++| Where | What it does |
++|---|---|
++| `apps/web/lib/floor-studio/catalog.ts:426` | `bandForWork(work)` — `country` left at its `'CA'` default |
++| `apps/web/app/components/floor-studio/FloorStudio.tsx:99` | `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded |
++| `apps/web/app/components/floor-studio/FloorStudio.tsx:589` | the budget field is labelled "optional, CAD" |
++| `apps/web/app/floor-studio/page.tsx:117` | the `WebApplication` JSON-LD tells machines the range is "in Canadian dollars" |
++| `apps/web/app/components/Header.tsx:68`, `SiteFooter.tsx:247` | link `/floor-studio` from every page, which is all 26 US markets |
++
++A homeowner in Amherst reads a United States band on `/service-areas/amherst`,
++clicks "See it in your room" in the header, and is quoted in Canadian dollars
++with no explanation. That is two published versions of one fact, which is the
++single class of error this log exists to catch.
++
++`bandForWork(work, country)` already takes the argument. Nothing calls it with
++one. Closed by GEO-006.
++
++---
++
++## AV-01 · P0 · the renderer paints hardwood over people
++
++`apps/web/lib/floor-studio/render.ts:474` is the entire object-protection
++system: a pixel is left alone if and only if its **chroma** differs from the
++floor region's mean chroma by more than 0.075. No luminance term, no texture,
++no edge, no spatial coherence, no segmentation.
++
++The renderer's own docblock states the intent — "a sofa leg, a rug, a plant pot
++inside the quad is not floor and must not be painted over… painting oak across
++the cat looks like a toy" — and the implementation does not meet it. It is
++conservative against *colour*, which makes it anti-conservative against exactly
++the objects standing on a hardwood floor in a hardwood customer's house.
++
++Executed against the real `compositeFloor()` by
++`scripts/audit/occlusion.audit.ts`, 14 objects on a known floor inside an honest
++quad: **6 painted over, 100% of their pixels** — a jute rug, a human leg, a
++golden retriever, an oak stair riser, a wooden table leg, a cardboard box. The
++8 survivors are the ones whose hue is not wood: a grey sofa, a charcoal rug, a
++plant, a black cat, a white toe-kick, a navy armchair, terracotta, brass.
++
++Consequence beyond the picture: `FloorStudio.tsx:625` warns "a lot of this room
++is furniture rather than floor" when `painted < 0.5`. Because wooden furniture
++is painted rather than skipped, `painted` stays high in precisely the rooms
++where the warning is needed. The safety net is wired to the wrong signal.
++
++Closed by VIS-02.
++
++---
++
++## AV-02 · P0 · `measured` is asserted where it is not true
++
++`room.ts` offers two confidence values and argues, correctly, that a percentage
++would be "a claim about a distribution nobody estimated". The argument is right;
++the boundary between the two values is wrong.
++
++`scripts/audit/boundary.audit.ts`, six synthetic rooms with a floor plane whose
++true coverage is 0.55 by construction:
++
++| Scene | Reported | Coverage | Error | Honest? |
++|---|---|---|---|---|
++| empty room, oak floor | `measured` | 0.551 | 0% | yes |
++| dark walnut floor | `measured` | 0.551 | 0% | yes |
++| **with a large pale area rug** | `measured` | 0.153 | **72%** | **no** |
++| with a sofa | `measured` | 0.551 | 0% | yes |
++| **rug + sofa (a real living room)** | `measured` | 0.153 | **72%** | **no** |
++| shot from a doorway (angled) | `measured` | 0.417 | 24% | yes |
++
++The estimator is excellent on an empty room and wrong by 72% the moment there is
++a rug, because a rug collapses the colour run exactly the way a wall does and
++the algorithm cannot tell them apart. `weak` fires only on degeneracies — an
++image under 8px, a run that never collapses, a far edge under a fifth of the
++frame — and never on the common case.
++
++So the screen headed "We found your room" says `measured` to a visitor whose
++floor has been cut to a sixth of its real size, and the copy inviting a
++correction is undercut by the label that has just said none is needed.
++
++Closed by VIS-03.
+diff --git a/scripts/audit/README.md b/scripts/audit/README.md
+new file mode 100644
+index 0000000..3b64062
+--- /dev/null
++++ b/scripts/audit/README.md
+@@ -0,0 +1,25 @@
++# scripts/audit — executed evidence
++
++These are not guards. They do not run in `verify-all.mjs`, they do not gate a
++commit, and they never fail a build. They exist so that a claim in
++`docs/AUDIT_01_VISUALIZER.md` can be re-executed by anyone, on any checkout,
++against the real implementation rather than against a comment.
++
++Each script builds a synthetic room with **known ground truth**, runs it through
++the production function, and prints what actually happened.
++
++```bash
++node --experimental-strip-types --no-warnings \
++  --import ./scripts/audit/register.mjs \
++  scripts/audit/occlusion.audit.ts      # AV-01: what survives on the floor
++
++node --experimental-strip-types --no-warnings \
++  --import ./scripts/audit/register.mjs \
++  scripts/audit/boundary.audit.ts       # AV-02: is "measured" true
++```
++
++`ts-hook.mjs` resolves the repo's `@/` and `@ecowoods/shared/*` aliases so the
++scripts import the same modules the app does. Node ≥ 22.6 strips the types.
++
++When VIS-02 and VIS-03 land, these become vitest fixtures with an error budget.
++Until then they are the audit's working.
+diff --git a/scripts/audit/boundary.audit.ts b/scripts/audit/boundary.audit.ts
+new file mode 100644
+index 0000000..373f0b6
+--- /dev/null
++++ b/scripts/audit/boundary.audit.ts
+@@ -0,0 +1,51 @@
++/**
++ * scripts/audit/boundary.audit.ts — AV-02.
++ *
++ * THE QUESTION: when the studio says `measured`, is it?
++ *
++ * room.ts offers exactly two confidence values and argues, correctly, that a
++ * percentage would be "a claim about a distribution nobody estimated". The
++ * argument is right. This script tests the boundary between the two values.
++ *
++ * Six synthetic rooms, each with a floor plane whose true coverage is known by
++ * construction. The estimator is run on each and its reported coverage is
++ * compared against the truth. A run is honest if it says `measured` and is
++ * close, or says `weak` at all. It is dishonest if it says `measured` and is
++ * not.
++ *
++ * The interesting case is the third one: a room with a rug. That is not an edge
++ * case, it is the most common photograph a homeowner will upload.
++ */
++import { analyseRoom, quadCoverage } from '@/lib/floor-studio/room';
++const W=480,H=320;
++function room(opts:{rug?:boolean;furniture?:boolean;angle?:boolean;darkFloor?:boolean}){
++  const data=new Uint8ClampedArray(W*H*4);
++  const put=(x:number,y:number,r:number,g:number,b:number)=>{const i=(y*W+x)*4;data[i]=r;data[i+1]=g;data[i+2]=b;data[i+3]=255;};
++  const TRUE_HORIZON=0.45;
++  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ny=y/H;
++    let fy=TRUE_HORIZON;
++    if(opts.angle) fy=0.30+0.30*(x/W);           // floor line runs diagonally (photo from a doorway)
++    if(ny<fy)put(x,y,236,233,228);
++    else{const d=1-0.18*(1-ny);const base=opts.darkFloor?[70,52,38]:[150,112,74];
++      put(x,y,base[0]!*d,base[1]!*d,base[2]!*d);}}
++  if(opts.rug)for(let y=Math.round(0.60*H);y<Math.round(0.85*H);y++)for(let x=Math.round(0.15*W);x<Math.round(0.85*W);x++)put(x,y,214,206,190);
++  if(opts.furniture)for(let y=Math.round(0.48*H);y<Math.round(0.70*H);y++)for(let x=Math.round(0.05*W);x<Math.round(0.40*W);x++)put(x,y,138,136,132);
++  return {data,width:W,height:H};
++}
++const TRUE_COVERAGE_FLAT = 0.55; // floor from y=0.45 to 1.0, full width
++const cases: [string, any, number][] = [
++  ['empty room, oak floor',            {},                                 TRUE_COVERAGE_FLAT],
++  ['dark walnut floor',                {darkFloor:true},                   TRUE_COVERAGE_FLAT],
++  ['with a large pale area rug',       {rug:true},                         TRUE_COVERAGE_FLAT],
++  ['with a sofa',                      {furniture:true},                   TRUE_COVERAGE_FLAT],
++  ['rug + sofa (a real living room)',  {rug:true,furniture:true},          TRUE_COVERAGE_FLAT],
++  ['shot from a doorway (angled)',     {angle:true},                       0.55],
++];
++console.log('SCENE                              confidence   coverage   true    error   label honest?');
++for(const [name,opts,truth] of cases){
++  const r=analyseRoom(room(opts));
++  const err=Math.abs(r.floorCoverage-truth)/truth;
++  const honest = (r.floorConfidence==='measured' && err<0.25) || (r.floorConfidence==='weak');
++  console.log(name.padEnd(34), r.floorConfidence.padEnd(12), r.floorCoverage.toFixed(3).padStart(8), truth.toFixed(2).padStart(7),
++    (100*err).toFixed(0).padStart(6)+'%', '  ', honest?'yes':'NO — says "measured" while wrong');
++}
+diff --git a/scripts/audit/occlusion.audit.ts b/scripts/audit/occlusion.audit.ts
+new file mode 100644
+index 0000000..f4789a5
+--- /dev/null
++++ b/scripts/audit/occlusion.audit.ts
+@@ -0,0 +1,80 @@
++/**
++ * scripts/audit/occlusion.audit.ts — AV-01.
++ *
++ * THE QUESTION: when Floor Studio lays a floor into a photograph, what does it
++ * destroy on the way?
++ *
++ * The renderer's own docblock promises that "a sofa leg, a rug, a plant pot
++ * inside the quad is not floor and must not be painted over". This script does
++ * not take that on trust. It builds a room whose floor plane is known exactly,
++ * stands fourteen ordinary objects on it, runs the real compositeFloor(), and
++ * counts the pixels of each object that came back changed.
++ *
++ * The objects are not adversarial. They are what is on the floor of a house
++ * that is about to buy hardwood: a sofa, two rugs, a plant, a person, a cat, a
++ * dog, a cabinet toe-kick, a stair riser, a table leg, a box, an armchair, a
++ * pot and a lamp base.
++ *
++ * Ground truth is exact because the room is synthetic: every object's box is
++ * known, so "was this pixel of the dog replaced" is a comparison, not a
++ * judgement. Run it; do not read it.
++ */
++import { compositeFloor } from '@/lib/floor-studio/render';
++const W=480,H=320;
++type Obj={name:string;rgb:[number,number,number];box:[number,number,number,number]};
++// every object tiled along the true floor band so all are inside one honest quad
++const NAMES: [string,[number,number,number]][] = [
++  ['grey fabric sofa',[138,136,132]],
++  ['cream/jute area rug',[214,196,166]],
++  ['charcoal rug',[52,52,56]],
++  ['green plant',[62,110,58]],
++  ['human leg (skin)',[206,160,128]],
++  ['black cat',[28,26,26]],
++  ['golden retriever',[198,158,104]],
++  ['white cabinet toe-kick',[238,236,232]],
++  ['oak stair riser',[168,128,84]],
++  ['pine/oak table leg',[176,140,96]],
++  ['cardboard box',[190,158,116]],
++  ['navy armchair',[46,58,88]],
++  ['terracotta pot',[178,98,62]],
++  ['brass floor lamp base',[186,152,74]],
++];
++function build(){
++  const data=new Uint8ClampedArray(W*H*4);
++  const put=(x:number,y:number,r:number,g:number,b:number)=>{const i=(y*W+x)*4;data[i]=r;data[i+1]=g;data[i+2]=b;data[i+3]=255;};
++  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ny=y/H;
++    if(ny<0.45)put(x,y,236,233,228);else{const d=1-0.18*(1-ny);put(x,y,150*d,112*d,74*d);}}
++  const objs:Obj[]=[];
++  NAMES.forEach((n,i)=>{
++    const col=i%7, row=Math.floor(i/7);
++    const x0=0.02+col*0.14, y0=0.50+row*0.24;
++    const box:[number,number,number,number]=[x0,y0,x0+0.11,y0+0.19];
++    objs.push({name:n[0],rgb:n[1],box});
++    for(let y=Math.round(box[1]*H);y<Math.round(box[3]*H);y++)
++      for(let x=Math.round(box[0]*W);x<Math.round(box[2]*W);x++)
++        if(x>=0&&x<W&&y>=0&&y<H)put(x,y,n[1][0],n[1][1],n[1][2]);
++  });
++  return {px:{data,width:W,height:H},objs};
++}
++const {px,objs}=build();
++const quad=[{x:0.10,y:0.46},{x:0.90,y:0.46},{x:1,y:1},{x:0,y:1}] as any;
++const res=compositeFloor(px,quad,{productId:'white-oak',finishId:'satin',patternId:'straight',widthId:'5'},{squareFeet:400});
++console.log('painted fraction of quad:',res.painted.toFixed(3),res.failure??'');
++console.log('');
++console.log('OBJECT ON THE FLOOR          in-quad  overwritten     %   VERDICT');
++for(const o of objs){
++  let n=0,c=0;
++  for(let y=Math.round(o.box[1]*H);y<Math.round(o.box[3]*H);y++)
++    for(let x=Math.round(o.box[0]*W);x<Math.round(o.box[2]*W);x++){
++      const nx=(x+0.5)/W,ny=(y+0.5)/H;
++      let sign=0,inside=true;
++      for(let i=0;i<4;i++){const a=quad[i],b=quad[(i+1)%4];
++        const cr=(b.x-a.x)*(ny-a.y)-(b.y-a.y)*(nx-a.x);if(cr===0)continue;
++        const s=cr>0?1:-1;if(sign===0)sign=s;else if(s!==sign){inside=false;break;}}
++      if(!inside)continue;n++;
++      const i=(y*W+x)*4;
++      if(res.pixels.data[i]!==px.data[i]||res.pixels.data[i+1]!==px.data[i+1]||res.pixels.data[i+2]!==px.data[i+2])c++;
++    }
++  const p=n?100*c/n:0;
++  console.log(o.name.padEnd(28),String(n).padStart(7),String(c).padStart(12),p.toFixed(1).padStart(7),' ',n===0?'n/a':p<5?'PRESERVED':p<50?'PARTIAL':'PAINTED OVER');
++}
+diff --git a/scripts/audit/register.mjs b/scripts/audit/register.mjs
+new file mode 100644
+index 0000000..bd89948
+--- /dev/null
++++ b/scripts/audit/register.mjs
+@@ -0,0 +1,3 @@
++import { register } from 'node:module';
++import { pathToFileURL } from 'node:url';
++register('./ts-hook.mjs', pathToFileURL(import.meta.filename));
+diff --git a/scripts/audit/ts-hook.mjs b/scripts/audit/ts-hook.mjs
+new file mode 100644
+index 0000000..1d567db
+--- /dev/null
++++ b/scripts/audit/ts-hook.mjs
+@@ -0,0 +1,29 @@
++import { fileURLToPath, pathToFileURL } from 'node:url';
++import { existsSync } from 'node:fs';
++import path from 'node:path';
++
++const ROOT = path.resolve(fileURLToPath(import.meta.url), '../../..');
++const WEB = path.join(ROOT, 'apps/web');
++const SHARED = path.join(ROOT, 'packages/shared');
++
++export async function resolve(spec, ctx, next) {
++  let target = null;
++  if (spec.startsWith('@ecowoods/shared/')) {
++    target = path.join(SHARED, spec.slice('@ecowoods/shared/'.length));
++  } else if (spec === '@ecowoods/shared') {
++    target = path.join(SHARED, 'index');
++  } else if (spec.startsWith('@/')) {
++    target = path.join(WEB, spec.slice(2));
++  } else if (spec.startsWith('.') && ctx.parentURL) {
++    target = path.resolve(path.dirname(fileURLToPath(ctx.parentURL)), spec);
++  }
++  if (target) {
++    for (const cand of [target, target + '.ts', target + '.tsx', path.join(target, 'index.ts')]) {
++      if (existsSync(cand) && !cand.endsWith('/')) {
++        try { const st = (await import('node:fs')).statSync(cand); if (st.isDirectory()) continue; } catch {}
++        return { url: pathToFileURL(cand).href, format: cand.endsWith('.ts') || cand.endsWith('.tsx') ? 'module-typescript' : 'module', shortCircuit: true };
++      }
++    }
++  }
++  return next(spec, ctx);
++}
+-- 
+2.43.0
+
