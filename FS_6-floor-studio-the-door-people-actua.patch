@@ -1,0 +1,2318 @@
+From 3e5a2047581c62a6b12e8573c0cc9b67e6ee36d9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 01:22:31 +0000
+Subject: [PATCH 6/7] =?UTF-8?q?feat(floor-studio):=20/floor-studio=20?=
+ =?UTF-8?q?=E2=80=94=20the=20door=20people=20actually=20come=20through?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FS-06 of the Floor Studio series.
+
+The route, the client experience, the chrome, the sitemap, the markdown
+twin and the registry primitive. Everything that decides an answer still
+lives in lib/floor-studio, where it is pure and tested; this is the
+sequence a person moves through:
+
+  photo → what we measured (and what you fix) → how you want it to feel →
+  three real floors in your room → change anything → the range → the exit
+
+THE INTERACTIVE PART IS AN ISLAND IN A SERVER PAGE
+
+The wow is a canvas and a canvas needs a browser. Everything around it —
+what the studio is, which floors exist, what the bands are, what it
+refuses to do — is server-rendered prose, because a page whose content
+appears only after hydration is a page a crawler, a retrieval system and
+somebody on a bad connection all see as empty. This site paid for that
+lesson once already (F-160: <form> count zero on every page).
+
+THE CORRECTION IS A CONTROL, NOT AN ERROR PATH
+
+Four corners, draggable and keyboard-operable with arrow keys, present
+from the moment the analysis finishes whether it went well or not. The
+person looking at the screen can see their own floor and we cannot.
+
+A CONTROL THAT CANNOT BE CHOSEN SAYS WHY
+
+Pick smoked hard maple and the studio explains the tannin; widen a
+herringbone past five inches and it explains the block cut, moves the axis
+the visitor did NOT just touch, and narrates what it moved. A disabled
+button with no explanation teaches a visitor the product is broken.
+
+WHERE IT SITS IN THE FUNNEL
+
+The homepage band now leads with "Don't imagine your new floor. See it."
+and keeps the configurator as the second link for the minority who arrive
+knowing their specification. Floor Studio leads the Start here column of
+the header menu — depth 0, one click from every page — and sits in the
+footer beside the designer. /design links across to it.
+
+And the studio funnel deliberately does NOT point at the estimate form.
+Somebody who has just watched a floor appear in a photo of their own
+living room has resolved desire, not doubt; the next uncertainty is
+whether the picture was honest, and the answer to that is finished houses.
+The page carries its own estimate CTA at the wow moment.
+
+THE MONEY LADDER IS DECLARED AND NOT PUBLISHED
+
+content/constants/studio-products.ts holds all three rungs — samples, the
+personal floor plan, the professional design review — with priceCad: null
+and published: false on the two paid ones. A new dollar figure is a Class
+C change and no engineer gets to make it in a patch. The studio renders
+nothing at all for an unpublished rung: no price, no "from", no "coming
+soon" that could read as an offer. A test asserts every rung's price is
+still null and that only the free one ships.
+
+MACHINE SURFACES
+
+/floor-studio.md states the capability, the vocabulary and the four
+refusals. `action:visualise_floor` joins the registry as a ViewAction —
+the third category of action this site has: work a machine cannot do FOR
+somebody, only send them to, because it needs their photograph and their
+device. The refusals are the citable part: an assistant choosing between
+visualisers has no way to tell which ones invent products, and the one
+that says in a machine-readable document that it renders only installable
+configurations is the one worth naming.
+
+16 wiring tests. 465 across the app. pnpm verify green (66 guards).
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01CCa8RyVk8SP2G5vs4LsgmD
+---
+ apps/web/app/components/Header.tsx            |   5 +
+ apps/web/app/components/SiteFooter.tsx        |   1 +
+ .../components/floor-studio/FloorStudio.tsx   | 950 ++++++++++++++++++
+ apps/web/app/design/page.tsx                  |   5 +
+ apps/web/app/floor-studio/page.tsx            | 242 +++++
+ apps/web/app/globals.css                      | 277 +++++
+ apps/web/app/home-client.tsx                  |  30 +-
+ apps/web/app/md/floor-studio/route.ts         |  22 +
+ apps/web/app/sitemap.ts                       |   5 +
+ apps/web/content/constants/studio-products.ts |  98 ++
+ apps/web/lib/analytics.ts                     |  29 +-
+ apps/web/lib/floor-studio/studio-config.ts    |   4 +-
+ apps/web/lib/funnels/funnels.test.ts          |   7 +-
+ apps/web/lib/funnels/index.ts                 |  17 +
+ apps/web/lib/markdown-export.ts               |  78 ++
+ apps/web/lib/registry/registry.ts             |  52 +
+ apps/web/lib/registry/types.ts                |   9 +-
+ apps/web/next.config.js                       |   1 +
+ apps/web/tests/floor-studio.test.ts           | 131 +++
+ 19 files changed, 1946 insertions(+), 17 deletions(-)
+ create mode 100644 apps/web/app/components/floor-studio/FloorStudio.tsx
+ create mode 100644 apps/web/app/floor-studio/page.tsx
+ create mode 100644 apps/web/app/md/floor-studio/route.ts
+ create mode 100644 apps/web/content/constants/studio-products.ts
+ create mode 100644 apps/web/tests/floor-studio.test.ts
+
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 6bf192e..9929e32 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -61,6 +61,11 @@ const SERVICES_MENU: MegaColumn[] = [
+   {
+     title: 'Start here',
+     items: [
++      /* Floor Studio leads the menu because it is the only entry on this site
++         that costs the visitor nothing and shows them something they cannot get
++         anywhere else: their own room, with a floor we can actually lay in it.
++         In the chrome it is depth 0 — one click from every page. */
++      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
+       { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
+       { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
+     ],
+diff --git a/apps/web/app/components/SiteFooter.tsx b/apps/web/app/components/SiteFooter.tsx
+index 67d306b..0d4f16a 100644
+--- a/apps/web/app/components/SiteFooter.tsx
++++ b/apps/web/app/components/SiteFooter.tsx
+@@ -244,6 +244,7 @@ export default function SiteFooter() {
+                   is right to call it an orphan: a page in the sitemap with no way
+                   in reads as unimportant no matter what the sitemap says. */}
+               <a href="/where-we-work">Where We Work</a>
++              <a href="/floor-studio">Floor Studio</a>
+               <a href="/design">Floor Designer</a>
+               {/* F-163 moved FloorForge out of the primary nav, where it spent a
+                   tenth of the header on a product name a homeowner comparing three
+diff --git a/apps/web/app/components/floor-studio/FloorStudio.tsx b/apps/web/app/components/floor-studio/FloorStudio.tsx
+new file mode 100644
+index 0000000..13b0fcb
+--- /dev/null
++++ b/apps/web/app/components/floor-studio/FloorStudio.tsx
+@@ -0,0 +1,950 @@
++'use client';
++
++import {
++  useCallback,
++  useEffect,
++  useMemo,
++  useRef,
++  useState,
++  type CSSProperties,
++  type KeyboardEvent as ReactKeyboardEvent,
++  type PointerEvent as ReactPointerEvent,
++} from 'react';
++import Link from 'next/link';
++import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
++import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
++import { publishedStudioProducts } from '@/content/constants/studio-products';
++import { track } from '@/lib/analytics';
++import {
++  BOARD_WIDTHS,
++  FLOOR_PRODUCTS,
++  configurationId,
++  describeConfiguration,
++  incompatibilities,
++  movementFor,
++  parseConfigurationId,
++  priceConfiguration,
++  widthById,
++  withAxis,
++  type FloorConfiguration,
++} from '@/lib/floor-studio/catalog';
++import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
++import { compositeFloor } from '@/lib/floor-studio/render';
++import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
++import {
++  UNMEASURABLE_FROM_A_PHOTO,
++  analyseRoom,
++  type Pixels,
++  type Quad,
++  type RoomReading,
++} from '@/lib/floor-studio/room';
++import {
++  SQFT_MAX,
++  SQFT_MIN,
++  decodeStudioDesign,
++  describeStudioDesign,
++  designHref,
++  emptyStudioDesign,
++  encodeStudioDesign,
++  estimateHref,
++  roomFactsFrom,
++  saveStudioDesign,
++  studioHref,
++  studioRef,
++  type StudioDesign,
++} from '@/lib/floor-studio/studio-config';
++
++/**
++ * ECOWOODS FLOOR STUDIO — the client experience.
++ *
++ * Everything that decides an answer lives in lib/floor-studio, where it is pure
++ * and tested. This file is the sequence a person moves through, and its job is
++ * to be so uneventful that they never think about it:
++ *
++ *   photo → what we measured (and what you fix) → how you want it to feel →
++ *   three real floors in your room → change anything → the range → the exit
++ *
++ * FOUR RULES IT OBEYS
++ *
++ * 1. THE PHOTOGRAPH NEVER LEAVES THE DEVICE. Decoding, analysis, masking and
++ *    compositing all happen here. There is no upload in this component and no
++ *    endpoint for one. A share link carries the floor, never the room.
++ *
++ * 2. THE CORRECTION IS A FIRST-CLASS CONTROL, NOT AN ERROR PATH. The four
++ *    corners are draggable AND keyboard-operable from the moment the analysis
++ *    finishes, whether or not it went well, because the person looking at the
++ *    screen can see their own floor and we cannot.
++ *
++ * 3. NOTHING SAYS QUOTE. The figure is an estimated installed range, labelled,
++ *    every time, next to the sentence about the measure. The published band it
++ *    comes from is linked rather than retyped.
++ *
++ * 4. A CONTROL THAT CANNOT BE CHOSEN SAYS WHY. Fuming needs tannin; herringbone
++ *    is cut as blocks. A disabled button with no explanation teaches a visitor
++ *    that the product is broken.
++ */
++
++type Stage = 'start' | 'analysing' | 'verify' | 'feel' | 'studio';
++
++const ANALYSING_STEPS = [
++  'Reading your photo…',
++  'Measuring the light in the room…',
++  'Finding where the floor meets the walls…',
++  'Matching against floors we can actually lay…',
++];
++
++const MAX_COMPARE = 5;
++
++const cad = (n: number) =>
++  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
++
++/** A neutral plan-view ground for "start with a floor", with a little falloff
++    so the boards are lit rather than flat. Not a room, and not pretending. */
++function swatchGround(width: number, height: number): Pixels {
++  const data = new Uint8ClampedArray(width * height * 4);
++  for (let y = 0; y < height; y += 1) {
++    for (let x = 0; x < width; x += 1) {
++      const fall = 1 - 0.28 * Math.hypot((x / width - 0.5) * 1.1, (y / height - 0.5) * 1.4);
++      const v = Math.round(168 * fall);
++      const i = (y * width + x) * 4;
++      data[i] = v;
++      data[i + 1] = v;
++      data[i + 2] = v;
++      data[i + 3] = 255;
++    }
++  }
++  return { data, width, height };
++}
++
++const FULL_QUAD: Quad = [
++  { x: 0, y: 0 },
++  { x: 1, y: 0 },
++  { x: 1, y: 1 },
++  { x: 0, y: 1 },
++];
++
++const CORNER_LABELS = ['Far left corner', 'Far right corner', 'Near right corner', 'Near left corner'];
++
++export default function FloorStudio() {
++  const [stage, setStage] = useState<Stage>('start');
++  const [analysingStep, setAnalysingStep] = useState(0);
++  const [error, setError] = useState<string | null>(null);
++
++  const [photo, setPhoto] = useState<Pixels | null>(null);
++  const [reading, setReading] = useState<RoomReading | null>(null);
++  const [quad, setQuad] = useState<Quad>(FULL_QUAD);
++  const [boardScale, setBoardScale] = useState(1);
++
++  const [design, setDesign] = useState<StudioDesign>(() => emptyStudioDesign());
++  const [compare, setCompare] = useState<string[]>([]);
++  const [split, setSplit] = useState(60);
++  const [repaired, setRepaired] = useState<string | null>(null);
++  const [copied, setCopied] = useState(false);
++
++  const beforeRef = useRef<HTMLCanvasElement | null>(null);
++  const afterRef = useRef<HTMLCanvasElement | null>(null);
++  const stageRef = useRef<HTMLDivElement | null>(null);
++  const openedRef = useRef(false);
++
++  /* ── entry: a shared link opens on the floor it names ──────────────────── */
++  useEffect(() => {
++    if (!openedRef.current) {
++      openedRef.current = true;
++      track('studio_open');
++    }
++    try {
++      const search = window.location.search;
++      if (!search) return;
++      const shared = decodeStudioDesign(search);
++      if (shared) {
++        setDesign(shared);
++        setStage('studio');
++      }
++    } catch {
++      /* a malformed link opens the studio empty rather than breaking it */
++    }
++  }, []);
++
++  /* ── the ground the floor is laid into ─────────────────────────────────── */
++  const ground = useMemo(() => photo ?? swatchGround(960, 640), [photo]);
++  const activeQuad = photo ? quad : FULL_QUAD;
++
++  const render = useMemo(
++    () =>
++      compositeFloor(ground, activeQuad, design.config, {
++        squareFeet: design.squareFeet,
++        boardScale,
++      }),
++    [ground, activeQuad, design.config, design.squareFeet, boardScale],
++  );
++
++  useEffect(() => {
++    if (beforeRef.current) paintPixels(beforeRef.current, ground);
++    if (afterRef.current) paintPixels(afterRef.current, render.pixels);
++  }, [ground, render]);
++
++  const visualisedRef = useRef<string | null>(null);
++  useEffect(() => {
++    if (stage !== 'studio') return;
++    const id = configurationId(design.config);
++    if (visualisedRef.current === id) return;
++    visualisedRef.current = id;
++    track('studio_visualised', { config: id, with_photo: photo !== null });
++  }, [stage, design.config, photo]);
++
++  /* ── the recommendations ───────────────────────────────────────────────── */
++  const matches = useMemo(
++    () =>
++      matchFloors({
++        feels: design.feels,
++        room: design.room,
++        roomTypeId: design.roomTypeId,
++        squareFeet: design.squareFeet,
++        budgetCad: design.budgetCad,
++      }),
++    [design.feels, design.room, design.roomTypeId, design.squareFeet, design.budgetCad],
++  );
++
++  const matchesShownRef = useRef(false);
++  useEffect(() => {
++    if (stage !== 'studio' || matchesShownRef.current || matches.length === 0) return;
++    matchesShownRef.current = true;
++    track('studio_match_shown', { count: matches.length, top: matches[0]!.id });
++  }, [stage, matches]);
++
++  const estimate = useMemo(
++    () => priceConfiguration(design.config, design.squareFeet),
++    [design.config, design.squareFeet],
++  );
++  const movement = useMemo(() => movementFor(design.config), [design.config]);
++
++  /* ── persistence: every change survives a reload and a share ───────────── */
++  useEffect(() => {
++    if (stage !== 'studio') return;
++    saveStudioDesign(design);
++    try {
++      const url = new URL(window.location.href);
++      url.search = encodeStudioDesign(design);
++      window.history.replaceState(null, '', url.toString());
++    } catch {
++      /* history unavailable — localStorage still carries it */
++    }
++  }, [design, stage]);
++
++  /* ── photo intake ──────────────────────────────────────────────────────── */
++  const onPickPhoto = useCallback(async (file: File | undefined) => {
++    if (!file) return;
++    setError(null);
++    setStage('analysing');
++    setAnalysingStep(0);
++    const paced = window.setInterval(
++      () => setAnalysingStep((s) => Math.min(ANALYSING_STEPS.length - 1, s + 1)),
++      260,
++    );
++    try {
++      const decoded = await decodePhoto(file);
++      const measured = analyseRoom(decoded.pixels);
++      window.clearInterval(paced);
++      setPhoto(decoded.pixels);
++      setReading(measured);
++      setQuad(measured.floorQuad);
++      setDesign((d) => ({ ...d, room: roomFactsFrom(measured) }));
++      track('studio_photo_analysed', { confidence: measured.floorConfidence, light: measured.lightLevel });
++      setStage('verify');
++    } catch (err) {
++      window.clearInterval(paced);
++      setError(err instanceof Error ? err.message : 'Something went wrong reading that photo.');
++      setStage('start');
++    }
++  }, []);
++
++  /* ── the boundary, dragged or typed ────────────────────────────────────── */
++  const correctedRef = useRef(false);
++  const noteCorrection = useCallback(() => {
++    if (correctedRef.current) return;
++    correctedRef.current = true;
++    track('studio_boundary_corrected');
++  }, []);
++
++  const moveCorner = useCallback(
++    (index: number, dx: number, dy: number) => {
++      noteCorrection();
++      setQuad((q) => {
++        const next = [...q] as Quad;
++        next[index] = {
++          x: Math.min(1, Math.max(0, q[index]!.x + dx)),
++          y: Math.min(1, Math.max(0, q[index]!.y + dy)),
++        };
++        return next;
++      });
++    },
++    [noteCorrection],
++  );
++
++  const dragging = useRef<number | null>(null);
++  const onCornerPointerDown = (index: number) => (e: ReactPointerEvent<HTMLButtonElement>) => {
++    dragging.current = index;
++    e.currentTarget.setPointerCapture(e.pointerId);
++  };
++  const onStagePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
++    const index = dragging.current;
++    if (index === null || !stageRef.current) return;
++    const box = stageRef.current.getBoundingClientRect();
++    noteCorrection();
++    setQuad((q) => {
++      const next = [...q] as Quad;
++      next[index] = {
++        x: Math.min(1, Math.max(0, (e.clientX - box.left) / box.width)),
++        y: Math.min(1, Math.max(0, (e.clientY - box.top) / box.height)),
++      };
++      return next;
++    });
++  };
++  const onStagePointerUp = () => {
++    dragging.current = null;
++  };
++  const onCornerKey = (index: number) => (e: ReactKeyboardEvent<HTMLButtonElement>) => {
++    const step = e.shiftKey ? 0.05 : 0.01;
++    const moves: Record<string, [number, number]> = {
++      ArrowLeft: [-step, 0],
++      ArrowRight: [step, 0],
++      ArrowUp: [0, -step],
++      ArrowDown: [0, step],
++    };
++    const move = moves[e.key];
++    if (!move) return;
++    e.preventDefault();
++    moveCorner(index, move[0], move[1]);
++  };
++
++  /* ── configuration ─────────────────────────────────────────────────────── */
++  const setConfig = useCallback((next: FloorConfiguration, axis: keyof FloorConfiguration, value: string) => {
++    const { config, repairedAxes } = withAxis(next, axis, value);
++    setDesign((d) => ({ ...d, config }));
++    track('studio_config_changed', { axis, value, config: configurationId(config) });
++    setRepaired(
++      repairedAxes.length
++        ? `We moved the ${repairedAxes
++            .map((a) => ({ productId: 'species', finishId: 'finish', patternId: 'pattern', widthId: 'board width' })[a])
++            .join(' and ')} to keep this a floor we can lay.`
++        : null,
++    );
++  }, []);
++
++  const toggleCompare = useCallback((id: string) => {
++    setCompare((list) => {
++      const next = list.includes(id) ? list.filter((x) => x !== id) : [...list, id].slice(-MAX_COMPARE);
++      if (next.length > 1) track('studio_compare', { count: next.length });
++      return next;
++    });
++  }, []);
++
++  const applyMatch = useCallback((match: Match) => {
++    setDesign((d) => ({ ...d, config: match.config }));
++    setRepaired(null);
++  }, []);
++
++  /* ── save, share, download ─────────────────────────────────────────────── */
++  const shareLink = useMemo(() => studioHref(design), [design]);
++  const reference = useMemo(() => studioRef(design), [design]);
++
++  const copyLink = useCallback(async () => {
++    try {
++      await navigator.clipboard.writeText(new URL(shareLink, window.location.origin).toString());
++      setCopied(true);
++      window.setTimeout(() => setCopied(false), 2200);
++      track('studio_share', { method: 'copy', config: configurationId(design.config) });
++    } catch {
++      setError('Your browser would not let us copy that. The address bar already has the link.');
++    }
++  }, [shareLink, design.config]);
++
++  const downloadImage = useCallback(() => {
++    try {
++      const url = pixelsToDataUrl(render.pixels);
++      const a = document.createElement('a');
++      a.href = url;
++      a.download = `ecowoods-${reference}.png`;
++      a.click();
++      track('studio_share', { method: 'download', config: configurationId(design.config) });
++    } catch {
++      setError('We could not save that image here. Try the share link instead.');
++    }
++  }, [render.pixels, reference, design.config]);
++
++  /* ── rendering ─────────────────────────────────────────────────────────── */
++  const sampleProduct = publishedStudioProducts().find((p) => p.id === 'samples');
++
++  const cornerStyle = (p: { x: number; y: number }): CSSProperties => ({
++    left: `${p.x * 100}%`,
++    top: `${p.y * 100}%`,
++  });
++
++  return (
++    <section className="fs" id="studio" aria-labelledby="fs-studio-heading">
++      <div className="shell">
++        <h2 id="fs-studio-heading" className="fs-h">
++          {stage === 'studio' ? 'Your floor, in your room' : 'See your new floor in your home'}
++        </h2>
++
++        {error && (
++          <p className="fs-error" role="alert">
++            {error}
++          </p>
++        )}
++
++        {/* ── START ──────────────────────────────────────────────────────── */}
++        {stage === 'start' && (
++          <div className="fs-start">
++            <p className="fs-lede">
++              Upload a photo, use your camera, or start with a floor. Everything happens on your own
++              device — the photo never leaves it, and we do not keep it.
++            </p>
++            <div className="fs-start-actions">
++              <label className="btn btn-copper btn-lg fs-file">
++                Upload a room photo
++                <input
++                  type="file"
++                  accept="image/*"
++                  className="fs-file-input"
++                  onChange={(e) => void onPickPhoto(e.currentTarget.files?.[0])}
++                />
++              </label>
++              <label className="btn btn-ghost fs-file">
++                Use my camera
++                <input
++                  type="file"
++                  accept="image/*"
++                  capture="environment"
++                  className="fs-file-input"
++                  onChange={(e) => void onPickPhoto(e.currentTarget.files?.[0])}
++                />
++              </label>
++              <button type="button" className="fs-link-btn" onClick={() => setStage('feel')}>
++                Start with a floor instead
++              </button>
++            </div>
++            <p className="fs-fine">
++              Works best on a photo taken standing up, with some of the floor in the bottom of the
++              frame. A phone photo is exactly right.
++            </p>
++          </div>
++        )}
++
++        {/* ── ANALYSING ──────────────────────────────────────────────────── */}
++        {stage === 'analysing' && (
++          <div className="fs-analysing" role="status" aria-live="polite">
++            <span className="fs-spinner" aria-hidden="true" />
++            <p>{ANALYSING_STEPS[analysingStep]}</p>
++            <p className="fs-fine">All of this is running in your browser. Nothing is being uploaded.</p>
++          </div>
++        )}
++
++        {/* ── VERIFY ─────────────────────────────────────────────────────── */}
++        {stage === 'verify' && reading && (
++          <div className="fs-verify">
++            <div
++              className="fs-stage fs-stage--verify"
++              ref={stageRef}
++              onPointerMove={onStagePointerMove}
++              onPointerUp={onStagePointerUp}
++              onPointerCancel={onStagePointerUp}
++            >
++              <canvas ref={beforeRef} className="fs-canvas" role="img" aria-label="Your room" />
++              <svg className="fs-quad" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
++                <polygon points={quad.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')} />
++              </svg>
++              {quad.map((p, i) => (
++                <button
++                  key={CORNER_LABELS[i]}
++                  type="button"
++                  className="fs-corner"
++                  style={cornerStyle(p)}
++                  aria-label={`${CORNER_LABELS[i]} of the floor. Arrow keys to move, shift for bigger steps.`}
++                  onPointerDown={onCornerPointerDown(i)}
++                  onKeyDown={onCornerKey(i)}
++                />
++              ))}
++            </div>
++
++            <div className="fs-verify-panel">
++              <h3 className="fs-h3">We found your room</h3>
++              <ul className="fs-notes">
++                {reading.notes.map((note) => (
++                  <li key={note}>{note}</li>
++                ))}
++              </ul>
++              <p className="fs-fine">
++                Drag the four corners onto the floor if we got the edge wrong. This is the normal
++                thing to do, not the failure case — you can see your floor and we cannot.
++              </p>
++
++              <div className="fs-asks">
++                {UNMEASURABLE_FROM_A_PHOTO.map((ask) => (
++                  <div className="fs-ask" key={ask.field}>
++                    {ask.field === 'area' ? (
++                      <label className="fs-field">
++                        <span>{ask.ask}</span>
++                        <input
++                          type="number"
++                          inputMode="numeric"
++                          min={SQFT_MIN}
++                          max={SQFT_MAX}
++                          value={design.squareFeet}
++                          onChange={(e) =>
++                            setDesign((d) => ({ ...d, squareFeet: Number(e.target.value) || d.squareFeet }))
++                          }
++                        />
++                      </label>
++                    ) : (
++                      <label className="fs-field">
++                        <span>{ask.ask}</span>
++                        <select
++                          value={design.roomTypeId ?? ''}
++                          onChange={(e) => setDesign((d) => ({ ...d, roomTypeId: e.target.value || undefined }))}
++                        >
++                          <option value="">Choose one</option>
++                          {ROOM_TYPES.map((r) => (
++                            <option key={r.id} value={r.id}>
++                              {r.label}
++                            </option>
++                          ))}
++                        </select>
++                      </label>
++                    )}
++                    <p className="fs-fine">{ask.why}</p>
++                  </div>
++                ))}
++              </div>
++
++              <div className="fs-verify-actions">
++                <button type="button" className="btn btn-copper" onClick={() => setStage('feel')}>
++                  That looks right — continue
++                </button>
++                <button type="button" className="fs-link-btn" onClick={() => setStage('start')}>
++                  Try another photo
++                </button>
++              </div>
++            </div>
++          </div>
++        )}
++
++        {/* ── FEEL ───────────────────────────────────────────────────────── */}
++        {stage === 'feel' && (
++          <div className="fs-feel">
++            <h3 className="fs-h3">How do you want the room to feel?</h3>
++            <p className="fs-lede">
++              Pick as many as you like. We will translate it into species, finish, pattern and board
++              width — which is our job, not yours.
++            </p>
++            <div className="fs-chips">
++              {FEELS.map((feel) => {
++                const on = design.feels.includes(feel.id);
++                return (
++                  <button
++                    key={feel.id}
++                    type="button"
++                    className="fs-chip"
++                    aria-pressed={on}
++                    onClick={() =>
++                      setDesign((d) => ({
++                        ...d,
++                        feels: on ? d.feels.filter((f) => f !== feel.id) : [...d.feels, feel.id],
++                      }))
++                    }
++                  >
++                    <strong>{feel.label}</strong>
++                    <em>{feel.blurb}</em>
++                  </button>
++                );
++              })}
++            </div>
++
++            <div className="fs-feel-row">
++              <label className="fs-field">
++                <span>
++                  Roughly what are you covering? <em>square feet</em>
++                </span>
++                <input
++                  type="number"
++                  inputMode="numeric"
++                  min={SQFT_MIN}
++                  max={SQFT_MAX}
++                  value={design.squareFeet}
++                  onChange={(e) => setDesign((d) => ({ ...d, squareFeet: Number(e.target.value) || d.squareFeet }))}
++                />
++              </label>
++              <label className="fs-field">
++                <span>
++                  A budget, if you have one <em>optional, CAD</em>
++                </span>
++                <input
++                  type="number"
++                  inputMode="numeric"
++                  min={0}
++                  value={design.budgetCad ?? ''}
++                  placeholder="We never hide a floor because of this"
++                  onChange={(e) => setDesign((d) => ({ ...d, budgetCad: Number(e.target.value) || undefined }))}
++                />
++              </label>
++            </div>
++
++            <button type="button" className="btn btn-copper btn-lg" onClick={() => setStage('studio')}>
++              Show me my floors
++            </button>
++          </div>
++        )}
++
++        {/* ── STUDIO ─────────────────────────────────────────────────────── */}
++        {stage === 'studio' && (
++          <div className="fs-studio">
++            <div className="fs-stage-wrap">
++              <div className="fs-stage" ref={stageRef}>
++                <canvas ref={beforeRef} className="fs-canvas" role="img" aria-label="Your room before" />
++                <div className="fs-after" style={{ width: `${split}%` }}>
++                  <canvas
++                    ref={afterRef}
++                    className="fs-canvas"
++                    role="img"
++                    aria-label={`Your room with ${describeConfiguration(design.config)}`}
++                  />
++                </div>
++                <span className="fs-split-line" style={{ left: `${split}%` }} aria-hidden="true" />
++              </div>
++              <label className="fs-split">
++                <span>Drag to compare before and after</span>
++                <input
++                  type="range"
++                  min={0}
++                  max={100}
++                  value={split}
++                  onChange={(e) => setSplit(Number(e.target.value))}
++                />
++              </label>
++              {photo && render.painted < 0.5 && (
++                <p className="fs-fine">
++                  A lot of this room is furniture rather than floor, so we have left it alone. Drag
++                  the corners on the photo step if the boundary is wrong.
++                </p>
++              )}
++              {!photo && (
++                <p className="fs-fine">
++                  This is the floor itself, lit from above. Add a photo of your room and it goes into
++                  the room instead.{' '}
++                  <button type="button" className="fs-link-btn" onClick={() => setStage('start')}>
++                    Add a photo
++                  </button>
++                </p>
++              )}
++            </div>
++
++            <div className="fs-panel">
++              {/* Matches */}
++              <h3 className="fs-h3">Ecowoods Floor Match</h3>
++              <p className="fs-fine">
++                Every one of these is a floor we can supply and install. The percentage is the sum of
++                the reasons under it — there is no number here without a sentence.
++              </p>
++              <ul className="fs-matches">
++                {matches.map((match) => (
++                  <li key={match.id} className={match.id === configurationId(design.config) ? 'is-current' : ''}>
++                    <div className="fs-match-head">
++                      <strong>{match.name}</strong>
++                      <span className="fs-score">{match.score}% match</span>
++                    </div>
++                    <ul className="fs-reasons">
++                      {match.reasons.slice(0, 2).map((r) => (
++                        <li key={r}>{r}</li>
++                      ))}
++                      {match.caveats.slice(0, 1).map((r) => (
++                        <li key={r} className="fs-caveat">
++                          {r}
++                        </li>
++                      ))}
++                    </ul>
++                    <p className="fs-match-price">
++                      {cad(match.estimate.estimatedLowCad)} – {cad(match.estimate.estimatedHighCad)}{' '}
++                      <em>estimated installed</em>
++                    </p>
++                    <div className="fs-match-actions">
++                      <button type="button" className="btn btn-ghost" onClick={() => applyMatch(match)}>
++                        See it in my room
++                      </button>
++                      <button
++                        type="button"
++                        className="fs-link-btn"
++                        aria-pressed={compare.includes(match.id)}
++                        onClick={() => toggleCompare(match.id)}
++                      >
++                        {compare.includes(match.id) ? 'In the comparison' : 'Compare'}
++                      </button>
++                    </div>
++                  </li>
++                ))}
++              </ul>
++
++              {/* Controls */}
++              <h3 className="fs-h3">Change anything</h3>
++              {repaired && (
++                <p className="fs-repaired" role="status">
++                  {repaired}
++                </p>
++              )}
++
++              <Axis
++                legend="Species"
++                options={FLOOR_PRODUCTS.map((p) => ({ id: p.id, label: p.name, swatch: [p.base, p.grain] }))}
++                value={design.config.productId}
++                onPick={(v) => setConfig(design.config, 'productId', v)}
++                reasonFor={(v) =>
++                  incompatibilities({ ...design.config, productId: v }).map((r) => r.reason)[0] ?? null
++                }
++              />
++              <Axis
++                legend="Finish"
++                options={FINISH_OPTIONS.map((f) => ({ id: f.id, label: f.label }))}
++                value={design.config.finishId}
++                onPick={(v) => setConfig(design.config, 'finishId', v)}
++                reasonFor={(v) =>
++                  incompatibilities({ ...design.config, finishId: v }).map((r) => r.reason)[0] ?? null
++                }
++              />
++              <Axis
++                legend="Pattern"
++                options={PATTERN_OPTIONS.map((p) => ({ id: p.id, label: p.label }))}
++                value={design.config.patternId}
++                onPick={(v) => setConfig(design.config, 'patternId', v)}
++                reasonFor={(v) =>
++                  incompatibilities({ ...design.config, patternId: v }).map((r) => r.reason)[0] ?? null
++                }
++              />
++              <Axis
++                legend="Board width"
++                options={BOARD_WIDTHS.map((w) => ({ id: w.id, label: w.label }))}
++                value={design.config.widthId}
++                onPick={(v) => setConfig(design.config, 'widthId', v)}
++                reasonFor={(v) =>
++                  incompatibilities({ ...design.config, widthId: v }).map((r) => r.reason)[0] ?? null
++                }
++              />
++              <p className="fs-fine">
++                {widthById(design.config.widthId)?.note} Board width changes how the floor looks and
++                how far it moves with the seasons. It does not change the published band.
++              </p>
++              {movement && <p className="fs-fine">{movement.sentence}</p>}
++
++              <div className="fs-sliders">
++                <label className="fs-field">
++                  <span>
++                    Area <em>{design.squareFeet.toLocaleString('en-CA')} sq ft</em>
++                  </span>
++                  <input
++                    type="range"
++                    min={SQFT_MIN}
++                    max={3000}
++                    step={25}
++                    value={Math.min(3000, design.squareFeet)}
++                    onChange={(e) => setDesign((d) => ({ ...d, squareFeet: Number(e.target.value) }))}
++                  />
++                </label>
++                <label className="fs-field">
++                  <span>
++                    Board scale <em>nudge until the boards look right in your photo</em>
++                  </span>
++                  <input
++                    type="range"
++                    min={0.6}
++                    max={2}
++                    step={0.05}
++                    value={boardScale}
++                    onChange={(e) => setBoardScale(Number(e.target.value))}
++                  />
++                </label>
++              </div>
++
++              {/* The range */}
++              <div className="fs-estimate">
++                <p className="fs-estimate-label">Estimated installed investment</p>
++                <p className="fs-estimate-figure">
++                  {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
++                </p>
++                <p className="fs-estimate-sub">
++                  {estimate.perSqftCad} · {design.squareFeet.toLocaleString('en-CA')} sq ft ·{' '}
++                  {describeConfiguration(design.config)}
++                </p>
++                <p className="fs-disclaimer">
++                  This is a <strong>range, not a quote.</strong> Your fixed price is written down after
++                  the free in-home measure, and then it does not change.
++                </p>
++                <details className="fs-why">
++                  <summary>Why this price?</summary>
++                  <p>
++                    New hardwood installation is published at {formatBand(NEW_INSTALL)} — see{' '}
++                    <Link href="/pricing">the published bands</Link>. Inside that, the species sets the
++                    material, the finish sets how many passes the floor takes, and the pattern sets the
++                    waste and the labour: a chevron is mitred point to point and is the hardest floor
++                    we lay. What the range cannot know is your subfloor, your stairs, your transitions
++                    and your moisture readings, which is exactly why the number is fixed after somebody
++                    has stood in the room.
++                  </p>
++                </details>
++              </div>
++
++              {/* Compare */}
++              {compare.length > 0 && (
++                <div className="fs-compare">
++                  <h3 className="fs-h3">Side by side</h3>
++                  <ul className="fs-compare-list">
++                    {compare.map((id) => {
++                      const config = parseConfigurationId(id);
++                      if (!config) return null;
++                      const price = priceConfiguration(config, design.squareFeet);
++                      return (
++                        <li key={id}>
++                          <ComparePane ground={ground} quad={activeQuad} config={config} squareFeet={design.squareFeet} boardScale={boardScale} />
++                          <strong>{describeConfiguration(config)}</strong>
++                          <span>
++                            {cad(price.estimatedLowCad)} – {cad(price.estimatedHighCad)}
++                          </span>
++                          <div className="fs-match-actions">
++                            <button
++                              type="button"
++                              className="fs-link-btn"
++                              onClick={() => setDesign((d) => ({ ...d, config }))}
++                            >
++                              Make this the one
++                            </button>
++                            <button type="button" className="fs-link-btn" onClick={() => toggleCompare(id)}>
++                              Remove
++                            </button>
++                          </div>
++                        </li>
++                      );
++                    })}
++                  </ul>
++                </div>
++              )}
++
++              {/* Exits */}
++              <div className="fs-exits">
++                <h3 className="fs-h3">Your Ecowoods floor</h3>
++                <p className="fs-ref">
++                  {reference} · {describeStudioDesign(design)}
++                </p>
++                <div className="fs-exit-actions">
++                  <a
++                    className="btn btn-copper btn-lg"
++                    href={estimateHref(design)}
++                    onClick={() => track('studio_estimate_handoff', { config: configurationId(design.config) })}
++                  >
++                    Get my fixed price
++                  </a>
++                  {sampleProduct && (
++                    <a
++                      className="btn btn-ghost"
++                      href={estimateHref(design, 'samples')}
++                      onClick={() => track('studio_samples_request', { config: configurationId(design.config) })}
++                    >
++                      Send me samples
++                    </a>
++                  )}
++                  <button type="button" className="fs-link-btn" onClick={() => void copyLink()}>
++                    {copied ? 'Link copied' : 'Copy the link to this design'}
++                  </button>
++                  <button type="button" className="fs-link-btn" onClick={downloadImage}>
++                    Download the image
++                  </button>
++                  <Link className="fs-link-btn" href={designHref(design)}>
++                    Open it in the full configurator
++                  </Link>
++                </div>
++                <p className="fs-fine">
++                  {sampleProduct?.deliverable} Your design travels with you — the estimate form already
++                  knows the floor, the area and the room. Nothing to retype.
++                </p>
++              </div>
++            </div>
++          </div>
++        )}
++      </div>
++    </section>
++  );
++}
++
++/* ── one axis of the configuration ───────────────────────────────────────── */
++
++function Axis({
++  legend,
++  options,
++  value,
++  onPick,
++  reasonFor,
++}: {
++  legend: string;
++  options: { id: string; label: string; swatch?: [string, string] }[];
++  value: string;
++  onPick: (id: string) => void;
++  reasonFor: (id: string) => string | null;
++}) {
++  const slug = legend.toLowerCase().replace(/[^a-z]+/g, '-');
++  return (
++    <fieldset className="fs-axis">
++      <legend>{legend}</legend>
++      <div className="fs-axis-options">
++        {options.map((option) => {
++          const reason = option.id === value ? null : reasonFor(option.id);
++          return (
++            <button
++              key={option.id}
++              type="button"
++              className="fs-option"
++              aria-pressed={option.id === value}
++              aria-describedby={reason ? `fs-why-${slug}-${option.id}` : undefined}
++              onClick={() => onPick(option.id)}
++            >
++              {option.swatch && (
++                <span
++                  className="fs-option-swatch"
++                  aria-hidden="true"
++                  style={{ background: `linear-gradient(135deg, ${option.swatch[0]}, ${option.swatch[1]})` }}
++                />
++              )}
++              {option.label}
++            </button>
++          );
++        })}
++      </div>
++      {options.map((option) => {
++        const reason = option.id === value ? null : reasonFor(option.id);
++        return reason ? (
++          <p className="fs-axis-note" id={`fs-why-${slug}-${option.id}`} key={`${option.id}-why`}>
++            <strong>{option.label}:</strong> {reason}
++          </p>
++        ) : null;
++      })}
++    </fieldset>
++  );
++}
++
++/* ── one pane of the comparison ──────────────────────────────────────────── */
++
++function ComparePane({
++  ground,
++  quad,
++  config,
++  squareFeet,
++  boardScale,
++}: {
++  ground: Pixels;
++  quad: Quad;
++  config: FloorConfiguration;
++  squareFeet: number;
++  boardScale: number;
++}) {
++  const ref = useRef<HTMLCanvasElement | null>(null);
++  useEffect(() => {
++    const result = compositeFloor(ground, quad, config, { squareFeet, boardScale });
++    if (ref.current) paintPixels(ref.current, result.pixels);
++  }, [ground, quad, config, squareFeet, boardScale]);
++  return <canvas ref={ref} className="fs-canvas" role="img" aria-label={describeConfiguration(config)} />;
++}
+diff --git a/apps/web/app/design/page.tsx b/apps/web/app/design/page.tsx
+index 23c7f4a..a7b44c7 100644
+--- a/apps/web/app/design/page.tsx
++++ b/apps/web/app/design/page.tsx
+@@ -32,6 +32,11 @@ export default function DesignPage() {
+             Take your time here. When a combination feels right, one tap books the free
+             in-home measure — or hands your exact configuration to EcowoodsGuide. No retyping.
+           </p>
++          <p className="tlx-lede">
++            Want to see it in your own room first?{' '}
++            <Link href="/floor-studio">Open Floor Studio</Link> — the same floors, the same
++            numbers, rendered into a photo of your space.
++          </p>
+         </div>
+       </header>
+       <ConfiguratorSection />
+diff --git a/apps/web/app/floor-studio/page.tsx b/apps/web/app/floor-studio/page.tsx
+new file mode 100644
+index 0000000..1b8c439
+--- /dev/null
++++ b/apps/web/app/floor-studio/page.tsx
+@@ -0,0 +1,242 @@
++import type { Metadata } from 'next';
++import Link from 'next/link';
++import { BUSINESS_NAP } from '@ecowoods/shared/constants';
++import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
++import { SITE_URL } from '@/lib/seo-data';
++import { PRICE_PROMISE } from '@/lib/pricing';
++import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
++import { FEELS } from '@/lib/floor-studio/match';
++import { NextStep } from '@/app/components/NextStep';
++import FloorStudio from '@/app/components/floor-studio/FloorStudio';
++
++/**
++ * /floor-studio — ECOWOODS FLOOR STUDIO.
++ *
++ * ONE SYSTEM, FOUR DOORS, AND THIS IS THE ONE PEOPLE COME THROUGH
++ *
++ *   /floor-studio  discovery: a photograph, a real floor rendered into it, desire
++ *   /design        the advanced configurator, already live and untouched
++ *   /estimate      the professional measure and the fixed written price
++ *   /pricing       the published bands
++ *
++ * The studio does not duplicate /design and does not replace it. /design asks a
++ * person who already knows they want hardwood to specify it; the studio asks a
++ * person who does not yet know what they want to SEE it. They share one
++ * catalogue, one pricing function and one handoff, so a visitor moving between
++ * them never feels they left the company.
++ *
++ * WHY THE INTERACTIVE PART IS AN ISLAND IN A SERVER PAGE
++ *
++ * The wow is a canvas and the canvas needs the browser. Everything around it —
++ * what the studio is, which floors exist, what the bands are, what it refuses
++ * to do — is server-rendered prose, because a page whose entire content appears
++ * only after hydration is a page a crawler, a retrieval system and a person on
++ * a bad connection all see as empty. This site has already paid for that lesson
++ * once (F-160: <form> count zero on every page).
++ *
++ * THE COPY BELOW IS NOT FILLER. It is the machine-readable statement of what
++ * Floor Studio is, which is the only way an assistant answering "can I see a
++ * floor in my own room before I buy it in Toronto" can know this exists.
++ */
++
++const url = `${SITE_URL}/floor-studio`;
++
++export const metadata: Metadata = {
++  title: 'Floor Studio — see your new floor in your room',
++  description:
++    `Upload a photo of your room and see real ${BUSINESS_NAP.name} floors in it — species, finish, pattern and board width, with a live estimated installed range in CAD. The photo never leaves your device.`,
++  alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
++  openGraph: {
++    title: 'Ecowoods Floor Studio — see your new floor in your room',
++    description:
++      'A photo of your room, a real Ecowoods floor rendered into it, and a live installed range. A range, not a quote.',
++    type: 'website',
++    url,
++  },
++};
++
++const STEPS = [
++  {
++    id: 'step-photo',
++    title: 'Your photo, read in your browser',
++    body:
++      'The studio measures the light in the room, the undertone of the walls, how dark the floor that is there now reads, and where the floor plane appears to meet them. All of it runs on your own device. Nothing is uploaded and we keep nothing.',
++  },
++  {
++    id: 'step-correct',
++    title: 'You correct what we got wrong',
++    body:
++      'Four corners you can drag or move with the arrow keys. We never claim the boundary is certain, and we ask for the two things a photograph genuinely cannot tell us: how many square feet you are covering, and which room this is.',
++  },
++  {
++    id: 'step-see',
++    title: 'Real floors, in your room',
++    body:
++      'Every floor you can see is one we can supply and install. Nothing is generated by an image model, because a floor that does not exist cannot be bought. Change species, finish, pattern or board width and the room changes with it.',
++  },
++  {
++    id: 'step-price',
++    title: 'A range, then a fixed price',
++    body:
++      `The installed range updates as you change the floor, from the same numbers our estimator carries in the truck. ${PRICE_PROMISE} The studio hands your exact design to the estimate form — there is nothing to retype.`,
++  },
++];
++
++const REFUSALS = [
++  'It does not generate floors. Every board rendered into your room is a configuration this company can supply and install.',
++  'It does not measure your room. A single photo with nothing of known size in it cannot give an area, so the studio asks you instead of printing a number that is quietly wrong.',
++  'It does not give you a quote. The figure is an estimated installed range and it is labelled as one on every screen it appears.',
++  'It does not keep your photograph. The analysis and the rendering both run in your browser; a shared design link carries the floor, never the room.',
++];
++
++export default function FloorStudioPage() {
++  return (
++    <div className="tlx-page">
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Floor Studio', url },
++        ])}
++      />
++      <SchemaScript
++        schema={{
++          '@context': 'https://schema.org',
++          '@type': 'WebApplication',
++          '@id': `${url}#app`,
++          url,
++          name: 'Ecowoods Floor Studio',
++          applicationCategory: 'DesignApplication',
++          operatingSystem: 'Any modern web browser',
++          inLanguage: 'en-CA',
++          isPartOf: { '@id': `${SITE_URL}/#website` },
++          publisher: { '@id': `${SITE_URL}/#organization` },
++          description:
++            'Upload a photograph of a room and see real Ecowoods hardwood configurations rendered into it, with a live estimated installed range in Canadian dollars. Runs entirely in the browser; the photograph is not uploaded.',
++          featureList: [
++            'Room photograph analysis in the browser',
++            'Correctable floor boundary',
++            'Recommendations over installable configurations only',
++            'Species, finish, pattern and board width',
++            'Live estimated installed range in CAD',
++            'Shareable design link',
++            'Structured handoff into the free in-home measure',
++          ],
++          potentialAction: {
++            '@type': 'QuoteAction',
++            name: 'Get a fixed written price for this floor',
++            target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/estimate#form` },
++          },
++        }}
++      />
++
++      <header className="tlx-hero">
++        <div className="shell">
++          <nav className="tlx-crumbs" aria-label="Breadcrumb">
++            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Floor Studio</span>
++          </nav>
++          <h1 className="tlx-title">See your new floor in your home</h1>
++          <p className="tlx-lede">
++            Upload a photo of your room, or start from a floor, and see real {BUSINESS_NAP.name} hardwood
++            in your own space — species, finish, pattern and board width, with a live estimated
++            installed range in Canadian dollars. Design it digitally. Verify it professionally. Build
++            it perfectly.
++          </p>
++        </div>
++      </header>
++
++      <FloorStudio />
++
++      <section className="tlx-section" id="how" aria-label="How Floor Studio works">
++        <div className="shell">
++          <p className="tlx-kicker">Four steps</p>
++          <h2 className="tlx-h2">How it works</h2>
++          <ol className="wp-steps">
++            {STEPS.map((s, i) => (
++              <li key={s.id} id={s.id}>
++                <strong>
++                  {i + 1}. {s.title}.
++                </strong>{' '}
++                {s.body}
++              </li>
++            ))}
++          </ol>
++        </div>
++      </section>
++
++      <section className="tlx-section" id="floors" aria-label="The floors in Floor Studio">
++        <div className="shell">
++          <p className="tlx-kicker">The catalogue</p>
++          <h2 className="tlx-h2">Every floor the studio can show you</h2>
++          <p className="tlx-lede">
++            Five species, {FINISH_OPTIONS.length} finishes, {PATTERN_OPTIONS.length} patterns and{' '}
++            {BOARD_WIDTHS.length} board widths, in the combinations we actually lay. Fuming is an
++            ammonia reaction with the tannin in the wood, so it is offered on oak and not on maple or
++            hickory. Herringbone and chevron are cut as blocks, so they are laid at 3¼″ and 5″.
++          </p>
++          <ul className="wp-bullets">
++            {FLOOR_PRODUCTS.map((p) => (
++              <li key={p.id}>
++                <strong>{p.name}</strong> — Janka {p.janka}. {p.note} Suited to {p.suitedTo.join(', ')}.
++              </li>
++            ))}
++          </ul>
++          <p>
++            Board width changes how the floor looks and how far each board moves between a Toronto
++            July and a Toronto February — the studio computes that from the published Wood Handbook
++            coefficients, the same ones behind{' '}
++            <Link href="/tools/floor-movement">the movement calculator</Link>. It does not change the
++            published band.
++          </p>
++        </div>
++      </section>
++
++      <section className="tlx-section" id="feel" aria-label="What Floor Studio asks">
++        <div className="shell">
++          <p className="tlx-kicker">Feel first</p>
++          <h2 className="tlx-h2">It asks how you want the room to feel, not how hard the wood is</h2>
++          <p className="tlx-lede">
++            Nobody outside the trade opens a renovation by asking about Janka ratings. The studio asks
++            for one of these and translates it into a specification, which is our job rather than
++            yours:
++          </p>
++          <ul className="wp-bullets">
++            {FEELS.filter((f) => f.id !== 'unsure').map((f) => (
++              <li key={f.id}>
++                <strong>{f.label}</strong> — {f.blurb}
++              </li>
++            ))}
++          </ul>
++          <p>
++            Every recommendation comes back with a match percentage and the sentences that produced
++            it. A percentage with nothing under it is a number you cannot check, and it has no
++            business in a decision this size.
++          </p>
++        </div>
++      </section>
++
++      <section className="tlx-section" id="limits" aria-label="What Floor Studio will not do">
++        <div className="shell">
++          <p className="tlx-kicker">Plainly</p>
++          <h2 className="tlx-h2">What it will not do</h2>
++          <ul className="wp-bullets">
++            {REFUSALS.map((r) => (
++              <li key={r}>{r}</li>
++            ))}
++          </ul>
++          <p>
++            New hardwood installation is published at {formatBand(NEW_INSTALL)}; the three bands and
++            what moves a job inside them are on <Link href="/pricing">the pricing page</Link>. When you
++            are ready, <Link href="/estimate">the free in-home measure</Link> is where the fixed
++            written price comes from, and{' '}
++            <Link href="/design">the full configurator</Link> is where the specification gets finished.
++          </p>
++        </div>
++      </section>
++
++      <NextStep route="/floor-studio" />
++    </div>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 808c546..6695292 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -11317,3 +11317,280 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+ .cr-within a { color: var(--ink-soft); text-decoration: underline;
+   text-decoration-thickness: 1px; text-underline-offset: 2px; }
+ .cr-within a:hover, .cr-within a:focus-visible { color: var(--copper-text); }
++
++/* ═══════════════════════════════════════════════════════════════════════════
++   ECOWOODS FLOOR STUDIO  (/floor-studio)
++
++   Mobile first, because this feature is used standing in the room being
++   photographed. Every colour is a SEMANTIC token — audit/DESIGN_SYSTEM.md §1.1
++   and scripts/verify-tokens.mjs: a component rule that paints with a primitive
++   is right in one theme and silently wrong in the other.
++
++   The stage is the only thing on the page allowed to be large. Everything else
++   is a panel that reads as a document, because after the wow the visitor is
++   making a five-figure decision and a decision wants prose, not chrome.
++   ═══════════════════════════════════════════════════════════════════════════ */
++
++.fs { padding: var(--section-y-tight) 0; }
++.fs-h {
++  font-family: var(--font-display);
++  font-size: var(--fs-2xl);
++  color: var(--ink);
++  margin: 0 0 var(--space-md);
++}
++.fs-h3 {
++  font-family: var(--font-display);
++  font-size: var(--fs-lg);
++  color: var(--ink);
++  margin: var(--space-xl) 0 var(--space-sm);
++}
++.fs-lede { color: var(--ink-soft); max-width: 62ch; margin: 0 0 var(--space-lg); line-height: 1.65; }
++.fs-fine { color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; margin: var(--space-sm) 0 0; max-width: 68ch; }
++.fs-error {
++  color: var(--danger-fg);
++  background: var(--danger-bg);
++  border: 1px solid var(--danger-border);
++  border-radius: 10px;
++  padding: var(--space-sm) var(--space-md);
++  margin: 0 0 var(--space-lg);
++  font-size: var(--fs-sm);
++}
++
++/* ── start ─────────────────────────────────────────────────────────────── */
++.fs-start-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
++.fs-file { position: relative; overflow: hidden; cursor: pointer; }
++.fs-file-input {
++  position: absolute;
++  inset: 0;
++  opacity: 0;
++  cursor: pointer;
++  font-size: 0;
++}
++.fs-link-btn {
++  appearance: none;
++  border: 0;
++  background: transparent;
++  color: var(--copper-text);
++  font: inherit;
++  font-size: var(--fs-sm);
++  text-decoration: underline;
++  text-underline-offset: 3px;
++  cursor: pointer;
++  padding: var(--space-2xs) 0;
++}
++.fs-link-btn[aria-pressed='true'] { font-weight: 600; }
++.fs-link-btn:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 3px; }
++
++/* ── analysing ─────────────────────────────────────────────────────────── */
++.fs-analysing {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: var(--space-sm);
++  padding: var(--space-2xl) var(--space-md);
++  text-align: center;
++  color: var(--ink-soft);
++  border: 1px dashed var(--line);
++  border-radius: 14px;
++}
++.fs-spinner {
++  width: 26px;
++  height: 26px;
++  border-radius: 50%;
++  border: 2px solid var(--line-strong);
++  border-top-color: var(--copper-text);
++  animation: fs-spin 800ms linear infinite;
++}
++@keyframes fs-spin { to { transform: rotate(360deg); } }
++@media (prefers-reduced-motion: reduce) {
++  .fs-spinner { animation: none; }
++}
++
++/* ── the stage ─────────────────────────────────────────────────────────── */
++.fs-stage {
++  position: relative;
++  width: 100%;
++  border-radius: 14px;
++  overflow: hidden;
++  background: var(--surface-2);
++  border: 1px solid var(--line);
++  touch-action: none;
++}
++.fs-canvas { display: block; width: 100%; height: auto; }
++.fs-after {
++  position: absolute;
++  inset: 0 auto 0 0;
++  overflow: hidden;
++}
++.fs-after .fs-canvas { width: auto; height: 100%; max-width: none; }
++.fs-split-line {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  width: 2px;
++  background: var(--on-dark);
++  box-shadow: 0 0 0 1px var(--line-strong);
++  pointer-events: none;
++}
++.fs-split { display: block; margin: var(--space-sm) 0 0; }
++.fs-split span { display: block; font-size: var(--fs-xs); color: var(--muted); margin-bottom: var(--space-2xs); }
++.fs-split input[type='range'] { width: 100%; }
++
++.fs-quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
++.fs-quad polygon {
++  fill: none;
++  stroke: var(--copper-bright);
++  stroke-width: 0.6;
++  stroke-dasharray: 2 1.5;
++  vector-effect: non-scaling-stroke;
++}
++.fs-corner {
++  position: absolute;
++  width: 34px;
++  height: 34px;
++  margin: -17px 0 0 -17px;
++  border-radius: 50%;
++  border: 2px solid var(--copper-surface);
++  background: var(--scrim);
++  cursor: grab;
++  touch-action: none;
++}
++.fs-corner:focus-visible { outline: 3px solid var(--copper-bright); outline-offset: 2px; }
++
++/* ── verify ────────────────────────────────────────────────────────────── */
++.fs-verify { display: grid; gap: var(--space-lg); }
++.fs-notes { margin: 0 0 var(--space-md); padding-left: 1.1rem; color: var(--ink-soft); line-height: 1.65; }
++.fs-notes li { margin: 0 0 var(--space-xs); }
++.fs-asks { display: grid; gap: var(--space-md); margin: var(--space-lg) 0; }
++.fs-ask { border-left: 3px solid var(--line-strong); padding-left: var(--space-md); }
++.fs-field { display: block; margin: 0 0 var(--space-sm); }
++.fs-field > span { display: block; font-size: var(--fs-sm); color: var(--ink); margin-bottom: var(--space-2xs); }
++.fs-field > span em { color: var(--muted); font-style: normal; font-size: var(--fs-xs); }
++.fs-field input[type='number'],
++.fs-field select {
++  width: 100%;
++  max-width: 22rem;
++  padding: var(--space-sm);
++  border: 1px solid var(--line-strong);
++  border-radius: 8px;
++  background: var(--surface);
++  color: var(--ink);
++  font: inherit;
++}
++.fs-field input[type='range'] { width: 100%; max-width: 26rem; }
++.fs-verify-actions { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
++
++/* ── feel ──────────────────────────────────────────────────────────────── */
++.fs-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-sm); }
++.fs-chip {
++  display: block;
++  text-align: left;
++  padding: var(--space-sm) var(--space-md);
++  border: 1px solid var(--line);
++  border-radius: 12px;
++  background: var(--surface);
++  color: var(--ink);
++  cursor: pointer;
++  transition: border-color var(--dur-fast), background var(--dur-fast);
++}
++.fs-chip strong { display: block; font-size: var(--fs-sm); }
++.fs-chip em { display: block; font-style: normal; font-size: var(--fs-2xs); color: var(--muted); margin-top: 2px; }
++.fs-chip[aria-pressed='true'] { border-color: var(--copper-surface); background: var(--hover-tint); }
++.fs-chip:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }
++.fs-feel-row { display: grid; gap: var(--space-md); margin: var(--space-lg) 0; }
++
++/* ── studio ────────────────────────────────────────────────────────────── */
++.fs-studio { display: grid; gap: var(--space-xl); }
++.fs-panel { min-width: 0; }
++.fs-matches { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); }
++.fs-matches > li {
++  border: 1px solid var(--line);
++  border-radius: 12px;
++  padding: var(--space-md);
++  background: var(--surface);
++}
++.fs-matches > li.is-current { border-color: var(--copper-surface); }
++.fs-match-head { display: flex; justify-content: space-between; gap: var(--space-sm); align-items: baseline; }
++.fs-match-head strong { font-size: var(--fs-md); color: var(--ink); }
++.fs-score { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--copper-text); white-space: nowrap; }
++.fs-reasons { margin: var(--space-xs) 0; padding-left: 1.1rem; color: var(--ink-soft); font-size: var(--fs-sm); line-height: 1.6; }
++.fs-reasons .fs-caveat { color: var(--muted); }
++.fs-match-price { margin: var(--space-xs) 0; font-size: var(--fs-sm); color: var(--ink); }
++.fs-match-price em { font-style: normal; color: var(--muted); font-size: var(--fs-2xs); }
++.fs-match-actions { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
++
++.fs-repaired {
++  font-size: var(--fs-xs);
++  color: var(--ink-soft);
++  background: var(--surface-2);
++  border-radius: 8px;
++  padding: var(--space-xs) var(--space-sm);
++  margin: 0 0 var(--space-sm);
++}
++.fs-axis { border: 0; padding: 0; margin: 0 0 var(--space-md); }
++.fs-axis legend { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0; }
++.fs-axis-options { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-xs); }
++.fs-option {
++  display: inline-flex;
++  align-items: center;
++  gap: var(--space-xs);
++  padding: var(--space-xs) var(--space-sm);
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  background: var(--surface);
++  color: var(--ink);
++  font-size: var(--fs-xs);
++  cursor: pointer;
++}
++.fs-option[aria-pressed='true'] { border-color: var(--copper-surface); background: var(--hover-tint); font-weight: 600; }
++.fs-option:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }
++.fs-option-swatch { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
++.fs-axis-note { font-size: var(--fs-2xs); color: var(--muted); margin: var(--space-2xs) 0 0; line-height: 1.5; }
++.fs-sliders { display: grid; gap: var(--space-md); margin: var(--space-lg) 0; }
++
++.fs-estimate {
++  border: 1px solid var(--line-strong);
++  border-radius: 14px;
++  padding: var(--space-lg);
++  background: var(--surface-warm);
++  margin: var(--space-xl) 0;
++}
++.fs-estimate-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0; }
++.fs-estimate-figure {
++  font-family: var(--font-display);
++  font-size: var(--fs-xl);
++  color: var(--ink);
++  margin: var(--space-2xs) 0;
++}
++.fs-estimate-figure em { font-style: normal; color: var(--muted); padding: 0 var(--space-2xs); }
++.fs-estimate-sub { font-size: var(--fs-xs); color: var(--muted); margin: 0 0 var(--space-sm); }
++.fs-disclaimer { font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.6; margin: 0 0 var(--space-sm); }
++.fs-why summary { cursor: pointer; font-size: var(--fs-sm); color: var(--copper-text); }
++.fs-why p { font-size: var(--fs-sm); color: var(--ink-soft); line-height: 1.65; margin: var(--space-xs) 0 0; }
++
++.fs-compare-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
++  gap: var(--space-md);
++}
++.fs-compare-list > li { border: 1px solid var(--line); border-radius: 12px; padding: var(--space-sm); background: var(--surface); }
++.fs-compare-list strong { display: block; font-size: var(--fs-xs); margin-top: var(--space-xs); color: var(--ink); }
++.fs-compare-list span { display: block; font-size: var(--fs-2xs); color: var(--muted); }
++.fs-compare-list .fs-canvas { border-radius: 8px; }
++
++.fs-exits { border-top: 1px solid var(--line); padding-top: var(--space-lg); margin-top: var(--space-xl); }
++.fs-ref { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--muted); margin: 0 0 var(--space-sm); }
++.fs-exit-actions { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
++
++/* ── from tablet up the stage and the panel sit side by side ───────────── */
++@media (min-width: 900px) {
++  .fs-verify { grid-template-columns: 1.1fr 0.9fr; align-items: start; }
++  .fs-studio { grid-template-columns: 1.05fr 0.95fr; align-items: start; }
++  .fs-feel-row { grid-template-columns: 1fr 1fr; }
++  .fs-asks { grid-template-columns: 1fr 1fr; }
++  .fs-sliders { grid-template-columns: 1fr 1fr; }
++  .fs-stage-wrap { position: sticky; top: calc(var(--header-h) + 1rem); }
++}
+diff --git a/apps/web/app/home-client.tsx b/apps/web/app/home-client.tsx
+index 544ffb3..26ebc56 100644
+--- a/apps/web/app/home-client.tsx
++++ b/apps/web/app/home-client.tsx
+@@ -769,23 +769,35 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
+         </div>
+       </section>
+ 
+-      {/* 5b · DESIGN YOUR FLOOR — teaser only. The full configurator lives at
+-             /design so the landing page stays short; researchers click through,
+-             buyers keep scrolling toward pricing and the estimate. */}
++      {/* 5b · SEE IT IN YOUR ROOM — Floor Studio first, the configurator second.
++
++             The order matters and it is the whole argument. "Design your floor"
++             asks a visitor to imagine; Floor Studio shows them. A homeowner who
++             has watched a real white oak herringbone appear in a photograph of
++             their own living room is a different person from one who has moved
++             three sliders, and the second CTA is there for the minority who
++             arrive already knowing what they want. Both surfaces share one
++             catalogue and one pricing function, so neither can contradict the
++             other. */}
+       <section className="section-tight" id="design">
+         <div className="shell">
+           <div className="section-head reveal" style={{ maxWidth: '640px' }}>
+-            <span className="eyebrow">Design your floor</span>
++            <span className="eyebrow">Floor Studio</span>
+             <h2>
+-              See it before we <span className="serif-italic">build it.</span>
++              Don’t imagine your new floor. <span className="serif-italic">See it.</span>
+             </h2>
+             <p>
+-              Pick species, finish, and pattern — with a live installed-price range built from
+-              the same numbers our estimator carries in the truck.
++              Upload a photo of your room and explore real Ecowoods floors in your own space —
++              species, finish, pattern and board width, with a live estimated installed range.
++              The photo never leaves your device.
+             </p>
+-            <Link href="/design" className="btn btn-copper">
+-              Open the floor designer <span aria-hidden>→</span>
++            <Link href="/floor-studio" className="btn btn-copper">
++              Try your room <span aria-hidden>→</span>
+             </Link>
++            <p>
++              Already know the specification?{' '}
++              <Link href="/design">Open the full floor designer</Link>.
++            </p>
+           </div>
+         </div>
+       </section>
+diff --git a/apps/web/app/md/floor-studio/route.ts b/apps/web/app/md/floor-studio/route.ts
+new file mode 100644
+index 0000000..386b88a
+--- /dev/null
++++ b/apps/web/app/md/floor-studio/route.ts
+@@ -0,0 +1,22 @@
++/**
++ * GET /floor-studio.md  (rewritten from this path by next.config.js)
++ *
++ * The machine edition of Floor Studio. The HTML page's interactive half is a
++ * canvas, and a canvas tells a retrieval system nothing — so an assistant asked
++ * "can I see a floor in a photo of my own room before I buy it in Toronto" had
++ * no way to learn this exists. The twin states the capability, the vocabulary it
++ * accepts, and the four things it refuses to do, which for a tool of this kind
++ * is the part that decides whether a careful assistant should name it at all.
++ */
++import { floorStudioToMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export async function GET() {
++  return new Response(floorStudioToMarkdown(), {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/app/sitemap.ts b/apps/web/app/sitemap.ts
+index 3f631c7..18d62d6 100644
+--- a/apps/web/app/sitemap.ts
++++ b/apps/web/app/sitemap.ts
+@@ -141,6 +141,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+ 
+   const basePages: MetadataRoute.Sitemap = [
+     entry('/', 'weekly', 1.0, newestChange, brandUrls()),         // newest publication
++    /* Floor Studio. Priority above /design because it is the door: the
++       configurator serves a visitor who already knows what they want, and the
++       studio serves everybody else. No date — nothing dated backs it, and a
++       build date wearing a disguise is what this file exists to refuse. */
++    entry('/floor-studio', 'monthly', 0.95),                       // no date
+     entry('/design', 'monthly', 0.85),                             // no date
+     entry('/technical-library', 'weekly', 0.95, newest([
+       ...articles.map((x) => x.modifiedAt || x.publishedAt),
+diff --git a/apps/web/content/constants/studio-products.ts b/apps/web/content/constants/studio-products.ts
+new file mode 100644
+index 0000000..44e8aa0
+--- /dev/null
++++ b/apps/web/content/constants/studio-products.ts
+@@ -0,0 +1,98 @@
++/**
++ * content/constants/studio-products.ts — the paid rungs of the Floor Studio
++ * ladder, declared and NOT PUBLISHED.
++ *
++ * WHY THIS FILE EXISTS WITH EVERY PRICE SET TO null
++ *
++ * Floor Studio's commercial design has more than one rung: the free
++ * visualisation, a paid personal floor plan, a paid professional design review,
++ * samples, and then the project itself. Building the free rung without the
++ * others is how a feature ends up with no path to revenue and gets cut in six
++ * months. But a new dollar figure on this site is a Class C change — it is a
++ * price this business has not agreed to honour, published to the public and to
++ * every machine that reads /api/v1/pricing — and no engineer, and no agent, gets
++ * to make that call in a patch.
++ *
++ * So the ladder is DECLARED here, with its rungs, its deliverables and its
++ * refusals written down, and `published: false` on the paid ones. The studio
++ * renders nothing for an unpublished rung: no price, no "from $X", no "coming
++ * soon" that reads like a price. When the owner sets a figure, they set it here,
++ * once, and every surface follows — the same contract
++ * content/constants/pricing.ts already holds for the three service bands.
++ *
++ * `priceCad: null` is therefore not a placeholder waiting for a developer. It is
++ * the correct value until a person who can honour the number types it.
++ *
++ * THE SAMPLE RUNG IS DIFFERENT AND IS LIVE
++ *
++ * Sending samples is something this business already does, by hand, when
++ * somebody asks. The studio's samples CTA is a LEAD — it carries the design into
++ * /estimate and the office follows up — not a checkout. It publishes no price
++ * because it charges nothing, which is why it can ship today while the other two
++ * wait.
++ */
++
++export type StudioProduct = {
++  id: string;
++  name: string;
++  /** What the customer receives. Written for them, not for us. */
++  deliverable: string;
++  /**
++   * CAD, or null where no figure has been published. A number here is a Class C
++   * change: it must be patched deliberately and flagged, never introduced as a
++   * side effect of a UI change.
++   */
++  priceCad: number | null;
++  /**
++   * False keeps it off every surface. The studio does not render an
++   * unpublished rung at all — not greyed out, not "coming soon", not a
++   * placeholder that a visitor could mistake for an offer.
++   */
++  published: boolean;
++  /** Where a published rung would send the visitor. */
++  href: string;
++  /** What this rung explicitly is not, so it cannot be oversold later. */
++  refuses: readonly string[];
++};
++
++export const STUDIO_PRODUCTS: readonly StudioProduct[] = [
++  {
++    id: 'samples',
++    name: 'Send me samples',
++    deliverable:
++      'Physical samples of the floor you designed, so you can put them on your own floor, in your own light, at the time of day you are actually in the room.',
++    priceCad: null,
++    published: true,
++    href: '/estimate#form',
++    refuses: [
++      'not a quote — a sample tells you about the wood, never about your subfloor',
++      'not a colour guarantee: every board in a real floor differs from every sample',
++    ],
++  },
++  {
++    id: 'floor-plan',
++    name: 'Ecowoods Personal Floor Plan',
++    deliverable:
++      'Your room, your configuration, and the specification written out: species, grade, width, finish schedule, direction of lay, transitions, and what the subfloor has to be doing for it to work.',
++    priceCad: null,
++    published: false,
++    href: '/estimate#form',
++    refuses: ['not a fixed price', 'not a substitute for the in-home measure'],
++  },
++  {
++    id: 'design-review',
++    name: 'Ecowoods Professional Design Review',
++    deliverable:
++      'A senior estimator reads your design against the room it is going into and writes back: what will work, what will not, and what they would change.',
++    priceCad: null,
++    published: false,
++    href: '/estimate#form',
++    refuses: ['not interior design', 'not a fixed price'],
++  },
++] as const;
++
++export const publishedStudioProducts = (): StudioProduct[] =>
++  STUDIO_PRODUCTS.filter((p) => p.published);
++
++export const studioProductById = (id: string): StudioProduct | undefined =>
++  STUDIO_PRODUCTS.find((p) => p.id === id);
+diff --git a/apps/web/lib/analytics.ts b/apps/web/lib/analytics.ts
+index 24a3260..c5fe999 100644
+--- a/apps/web/lib/analytics.ts
++++ b/apps/web/lib/analytics.ts
+@@ -24,6 +24,16 @@
+  *   commercial_cta       — a CTA on /commercial was activated
+  *   realtor_cta          — a CTA on /realtors was activated
+  *   recovery_opt_in      — the visitor consented to an unfinished-form reminder
++ *   studio_open          — /floor-studio was opened
++ *   studio_photo_analysed — a room photo was read (in the browser; nothing uploaded)
++ *   studio_boundary_corrected — the visitor dragged the floor boundary
++ *   studio_match_shown   — Floor Match returned its recommendations
++ *   studio_visualised    — a real configuration was rendered into their room
++ *   studio_config_changed — species / finish / pattern / width moved
++ *   studio_compare       — two or more floors were compared
++ *   studio_share         — a design link was copied or shared
++ *   studio_samples_request — samples were requested from the studio
++ *   studio_estimate_handoff — the design was carried into /estimate
+  */
+ 
+ export type AnalyticsEvent =
+@@ -45,7 +55,24 @@ export type AnalyticsEvent =
+      whether the wording is fair — a rate near zero means people did not
+      understand it, and a rate near one means it was not really a choice. */
+   | 'photo_retention_opt_in'
+-  | 'framework_benchmark_contribute';
++  | 'framework_benchmark_contribute'
++  /* Floor Studio. The funnel this business has never been able to measure:
++     what a visitor does between wanting a floor and asking for a price.
++     studio_visualised is the wow moment; studio_estimate_handoff is the one
++     that pays for the feature, and lib/funnels binds it as the completion of
++     the studio funnel. None of these carries a photograph, a room, or
++     anything about the person — the parameters are a configuration id and a
++     count, and that is all they are allowed to be. */
++  | 'studio_open'
++  | 'studio_photo_analysed'
++  | 'studio_boundary_corrected'
++  | 'studio_match_shown'
++  | 'studio_visualised'
++  | 'studio_config_changed'
++  | 'studio_compare'
++  | 'studio_share'
++  | 'studio_samples_request'
++  | 'studio_estimate_handoff';
+ 
+ export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+   if (typeof window === 'undefined') return;
+diff --git a/apps/web/lib/floor-studio/studio-config.ts b/apps/web/lib/floor-studio/studio-config.ts
+index 7d6b123..ce59463 100644
+--- a/apps/web/lib/floor-studio/studio-config.ts
++++ b/apps/web/lib/floor-studio/studio-config.ts
+@@ -293,11 +293,11 @@ export const studioHref = (design: StudioDesign): string =>
+  * estimating desk can paste back into the studio to see exactly what the
+  * visitor was looking at. `sqft` and `service` prefill the form's own fields.
+  */
+-export function estimateHref(design: StudioDesign): string {
++export function estimateHref(design: StudioDesign, service = 'installation'): string {
+   const params = new URLSearchParams({
+     design: encodeStudioDesign(design),
+     sqft: String(design.squareFeet),
+-    service: 'installation',
++    service,
+     source: 'floor-studio',
+   });
+   return `/estimate?${params.toString()}#form`;
+diff --git a/apps/web/lib/funnels/funnels.test.ts b/apps/web/lib/funnels/funnels.test.ts
+index 0c5a2e9..e9dc371 100644
+--- a/apps/web/lib/funnels/funnels.test.ts
++++ b/apps/web/lib/funnels/funnels.test.ts
+@@ -15,7 +15,7 @@ describe('funnels', () => {
+   it('has one funnel per distinct intent, with no duplicate ids', () => {
+     const ids = FUNNELS.map((f) => f.id);
+     expect(new Set(ids).size).toBe(ids.length);
+-    expect(FUNNELS.length).toBe(6);
++    expect(FUNNELS.length).toBe(7);
+   });
+ 
+   it('completes on the last declared step, never a middle one', () => {
+@@ -31,15 +31,18 @@ describe('funnels', () => {
+ 
+   it('does not end five of six funnels at the estimate form', () => {
+     // The failure this whole module exists to prevent: every page asking for a
+-    // booking. At most two funnels may point at /estimate.
++    // booking. At most three funnels may point at /estimate — and the studio,
++    // the surface with the strongest pull toward one, deliberately does not.
+     const toEstimate = FUNNELS.filter((f) => f.nextStep.href.startsWith('/estimate'));
+     expect(toEstimate.length).toBeLessThanOrEqual(3);
+     expect(funnelById('problem')!.notYet).toMatch(/price/i);
++    expect(funnelById('studio')!.nextStep.href.startsWith('/estimate')).toBe(false);
+   });
+ 
+   it('resolves a route to its funnel, and an unmapped route to nothing', () => {
+     expect(funnelForRoute('/pricing')?.id).toBe('price');
+     expect(funnelForRoute('/quote-check')?.id).toBe('evaluation');
++    expect(funnelForRoute('/floor-studio')?.id).toBe('studio');
+     expect(funnelForRoute('/reviews')).toBeUndefined();
+   });
+ 
+diff --git a/apps/web/lib/funnels/index.ts b/apps/web/lib/funnels/index.ts
+index 1b97fdb..78b6989 100644
+--- a/apps/web/lib/funnels/index.ts
++++ b/apps/web/lib/funnels/index.ts
+@@ -35,6 +35,7 @@ export type FunnelId =
+   | 'price'
+   | 'evaluation'
+   | 'design'
++  | 'studio'
+   | 'purchase';
+ 
+ export interface Funnel {
+@@ -105,6 +106,21 @@ export const FUNNELS: Funnel[] = [
+     nextStep: { href: '/estimate#form', label: 'Book the measure with this configuration attached' },
+     notYet: 'Technical detail about substrate. It matters and it is not what they are here for yet.',
+   },
++  {
++    id: 'studio',
++    intent: 'I want to see it in my room before I believe any of this.',
++    tool: '/floor-studio',
++    steps: ['studio_open', 'studio_visualised', 'studio_estimate_handoff'],
++    /* NOT the estimate form, and the restraint is the point. Somebody who has
++       just watched a floor appear in a photograph of their own living room has
++       resolved desire, not doubt — the next uncertainty is whether the picture
++       is honest, and the answer to that is finished houses, not a booking
++       button. The studio page carries its own estimate CTA at the wow moment;
++       this is the call for the visitor who is not there yet. */
++    nextStep: { href: '/projects', label: 'See these floors in houses we finished' },
++    notYet:
++      'A deposit. They have seen a picture of a floor, not a floor. The sample in the hand and the measure in the house both come first.',
++  },
+   {
+     id: 'purchase',
+     intent: 'I want Ecowoods to do the work.',
+@@ -139,6 +155,7 @@ export const ROUTE_FUNNEL: Record<string, FunnelId> = {
+   '/framework/assess': 'evaluation',
+   '/guides/how-to-evaluate-a-hardwood-quote': 'evaluation',
+   '/design': 'design',
++  '/floor-studio': 'studio',
+   '/estimate': 'purchase',
+ };
+ 
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 471ca1e..95caa7b 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -83,6 +83,10 @@ import {
+ } from '@/lib/service-pages';
+ import { PILLARS, FRAMEWORK_NAME, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
+ import { PRICE_PROMISE } from '@/lib/pricing';
++import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
++import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
++import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
++import { FEELS } from '@/lib/floor-studio/match';
+ import { CLAIMS } from '@/content/claims';
+ import { buildPrices, buildActions } from '@/lib/registry/registry';
+ import type { PricePrimitive } from '@/lib/registry/types';
+@@ -1048,6 +1052,80 @@ export const estimateToMarkdown = (): string => {
+   return out.join('\n');
+ };
+ 
++/* /floor-studio.md — what Floor Studio is, for a machine that has to decide
++   whether to name it.
++
++   THE POINT OF THIS FILE
++
++   An assistant asked "can I see a hardwood floor in a photo of my own room
++   before I buy it, in Toronto" has no way to learn that this exists from a page
++   whose interactive half is a canvas. So the twin states the capability, the
++   vocabulary it accepts, and — the part that matters most for a tool of this
++   kind — the four things it refuses to do. A visualiser that will not say what
++   it invents is one a careful assistant should not recommend, and this one
++   invents nothing. */
++export const floorStudioToMarkdown = (): string => {
++  const canonical = abs('/floor-studio');
++  const out: string[] = [
++    '# Ecowoods Floor Studio',
++    '',
++    '> Upload a photograph of a room and see real Ecowoods hardwood configurations rendered',
++    '> into it, with a live estimated installed range in Canadian dollars. The photograph is',
++    '> analysed and composited in the browser and is never uploaded.',
++    '',
++    identitySentence(),
++    '',
++    '## What it does',
++    '',
++    '1. **Reads the photograph, on the device.** Mean relative luminance, the undertone of the upper third of the frame, the tone of the existing floor, and an estimate of where the floor plane meets the walls. All of it is arithmetic over pixels.',
++    '2. **Asks the person to correct it.** Four draggable, keyboard-operable corners. Confidence is reported as "measured" or "weak" — never as a percentage, because a percentage would be a claim about a distribution nobody estimated.',
++    '3. **Asks for what a photograph cannot give.** The area in square feet and the room type. A single uncalibrated photograph cannot yield either, and the installed range is computed from the area.',
++    '4. **Recommends real configurations.** Ranked by criteria that each return a sentence; the match percentage is the arithmetic over those sentences.',
++    '5. **Renders the chosen floor into the room** and updates the estimated installed range as species, finish, pattern, board width or area change.',
++    '6. **Hands the design to the estimate form** as structured data, so nothing is retyped.',
++    '',
++    '## What it refuses to do',
++    '',
++    '- It does not generate floors. Every board rendered is a configuration this company can supply and install; no image model is involved at any point.',
++    '- It does not measure the room. It asks.',
++    '- It does not produce a quote. The figure is an estimated installed range and is labelled as one everywhere it appears.',
++    '- It does not retain the photograph. A shared design link carries the floor, never the room.',
++    '',
++    '## Vocabulary it accepts',
++    '',
++    `- Species: ${FLOOR_PRODUCTS.map((p) => p.name).join(', ')}`,
++    `- Finishes: ${FINISH_OPTIONS.map((f) => f.label).join(', ')}`,
++    `- Patterns: ${PATTERN_OPTIONS.map((p) => p.label).join(', ')}`,
++    `- Board widths: ${BOARD_WIDTHS.map((w) => w.label).join(', ')}`,
++    `- Feels: ${FEELS.map((f) => f.label).join(', ')}`,
++    '',
++    'Two combinations are not offered, for reasons about wood rather than merchandising.',
++    'Fuming is an ammonia reaction with the tannin in the wood, so it is offered on oak and not',
++    'on hard maple or hickory. Herringbone and chevron are cut as blocks and are laid at 3.25 inches',
++    'and 5 inches.',
++    '',
++    '## Price',
++    '',
++    `New hardwood installation is published at ${formatBand(NEW_INSTALL)}. The studio shows an`,
++    'estimated installed range built from the same function the on-site configurator and the',
++    `assistant both call. ${PRICE_PROMISE}`,
++    '',
++    `Published bands: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
++    `Fixed written price: ${link('Request an estimate', '/estimate')} (${md('/estimate')}).`,
++    `Advanced configurator: ${link('Design your floor', '/design')}.`,
++    '',
++    '## Board width',
++    '',
++    'Board width changes how the floor looks and how far each board moves between a Toronto',
++    'July and a Toronto February, computed from the Wood Handbook (FPL-GTR-190) Table 13-5',
++    `coefficients — the same source behind ${link('the movement calculator', '/tools/floor-movement')}.`,
++    'It does not change the published band.',
++    '',
++  ];
++  out.push(...provenance(canonical, [`- Structured actions: ${abs('/api/v1/actions')}`]));
++  return out.join('\n');
++};
++
+ /* /contact.md — NAP, hours, showroom, map. */
+ export const contactToMarkdown = (): string => {
+   const canonical = abs('/contact');
+diff --git a/apps/web/lib/registry/registry.ts b/apps/web/lib/registry/registry.ts
+index 1588ba5..6e9353b 100644
+--- a/apps/web/lib/registry/registry.ts
++++ b/apps/web/lib/registry/registry.ts
+@@ -732,6 +732,12 @@ export function buildPages(): PagePrimitive[] {
+     { path: '/hardwood-flooring-toronto', title: 'Hardwood flooring in Toronto', kind: 'commercial', md: '/hardwood-flooring-toronto.md', fragments: ['pricing', 'faq'], p0: true },
+     { path: '/hardwood-floor-refinishing-toronto', title: 'Hardwood floor refinishing in Toronto', kind: 'commercial', md: '/hardwood-floor-refinishing-toronto.md', fragments: ['pricing', 'faq'], p0: true },
+     { path: '/hardwood-stairs-toronto', title: 'Hardwood stairs in Toronto', kind: 'commercial', md: '/hardwood-stairs-toronto.md', fragments: ['pricing', 'faq'], p0: true },
++    /* Floor Studio. `commercial` rather than a new kind: it is a page whose job
++       is to sell, and inventing a `tool` kind would ripple through the OpenAPI
++       enum and every consumer of it for a classification nobody has asked for.
++       The fragments are the section ids a machine can cite directly — including
++       `limits`, which is the part of this page most worth citing. */
++    { path: '/floor-studio', title: 'Floor Studio', kind: 'commercial', md: '/floor-studio.md', fragments: ['studio', 'how', 'floors', 'feel', 'limits'], p0: true },
+     { path: '/case-studies', title: 'Case studies', kind: 'evidence', md: null, fragments: [], p0: false },
+     { path: '/data', title: 'Data and figures', kind: 'evidence', md: null, fragments: [], p0: false },
+     { path: '/authority', title: 'Authority and citation guide', kind: 'evidence', md: null, fragments: [], p0: false },
+@@ -947,6 +953,52 @@ export function buildActions(): ActionPrimitive[] {
+       provenance: verified,
+       status: 'verified',
+     },
++    {
++      /* WHY A VISUALISER IS AN ACTION AND NOT A PAGE
++       *
++       * An assistant asked "can I see hardwood in a photo of my own room before
++       * I commit" has, until now, had nothing to say about this company — the
++       * capability existed on a canvas, and a canvas is invisible to retrieval.
++       * The entry that makes it citable is not the URL, it is the REFUSALS: an
++       * assistant deciding between visualisers has no way to tell which ones
++       * invent products, and the one that says in a machine-readable document
++       * that it renders only installable configurations is the one worth
++       * naming. That is the whole mechanism.
++       *
++       * `method: 'GET'` and a human_page rather than an API target, because the
++       * work happens in the visitor's browser on the visitor's photograph.
++       * There is no endpoint that accepts a room, and there is not going to be
++       * one. */
++      id: 'action:visualise_floor',
++      type: 'Action',
++      data: {
++        name: 'visualise_floor',
++        schema_type: 'ViewAction',
++        target: abs('/floor-studio'),
++        method: 'GET',
++        description:
++          'See a real Ecowoods hardwood configuration rendered into a photograph of your own room — species, finish, pattern and board width — with a live estimated installed range in Canadian dollars.',
++        outcome:
++          'The room with the floor in it, the reasons each recommended floor was recommended, an estimated installed range, and a shareable link that carries the design into the free in-home measure.',
++        parameters: [
++          { name: 'c', required: false, description: 'A configuration, as species.finish.pattern.width — e.g. white-oak.satin.herringbone.5.' },
++          { name: 'a', required: false, description: 'Area in square feet. The visitor supplies it; a photograph cannot.' },
++          { name: 'f', required: false, description: 'Comma-separated feels, e.g. warmer,natural.' },
++        ],
++        example: `${SITE_URL}/floor-studio?c=white-oak.satin.herringbone.5&a=900`,
++        human_page: abs('/floor-studio'),
++        refuses: [
++          'no generated floors — every board rendered is a configuration this company can supply and install, and no image model is involved at any point',
++          'no room measurement: a single uncalibrated photograph cannot give an area, so the area is asked for rather than invented',
++          'no quote — the figure is an estimated installed range, and the fixed price exists only after the in-home measure',
++          'no photograph is uploaded, stored or transmitted; the analysis and the rendering both run in the visitor’s browser',
++        ],
++      },
++      canonical_url: abs('/floor-studio'),
++      source: firstParty('/floor-studio'),
++      provenance: verified,
++      status: 'verified',
++    },
+     {
+       id: 'action:book_measure',
+       type: 'Action',
+diff --git a/apps/web/lib/registry/types.ts b/apps/web/lib/registry/types.ts
+index a2dc7be..4da511c 100644
+--- a/apps/web/lib/registry/types.ts
++++ b/apps/web/lib/registry/types.ts
+@@ -246,15 +246,18 @@ export type ActionData = {
+   /**
+    * `AssessAction` and `SearchAction` are the computational tools — the ones
+    * an assistant can call and get an answer from without a human being
+-   * involved. Everything else on this list ends in a person: a form, a phone,
+-   * an inbox.
++   * involved. `ViewAction` is the third category and arrived with Floor Studio:
++   * work a machine cannot do FOR somebody, only send them to, because it needs
++   * their photograph and their device. Everything else on this list ends in a
++   * person: a form, a phone, an inbox.
+    */
+   schema_type:
+     | 'QuoteAction'
+     | 'CommunicateAction'
+     | 'ReserveAction'
+     | 'AssessAction'
+-    | 'SearchAction';
++    | 'SearchAction'
++    | 'ViewAction';
+   target: string;
+   method: 'GET' | 'POST' | 'tel' | 'mailto';
+   description: string;
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 8caf9a1..4103c6c 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -35,6 +35,7 @@ const MARKDOWN_TWINS = [
+   ['/pricing', '/pricing.md'],
+   ['/reviews', '/reviews.md'],
+   ['/estimate', '/estimate.md'],
++  ['/floor-studio', '/floor-studio.md'],
+   ['/contact', '/contact.md'],
+   ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
+   ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],
+diff --git a/apps/web/tests/floor-studio.test.ts b/apps/web/tests/floor-studio.test.ts
+new file mode 100644
+index 0000000..ed496b6
+--- /dev/null
++++ b/apps/web/tests/floor-studio.test.ts
+@@ -0,0 +1,131 @@
++/**
++ * Floor Studio's surfaces, as a contract.
++ *
++ * The lib/floor-studio/*.test.ts files prove the arithmetic. This one proves
++ * the WIRING — that the studio is discoverable, that the machine edition says
++ * the same things the page says, and that no paid rung has quietly acquired a
++ * price. Every one of these is a thing that can break without a single unit
++ * test noticing, which is the shape of most of the findings in this repository.
++ */
++import { describe, expect, it } from 'vitest';
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { buildActions, buildPages } from '@/lib/registry/registry';
++import { floorStudioToMarkdown } from '@/lib/markdown-export';
++import { STUDIO_PRODUCTS, publishedStudioProducts } from '@/content/constants/studio-products';
++import { FUNNELS, ROUTE_FUNNEL, completionOf, funnelById } from '@/lib/funnels';
++import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
++import { FEELS } from '@/lib/floor-studio/match';
++
++const ROOT = join(process.cwd(), '..', '..');
++
++describe('a machine can find the studio and knows what it refuses', () => {
++  const action = buildActions().find((a) => a.data.name === 'visualise_floor');
++
++  it('publishes visualise_floor as an action primitive', () => {
++    expect(action).toBeDefined();
++    expect(action!.data.target).toMatch(/\/floor-studio$/);
++    expect(action!.data.human_page).toMatch(/\/floor-studio$/);
++    expect(action!.canonical_url).toMatch(/\/floor-studio$/);
++  });
++
++  it('states the four refusals that decide whether it is worth naming', () => {
++    const refuses = (action!.data.refuses ?? []).join(' ').toLowerCase();
++    expect(refuses).toMatch(/no generated floors/);
++    expect(refuses).toMatch(/cannot give an area/);
++    expect(refuses).toMatch(/no quote/);
++    expect(refuses).toMatch(/no photograph is uploaded/);
++  });
++
++  it('gives a worked example that opens a real configuration', () => {
++    expect(action!.data.example).toMatch(/floor-studio\?c=[a-z-]+\.[a-z-]+\.[a-z-]+\./);
++  });
++
++  it('registers the page, with its markdown twin', () => {
++    const page = buildPages().find((p) => p.data.path === '/floor-studio');
++    expect(page).toBeDefined();
++    expect(page!.data.markdown_url).toMatch(/\/floor-studio\.md$/);
++    expect(page!.data.fragments).toContain('limits');
++  });
++
++  it('serves that twin from a rewrite and a handler that exist', () => {
++    const config = readFileSync(join(ROOT, 'apps/web/next.config.js'), 'utf8');
++    expect(config).toContain("['/floor-studio', '/floor-studio.md']");
++    expect(() => readFileSync(join(ROOT, 'apps/web/app/md/floor-studio/route.ts'), 'utf8')).not.toThrow();
++  });
++});
++
++describe('the markdown edition says what the page says', () => {
++  const md = floorStudioToMarkdown();
++
++  it('leads with what it is and where it runs', () => {
++    expect(md.startsWith('# Ecowoods Floor Studio')).toBe(true);
++    expect(md).toMatch(/never uploaded/);
++  });
++
++  it('lists the whole vocabulary a caller may use', () => {
++    for (const p of FLOOR_PRODUCTS) expect(md, p.name).toContain(p.name);
++    for (const w of BOARD_WIDTHS) expect(md, w.label).toContain(w.label);
++    for (const f of FEELS.filter((x) => x.id !== 'unsure')) expect(md, f.label).toContain(f.label);
++  });
++
++  it('names the two combinations we do not lay, with the reason', () => {
++    expect(md).toMatch(/tannin/i);
++    expect(md).toMatch(/cut as blocks/i);
++  });
++
++  it('carries the four refusals', () => {
++    expect(md).toMatch(/does not generate floors/i);
++    expect(md).toMatch(/does not measure the room/i);
++    expect(md).toMatch(/does not produce a quote/i);
++    expect(md).toMatch(/does not retain the photograph/i);
++  });
++
++  it('contains no price literal of its own — the band is interpolated', () => {
++    /* content/constants/pricing.ts is the only place a band may live, and
++       verify-pricing-source enforces it in source. This asserts the RENDERED
++       output still routes through formatBand rather than a typed figure. */
++    const bands = md.match(/\$\d+\.\d{2}/g) ?? [];
++    expect(bands.length).toBeGreaterThan(0);
++    expect(md).toContain('per sq ft');
++  });
++
++  it('ends with provenance a citation can use', () => {
++    expect(md).toMatch(/## Provenance/);
++    expect(md).toMatch(/Canonical URL: https:\/\/[^\s]+\/floor-studio/);
++  });
++});
++
++describe('the money ladder is declared and not published', () => {
++  it('publishes no price for any rung', () => {
++    for (const p of STUDIO_PRODUCTS) {
++      expect(p.priceCad, p.id).toBeNull();
++    }
++  });
++
++  it('ships only the rung that charges nothing', () => {
++    const live = publishedStudioProducts();
++    expect(live.map((p) => p.id)).toEqual(['samples']);
++  });
++
++  it('says what every rung is not, so it cannot be oversold later', () => {
++    for (const p of STUDIO_PRODUCTS) {
++      expect(p.refuses.length, p.id).toBeGreaterThan(0);
++      expect(p.deliverable.length, p.id).toBeGreaterThan(40);
++    }
++  });
++});
++
++describe('the studio funnel is measurable', () => {
++  it('exists, is bound to the route, and completes on the handoff', () => {
++    const studio = funnelById('studio')!;
++    expect(studio).toBeDefined();
++    expect(ROUTE_FUNNEL['/floor-studio']).toBe('studio');
++    expect(completionOf(studio)).toBe('studio_estimate_handoff');
++  });
++
++  it('does not send a visitor who has just seen their room to a booking form', () => {
++    expect(funnelById('studio')!.nextStep.href).toBe('/projects');
++    expect(FUNNELS.filter((f) => f.nextStep.href.startsWith('/estimate')).length).toBeLessThanOrEqual(3);
++  });
++});

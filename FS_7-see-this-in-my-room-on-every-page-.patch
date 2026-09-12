@@ -1,0 +1,378 @@
+From ed7d717a5f690caa310b7a9b240ea8ccb41633d5 Mon Sep 17 00:00:00 2001
+From: Vincenzo Grimaldi <vince.ceccarelli@gmail.com>
+Date: Fri, 11 Sep 2026 23:55:43 +0000
+Subject: [PATCH 7/7] feat(floor-studio): see this in my room, on every page
+ about a floor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FS-07 of the Floor Studio series.
+
+A species dossier is a good page and a dead end. Somebody reads two
+thousand words about white oak, decides they like it, and then has to go
+and find the thing that shows it to them. Five dossiers and the new-install
+head term now carry the floor they are about into Floor Studio, preloaded.
+
+WHITE ASH IS DELIBERATELY ABSENT, AND THAT IS THE FEATURE
+
+It has a dossier and no catalogue entry — this company does not currently
+lay it. <SeeInMyRoom> validates the configuration and renders NOTHING for
+a species that is not in the catalogue, rather than linking into a floor
+that cannot be bought. Same rule the renderer obeys, enforced at a
+different layer.
+
+THE CTA IS A SERVER COMPONENT AND STAYS ONE
+
+A reference page should not ship a kilobyte of JavaScript so a link can
+fire an event. The `src` parameter says which surface sent the visitor and
+the studio — already a client island — reports it on arrival.
+
+ON THE HEAD TERM IT SITS ABOVE THE FORM
+
+F-160 put a real <form> above every explanatory section on that page and
+that was right. But a visitor on the new-install head term is deciding
+what to buy, not only whether to buy, and the cheapest way to move that
+decision is to show them the floor in their own room: free, instant, no
+contact details. Desire, then confidence, then contact. Putting the form
+first only works on the minority who arrived already decided.
+
+docs/FLOOR_STUDIO.md now carries the definition-of-done table, the patch
+series and what was built so Phase 2 and Phase 3 are not demolitions.
+README names the route and the twin.
+
+pnpm verify green (66 guards), 465 tests.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01CCa8RyVk8SP2G5vs4LsgmD
+---
+ README.md                                     |  3 +-
+ .../components/floor-studio/FloorStudio.tsx   | 14 +++-
+ .../components/floor-studio/SeeInMyRoom.tsx   | 77 +++++++++++++++++++
+ apps/web/app/globals.css                      | 26 +++++++
+ apps/web/app/guides/[slug]/page.tsx           | 40 ++++++++++
+ .../app/hardwood-flooring-toronto/page.tsx    | 21 +++++
+ docs/FLOOR_STUDIO.md                          | 53 ++++++++++---
+ 7 files changed, 220 insertions(+), 14 deletions(-)
+ create mode 100644 apps/web/app/components/floor-studio/SeeInMyRoom.tsx
+
+diff --git a/README.md b/README.md
+index 1583821..4c9e881 100644
+--- a/README.md
++++ b/README.md
+@@ -108,9 +108,10 @@ After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVI
+ ## What the site publishes
+ 
+ - **Commercial pages**: `/`, `/services/*`, `/hardwood-flooring-toronto`, `/hardwood-floor-refinishing-toronto`, `/hardwood-stairs-toronto`, `/service-areas/*` (32 areas), `/commercial`, `/realtors`.
++- **Floor Studio**: `/floor-studio` — a photograph of a room, analysed and composited in the browser, with a real Ecowoods configuration rendered into it and a live estimated installed range. Four doors, one system: `/floor-studio` (discovery), `/design` (the configurator), `/estimate` (the measure and the fixed price), `/pricing` (the bands). The photograph is never uploaded; a share link carries the floor, never the room. No generative imagery — every board rendered is a configuration this company can install (`apps/web/lib/floor-studio/`, `docs/FLOOR_STUDIO.md`).
+ - **Authority**: `/papers` (5 technical papers), `/framework` (Well-Installed Framework v1.0 — 6 pillars, 27 criteria), `/guides`, `/glossary` (44 terms), `/standards`, `/data`, `/library`, `/case-studies`, `/blog`.
+ - **Entity**: `/about`, `/team`, `/press`, `/reviews`, `/authority`.
+-- **Machine surfaces**: `/llms.txt` (llmstxt.org shape, curated, `## Optional` long tail), `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, `/md` (index) and a `.md` edition of every paper, guide, glossary term, service, service area, plus `/index.md`, `/about.md`, `/services.md`, `/service-areas.md`, `/pricing.md`, `/reviews.md`, `/estimate.md`, `/contact.md` and the three head-term pages. Every page with a twin advertises it with `<link rel="alternate" type="text/markdown">` and a `Link` header.
++- **Machine surfaces**: `/llms.txt` (llmstxt.org shape, curated, `## Optional` long tail), `/llms-full.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml`, `/feed.xml`, `/api/knowledge`, `/api/market`, `/md` (index) and a `.md` edition of every paper, guide, glossary term, service, service area, plus `/index.md`, `/about.md`, `/services.md`, `/service-areas.md`, `/pricing.md`, `/reviews.md`, `/estimate.md`, `/contact.md`, `/floor-studio.md` and the three head-term pages. Every page with a twin advertises it with `<link rel="alternate" type="text/markdown">` and a `Link` header.
+ - **Agentic primitives (Protocol v2)**: `/api/v1` — entity, services, locations, pricing, reviews, evidence, sources, FAQ, pages, actions, graph, manifest, changefeed, citation packs, `service-match`, `recommendation-context`, OpenAPI 3.1 at `/api/v1/openapi.json`. Every primitive carries `canonical_url`, `source`, `provenance.verified_at` and `status`; ETag/304 on every response. Registry: `apps/web/lib/registry/` (a projection of the constants — it owns no fact). Docs: `docs/agentic/API.md`. Constitution: `ECOWOODS_AUTONOMOUS_EXECUTION_PROTOCOL.md`.
+ - **P0 pages added**: `/pricing` (table first, stable row ids the registry cites), `/estimate` (the `request_estimate` action target; JSON-LD `potentialAction`), `/contact` (the NAP on one URL with citable fragment ids). Service pages carry "When this is the wrong service" and stable section ids.
+ - **Lead path**: estimate form → `/api/estimate` → Resend email + database record; booking scheduler; `/r` (noindex) is the printed review card destination.
+diff --git a/apps/web/app/components/floor-studio/FloorStudio.tsx b/apps/web/app/components/floor-studio/FloorStudio.tsx
+index 13b0fcb..f0f02e4 100644
+--- a/apps/web/app/components/floor-studio/FloorStudio.tsx
++++ b/apps/web/app/components/floor-studio/FloorStudio.tsx
+@@ -148,12 +148,22 @@ export default function FloorStudio() {
+ 
+   /* ── entry: a shared link opens on the floor it names ──────────────────── */
+   useEffect(() => {
++    let search = '';
++    try {
++      search = window.location.search;
++    } catch {
++      /* no location — nothing to read */
++    }
+     if (!openedRef.current) {
+       openedRef.current = true;
+-      track('studio_open');
++      /* `src` says which surface sent them: a species dossier, the head term,
++         the homepage band, the chrome. It is set by <SeeInMyRoom> and is read
++         here rather than there, because a reference page should not ship a
++         kilobyte of JavaScript to fire one event. */
++      const src = new URLSearchParams(search).get('src');
++      track('studio_open', src ? { src } : undefined);
+     }
+     try {
+-      const search = window.location.search;
+       if (!search) return;
+       const shared = decodeStudioDesign(search);
+       if (shared) {
+diff --git a/apps/web/app/components/floor-studio/SeeInMyRoom.tsx b/apps/web/app/components/floor-studio/SeeInMyRoom.tsx
+new file mode 100644
+index 0000000..74e4d4a
+--- /dev/null
++++ b/apps/web/app/components/floor-studio/SeeInMyRoom.tsx
+@@ -0,0 +1,77 @@
++import Link from 'next/link';
++import {
++  DEFAULT_FINISH,
++  DEFAULT_PATTERN,
++} from '@ecowoods/shared/ai';
++import {
++  DEFAULT_WIDTH,
++  isLayable,
++  productById,
++  type FloorConfiguration,
++} from '@/lib/floor-studio/catalog';
++
++/**
++ * SEE THIS IN MY ROOM — the line that turns a page about a floor into a page
++ * that sells one.
++ *
++ * WHY THIS COMPONENT EXISTS RATHER THAN A LINK
++ *
++ * A species dossier is a good page and a dead end. Somebody reads two thousand
++ * words about white oak, decides they like it, and then has to go and find the
++ * thing that shows it to them. Every one of those pages now carries the floor
++ * it is about, preloaded, one click away — which is the difference between an
++ * article and a product surface.
++ *
++ * It is a SERVER component and it stays one. A CTA that ships a kilobyte of
++ * JavaScript to a reference page so it can fire an event is a bad trade; the
++ * `src` parameter tells the studio where the visitor came from, and the studio —
++ * which is already a client island — reports it.
++ *
++ * The configuration is validated before it is linked. A dossier for a species
++ * this company does not lay renders NOTHING rather than a link into a floor
++ * that does not exist: white ash has a guide and no catalogue entry, and the
++ * honest behaviour there is silence.
++ */
++export function SeeInMyRoom({
++  productId,
++  patternId = DEFAULT_PATTERN,
++  finishId = DEFAULT_FINISH,
++  widthId = DEFAULT_WIDTH,
++  source,
++  label,
++}: {
++  productId: string;
++  patternId?: string;
++  finishId?: string;
++  widthId?: string;
++  /** Where the click came from, for the funnel. Short and route-shaped. */
++  source: string;
++  /** Overrides the default sentence where the page has a better one. */
++  label?: string;
++}) {
++  const product = productById(productId);
++  const config: FloorConfiguration = { productId, finishId, patternId, widthId };
++  if (!product || !isLayable(config)) return null;
++
++  const params = new URLSearchParams({
++    c: [productId, finishId, patternId, widthId].join('.'),
++    a: '900',
++    src: source,
++  });
++
++  return (
++    <aside className="fs-cta" aria-label={`See ${product.name} in your room`}>
++      <p className="fs-cta-kicker">Floor Studio</p>
++      <p className="fs-cta-line">
++        {label ?? `Don’t imagine ${product.name.toLowerCase()} in your house. See it.`}
++      </p>
++      <Link className="btn btn-copper" href={`/floor-studio?${params.toString()}`}>
++        See this in my room <span aria-hidden="true">→</span>
++      </Link>
++      <p className="fs-cta-fine">
++        Upload a photo and this floor goes into it, with a live estimated installed range. The photo
++        stays on your device.
++      </p>
++    </aside>
++  );
++}
+diff --git a/apps/web/app/globals.css b/apps/web/app/globals.css
+index 6695292..bfd294c 100644
+--- a/apps/web/app/globals.css
++++ b/apps/web/app/globals.css
+@@ -11594,3 +11594,29 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
+   .fs-sliders { grid-template-columns: 1fr 1fr; }
+   .fs-stage-wrap { position: sticky; top: calc(var(--header-h) + 1rem); }
+ }
++
++/* The Floor Studio call, on a page about a floor. Server-rendered, no island —
++   a reference page should not ship JavaScript to carry a link. */
++.fs-cta {
++  border: 1px solid var(--line-strong);
++  border-left: 4px solid var(--copper-surface);
++  border-radius: 12px;
++  padding: var(--space-lg);
++  background: var(--surface-warm);
++  max-width: 46rem;
++}
++.fs-cta-kicker {
++  font-size: var(--fs-2xs);
++  text-transform: uppercase;
++  letter-spacing: 0.12em;
++  color: var(--muted);
++  margin: 0 0 var(--space-2xs);
++}
++.fs-cta-line {
++  font-family: var(--font-display);
++  font-size: var(--fs-lg);
++  color: var(--ink);
++  margin: 0 0 var(--space-md);
++  line-height: 1.35;
++}
++.fs-cta-fine { font-size: var(--fs-xs); color: var(--muted); margin: var(--space-sm) 0 0; line-height: 1.6; }
+diff --git a/apps/web/app/guides/[slug]/page.tsx b/apps/web/app/guides/[slug]/page.tsx
+index 82ec067..3ccc98c 100644
+--- a/apps/web/app/guides/[slug]/page.tsx
++++ b/apps/web/app/guides/[slug]/page.tsx
+@@ -14,6 +14,33 @@ import { SERVICES } from '@/lib/seo-data';
+ import { IllustrationPair } from '../../components/Illustration';
+ import { CatalogueRail } from '@/app/components/CatalogueRail';
+ import { NextStep } from '@/app/components/NextStep';
++import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
++
++/**
++ * Guide slug → the floor the guide is about.
++ *
++ * A species dossier is a good page and a dead end: somebody reads two thousand
++ * words about white oak, decides they like it, and then has to go and find the
++ * thing that shows it to them. These five carry the floor they are about into
++ * Floor Studio, preloaded.
++ *
++ * WHITE ASH IS DELIBERATELY ABSENT. It has a dossier and no catalogue entry —
++ * this company does not currently lay it — and <SeeInMyRoom> renders nothing
++ * for a species that is not in the catalogue rather than linking into a floor
++ * that cannot be bought. That silence is the same rule the renderer obeys.
++ */
++const GUIDE_FLOOR: Record<string, { productId: string; patternId?: string; label?: string }> = {
++  'white-oak-flooring-toronto': { productId: 'white-oak' },
++  'red-oak-flooring-toronto': { productId: 'red-oak' },
++  'hard-maple-flooring-toronto': { productId: 'hard-maple' },
++  'black-walnut-flooring-toronto': { productId: 'black-walnut' },
++  'hickory-flooring-toronto': { productId: 'hickory' },
++  'herringbone-chevron-parquet-toronto': {
++    productId: 'white-oak',
++    patternId: 'herringbone',
++    label: 'Herringbone is the one people photograph. See it in your own room before you commit to it.',
++  },
++};
+ 
+ /* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
+    drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
+@@ -328,6 +355,19 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
+         </section>
+       )}
+ 
++      {GUIDE_FLOOR[guide.slug] && (
++        <section className="tlx-section tlx-section--flush" aria-label="See this floor in your room">
++          <div className="shell">
++            <SeeInMyRoom
++              productId={GUIDE_FLOOR[guide.slug]!.productId}
++              patternId={GUIDE_FLOOR[guide.slug]!.patternId}
++              label={GUIDE_FLOOR[guide.slug]!.label}
++              source={`guide:${guide.slug}`}
++            />
++          </div>
++        </section>
++      )}
++
+       <CatalogueRail route={`/guides/${guide.slug}`} />
+ 
+       <CommercialHeadTermRail />
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index 7358e74..71ea2fb 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
+ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
+ import { FeedbackBand } from '../components/FeedbackBand';
+ import { EstimateForm } from '../components/EstimateForm';
++import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
+ import Link from 'next/link';
+ import {
+   BUSINESS_NAP,
+@@ -202,6 +203,26 @@ export default function HardwoodFlooringTorontoPage() {
+         </div>
+       </header>
+ 
++      {/* BEFORE THE ASK, THE PICTURE.
++
++          The form below is the right thing to put above every explanatory
++          section and it is still a form. A visitor on the new-install head term
++          is deciding what to buy, not only whether to buy, and the cheapest way
++          to move that decision is to show them the floor in their own room —
++          free, instant, and no contact details. It sits above the form rather
++          than below it because the order of a sale is desire, then confidence,
++          then contact, and putting the form first only works on the minority
++          who arrived already decided. */}
++      <section className="tlx-section tlx-section--flush" aria-label="See this floor in your room">
++        <div className="shell">
++          <SeeInMyRoom
++            productId="white-oak"
++            label="Don’t imagine your new floor. See it in a photo of your own room, before anybody measures anything."
++            source="head-term:hardwood-flooring-toronto"
++          />
++        </div>
++      </section>
++
+       {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+           This used to be a link to `/#quote`, which is a different url whose form
+           only exists after React opens a modal. Zero `<form>` elements reached the
+diff --git a/docs/FLOOR_STUDIO.md b/docs/FLOOR_STUDIO.md
+index 4e6b73d..bf73702 100644
+--- a/docs/FLOOR_STUDIO.md
++++ b/docs/FLOOR_STUDIO.md
+@@ -77,14 +77,45 @@ fix it". Nothing claims a confidence it cannot defend.
+ run on the visitor's device. Nothing is uploaded unless they ask us to keep it,
+ and then only through the consent ledger.
+ 
+-## 6. Phase 1 — definition of done
+-
+-1. `/floor-studio` is a real route in `apps/web`, linked from the homepage, the
+-   footer chrome and `/design`, and reachable within the navigation depth budget.
+-2. Photo → measured analysis → human correction → match → visualisation →
+-   controls → live range → compare → save/share → estimate, on phone and desktop.
+-3. Every visualised floor is a layable configuration (`isLayable`).
+-4. Ranges come from `estimateInstalledRangeCad` and are labelled ESTIMATE.
+-5. Design state survives into `/estimate` as structured data.
+-6. Analytics fire across the funnel and are bound in `lib/funnels`.
+-7. `pnpm verify` and `pnpm test:web` pass.
++## 6. Phase 1 — definition of done, and where it stands
++
++| # | Done when | Status |
++|---|---|---|
++| 1 | `/floor-studio` is a real route, reachable within the depth budget | ✅ header "Start here" (depth 0), footer, homepage band, `/design`, species dossiers, the new-install head term |
++| 2 | Photo → analysis → correction → match → visualisation → controls → range → compare → save/share → estimate, phone and desktop | ✅ one client island; CSS is mobile-first with the stage/panel split at 900px |
++| 3 | Every visualised floor is layable | ✅ `isLayable` gates the catalogue, the share code, the matcher and the renderer |
++| 4 | Ranges come from `estimateInstalledRangeCad`, labelled ESTIMATE | ✅ `priceConfiguration` delegates; a test asserts byte equality with the shared function |
++| 5 | Design state survives into `/estimate` as structured data | ✅ `design` on `leadSchema`; `EstimateForm` reads `?design=`; `/api/leads` stores the code verbatim |
++| 6 | Analytics fire across the funnel and are bound in `lib/funnels` | ✅ ten events; the `studio` funnel completes on `studio_estimate_handoff` |
++| 7 | `pnpm verify` and `pnpm test:web` pass | ✅ 66 guards, 465 tests |
++| 8 | A machine can understand what Floor Studio is | ✅ `/floor-studio.md`, `action:visualise_floor` (a `ViewAction`), the page primitive with a `limits` fragment |
++| 9 | Money paths are explicit | ✅ samples (free, a lead); the two paid rungs declared in `content/constants/studio-products.ts` with `priceCad: null` and `published: false` |
++
++## 7. The patch series
++
++| Patch | What it lands |
++|---|---|
++| FS-01 | `lib/floor-studio/catalog.ts` — the floors this company can lay, the compatibility rules, the delegation to the shared estimator. `/design` becomes a projection of it. |
++| FS-02 | `lib/floor-studio/room.ts` — what a photograph honestly contains, and `UNMEASURABLE_FROM_A_PHOTO` for what it does not. |
++| FS-03 | `lib/floor-studio/match.ts` — a score produced by its own explanations. |
++| FS-04 | `lib/floor-studio/render.ts` + `render-canvas.ts` — exact perspective, the room's own light, and everything standing on the floor left alone. |
++| FS-05 | `lib/floor-studio/studio-config.ts` — the handoff, `leadSchema.design`, `EstimateForm`, `/api/leads`. |
++| FS-06 | `/floor-studio`, the client experience, the chrome, the sitemap, the markdown twin, the registry action. |
++| FS-07 | "See this in my room" on the species dossiers and the new-install head term; docs. |
++
++## 8. Phase 2 and 3, and what was built so they are not rewrites
++
++- **Accounts, sample commerce, paid reports** — the rungs exist as data already
++  (`studio-products.ts`); publishing one is a price and a boolean, not a
++  refactor. The design reference (`FS-XXXXXXX`) is derived from the design, so
++  it is stable before there is a database row to hang it on.
++- **Photo retention, when somebody asks for it** — the only path is
++  `grantConsent` + `storePhoto`, both of which already exist and both of which
++  fail closed. Nothing in the studio bypasses them because nothing in the studio
++  uploads anything.
++- **AR / live camera (Phase 3)** — the renderer takes a quad and a photograph.
++  A camera frame is a photograph arriving sixty times a second; the homography
++  and the composite do not change, only where the quad comes from.
++- **Floor Passport** — `configurationId` is already the durable identity of a
++  floor, and it is the same string in the share link, the lead note and the
++  estimate payload.
