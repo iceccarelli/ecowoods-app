@@ -22,6 +22,10 @@ const navItems = [
   { href: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
   { href: '/admin/inquiries', label: 'Inquiries', icon: <InquiriesIcon /> },
   { href: '/admin/floor-graph', label: 'Floor Graph', icon: <FloorGraphIcon /> },
+  /* MEAS-02. Reachable from the chrome on purpose: an admin page that exists
+     but is not linked is a page nobody opens, and a funnel nobody opens is the
+     write-only failure PG0 found three times over. */
+  { href: '/admin/funnel', label: 'Funnel', icon: <FloorGraphIcon /> },
   { href: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 

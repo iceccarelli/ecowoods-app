@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 // ─── Zod schema for the full quote form ─────────────────────────────────────
 const quoteFormSchema = z.object({
@@ -223,6 +224,17 @@ To proceed, reply to this email or call ${settings?.companyPhone ?? BUSINESS_NAP
     data: { quoteIssuedAt: new Date(), status: 'QUOTED' },
   });
 
+  /* MEAS-02 — the brief's `estimate` event: a price, in writing, in the
+     customer's hands. The amount is the quoted total BEFORE tax, because that
+     is the figure every other margin calculation on this site is written
+     against and a funnel that mixes the two silently reports a 13% lift. */
+  void recordFunnelEvent({
+    stage: 'QUOTE_ISSUED',
+    designId: quote.designId,
+    quoteId,
+    amountCad: Number(quote.quotedAmount ?? 0) || null,
+  });
+
   revalidatePath(`/admin/quotes/${quoteId}`);
   return { success: true };
 }
@@ -292,6 +304,18 @@ export async function convertQuoteToProject(
   await db.quoteRequest.update({
     where: { id: quoteId },
     data: { projectId: project.id, status: 'ACCEPTED' },
+  });
+
+  /* MEAS-02 — the brief's `acceptance` event. */
+  void recordFunnelEvent({
+    stage: 'QUOTE_ACCEPTED',
+    designId: quote.designId,
+    quoteId,
+    projectId: project.id,
+    /* Parenthesised deliberately: `a ?? b || c` is a SyntaxError in JS, and
+       parse-scan did not catch it. The contract value when the admin set one,
+       otherwise the quoted amount, otherwise nothing. */
+    amountCad: projectData.contractValue ?? (Number(quote.quotedAmount ?? 0) || null),
   });
 
   revalidatePath('/admin/quotes');

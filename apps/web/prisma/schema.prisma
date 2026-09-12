@@ -1081,3 +1081,89 @@ model Prediction {
   @@index([closedAt])
   @@schema("ecowoods")
 }
+
+/// ─────────────────────────────────────────────────────────────────────────
+/// MEAS-02 — the funnel ledger.
+///
+/// WHY A TABLE RATHER THAN MORE GA4
+///
+/// PG0 found nine of the brief's twenty-one canonical events missing, and the
+/// last five of them — appointment, estimate, acceptance, deposit,
+/// job_complete — are structurally unreachable from the existing instrument:
+/// every one is a SERVER write (Appointment, QuoteRequest.quoteIssuedAt,
+/// Project.status, Invoice, JobOutcome) and lib/analytics.ts `track()` returns
+/// early when `window` is undefined. No amount of client work reaches them.
+///
+/// The obvious fix is GA4's Measurement Protocol. It was rejected, and the
+/// reason is worth writing down rather than rediscovering:
+///
+///   1. Measurement Protocol requires a `client_id`, which identifies a
+///      DEVICE. Nothing on the server has one. Synthesising it from the design
+///      id would file every deposit under a fabricated user, inflating GA4's
+///      user counts with people who do not exist. A number that is wrong in a
+///      flattering direction is the worst kind.
+///   2. These are commercial facts about transactions — a deposit cleared, a
+///      job finished — not observations of a person's behaviour. They belong
+///      in the business's own records, not in a third party's.
+///   3. GA4 cannot answer the success question anyway. "Of the last 100
+///      deposits, how many began in Floor Studio, and what was the margin on
+///      those versus the rest" needs revenue and cost, and those live here.
+///
+/// So GA4 keeps the top of the funnel, where consent and device identity are
+/// real and correct, and this table takes the commercial end. One join key —
+/// `designId` from MEAS-01 — spans both.
+///
+/// WHAT IT MUST NEVER HOLD
+///
+/// No name, no email, no phone, no address, no IP. Not a shadow CRM: the
+/// customer record already exists on QuoteRequest and User, and duplicating it
+/// is exactly what the brief's Rule #5 forbids. This table holds a stage, a
+/// timestamp, an amount, and foreign keys as bare indexed UUIDs. Everything
+/// needed to count money; nothing that identifies a person.
+
+enum FunnelStage {
+  LEAD_CAPTURED
+  APPOINTMENT_BOOKED
+  QUOTE_ISSUED
+  QUOTE_ACCEPTED
+  DEPOSIT_PAID
+  JOB_COMPLETED
+
+  @@schema("ecowoods")
+}
+
+model FunnelEvent {
+  id    String      @id @default(uuid()) @db.Uuid
+  stage FunnelStage
+
+  /// MEAS-01's join key. Null is the honest value for a lead that arrived by
+  /// phone, from a service page, or through the assistant — those are real
+  /// leads that simply did not begin in a design, and recording them as
+  /// unattributed is the difference between a denominator and a guess.
+  designId String? @db.VarChar(16)
+
+  /// Which surface the journey started on, as the lead reported it — the same
+  /// `source` the estimate form posts. Free-form because it is a label, not a
+  /// controlled vocabulary, and a wrong enum is harder to fix than a wrong
+  /// string.
+  source String? @db.VarChar(120)
+
+  /// Bare UUIDs with indexes, no foreign keys — the same choice the Floor
+  /// Graph made and for the same reason: erasing a commercial record must
+  /// never cascade into the ledger that says how the business performed.
+  quoteId   String? @db.Uuid
+  projectId String? @db.Uuid
+
+  /// The money at this stage, where there is any: the quoted total at
+  /// QUOTE_ISSUED, the deposit at DEPOSIT_PAID, the contract value at
+  /// JOB_COMPLETED. Always the figure in the currency the job was written in.
+  amountCad Decimal? @db.Decimal(12, 2)
+
+  occurredAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([stage, occurredAt])
+  @@index([designId])
+  @@index([projectId])
+  @@index([quoteId])
+  @@schema("ecowoods")
+}

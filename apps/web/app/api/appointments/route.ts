@@ -8,6 +8,7 @@ import {
 } from '@/lib/booking/availability';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -118,6 +119,17 @@ export async function POST(request: Request) {
         },
       });
       return { quote, appt };
+    });
+
+    /* MEAS-02 — the brief's `appointment` event. Outside the transaction on
+       purpose: a measurement row must never be able to roll back a booking
+       that the customer has already been shown as confirmed. Not awaited, for
+       the same reason it is not inside the transaction. */
+    void recordFunnelEvent({
+      stage: 'APPOINTMENT_BOOKED',
+      designId: (data as { designId?: string }).designId,
+      source: 'booking',
+      quoteId: quote.id,
     });
 
     // Notifications — non-blocking; a booking is never lost to a flaky email.

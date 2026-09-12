@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import type { ProjectStatus } from '@prisma/client';
 import { requestReviewForProject } from '@/lib/review-request';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 // ─── Create project ──────────────────────────────────────────────────────────
 export async function createProject(input: {
@@ -63,7 +64,26 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
-  await db.project.update({ where: { id: projectId }, data: { status } });
+  const project = await db.project.update({
+    where: { id: projectId },
+    data: { status },
+    select: { id: true, designId: true, contractValue: true },
+  });
+
+  /* MEAS-02 — the brief's `job_complete` event, and the end of the first
+     flywheel. Fired from the status change rather than from JobOutcome,
+     because JobOutcome is filled in by an estimator at their own pace and may
+     be days late or never written at all; the status is what the business
+     acts on. Not awaited: a ledger row must not be able to block a status
+     change the crew is waiting on. */
+  if (status === 'COMPLETED') {
+    void recordFunnelEvent({
+      stage: 'JOB_COMPLETED',
+      designId: project.designId,
+      projectId: project.id,
+      amountCad: project.contractValue ? Number(project.contractValue) : null,
+    });
+  }
 
   /* A completed job sends its one review request immediately. A failure here
      never blocks the status change — the hourly sweep retries it. */

@@ -6,6 +6,7 @@ import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 import { designIdOf } from '@/lib/floor-studio/design-id';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -208,6 +209,15 @@ export async function POST(request: Request) {
       },
     });
     quoteId = quote.id;
+    /* MEAS-02 — not awaited. A lead that was captured is captured whether or
+       not its ledger row lands, and holding this response open for a row only
+       a report will read would be trading a customer's wait for a statistic. */
+    void recordFunnelEvent({
+      stage: 'LEAD_CAPTURED',
+      designId: lead.designId as string | undefined,
+      source: lead.source as string | undefined,
+      quoteId: quote.id,
+    });
   } catch (err) {
     console.error(JSON.stringify({
       event: 'lead.db_persist_failed', leadId,

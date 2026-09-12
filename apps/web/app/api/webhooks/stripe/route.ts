@@ -17,6 +17,7 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import Stripe from 'stripe';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 export const runtime = 'nodejs';
 
@@ -119,6 +120,38 @@ export async function POST(req: Request) {
               : (session.payment_intent?.id ?? null),
           },
         });
+
+        /* MEAS-02 — the brief's `deposit` event, and the one the success test
+           is built on.
+
+           Only the DEPOSIT stage counts here. A progress or final invoice is
+           real revenue but it is not the moment a customer committed, and
+           counting all three would report a conversion rate above 100% for
+           every job that invoices in thirds.
+
+           The `already paid` guard above is what makes this idempotent:
+           Stripe retries webhooks, and without that early break a single
+           deposit would land in this ledger once per retry. Not awaited — a
+           throw here would return non-2xx to Stripe and trigger exactly those
+           retries, against an invoice this handler has already marked PAID.
+
+           The design id is read from the project rather than carried in the
+           Stripe payload, because Stripe metadata is not a place to keep a
+           field whose correctness this business depends on. */
+        if (invoice.stage === 'DEPOSIT') {
+          const project = invoice.projectId
+            ? await db.project.findUnique({
+                where: { id: invoice.projectId },
+                select: { designId: true },
+              })
+            : null;
+          void recordFunnelEvent({
+            stage: 'DEPOSIT_PAID',
+            designId: project?.designId ?? null,
+            projectId: invoice.projectId ?? null,
+            amountCad: (session.amount_total ?? 0) / 100,
+          });
+        }
 
         console.log(`[stripe webhook] invoice ${invoiceId} marked PAID`);
         break;

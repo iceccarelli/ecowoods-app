@@ -201,9 +201,9 @@ proven to have worked.
 
 | Patch | Name | Group | Production change |
 |---|---|---|---|
-| **PG0** | This audit | 0 | Docs only |
-| **MEAS-01** | Design ID — one identity from first render to job outcome | 1 | Yes |
-| **MEAS-02** | Server-side funnel events (appointment→deposit→job_complete) | 1 | Yes |
+| **PG0** | This audit | 0 | Docs only — SHIPPED |
+| **MEAS-01** | Design ID — one identity from first render to job outcome | 1 | Yes — SHIPPED |
+| **MEAS-02** | The funnel ledger — six server-side commercial stages, plus /admin/funnel | 1 | Yes — SHIPPED |
 | **MEAS-03** | The unmeasured tools: chat, movement, quote-check; kill dead events | 1 | Yes |
 | **MEAS-04** | The lying handoff: fix `SpecSheet` CTA, make `design_handoff` truthful | 1 | Yes |
 | **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes |
