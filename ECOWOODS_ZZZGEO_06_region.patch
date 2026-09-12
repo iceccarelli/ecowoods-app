@@ -1,0 +1,922 @@
+From b71a949695b02c4d4a2e6c9c6152cec5579adf1a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 18:01:03 +0000
+Subject: [PATCH] =?UTF-8?q?feat(geo):=20GEO-006=20=E2=80=94=20the=20studio?=
+ =?UTF-8?q?=20has=20a=20country,=20and=20GC-026=20is=20closed?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE LAST SURFACE THAT ASSUMED A VISITOR'S COUNTRY
+
+GEO-004 set the rule the rest of this site holds: a New York surface shows no
+Canadian figure and an Ontario surface shows no United States one. verify-geo
+enforces it on every page that NAMES a market.
+
+The studio names none. So the rule never reached it — while the header and the
+footer link it from all 26 New York markets, and every figure it printed was
+Canadian:
+
+  catalog.ts              bandForWork(work), left at its 'CA' default
+  FloorStudio.tsx         Intl.NumberFormat('en-CA', { currency: 'CAD' })
+  the budget field        labelled "optional, CAD"
+  floor-studio/page.tsx   told machines the range was "in Canadian dollars"
+  studioLeadNote          wrote CAD into the estimating desk's own note
+
+A homeowner in Amherst read a United States band on /service-areas/amherst,
+tapped "see it in your room", and was quoted in Canadian dollars. That is two
+published versions of one fact, which is the single class of error this
+repository exists to prevent.
+
+ASKED FOR AND CARRIED, NEVER INFERRED
+
+StudioDesign carries a country. No IP lookup and no locale sniffing: a visitor
+on a Toronto laptop planning a Buffalo rental is not a Canadian job, and
+guessing would put the wrong currency in front of them with no way to see why.
+
+  · THE CITY PAGES SET IT. All 89 carry a studio CTA linking ?region=US or
+    ?region=CA. Until now they reached the studio only through the global
+    chrome, which is exactly how the defect survived a currency patch.
+  · THE STUDIO STATES IT. A region control above the range says which bands are
+    in use and where they apply, linked to /pricing where both are published.
+  · THE SHARE CODE CARRIES IT. n=US only when it is not the home country, so no
+    Ontario link that already exists changed meaning or grew by a byte.
+  · THE HANDOFF CARRIES IT. estimateHref adds region, so the fixed price is
+    written against the band the visitor was actually shown — the same defect
+    one step further down the funnel, closed in the same patch.
+
+GEO-005 HAD ALREADY DONE THE HARD HALF
+
+EstimateResult has carried `currency` from the band it was given since then, so
+nothing downstream had to learn a country — only to read the currency instead of
+assuming one. Both figure sets are their own published band times the area. NO
+EXCHANGE RATE IS APPLIED ANYWHERE, because nobody published one.
+
+NAMING DEBT, RECORDED RATHER THAN HIDDEN
+
+The fields are still estimatedLowCad, estimatedHighCad, perSqftCad, budgetCad.
+The VALUES are right — whatever band came in, with `currency` saying which — but
+the names now say CAD about a figure that may be USD. Renaming crosses
+packages/shared, the chat tool, the estimate API and the lead schema: a patch of
+its own, not one to bury inside this one. It is a misleading name and not a
+misleading claim — nothing a visitor or a machine reads says CAD about a USD
+figure. It is in the log so it is not found as a surprise.
+
+Verified: 66 guards pass, verify:geo and the green gate included. 34 new
+assertions in region.test.ts, holding the rule the studio had escaped: a New
+York design never carries a Canadian figure, an omitted country still means
+Ontario, a share link opens in the currency it was built in, and an Ontario link
+gains no parameter. 65,490 across the floor-studio, navigation and assistant
+suites, 0 failed.
+
+docs/AUDIT_03_INTEGRATION.md moves from A− to A. The contradiction that held the
+grade is gone; what is left is the naming debt above, GC-021, GC-023, and
+ecowoodshardwood.com, which needs a DNS panel rather than a commit.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .../components/floor-studio/FloorStudio.tsx   |  96 +++++++++++--
+ apps/web/app/floor-studio/page.tsx            |  13 +-
+ apps/web/app/service-areas/[city]/page.tsx    |  18 ++-
+ apps/web/lib/analytics.ts                     |   9 +-
+ apps/web/lib/floor-studio/catalog.ts          |  19 ++-
+ apps/web/lib/floor-studio/match.ts            |  10 +-
+ apps/web/lib/floor-studio/region.test.ts      | 136 ++++++++++++++++++
+ .../lib/floor-studio/studio-config.test.ts    |   3 +
+ apps/web/lib/floor-studio/studio-config.ts    |  48 ++++++-
+ apps/web/lib/markdown-export.ts               |  15 +-
+ docs/AUDIT_03_INTEGRATION.md                  |  29 ++--
+ docs/GEO_CONTRADICTION_LOG.md                 |  61 +++++++-
+ 12 files changed, 417 insertions(+), 40 deletions(-)
+ create mode 100644 apps/web/lib/floor-studio/region.test.ts
+
+diff --git a/apps/web/app/components/floor-studio/FloorStudio.tsx b/apps/web/app/components/floor-studio/FloorStudio.tsx
+index 80ac751..6357dea 100644
+--- a/apps/web/app/components/floor-studio/FloorStudio.tsx
++++ b/apps/web/app/components/floor-studio/FloorStudio.tsx
+@@ -12,7 +12,7 @@ import {
+ } from 'react';
+ import Link from 'next/link';
+ import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
+-import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
++import { NEW_INSTALL, US_NEW_INSTALL, formatBand } from '@/content/constants/pricing';
+ import { publishedStudioProducts } from '@/content/constants/studio-products';
+ import { track } from '@/lib/analytics';
+ import {
+@@ -46,6 +46,8 @@ import {
+   decodeStudioDesign,
+   describeStudioDesign,
+   designHref,
++  STUDIO_COUNTRIES,
++  countryOf,
+   emptyStudioDesign,
+   encodeStudioDesign,
+   estimateHref,
+@@ -102,8 +104,27 @@ const ANALYSING_STEPS = [
+ 
+ const MAX_COMPARE = 5;
+ 
+-const cad = (n: number) =>
+-  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
++/**
++ * MONEY FOLLOWS THE BAND (GEO-006).
++ *
++ * This was `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded, and
++ * it was the last place on this site that assumed a visitor's country. GEO-004
++ * established the rule — a New York surface shows no Canadian figure — and
++ * verify-geo holds it on every page that names a market. The studio names none,
++ * so the rule never reached it, while the header and footer link it from all 26
++ * New York markets.
++ *
++ * EstimateResult has carried `currency` from the band it was given since
++ * GEO-005, so nothing here has to know a country: it reads the currency the
++ * arithmetic actually used. The locale follows it too, because a US visitor
++ * reading "US$" is being told the same thing twice, and en-US simply writes $.
++ */
++const money = (n: number, currency: string) =>
++  new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'en-CA', {
++    style: 'currency',
++    currency,
++    maximumFractionDigits: 0,
++  }).format(n);
+ 
+ /** A neutral plan-view ground for "start with a floor", with a little falloff
+     so the boards are lit rather than flat. Not a room, and not pretending. */
+@@ -143,6 +164,7 @@ export default function FloorStudio() {
+   const [boardScale, setBoardScale] = useState(1);
+ 
+   const [design, setDesign] = useState<StudioDesign>(() => emptyStudioDesign());
++  const regionNotedRef = useRef(false);
+   const [compare, setCompare] = useState<string[]>([]);
+   const [split, setSplit] = useState(60);
+   const [repaired, setRepaired] = useState<string | null>(null);
+@@ -169,6 +191,17 @@ export default function FloorStudio() {
+          kilobyte of JavaScript to fire one event. */
+       const src = new URLSearchParams(search).get('src');
+       track('studio_open', src ? { src } : undefined);
++      /* WHICH BANDS TO OPEN ON (GEO-006).
++         `?region=US` is set by the links on the New York city pages, so a
++         homeowner in Amherst who taps "see it in your room" arrives already
++         priced in the currency their own city page quoted them. It is a
++         DEFAULT, not a verdict: the control below says which bands are in use
++         and changes them, and nothing is inferred from an IP or a locale — a
++         visitor on a Toronto laptop planning a Buffalo rental is not a Canadian
++         job, and guessing would put the wrong currency in front of them with no
++         way to see why. */
++      const region = new URLSearchParams(search).get('region');
++      if (region) setDesign((d) => ({ ...d, country: countryOf(region) }));
+     }
+     /* `/floor-studio#live` opens the camera directly. The header, the mobile
+        drawer, ⌘K and the homepage all use it, so the fastest thing this site
+@@ -229,8 +262,9 @@ export default function FloorStudio() {
+         roomTypeId: design.roomTypeId,
+         squareFeet: design.squareFeet,
+         budgetCad: design.budgetCad,
++        country: design.country,
+       }),
+-    [design.feels, design.room, design.roomTypeId, design.squareFeet, design.budgetCad],
++    [design.feels, design.room, design.roomTypeId, design.squareFeet, design.budgetCad, design.country],
+   );
+ 
+   const matchesShownRef = useRef(false);
+@@ -241,8 +275,8 @@ export default function FloorStudio() {
+   }, [stage, matches]);
+ 
+   const estimate = useMemo(
+-    () => priceConfiguration(design.config, design.squareFeet),
+-    [design.config, design.squareFeet],
++    () => priceConfiguration(design.config, design.squareFeet, design.country),
++    [design.config, design.squareFeet, design.country],
+   );
+   const movement = useMemo(() => movementFor(design.config), [design.config]);
+ 
+@@ -500,7 +534,7 @@ export default function FloorStudio() {
+               config={design.config}
+               squareFeet={design.squareFeet}
+               boardScale={boardScale}
+-              priceLine={`${cad(estimate.estimatedLowCad)} – ${cad(estimate.estimatedHighCad)}`}
++              priceLine={`${money(estimate.estimatedLowCad, estimate.currency)} – ${money(estimate.estimatedHighCad, estimate.currency)}`}
+               onCapture={onLiveCapture}
+               onClose={() => setStage('start')}
+             />
+@@ -544,7 +578,7 @@ export default function FloorStudio() {
+               )}
+               <p className="fs-estimate-label">Estimated installed investment</p>
+               <p className="fs-estimate-figure">
+-                {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
++                {money(estimate.estimatedLowCad, estimate.currency)} <em>–</em> {money(estimate.estimatedHighCad, estimate.currency)}
+               </p>
+               <p className="fs-disclaimer">
+                 A <strong>range, not a quote</strong>, for {design.squareFeet.toLocaleString('en-CA')} sq ft.
+@@ -703,7 +737,7 @@ export default function FloorStudio() {
+               </label>
+               <label className="fs-field">
+                 <span>
+-                  A budget, if you have one <em>optional, CAD</em>
++                  A budget, if you have one <em>optional, {estimate.currency}</em>
+                 </span>
+                 <input
+                   type="number"
+@@ -790,7 +824,7 @@ export default function FloorStudio() {
+                       ))}
+                     </ul>
+                     <p className="fs-match-price">
+-                      {cad(match.estimate.estimatedLowCad)} – {cad(match.estimate.estimatedHighCad)}{' '}
++                      {money(match.estimate.estimatedLowCad, match.estimate.currency)} – {money(match.estimate.estimatedHighCad, match.estimate.currency)}{' '}
+                       <em>estimated installed</em>
+                     </p>
+                     <div className="fs-match-actions">
+@@ -889,11 +923,44 @@ export default function FloorStudio() {
+                 </label>
+               </div>
+ 
++              {/* WHICH BANDS THIS IS PRICED AGAINST (GEO-006).
++                  Stated on screen rather than assumed, because the studio is
++                  linked from the header and footer of 26 New York markets and
++                  quoted every one of them in Canadian dollars until now. */}
++              <fieldset className="fs-axis fs-region">
++                <legend>Where is the floor?</legend>
++                <div className="fs-axis-options">
++                  {STUDIO_COUNTRIES.map((c) => (
++                    <button
++                      key={c.id}
++                      type="button"
++                      className="fs-option"
++                      aria-pressed={design.country === c.id}
++                      onClick={() => {
++                        setDesign((d) => ({ ...d, country: c.id }));
++                        if (!regionNotedRef.current) {
++                          regionNotedRef.current = true;
++                          track('studio_region_changed', { region: c.id });
++                        }
++                      }}
++                    >
++                      {c.label}
++                    </button>
++                  ))}
++                </div>
++                <p className="fs-axis-note">
++                  {design.country === 'US'
++                    ? `Priced against the New York bands, in US dollars — ${STUDIO_COUNTRIES[1]!.where}.`
++                    : `Priced against the Ontario bands, in Canadian dollars — ${STUDIO_COUNTRIES[0]!.where}.`}{' '}
++                  <Link href="/pricing">Both are published.</Link>
++                </p>
++              </fieldset>
++
+               {/* The range */}
+               <div className="fs-estimate">
+                 <p className="fs-estimate-label">Estimated installed investment</p>
+                 <p className="fs-estimate-figure">
+-                  {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
++                  {money(estimate.estimatedLowCad, estimate.currency)} <em>–</em> {money(estimate.estimatedHighCad, estimate.currency)}
+                 </p>
+                 <p className="fs-estimate-sub">
+                   {estimate.perSqftCad} · {design.squareFeet.toLocaleString('en-CA')} sq ft ·{' '}
+@@ -906,7 +973,8 @@ export default function FloorStudio() {
+                 <details className="fs-why">
+                   <summary>Why this price?</summary>
+                   <p>
+-                    New hardwood installation is published at {formatBand(NEW_INSTALL)} — see{' '}
++                    New hardwood installation is published at{' '}
++                    {formatBand(design.country === 'US' ? US_NEW_INSTALL : NEW_INSTALL)} — see{' '}
+                     <Link href="/pricing">the published bands</Link>. Inside that, the species sets the
+                     material, the finish sets how many passes the floor takes, and the pattern sets the
+                     waste and the labour: a chevron is mitred point to point and is the hardest floor
+@@ -925,13 +993,13 @@ export default function FloorStudio() {
+                     {compare.map((id) => {
+                       const config = parseConfigurationId(id);
+                       if (!config) return null;
+-                      const price = priceConfiguration(config, design.squareFeet);
++                      const price = priceConfiguration(config, design.squareFeet, design.country);
+                       return (
+                         <li key={id}>
+                           <ComparePane ground={ground} quad={activeQuad} config={config} squareFeet={design.squareFeet} boardScale={boardScale} />
+                           <strong>{describeConfiguration(config)}</strong>
+                           <span>
+-                            {cad(price.estimatedLowCad)} – {cad(price.estimatedHighCad)}
++                            {money(price.estimatedLowCad, price.currency)} – {money(price.estimatedHighCad, price.currency)}
+                           </span>
+                           <div className="fs-match-actions">
+                             <button
+diff --git a/apps/web/app/floor-studio/page.tsx b/apps/web/app/floor-studio/page.tsx
+index 98a6720..0921629 100644
+--- a/apps/web/app/floor-studio/page.tsx
++++ b/apps/web/app/floor-studio/page.tsx
+@@ -48,7 +48,7 @@ const url = `${SITE_URL}/floor-studio`;
+ export const metadata: Metadata = {
+   title: 'Floor Studio — see your new floor in your room',
+   description:
+-    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in CAD. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
++    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in the currency of the region the floor is in \u2014 Canadian dollars in Ontario, United States dollars in New York State. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
+   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
+   openGraph: {
+     images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
+@@ -89,7 +89,7 @@ const STEPS = [
+     id: 'step-price',
+     title: 'A range, then a fixed price',
+     body:
+-      `The installed range updates as you change the floor, from the same numbers our estimator carries in the truck. ${PRICE_PROMISE} The studio hands your exact design to the estimate form — there is nothing to retype.`,
++      `The installed range updates as you change the floor, from the same numbers our estimator carries in the truck, against the bands published for the region the floor is in \u2014 Ontario or New York State, and the studio says which. ${PRICE_PROMISE} The studio hands your exact design to the estimate form — there is nothing to retype.`,
+   },
+ ];
+ 
+@@ -123,7 +123,7 @@ export default function FloorStudioPage() {
+           isPartOf: { '@id': `${SITE_URL}/#website` },
+           publisher: { '@id': `${SITE_URL}/#organization` },
+           description:
+-            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in Canadian dollars. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
++            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in the published bands of the region the floor is in — Canadian dollars in Ontario, United States dollars in New York State. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
+           featureList: [
+             'Live camera view with the floor rendered in at video rate',
+             'Species, finish, pattern and board width changed while the camera runs',
+@@ -131,7 +131,7 @@ export default function FloorStudioPage() {
+             'Correctable floor boundary',
+             'Recommendations over installable configurations only',
+             'Species, finish, pattern and board width',
+-            'Live estimated installed range in CAD',
++            'Estimated installed range in the published bands of the region the floor is in \u2014 Canadian dollars in Ontario, United States dollars in New York State',
+             'No generative model: every floor shown is a configuration that can be supplied and installed',
+             'No upload: camera frames and photographs are analysed on the device and discarded',
+             'Shareable design link',
+@@ -154,8 +154,9 @@ export default function FloorStudioPage() {
+           <p className="tlx-lede">
+             Point your camera at the room and the floor changes while you move — or upload a photo,
+             or start from a floor. Real {BUSINESS_NAP.name} hardwood in your own space: species,
+-            finish, pattern and board width, with a live estimated installed range in Canadian
+-            dollars. Design it digitally. Verify it professionally. Build it perfectly.
++            finish, pattern and board width, with a live estimated installed range in the currency
++            of the region the floor is in. Design it digitally. Verify it professionally. Build it
++            perfectly.
+           </p>
+         </div>
+       </header>
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index 3c03df8..4b8de50 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -233,8 +233,24 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+             Dust-free sanding that keeps you living at home, fixed written estimates with no
+             &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
+           </p>
+-          <p style={{ marginTop: '1.5rem' }}>
++          <p style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center' }}>
+             <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
++            {/* THE STUDIO, IN THIS CITY'S OWN CURRENCY (GEO-006).
++                Until now these pages reached Floor Studio only through the
++                header and footer, which are global and were therefore Canadian
++                — so a homeowner in Amherst read a United States band here and
++                was quoted in Canadian dollars one tap later. That is GC-026.
++                The region travels with the link, the studio says on screen
++                which bands it is using, and the visitor can change it: nothing
++                is inferred from an IP or a locale, because a Toronto laptop
++                planning a Buffalo rental is not a Canadian job. */}
++            <Link
++              href={`/floor-studio?region=${isUS ? 'US' : 'CA'}#live`}
++              className="btn btn-ghost btn-lg"
++              prefetch={false}
++            >
++              See it in your room, priced in {isUS ? 'US dollars' : 'Canadian dollars'}
++            </Link>
+           </p>
+         </div>
+       </section>
+diff --git a/apps/web/lib/analytics.ts b/apps/web/lib/analytics.ts
+index 01f0e78..a497b5e 100644
+--- a/apps/web/lib/analytics.ts
++++ b/apps/web/lib/analytics.ts
+@@ -37,6 +37,7 @@
+  *   studio_live_opened   — a camera stream started
+  *   studio_live_blocked  — it did not, and why (six possible reasons)
+  *   studio_live_captured — a live frame was frozen into the studio
++ *   studio_region_changed — the visitor moved between the Ontario and New York bands
+  */
+ 
+ export type AnalyticsEvent =
+@@ -84,7 +85,13 @@ export type AnalyticsEvent =
+      classifyCameraError and nothing else. */
+   | 'studio_live_opened'
+   | 'studio_live_blocked'
+-  | 'studio_live_captured';
++  | 'studio_live_captured'
++  /* GEO-006. Which band set the visitor is pricing against — 'CA' or 'US' and
++     nothing else. It is the only way to find out whether the New York links are
++     landing people in the right currency, and it carries no location: the
++     visitor chose it, and a choice between two published band sets is not a
++     place. */
++  | 'studio_region_changed';
+ 
+ export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
+   if (typeof window === 'undefined') return;
+diff --git a/apps/web/lib/floor-studio/catalog.ts b/apps/web/lib/floor-studio/catalog.ts
+index 3aae251..45c726d 100644
+--- a/apps/web/lib/floor-studio/catalog.ts
++++ b/apps/web/lib/floor-studio/catalog.ts
+@@ -80,7 +80,7 @@ import {
+   type PatternOption,
+ } from '@ecowoods/shared/ai';
+ import { SPECIES as WOOD_SPECIES, computeMovement, type WoodSpecies } from '@/lib/wood';
+-import { bandForWork } from '@/content/constants/pricing';
++import { bandForWork, type PriceCountry } from '@/content/constants/pricing';
+ 
+ /* ── the axes ─────────────────────────────────────────────────────────────── */
+ 
+@@ -418,12 +418,25 @@ export function describeConfiguration(c: FloorConfiguration): string {
+  * Width is deliberately absent from the arguments passed downstream. See the
+  * header: it changes the floor and the movement, not the published band.
+  */
+-export function priceConfiguration(c: FloorConfiguration, squareFeet: number): EstimateResult {
++/**
++ * `country` decides WHICH PUBLISHED BAND, and nothing else (GEO-006).
++ *
++ * It defaults to the home country so every existing caller keeps its meaning,
++ * and the studio passes the visitor's own choice. The returned EstimateResult
++ * already carries `currency` from the band it was given — that has been true
++ * since GEO-005 — so nothing downstream has to know a country, only to read
++ * the currency instead of assuming one.
++ */
++export function priceConfiguration(
++  c: FloorConfiguration,
++  squareFeet: number,
++  country: PriceCountry = 'CA',
++): EstimateResult {
+   const product = productById(c.productId);
+   const work = product?.rateKey ?? FLOOR_PRODUCTS[0].rateKey;
+   return estimateInstalledRangeCad(
+     { species: work, squareFeet, finish: c.finishId, pattern: c.patternId },
+-    bandForWork(work),
++    bandForWork(work, country),
+   );
+ }
+ 
+diff --git a/apps/web/lib/floor-studio/match.ts b/apps/web/lib/floor-studio/match.ts
+index 0ef5086..781a9bb 100644
+--- a/apps/web/lib/floor-studio/match.ts
++++ b/apps/web/lib/floor-studio/match.ts
+@@ -42,6 +42,7 @@
+  * per species in the headline set, and says so here rather than hiding it.
+  */
+ import type { EstimateResult } from '@ecowoods/shared/ai';
++import type { PriceCountry } from '@/content/constants/pricing';
+ import {
+   BOARD_WIDTHS,
+   FLOOR_PRODUCTS,
+@@ -112,6 +113,13 @@ export type MatchInput = {
+   room?: Pick<RoomReading, 'lightLevel' | 'wallUndertone' | 'existingFloorTone'>;
+   roomTypeId?: string;
+   squareFeet: number;
++  /**
++   * Which published band set to rank against (GEO-006). Optional, defaulting to
++   * the home country, so every existing caller keeps its meaning — and so a
++   * recommendation shown to a New York visitor is ranked against the prices
++   * they will actually be quoted rather than somebody else's.
++   */
++  country?: PriceCountry;
+   /**
+    * An installed budget the visitor typed, in CAD. Optional, and used only to
+    * caveat — never to hide a floor. Somebody who says $20,000 and falls in love
+@@ -419,7 +427,7 @@ export function recomputeScore(judgements: MatchReason[]): number {
+ function judge(input: MatchInput, config: FloorConfiguration): Match | null {
+   const product = productById(config.productId);
+   if (!product) return null;
+-  const estimate = priceConfiguration(config, input.squareFeet);
++  const estimate = priceConfiguration(config, input.squareFeet, input.country ?? 'CA');
+   const ctx: Context = { input, config, product, estimate, feels: new Set(input.feels) };
+ 
+   const judgements: MatchReason[] = [];
+diff --git a/apps/web/lib/floor-studio/region.test.ts b/apps/web/lib/floor-studio/region.test.ts
+new file mode 100644
+index 0000000..56b56f5
+--- /dev/null
++++ b/apps/web/lib/floor-studio/region.test.ts
+@@ -0,0 +1,136 @@
++/**
++ * lib/floor-studio/region.test.ts — GC-026, and the rule it broke.
++ *
++ * GEO-004 set the rule the rest of this site holds: a New York surface shows no
++ * Canadian figure and an Ontario surface shows no United States one.
++ * `verify-geo` enforces it on every page that NAMES a market. The studio names
++ * none, so the rule never reached it — and the header and footer link the
++ * studio from all 26 New York markets, every one of them priced in Canadian
++ * dollars.
++ *
++ * These are the assertions that make the rule reach it.
++ */
++import { describe, expect, it } from 'vitest';
++import {
++  NEW_INSTALL,
++  US_NEW_INSTALL,
++  bandForWork,
++  type PriceCountry,
++} from '@/content/constants/pricing';
++import { DEFAULT_CONFIGURATION, priceConfiguration } from './catalog';
++import { matchFloors } from './match';
++import {
++  STUDIO_COUNTRIES,
++  countryOf,
++  decodeStudioDesign,
++  emptyStudioDesign,
++  encodeStudioDesign,
++  estimateHref,
++  studioLeadNote,
++  type StudioDesign,
++} from './studio-config';
++
++const design = (country: PriceCountry): StudioDesign => ({
++  ...emptyStudioDesign(new Date('2026-01-01T00:00:00Z'), country),
++  squareFeet: 900,
++});
++
++describe('the money follows the band', () => {
++  it('an Ontario design is in CAD and a New York one is in USD', () => {
++    expect(priceConfiguration(DEFAULT_CONFIGURATION, 900, 'CA').currency).toBe('CAD');
++    expect(priceConfiguration(DEFAULT_CONFIGURATION, 900, 'US').currency).toBe('USD');
++  });
++
++  it('the default is the home country, so every caller from before GEO-006 is unchanged', () => {
++    expect(priceConfiguration(DEFAULT_CONFIGURATION, 900).currency).toBe('CAD');
++    expect(bandForWork('installation').currency).toBe('CAD');
++  });
++
++  it('the figures come from the country’s own published band, not a conversion', () => {
++    /* The failure this prevents: a rate multiplied by an exchange rate nobody
++       published. Both band sets are written down, and the arithmetic is the
++       band times the area — GEO-005. */
++    const ca = priceConfiguration(DEFAULT_CONFIGURATION, 1000, 'CA');
++    const us = priceConfiguration(DEFAULT_CONFIGURATION, 1000, 'US');
++    expect(ca.perSqftLowCad).toBe(NEW_INSTALL.min);
++    expect(ca.perSqftHighCad).toBe(NEW_INSTALL.max);
++    expect(us.perSqftLowCad).toBe(US_NEW_INSTALL.min);
++    expect(us.perSqftHighCad).toBe(US_NEW_INSTALL.max);
++  });
++
++  it('a New York design never carries a Canadian figure', () => {
++    const us = priceConfiguration(DEFAULT_CONFIGURATION, 900, 'US');
++    const ca = priceConfiguration(DEFAULT_CONFIGURATION, 900, 'CA');
++    expect(us.estimatedLowCad).not.toBe(ca.estimatedLowCad);
++    expect(us.estimatedHighCad).not.toBe(ca.estimatedHighCad);
++  });
++});
++
++describe('the recommendations are ranked against the right prices', () => {
++  it('a New York visitor is matched on New York money', () => {
++    const input = { feels: [], squareFeet: 900 } as const;
++    const ca = matchFloors({ ...input, country: 'CA' });
++    const us = matchFloors({ ...input, country: 'US' });
++    expect(ca[0]!.estimate.currency).toBe('CAD');
++    expect(us[0]!.estimate.currency).toBe('USD');
++  });
++
++  it('omitting the country still means Ontario', () => {
++    expect(matchFloors({ feels: [], squareFeet: 900 })[0]!.estimate.currency).toBe('CAD');
++  });
++});
++
++describe('the region travels', () => {
++  it('a share link opens in the currency it was built in', () => {
++    const us = design('US');
++    const back = decodeStudioDesign(encodeStudioDesign(us));
++    expect(back?.country).toBe('US');
++    expect(priceConfiguration(back!.config, back!.squareFeet, back!.country).currency).toBe('USD');
++  });
++
++  it('an Ontario link stays exactly as short as it was before GEO-006', () => {
++    /* The home country is the absence of a parameter, so no existing shared
++       link changes meaning and none of them grew. */
++    expect(encodeStudioDesign(design('CA'))).not.toContain('n=');
++    expect(encodeStudioDesign(design('US'))).toContain('n=US');
++  });
++
++  it('a link with no region, or a broken one, opens on the home country', () => {
++    expect(countryOf(null)).toBe('CA');
++    expect(countryOf('')).toBe('CA');
++    expect(countryOf('nonsense')).toBe('CA');
++    expect(countryOf('US')).toBe('US');
++    expect(countryOf('us')).toBe('US');
++  });
++
++  it('the estimating desk is told which band set produced the figure', () => {
++    /* Without this the fixed price gets written against the wrong band, which
++       is the same defect one step further down the funnel. */
++    expect(estimateHref(design('US'))).toContain('region=US');
++    expect(estimateHref(design('CA'))).toContain('region=CA');
++  });
++
++  it('the lead note says the currency in words, not just a symbol', () => {
++    const note = studioLeadNote(design('US'));
++    expect(note).toMatch(/United States bands/);
++    expect(note).toContain('USD');
++    expect(studioLeadNote(design('CA'))).toMatch(/Ontario bands/);
++  });
++});
++
++describe('what the visitor is shown about it', () => {
++  it('both regions are offered, and each says where it applies', () => {
++    expect(STUDIO_COUNTRIES.map((c) => c.id)).toEqual(['CA', 'US']);
++    for (const c of STUDIO_COUNTRIES) {
++      expect(c.label.length).toBeGreaterThan(3);
++      expect(c.where.length).toBeGreaterThan(20);
++    }
++  });
++
++  it('the New York option names New York places and the Ontario one names Ontario places', () => {
++    const us = STUDIO_COUNTRIES.find((c) => c.id === 'US')!;
++    const ca = STUDIO_COUNTRIES.find((c) => c.id === 'CA')!;
++    expect(us.where).toMatch(/Buffalo|Rochester|Erie|Niagara County/);
++    expect(ca.where).toMatch(/Toronto|GTA/);
++  });
++});
+diff --git a/apps/web/lib/floor-studio/studio-config.test.ts b/apps/web/lib/floor-studio/studio-config.test.ts
+index e0e852e..adbc2ac 100644
+--- a/apps/web/lib/floor-studio/studio-config.test.ts
++++ b/apps/web/lib/floor-studio/studio-config.test.ts
+@@ -34,6 +34,9 @@ const design: StudioDesign = {
+   roomTypeId: 'living',
+   room: { lightLevel: 'bright', wallUndertone: 'warm', existingFloorTone: 'mid' },
+   budgetCad: 24000,
++  /* GEO-006: every design says which published bands it is priced against, and
++     the home country is the default so no older shared link changed meaning. */
++  country: 'CA',
+   savedAt: AT.toISOString(),
+ };
+ 
+diff --git a/apps/web/lib/floor-studio/studio-config.ts b/apps/web/lib/floor-studio/studio-config.ts
+index ce59463..b37a11d 100644
+--- a/apps/web/lib/floor-studio/studio-config.ts
++++ b/apps/web/lib/floor-studio/studio-config.ts
+@@ -49,6 +49,7 @@ import {
+ import { ROOM_TYPES, isFeelTag, roomTypeById, type FeelTag } from './match';
+ import type { LightLevel, RoomReading } from './room';
+ import type { ToneKey, UndertoneKey } from './catalog';
++import type { PriceCountry } from '@/content/constants/pricing';
+ 
+ export const STUDIO_CONFIG_KEY = 'ew-studio-v1';
+ 
+@@ -71,11 +72,39 @@ export type StudioDesign = {
+   roomTypeId?: string;
+   /** The measured reading, where a photo was analysed. Never the photo. */
+   room?: StudioRoomFacts;
++  /**
++   * WHICH BANDS THIS DESIGN IS PRICED AGAINST (GEO-006).
++   *
++   * GEO-004 established the rule the rest of this site holds: a New York
++   * surface shows no Canadian figure and an Ontario surface shows no United
++   * States one. verify-geo enforces it on the pages that NAME a market, and the
++   * studio names none — so the rule never reached it. Every figure it printed
++   * was Canadian, while the header and footer link it from all 26 New York
++   * markets. A homeowner in Amherst read a United States band on their city
++   * page and was quoted in Canadian dollars one click later.
++   *
++   * It is ASKED FOR and CARRIED, never inferred. No IP lookup, no locale
++   * sniffing: a visitor on a Toronto laptop planning a Buffalo rental is not a
++   * Canadian job, and guessing would put a wrong currency in front of them with
++   * no way to see why. The entry links set it, the control changes it, and the
++   * share code carries it so a link opens in the currency it was built in.
++   */
++  country: PriceCountry;
++  /** The optional budget the visitor typed, in the currency of `country`. */
+   budgetCad?: number;
+   /** ISO timestamp of the last edit. */
+   savedAt: string;
+ };
+ 
++/** The two countries this business publishes bands for. */
++export const STUDIO_COUNTRIES: { id: PriceCountry; label: string; where: string }[] = [
++  { id: 'CA', label: 'Ontario', where: 'Toronto, the GTA, Niagara and southwestern Ontario' },
++  { id: 'US', label: 'New York', where: 'Buffalo, Niagara County, Erie County and Rochester' },
++];
++
++export const countryOf = (value: string | null | undefined): PriceCountry =>
++  value === 'US' || value === 'us' ? 'US' : 'CA';
++
+ export const roomFactsFrom = (reading: RoomReading): StudioRoomFacts => ({
+   lightLevel: reading.lightLevel,
+   wallUndertone: reading.wallUndertone,
+@@ -105,6 +134,9 @@ export function encodeStudioDesign(design: StudioDesign): string {
+     params.set('e', design.room.existingFloorTone);
+   }
+   if (design.budgetCad && design.budgetCad > 0) params.set('b', String(Math.round(design.budgetCad)));
++  /* Only when it is not the home country, so an Ontario link stays as short as
++     it was before GEO-006 and a New York one says so out loud. */
++  if (design.country === 'US') params.set('n', 'US');
+   return params.toString();
+ }
+ 
+@@ -161,6 +193,7 @@ export function decodeStudioDesign(input: string, now = new Date()): StudioDesig
+     roomTypeId: roomTypeId && roomTypeById(roomTypeId) ? roomTypeId : undefined,
+     room,
+     budgetCad: Number.isFinite(budget) && budget > 0 ? Math.round(budget) : undefined,
++    country: countryOf(params.get('n')),
+     savedAt: now.toISOString(),
+   };
+ }
+@@ -226,6 +259,7 @@ export function readStudioDesign(now = Date.now()): StudioDesign | null {
+       roomTypeId: parsed.roomTypeId && roomTypeById(parsed.roomTypeId) ? parsed.roomTypeId : undefined,
+       room: parsed.room,
+       budgetCad: typeof parsed.budgetCad === 'number' && parsed.budgetCad > 0 ? parsed.budgetCad : undefined,
++      country: countryOf(typeof parsed.country === 'string' ? parsed.country : null),
+       savedAt: parsed.savedAt,
+     };
+   } catch {
+@@ -242,10 +276,11 @@ export function clearStudioDesign(): void {
+   }
+ }
+ 
+-export const emptyStudioDesign = (now = new Date()): StudioDesign => ({
++export const emptyStudioDesign = (now = new Date(), country: PriceCountry = 'CA'): StudioDesign => ({
+   config: DEFAULT_CONFIGURATION,
+   squareFeet: 900,
+   feels: [],
++  country,
+   savedAt: now.toISOString(),
+ });
+ 
+@@ -264,7 +299,7 @@ export function describeStudioDesign(design: StudioDesign): string {
+  * somebody reads it before they knock on the door.
+  */
+ export function studioLeadNote(design: StudioDesign): string {
+-  const estimate = priceConfiguration(design.config, design.squareFeet);
++  const estimate = priceConfiguration(design.config, design.squareFeet, design.country);
+   const lines = [
+     `Floor Studio ${studioRef(design)}`,
+     describeStudioDesign(design),
+@@ -276,7 +311,10 @@ export function studioLeadNote(design: StudioDesign): string {
+       `Their photo read as: ${design.room.lightLevel} light, ${design.room.wallUndertone} walls, ${design.room.existingFloorTone} existing floor.`,
+     );
+   }
+-  if (design.budgetCad) lines.push(`Budget they typed: ${design.budgetCad.toLocaleString('en-CA')} CAD.`);
++  lines.push(`Priced against the ${design.country === 'US' ? 'United States' : 'Ontario'} bands, in ${estimate.currency}.`);
++  if (design.budgetCad) {
++    lines.push(`Budget they typed: ${design.budgetCad.toLocaleString('en-CA')} ${estimate.currency}.`);
++  }
+   return lines.join('\n');
+ }
+ 
+@@ -299,6 +337,10 @@ export function estimateHref(design: StudioDesign, service = 'installation'): st
+     sqft: String(design.squareFeet),
+     service,
+     source: 'floor-studio',
++    /* The estimating desk has to know which band set produced the figure the
++       visitor was looking at, or the fixed price will be written against the
++       wrong one. GEO-006. */
++    region: design.country,
+   });
+   return `/estimate?${params.toString()}#form`;
+ }
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 2f73bfd..d13d304 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -1099,6 +1099,18 @@ export const designToMarkdown = (): string => {
+     '',
+     'Moving between them changes nothing about the floor, the catalogue or the price.',
+     '',
++    '## Region and currency',
++    '',
++    'The studio is priced against the published bands of the region the floor is in: Ontario in',
++    'Canadian dollars, New York State in United States dollars. It is ASKED FOR and CARRIED, never',
++    'inferred \u2014 no IP lookup and no locale sniffing, because a visitor on a Toronto laptop planning',
++    'a Buffalo rental is not a Canadian job. A city page links the studio with its own region,',
++    'the studio states on screen which bands are in use, the visitor can change it, and the share',
++    'code carries it so a link opens in the currency it was built in.',
++    '',
++    '- ' + abs('/floor-studio') + '?region=US opens against the New York bands.',
++    '- ' + abs('/floor-studio') + '?region=CA, or no parameter, opens against the Ontario bands.',
++    '',
+     '## Camera',
+     '',
+     '- Entry point: ' + abs('/floor-studio') + '#live opens the camera directly.',
+@@ -1139,7 +1151,8 @@ export const floorStudioToMarkdown = (): string => {
+     '',
+     '> Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood',
+     '> configurations rendered into it — live, at video rate — with an estimated installed range',
+-    '> in Canadian dollars. Every frame is analysed and composited in the browser and is never',
++    '> in the currency of the region the floor is in. Every frame is analysed and composited',
++    '> in the browser and is never',
+     '> uploaded, and no image model is involved: every floor shown is one Ecowoods can supply',
+     '> and install.',
+     '',
+diff --git a/docs/AUDIT_03_INTEGRATION.md b/docs/AUDIT_03_INTEGRATION.md
+index 8631926..c5d3bd7 100644
+--- a/docs/AUDIT_03_INTEGRATION.md
++++ b/docs/AUDIT_03_INTEGRATION.md
+@@ -161,20 +161,31 @@ Recorded because an audit that only lists faults is not an audit.
+ | Footer as a full sitemap | **Yes** — 43 links |
+ | Account / portal entry | **Yes** — login, My Page, Admin |
+ | Docs surface for machines | **Beyond it** — 20 markdown twins, llms.txt, ai.txt, `/api/knowledge`, 36 agentic endpoints |
+-| Region selector | **No, and this is GC-026** — 26 New York markets get a Canadian-dollar studio |
++| Region selector | **Yes, as of GEO-006** — the studio says which published bands it is pricing against, and the city pages link it with their own |
+ 
+ ---
+ 
+ ## 7. THE HONEST GRADE
+ 
+-**A−, and the missing grade has one name: GC-026.**
+-
+-Every structural question in this audit now answers yes. What is left is not a
+-gap in reachability, it is a contradiction in content: a homeowner in Amherst
+-reads a United States band on their city page and is one tap from a tool that
+-prices their floor in Canadian dollars. GEO-006 closes it, and until it does
+-this platform states two versions of one fact — which is the single class of
+-error this repository exists to prevent.
++**A. GC-026 is closed by GEO-006, and it was the last one.**
++
++When this audit was written the grade was A−, and the missing grade had one
++name: a homeowner in Amherst read a United States band on their city page and
++was one tap from a tool that priced their floor in Canadian dollars. The studio
++carries a region now — asked for and carried, never inferred — the 89 city pages
++link it with their own, and the share code and the estimate handoff both take it
++with them.
++
++Every structural question in this audit answers yes, and the contradiction that
++held the grade is gone. What remains is not a defect but a debt, recorded in the
++log rather than hidden: the estimate fields are still named `…Cad` while
++carrying whatever currency their band did. The values and every rendered figure
++are correct — `currency` says which — and renaming them crosses `packages/shared`,
++the chat tool, the estimate API and the lead schema, which is a patch of its own.
++
++Open, and none of them a contradiction: GC-021 (job cards keyed by display
++name), GC-023 (cache windows), and `ecowoodshardwood.com`, which needs a DNS
++panel rather than a commit.
+ 
+ ---
+ 
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 1fc9fb0..2b6468d 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -74,7 +74,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | GC-023 | open | measure after the first geography deploy |
+ | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
+ | GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
+-| GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
++| GC-026 | **closed by GEO-006** | the studio is priced against the bands of the region the floor is in; the region is asked for and carried, never inferred |
+ | AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
+ | AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
+ | LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
+@@ -1070,3 +1070,62 @@ somebody else's hostname, inside this company's own chat window. A trailing
+ `verify-pricing-source` fired on a price literal in this work's own test file. It
+ was removed rather than marked `pricing-allow`, on the same reasoning as before:
+ a band written into a test is a second copy of a published band.
++
++---
++
++## GEO-006 · the studio has a country now
++
++GC-026, closed. The last surface on this site that assumed a visitor's country.
++
++### What was wrong
++
++GEO-004 set the rule: a New York surface shows no Canadian figure and an
++Ontario surface shows no United States one. `verify-geo` enforces it on every
++page that NAMES a market — and the studio names none, so the rule never reached
++it, while the header and footer link it from all 26 New York markets.
++
++| Where | What it did |
++|---|---|
++| `catalog.ts` | `bandForWork(work)` at its `'CA'` default |
++| `FloorStudio.tsx` | `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded |
++| the budget field | labelled "optional, CAD" |
++| `floor-studio/page.tsx` | told machines the range was "in Canadian dollars" |
++| `studioLeadNote` | wrote "CAD" into the estimating desk's note |
++
++A homeowner in Amherst read a United States band on `/service-areas/amherst`,
++tapped "see it in your room", and was quoted in Canadian dollars.
++
++### What closed it
++
++`StudioDesign` carries a `country`. It is ASKED FOR and CARRIED, never inferred
++— no IP lookup, no locale sniffing, because a visitor on a Toronto laptop
++planning a Buffalo rental is not a Canadian job, and guessing would put a wrong
++currency in front of them with no way to see why.
++
++- **The city pages set it.** All 89 now carry a studio CTA linking
++  `?region=US` or `?region=CA` — and until GEO-006 they reached the studio only
++  through the global chrome, which is exactly how the defect survived.
++- **The studio states it.** A region control sits above the range, saying which
++  bands are in use and where they apply, linked to `/pricing` where both are
++  published.
++- **The share code carries it.** `n=US` only when it is not the home country,
++  so no Ontario link that already exists changed meaning or grew.
++- **The handoff carries it.** `estimateHref` adds `region`, so the fixed price
++  is written against the band the visitor was actually shown.
++
++GEO-005 had already done the hard half: `EstimateResult` has carried `currency`
++from the band it was given since then, so nothing downstream needed to learn a
++country — only to read the currency instead of assuming one. Both figure sets
++come from their own published band times the area. **No exchange rate is applied
++anywhere**, because nobody published one.
++
++### Naming debt, recorded rather than hidden
++
++The fields are still `estimatedLowCad`, `estimatedHighCad`, `perSqftCad`,
++`budgetCad`. The VALUES are correct — they are whatever band came in, and
++`currency` says which — but the names now say CAD about a figure that may be
++USD. Renaming them crosses `packages/shared`, the chat tool, the estimate API
++and the lead schema, which is a patch of its own and not one to hide inside
++this one. It is a misleading name, it is not a misleading claim: nothing a
++visitor or a machine reads says CAD about a USD figure. Logged here so it is
++not discovered as a surprise.
+-- 
+2.43.0
+
