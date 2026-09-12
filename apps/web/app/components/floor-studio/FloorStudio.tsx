@@ -322,7 +322,7 @@ export default function FloorStudio() {
     if (stage !== 'studio') return;
     /* MEAS-01 — the design gets its id HERE, in an effect, and the id is set
        back into state rather than left inside saveStudioDesign.
-       
+
        In an effect because minting during render would mint a different id on
        the server than in the browser, and React would report a hydration
        mismatch on the first paint. Back into state because the URL below, the
