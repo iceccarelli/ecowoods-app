@@ -1,0 +1,1167 @@
+From 28e09eb403abdb3e87f3c404b73e557aa8636a38 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 15:01:14 +0000
+Subject: [PATCH] =?UTF-8?q?feat(structure):=20AUDIT-02=20and=20VIS-02=20?=
+ =?UTF-8?q?=E2=80=94=20five=20share=20cards,=20and=20the=20wing=20with=20n?=
+ =?UTF-8?q?o=20door?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FOUR QUESTIONS, MEASURED RATHER THAN ASSERTED. docs/AUDIT_02_STRUCTURE.md
+carries the working; this is what it found and what this patch changes.
+
+"ARE THERE TWO SIMILAR PAGES?" — MEASURABLY NO, AND I LOOKED HARD
+
+Prose from all 58 public route templates, normalised, compared as 4-word
+shingles. Highest overlap between any two pages: 12.6%, /guides/[slug] against
+/services/[slug] — shared breadcrumb, CTA and next-step rail, not shared
+content. No identical title except the notFound fallback. No identical meta
+description. No pair of pages on this site tells the same story.
+
+TREE-01 · BUT THE ARTICLE TREE HAD A PARENT THE MENU NEVER NAMED
+
+/resources says "everything we publish, organised by what you are trying to
+do". /technical-library says "the engineering reference behind our work". Those
+are different jobs and both are worth having. But ArticleLayout.tsx:29 makes
+/technical-library the breadcrumb parent of EVERY article, sitemap.ts gives it
+priority 0.95, /resources links down to it while it links back to nothing — and
+it appeared in no menu at all. A visitor following a breadcrumb up from an
+article landed on a page the navigation could not show them the position of.
+
+The Reference column now names both, with notes that say which is which. Same
+fix as UI-NAV-02 made for /floor-studio and /design, for the same reason: the
+labels alone read as duplicates and the notes do not.
+
+VIS-02 · FIVE PAGES SHARED ONE SHARE CARD, AND THEY WERE THE FIVE THAT MATTER
+
+verify:images passed and was right about what it checks: no slot declared,
+bundled and sitemapped without a page drawing it. What it does not check is the
+image a page hands to WhatsApp, iMessage, Slack, LinkedIn and every crawler
+that reads Open Graph.
+
+24 of 55 public routes declared openGraph.images. Most of the other 31 are
+correct to inherit the default. Five were not, and each carried a full
+openGraph block — title, description, type, url — with the images key simply
+absent: the four commercial head terms and Floor Studio. Sharing the single
+most valuable page on this site produced a card identical to sharing the
+privacy policy. VIS-01 gave nine pages a card of their own and stopped one row
+short of the ones that earn the most.
+
+Five cards, drawn in the same flat schematic language as those nine — cream
+#FAF7EF, the brand's dark, green and copper, subject in the left forty percent,
+right third left empty because the platform lays its own title over it. One
+idea each: five courses of plank with staggered end joints and the starting
+course in copper; three abrasive passes coarse to fine and then one clean
+finish bar; a four-step section with the treads picked out from the risers;
+five board cross-sections showing five failures, all on one subfloor line; a
+floor plane in perspective with chevron laid into it and a handle at each
+corner.
+
+Brace-depth checked on all five that `images` is a DIRECT child of openGraph
+and not nested inside a sibling. That is the VIS-01a bug and it cost a build.
+
+WHAT THE CAMERA AND AI ACTUALLY REACH
+
+Chat on every page, ⌘K with the whole corpus on every page, Floor Studio at
+depth 0 from header and footer. Native camera capture on phones only
+(capture="environment" — a silent file picker on desktop). Live preview,
+segmentation, depth and surface normals reach nobody, because none of it
+exists. Recommendations always carry their reasons; the range always comes from
+one price source. New York still gets Canadian dollars — GC-026, open.
+
+Two things reach every visitor who uploads a photo and should not: AV-01 paints
+hardwood over a person's leg, a light dog and a jute rug; AV-02 claims
+`measured` at 72% error in a room with a rug. Neither is a reachability
+problem, and neither is improved by more people finding the feature.
+
+Verified: 66 guards pass. verify:images 162 slots, 162 on disk, 0 pending, 0
+orphans. verify:navigation 58 public routes, all within 3 clicks, chrome 44, no
+duplicate labels. lib/navigation.test.ts 198 assertions green. Orphans among
+public routes: 3, all correct — /design/spec in-flow, /r a short link,
+/verify-email an email flow.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/data/illustration-images.ts      |  12 +-
+ apps/web/app/floor-studio/page.tsx            |   2 +
+ .../hardwood-floor-problems-toronto/page.tsx  |   2 +
+ .../page.tsx                                  |   2 +
+ .../app/hardwood-flooring-toronto/page.tsx    |   2 +
+ apps/web/app/hardwood-stairs-toronto/page.tsx |   2 +
+ apps/web/lib/images.ts                        |  36 ++++
+ apps/web/lib/navigation.ts                    |  11 ++
+ .../public/illustrations/og-floor-studio.webp | Bin 0 -> 12066 bytes
+ .../public/illustrations/og-installation.webp | Bin 0 -> 3902 bytes
+ .../web/public/illustrations/og-problems.webp | Bin 0 -> 3576 bytes
+ .../public/illustrations/og-refinishing.webp  | Bin 0 -> 6156 bytes
+ apps/web/public/illustrations/og-stairs.webp  | Bin 0 -> 5940 bytes
+ docs/AUDIT_02_STRUCTURE.md                    | 182 ++++++++++++++++++
+ docs/GEO_CONTRADICTION_LOG.md                 |  70 +++++++
+ 15 files changed, 320 insertions(+), 1 deletion(-)
+ create mode 100644 apps/web/public/illustrations/og-floor-studio.webp
+ create mode 100644 apps/web/public/illustrations/og-installation.webp
+ create mode 100644 apps/web/public/illustrations/og-problems.webp
+ create mode 100644 apps/web/public/illustrations/og-refinishing.webp
+ create mode 100644 apps/web/public/illustrations/og-stairs.webp
+ create mode 100644 docs/AUDIT_02_STRUCTURE.md
+
+diff --git a/apps/web/app/data/illustration-images.ts b/apps/web/app/data/illustration-images.ts
+index 77e3407..6156653 100644
+--- a/apps/web/app/data/illustration-images.ts
++++ b/apps/web/app/data/illustration-images.ts
+@@ -1,6 +1,6 @@
+ // AUTO-GENERATED by scripts/gen-illustration-imports.mjs — do not edit by hand.
+ //
+-// Static image imports, so Next bundles all 157 diagrams into
++// Static image imports, so Next bundles all 162 diagrams into
+ // _next/static rather than serving them from public/.
+ //
+ // WHY THIS FILE EXISTS AT ALL
+@@ -93,16 +93,21 @@ import og_contact from '../../public/illustrations/og-contact.webp';
+ import og_corridors from '../../public/illustrations/og-corridors.webp';
+ import og_data from '../../public/illustrations/og-data.webp';
+ import og_estimate from '../../public/illustrations/og-estimate.webp';
++import og_floor_studio from '../../public/illustrations/og-floor-studio.webp';
+ import og_framework from '../../public/illustrations/og-framework.webp';
+ import og_glossary from '../../public/illustrations/og-glossary.webp';
++import og_installation from '../../public/illustrations/og-installation.webp';
+ import og_market from '../../public/illustrations/og-market.webp';
+ import og_press from '../../public/illustrations/og-press.webp';
+ import og_pricing from '../../public/illustrations/og-pricing.webp';
++import og_problems from '../../public/illustrations/og-problems.webp';
+ import og_quote_check from '../../public/illustrations/og-quote-check.webp';
+ import og_realtors from '../../public/illustrations/og-realtors.webp';
++import og_refinishing from '../../public/illustrations/og-refinishing.webp';
+ import og_reviews from '../../public/illustrations/og-reviews.webp';
+ import og_service_areas from '../../public/illustrations/og-service-areas.webp';
+ import og_services from '../../public/illustrations/og-services.webp';
++import og_stairs from '../../public/illustrations/og-stairs.webp';
+ import og_standards from '../../public/illustrations/og-standards.webp';
+ import paper_climate from '../../public/illustrations/paper-climate.webp';
+ import paper_craft from '../../public/illustrations/paper-craft.webp';
+@@ -252,16 +257,21 @@ export const ILLUSTRATION_IMAGES: Record<string, StaticImageData> = {
+   'og-corridors': og_corridors,
+   'og-data': og_data,
+   'og-estimate': og_estimate,
++  'og-floor-studio': og_floor_studio,
+   'og-framework': og_framework,
+   'og-glossary': og_glossary,
++  'og-installation': og_installation,
+   'og-market': og_market,
+   'og-press': og_press,
+   'og-pricing': og_pricing,
++  'og-problems': og_problems,
+   'og-quote-check': og_quote_check,
+   'og-realtors': og_realtors,
++  'og-refinishing': og_refinishing,
+   'og-reviews': og_reviews,
+   'og-service-areas': og_service_areas,
+   'og-services': og_services,
++  'og-stairs': og_stairs,
+   'og-standards': og_standards,
+   'paper-climate': paper_climate,
+   'paper-craft': paper_craft,
+diff --git a/apps/web/app/floor-studio/page.tsx b/apps/web/app/floor-studio/page.tsx
+index 1b8c439..64fb720 100644
+--- a/apps/web/app/floor-studio/page.tsx
++++ b/apps/web/app/floor-studio/page.tsx
+@@ -11,6 +11,7 @@ import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
+ import { FEELS } from '@/lib/floor-studio/match';
+ import { NextStep } from '@/app/components/NextStep';
+ import FloorStudio from '@/app/components/floor-studio/FloorStudio';
++import { illustrationImage } from '@/app/data/illustration-images';
+ 
+ /**
+  * /floor-studio — ECOWOODS FLOOR STUDIO.
+@@ -50,6 +51,7 @@ export const metadata: Metadata = {
+     `Upload a photo of your room and see real ${BUSINESS_NAP.name} floors in it — species, finish, pattern and board width, with a live estimated installed range in CAD. The photo never leaves your device.`,
+   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
+   openGraph: {
++    images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
+     title: 'Ecowoods Floor Studio — see your new floor in your room',
+     description:
+       'A photo of your room, a real Ecowoods floor rendered into it, and a live installed range. A range, not a quote.',
+diff --git a/apps/web/app/hardwood-floor-problems-toronto/page.tsx b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+index b001258..7230e8a 100644
+--- a/apps/web/app/hardwood-floor-problems-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-problems-toronto/page.tsx
+@@ -15,6 +15,7 @@ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
+ import { IllustrationPair } from '../components/Illustration';
+ import { NextStep } from '@/app/components/NextStep';
+ import { TERRITORY } from '@/lib/geo/territory';
++import { illustrationImage } from '@/app/data/illustration-images';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -30,6 +31,7 @@ export const metadata: Metadata = {
+     'Every failure mode on this page is one mechanism — moisture — and the diagnosis is free.',
+   alternates: { canonical: '/hardwood-floor-problems-toronto' },
+   openGraph: {
++    images: [{ url: illustrationImage('og-problems')?.src ?? '/illustrations/og-problems.webp', width: 1200, height: 630 }],
+     title: 'Hardwood Floor Problems Toronto — Ecowoods',
+     description:
+       'Cupping, gapping, crowning, buckling, edge peaking. Cause, prognosis and price for each, ' +
+diff --git a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+index befb4b6..28444fd 100644
+--- a/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
++++ b/apps/web/app/hardwood-floor-refinishing-toronto/page.tsx
+@@ -15,6 +15,7 @@ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { ProcessVideo } from '../components/ProcessVideo';
+ import { CatalogueRail } from '../components/CatalogueRail';
+ import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
++import { illustrationImage } from '@/app/data/illustration-images';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -25,6 +26,7 @@ export const metadata: Metadata = {
+   description: `Hardwood floor refinishing and dust-free sanding across Toronto and the GTA. ${band('fullSandAndFinish')} per square foot for a full sand and finish, ${band('screenAndRecoat')} for a screen and recoat. The four-machine sequence is published in full.`,
+   alternates: { canonical: '/hardwood-floor-refinishing-toronto', types: { 'text/markdown': '/hardwood-floor-refinishing-toronto.md' } },
+   openGraph: {
++    images: [{ url: illustrationImage('og-refinishing')?.src ?? '/illustrations/og-refinishing.webp', width: 1200, height: 630 }],
+     title: 'Hardwood Floor Refinishing Toronto — Ecowoods',
+     description: `Published prices, published machine sequence, HEPA containment so the house stays livable. Serving ${SERVICE_AREAS.length} areas.`,
+     type: 'website',
+diff --git a/apps/web/app/hardwood-flooring-toronto/page.tsx b/apps/web/app/hardwood-flooring-toronto/page.tsx
+index 71ea2fb..a45521d 100644
+--- a/apps/web/app/hardwood-flooring-toronto/page.tsx
++++ b/apps/web/app/hardwood-flooring-toronto/page.tsx
+@@ -20,6 +20,7 @@ import { Illustration } from '../components/Illustration';
+ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { CatalogueRail } from '../components/CatalogueRail';
+ import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
++import { illustrationImage } from '@/app/data/illustration-images';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -29,6 +30,7 @@ export const metadata: Metadata = {
+   description: `Hardwood flooring installation and refinishing across Toronto and the GTA. Price bands published up front (${band('newInstall')} per sq ft installed), the full installation standard published for anyone to hold us to, and salaried crews rather than subcontractors.`,
+   alternates: { canonical: '/hardwood-flooring-toronto', types: { 'text/markdown': '/hardwood-flooring-toronto.md' } },
+   openGraph: {
++    images: [{ url: illustrationImage('og-installation')?.src ?? '/illustrations/og-installation.webp', width: 1200, height: 630 }],
+     title: 'Hardwood Flooring Toronto — Ecowoods',
+     description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across ${TERRITORY_SHORT}.`,
+     type: 'website',
+diff --git a/apps/web/app/hardwood-stairs-toronto/page.tsx b/apps/web/app/hardwood-stairs-toronto/page.tsx
+index 75beebf..726474d 100644
+--- a/apps/web/app/hardwood-stairs-toronto/page.tsx
++++ b/apps/web/app/hardwood-stairs-toronto/page.tsx
+@@ -15,6 +15,7 @@ import { EvidenceRail, CASES } from '../components/EvidenceRail';
+ import { IllustrationPair } from '../components/Illustration';
+ import { CatalogueRail } from '../components/CatalogueRail';
+ import { TERRITORY_SHORT } from '@/lib/geo/territory';
++import { illustrationImage } from '@/app/data/illustration-images';
+ 
+ const money = (n: number) => `$${n.toFixed(2)}`;
+ const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+@@ -29,6 +30,7 @@ export const metadata: Metadata = {
+     'square foot, what moves that number, and the standard the finished work is judged against.',
+   alternates: { canonical: '/hardwood-stairs-toronto', types: { 'text/markdown': '/hardwood-stairs-toronto.md' } },
+   openGraph: {
++    images: [{ url: illustrationImage('og-stairs')?.src ?? '/illustrations/og-stairs.webp', width: 1200, height: 630 }],
+     title: 'Hardwood Stairs Toronto — Ecowoods',
+     description:
+       'Treads, risers, nosings and stringers — the part of the job a floor quote usually ' +
+diff --git a/apps/web/lib/images.ts b/apps/web/lib/images.ts
+index ce08c9f..ec92fc2 100644
+--- a/apps/web/lib/images.ts
++++ b/apps/web/lib/images.ts
+@@ -133,6 +133,14 @@ const HREFS: Record<string, string> = {
+   'og-commercial': '/commercial',
+   'og-realtors': '/realtors',
+   'og-corridors': '/corridors',
++  /* VIS-02 — the five pages that had no share card of their own. Four are the
++     commercial head terms and one is the flagship feature; every one of them
++     was serving the site default, which is the same card /terms serves. */
++  'og-installation': '/hardwood-flooring-toronto',
++  'og-refinishing': '/hardwood-floor-refinishing-toronto',
++  'og-stairs': '/hardwood-stairs-toronto',
++  'og-problems': '/hardwood-floor-problems-toronto',
++  'og-floor-studio': '/floor-studio',
+   'og-service-areas': '/service-areas',
+   'og-quote-check': '/quote-check',
+   'og-contact': '/contact',
+@@ -1476,6 +1484,34 @@ export const IMAGES: SiteImage[] = [
+     'Ecowoods measured case studies — share card.',
+     'A floor with an open document of readings beside it on a cream field, subject left, right third empty.',
+   ),
++  /* VIS-02. One idea per card, drawn in the same flat schematic language as the
++     nine above: cream field, subject in the left forty percent, right third left
++     empty because the platform lays its own title over it. */
++  og(
++    'og-installation',
++    'Ecowoods hardwood installation in Toronto — share card.',
++    'Five courses of plank with staggered end joints on a cream field, the starting course in copper, subject left, right third empty.',
++  ),
++  og(
++    'og-refinishing',
++    'Ecowoods hardwood floor refinishing in Toronto — share card.',
++    'Three abrasive passes from coarse to fine and then a single clean finish bar, on a cream field, subject left, right third empty.',
++  ),
++  og(
++    'og-stairs',
++    'Ecowoods hardwood stairs in Toronto — share card.',
++    'A four-step stair section with treads picked out from risers, on a cream field, subject left, right third empty.',
++  ),
++  og(
++    'og-problems',
++    'Cupping, crowning, gapping, buckling and edge peaking — share card.',
++    'Five board cross-sections showing five failures, all sitting on one subfloor line, on a cream field, subject left, right third empty.',
++  ),
++  og(
++    'og-floor-studio',
++    'Ecowoods Floor Studio — see your new floor in your room — share card.',
++    'A room floor plane in perspective with a chevron pattern laid into it and a draggable handle at each corner, on a cream field, subject left, right third empty.',
++  ),
+ ];
+ 
+ export const getImages = (): SiteImage[] => IMAGES;
+diff --git a/apps/web/lib/navigation.ts b/apps/web/lib/navigation.ts
+index aea36eb..e350dcf 100644
+--- a/apps/web/lib/navigation.ts
++++ b/apps/web/lib/navigation.ts
+@@ -191,6 +191,17 @@ export const LIBRARY_MENU: MegaColumn[] = [
+     title: 'Reference',
+     href: '/resources',
+     items: [
++      /* TWO LIBRARY DOORS, AND THE MENU NAMED ONLY ONE (VIS-02).
++         /resources is "everything we publish, organised by what you are trying
++         to do" — the front door, task-first. /technical-library is "the
++         engineering reference behind our work" — the corpus, and the breadcrumb
++         parent ArticleLayout gives EVERY article. It sits at sitemap priority
++         0.95 and appeared in no menu at all, so a visitor who followed a
++         breadcrumb up from an article landed on a page the navigation could not
++         show them the position of. Both are named now, and the notes say which
++         is which — the same fix UI-NAV-02 made for /floor-studio and /design,
++         for the same reason: the labels alone read as duplicates. */
++      { label: 'Technical library', href: '/technical-library', note: 'The engineering reference every article sits under' },
+       { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
+       /* The catalogues sit in Reference and not in the primary conversion nav:
+          Quote and Call come first, and a download is not a conversion. */
+diff --git a/apps/web/public/illustrations/og-floor-studio.webp b/apps/web/public/illustrations/og-floor-studio.webp
+new file mode 100644
+index 0000000000000000000000000000000000000000..7585260e5d0da19a73db4837b66ad37e4830f34f
+GIT binary patch
+literal 12066
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/apps/web/public/illustrations/og-installation.webp b/apps/web/public/illustrations/og-installation.webp
+new file mode 100644
+index 0000000000000000000000000000000000000000..d0505ce88d9596db3d85165d3b641f4cb7fe8127
+GIT binary patch
+literal 3902
+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
+MuAYDXzubA_Z=)g$3IG5A
+
+literal 0
+HcmV?d00001
+
+diff --git a/apps/web/public/illustrations/og-problems.webp b/apps/web/public/illustrations/og-problems.webp
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe4acf7da779a36337b00029c15d66c16995b320
+GIT binary patch
+literal 3576
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/apps/web/public/illustrations/og-refinishing.webp b/apps/web/public/illustrations/og-refinishing.webp
+new file mode 100644
+index 0000000000000000000000000000000000000000..f519278651548d2dde7b57e6d56c6fb39abfbec7
+GIT binary patch
+literal 6156
+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
+Wv(UBqyq*DF+`~gu|G#(rcl-ywM+yS~
+
+literal 0
+HcmV?d00001
+
+diff --git a/apps/web/public/illustrations/og-stairs.webp b/apps/web/public/illustrations/og-stairs.webp
+new file mode 100644
+index 0000000000000000000000000000000000000000..2a8f33ef354100b39ff87442fb512925efec4b4a
+GIT binary patch
+literal 5940
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/docs/AUDIT_02_STRUCTURE.md b/docs/AUDIT_02_STRUCTURE.md
+new file mode 100644
+index 0000000..f59cd10
+--- /dev/null
++++ b/docs/AUDIT_02_STRUCTURE.md
+@@ -0,0 +1,182 @@
++# AUDIT #2 — THE TREE, THE IMAGES, AND THE AI
++
++Four questions, answered by measuring rather than asserting.
++
++**Baseline:** `main` after AUDIT-01 + NAV-03.
++**Method:** every number below comes from a script run against the source. Where
++a question can only be settled against production, the probe is given rather
++than the answer.
++
++---
++
++## Q1. "Are there two similar web pages inside ecowoods.ca?"
++
++**Measurably, no — and I looked hard.**
++
++Prose was extracted from all 58 public route templates (page file plus its
++siblings), normalised, and compared as 4-word shingles, Jaccard:
++
++| Pair | Overlap |
++|---|---|
++| `/guides/[slug]` ↔ `/services/[slug]` | **12.6%** |
++| everything else | below 12% |
++
++12.6% between two *templates* is shared chrome — breadcrumb, CTA, next-step
++rail — not shared content. **No pair of pages on this site tells the same story.**
++
++- Identical `<title>`: none, except the `notFound()` fallback on two dynamic routes.
++- Identical meta description: **none**.
++
++### But the tree had a wing the navigation never named
++
++The real risk was never duplicate prose. It is two pages doing one job — which
++is the thing you have caught twice already (`/floor-studio` vs `/design`, and
++the three geography-shaped pages). One more was hiding:
++
++| Page | What it says it is | Where it appeared |
++|---|---|---|
++| `/resources` | *"Everything we publish, organised by what you are trying to do"* | the **Reference** column of the Library menu |
++| `/technical-library` | *"The engineering reference behind our work"* | **no menu at all** |
++
++They are not duplicates — a front door and a wing. But:
++
++- `ArticleLayout.tsx:29` makes `/technical-library` the **breadcrumb parent of
++  every article on the site**
++- `sitemap.ts:150` gives it **priority 0.95**
++- `/resources` links *down* to it as a sub-item, and it links back to nothing
++- and the navigation named neither the relationship nor the page
++
++So a visitor who followed a breadcrumb up from any article landed on a page the
++menu could not show them the position of. **Fixed:** the Reference column now
++names both, with notes that say which is which — the same fix UI-NAV-02 made for
++`/floor-studio` and `/design`, for the same reason: the labels alone read as
++duplicates, the notes do not.
++
++### The tree, as it now stands
++
++- 58 public routes, every one within **3 clicks** of the homepage (`verify:navigation`)
++- **55 destinations** in the chrome, projected from one module into the desktop
++  panels, the mobile drawer and ⌘K
++- orphans — reachable from no other page and no menu: **3**, all correct:
++  `/design/spec` (reached in-flow from the configurator), `/r` (a short link),
++  `/verify-email` (an email flow)
++
++---
++
++## Q2. "Are all the images displayed where they are supposed to be?"
++
++**Now yes. Five were not, and they were the five that mattered most.**
++
++`verify:images` passed at the baseline, and it was right about what it checks:
++no slot is declared, bundled and sitemapped without a page drawing it. What it
++does not check is the **share card** — the image a page hands to WhatsApp,
++iMessage, Slack, LinkedIn and every AI crawler that reads Open Graph.
++
++Measured across all 55 public routes: **24 declared their own `openGraph.images`;
++31 did not.** Most of the 31 are correct to inherit the site default. Five were
++not:
++
++| Page | What it is | Card it served |
++|---|---|---|
++| `/hardwood-flooring-toronto` | the installation head term | site default |
++| `/hardwood-floor-refinishing-toronto` | the refinishing head term | site default |
++| `/hardwood-stairs-toronto` | the stairs head term | site default |
++| `/hardwood-floor-problems-toronto` | the problems head term | site default |
++| `/floor-studio` | the flagship feature | site default |
++
++Each carried a full `openGraph` block — title, description, type, url — and no
++`images` key. So sharing the single most commercially valuable page on this site
++produced a card **identical to sharing the privacy policy**.
++
++**Fixed.** Five new cards, drawn in the same flat schematic language as the nine
++VIS-01 added — cream field `#FAF7EF`, the brand's dark/green/copper, subject in
++the left forty percent, right third left empty because the platform lays its own
++title over it:
++
++| Slot | One idea |
++|---|---|
++| `og-installation` | five courses of plank with staggered end joints, the starting course in copper |
++| `og-refinishing` | three abrasive passes coarse → fine, then one clean finish bar |
++| `og-stairs` | a four-step section with treads picked out from risers |
++| `og-problems` | five board cross-sections, five failures, one subfloor line under all of them |
++| `og-floor-studio` | a floor plane in perspective with chevron laid into it and a handle at each corner |
++
++`verify:images` — **162 slots, 162 on disk, 0 pending, 0 orphans.**
++
++Structurally checked by brace depth on all five: `images` is a direct child of
++`openGraph`, never nested. That is the VIS-01a bug and it cost a build once.
++
++---
++
++## Q3. "Are the AI and camera features accessible to all customers?"
++
++Partly. This is the honest column, and AUDIT-01 already established most of it.
++
++| Capability | Reaches | Note |
++|---|---|---|
++| EcowoodsGuide chat | **every page** | `layout.tsx:185`, `<ChatWidgetLoader />` |
++| ⌘K, with the whole corpus | **every page** | NAV-03; it reached almost nothing before |
++| Floor Studio | **every page** | header + footer + Start-here column, depth 0 |
++| Native camera capture | **phones** | `capture="environment"` on a file input — real camera on iOS/Android, a silent file picker on desktop |
++| Live camera preview / AR | **nobody** | no `getUserMedia` exists in this repository |
++| Segmentation, depth, surface normals | **nobody** | no model, no weights, no inference |
++| Recommendations with reasons | **every visitor** | `match.ts` — no score without a sentence under it |
++| Live installed range | **every visitor** | one price source (GEO-005) |
++| Priced in the visitor's currency | **Canadians only** | GC-026 — 26 New York markets get CAD |
++
++Two things are worth naming plainly rather than counting as "accessible":
++
++- **The occlusion defect (AV-01) reaches everyone who uploads a photo.** Six of
++  fourteen tested objects are painted over completely, including a person's leg,
++  a light-coloured dog and a jute rug.
++- **`measured` is claimed where it is not true (AV-02)** — 72% error in a room
++  with a rug, which is most rooms.
++
++Neither is a reachability problem. Both are in the fix queue, and neither is
++made better by more people finding the feature.
++
++---
++
++## Q4. "Is it the best proposition, the best suggestions, the best price ranges?"
++
++The parts that are structurally right, and are unusual in this market:
++
++- **One price source.** Every figure on every surface — the studio, `/design`,
++  `/pricing`, the chat's estimate tool, the API — comes from
++  `content/constants/pricing.ts`, enforced by `verify-pricing-source`.
++- **No number without a sentence.** Every match percentage carries the reasons
++  that produced it and the caveats against it.
++- **Nothing is called a quote.** The figure is a labelled range on every screen
++  it appears on, and the fixed price is written after the measure.
++- **It refuses to estimate what it cannot measure**, and says why next to the
++  field it asks instead.
++
++What stops this being "the best in the world" today is three named defects, not
++a missing feature: **AV-01**, **AV-02**, **GC-026**. Each is in the queue with a
++patch attached.
++
++---
++
++## The probes — run these against production
++
++These need egress this session does not have.
++
++```bash
++# 1. the five new share cards are distinct and live
++for u in /hardwood-flooring-toronto /hardwood-floor-refinishing-toronto \
++         /hardwood-stairs-toronto /hardwood-floor-problems-toronto /floor-studio; do
++  printf '%-38s %s\n' "$u" \
++    "$(curl -sS https://ecowoods.ca$u | grep -o 'og:image[^>]*content="[^"]*"' | head -1 | grep -o '[^/]*\.webp')"
++done
++# expect five DIFFERENT filenames, none of them the site default
++
++# 2. no page shares a card with another
++node scripts/crawl-site.mjs && node -e "
++const c=require('./audit/site-crawl.json');
++const m=new Map(); for(const p of c.pages||[]) if(p.ogImage) m.set(p.ogImage,[...(m.get(p.ogImage)||[]),p.url]);
++for(const [img,us] of m) if(us.length>3) console.log(us.length, img);
++"
++
++# 3. the whole tree, as a crawler sees it
++node scripts/crawl-site.mjs --strict
++```
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 3e331cd..c7c5248 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -78,6 +78,8 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
+ | AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
+ | NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
++| VIS-02 | **closed by VIS-02** | five pages carried a full openGraph block with no images key — the four commercial head terms and Floor Studio all served the site default, the same card /terms serves |
++| TREE-01 | **closed by VIS-02** | /technical-library is the breadcrumb parent of every article and sits at sitemap priority 0.95, and appeared in no menu; the Reference column now names it beside /resources with notes that distinguish them |
+ 
+ Two existing checks were edited because they encoded the old geography, and
+ both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
+@@ -834,3 +836,71 @@ One widening edit, disclosed: `scripts/verify-navigation.mjs` `CHROME` gained
+ `apps/web/lib/navigation.ts`, because the guard reads strings and the strings
+ moved. It loosens no rule and `MAX_DEPTH` is untouched. Chrome link count 43 →
+ 44 after the move, with `/pricing` and `/where-we-work` added.
++
++---
++
++## VIS-02 · P1 · five pages shared one share card
++
++`verify:images` passed and was right about what it checks: no slot declared,
++bundled and sitemapped without a page drawing it. What it does not check is the
++image a page hands to WhatsApp, iMessage, Slack, LinkedIn and every crawler that
++reads Open Graph.
++
++Measured across 55 public routes: 24 declared `openGraph.images`, 31 did not.
++Most of the 31 are correct to inherit the default. Five were not, and each one
++carried a full `openGraph` block — title, description, type, url — with the
++`images` key simply absent:
++
++| Page | What it is |
++|---|---|
++| `/hardwood-flooring-toronto` | the installation head term |
++| `/hardwood-floor-refinishing-toronto` | the refinishing head term |
++| `/hardwood-stairs-toronto` | the stairs head term |
++| `/hardwood-floor-problems-toronto` | the problems head term |
++| `/floor-studio` | the flagship feature |
++
++So sharing the most commercially valuable page on this site produced a card
++identical to sharing the privacy policy. VIS-01 gave nine pages their own card
++and stopped; these five were the ones that needed it most.
++
++Five cards drawn in the same language as those nine — cream `#FAF7EF`, the
++brand's dark, green and copper, subject in the left forty percent, right third
++left empty because the platform lays its own title over it. One idea each:
++staggered courses with a copper starting course; three abrasive passes into a
++clean finish bar; a four-step section with treads picked out from risers; five
++board cross-sections on one subfloor line; a floor plane in perspective with
++chevron laid into it and a handle at each corner.
++
++Checked by brace depth on all five that `images` is a DIRECT child of
++`openGraph` rather than nested — that is the VIS-01a bug and it cost a build.
++
++`verify:images` after: 162 slots, 162 on disk, 0 pending, 0 orphans.
++
++---
++
++## TREE-01 · P1 · the article tree had a parent the menu never named
++
++Not a duplicate page. A wing of the tree with no door on the map.
++
++| Page | What it says it is | Where it appeared |
++|---|---|---|
++| `/resources` | "Everything we publish, organised by what you are trying to do" | the Reference column of the Library menu |
++| `/technical-library` | "The engineering reference behind our work" | no menu at all |
++
++Those are different jobs, and both are worth having. But `ArticleLayout.tsx:29`
++makes `/technical-library` the breadcrumb parent of EVERY article, `sitemap.ts`
++gives it priority 0.95, and `/resources` links down to it as a sub-item while it
++links back to nothing. A visitor following a breadcrumb up from an article
++landed on a page the navigation could not show them the position of.
++
++The Reference column now names both, with notes that say which is which. Same
++fix as UI-NAV-02 made for /floor-studio and /design, for the same reason: the
++labels alone read as duplicates and the notes do not.
++
++WHAT WAS MEASURED AND FOUND CLEAN
++
++Prose from all 58 public route templates, normalised and compared as 4-word
++shingles. Highest overlap between any two pages: 12.6%, `/guides/[slug]` against
++`/services/[slug]` — shared breadcrumb, CTA and next-step rail, not shared
++content. No identical title except the notFound fallback. No identical meta
++description. No pair of pages on this site tells the same story.
+-- 
+2.43.0
+
