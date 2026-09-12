@@ -65,7 +65,14 @@ export const SERVICES_MENU: MegaColumn[] = [
          that costs the visitor nothing and shows them something they cannot get
          anywhere else: their own room, with a floor we can actually lay in it.
          In the chrome it is depth 0 — one click from every page. */
-      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
+      /* The live camera leads the whole site (LIVE-01). It is the only entry
+         here that costs nothing, needs no photograph and shows somebody their
+         own room changing in front of them, and the fragment opens it directly
+         rather than making them find a button. The still-photo door stays,
+         because a desktop has no useful camera and a considered decision is
+         often made sitting down. */
+      { label: 'Point your camera at the room', href: '/floor-studio#live', note: 'Live, on your phone — the floor changes as you move' },
+      { label: 'See it in your room', href: '/floor-studio', note: 'From a photo, with the boundary you can correct' },
       /* The second door, one line under the first (UI-NAV-02). Floor Studio led
          this menu alone, and /design — the configurator it hands people on to —
          was reachable only from the footer. Two entries into one catalogue is

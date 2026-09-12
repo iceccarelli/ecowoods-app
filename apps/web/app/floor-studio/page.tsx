@@ -48,13 +48,13 @@ const url = `${SITE_URL}/floor-studio`;
 export const metadata: Metadata = {
   title: 'Floor Studio — see your new floor in your room',
   description:
-    `Upload a photo of your room and see real ${BUSINESS_NAP.name} floors in it — species, finish, pattern and board width, with a live estimated installed range in CAD. The photo never leaves your device.`,
+    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in CAD. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
   openGraph: {
     images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
     title: 'Ecowoods Floor Studio — see your new floor in your room',
     description:
-      'A photo of your room, a real Ecowoods floor rendered into it, and a live installed range. A range, not a quote.',
+      'Point your camera at the room and the floor changes while you move. Real Ecowoods floors, the room\u2019s own light, and a live installed range. A range, not a quote.',
     type: 'website',
     url,
   },
@@ -62,8 +62,14 @@ export const metadata: Metadata = {
 
 const STEPS = [
   {
+    id: 'step-live',
+    title: 'Your camera, live',
+    body:
+      'Point the phone at the floor and it changes under you, thirty times a second, while you walk around the room. Every frame is read on the device and dropped; the camera stops the moment you close the view or switch apps. Change species, finish, pattern or board width and the room changes with you, and the installed range changes with it.',
+  },
+  {
     id: 'step-photo',
-    title: 'Your photo, read in your browser',
+    title: 'Or a photo, read in your browser',
     body:
       'The studio measures the light in the room, the undertone of the walls, how dark the floor that is there now reads, and where the floor plane appears to meet them. All of it runs on your own device. Nothing is uploaded and we keep nothing.',
   },
@@ -88,10 +94,11 @@ const STEPS = [
 ];
 
 const REFUSALS = [
-  'It does not generate floors. Every board rendered into your room is a configuration this company can supply and install.',
+  'It does not generate floors. Every board rendered into your room — in a photo or live through the camera — is a configuration this company can supply and install. There is no image model anywhere in it, because a floor that does not exist cannot be bought.',
   'It does not measure your room. A single photo with nothing of known size in it cannot give an area, so the studio asks you instead of printing a number that is quietly wrong.',
   'It does not give you a quote. The figure is an estimated installed range and it is labelled as one on every screen it appears.',
-  'It does not keep your photograph. The analysis and the rendering both run in your browser; a shared design link carries the floor, never the room.',
+  'It does not keep your photograph, and it does not keep a camera frame. Analysis and rendering both run in your browser, the camera stops when you close the view, and a shared design link carries the floor, never the room.',
+  'It does not tell you the live view is measured. The still-photo path gives you four corners to drag and a boundary you have checked; the live path has neither, and says so.',
 ];
 
 export default function FloorStudioPage() {
@@ -116,13 +123,17 @@ export default function FloorStudioPage() {
           isPartOf: { '@id': `${SITE_URL}/#website` },
           publisher: { '@id': `${SITE_URL}/#organization` },
           description:
-            'Upload a photograph of a room and see real Ecowoods hardwood configurations rendered into it, with a live estimated installed range in Canadian dollars. Runs entirely in the browser; the photograph is not uploaded.',
+            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in Canadian dollars. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
           featureList: [
+            'Live camera view with the floor rendered in at video rate',
+            'Species, finish, pattern and board width changed while the camera runs',
             'Room photograph analysis in the browser',
             'Correctable floor boundary',
             'Recommendations over installable configurations only',
             'Species, finish, pattern and board width',
             'Live estimated installed range in CAD',
+            'No generative model: every floor shown is a configuration that can be supplied and installed',
+            'No upload: camera frames and photographs are analysed on the device and discarded',
             'Shareable design link',
             'Structured handoff into the free in-home measure',
           ],
@@ -141,15 +152,25 @@ export default function FloorStudioPage() {
           </nav>
           <h1 className="tlx-title">See your new floor in your home</h1>
           <p className="tlx-lede">
-            Upload a photo of your room, or start from a floor, and see real {BUSINESS_NAP.name} hardwood
-            in your own space — species, finish, pattern and board width, with a live estimated
-            installed range in Canadian dollars. Design it digitally. Verify it professionally. Build
-            it perfectly.
+            Point your camera at the room and the floor changes while you move — or upload a photo,
+            or start from a floor. Real {BUSINESS_NAP.name} hardwood in your own space: species,
+            finish, pattern and board width, with a live estimated installed range in Canadian
+            dollars. Design it digitally. Verify it professionally. Build it perfectly.
           </p>
         </div>
       </header>
 
-      <FloorStudio />
+      {/* A REAL ANCHOR, NOT JUST A FRAGMENT THE SCRIPT READS.
+          /floor-studio#live is linked from the header, the mobile drawer, ⌘K
+          and the homepage, and the component opens the camera when it sees that
+          hash. But a fragment with no element behind it lands at the top of the
+          page for anyone whose JavaScript has not run — and verify-destinations
+          is right to call that a link that does not land where it claims. This
+          div is the target: without script it scrolls to the studio, with
+          script the camera is already opening. */}
+      <div id="live">
+        <FloorStudio />
+      </div>
 
       <section className="tlx-section" id="how" aria-label="How Floor Studio works">
         <div className="shell">

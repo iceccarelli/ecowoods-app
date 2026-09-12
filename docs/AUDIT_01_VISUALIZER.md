@@ -27,16 +27,19 @@ repository's own vitest.)*
 
 ## 0. THE HEADLINE
 
-**The grade is B‑. It is not A+, and saying A+ today would be the exact failure
-this repository exists to prevent.**
+**The grade was B− when this was written. LIVE-01 closed AV-01 and AV-02 and
+added the live camera; GC-026 is still open, so it is B+ now, and it is still
+not A+.** The original findings are kept below exactly as measured, with what
+closed each one, because an audit that quietly rewrites itself is a press
+release.
 
 Three findings carry that grade, and all three are executed rather than argued:
 
 | # | Finding | Class |
 |---|---|---|
-| **AV-01** | The occlusion mask paints hardwood over people, dogs, jute rugs, wooden furniture legs and stair risers — 6 of 14 tested objects, 100% of their pixels | **BROKEN** |
-| **AV-02** | The floor-boundary estimator reports `measured` — its confident label — while losing 72% of the floor, in the single most common room photograph there is (a room with a rug) | **MISLEADING** |
-| **AV-03** | The studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all **26 New York pages** | **BROKEN** (reopens GC-024) |
+| **AV-01** | The occlusion mask paints hardwood over people, dogs, jute rugs, wooden furniture legs and stair risers — 6 of 14 tested objects, 100% of their pixels | ~~BROKEN~~ → **CLOSED by LIVE-01.** 13 of 14 preserved. The oak stair riser is a named, documented limit: it is the same wood as the floor, and the rule that would catch it also refuses to paint a pool of sunlight |
+| **AV-02** | The floor-boundary estimator reports `measured` — its confident label — while losing 72% of the floor, in the single most common room photograph there is (a room with a rug) | ~~MISLEADING~~ → **CLOSED by LIVE-01.** The floor is a connected region now, so a rug is a hole in it rather than the end of it. 72% error → 3%, and a doorway shot the trapezoid cannot describe reports `weak` |
+| **AV-03** | The studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all **26 New York pages** | **BROKEN, STILL OPEN** (GC-026) |
 
 Everything else is honest. Much of it is unusually honest — the refusal to
 estimate area from a photo, the refusal to generate floors, the single price
@@ -55,11 +58,12 @@ visitor something untrue · `UNVERIFIED` not testable from here.
 
 | Capability | Verdict | Evidence |
 |---|---|---|
-| Live camera access (`getUserMedia`) | **MISSING** | `grep -rn "getUserMedia\|mediaDevices" apps/web packages` → 0 matches |
+| Live camera access (`getUserMedia`) | ~~MISSING~~ → **PASS (LIVE-01)** | `app/components/floor-studio/LiveRoom.tsx`. Rear camera by `facingMode`, permission failure classified into six named causes each with an actionable sentence, upload offered as the way through every one of them |
 | Native camera capture | **PASS** | `FloorStudio.tsx:428` — `<input type="file" accept="image/*" capture="environment">`. On a phone this opens the rear camera. On desktop it degrades to a file picker, silently. |
 | Front/rear camera selection | **MISSING** | `capture="environment"` is a fixed hint; no device enumeration exists |
 | Permission prompt + fallback | **PASS (by construction)** | There is no permission to grant: the OS camera app mediates. Upload is a first-class sibling, not a fallback. `FloorStudio.tsx:414–437` |
-| Live preview / live AR | **MISSING** | No `MediaStream`, no `requestAnimationFrame` in the studio. The pipeline is single-frame. |
+| Live preview / live AR | ~~MISSING~~ → **PASS (LIVE-01)** | Every frame: floor plane found, mask built, catalogue floor composited through the exact homography, presented. Measured 2.8–8.8 ms a frame at 400×300 after the render path was optimised 7.8× |
+| Graceful degradation under load | **PASS (LIVE-01)** | `lib/floor-studio/live.ts` — a six-rung resolution ladder that moves only on a sustained run of slow or fast frames, with its own tests |
 | Graceful degradation of live AR | **n/a → MISSING** | Nothing to degrade |
 
 **Read this honestly:** the site never claims live AR. `/floor-studio` says
@@ -77,8 +81,8 @@ lie to a visitor.
 | Plane detection | **PARTIAL** | `room.ts:estimateFloorQuad` — a colour-run heuristic from a bottom-centre reference patch, walking upward until the run collapses. Named as a heuristic in its own docblock. |
 | Perspective / homography | **PASS** | `render.ts:solveHomography` — eight equations, Gaussian elimination with partial pivoting, degenerate quads return `null` rather than NaN. Exact projective map, not an affine approximation. Covered by `render.test.ts`. |
 | Surface-normal estimation | **MISSING** | The plane is assumed flat and level |
-| **Occlusion of objects on the floor** | **BROKEN** | See §2 |
-| Confidence reporting | **MISLEADING** | See §3 |
+| **Occlusion of objects on the floor** | ~~BROKEN~~ → **PASS** | Region-based mask: per-row luminance profile, dominant-surface mode on the residual, morphological close, hole fill. 13 of 14 fixture objects preserved |
+| Confidence reporting | ~~MISLEADING~~ → **PASS** | 3% coverage error where it says `measured`; `weak` when a trapezoid does not fit what it found |
 
 ### 1.3 Rendering
 
@@ -87,7 +91,7 @@ lie to a visitor.
 | Only real, buyable products rendered | **PASS** | `render.ts` docblock and implementation: every board is synthesised from a catalogue record's two pigments + finish tint + sheen. No generative model anywhere in the dependency tree. |
 | The room's own light is preserved | **PASS** | `render.ts:489` — each output pixel keeps the luminance ratio of the pixel it replaces against the floor-region mean, clamped to 0.45–1.8 |
 | Sheen behaves like sheen | **PASS** | `render.ts:495` — gloss scales with how far above the mean the original pixel was, so satin reads satin and matte reads matte with no extra input |
-| **Modifies only the floor** | **BROKEN** | §2 — it modifies whatever shares wood's hue |
+| **Modifies only the floor** | ~~BROKEN~~ → **PASS** | §2, closed |
 | Orientation control | **PARTIAL** | Pattern (straight / diagonal / herringbone / chevron) and a board-scale nudge. There is **no free rotation angle**, so a room whose boards should run toward the window cannot be shown that way. |
 | Determinism (a shared link shows the sender's floor) | **PASS** | Texture is a pure function of the configuration id |
 

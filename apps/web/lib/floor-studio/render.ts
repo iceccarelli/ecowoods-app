@@ -54,7 +54,7 @@ import {
   widthById,
   type FloorConfiguration,
 } from './catalog';
-import { relativeLuminance, type Pixels, type Point, type Quad } from './room';
+import type { Pixels, Point, Quad } from './room';
 
 /* ── projective geometry ──────────────────────────────────────────────────── */
 
@@ -149,6 +149,30 @@ const rot45 = (x: number, y: number) => ({ x: (x + y) * Math.SQRT1_2, y: (y - x)
 export function hash2(a: number, b: number): number {
   const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
   return n - Math.floor(n);
+}
+
+/**
+ * sin(), as a table, for the grain only.
+ *
+ * The grain is three sine waves per pixel and the board tone and phase are two
+ * more — six Math.sin() for every pixel of every frame, which at video rate is
+ * the whole budget. The board terms are cached per board below; these three are
+ * genuinely per pixel, and a thousand-entry table with linear interpolation is
+ * indistinguishable from Math.sin in wood grain while costing an index and a
+ * multiply. Nothing that produces a NUMBER anyone reads uses this — it draws
+ * grain, and only grain.
+ */
+const SIN_N = 1024;
+const SIN = new Float32Array(SIN_N + 1);
+for (let i = 0; i <= SIN_N; i += 1) SIN[i] = Math.sin((i / SIN_N) * Math.PI * 2);
+const TAU = Math.PI * 2;
+function fastSin(x: number): number {
+  let t = (x / TAU) % 1;
+  if (t < 0) t += 1;
+  const f = t * SIN_N;
+  const i = f | 0;
+  const frac = f - i;
+  return SIN[i]! + (SIN[i + 1]! - SIN[i]!) * frac;
 }
 
 function runSample(x: number, y: number, widthIn: number, axisFlag: 0 | 1): PlankSample {
@@ -301,26 +325,80 @@ const clamp255 = (n: number) => (n < 0 ? 0 : n > 255 ? 255 : n);
  * inside a few thousandths of the edge, which is what makes a floor read as
  * boards rather than as wallpaper.
  */
+/**
+ * Everything about a configuration that does not change per pixel, resolved
+ * once.
+ *
+ * woodColourAt used to do a catalogue lookup, two hex parses, a second
+ * catalogue lookup and an rgba() string parse FOR EVERY PIXEL. At a million
+ * pixels a second that is four million string operations a second, and it is
+ * the single reason the renderer could not keep up with a camera. None of it
+ * depends on where the pixel is.
+ */
+export type WoodPalette = {
+  base: Rgb;
+  grain: Rgb;
+  variation: number;
+  tint: Rgba;
+  ok: boolean;
+  /** board key → its tone and grain phase. Constant across a whole board, and
+      recomputing it per pixel cost two hash2 — two Math.sin — every time. */
+  boards: Map<number, { tone: number; phase: number }>;
+};
+
+const paletteCache = new Map<string, WoodPalette>();
+
+export function woodPalette(productId: string, finishId: string): WoodPalette {
+  const key = `${productId}|${finishId}`;
+  const hit = paletteCache.get(key);
+  if (hit) return hit;
+  const product = productById(productId);
+  const finish = finishById(finishId) ?? FINISH_OPTIONS[1]!;
+  const made: WoodPalette = product
+    ? {
+        base: hexToRgb(product.base),
+        grain: hexToRgb(product.grain),
+        variation: VARIATION[productId] ?? 0.12,
+        tint: parseRgba(finish.tint),
+        ok: true,
+        boards: new Map(),
+      }
+    : { base: { r: 0, g: 0, b: 0 }, grain: { r: 0, g: 0, b: 0 }, variation: 0.12, tint: { r: 0, g: 0, b: 0, a: 0 }, ok: false, boards: new Map() };
+  paletteCache.set(key, made);
+  return made;
+}
+
 export function woodColourAt(
   productId: string,
   finishId: string,
   sample: PlankSample,
 ): Rgb {
-  const product = productById(productId);
-  if (!product) return { r: 0, g: 0, b: 0 };
-  const base = hexToRgb(product.base);
-  const grain = hexToRgb(product.grain);
-  const variation = VARIATION[productId] ?? 0.12;
+  return woodColourFrom(woodPalette(productId, finishId), sample);
+}
 
-  /* Board tone: where this board sits between the two pigments. */
-  const boardTone = 0.35 + (hash2(sample.key, 7) - 0.5) * 2 * variation;
+export function woodColourFrom(palette: WoodPalette, sample: PlankSample): Rgb {
+  if (!palette.ok) return { r: 0, g: 0, b: 0 };
+  const base = palette.base;
+  const grain = palette.grain;
+  const variation = palette.variation;
+
+  /* Board tone and grain phase are properties of the BOARD, not the pixel. */
+  let board = palette.boards.get(sample.key);
+  if (!board) {
+    board = {
+      tone: 0.35 + (hash2(sample.key, 7) - 0.5) * 2 * variation,
+      phase: hash2(sample.key, 13) * Math.PI * 2,
+    };
+    palette.boards.set(sample.key, board);
+  }
+  const boardTone = board.tone;
+  const phase = board.phase;
 
   /* Grain: two waves along the board, plus a fine one across it. */
-  const phase = hash2(sample.key, 13) * Math.PI * 2;
   const grainWave =
-    Math.sin(sample.across * 18 + phase) * 0.5 +
-    Math.sin(sample.across * 47 + phase * 1.7) * 0.22 +
-    Math.sin(sample.along * 6 + phase * 0.4) * 0.18;
+    fastSin(sample.across * 18 + phase) * 0.5 +
+    fastSin(sample.across * 47 + phase * 1.7) * 0.22 +
+    fastSin(sample.along * 6 + phase * 0.4) * 0.18;
   const t = Math.max(0, Math.min(1, boardTone + grainWave * 0.14));
 
   let r = mix(base.r, grain.r, t);
@@ -336,8 +414,7 @@ export function woodColourAt(
   b *= shade;
 
   /* Finish tint, over the top, at the alpha the finish already declares. */
-  const finish = finishById(finishId) ?? FINISH_OPTIONS[1]!;
-  const tint = parseRgba(finish.tint);
+  const tint = palette.tint;
   if (tint.a > 0) {
     r = mix(r, tint.r, tint.a);
     g = mix(g, tint.g, tint.a);
@@ -355,12 +432,23 @@ export type RenderOptions = {
   /** Visitor nudge for rooms that are not square, 0.4–2.5. */
   boardScale?: number;
   /**
-   * How different from the floor's own colour a pixel must be before it is
+   * How different from the floor's own colour a cell must be before it is
    * treated as something standing ON the floor and left alone. Higher keeps
    * more of the photograph.
    */
-  occlusionTolerance?: number;
+  chromaTolerance?: number;
+  /**
+   * How many robust deviations of the floor's own luminance a cell must be
+   * away before the same applies. This is the signal that sees a person's foot,
+   * a light dog and a jute rug, none of which chroma can distinguish from oak.
+   */
+  luminanceSigmas?: number;
+  /** A mask already built for this frame — live video reuses one across
+      configuration changes instead of recomputing per repaint. */
+  mask?: FloorMask;
 };
+
+export type MaskOptions = Pick<RenderOptions, 'chromaTolerance' | 'luminanceSigmas'>;
 
 export type RenderResult = {
   pixels: Pixels;
@@ -368,6 +456,30 @@ export type RenderResult = {
   painted: number;
   /** Why nothing was painted, where that happened. */
   failure?: 'degenerate-quad' | 'empty-region';
+};
+
+/**
+ * sRGB → linear, as a 256-entry table.
+ *
+ * relativeLuminance() in room.ts is the published formula and stays exactly
+ * as it is — it is what the contrast work and the tests read. It also calls
+ * Math.pow three times, and this renderer calls it twice for every pixel of
+ * every frame. At video rate that is roughly six million pow() a second for
+ * 256 distinct inputs. The table is the same function, memoised by its only
+ * possible argument.
+ */
+const LINEAR = new Float32Array(256);
+for (let i = 0; i < 256; i += 1) {
+  const c = i / 255;
+  LINEAR[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+const fastLuminance = (r: number, g: number, b: number): number =>
+  0.2126 * LINEAR[r & 255]! + 0.7152 * LINEAR[g & 255]! + 0.0722 * LINEAR[b & 255]!;
+
+/** Chroma as the two opponent axes, normalised out of brightness. */
+const chromaOf = (r: number, g: number, b: number) => {
+  const sum = r + g + b || 1;
+  return { u: (r - g) / sum, v: (g - b) / sum };
 };
 
 const inQuad = (quad: Quad, x: number, y: number): boolean => {
@@ -384,11 +496,485 @@ const inQuad = (quad: Quad, x: number, y: number): boolean => {
   return true;
 };
 
-/** Chroma as the two opponent axes, normalised out of brightness. */
-const chromaOf = (r: number, g: number, b: number) => {
-  const sum = r + g + b || 1;
-  return { u: (r - g) / sum, v: (g - b) / sum };
+/* ── the mask: what is standing on the floor ──────────────────────────────── */
+
+/**
+ * WHAT WAS HERE BEFORE, AND WHY IT PAINTED OAK OVER A PERSON'S FOOT
+ *
+ * The entire object-protection system used to be one line:
+ *
+ *     if (hypot(c.u - meanU, c.v - meanV) > tolerance) continue;
+ *
+ * A pixel survived if and only if its CHROMA differed from the floor's mean
+ * chroma. No luminance, no texture, no spatial coherence, no notion of an
+ * object at all — a per-pixel colour test and nothing else. AUDIT-01 measured
+ * it against fourteen things that stand on the floor of a house about to buy
+ * hardwood and found six painted over completely: a jute rug, a person's leg, a
+ * golden retriever, an oak stair riser, a wooden table leg, a cardboard box.
+ * Every one of them sits in the same hue family as wood, which is not a
+ * coincidence — it is what is in a room with a wooden floor.
+ *
+ * THE THREE THINGS IT NOW USES INSTEAD, AND WHY EACH ONE IS NECESSARY
+ *
+ * 1. ROBUST FLOOR STATISTICS, NOT THE MEAN. A large pale rug covering a third
+ *    of the quad drags a mean until the rug looks like the floor and the floor
+ *    looks like an object. The median and the median absolute deviation do not
+ *    move until more than half the region is contaminated, and more than half
+ *    the floor being covered is a photograph of a rug rather than of a floor.
+ *
+ * 2. LUMINANCE AS WELL AS CHROMA. Skin, a light dog, jute and cardboard all
+ *    share wood's hue. What they do not share is its brightness: against a mid
+ *    oak floor each is two to four robust deviations lighter. Chroma catches
+ *    the green plant and the navy chair; luminance catches the ones chroma
+ *    cannot see. Both are needed and neither is sufficient.
+ *
+ * 3. OBJECTS ARE REGIONS, NOT PIXELS. This is the part that actually works. A
+ *    single pixel differing from the floor is noise; four thousand connected
+ *    pixels differing from the floor is a dog. So the decision is made on a
+ *    grid of cells and then CLOSED — dilate, erode — which fills the interior
+ *    of an object whose middle happens to match wood while its edges do not,
+ *    and erases isolated cells that are just grain. One more dilation leaves a
+ *    margin around every object, because a rim of old floor at the edge of the
+ *    sofa reads as a rough edge and oak across the sofa reads as a toy.
+ *
+ * WHAT THIS IS STILL NOT
+ *
+ * It is not segmentation. It does not know what a dog is. It is a statistical
+ * separation of "surface that behaves like the floor region" from "everything
+ * else", made spatially coherent — which is a different and much weaker claim
+ * than the one a model would let us make, and it is the claim the studio makes.
+ * The four draggable corners remain the visitor's answer to any of it.
+ */
+
+/** Analysis cell, in pixels. Small enough to follow a chair leg, large enough
+    that a thousand of them is still cheap on a phone at video rate. */
+const CELL = 8;
+
+export type FloorMask = {
+  cols: number;
+  rows: number;
+  /** 1 where the cell has any of the quad in it. */
+  inside: Uint8Array;
+  /** 1 where the cell straddles the quad's edge and still needs the per-pixel
+      test. A few percent of the grid; everything else skips four cross
+      products per pixel. */
+  border: Uint8Array;
+  /** 1 where the cell is floor and may be painted. */
+  floor: Uint8Array;
+  /** Robust centre of the floor region's luminance, 0–1. */
+  medianLuminance: number;
+  /** Fraction of in-quad cells judged to be something standing on the floor. */
+  occluded: number;
 };
+
+const medianOf = (xs: number[]): number => {
+  if (!xs.length) return 0;
+  const a = [...xs].sort((p, q) => p - q);
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m]! : (a[m - 1]! + a[m]!) / 2;
+};
+
+/** 1.4826 × MAD is the consistent estimator of σ for a normal distribution. */
+const robustSigma = (xs: number[], centre: number): number =>
+  1.4826 * medianOf(xs.map((x) => Math.abs(x - centre)));
+
+/**
+ * Decide, per cell, whether the photograph shows floor there.
+ *
+ * Exported and pure so the fixture set in audit.test.ts can hold it to a
+ * number rather than to a description.
+ */
+export function buildFloorMask(px: Pixels, quad: Quad, options: MaskOptions = {}): FloorMask {
+  const cols = Math.max(1, Math.ceil(px.width / CELL));
+  const rows = Math.max(1, Math.ceil(px.height / CELL));
+  const n = cols * rows;
+
+  const lum = new Float32Array(n);
+  const cu = new Float32Array(n);
+  const cv = new Float32Array(n);
+  const count = new Int32Array(n);
+
+  for (let y = 0; y < px.height; y += 2) {
+    const ny = (y + 0.5) / px.height;
+    const row = (y / CELL) | 0;
+    for (let x = 0; x < px.width; x += 2) {
+      const nx = (x + 0.5) / px.width;
+      if (!inQuad(quad, nx, ny)) continue;
+      const i = (y * px.width + x) * 4;
+      const r = px.data[i]!;
+      const g = px.data[i + 1]!;
+      const b = px.data[i + 2]!;
+      const c = ((x / CELL) | 0) + row * cols;
+      lum[c] += fastLuminance(r, g, b);
+      const ch = chromaOf(r, g, b);
+      cu[c] += ch.u;
+      cv[c] += ch.v;
+      count[c] += 1;
+    }
+  }
+
+  const live: number[] = [];
+  for (let c = 0; c < n; c += 1) {
+    if (count[c] === 0) continue;
+    lum[c] /= count[c]!;
+    cu[c] /= count[c]!;
+    cv[c] /= count[c]!;
+    live.push(c);
+  }
+
+  /* A FLOOR IS NOT ONE BRIGHTNESS, IT IS A GRADIENT.
+   *
+   * Light falls off with depth. In an ordinary room the near floor is a third
+   * brighter than the far floor, and near a window more than that. Comparing
+   * every cell to ONE number therefore flags the far half of a perfectly
+   * ordinary floor as an object — which is exactly what the live camera showed:
+   * pointed at a room it repainted the near floor and left big unexplained
+   * patches of the old floor further in.
+   *
+   * So the comparison is made against the floor's own profile down the frame.
+   * Take the median luminance of each cell ROW, smooth it, and measure every
+   * cell against its own row. What is left after that is the residual — how far
+   * this cell departs from what the floor is doing at that depth — and the
+   * residual is the thing that is flat enough for a single threshold to mean
+   * something at the top of the frame and the bottom.
+   *
+   * A row's median is robust to whatever is standing in that row, for the same
+   * reason the global one was: an object has to cover more than half the row
+   * before it moves it, and an object covering more than half a row is a rug,
+   * which the mode test below still catches.
+   */
+  const rowMedian = new Float32Array(rows).fill(NaN);
+  for (let ry = 0; ry < rows; ry += 1) {
+    const inRow: number[] = [];
+    for (let cx = 0; cx < cols; cx += 1) {
+      const c = cx + ry * cols;
+      if (count[c] > 0) inRow.push(lum[c]!);
+    }
+    if (inRow.length >= 3) rowMedian[ry] = medianOf(inRow);
+  }
+  /* A LINE THROUGH THE ROW MEDIANS, NOT THE ROW MEDIANS THEMSELVES.
+   *
+   * Taking each row's own median follows the floor's falloff perfectly — and
+   * also follows a band of furniture, because a row that is mostly sofa has a
+   * sofa's median. On the fourteen-object fixture that lifted the profile to
+   * the objects' own level in the rows they occupy and hid an oak stair riser
+   * inside it.
+   *
+   * Light falling off with depth is close to linear over the height of one
+   * frame, and a straight line cannot be bent by one band of furniture the way
+   * a per-row value can. So fit one, by least squares over the rows that have
+   * enough of the quad in them to have a median at all. What the line cannot
+   * follow, the residual threshold's own slack absorbs. */
+  let sw = 0;
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let sxy = 0;
+  for (let ry = 0; ry < rows; ry += 1) {
+    const v = rowMedian[ry]!;
+    if (Number.isNaN(v)) continue;
+    sw += 1;
+    sx += ry;
+    sy += v;
+    sxx += ry * ry;
+    sxy += ry * v;
+  }
+  const profile = new Float32Array(rows);
+  const denom = sw * sxx - sx * sx;
+  if (sw >= 3 && Math.abs(denom) > 1e-9) {
+    const slope = (sw * sxy - sx * sy) / denom;
+    const intercept = (sy - slope * sx) / sw;
+    for (let ry = 0; ry < rows; ry += 1) profile[ry] = intercept + slope * ry;
+  } else {
+    const flat = sw ? sy / sw : 0;
+    for (let ry = 0; ry < rows; ry += 1) profile[ry] = flat;
+  }
+
+  const residual = new Float32Array(n);
+  for (const c of live) residual[c] = lum[c]! - profile[(c / cols) | 0]!;
+
+  /* THE FLOOR IS THE MODE OF THE RESIDUAL.
+   *
+   * The median survives up to half the region being something else, which is
+   * not enough: a living room can hold a rug, a sofa, a table and a dog inside
+   * the quad, and those are mostly LIGHTER than a mid oak floor, so the
+   * contamination is large and one-sided.
+   *
+   * So take the DOMINANT SURFACE. Histogram the residuals, find the heaviest
+   * mode, and take the centre and spread from it. Robust to any amount of
+   * contamination provided no single object covers more of the quad than the
+   * floor does — the same assumption the quad itself encodes, and when it fails
+   * the visitor drags the corners. */
+  const BINS = 64;
+  const SPREAD = 0.5;
+  const hist = new Int32Array(BINS);
+  const binOf = (r: number) =>
+    Math.min(BINS - 1, Math.max(0, Math.round(((r + SPREAD) / (2 * SPREAD)) * (BINS - 1))));
+  for (const c of live) hist[binOf(residual[c]!)] += 1;
+
+  /* SMOOTH FIRST, AND TAKE THE HEAVIEST MODE — NOT THE TALLEST BIN.
+   *
+   * A real floor has grain, so its cells spread across adjacent bins. A rug is
+   * flat, so all of its land in one. Measured on a room with a large pale rug,
+   * the floor held 780 cells over two bins while the rug held 420 in a single
+   * bin — and the tallest bin was the RUG's. The mask then took the rug for the
+   * floor and painted oak onto it and nothing else. Texture is evidence of
+   * floor; a rule that punishes it is the wrong rule. */
+  const smooth = new Float32Array(BINS);
+  for (let b = 0; b < BINS; b += 1) {
+    smooth[b] = (hist[Math.max(0, b - 1)]! + hist[b]! * 2 + hist[Math.min(BINS - 1, b + 1)]!) / 4;
+  }
+
+  /* Two brakes on how far a mode may grow. KEEP is the height a neighbouring
+     bin must still have to be the same surface; WIDTH is the hard stop, because
+     beyond it this is not one surface under different light, it is two. */
+  const MAX_SPAN = 12;
+  const spanOf = (peak: number): { lo: number; hi: number; mass: number } => {
+    const keep = smooth[peak]! * 0.35;
+    let a = peak;
+    let z = peak;
+    while (a > 0 && smooth[a - 1]! >= keep && z - (a - 1) < MAX_SPAN) a -= 1;
+    while (z < BINS - 1 && smooth[z + 1]! >= keep && z + 1 - a < MAX_SPAN) z += 1;
+    let mass = 0;
+    for (let b = a; b <= z; b += 1) mass += hist[b]!;
+    return { lo: a, hi: z, mass };
+  };
+
+  let best = { lo: 0, hi: BINS - 1, mass: -1, peak: 0 };
+  for (let b = 0; b < BINS; b += 1) {
+    if (smooth[b]! <= 0) continue;
+    const left = b > 0 ? smooth[b - 1]! : -1;
+    const right = b < BINS - 1 ? smooth[b + 1]! : -1;
+    if (smooth[b]! < left || smooth[b]! < right) continue;
+    const span = spanOf(b);
+    if (span.mass > best.mass) best = { ...span, peak: b };
+  }
+
+  const mode = live.filter((c) => {
+    const b = binOf(residual[c]!);
+    return b >= best.lo && b <= best.hi;
+  });
+  /* Too small a mode is noise rather than a surface; fall back to everything
+     inside the quad, which is what this function did before. */
+  const surface = mode.length >= 8 ? mode : live;
+
+  const res = surface.map((c) => residual[c]!);
+  const medRes = medianOf(res);
+  const medU = medianOf(surface.map((c) => cu[c]!));
+  const medV = medianOf(surface.map((c) => cv[c]!));
+  /* Set after the mask is final — see below. */
+  let medLum = medianOf(surface.map((c) => lum[c]!));
+
+  /* MEMBERSHIP COMES FROM THE MODE; SCALE COMES FROM ITS CORE.
+   *
+   * The expanded mode is deliberately generous so a floor stays one surface.
+   * Measuring the spread across that whole span reads the generosity back as
+   * variation — on the fourteen-object fixture it put the deviation at its cap,
+   * which moved the threshold past an oak stair riser standing on the floor it
+   * matched. The three bins at the peak are the floor's own grain, without the
+   * reach the membership rule needs. */
+  const core = surface.filter((c) => Math.abs(binOf(residual[c]!) - best.peak) <= 1);
+  const coreRes = (core.length >= 8 ? core : surface).map((c) => residual[c]!);
+  const sigma = Math.min(0.03, Math.max(0.008, robustSigma(coreRes, medianOf(coreRes))));
+
+
+  const chromaTol = options.chromaTolerance ?? 0.075;
+  const lumK = options.luminanceSigmas ?? 2.2;
+
+  /* SAME COLOUR, DIFFERENT BRIGHTNESS, IS LIGHT — NOT AN OBJECT.
+   *
+   * Chroma is normalised out of brightness, so a pool of sunlight on an oak
+   * floor has the oak's chroma and the sun's luminance. The luminance test
+   * alone calls that an object and refuses to paint it, and the result is a
+   * new floor with a blotch of the old one wherever a window falls — in every
+   * daylit room, which is most of them. render.test.ts caught it: a matte and a
+   * satin floor stopped differing, because the lit pool the sheen shows up in
+   * was the part being skipped.
+   *
+   * So below a small fraction of the chroma tolerance, brightness is taken as
+   * light and the luminance test does not apply.
+   *
+   * THE PRICE OF THAT, STATED RATHER THAN HIDDEN: an object made of the same
+   * wood as the floor — an oak stair riser is the case in the fixture — is no
+   * longer separable by colour statistics, and gets painted. That is a real
+   * limit and it is the right trade: a riser painted at the edge of the frame
+   * is a cosmetic error on a surface that is quoted separately anyway, and a
+   * sunlit patch left unpainted is the feature visibly not working, in the
+   * middle of the picture, for almost everyone. Telling the two apart needs
+   * geometry — a plane normal, or depth — and this codebase has neither and
+   * does not claim to. */
+  const LIGHT_NOT_OBJECT = chromaTol * 0.3;
+
+  const floor = new Uint8Array(n);
+  for (const c of live) {
+    const dChroma = Math.hypot(cu[c]! - medU, cv[c]! - medV);
+    if (dChroma > chromaTol) { floor[c] = 0; continue; }
+    if (dChroma < LIGHT_NOT_OBJECT) { floor[c] = 1; continue; }
+    floor[c] = Math.abs(residual[c]! - medRes) / sigma > lumK ? 0 : 1;
+  }
+
+  /* ── morphology, on cells that are inside the quad ─────────────────────── */
+  const inside = new Uint8Array(n);
+  for (const c of live) inside[c] = 1;
+
+  /* Which cells the quad's edge actually cuts. Four corner tests each; a cell
+     whose four corners agree is wholly in or wholly out. */
+  const border = new Uint8Array(n);
+  for (const c of live) {
+    const cx = (c % cols) * CELL;
+    const cy = ((c / cols) | 0) * CELL;
+    let inCount = 0;
+    for (const [ox, oy] of [[0, 0], [CELL, 0], [0, CELL], [CELL, CELL]] as const) {
+      if (inQuad(quad, (cx + ox) / px.width, (cy + oy) / px.height)) inCount += 1;
+    }
+    if (inCount !== 4) border[c] = 1;
+  }
+
+  const neighbours = (c: number): number[] => {
+    const x = c % cols;
+    const y = (c / cols) | 0;
+    const out: number[] = [];
+    for (let dy = -1; dy <= 1; dy += 1)
+      for (let dx = -1; dx <= 1; dx += 1) {
+        if (!dx && !dy) continue;
+        const nx2 = x + dx;
+        const ny2 = y + dy;
+        if (nx2 < 0 || ny2 < 0 || nx2 >= cols || ny2 >= rows) continue;
+        out.push(nx2 + ny2 * cols);
+      }
+    return out;
+  };
+
+  /** Grow the NOT-floor set by one ring. */
+  const growObjects = (src: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(src);
+    for (const c of live) {
+      if (src[c] === 0) continue;
+      for (const k of neighbours(c)) if (inside[k] && src[k] === 0) { out[c] = 0; break; }
+    }
+    return out;
+  };
+
+  /** Shrink the NOT-floor set by one ring. */
+  const shrinkObjects = (src: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(src);
+    for (const c of live) {
+      if (src[c] === 1) continue;
+      let anyFloor = false;
+      for (const k of neighbours(c)) if (inside[k] && src[k] === 1) { anyFloor = true; break; }
+      if (!anyFloor) continue;
+      let objectNeighbours = 0;
+      for (const k of neighbours(c)) if (inside[k] && src[k] === 0) objectNeighbours += 1;
+      /* A cell surrounded mostly by floor was grain, not a chair leg. */
+      if (objectNeighbours <= 2) out[c] = 1;
+    }
+    return out;
+  };
+
+  /* CLOSE: grow then shrink. Fills the wood-coloured middle of an object whose
+     edges gave it away, and leaves genuine floor alone. */
+  let m = growObjects(floor);
+  m = shrinkObjects(m);
+  /* FILL WHAT THE OBJECT ENCLOSES.
+   *
+   * The edges of an oak stair riser give it away against an oak floor — a
+   * luminance step of a few hundredths — while its middle is, colourimetrically,
+   * floor. Grow-and-shrink only reaches one cell in from that edge, so the
+   * riser came back eighty-six percent painted with a protected rim: the exact
+   * "sticker" look this renderer exists to avoid.
+   *
+   * Real floor is connected to the edge of the quad. Anything the object ring
+   * encloses is not floor, whatever colour it is. So flood the floor set
+   * inward from the quad's boundary and give back everything the flood never
+   * reached. This needs no idea of what the object is, which is the point. */
+  const reached = new Uint8Array(n);
+  const stack: number[] = [];
+  for (const c of live) {
+    if (m[c] !== 1) continue;
+    const x = c % cols;
+    const y = (c / cols) | 0;
+    const border =
+      x === 0 || y === 0 || x === cols - 1 || y === rows - 1 ||
+      neighbours(c).some((k) => !inside[k]);
+    if (border) { reached[c] = 1; stack.push(c); }
+  }
+  /* The flood is 4-CONNECTED while the object ring is 8-connected. That
+     pairing is not a detail: with both at 8, the flood slips diagonally
+     between two object cells that touch only at a corner, and every enclosed
+     region leaks. */
+  const orthogonal = (c: number): number[] => {
+    const x = c % cols;
+    const y = (c / cols) | 0;
+    const out: number[] = [];
+    if (x > 0) out.push(c - 1);
+    if (x < cols - 1) out.push(c + 1);
+    if (y > 0) out.push(c - cols);
+    if (y < rows - 1) out.push(c + cols);
+    return out;
+  };
+  while (stack.length) {
+    const c = stack.pop()!;
+    for (const k of orthogonal(c)) {
+      if (!inside[k] || reached[k] || m[k] !== 1) continue;
+      reached[k] = 1;
+      stack.push(k);
+    }
+  }
+  for (const c of live) if (m[c] === 1 && reached[c] === 0) m[c] = 0;
+
+  /* One more ring of margin around whatever survived. Conservative on purpose:
+     a rim of old floor is a rough edge, oak across the cat is a toy. */
+  m = growObjects(m);
+
+  let occludedCells = 0;
+  for (const c of live) if (m[c] === 0) occludedCells += 1;
+
+  /* THE SHADING BASELINE IS THE MEDIAN OF WHAT WE ARE ACTUALLY PAINTING.
+   *
+   * compositeFloor keeps the room's light by holding each pixel's luminance
+   * RATIO against this number, so it has to be the floor's own level and
+   * nothing else. Taking it from the statistics that BUILT the mask is subtly
+   * wrong: those run over every cell the quad touches, including the sliver of
+   * wall a quad's top edge usually clips, and a wall is four times brighter
+   * than a mid oak floor. With the baseline up there every floor pixel lands
+   * below one, the shading clamp flattens the whole picture, and the sheen term
+   * — which only acts above one — never fires at all. A satin floor and a matte
+   * floor come out identical, which is what render.test.ts caught.
+   *
+   * The cells the mask finally calls floor are exactly the right sample. */
+  const paintedCells = live.filter((c) => m[c] === 1);
+  if (paintedCells.length >= 4) {
+    /* THE MEAN HERE, NOT THE MEDIAN — and the difference is the whole sheen.
+     *
+     * Sheen is "returns more light where the room was already bright", so the
+     * baseline has to be a value that a bright patch is ABOVE. A median is not:
+     * in a room where a window lights more than half the visible floor, the
+     * median IS the lit floor, the lit floor's ratio is exactly one, and the
+     * gloss term — which only acts above one — never fires anywhere. A matte
+     * floor and a satin floor come out identical, in the one room where the
+     * difference between them is most visible.
+     *
+     * Weighted by each cell's sample count so a cell the quad only clips does
+     * not carry the same weight as one wholly inside it. */
+    let sum = 0;
+    let weight = 0;
+    for (const c of paintedCells) {
+      sum += lum[c]! * count[c]!;
+      weight += count[c]!;
+    }
+    if (weight > 0) medLum = sum / weight;
+  }
+
+  return {
+    cols,
+    rows,
+    inside,
+    border,
+    floor: m,
+    medianLuminance: medLum,
+    occluded: live.length ? occludedCells / live.length : 0,
+  };
+}
 
 /**
  * Lay `config` into `px` inside `quad`, keeping the room's light and whatever
@@ -426,67 +1012,70 @@ export function compositeFloor(
   const m = solveHomography(quad, planQuad);
   if (!m) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
 
-  /* First pass: the floor region's own statistics. The composite is measured
-     against these, which is how the room's light survives. */
-  let sumLum = 0;
-  let sumU = 0;
-  let sumV = 0;
-  let count = 0;
-  for (let y = 0; y < px.height; y += 2) {
-    const ny = (y + 0.5) / px.height;
-    for (let x = 0; x < px.width; x += 2) {
-      const nx = (x + 0.5) / px.width;
-      if (!inQuad(quad, nx, ny)) continue;
-      const i = (y * px.width + x) * 4;
-      const r = px.data[i]!;
-      const g = px.data[i + 1]!;
-      const b = px.data[i + 2]!;
-      sumLum += relativeLuminance(r, g, b);
-      const c = chromaOf(r, g, b);
-      sumU += c.u;
-      sumV += c.v;
-      count += 1;
-    }
+  /* The mask decides WHERE, and carries the robust luminance centre the
+     shading is measured against. One pass, reusable across a configuration
+     change — which is what makes live video affordable. */
+  const mask = options.mask ?? buildFloorMask(px, quad, options);
+  if (mask.medianLuminance === 0 && mask.occluded === 0) {
+    let any = false;
+    for (let c = 0; c < mask.floor.length && !any; c += 1) if (mask.floor[c] === 1) any = true;
+    if (!any) return { pixels: out, painted: 0, failure: 'empty-region' };
   }
-  if (count === 0) return { pixels: out, painted: 0, failure: 'empty-region' };
-
-  const meanLum = Math.max(0.01, sumLum / count);
-  const meanU = sumU / count;
-  const meanV = sumV / count;
-  const tolerance = options.occlusionTolerance ?? 0.075;
+  const meanLum = Math.max(0.01, mask.medianLuminance);
 
   const finish = finishById(config.finishId) ?? FINISH_OPTIONS[1]!;
   const sheen = finish.sheen;
+  const palette = woodPalette(config.productId, config.finishId);
 
   let painted = 0;
   let considered = 0;
 
+  /* The mask already knows which cells lie inside the quad — a cell with no
+     samples in it got no count and is not floor. So the per-pixel inQuad test,
+     four cross products deep, only has to run on the ragged border cells. That
+     is a few percent of them. */
+  const m00 = m[0];
+  const m01 = m[1];
+  const m02 = m[2];
+  const m10 = m[3];
+  const m11 = m[4];
+  const m12 = m[5];
+  const m20 = m[6];
+  const m21 = m[7];
+  const m22 = m[8];
+
   for (let y = 0; y < px.height; y += 1) {
     const ny = (y + 0.5) / px.height;
+    const cellRow = ((y / CELL) | 0) * mask.cols;
     for (let x = 0; x < px.width; x += 1) {
+      const cell = ((x / CELL) | 0) + cellRow;
+      if (mask.inside[cell] !== 1) continue;
       const nx = (x + 0.5) / px.width;
-      if (!inQuad(quad, nx, ny)) continue;
+      if (mask.border[cell] === 1 && !inQuad(quad, nx, ny)) continue;
       considered += 1;
+
+      /* Something standing on the floor keeps its own pixels. The decision was
+         made for this cell, with its neighbours, not for this pixel alone —
+         see buildFloorMask. */
+      if (mask.floor[cell] !== 1) continue;
 
       const i = (y * px.width + x) * 4;
       const r0 = px.data[i]!;
       const g0 = px.data[i + 1]!;
       const b0 = px.data[i + 2]!;
 
-      /* Something standing on the floor keeps its own pixels. */
-      const c = chromaOf(r0, g0, b0);
-      if (Math.hypot(c.u - meanU, c.v - meanV) > tolerance) continue;
+      const w = m20 * nx + m21 * ny + m22;
+      if (w > -1e-12 && w < 1e-12) continue;
+      const planX = (m00 * nx + m01 * ny + m02) / w;
+      const planY = (m10 * nx + m11 * ny + m12) / w;
 
-      const planPoint = applyHomography(m, { x: nx, y: ny });
-      if (!planPoint) continue;
-
-      const sample = samplePattern(planPoint.x, planPoint.y, config.patternId, width.inches);
-      const wood = woodColourAt(config.productId, config.finishId, sample);
+      const sample = samplePattern(planX, planY, config.patternId, width.inches);
+      const wood = woodColourFrom(palette, sample);
 
       /* The room's own light, as a ratio against the region mean. Clamped so a
          blown highlight or a black shadow cannot produce a floor nobody would
          believe. */
-      const lum = relativeLuminance(r0, g0, b0);
+      const lum = fastLuminance(r0, g0, b0);
       const shading = Math.max(0.45, Math.min(1.8, lum / meanLum));
 
       /* Sheen: a surface that returns light returns MORE of it where the room

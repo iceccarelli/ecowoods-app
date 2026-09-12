@@ -11620,3 +11620,108 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   line-height: 1.35;
 }
 .fs-cta-fine { font-size: var(--fs-xs); color: var(--muted); margin: var(--space-sm) 0 0; line-height: 1.6; }
+
+/* ── FLOOR STUDIO · LIVE CAMERA (LIVE-01) ─────────────────────────────────────
+ *
+ * Two columns on a desktop, stacked on a phone — and the phone case is the one
+ * that matters, because a person pointing a camera at their own floor is
+ * holding a phone by definition. There the picture comes first and the controls
+ * sit under it, within thumb reach, so changing the species does not mean
+ * moving the hand that is aiming the camera.
+ *
+ * The <video> and the analysis <canvas> are never shown. The video is the frame
+ * source and the work canvas is where the composite is built at analysis size;
+ * what the visitor sees is the view canvas, which is the work canvas scaled up
+ * once by the compositor. Hiding them with `display:none` would let a browser
+ * stop decoding the stream, so they are moved off-screen instead.
+ */
+.fs-live-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .fs-live-wrap { grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); }
+}
+
+.fs-live-source,
+.fs-live-work,
+.fs-live-mark {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  left: -9999px;
+  top: 0;
+}
+
+.fs-live { position: relative; }
+
+.fs-live-stage {
+  position: relative;
+  border-radius: var(--radius-lg, 14px);
+  overflow: hidden;
+  background: #14100c;
+  box-shadow: var(--shadow-md, 0 10px 30px rgba(0, 0, 0, 0.18));
+}
+
+.fs-live-view {
+  display: block;
+  width: 100%;
+  /* A phone camera is 4:3 or 16:9 depending on the device and the orientation.
+     A fixed box would letterbox one of them; the aspect follows the element and
+     the canvas is resized to match it every frame. */
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #14100c;
+}
+@media (orientation: landscape) and (max-width: 899px) {
+  .fs-live-view { aspect-ratio: 16 / 9; }
+}
+
+.fs-live-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: rgba(255, 252, 245, 0.94);
+  background: linear-gradient(to bottom, rgba(24, 18, 12, 0.62), rgba(24, 18, 12, 0));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.fs-live-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-md);
+}
+
+.fs-live-meta {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fs-live-error {
+  padding: var(--space-lg);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius-lg, 14px);
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+}
+.fs-live-error p { margin: 0 0 var(--space-md); color: var(--ink); line-height: 1.6; max-width: 60ch; }
+
+.fs-live-panel > .fs-h3 { margin-top: 0; }
+.fs-live-panel .fs-estimate-figure { margin-bottom: 0; }
+
+/* A camera view that animates its own controls while the frame is already
+   moving is nauseating. Everything here respects the setting. */
+@media (prefers-reduced-motion: reduce) {
+  .fs-live-view { transition: none; }
+}

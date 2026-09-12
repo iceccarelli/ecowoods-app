@@ -75,8 +75,9 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
 | GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
 | GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
-| AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
-| AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
+| AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
+| AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
+| LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
 | NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
 | VIS-02 | **closed by VIS-02** | five pages carried a full openGraph block with no images key — the four commercial head terms and Floor Studio all served the site default, the same card /terms serves |
 | TREE-01 | **closed by VIS-02** | /technical-library is the breadcrumb parent of every article and sits at sitemap priority 0.95, and appeared in no menu; the Reference column now names it beside /resources with notes that distinguish them |
@@ -904,3 +905,90 @@ shingles. Highest overlap between any two pages: 12.6%, `/guides/[slug]` against
 `/services/[slug]` — shared breadcrumb, CTA and next-step rail, not shared
 content. No identical title except the notFound fallback. No identical meta
 description. No pair of pages on this site tells the same story.
+
+---
+
+## LIVE-01 · the live camera, and the two defects it could not ship on top of
+
+### What was asked for, and what was built instead
+
+The request was for the floor to change live under a camera, described as "REAL
+ai generated change of the floor". What shipped renders, live, every floor
+Ecowoods can supply and install — and generates nothing.
+
+That is not a shortfall, it is the same rule render.ts has carried since the
+studio shipped: *"A diffusion model asked for 'white oak herringbone' produces a
+beautiful floor that exists nowhere, and the homeowner who falls in love with it
+cannot buy it. That is not a rendering bug, it is a fraud with a nice colour
+palette."* A generated floor would also break the one thing this repository is
+for — the price under the picture would belong to no product.
+
+So: per frame, the floor plane is found, a mask decides which of those pixels
+are floor rather than furniture, and a configuration from the catalogue is drawn
+into them through an exact projective map, keeping the room's own light. The
+claim is narrower than "AI generates your floor" and, unlike it, true.
+
+### It could not ship on AV-01 and AV-02, so both are closed here
+
+Pointing a camera at a room made both defects impossible to look away from. The
+first frame repainted a strip along the bottom and left the rest of the floor
+alone (AV-02: the row-run estimator stops at the first rug it meets), and what
+it did paint went over the dog (AV-01).
+
+**AV-01 — the mask.** Chroma-only became: a per-row luminance profile fitted as
+a line, so a floor's falloff with depth is removed before anything is judged; a
+dominant-surface mode on the residual, chosen by mass after smoothing, because a
+flat rug otherwise out-votes a textured floor one bin at a time; scale from the
+mode's core rather than its span; morphological close; a 4-connected flood that
+fills whatever an object encloses. 13 of 14 fixture objects preserved, against 8
+before.
+
+The fourteenth is named rather than buried. An oak stair riser on an oak floor
+is the same wood at a slightly different angle to the light, and the rule that
+catches it — any luminance departure is an object — also refuses to paint a pool
+of sunlight, which leaves a blotch of the old floor in the middle of the new one
+in every daylit room. Same chroma with different brightness is therefore treated
+as light. The riser is the price and it is in the audit.
+
+**AV-02 — the boundary.** The floor is a connected region now, found by growing
+from the bottom edge over cells that match the dominant surface of the bottom
+band, so a rug is a hole in the floor rather than the end of it. Coverage error
+on a room with a rug: 72% → 3%. And the quad is checked for FIT in both
+directions against the region's own row extents — a trapezoid stretched over a
+diagonal wall line, or a wedge that has missed most of the floor, both report
+`weak` and hand over the four corners.
+
+### The render path had to be 7.8× faster
+
+63,530 assertions of behaviour unchanged, and 64 ms a frame at 320×240 became
+8.2. Three causes, all of them work that did not depend on the pixel:
+`woodColourAt` was doing a catalogue lookup, two hex parses, a second lookup and
+an `rgba()` string parse PER PIXEL; the grain was six `Math.sin` per pixel, of
+which two are constant across a whole board; and `relativeLuminance` was three
+`Math.pow` per pixel over 256 possible inputs. A memoised palette, a per-board
+cache, a sine table for grain only, an sRGB table, and the mask's own cell grid
+standing in for four cross products of `inQuad` on every interior pixel.
+
+### What the live view is not allowed to say
+
+It never says `measured`. The still-photograph path gives a person four corners
+to drag and a boundary they have looked at; the live path has neither. The
+caption asks for what it needs instead, and `liveCaption` has a test asserting
+that the words "measured", "accurate", "exact" and "precise" never appear in it.
+
+### Privacy, unchanged and now more load-bearing
+
+There is no upload in the component and no endpoint for one. The stream is
+attached to a `<video>` that never leaves the page, frames are read into an
+ImageData and dropped, and the tracks stop on close and on `visibilitychange` —
+a camera light that stays on after someone switches apps is what makes a person
+uninstall a product. Pointing a camera at a living room produces zero requests,
+which is checkable from the network panel.
+
+### Where it is reachable from
+
+`/floor-studio#live` opens the camera directly, and it is linked from the header
+panel, the mobile drawer, ⌘K and the homepage — four surfaces, one entry in
+`lib/navigation.ts`, because NAV-03 made that one source. The fragment has a
+real `id="live"` behind it so it lands correctly without JavaScript, which
+`verify-destinations` caught and required.

@@ -787,12 +787,19 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               Don’t imagine your new floor. <span className="serif-italic">See it.</span>
             </h2>
             <p>
-              Upload a photo of your room and explore real Ecowoods floors in your own space —
-              species, finish, pattern and board width, with a live estimated installed range.
-              The photo never leaves your device.
+              Point your phone at the room and the floor changes while you move — species, finish,
+              pattern and board width, with the installed range updating as you go. Or upload a
+              photo. Either way it runs on your own device: nothing is uploaded, and every floor
+              you see is one we can actually supply and install.
             </p>
-            <Link href="/floor-studio" className="btn btn-copper">
-              Try your room <span aria-hidden>→</span>
+            {/* Two doors into one thing, and the live one leads because it is the
+                one people have never seen before. Both land on /floor-studio;
+                the fragment is what opens the camera (LIVE-01). */}
+            <Link href="/floor-studio#live" className="btn btn-copper">
+              Point your camera at the room <span aria-hidden>→</span>
+            </Link>
+            <Link href="/floor-studio" className="btn btn-ghost">
+              Or start from a photo
             </Link>
             <p>
               Already know the specification?{' '}

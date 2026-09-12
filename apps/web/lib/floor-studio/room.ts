@@ -220,60 +220,139 @@ export const DEFAULT_QUAD: Quad = [
   { x: 0, y: 1 },
 ];
 
+/* ── the floor as a REGION, not a run of pixels (VIS-03) ──────────────────── */
+
+/**
+ * WHY THE ROW-RUN VERSION HAD TO GO
+ *
+ * It sampled a reference colour from the bottom centre, then walked upward
+ * measuring how far that colour continued left and right on each row, and
+ * called the row where the run collapsed the wall line. On an empty room it is
+ * exact. On a room with anything IN it, the first rug, sofa or dog the walk
+ * meets collapses the run — so the wall line comes back at the near edge of the
+ * furniture rather than at the wall.
+ *
+ * AUDIT-01 measured it: 0% error on an empty room, 0% with a sofa off to one
+ * side, and 72% error the moment a rug crosses the middle of the floor, while
+ * still reporting `measured`. Living rooms have rugs. And the live camera made
+ * it impossible to ignore — pointed at a room it repainted a strip along the
+ * bottom of the frame and left the rest of the floor alone, because a strip
+ * along the bottom was all the estimator had found.
+ *
+ * WHAT REPLACES IT
+ *
+ * The floor is a connected REGION, and a rug sitting on it is a hole in that
+ * region rather than the end of it. So:
+ *
+ *   1. take the dominant surface of the bottom band as the reference — the
+ *      same mode-of-the-histogram idea the renderer's mask uses, for the same
+ *      reason: a mean is dragged by whatever is standing there
+ *   2. mark every cell in the frame that matches it
+ *   3. keep the connected component that touches the bottom edge — this is
+ *      what walks AROUND a rug instead of stopping at it
+ *   4. the wall line is the topmost row that component reaches with real width
+ *
+ * It reports `weak` in exactly the cases the old one did, plus the new ones it
+ * can now detect: no component, a component that never rises above the bottom
+ * quarter, or one whose far edge is a sliver.
+ */
+
+/**
+ * Cell size, in pixels, scaled to the frame.
+ *
+ * A fixed cell is a different instrument on a 200-pixel test image than on a
+ * 1400-pixel photograph: eight pixels is four percent of the first and half a
+ * percent of the second. Roughly forty cells across the short edge keeps the
+ * estimator's resolution the same proportion of the picture wherever it runs,
+ * which is what makes a fixture at one size mean anything at another.
+ */
+const qcell = (px: Pixels): number => Math.max(3, Math.round(Math.min(px.width, px.height) / 40));
+
+type Band = { lum: number; u: number; v: number };
+
+const bandOf = (px: Pixels, x0: number, y0: number, x1: number, y1: number): Band => {
+  const rgb = meanRgb(px, x0, y0, x1, y1, 2);
+  const { hueDeg, chroma } = hueChroma(rgb);
+  const rad = (hueDeg * Math.PI) / 180;
+  return { lum: relativeLuminance(rgb.r, rgb.g, rgb.b), u: Math.cos(rad) * chroma, v: Math.sin(rad) * chroma };
+};
+
+const QUAD_CHROMA_TOL = 0.13;
+const QUAD_LUM_TOL = 0.085;
+
 export function estimateFloorQuad(px: Pixels): { quad: Quad; confidence: 'measured' | 'weak' } {
   if (px.width < 8 || px.height < 8) return { quad: DEFAULT_QUAD, confidence: 'weak' };
 
-  const reference = meanRgb(px, 0.35, 0.9, 0.65, 1);
-  const sampleRows = Math.min(120, px.height);
-  const rowStep = Math.max(1, Math.floor(px.height / sampleRows));
-  const centre = Math.floor(px.width / 2);
-  const colStep = Math.max(1, Math.floor(px.width / 160));
+  const QCELL = qcell(px);
+  const cols = Math.max(1, Math.ceil(px.width / QCELL));
+  const rows = Math.max(1, Math.ceil(px.height / QCELL));
 
-  let horizonRow = 0;
-  let leftAtHorizon = 0;
-  let rightAtHorizon = px.width - 1;
-  let found = false;
+  /* The reference. The bottom band of a photograph taken by a person standing
+     in a room is floor in essentially every case, and taking it as a BAND
+     rather than one small patch means a rug that happens to sit under the
+     camera does not become the definition of floor. */
+  const ref = bandOf(px, 0.2, 0.88, 0.8, 1);
 
-  for (let y = px.height - 1; y >= 0; y -= rowStep) {
-    let left = centre;
-    let right = centre;
-    for (let x = centre; x >= 0; x -= colStep) {
-      const i = (y * px.width + x) * 4;
-      const here = { r: px.data[i]!, g: px.data[i + 1]!, b: px.data[i + 2]! };
-      if (colourDistance(here, reference) > TOLERANCE) break;
-      left = x;
+  const like = new Uint8Array(cols * rows);
+  for (let cy = 0; cy < rows; cy += 1) {
+    for (let cx = 0; cx < cols; cx += 1) {
+      const b = bandOf(
+        px,
+        (cx * QCELL) / px.width,
+        (cy * QCELL) / px.height,
+        ((cx + 1) * QCELL) / px.width,
+        ((cy + 1) * QCELL) / px.height,
+      );
+      const dChroma = Math.hypot(b.u - ref.u, b.v - ref.v);
+      const dLum = Math.abs(b.lum - ref.lum);
+      like[cx + cy * cols] = dChroma < QUAD_CHROMA_TOL && dLum < QUAD_LUM_TOL ? 1 : 0;
     }
-    for (let x = centre; x < px.width; x += colStep) {
-      const i = (y * px.width + x) * 4;
-      const here = { r: px.data[i]!, g: px.data[i + 1]!, b: px.data[i + 2]! };
-      if (colourDistance(here, reference) > TOLERANCE) break;
-      right = x;
-    }
-    const run = right - left;
-    if (run < px.width * MIN_RUN_FRACTION) {
-      horizonRow = y;
-      found = true;
-      break;
-    }
-    leftAtHorizon = left;
-    rightAtHorizon = right;
-    horizonRow = y;
   }
 
-  /* The run never collapsed — the whole frame reads as one surface. That is a
-     photograph of a floor, not of a room, and the honest answer is a default
-     quad plus a request for a correction. */
-  if (!found || horizonRow > px.height * 0.92) {
-    return { quad: DEFAULT_QUAD, confidence: 'weak' };
+  /* The component that reaches the bottom of the frame. Four-connected, so it
+     does not leak diagonally past a chair leg into the wall behind it. */
+  const seen = new Uint8Array(cols * rows);
+  const stack: number[] = [];
+  for (let cx = 0; cx < cols; cx += 1) {
+    const c = cx + (rows - 1) * cols;
+    if (like[c] === 1 && seen[c] === 0) { seen[c] = 1; stack.push(c); }
+  }
+  let size = 0;
+  const rowLeft = new Int32Array(rows).fill(cols);
+  const rowRight = new Int32Array(rows).fill(-1);
+  while (stack.length) {
+    const c = stack.pop()!;
+    size += 1;
+    const x = c % cols;
+    const y = (c / cols) | 0;
+    if (x < rowLeft[y]!) rowLeft[y] = x;
+    if (x > rowRight[y]!) rowRight[y] = x;
+    if (x > 0 && like[c - 1] === 1 && !seen[c - 1]) { seen[c - 1] = 1; stack.push(c - 1); }
+    if (x < cols - 1 && like[c + 1] === 1 && !seen[c + 1]) { seen[c + 1] = 1; stack.push(c + 1); }
+    if (y > 0 && like[c - cols] === 1 && !seen[c - cols]) { seen[c - cols] = 1; stack.push(c - cols); }
+    if (y < rows - 1 && like[c + cols] === 1 && !seen[c + cols]) { seen[c + cols] = 1; stack.push(c + cols); }
   }
 
-  const yFar = clamp01(horizonRow / px.height);
-  const xFarLeft = clamp01(leftAtHorizon / px.width);
-  const xFarRight = clamp01(rightAtHorizon / px.width);
+  /* The whole frame is one surface: a photograph of a floor, not of a room.
+     Same answer the row-run version gave, for the same reason. */
+  if (size >= cols * rows * 0.97) return { quad: DEFAULT_QUAD, confidence: 'weak' };
+  if (size < cols * rows * 0.04) return { quad: DEFAULT_QUAD, confidence: 'weak' };
 
-  /* A far edge narrower than a fifth of the frame is a corridor of noise, not a
-     wall line. Say weak and hand over the default rather than a confident
-     sliver. */
+  /* The wall line: the topmost row the region reaches with real width. A row
+     the region only just clips is a reflection or a door frame. */
+  const minWidth = Math.max(2, Math.round(cols * MIN_RUN_FRACTION));
+  let top = rows - 1;
+  for (let y = 0; y < rows; y += 1) {
+    if (rowRight[y]! - rowLeft[y]! + 1 >= minWidth) { top = y; break; }
+  }
+  if (top > rows * 0.92) return { quad: DEFAULT_QUAD, confidence: 'weak' };
+
+  /* A cell's position is its CENTRE. Taking the outer edge of the boundary
+     cells widens the floor by one cell on each side, which on a small frame is
+     several percent of the picture and always in the same direction. */
+  const yFar = clamp01(((top + 0.5) * QCELL) / px.height);
+  const xFarLeft = clamp01(((rowLeft[top]! + 0.5) * QCELL) / px.width);
+  const xFarRight = clamp01(((rowRight[top]! + 0.5) * QCELL) / px.width);
   if (xFarRight - xFarLeft < 0.2) return { quad: DEFAULT_QUAD, confidence: 'weak' };
 
   const quad: Quad = [
@@ -282,6 +361,36 @@ export function estimateFloorQuad(px: Pixels): { quad: Quad; confidence: 'measur
     { x: 1, y: 1 },
     { x: 0, y: 1 },
   ];
+
+  /* DOES A TRAPEZOID ACTUALLY FIT WHAT WE FOUND?
+   *
+   * The quad has two corners on the wall line and two at the bottom of the
+   * frame. That is the right shape for a room photographed square-on and the
+   * wrong shape for one shot through a doorway at an angle, where the wall line
+   * runs diagonally across the picture — there the emitted quad covers a great
+   * deal of wall, and the old estimator said `measured` about it anyway.
+   *
+   * So measure the fit, IN BOTH DIRECTIONS. Sum the region's own row extents —
+   * extents, so a rug or a sofa INSIDE the floor counts as covered rather than
+   * as a hole — and compare that to the area of the quad.
+   *
+   * A trapezoid that fits its region scores near one. Score well under and the
+   * quad has swallowed wall. Score well OVER and the quad has missed floor:
+   * that is the doorway shot, where the wall line arrives at one corner first,
+   * the width threshold is met a long way down, and the emitted wedge covers
+   * two thirds of the floor that is actually there. Both are the same answer —
+   * `weak`, and four corners to drag, which is what the verification screen is
+   * for. */
+  let filled = 0;
+  for (let y = 0; y < rows; y += 1) {
+    if (rowRight[y]! < rowLeft[y]!) continue;
+    filled += rowRight[y]! - rowLeft[y]! + 1;
+  }
+  const filledArea = (filled * QCELL * QCELL) / (px.width * px.height);
+  const quadArea = quadCoverage(quad);
+  const fit = quadArea > 0 ? filledArea / quadArea : 0;
+  if (fit < 0.85 || fit > 1.25) return { quad, confidence: 'weak' };
+
   return { quad, confidence: 'measured' };
 }
 

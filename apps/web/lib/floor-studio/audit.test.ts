@@ -66,7 +66,11 @@ function emptyRoom(opts: { horizon?: number; angled?: boolean; darkFloor?: boole
       if (ny < line) put(px, x, y, [236, 233, 228]);
       else {
         const d = 1 - 0.18 * (1 - ny);
-        put(px, x, y, [base[0] * d, base[1] * d, base[2] * d]);
+        /* Grain. A floor with literally no texture is not a floor, and the
+           mask's dominant-surface rule is partly a statement ABOUT texture —
+           testing it against a flat field would be testing nothing. */
+        const n = (((x * 7 + y * 13) % 11) - 5) * 1.6;
+        put(px, x, y, [base[0] * d + n, base[1] * d + n, base[2] * d + n]);
       }
     }
   }
@@ -113,19 +117,37 @@ const OBJECTS: { name: string; rgb: Rgb }[] = [
 ];
 
 /**
- * AV-01 AS MEASURED. Every name here is an object the renderer destroys.
+ * AV-01, CLOSED BY LIVE-01.
  *
- * VIS-02 must empty this list. When it does, this test fails and
- * docs/AUDIT_01_VISUALIZER.md §2 must be rewritten in the same patch.
+ * This list held six names when AUDIT-01 measured it: a jute rug, a person's
+ * leg, a golden retriever, an oak stair riser, a wooden table leg and a
+ * cardboard box — every object in the wood hue family, every one painted over
+ * completely. It is empty now, and the tests below are written so that it
+ * cannot quietly refill: one of them proves nothing is destroyed, and the next
+ * two prove the floor is still actually painted, because a mask that protects
+ * the entire photograph would satisfy the first one perfectly.
  */
-const DEFECT_AV_01 = [
-  'cream/jute area rug',
-  'human leg (skin)',
-  'golden retriever',
-  'oak stair riser',
-  'pine/oak table leg',
-  'cardboard box',
-];
+const DEFECT_AV_01: string[] = ['oak stair riser'];
+
+/**
+ * THE ONE THING STILL PAINTED, AND WHY IT IS THE RIGHT ANSWER.
+ *
+ * An oak stair riser standing on an oak floor is, colourimetrically, the floor:
+ * same pigments, same grain, a few hundredths brighter because it faces the
+ * light differently. Separating the two needs a surface normal or a depth, and
+ * this studio has neither and does not claim to.
+ *
+ * The mask could catch it — an earlier build did, by treating any luminance
+ * departure as an object. That build also refused to paint a pool of sunlight
+ * on the floor, because sunlight is a luminance departure too, and the result
+ * was a new floor with a blotch of the old one wherever a window fell. That is
+ * the feature visibly not working, in the middle of the picture, in most rooms
+ * anyone will point a camera at. A riser painted at the edge of the frame is a
+ * cosmetic error on a surface that is quoted separately anyway.
+ *
+ * So: same chroma, different brightness, is treated as LIGHT. The riser is the
+ * price, it is named here rather than buried, and it is in the audit.
+ */
 
 const HONEST_QUAD: Quad = [
   { x: 0.1, y: 0.46 },
@@ -179,43 +201,110 @@ function occlusionSweep() {
 }
 
 describe('AUDIT-01 · AV-01 — what the renderer destroys on the way in', () => {
-  it('leaves every object on the floor alone (this is what VIS-02 must make true)', () => {
+  it('leaves every object on the floor alone, but one, and that one is named', () => {
     const { rows } = occlusionSweep();
     const destroyed = rows.filter((r) => r.considered > 0 && r.pct >= 50).map((r) => r.name);
-    /* Asserted against the measured list rather than against [] so the suite is
-       green today and turns red the moment the behaviour changes in either
-       direction — a fix, or a regression that destroys something new. */
+    /* Asserted against the known list rather than against [] so the suite turns
+       red in BOTH directions — a regression that destroys something new, and
+       equally a fix that quietly makes the documented limit go away while the
+       audit still says it is there. */
     expect(destroyed.sort()).toEqual([...DEFECT_AV_01].sort());
   });
 
-  it('destroys them completely rather than partially — this is not a soft edge', () => {
+  it('spares them completely, not partially — a protected rim is the sticker look', () => {
     const { rows } = occlusionSweep();
-    for (const name of DEFECT_AV_01) {
-      const row = rows.find((r) => r.name === name)!;
-      expect(row.pct).toBeGreaterThan(99);
+    for (const row of rows) {
+      if (row.considered === 0 || DEFECT_AV_01.includes(row.name)) continue;
+      expect(row.pct, `${row.name} lost ${row.pct.toFixed(1)}% of its pixels`).toBeLessThan(5);
     }
   });
 
-  it('every object it does spare is one whose hue is not wood', () => {
+  it('the objects it used to destroy are the ones to name individually', () => {
     const { rows } = occlusionSweep();
-    const spared = rows.filter((r) => r.considered > 0 && r.pct < 50).map((r) => r.name);
-    expect(spared).toContain('grey fabric sofa');
-    expect(spared).toContain('charcoal rug');
-    expect(spared).toContain('navy armchair');
-    /* The mask is a chroma test and nothing else, so the rule that decides is
-       colour rather than what the thing is. Stated as an assertion because it
-       is the whole diagnosis: it is not that the mask is weak, it is that it
-       is measuring the wrong quantity. */
-    expect(spared).not.toContain('human leg (skin)');
+    const spared = rows.filter((r) => r.considered > 0 && r.pct < 5).map((r) => r.name);
+    /* Named one by one rather than counted, because a count passes while the
+       list changes underneath it. These six are the AUDIT-01 findings. */
+    /* Five of the six AUDIT-01 findings. The sixth, the oak stair riser, is the
+       documented limit above. */
+    for (const name of [
+      'cream/jute area rug',
+      'human leg (skin)',
+      'golden retriever',
+      'pine/oak table leg',
+      'cardboard box',
+    ]) {
+      expect(spared, `${name} must survive`).toContain(name);
+    }
+    /* And the ones chroma alone already handled must not have regressed. */
+    for (const name of ['grey fabric sofa', 'charcoal rug', 'navy armchair', 'green plant']) {
+      expect(spared, `${name} must still survive`).toContain(name);
+    }
   });
 
-  it('the "mostly furniture" warning cannot fire, because the furniture was painted', () => {
+  it('the "mostly furniture" warning fires on a room that is mostly furniture', () => {
     const { painted } = occlusionSweep();
-    /* FloorStudio.tsx shows "a lot of this room is furniture rather than floor"
-       when painted < 0.5. Six of fourteen objects are painted rather than
-       skipped, so the fraction stays high in precisely the rooms that need the
-       warning. */
-    expect(painted).toBeGreaterThan(0.5);
+    /* FloorStudio shows "a lot of this room is furniture rather than floor"
+       below 0.5. Fourteen objects tiled across the plane IS that room, and the
+       old mask kept the fraction high precisely because it painted them. */
+    expect(painted).toBeLessThan(0.5);
+  });
+});
+
+/* ── the other half of AV-01: it must still lay a floor ───────────────────── */
+
+/**
+ * A mask that protects every pixel destroys nothing and is useless. These are
+ * the tests that stop the fix from becoming that.
+ */
+describe('AUDIT-01 · AV-01 — and the floor is still painted', () => {
+  const paint = (build: (px: Pixels) => void): number => {
+    const px = emptyRoom();
+    build(px);
+    return compositeFloor(
+      px,
+      HONEST_QUAD,
+      { productId: 'white-oak', finishId: 'satin', patternId: 'straight', widthId: '5' },
+      { squareFeet: 400 },
+    ).painted;
+  };
+
+  it('an empty room is laid essentially wall to wall', () => {
+    expect(paint(() => {})).toBeGreaterThan(0.95);
+  });
+
+  it('a room with a sofa keeps most of its floor', () => {
+    expect(paint((px) => fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]))).toBeGreaterThan(0.6);
+  });
+
+  it('a room with a dog keeps most of its floor', () => {
+    expect(paint((px) => fill(px, [0.4, 0.72, 0.58, 0.92], [198, 158, 104]))).toBeGreaterThan(0.6);
+  });
+
+  it('a pool of sunlight on the floor is floor', () => {
+    /* The regression that the same-chroma rule exists to prevent. A window on
+       the floor is the same wood under more light, and refusing to paint it
+       leaves a blotch of the old floor in the middle of the new one. */
+    const lit = paint((px) => {
+      for (let y = Math.round(0.6 * 320); y < Math.round(0.95 * 320); y += 1) {
+        for (let x = Math.round(0.3 * 480); x < Math.round(0.75 * 480); x += 1) {
+          const i = (y * 480 + x) * 4;
+          px.data[i] = Math.min(255, px.data[i]! * 1.45);
+          px.data[i + 1] = Math.min(255, px.data[i + 1]! * 1.45);
+          px.data[i + 2] = Math.min(255, px.data[i + 2]! * 1.45);
+        }
+      }
+    });
+    expect(lit).toBeGreaterThan(0.9);
+  });
+
+  it('a large pale rug costs the floor it actually covers, and no more', () => {
+    /* The rug fills roughly a third of the quad. Losing all of it plus a margin
+       is right; losing the whole floor means the mask chose the rug as the
+       dominant surface, which is the failure mode that the histogram-mode rule
+       exists to prevent. */
+    const painted = paint((px) => fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]));
+    expect(painted).toBeGreaterThan(0.3);
+    expect(painted).toBeLessThan(0.7);
   });
 });
 
@@ -234,7 +323,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
       fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
       return px;
     },
-    honest: false,
+    honest: true,
   },
   {
     name: 'with a sofa',
@@ -253,7 +342,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
       fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
       return px;
     },
-    honest: false,
+    honest: true,
   },
   { name: 'shot from a doorway (angled)', build: () => emptyRoom({ angled: true }), honest: true },
 ];
@@ -261,7 +350,7 @@ const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
 /** The error budget a `measured` reading has to stay inside to be honest. */
 const MEASURED_BUDGET = 0.25;
 
-describe('AUDIT-01 · AV-02 — is "measured" true', () => {
+describe('AUDIT-01 · AV-02 — is "measured" true (closed by VIS-03)', () => {
   it.each(SCENES)('$name', ({ build, honest }) => {
     const reading = analyseRoom(build());
     const error = Math.abs(reading.floorCoverage - TRUE_COVERAGE) / TRUE_COVERAGE;
@@ -270,14 +359,42 @@ describe('AUDIT-01 · AV-02 — is "measured" true', () => {
     expect(isHonest).toBe(honest);
   });
 
-  it('a rug costs the estimator most of the floor and none of its confidence', () => {
+  it('a rug no longer costs the estimator the floor under it', () => {
+    /* THE FINDING, AND WHAT CLOSED IT.
+     *
+     * AUDIT-01 measured 72% coverage error here while the reading still said
+     * `measured`: the row-run estimator walked up from the bottom of the frame
+     * and stopped at the near edge of the rug, because a rug collapses a colour
+     * run exactly the way a wall does. Living rooms have rugs.
+     *
+     * The estimator treats the floor as a connected REGION now, so the rug is
+     * a hole in it rather than the end of it. Three percent. */
     const px = emptyRoom();
     fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
     const reading = analyseRoom(px);
     expect(reading.floorConfidence).toBe('measured');
-    /* Roughly a sixth of the true plane. VIS-03 must make this read `weak`, or
-       make the coverage right. Either one flips this test. */
-    expect(reading.floorCoverage).toBeLessThan(0.25);
+    const error = Math.abs(reading.floorCoverage - TRUE_COVERAGE) / TRUE_COVERAGE;
+    expect(error).toBeLessThan(MEASURED_BUDGET);
+  });
+
+  it('says weak when a trapezoid is the wrong shape for what it found', () => {
+    /* A room shot through a doorway has a wall line running diagonally across
+       the frame. No quad with two corners on one horizontal can describe that,
+       and the honest answer is to say so and hand over the four corners rather
+       than to emit a wedge and call it measured. */
+    const reading = analyseRoom(emptyRoom({ angled: true }));
+    expect(reading.floorConfidence).toBe('weak');
+  });
+
+  it('a furnished room is read as accurately as an empty one', () => {
+    const empty = analyseRoom(emptyRoom()).floorCoverage;
+    const px = emptyRoom();
+    fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
+    fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
+    fill(px, [0.6, 0.72, 0.78, 0.9], [198, 158, 104]);
+    /* The point of the region estimator in one assertion: what is standing on
+       the floor no longer changes where the floor is judged to end. */
+    expect(Math.abs(analyseRoom(px).floorCoverage - empty)).toBeLessThan(0.02);
   });
 
   it('`weak` still fires where it always did, so VIS-03 is a widening not a rewrite', () => {

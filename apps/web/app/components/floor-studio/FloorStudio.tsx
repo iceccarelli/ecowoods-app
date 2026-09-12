@@ -31,6 +31,8 @@ import {
 import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
 import { compositeFloor } from '@/lib/floor-studio/render';
 import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
+import { cameraAvailable } from '@/lib/floor-studio/live';
+import LiveRoom from './LiveRoom';
 import {
   UNMEASURABLE_FROM_A_PHOTO,
   analyseRoom,
@@ -68,7 +70,12 @@ import {
  *
  * 1. THE PHOTOGRAPH NEVER LEAVES THE DEVICE. Decoding, analysis, masking and
  *    compositing all happen here. There is no upload in this component and no
- *    endpoint for one. A share link carries the floor, never the room.
+ *    endpoint for one. A share link carries the floor, never the room. The live
+ *    camera (LIVE-01) is held to exactly the same rule: the MediaStream is
+ *    attached to a <video> that never leaves the page, every frame is read into
+ *    an ImageData and dropped, and the tracks are stopped when the view closes
+ *    or the tab is hidden. Pointing a camera at a living room makes zero
+ *    network requests, and that is checkable from the network panel.
  *
  * 2. THE CORRECTION IS A FIRST-CLASS CONTROL, NOT AN ERROR PATH. The four
  *    corners are draggable AND keyboard-operable from the moment the analysis
@@ -84,7 +91,7 @@ import {
  *    that the product is broken.
  */
 
-type Stage = 'start' | 'analysing' | 'verify' | 'feel' | 'studio';
+type Stage = 'start' | 'live' | 'analysing' | 'verify' | 'feel' | 'studio';
 
 const ANALYSING_STEPS = [
   'Reading your photo…',
@@ -163,6 +170,17 @@ export default function FloorStudio() {
       const src = new URLSearchParams(search).get('src');
       track('studio_open', src ? { src } : undefined);
     }
+    /* `/floor-studio#live` opens the camera directly. The header, the mobile
+       drawer, ⌘K and the homepage all use it, so the fastest thing this site
+       does is one tap from anywhere (LIVE-01). A device with no camera falls
+       through to the ordinary start screen rather than showing an error for a
+       thing the visitor never asked for. */
+    try {
+      if (window.location.hash === '#live' && cameraAvailable()) setStage('live');
+    } catch {
+      /* no location — start where we always do */
+    }
+
     try {
       if (!search) return;
       const shared = decodeStudioDesign(search);
@@ -240,6 +258,30 @@ export default function FloorStudio() {
       /* history unavailable — localStorage still carries it */
     }
   }, [design, stage]);
+
+  /* ── live camera ───────────────────────────────────────────────────────── */
+  /* Resolved after mount: navigator.mediaDevices does not exist during the
+     server render, and a button that appears on hydration is better than a
+     button that is there and does nothing. */
+  const [hasCamera, setHasCamera] = useState(false);
+  useEffect(() => setHasCamera(cameraAvailable()), []);
+
+  /**
+   * A frozen live frame enters the ordinary flow at the verification step.
+   *
+   * It arrives with the boundary the live view had settled on, which is
+   * usually close and never claimed to be right — the same four draggable
+   * corners are waiting on the next screen, and the same two questions a
+   * photograph cannot answer still get asked.
+   */
+  const onLiveCapture = useCallback((pixels: Pixels, liveQuad: Quad) => {
+    const measured = analyseRoom(pixels);
+    setPhoto(pixels);
+    setReading({ ...measured, floorQuad: liveQuad });
+    setQuad(liveQuad);
+    setDesign((d) => ({ ...d, room: roomFactsFrom(measured) }));
+    setStage('verify');
+  }, []);
 
   /* ── photo intake ──────────────────────────────────────────────────────── */
   const onPickPhoto = useCallback(async (file: File | undefined) => {
@@ -407,11 +449,21 @@ export default function FloorStudio() {
         {stage === 'start' && (
           <div className="fs-start">
             <p className="fs-lede">
-              Upload a photo, use your camera, or start with a floor. Everything happens on your own
-              device — the photo never leaves it, and we do not keep it.
+              Point your camera at the room and watch the floor change while you move, upload a
+              photo, or start from a floor. Everything happens on your own device — nothing is
+              uploaded and we keep nothing.
             </p>
             <div className="fs-start-actions">
-              <label className="btn btn-copper btn-lg fs-file">
+              {hasCamera && (
+                <button
+                  type="button"
+                  className="btn btn-copper btn-lg"
+                  onClick={() => setStage('live')}
+                >
+                  Point my camera at the room
+                </button>
+              )}
+              <label className="btn btn-ghost btn-lg fs-file">
                 Upload a room photo
                 <input
                   type="file"
@@ -438,6 +490,71 @@ export default function FloorStudio() {
               Works best on a photo taken standing up, with some of the floor in the bottom of the
               frame. A phone photo is exactly right.
             </p>
+          </div>
+        )}
+
+        {/* ── LIVE ───────────────────────────────────────────────────────── */}
+        {stage === 'live' && (
+          <div className="fs-live-wrap">
+            <LiveRoom
+              config={design.config}
+              squareFeet={design.squareFeet}
+              boardScale={boardScale}
+              priceLine={`${cad(estimate.estimatedLowCad)} – ${cad(estimate.estimatedHighCad)}`}
+              onCapture={onLiveCapture}
+              onClose={() => setStage('start')}
+            />
+            {/* The floor changes WHILE the camera is running. These are the same
+                axes the studio uses, reading the same catalogue and the same
+                compatibility rules — there is no second configurator here. */}
+            <div className="fs-live-panel">
+              <h3 className="fs-h3">Change the floor while you look at it</h3>
+              <Axis
+                legend="Species"
+                options={FLOOR_PRODUCTS.map((p) => ({ id: p.id, label: p.name, swatch: [p.base, p.grain] }))}
+                value={design.config.productId}
+                onPick={(v) => setConfig(design.config, 'productId', v)}
+                reasonFor={(v) => incompatibilities({ ...design.config, productId: v }).map((r) => r.reason)[0] ?? null}
+              />
+              <Axis
+                legend="Finish"
+                options={FINISH_OPTIONS.map((f) => ({ id: f.id, label: f.label }))}
+                value={design.config.finishId}
+                onPick={(v) => setConfig(design.config, 'finishId', v)}
+                reasonFor={(v) => incompatibilities({ ...design.config, finishId: v }).map((r) => r.reason)[0] ?? null}
+              />
+              <Axis
+                legend="Pattern"
+                options={PATTERN_OPTIONS.map((p) => ({ id: p.id, label: p.label }))}
+                value={design.config.patternId}
+                onPick={(v) => setConfig(design.config, 'patternId', v)}
+                reasonFor={(v) => incompatibilities({ ...design.config, patternId: v }).map((r) => r.reason)[0] ?? null}
+              />
+              <Axis
+                legend="Board width"
+                options={BOARD_WIDTHS.map((w) => ({ id: w.id, label: w.label }))}
+                value={design.config.widthId}
+                onPick={(v) => setConfig(design.config, 'widthId', v)}
+                reasonFor={(v) => incompatibilities({ ...design.config, widthId: v }).map((r) => r.reason)[0] ?? null}
+              />
+              {repaired && (
+                <p className="fs-repaired" role="status">
+                  {repaired}
+                </p>
+              )}
+              <p className="fs-estimate-label">Estimated installed investment</p>
+              <p className="fs-estimate-figure">
+                {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
+              </p>
+              <p className="fs-disclaimer">
+                A <strong>range, not a quote</strong>, for {design.squareFeet.toLocaleString('en-CA')} sq ft.
+                Your fixed price is written down after the free in-home measure.
+              </p>
+              <p className="fs-fine">
+                Every floor here is one we can supply and install. Nothing on this screen is
+                generated by an image model — a floor that does not exist cannot be bought.
+              </p>
+            </div>
           </div>
         )}
 

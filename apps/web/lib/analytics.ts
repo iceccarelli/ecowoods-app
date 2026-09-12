@@ -34,6 +34,9 @@
  *   studio_share         — a design link was copied or shared
  *   studio_samples_request — samples were requested from the studio
  *   studio_estimate_handoff — the design was carried into /estimate
+ *   studio_live_opened   — a camera stream started
+ *   studio_live_blocked  — it did not, and why (six possible reasons)
+ *   studio_live_captured — a live frame was frozen into the studio
  */
 
 export type AnalyticsEvent =
@@ -72,7 +75,16 @@ export type AnalyticsEvent =
   | 'studio_compare'
   | 'studio_share'
   | 'studio_samples_request'
-  | 'studio_estimate_handoff';
+  | 'studio_estimate_handoff'
+  /* The live camera (LIVE-01). studio_live_opened fires when a stream actually
+     starts, not when the button is pressed — the gap between those two is the
+     permission prompt, and studio_live_blocked with its reason is the only way
+     to find out how many people never get past it. Neither carries a frame, a
+     room or anything about the person; the reason is one of six words from
+     classifyCameraError and nothing else. */
+  | 'studio_live_opened'
+  | 'studio_live_blocked'
+  | 'studio_live_captured';
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
   if (typeof window === 'undefined') return;
