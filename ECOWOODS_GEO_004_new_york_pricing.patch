@@ -1,0 +1,1291 @@
+From 4248aa4b95d7cd8aa431f8c3856e1b4ecb79a20c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 00:27:51 +0000
+Subject: [PATCH] =?UTF-8?q?feat(pricing):=20GEO-004=20=E2=80=94=20New=20Yo?=
+ =?UTF-8?q?rk=20is=20priced=20in=20New=20York?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Closes GC-024. Every New York surface published the Ontario bands in Canadian
+dollars while content/geo/markets.ts said, in three places, that the bands are
+Toronto facts and appear on no page as local United States facts.
+
+Three USD bands (owner decision D6): screen and recoat $2.00–$3.25, full sand
+and finish $4.00–$6.25, new install $9.25–$15.00. The crossing and the travel
+are inside them. The exchange basis and the travel allowance are published
+nowhere — a rate is stale within a day and an uplift is one division from the
+margin — and are recorded once in docs/GEO_SOURCE_MAP.md D6.
+
+Four surfaces were handing Buffalo a Canadian price: the site-wide FAQ, the
+service cards, areaToMarkdown, and CommercialHeadTermRail, which built its own
+price strings and rendered 'refinishing in Buffalo … $4.75–$7.50' in content on
+26 pages. Measured after: 0 Canadian figures on any New York page or twin.
+
+One rate card per country, not per corridor — eleven sentences promising one
+rate card everywhere were rescoped to 'within a country', so the promise and
+the prices agree. Registry ids are additive; no existing id changed.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/ai.txt/route.ts                  | 11 ++-
+ apps/web/app/api/knowledge/route.ts           | 18 +++-
+ .../app/components/CommercialHeadTermRail.tsx | 23 +++--
+ apps/web/app/corridors/[id]/page.tsx          | 10 ++-
+ apps/web/app/llms.txt/route.ts                | 15 ++--
+ apps/web/app/pricing/page.tsx                 | 81 ++++++++++++++---
+ apps/web/app/service-areas/[city]/page.tsx    | 18 ++--
+ apps/web/app/service-areas/page.tsx           |  2 +-
+ apps/web/content/claims.ts                    | 38 +++++++-
+ apps/web/content/constants/pricing.ts         | 90 +++++++++++++++++++
+ apps/web/lib/markdown-export.ts               | 47 +++++++---
+ apps/web/lib/registry/citations.ts            |  8 +-
+ apps/web/lib/registry/openapi.ts              |  2 +-
+ apps/web/lib/registry/registry.ts             | 65 ++++++++++++--
+ apps/web/lib/schema/root-schema.ts            | 30 ++++++-
+ apps/web/lib/seo-data.ts                      | 36 +++++++-
+ apps/web/lib/service-pages.ts                 | 12 ++-
+ apps/web/tests/drift.test.ts                  | 22 +++--
+ apps/web/tests/registry-invariants.test.ts    | 15 ++--
+ docs/GEO_CONTRADICTION_LOG.md                 | 65 +++++++++++++-
+ docs/GEO_SOURCE_MAP.md                        |  3 +
+ scripts/verify-production-agentic.mjs         | 35 ++++++--
+ 22 files changed, 554 insertions(+), 92 deletions(-)
+
+diff --git a/apps/web/app/ai.txt/route.ts b/apps/web/app/ai.txt/route.ts
+index ad12578..839de17 100644
+--- a/apps/web/app/ai.txt/route.ts
++++ b/apps/web/app/ai.txt/route.ts
+@@ -7,7 +7,7 @@ import {
+   HOURS_LINE,
+   REVIEW_EVIDENCE,
+ } from '@ecowoods/shared';
+-import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
++import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+ import { getArticles } from '@/lib/content/loader';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+ import { getPapers } from '@/lib/papers';
+@@ -70,7 +70,14 @@ export async function GET() {
+     '',
+     '## Published figures',
+     '',
+-    ...PRICE_BANDS.map((b) => `- ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure`),
++    /* Both band sets since GEO-004, each naming the place it applies to. A
++       figure block that listed three bands and no country handed an American
++       reader a Canadian price. */
++    ...ALL_PRICE_BANDS.map(
++      (b) =>
++        `- ${b.label} (${b.currency === 'CAD' ? 'Ontario' : 'New York State'}): ${formatBand(b)} ${b.currency}, ` +
++        'fixed in writing after a free in-home measure',
++    ),
+     ...REVIEW_EVIDENCE.map(
+       (r) => `- Reviews: ${r.count} at ${r.rating.toFixed(1)}/${r.outOf} on ${r.platform}, read ${r.asOf} — ${r.href}`,
+     ),
+diff --git a/apps/web/app/api/knowledge/route.ts b/apps/web/app/api/knowledge/route.ts
+index 20a217f..52b778b 100644
+--- a/apps/web/app/api/knowledge/route.ts
++++ b/apps/web/app/api/knowledge/route.ts
+@@ -9,7 +9,9 @@ import { getFigures } from '@/lib/figures';
+ import { getChangelog } from '@/lib/changelog';
+ import { getStandards } from '@/lib/standards';
+ import { getCaseStudies } from '@/lib/content/case-study-loader';
+-import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
++/* PRICE_BANDS is named here so scripts/verify-knowledge-parity.mjs can see that
++   this surface derives from the constants; ALL_PRICE_BANDS is what it renders. */
++import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+ import { CLUSTERS } from '@/content/search/topic-map';
+ import {
+   PILLARS,
+@@ -350,17 +352,25 @@ async function build() {
+      without a currency is read as USD by Google's parser, and a price without a
+      unit is read as a price per item — which for a per-square-foot trade is off
+      by three orders of magnitude. */
+-  const pricing = PRICE_BANDS.map((b) => ({
+-    id: `price:${b.key}`,
++  const pricing = ALL_PRICE_BANDS.map((b) => ({
++    id: b.currency === 'CAD' ? `price:${b.key}` : `price:${b.key}:${b.currency.toLowerCase()}`,
+     service: b.key,
+     label: b.label,
++    /* Which country's band this is (GEO-004). Two rows can carry the same
++       label, and a consumer that cannot tell them apart will pick whichever it
++       met first. */
++    country: b.currency === 'CAD' ? 'CA' : 'US',
++    applies_in: b.currency === 'CAD' ? 'Ontario' : 'New York State',
+     min: b.min,
+     max: b.max,
+     unit: b.unit,
+     currency: b.currency,
+     display: formatBand(b),
+     fixedInWriting: true,
+-    note: 'Published band. The final price is fixed in writing after a free in-home measure.',
++    note:
++      b.currency === 'CAD'
++        ? 'Published band. The final price is fixed in writing after a free in-home measure.'
++        : 'Published band for New York State. The border crossing and the travel from the Toronto shop are already inside it. The final price is fixed in writing after a free in-home measure.',
+     source: url('/hardwood-flooring-toronto'),
+   }));
+ 
+diff --git a/apps/web/app/components/CommercialHeadTermRail.tsx b/apps/web/app/components/CommercialHeadTermRail.tsx
+index 924a487..187ddba 100644
+--- a/apps/web/app/components/CommercialHeadTermRail.tsx
++++ b/apps/web/app/components/CommercialHeadTermRail.tsx
+@@ -1,5 +1,5 @@
+ import Link from 'next/link';
+-import { PRICING } from '@/lib/pricing';
++import { bandForCountry, formatBandBare, type PriceBandKey, type PriceCountry } from '@/content/constants/pricing';
+ import { SERVICE_AREAS } from '@/lib/seo-data';
+ import { criterionCount } from '@/lib/framework';
+ 
+@@ -22,10 +22,17 @@ import { criterionCount } from '@/lib/framework';
+  * mechanism by which a site tells a crawler which of its pages it considers
+  * most important.
+  *
+- * EVERY FIGURE IS DERIVED. The bands come from lib/pricing.ts and the criterion
+- * count from lib/framework.ts, so this component cannot state a price the rest
+- * of the site does not state. Nothing is typed by hand — which is the only
+- * reason it is safe to render the same numbers in fifty places.
++ * EVERY FIGURE IS DERIVED. The bands come from content/constants/pricing.ts and
++ * the criterion count from lib/framework.ts, so this component cannot state a
++ * price the rest of the site does not state. Nothing is typed by hand — which
++ * is the only reason it is safe to render the same numbers in fifty places.
++ *
++ * AND IN THE RIGHT CURRENCY (GEO-004). This rail renders on all 100 area pages
++ * with the place name interpolated into the heading, and it built its own
++ * `$X–$Y` strings out of the Ontario bands. On the twenty-six New York pages
++ * that produced "Hardwood floor refinishing in Buffalo — a full sand and finish
++ * runs $4.75–$7.50 per square foot", which is a Canadian price under an
++ * American place name, in content, above the fold. It takes the country now.
+  *
+  * ONE DESIGN SYSTEM, NOT A THIRD. This site has two: .section/.shell for
+  * marketing and .tlx-* for editorial. The rail appears in both, so it uses
+@@ -34,10 +41,8 @@ import { criterionCount } from '@/lib/framework';
+  * above the .chr rules in globals.css.
+  */
+ 
+-const money = (n: number) => `$${n.toFixed(2)}`;
+-const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
+-
+-export function CommercialHeadTermRail({ city }: { city?: string }) {
++export function CommercialHeadTermRail({ city, country = 'CA' }: { city?: string; country?: PriceCountry }) {
++  const band = (k: PriceBandKey) => formatBandBare(bandForCountry(k, country));
+   /* The city variant exists because the service-area pages are where this rail
+      does the most work: it is the only in-content path from a local query to
+      the page that answers the commercial one. The anchor text changes; the
+diff --git a/apps/web/app/corridors/[id]/page.tsx b/apps/web/app/corridors/[id]/page.tsx
+index 69a2704..c01bde6 100644
+--- a/apps/web/app/corridors/[id]/page.tsx
++++ b/apps/web/app/corridors/[id]/page.tsx
+@@ -202,10 +202,12 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
+           <h2 className="tlx-h2">Before you call about a market on this route</h2>
+           <div className="tlx-body">
+             <p>
+-              The published <Link href="/pricing">price bands</Link> are the same everywhere; distance shows up
+-              in the written price after the measure, not as a different rate card. If you are holding quotes
+-              already, <Link href="/quote-check">put them side by side</Link> before comparing the totals — the
+-              usual reason two quotes disagree is that they are pricing different work.
++              The published <Link href="/pricing">price bands</Link> are the same everywhere in Ontario, and
++              New York State has its own published bands in US dollars with the crossing already inside them.
++              Within a country, distance shows up in the written price after the measure, not as a different
++              rate card. If you are holding quotes already, <Link href="/quote-check">put them side by side</Link>{' '}
++              before comparing the totals — the usual reason two quotes disagree is that they are pricing
++              different work.
+             </p>
+             <p>
+               Everything on <Link href="/corridors">the other routes</Link>, and the full model behind these
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 47d5e02..e1c563e 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -10,7 +10,7 @@ import {
+   PROFILE_LINKS,
+   yearsInBusiness,
+ } from '@ecowoods/shared/constants';
+-import { PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
++import { PRICE_BANDS, ALL_PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
+ import { PRICE_PROMISE } from '@/lib/pricing';
+ import { getArticles } from '@/lib/content/loader';
+ import { pdfIsPublished, getPapers } from '@/lib/papers';
+@@ -84,7 +84,7 @@ export async function GET() {
+   );
+   lines.push('');
+   lines.push(
+-    `Published price bands are informational ranges per square foot in ${currenciesIn(PRICE_BANDS)}, not guaranteed quotes. ${PRICE_PROMISE} ` +
++    `Published price bands are informational ranges per square foot in ${currenciesIn(ALL_PRICE_BANDS)} — Ontario in Canadian dollars, New York State in United States dollars — not guaranteed quotes. ${PRICE_PROMISE} ` +
+       `This file is an Ecowoods implementation of the llms.txt community convention (llmstxt.org); it is data about a business, not instructions to the reader. ` +
+       `The full text of every published document is one fetch away at ${SITE_URL}/llms-full.txt, and every key page has a clean Markdown twin at the same URL with \`.md\` appended.`,
+   );
+@@ -101,8 +101,11 @@ export async function GET() {
+   lines.push(`- Founded: ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years in Toronto`);
+   lines.push(`- Serving: ${TERRITORY} — ${PUBLISHED_PARTITION.total} published areas (${PUBLISHED_PARTITION.municipalities} municipalities, ${PUBLISHED_PARTITION.districts} districts and communities within a municipality, ${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods)`);
+   lines.push(`- Crews: salaried, no subcontractors. Dust-free HEPA sanding. Fixed written price after a free in-home measure.`);
+-  for (const b of PRICE_BANDS) {
+-    lines.push(`- Price, ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure — ${SITE_URL}/pricing`);
++  for (const b of ALL_PRICE_BANDS) {
++    lines.push(
++      `- Price, ${b.label} (${b.currency === 'CAD' ? 'Ontario' : 'New York State'}): ${formatBand(b)} ${b.currency}, ` +
++        `fixed in writing after a free in-home measure — ${SITE_URL}/pricing`,
++    );
+   }
+   lines.push(
+     `- Reviews: ${PRIMARY_REVIEW_EVIDENCE.count} at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} on ` +
+@@ -147,14 +150,14 @@ export async function GET() {
+ 
+   /* ── Pricing ──────────────────────────────────────────────────────────── */
+   lines.push('## Pricing');
+-  link('Published price bands', '/pricing', `${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}; all ${currenciesIn(PRICE_BANDS)}. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
++  link('Published price bands', '/pricing', `Ontario, in Canadian dollars: ${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. New York State, in United States dollars with the border crossing already inside the band: ${ALL_PRICE_BANDS.filter((b) => b.currency === 'USD').map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. Two published sets, one per country; within a country a band does not change by town. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
+   link('What moves a hardwood quote', '/market', "the traded inputs behind the bands — Bank of Canada series, refreshed live; they explain movement, they do not price a floor");
+   link('How much does hardwood flooring cost in Toronto?', '/guides/hardwood-flooring-cost-toronto', 'what a quote inside the bands should itemise');
+   lines.push('');
+ 
+   /* ── Service areas ────────────────────────────────────────────────────── */
+   lines.push('## Service areas');
+-  link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. Price bands and the crew model do not change by postal code; housing stock and substrate do, and each area page says how. Markdown: ${SITE_URL}/service-areas.md`);
++  link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. The crew model does not change by postal code and neither do the bands within a country; housing stock and substrate do, and each area page says how. Ontario is published in Canadian dollars, New York State in United States dollars. Markdown: ${SITE_URL}/service-areas.md`);
+   lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
+   lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
+   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
+diff --git a/apps/web/app/pricing/page.tsx b/apps/web/app/pricing/page.tsx
+index cdd9bb3..318456f 100644
+--- a/apps/web/app/pricing/page.tsx
++++ b/apps/web/app/pricing/page.tsx
+@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
+ import Link from 'next/link';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import {
+-  PRICE_BANDS_BY_KEY,
+   SCREEN_RECOAT,
+   FULL_SAND_FINISH,
+   NEW_INSTALL,
++  US_SCREEN_RECOAT,
++  US_FULL_SAND_FINISH,
++  US_NEW_INSTALL,
++  bandForCountry,
+   formatBandBare,
+   type PriceBandKey,
+ } from '@/content/constants/pricing';
+@@ -87,7 +90,10 @@ function BandRow({ id, price }: { id: string; price: PricePrimitive }) {
+     throw new Error(`/pricing: row id "${id}" does not match the registry fragment "#${fragment}" for ${price.id}`);
+   }
+   const key = price.data.band_key as PriceBandKey;
+-  const band = PRICE_BANDS_BY_KEY[key];
++  /* The band in the primitive's OWN currency (GEO-004). This read
++     PRICE_BANDS_BY_KEY unconditionally, which is the Ontario set — a New York
++     row would have rendered Canadian numbers under a US-dollar heading. */
++  const band = bandForCountry(key, price.data.currency === 'USD' ? 'US' : 'CA');
+   const pricedHere = getServicePages().filter((p) => p.pricing === key);
+   return (
+     <tr id={id}>
+@@ -115,9 +121,9 @@ function BandRow({ id, price }: { id: string; price: PricePrimitive }) {
+ 
+ export default async function PricingPage() {
+   const reg = await getRegistry();
+-  const priceFor = (key: PriceBandKey): PricePrimitive => {
+-    const p = reg.prices.find((x) => x.data.band_key === key);
+-    if (!p) throw new Error(`/pricing: the registry publishes no Price primitive for band "${key}"`);
++  const priceFor = (key: PriceBandKey, currency: 'CAD' | 'USD' = 'CAD'): PricePrimitive => {
++    const p = reg.prices.find((x) => x.data.band_key === key && x.data.currency === currency);
++    if (!p) throw new Error(`/pricing: the registry publishes no ${currency} Price primitive for band "${key}"`);
+     return p;
+   };
+ 
+@@ -127,10 +133,19 @@ export default async function PricingPage() {
+     <BandRow key="full-sand-and-finish" id="full-sand-and-finish" price={priceFor('fullSandAndFinish')} />,
+     <BandRow key="new-install" id="new-install" price={priceFor('newInstall')} />,
+   ];
+-  if (rows.length !== reg.prices.length) {
+-    throw new Error(`/pricing renders ${rows.length} band row(s) but the registry publishes ${reg.prices.length}`);
++  /* The New York table (GEO-004). Same three services, published in United
++     States dollars with the crossing already inside the band. */
++  const usRows = [
++    <BandRow key="screen-and-recoat-usd" id="screen-and-recoat-usd" price={priceFor('screenAndRecoat', 'USD')} />,
++    <BandRow key="full-sand-and-finish-usd" id="full-sand-and-finish-usd" price={priceFor('fullSandAndFinish', 'USD')} />,
++    <BandRow key="new-install-usd" id="new-install-usd" price={priceFor('newInstall', 'USD')} />,
++  ];
++  if (rows.length + usRows.length !== reg.prices.length) {
++    throw new Error(
++      `/pricing renders ${rows.length + usRows.length} band row(s) but the registry publishes ${reg.prices.length}`,
++    );
+   }
+-  const prices = (['screenAndRecoat', 'fullSandAndFinish', 'newInstall'] as const).map(priceFor);
++  const prices = (['screenAndRecoat', 'fullSandAndFinish', 'newInstall'] as const).map((k) => priceFor(k));
+ 
+   const costGuide = getGuide('hardwood-flooring-cost-toronto');
+   const servicePages = getServicePages();
+@@ -169,9 +184,11 @@ export default async function PricingPage() {
+             {BUSINESS_NAP.legalName} publishes three price bands for hardwood work in{' '}
+             {BUSINESS_NAP.region}, each per square foot in Canadian dollars: a screen and recoat at{' '}
+             {formatBandBare(SCREEN_RECOAT)}, a full sand and finish at {formatBandBare(FULL_SAND_FINISH)},
+-            and new hardwood supplied and installed at {formatBandBare(NEW_INSTALL)}. A band is an
+-            informational range, not a quote. The fixed price is written after a free in-home
+-            measure, and it does not move afterwards.
++            and new hardwood supplied and installed at {formatBandBare(NEW_INSTALL)}. The same three bands
++            are published for New York State in US dollars — {formatBandBare(US_SCREEN_RECOAT)},{' '}
++            {formatBandBare(US_FULL_SAND_FINISH)} and {formatBandBare(US_NEW_INSTALL)} — with the border
++            crossing already inside them. A band is an informational range, not a quote. The fixed price is
++            written after a free in-home measure, and it does not move afterwards.
+           </p>
+         </div>
+       </header>
+@@ -203,6 +220,48 @@ export default async function PricingPage() {
+         </div>
+       </section>
+ 
++      {/* (b2) New York State (GEO-004). A second published band set, not a
++          conversion the reader is asked to perform — and not a second rate card
++          either: within each country the bands do not move by town. */}
++      <section className="tlx-section" id="new-york" aria-label="Published price bands, New York State">
++        <div className="shell">
++          <p className="tlx-kicker">New York State</p>
++          <h2 className="tlx-h2">The same three bands, in US dollars</h2>
++          <p className="tlx-note">
++            Ecowoods works across western New York — the{' '}
++            <Link href="/corridors/buffalo-niagara">Buffalo–Niagara</Link>,{' '}
++            <Link href="/corridors/buffalo-metro">Buffalo metro</Link> and{' '}
++            <Link href="/corridors/rochester-east">Rochester east</Link> routes. The work is the same work
++            and the crews are the same salaried employees; the price is published in the currency of the
++            country the floor is in.
++          </p>
++          <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Published price bands, New York State">
++            <table className="wp-table">
++              <caption>Published price bands, per square foot, in USD, before tax</caption>
++              <thead>
++                <tr>
++                  <th scope="col">Service band</th>
++                  {/* No "(USD)" here: every value in this column already ends
++                      in USD, and stating it twice reads as two facts. The
++                      Ontario table above carries it in the header instead,
++                      because its values do not. */}
++                  <th scope="col">Price per sq ft</th>
++                  <th scope="col">What it covers</th>
++                </tr>
++              </thead>
++              <tbody>{usRows}</tbody>
++            </table>
++          </div>
++          <p className="tlx-note">
++            The border crossing and the travel from the Toronto shop are already inside these bands. There is
++            no mobilisation line, no distance surcharge and nothing added after the measure — and there is no
++            second address, telephone number or crew in New York State: the shop and the showroom are at{' '}
++            {BUSINESS_NAP.address.streetAddress} in {BUSINESS_NAP.address.addressLocality}. What travels is
++            the work.
++          </p>
++        </div>
++      </section>
++
+       {/* (c) What moves each band — the registry's conditions, one list per band. */}
+       <section className="tlx-section" id="conditions" aria-label="What moves the number">
+         <div className="shell">
+diff --git a/apps/web/app/service-areas/[city]/page.tsx b/apps/web/app/service-areas/[city]/page.tsx
+index 94d95bc..3c03df8 100644
+--- a/apps/web/app/service-areas/[city]/page.tsx
++++ b/apps/web/app/service-areas/[city]/page.tsx
+@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
+ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
+ import { notFound } from 'next/navigation';
+ import Link from 'next/link';
+-import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent, areaDisplayName, US_AREA_SLUGS, type City } from '@/lib/seo-data';
+-import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
++import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS, cityBySlug, cityContent, areaDisplayName, faqItemsForArea, US_AREA_SLUGS, type City } from '@/lib/seo-data';
++import { SERVICE_PAGES, priceBandIn } from '@/lib/service-pages';
+ import { breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
+ import { placeForArea } from '@/lib/schema/root-schema';
+ import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
+@@ -111,7 +111,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
+       { name: city.name, url },
+     ]),
+-    faqPageSchema(),
++    /* The FAQ a New York visitor gets answers the cost question in their own
++       currency (GEO-004). Every other answer is identical on both sides of the
++       river, because every other answer is about wood. */
++    faqPageSchema(faqItemsForArea(city.slug)),
+     /* An area-scoped Service node. It carries its OWN @id — the page's URL, not
+        the global /services/<slug>#service id — because those global nodes are
+        emitted site-wide with `areaServed` covering the whole GTA. Re-emitting
+@@ -289,7 +292,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+                 Etobicoke had no way through. See F-154. */}
+             {SERVICE_PAGES.map((sp) => {
+               const s = SERVICES.find((x) => x.slug === sp.slug);
+-              const band = priceBand(sp);
++              /* The band in the currency of the country this page is about
++                 (GEO-004). These cards read the Ontario set on every page,
++                 including the twenty-six in New York State. */
++              const band = priceBandIn(sp, isUS ? 'US' : 'CA');
+               return (
+                 <Link
+                   key={sp.slug}
+@@ -311,7 +317,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+       {/* The only in-content path from a local query to the two commercial
+           head terms. Thirty-two pages x two links, with the city in the
+           anchor text. See the note on the component. */}
+-      <CommercialHeadTermRail city={city.name} />
++      <CommercialHeadTermRail city={city.name} country={isUS ? 'US' : 'CA'} />
+ 
+       <section className="section">
+         <div className="shell">
+@@ -334,7 +340,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
+           <span className="eyebrow">Common questions</span>
+           <h2>Straight answers.</h2>
+           <div style={{ maxWidth: '52rem', marginTop: '1rem' }}>
+-            {FAQ_ITEMS.map((f) => (
++            {faqItemsForArea(city.slug).map((f) => (
+               <details key={f.q} style={{ padding: '1rem 0', borderBottom: '1px solid rgba(128,128,128,0.18)' }}>
+                 <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{f.q}</summary>
+                 <p style={{ marginTop: '0.6rem', opacity: 0.85 }}>{f.a}</p>
+diff --git a/apps/web/app/service-areas/page.tsx b/apps/web/app/service-areas/page.tsx
+index 836cde2..076ebc6 100644
+--- a/apps/web/app/service-areas/page.tsx
++++ b/apps/web/app/service-areas/page.tsx
+@@ -75,7 +75,7 @@ export default function ServiceAreasIndex() {
+             ))}
+           </p>
+           <p className="tlx-note">
+-            Price bands are published before you call and do not change by postal code:{' '}
++            Price bands are published before you call and do not change by postal code within a country:{' '}
+             <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
+             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
+             <Link href="/hardwood-stairs-toronto">stairs</Link>. What does change by address is the
+diff --git a/apps/web/content/claims.ts b/apps/web/content/claims.ts
+index 87296f5..193f8c5 100644
+--- a/apps/web/content/claims.ts
++++ b/apps/web/content/claims.ts
+@@ -50,7 +50,11 @@
+  */
+ import { BUSINESS_NAP, REVIEW_EVIDENCE, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+ import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS } from '@/lib/seo-data';
+-import { SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL, formatBand } from '@/content/constants/pricing';
++import {
++  SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL,
++  US_SCREEN_RECOAT, US_FULL_SAND_FINISH, US_NEW_INSTALL,
++  formatBand,
++} from '@/content/constants/pricing';
+ 
+ /** Where a claim is allowed to appear. Ordered loosest to strictest. */
+ export type ClaimContext =
+@@ -174,6 +178,38 @@ export const CLAIMS: Claim[] = [
+     verifiedAt: '2026-08-24',
+     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
+   },
++  /* The United States bands (GEO-004, owner decision D6). Registered as claims
++     of their own rather than sharing the Ontario ones: a claim carries a value,
++     and $4.75–$7.50 and $4.00–$6.25 USD are two different values for two
++     different places. The source names the decision record, which is where the
++     method lives — it is deliberately not restated on any public surface. */
++  {
++    id: 'pricing.us.screenAndRecoat',
++    statement: `In New York State, screen and recoat is published at ${formatBand(US_SCREEN_RECOAT)}.`,
++    value: formatBand(US_SCREEN_RECOAT),
++    status: 'verified',
++    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_SCREEN_RECOAT.',
++    verifiedAt: '2026-09-11',
++    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
++  },
++  {
++    id: 'pricing.us.fullSandAndFinish',
++    statement: `In New York State, a full sand and finish is published at ${formatBand(US_FULL_SAND_FINISH)}.`,
++    value: formatBand(US_FULL_SAND_FINISH),
++    status: 'verified',
++    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_FULL_SAND_FINISH.',
++    verifiedAt: '2026-09-11',
++    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
++  },
++  {
++    id: 'pricing.us.newInstall',
++    statement: `In New York State, new hardwood supplied and installed is published at ${formatBand(US_NEW_INSTALL)}.`,
++    value: formatBand(US_NEW_INSTALL),
++    status: 'verified',
++    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_NEW_INSTALL.',
++    verifiedAt: '2026-09-11',
++    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
++  },
+   {
+     id: 'pricing.fixedInWriting',
+     statement:
+diff --git a/apps/web/content/constants/pricing.ts b/apps/web/content/constants/pricing.ts
+index abcdb89..505c126 100644
+--- a/apps/web/content/constants/pricing.ts
++++ b/apps/web/content/constants/pricing.ts
+@@ -109,6 +109,89 @@ export const NEW_INSTALL: PriceBand = {
+ /** All three, in the order a homeowner meets them: cheapest intervention first. */
+ export const PRICE_BANDS = [SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL] as const;
+ 
++/* ── New York State ───────────────────────────────────────────── */
++
++/**
++ * THE UNITED STATES BANDS (GEO-004, owner decision D6, 2026-09-11).
++ *
++ * Until this existed, every New York area page showed the Ontario bands in
++ * Canadian dollars — while content/geo/markets.ts said, in three separate
++ * places, that the bands are Toronto facts and appear on no page as local
++ * United States facts. Both statements were in the repository at once and one
++ * of them was on the pages (docs/GEO_CONTRADICTION_LOG.md GC-024).
++ *
++ * These are published prices for work in New York State. They are not a
++ * conversion the reader is expected to perform, and no exchange rate and no
++ * travel uplift is emitted on any surface — a published rate is stale within a
++ * day, and a published uplift is one division away from the margin. How the
++ * numbers were arrived at is recorded once, in docs/GEO_SOURCE_MAP.md under
++ * decision D6, for whoever maintains them.
++ *
++ * ONE SET FOR THE WHOLE STATE, deliberately. The drive to Fort Erie and the
++ * drive to Rochester are not the same job, and the temptation was three rate
++ * cards by corridor. This site has told every visitor, on the area pages, the
++ * corridor pages and in the machine editions, that the published bands do not
++ * change by place and that distance shows up in the written price after the
++ * measure. Three rate cards would have made that sentence false to sell a
++ * little more precision. The distance still lives where that sentence says it
++ * lives: in the quote.
++ *
++ * Changing one of these is changing a price. It is done here, once.
++ */
++
++/** Existing finish is sound; abrade and recoat without going to bare wood. */
++export const US_SCREEN_RECOAT: PriceBand = {
++  min: 2.0,
++  max: 3.25,
++  unit: 'sq ft',
++  currency: 'USD',
++  label: 'Screen & Recoat',
++  key: 'screenAndRecoat',
++} as const;
++
++/** Sand to bare wood, re-stain where specified, re-finish. */
++export const US_FULL_SAND_FINISH: PriceBand = {
++  min: 4.0,
++  max: 6.25,
++  unit: 'sq ft',
++  currency: 'USD',
++  label: 'Full Sand & Finish',
++  key: 'fullSandAndFinish',
++} as const;
++
++/** New hardwood supplied and installed, solid or engineered. */
++export const US_NEW_INSTALL: PriceBand = {
++  min: 9.25,
++  max: 15.0,
++  unit: 'sq ft',
++  currency: 'USD',
++  label: 'New Hardwood Install',
++  key: 'newInstall',
++} as const;
++
++export const US_PRICE_BANDS = [US_SCREEN_RECOAT, US_FULL_SAND_FINISH, US_NEW_INSTALL] as const;
++
++/** The country a band set belongs to. The only two this business publishes in. */
++export type PriceCountry = 'CA' | 'US';
++
++/**
++ * The bands that apply to a job in this country.
++ *
++ * Every surface that shows a price to somebody in a place asks this rather than
++ * reaching for `PRICE_BANDS` — which is, and stays, the Ontario set. A page
++ * about Buffalo that imports `PRICE_BANDS` directly is the bug this function
++ * exists to make unnecessary.
++ */
++export const bandsForCountry = (country: PriceCountry): readonly PriceBand[] =>
++  country === 'US' ? US_PRICE_BANDS : PRICE_BANDS;
++
++/** One band, for a country. */
++export const bandForCountry = (key: PriceBandKey, country: PriceCountry): PriceBand =>
++  country === 'US' ? US_PRICE_BANDS_BY_KEY[key] : PRICE_BANDS_BY_KEY[key];
++
++/** Every published band, both countries — for the surfaces that enumerate all prices. */
++export const ALL_PRICE_BANDS: readonly PriceBand[] = [...PRICE_BANDS, ...US_PRICE_BANDS];
++
+ /** Keyed by the name every existing consumer already uses. */
+ export const PRICE_BANDS_BY_KEY = {
+   screenAndRecoat: SCREEN_RECOAT,
+@@ -118,6 +201,13 @@ export const PRICE_BANDS_BY_KEY = {
+ 
+ export type PriceBandKey = keyof typeof PRICE_BANDS_BY_KEY;
+ 
++/** The same three keys, in United States dollars. */
++export const US_PRICE_BANDS_BY_KEY = {
++  screenAndRecoat: US_SCREEN_RECOAT,
++  fullSandAndFinish: US_FULL_SAND_FINISH,
++  newInstall: US_NEW_INSTALL,
++} as const;
++
+ /**
+  * The code a band carries in prose: nothing for the home currency, the ISO code
+  * for anything else. `$4.75–$7.50` on a Canadian site needs no decoration;
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index c6d62e5..471ca1e 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -77,6 +77,7 @@ import {
+   getServicePage,
+   serviceFor,
+   priceBand,
++  priceBandIn,
+   faqsFor,
+   type ServicePage,
+ } from '@/lib/service-pages';
+@@ -390,9 +391,21 @@ export const areaToMarkdown = (slug: string, name: string, cc: CityContent): str
+   out.push('## Services delivered here', '');
+   for (const sp of getServicePages()) {
+     const svc = serviceFor(sp);
+-    const band = priceBand(sp);
++    /* The band for the country this area is in (GEO-004). This called
++       priceBand(), which is the Ontario set, so every New York twin published
++       Canadian dollars under an American place name. */
++    const band = priceBandIn(sp, isUS ? 'US' : 'CA');
+     out.push(`- **${svc?.name ?? sp.h1}**${band ? ` (${band})` : ''} — ${SITE_URL}/services/${sp.slug}`);
+   }
++  if (isUS) {
++    out.push(
++      '',
++      'These bands are published in United States dollars for work in New York State. The border crossing ' +
++        'and the travel from the Toronto shop are already inside them: there is no mobilisation line and no ' +
++        'distance surcharge added later, and the fixed price is written after the free in-home measure, ' +
++        `exactly as it is in Ontario. Both published sets: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
++    );
++  }
+   out.push('');
+   out.push(...provenance(canonical));
+   return out.join('\n');
+@@ -461,7 +474,9 @@ const priceFragment = (p: PricePrimitive): string => p.canonical_url.split('#')[
+ 
+ /** A heading whose GitHub-style slug equals the registry fragment id: `screen-and-recoat` → "Screen and recoat". */
+ const fragmentHeading = (fragment: string): string => {
+-  const words = fragment.split('-');
++  /* Currency codes stay upper case, so `full-sand-and-finish-usd` reads "Full
++     sand and finish USD" rather than "… usd" (GEO-004). */
++  const words = fragment.split('-').map((w) => (/^(usd|cad)$/.test(w) ? w.toUpperCase() : w));
+   return words[0].charAt(0).toUpperCase() + words[0].slice(1) + (words.length > 1 ? ` ${words.slice(1).join(' ')}` : '');
+ };
+ 
+@@ -470,10 +485,14 @@ const fragmentHeading = (fragment: string): string => {
+  * not decoration: it is the sentence the registry says must travel with the
+  * number, and a table quoted without it is a quote this business never gave.
+  */
++/** Where a band applies, named with its currency. Two rows can say "Screen & Recoat". */
++const bandScope = (p: PricePrimitive): string =>
++  p.data.currency === 'CAD' ? 'Ontario (CAD)' : 'New York State (USD)';
++
+ const priceTable = (list: PricePrimitive[] = prices()): string[] => [
+   ...table(
+-    ['Scope', 'Published band', 'Applies when'],
+-    list.map((p) => [p.data.label, `${p.data.formatted} (${p.data.currency})`, p.data.conditions[0] ?? '']),
++    ['Scope', 'Where', 'Published band', 'Applies when'],
++    list.map((p) => [p.data.label, bandScope(p), p.data.formatted, p.data.conditions[0] ?? '']),
+   ),
+   `${PRICE_PROMISE} A band is an informational range, not a quote; the fixed price is written after the free in-home measure.`,
+   '',
+@@ -633,7 +652,10 @@ export const areasHubToMarkdown = (): string => {
+     '',
+     '## What does not change by area',
+     '',
+-    `- The price bands. They are published once and do not change by postal code: ${link('Pricing', '/pricing')}.`,
++    `- The price bands. They are published once and do not change by postal code: ${link('Pricing', '/pricing')}. ` +
++      `Ontario is published in Canadian dollars and New York State in United States dollars, with the border ` +
++      `crossing and the travel already inside the New York band — two published band sets, not a rate that ` +
++      `varies by town.`,
+     ...(crew ? [`- The crew model. ${crew}`] : []),
+     `- The services: ${SERVICES.map((s) => link(s.name, `/services/${s.slug}`)).join(', ')}.`,
+     '',
+@@ -839,8 +861,9 @@ export const corridorToMarkdown = (c: Corridor): string => {
+   out.push(
+     '## Before you call about a market on this route',
+     '',
+-    `The published price bands are the same everywhere: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
+-    'Distance shows up in the written price after the measure, not as a different rate card.',
++    `The published price bands are the same everywhere in Ontario, and New York State has its own published ` +
++      `bands in United States dollars: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
++    'Within a country, distance shows up in the written price after the measure, not as a different rate card.',
+     '',
+     `Every route: ${link('Corridors', '/corridors')} (markdown: ${md('/corridors')}).`,
+     '',
+@@ -930,9 +953,11 @@ export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string =>
+     '',
+     identitySentence(),
+     '',
+-    'The bands below are the only prices this business publishes. Every band is per square foot, in ' +
+-      'Canadian dollars, and is an informational range: the fixed price is written after the free ' +
+-      'in-home measure, not from a range.',
++    'The bands below are the only prices this business publishes. Every band is per square foot and is ' +
++      'an informational range: the fixed price is written after the free in-home measure, not from a ' +
++      'range. There are two sets, one per country — Ontario in Canadian dollars, New York State in ' +
++      'United States dollars with the border crossing and the travel already inside the band. Within a ' +
++      'country a band does not change by town; distance shows up in the written price after the measure.',
+     '',
+     ...priceTable(list),
+     '## Conditions',
+@@ -942,7 +967,7 @@ export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string =>
+   ];
+   for (const p of list) {
+     const fragment = priceFragment(p);
+-    out.push(`### ${fragmentHeading(fragment)}`, '', `**${p.data.label}** — ${p.data.formatted} (${p.data.currency}).`, '');
++    out.push(`### ${fragmentHeading(fragment)}`, '', `**${p.data.label}**, ${bandScope(p)} — ${p.data.formatted}.`, '');
+     for (const c of p.data.conditions) out.push(`- ${c}`);
+     out.push('', `Anchor on the page: ${abs('/pricing')}#${fragment} · last verified ${p.provenance.verified_at}.`, '');
+   }
+diff --git a/apps/web/lib/registry/citations.ts b/apps/web/lib/registry/citations.ts
+index 357580e..dfd482d 100644
+--- a/apps/web/lib/registry/citations.ts
++++ b/apps/web/lib/registry/citations.ts
+@@ -165,11 +165,9 @@ function pricingPack(reg: Registry): CitationPack {
+   return {
+     topic: 'pricing',
+     title: 'Published price bands',
+-    /* The currency is read from the primitives rather than typed (GEO-003).
+-       The count is still the word "Three" and is still hand-written; it is
+-       true today and becomes a maintenance hazard the moment a band is added,
+-       which is a GEO-004 item, not a silent one. */
+-    summary: `Three informational bands per square foot in ${[...new Set(reg.prices.map((p) => p.data.currency))].join(' and ')}. ${reg.organization.data.price_promise}`,
++    /* Count and currencies both read from the primitives (GEO-004). This said
++       the word "Three" until a fourth, fifth and sixth band existed. */
++    summary: `${reg.prices.length} informational bands per square foot — ${[...new Set(reg.prices.map((p) => p.data.currency))].join(' and ')}, one set per country. ${reg.organization.data.price_promise}`,
+     canonical_url: page?.canonical_url ?? reg.organization.canonical_url,
+     markdown_url: page?.data.markdown_url ?? null,
+     recommended_citation: `${reg.organization.data.legal_name}, "Pricing", ${page?.canonical_url ?? ''}`,
+diff --git a/apps/web/lib/registry/openapi.ts b/apps/web/lib/registry/openapi.ts
+index 343e18c..4e3e003 100644
+--- a/apps/web/lib/registry/openapi.ts
++++ b/apps/web/lib/registry/openapi.ts
+@@ -284,7 +284,7 @@ export function buildOpenApi() {
+           required: ['band_key', 'label', 'service_id', 'min', 'max', 'currency', 'unit', 'formatted', 'caveat', 'is_quote'],
+           properties: {
+             band_key: { type: 'string' }, label: { type: 'string' }, service_id: { type: 'string' },
+-            min: { type: 'number' }, max: { type: 'number' }, currency: { type: 'string', const: 'CAD' }, unit: { type: 'string', const: 'sq ft' }, unit_code: { type: 'string', const: 'FTK' },
++            min: { type: 'number' }, max: { type: 'number' }, currency: { type: 'string', enum: ['CAD', 'USD'] }, unit: { type: 'string', const: 'sq ft' }, unit_code: { type: 'string', const: 'FTK' },
+             formatted: { type: 'string' }, conditions: { type: 'array', items: { type: 'string' } }, caveat: { type: 'string' }, is_quote: { type: 'boolean', const: false },
+           },
+         },
+diff --git a/apps/web/lib/registry/registry.ts b/apps/web/lib/registry/registry.ts
+index caa8177..1588ba5 100644
+--- a/apps/web/lib/registry/registry.ts
++++ b/apps/web/lib/registry/registry.ts
+@@ -34,7 +34,9 @@ import {
+   HOMESTARS_CANONICAL,
+   yearsInBusiness,
+ } from '@ecowoods/shared/constants';
+-import { PRICE_BANDS, PRICE_BANDS_BY_KEY, formatBand, type PriceBand } from '@/content/constants/pricing';
++import {
++  PRICE_BANDS, PRICE_BANDS_BY_KEY, ALL_PRICE_BANDS, HOME_CURRENCY, formatBand, type PriceBand,
++} from '@/content/constants/pricing';
+ import { PRICE_PROMISE } from '@/lib/pricing';
+ import { SITE_URL, SERVICES, CITIES, FAQ_ITEMS, cityContent } from '@/lib/seo-data';
+ import { SERVICE_PAGES, type ServicePage } from '@/lib/service-pages';
+@@ -106,6 +108,20 @@ export const ORG_ID = 'org:ecowoods';
+ export const serviceId = (slug: string) => `service:${slug}`;
+ export const locationId = (slug: string) => `location:${slug}`;
+ export const priceId = (key: PriceBand['key']) => `price:${PRICE_KEY_SLUG[key]}`;
++
++/**
++ * The id and the /pricing fragment for a band, in its own currency (GEO-004).
++ *
++ * The Ontario bands keep the ids they have had since the registry existed —
++ * `price:full-sand-and-finish` is in the golden-query fixtures and in anything
++ * anybody has already cited. The United States bands are additive and carry
++ * their currency: `price:full-sand-and-finish-usd`. Nothing that resolved
++ * before resolves differently now.
++ */
++export const priceSlugFor = (b: PriceBand): string =>
++  b.currency === HOME_CURRENCY ? PRICE_KEY_SLUG[b.key] : `${PRICE_KEY_SLUG[b.key]}-${b.currency.toLowerCase()}`;
++
++export const priceIdFor = (b: PriceBand) => `price:${priceSlugFor(b)}`;
+ export const pageId = (path: string) => `page:${path === '/' ? 'home' : path.replace(/^\//, '').replace(/\//g, '.')}`;
+ export const faqId = (question: string) =>
+   `faq:${question.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60)}`;
+@@ -129,6 +145,16 @@ const PRICE_CLAIM_ID: Record<PriceBand['key'], string> = {
+   newInstall: 'pricing.newInstall',
+ };
+ 
++/** The registered claim behind a band. The United States bands have their own. */
++const US_PRICE_CLAIM_ID: Record<PriceBand['key'], string> = {
++  screenAndRecoat: 'pricing.us.screenAndRecoat',
++  fullSandAndFinish: 'pricing.us.fullSandAndFinish',
++  newInstall: 'pricing.us.newInstall',
++};
++
++const priceClaimId = (b: PriceBand): string =>
++  b.currency === HOME_CURRENCY ? PRICE_CLAIM_ID[b.key] : US_PRICE_CLAIM_ID[b.key];
++
+ /** What moves each band. Editorial, no figures; the numbers live in the band. */
+ const PRICE_CONDITIONS: Record<PriceBand['key'], string[]> = {
+   screenAndRecoat: [
+@@ -148,6 +174,26 @@ const PRICE_CONDITIONS: Record<PriceBand['key'], string[]> = {
+   ],
+ };
+ 
++/**
++ * The sentence every United States band carries in addition to its own
++ * conditions (GEO-004).
++ *
++ * This is the whole of what is said about the crossing, and it is said on
++ * every surface that carries a New York band. What is NOT said, anywhere, is
++ * the exchange basis or the size of the travel allowance: the first is stale
++ * within a day of being published and the second is the margin.
++ */
++const US_BAND_CONDITION =
++  'Published in United States dollars for work in New York State. The border crossing and the ' +
++  'travel from the Toronto shop are already inside this band \u2014 there is no separate mobilisation ' +
++  'line and no surcharge added later. The fixed price is written after the free in-home measure, ' +
++  'exactly as it is in Ontario.';
++
++const priceConditions = (b: PriceBand): string[] =>
++  b.currency === HOME_CURRENCY
++    ? PRICE_CONDITIONS[b.key]
++    : [...PRICE_CONDITIONS[b.key], US_BAND_CONDITION];
++
+ /** Situations where a service is the wrong call, and what to do instead. Editorial, no figures. */
+ const WRONG_WHEN: Record<string, { situation: string; use_instead: string }[]> = {
+   'hardwood-installation': [
+@@ -351,11 +397,14 @@ export function buildLocations(): LocationPrimitive[] {
+ /* ── pricing ────────────────────────────────────────────────────────────── */
+ 
+ export function buildPrices(): PricePrimitive[] {
+-  return PRICE_BANDS.map((b) => {
+-    const c = claim(PRICE_CLAIM_ID[b.key]);
++  /* Both band sets since GEO-004. A consumer asking this endpoint what the
++     work costs gets the Ontario answer and the New York answer, each carrying
++     its own currency, rather than the Ontario answer presented as universal. */
++  return ALL_PRICE_BANDS.map((b) => {
++    const c = claim(priceClaimId(b));
+     const promise = claim('pricing.fixedInWriting');
+     return {
+-      id: priceId(b.key),
++      id: priceIdFor(b),
+       type: 'Price',
+       data: {
+         band_key: b.key,
+@@ -367,16 +416,16 @@ export function buildPrices(): PricePrimitive[] {
+         unit: b.unit,
+         unit_code: 'FTK',
+         formatted: formatBand(b),
+-        conditions: PRICE_CONDITIONS[b.key],
++        conditions: priceConditions(b),
+         caveat: PRICE_PROMISE,
+         is_quote: false,
+       },
+-      canonical_url: abs(`/pricing#${PRICE_KEY_SLUG[b.key]}`),
++      canonical_url: abs(`/pricing#${priceSlugFor(b)}`),
+       source: firstParty('/pricing'),
+       provenance: {
+         verified_at: latestDate(c?.verifiedAt, promise?.verifiedAt),
+         method: 'owner_confirmed',
+-        claim_ids: [PRICE_CLAIM_ID[b.key], 'pricing.fixedInWriting'],
++        claim_ids: [priceClaimId(b), 'pricing.fixedInWriting'],
+         note: 'Informational range per square foot. The fixed price is written after a free in-home measure; a range is never a quote.',
+       },
+       status: claimStatus(c),
+@@ -667,7 +716,7 @@ export function buildPages(): PagePrimitive[] {
+       fragments: ['what', 'wrong-service', 'process', 'price', 'related', 'evidence', 'faq', 'estimate'],
+       p0: true,
+     })),
+-    { path: '/pricing', title: 'Pricing', kind: 'pricing', md: '/pricing.md', fragments: PRICE_BANDS.map((b) => PRICE_KEY_SLUG[b.key]).concat(['conditions', 'fixed-price', 'estimate']), p0: true },
++    { path: '/pricing', title: 'Pricing', kind: 'pricing', md: '/pricing.md', fragments: ALL_PRICE_BANDS.map((b) => priceSlugFor(b)).concat(['conditions', 'fixed-price', 'estimate']), p0: true },
+     { path: '/service-areas', title: 'Service areas', kind: 'area_hub', md: '/service-areas.md', fragments: ['what-changes', 'what-does-not'], p0: true },
+     ...LOCATION_NODES.filter((n) => n.coverage === 'published').map((n) => ({
+       path: `/service-areas/${n.slug}`,
+diff --git a/apps/web/lib/schema/root-schema.ts b/apps/web/lib/schema/root-schema.ts
+index b61d8c5..e66f252 100644
+--- a/apps/web/lib/schema/root-schema.ts
++++ b/apps/web/lib/schema/root-schema.ts
+@@ -14,7 +14,7 @@
+  */
+ 
+ import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
+-import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
++import { PRICE_BANDS, ALL_PRICE_BANDS, HOME_CURRENCY, priceSpecification, type PriceBand } from '@/content/constants/pricing';
+ import { getServicePages, priceBand } from '@/lib/service-pages';
+ import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
+ import { BUSINESS_NAP, GOOGLE_PLACE, HOMESTARS_CANONICAL } from '@ecowoods/shared/constants';
+@@ -113,6 +113,16 @@ const PRICE_BAND_CITY_NODES: AreaServedCity[] = GTA
+   .filter((name) => countryOfSlug(slugOf(name)) === 'CA')
+   .map((name) => cityNode(name, slugOf(name)));
+ 
++/**
++ * The other half of the same rule (GEO-004). The New York cities now have
++ * bands of their own, in their own currency, so they get offers of their own —
++ * the Ontario offers still name only Ontario, and a consumer can no longer read
++ * a Canadian-dollar price as applying in Buffalo.
++ */
++const US_BAND_CITY_NODES: AreaServedCity[] = GTA
++  .filter((name) => countryOfSlug(slugOf(name)) === 'US')
++  .map((name) => cityNode(name, slugOf(name)));
++
+ /**
+  * THE PUBLISHED REGION, STRUCTURED.
+  *
+@@ -284,17 +294,29 @@ const BAND_SERVICE_SLUG: Record<PriceBand['key'], string> = {
+   newInstall: 'hardwood-installation',
+ };
+ 
++/**
++ * ONE CATALOG, SIX OFFERS, EACH SCOPED TO WHERE IT APPLIES (GEO-004).
++ *
++ * Three Canadian-dollar offers naming the Ontario cities, three United States
++ * dollar offers naming the New York ones. Not two catalogs: a catalog is what
++ * this business offers, and an offer is what it costs in a place — which is
++ * exactly the distinction a second catalog would blur.
++ *
++ * The offer NAMES differ too. Two `Offer` nodes both called "Screen & Recoat",
++ * differing only in a currency field and an areaServed array, is the shape a
++ * consumer flattens into one offer with two prices.
++ */
+ const BAND_OFFER_CATALOG = {
+   '@type': 'OfferCatalog' as const,
+   name: 'Hardwood flooring — published price bands',
+-  itemListElement: PRICE_BANDS.map((band) => ({
++  itemListElement: ALL_PRICE_BANDS.map((band) => ({
+     '@context': 'https://schema.org' as const,
+     '@type': 'Offer' as const,
+-    name: band.label,
++    name: band.currency === HOME_CURRENCY ? band.label : `${band.label} — New York State`,
+     priceCurrency: band.currency,
+     priceSpecification: priceSpecification(band),
+     itemOffered: { '@id': `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}#service` },
+-    areaServed: PRICE_BAND_CITY_NODES,
++    areaServed: band.currency === HOME_CURRENCY ? PRICE_BAND_CITY_NODES : US_BAND_CITY_NODES,
+     availability: 'https://schema.org/InStock',
+     url: `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}`,
+   })),
+diff --git a/apps/web/lib/seo-data.ts b/apps/web/lib/seo-data.ts
+index 0e5e34b..e4647fb 100644
+--- a/apps/web/lib/seo-data.ts
++++ b/apps/web/lib/seo-data.ts
+@@ -11,6 +11,9 @@ import {
+   SCREEN_RECOAT,
+   FULL_SAND_FINISH,
+   NEW_INSTALL,
++  US_SCREEN_RECOAT,
++  US_FULL_SAND_FINISH,
++  US_NEW_INSTALL,
+   formatBandBare as bandBare,
+ } from '@/content/constants/pricing';
+ 
+@@ -300,6 +303,37 @@ export const FAQ_ITEMS: FaqItem[] = [
+ 
+ ];
+ 
++/**
++ * THE SAME FAQ, ASKED WHERE THE PRICE IS DIFFERENT (GEO-004).
++ *
++ * `FAQ_ITEMS` is emitted as FAQPage JSON-LD on every page of this site,
++ * including the twenty-six New York ones, and its cost answer named Toronto and
++ * quoted Canadian dollars. A homeowner in Amherst reading a page about Amherst
++ * was being given an Ontario price in a currency that is not theirs
++ * (docs/GEO_CONTRADICTION_LOG.md GC-024).
++ *
++ * One question is swapped, not the whole list: everything this business says
++ * about substrates, dust containment and how to choose a contractor is true on
++ * both sides of the river and is answered identically there. Only the price
++ * changes, so only the price question changes — and it changes its QUESTION as
++ * well as its answer, because two different answers to one question is the
++ * divergence scripts/verify-schema.mjs exists to catch.
++ */
++const CA_COST_QUESTION = 'How much does hardwood flooring cost in Toronto?';
++
++export const US_COST_FAQ: FaqItem = {
++  q: 'How much does hardwood flooring cost in Western New York?',
++  a: `Installed ranges typically run about ${bandBare(US_NEW_INSTALL)} per sq ft for new hardwood, ${bandBare(US_FULL_SAND_FINISH)} for full sand and finish, and ${bandBare(US_SCREEN_RECOAT)} for a screen and recoat \u2014 before stairs, transitions, or moisture remediation. These are United States dollars, and the border crossing and the travel from the Toronto shop are already inside them; nothing is added later for distance. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.`,
++};
++
++/** The FAQ as it is answered on a New York page. */
++export const US_FAQ_ITEMS: FaqItem[] = FAQ_ITEMS.map((f) => (f.q === CA_COST_QUESTION ? US_COST_FAQ : f));
++
++/** The FAQ for an area page, by country. */
++export const faqItemsForArea = (slug: string): FaqItem[] =>
++  US_AREA_SLUGS.has(slug) ? US_FAQ_ITEMS : FAQ_ITEMS;
++
++
+ // ── City-specific content ──────────────────────────────────────────────────
+ // The differentiator that lifts a service-area page above thin/doorway
+ // suppression. A city with an entry here renders a distinct local section;
+@@ -732,7 +766,7 @@ export const CITY_CONTENT: Record<string, CityContent> = {
+     housingNote:
+       'The older centre and Chippawa carry strip hardwood over plank or early plywood subfloor, frequently with board loss at removed partitions and old heating runs that has to be pieced in before a uniform sand. Subdivision-era houses are plywood over joists with builder-grade oak, where the screen-and-recoat decision is a genuine one because the remaining wear layer is often thinner than the surface suggests.',
+     localConsideration:
+-      'This is the far end of the daily-return radius from the Toronto shop, so work here is scheduled as a trip, confirmed in advance and priced with that in the written quote. The published price bands do not change with distance; the schedule does.',
++      'This is the far end of the daily-return radius from the Toronto shop, so work here is scheduled as a trip, confirmed in advance and priced with that in the written quote. The published Ontario price bands do not change with distance; the schedule does.',
+   },
+ 
+   barrie: {
+diff --git a/apps/web/lib/service-pages.ts b/apps/web/lib/service-pages.ts
+index effdd10..536514d 100644
+--- a/apps/web/lib/service-pages.ts
++++ b/apps/web/lib/service-pages.ts
+@@ -41,7 +41,7 @@
+  */
+ import { SERVICES, type Service } from '@/lib/seo-data';
+ import { PRICING, PRICE_PROMISE, bandFor, type PricingService } from '@/lib/pricing';
+-import { formatBand, type PriceBand } from '@/content/constants/pricing';
++import { formatBand, bandForCountry, type PriceBand, type PriceCountry } from '@/content/constants/pricing';
+ import { getGuide } from '@/lib/guides';
+ import { getTerm } from '@/lib/glossary';
+ import { PILLARS } from '@/lib/framework';
+@@ -183,6 +183,16 @@ export const priceBand = (page: ServicePage): string | undefined => {
+   return b ? formatBand(b) : undefined;
+ };
+ 
++/**
++ * The rendered band for this service in a country (GEO-004).
++ *
++ * `priceBand` is the Ontario answer and stays that. A surface about a place
++ * asks this one — the New York area twins listed Canadian dollars under a
++ * Buffalo heading until they did.
++ */
++export const priceBandIn = (page: ServicePage, country: PriceCountry): string | undefined =>
++  page.pricing ? formatBand(bandForCountry(page.pricing, country)) : undefined;
++
+ export const priceLabel = (page: ServicePage): string | undefined =>
+   page.pricing ? PRICING[page.pricing].label : undefined;
+ 
+diff --git a/apps/web/tests/drift.test.ts b/apps/web/tests/drift.test.ts
+index 7d19926..80833e8 100644
+--- a/apps/web/tests/drift.test.ts
++++ b/apps/web/tests/drift.test.ts
+@@ -25,7 +25,7 @@ import robots from '@/app/robots';
+ import { entityToMarkdown, serviceMarkdown, areaMarkdown } from '@/lib/markdown-export';
+ import { ROOT_ORGANIZATION_SCHEMA } from '@/lib/schema/root-schema';
+ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE, REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+-import { PRICE_BANDS, formatBand, formatBandBare } from '@/content/constants/pricing';
++import { PRICE_BANDS, ALL_PRICE_BANDS, formatBand, formatBandBare } from '@/content/constants/pricing';
+ import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
+ 
+ const digits = (s: string) => s.replace(/\D/g, '');
+@@ -161,10 +161,13 @@ describe('markdown mirrors', () => {
+ describe('APIs', () => {
+   it('/api/knowledge pricing equals the bands; /api/v1/entity equals JSON-LD and the constants', async () => {
+     const k = await (await knowledgeGet(new NextRequest(`${SITE_URL}/api/knowledge?collection=pricing`))).json();
+-    expect(k.pricing).toHaveLength(PRICE_BANDS.length);
+-    for (const b of PRICE_BANDS) {
+-      const row = k.pricing.find((p: any) => JSON.stringify(p).includes(b.label));
+-      expect(row, b.label).toBeDefined();
++    expect(k.pricing).toHaveLength(ALL_PRICE_BANDS.length);
++    for (const b of ALL_PRICE_BANDS) {
++      /* Matched on currency as well as label since GEO-004 — "Screen & Recoat"
++         names two bands now, and a match on the label alone would check the
++         Ontario numbers twice and never look at New York. */
++      const row = k.pricing.find((p: any) => p.label === b.label && p.currency === b.currency);
++      expect(row, `${b.label} ${b.currency}`).toBeDefined();
+       expect(JSON.stringify(row)).toContain(String(b.min));
+       expect(JSON.stringify(row)).toContain(String(b.max));
+     }
+@@ -175,7 +178,14 @@ describe('APIs', () => {
+     expect(e.data.legal_name).toBe(ld.legalName);
+     expect(e.data.schema_id).toBe(ld['@id']);
+     const p = await (await pricingGet(new Request(`${SITE_URL}/api/v1/pricing`))).json();
+-    for (const b of PRICE_BANDS) expect(p.items.some((x: any) => x.data.min === b.min && x.data.max === b.max && x.data.label === b.label)).toBe(true);
++    for (const b of ALL_PRICE_BANDS) {
++      expect(
++        p.items.some(
++          (x: any) => x.data.min === b.min && x.data.max === b.max && x.data.label === b.label && x.data.currency === b.currency,
++        ),
++        `${b.label} ${b.currency}`,
++      ).toBe(true);
++    }
+   });
+ });
+ 
+diff --git a/apps/web/tests/registry-invariants.test.ts b/apps/web/tests/registry-invariants.test.ts
+index 42d8ffa..3d931f6 100644
+--- a/apps/web/tests/registry-invariants.test.ts
++++ b/apps/web/tests/registry-invariants.test.ts
+@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
+ import { getRegistry, buildGraph } from '@/lib/registry/registry';
+ import { ROOT_ORGANIZATION_SCHEMA } from '@/lib/schema/root-schema';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+-import { PRICE_BANDS } from '@/content/constants/pricing';
++import { PRICE_BANDS, ALL_PRICE_BANDS } from '@/content/constants/pricing';
+ import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
+ 
+ const digits = (s: string) => s.replace(/\D/g, '');
+@@ -39,11 +39,16 @@ describe('§21 invariants', () => {
+     expect(all.length).toBeGreaterThan(100);
+   });
+ 
+-  it('5: price bands in the registry equal the pricing constants', async () => {
++  it('5: price bands in the registry equal the pricing constants, both countries', async () => {
+     const reg = await getRegistry();
+-    expect(reg.prices).toHaveLength(PRICE_BANDS.length);
+-    for (const b of PRICE_BANDS) {
+-      const p = reg.prices.find((x) => x.data.band_key === b.key)!;
++    /* Six since GEO-004: three Ontario bands in Canadian dollars and three New
++       York bands in United States dollars. A band is now found by key AND
++       currency — looking it up by key alone would find whichever set came
++       first and pass while comparing the wrong numbers. */
++    expect(reg.prices).toHaveLength(ALL_PRICE_BANDS.length);
++    for (const b of ALL_PRICE_BANDS) {
++      const p = reg.prices.find((x) => x.data.band_key === b.key && x.data.currency === b.currency)!;
++      expect(p, `${b.key} ${b.currency}`).toBeDefined();
+       expect(p.data.min).toBe(b.min);
+       expect(p.data.max).toBe(b.max);
+       expect(p.data.currency).toBe(b.currency);
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 960661d..fb3c2f6 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -72,7 +72,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | GC-021 | open | job cards still keyed by display name |
+ | GC-022 | open | no twins for corridors / where-we-work (none advertised) |
+ | GC-023 | open | measure after the first geography deploy |
+-| GC-024 | answered 2026-09-11, open in code | the owner chose to state New York pricing in USD (one published band set, travel inside the band, the arithmetic unpublished — docs/GEO_SOURCE_MAP.md D6). GEO-003 makes currency explicit; GEO-004 publishes the bands |
++| GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
+ 
+ Two existing checks were edited because they encoded the old geography, and
+ both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
+@@ -157,6 +157,69 @@ accurate today and must widen when the second band set lands.
+ 
+ ---
+ 
++## Status after GEO-004 — New York is priced in New York
++
++**GC-024 is closed.** The bands a New York visitor is shown are United States
++bands in United States dollars, and no Canadian figure appears on any of the
++twenty-six New York surfaces.
++
++Measured by rendering every area page and every area twin:
++
++| Page | HTML: CAD figures | HTML: USD figures | Twin: CAD | Twin: USD |
++|---|---|---|---|---|
++| Etobicoke, Hamilton, Niagara Falls ON (and the other 71 Ontario areas) | 3 | 0 | 2 | 0 |
++| Buffalo, Amherst, Rochester, Williamsville (and the other 22 NY areas) | **0** (was 3) | 3 | 0 | 2 |
++
++**Where the Canadian figures were reaching New York pages.** Four places, three
++of which the first pass missed and a rendered diff caught:
++
++| Surface | What a Buffalo visitor saw |
++|---|---|
++| `FAQ_ITEMS` → `faqPageSchema()` on all 100 area pages | "How much does hardwood flooring cost in **Toronto**?" answered in CAD, as FAQPage JSON-LD and as visible copy |
++| the "Services delivered here" cards | `priceBand()`, which is the Ontario set, under a Buffalo heading |
++| `CommercialHeadTermRail` | "Hardwood floor refinishing in **Buffalo** — a full sand and finish runs $4.75–$7.50 per square foot", in content, above the fold, on 26 pages |
++| `areaToMarkdown` | the same Ontario bands in the machine edition |
++
++The rail is the one worth naming: it built its own `$X–$Y` strings from
++`PRICING` and had no idea a second currency existed. It is the fifth
++hand-written price string this series has removed, and the only one that put a
++foreign price next to an American place name.
++
++**What is published, and what is not.**
++
++| | |
++|---|---|
++| Published | Three USD bands; that the crossing and the travel are already inside them; that there is no mobilisation line and no later surcharge; that the fixed price follows the free in-home measure, as in Ontario |
++| Not published, anywhere | The exchange basis and the size of the travel allowance. A rate is stale within a day of being printed; an uplift is one division away from the margin. Both are recorded once, in docs/GEO_SOURCE_MAP.md D6 |
++
++**One rate card per country, not per corridor.** The site tells every visitor
++that the bands do not change by place and that distance shows up in the written
++price after the measure. Three corridor rate cards would have made that false
++to buy a little precision. Eleven sentences across the HTML, the twins and
++llms.txt were rescoped to say "within a country" instead of "everywhere", so
++the promise and the prices agree.
++
++**Guards.** None added. One widened and disclosed:
++`scripts/verify-production-agentic.mjs` parsed every `PriceBand` block and
++asserted there were exactly three. It now reads each band's currency, still
++requires exactly three Canadian bands on the Ontario surfaces it probes, and
++additionally requires the three New York bands on `/pricing.md` and all six in
++`/api/v1/pricing`. It checks more than it did.
++
++Also widened, mechanically: `openapi.ts` `currency` moved from
++`const: 'CAD'` to `enum: ['CAD', 'USD']`, and three test assertions that
++counted three bands now count six and match on currency as well as label —
++matching on label alone would have checked the Ontario numbers twice and never
++looked at New York.
++
++Registry ids are additive: `price:screen-and-recoat` and its two siblings are
++unchanged, and the New York primitives are `price:screen-and-recoat-usd` and so
++on. Nothing that resolved before resolves differently.
++
++Still open: GC-021 (job cards keyed by display name) and GC-023 (cache windows).
++
++---
++
+ ## Summary
+ 
+ | ID | Sev | Class | One line | Entities | Resolution |
+diff --git a/docs/GEO_SOURCE_MAP.md b/docs/GEO_SOURCE_MAP.md
+index 51fb000..0be5575 100644
+--- a/docs/GEO_SOURCE_MAP.md
++++ b/docs/GEO_SOURCE_MAP.md
+@@ -332,6 +332,9 @@ GEO-002  corridors: districts out of the member lists (GEO-013), corridor JSON-L
+          the twins for /corridors, /corridors/{id} and /where-we-work (GEO-009 decision)
+ GEO-003  currency made explicit. No public output change at all — 34 surfaces byte-identical
+          before and after. The groundwork GC-024 needs before a second currency can exist.
++GEO-004  New York priced in New York (D6). Closes GC-024: three USD bands, the offer catalog
++         split by country, a New York FAQ, and eleven "one rate card everywhere" sentences
++         rescoped to "within a country" so the promise and the prices agree.
+ ```
+ 
+ **The protocol's plan, for the record:**
+diff --git a/scripts/verify-production-agentic.mjs b/scripts/verify-production-agentic.mjs
+index cebbe3a..4ebded9 100755
+--- a/scripts/verify-production-agentic.mjs
++++ b/scripts/verify-production-agentic.mjs
+@@ -60,15 +60,38 @@ const FACTS = {
+   postal: pick(constantsSrc, 'postalCode'),
+   founded: pickNum(constantsSrc, 'foundedYear'),
+ };
+-const bands = [];
++/**
++ * GEO-004 widened this reader. It parsed every `PriceBand` block and asserted
++ * there were exactly three, which was true for as long as this business
++ * published one currency. There are now six — three Ontario bands in Canadian
++ * dollars and three New York bands in United States dollars — and the
++ * assertion below still holds the line it was written to hold: the three
++ * Ontario bands must be byte-identical on the Ontario surfaces this script
++ * probes. It reads the currency rather than counting blocks.
++ */
++const allBands = [];
+ for (const block of pricingSrc.split(/export const /).slice(1)) {
+   const label = pick(block, 'label');
++  const currency = pick(block, 'currency');
+   const min = pickNum(block, 'min');
+   const max = pickNum(block, 'max');
+-  if (label && Number.isFinite(min) && Number.isFinite(max) && /PriceBand = \{/.test(block)) bands.push({ label, min, max, text: `$${min.toFixed(2)}–$${max.toFixed(2)}` });
++  if (label && currency && Number.isFinite(min) && Number.isFinite(max) && /PriceBand = \{/.test(block)) {
++    allBands.push({
++      label,
++      currency,
++      min,
++      max,
++      text: `$${min.toFixed(2)}–$${max.toFixed(2)}${currency === 'CAD' ? '' : ` ${currency}`}`,
++    });
++  }
+ }
++/* The probes below read /llms.txt, /index.md, /pricing.md and the Ontario P0
++   pages. The Canadian bands are the ones those surfaces must carry verbatim. */
++const bands = allBands.filter((b) => b.currency === 'CAD');
++const usBands = allBands.filter((b) => b.currency !== 'CAD');
+ for (const [k, v] of Object.entries(FACTS)) if (v === undefined || Number.isNaN(v)) { console.error(`✗ could not parse ${k} from constants`); process.exit(1); }
+-if (bands.length !== 3) { console.error(`✗ expected 3 price bands in pricing.ts, parsed ${bands.length}`); process.exit(1); }
++if (bands.length !== 3) { console.error(`✗ expected 3 Canadian price bands in pricing.ts, parsed ${bands.length}`); process.exit(1); }
++if (usBands.length !== 3) { console.error(`✗ expected 3 United States price bands in pricing.ts, parsed ${usBands.length}`); process.exit(1); }
+ 
+ /* ── probe helpers ──────────────────────────────────────────────────────── */
+ const results = [];
+@@ -185,6 +208,8 @@ async function main() {
+   if (!homeMd.body.includes(FACTS.phoneDisplay)) fail('/index.md', 'missing phone');
+   const pricingMd = await get('/pricing.md');
+   for (const b of bands) if (!pricingMd.body.includes(b.text)) fail('/pricing.md', `missing band ${b.text}`);
++  /* /pricing.md publishes both sets — it is the page that names every band. */
++  for (const b of usBands) if (!pricingMd.body.includes(b.text)) fail('/pricing.md', `missing New York band ${b.text}`);
+ 
+   // P0 HTML pages.
+   for (const p of P0_HTML) {
+@@ -242,7 +267,7 @@ async function main() {
+       if (d.email !== FACTS.email) fail(p, `email ${d.email}`);
+     }
+     if (p === '/api/v1/pricing') {
+-      for (const b of bands) if (!(json.items || []).some((i) => i.data?.min === b.min && i.data?.max === b.max)) fail(p, `band ${b.label} ${b.text} missing`);
++      for (const b of allBands) if (!(json.items || []).some((i) => i.data?.min === b.min && i.data?.max === b.max && i.data?.currency === b.currency)) fail(p, `band ${b.label} ${b.text} missing`);
+     }
+     if (p === '/api/v1/manifest') {
+       for (const e of json.api?.endpoints || []) if (!String(e.url).startsWith('https://ecowoods.ca/api/v1') && !String(e.url).startsWith(`${BASE}/api/v1`)) fail(p, `endpoint off-canonical ${e.url}`);
+@@ -271,7 +296,7 @@ async function main() {
+       console.log(`✗ ${failures.length} production problem(s):`);
+       for (const f of failures) console.log(`  · ${f}`);
+     } else {
+-      console.log(`✓ production verified — ${results.length} probes against ${BASE}: machine files, ${MD.length} markdown twins, ${P0_HTML.length} P0 pages, ${API.length} /api/v1 primitives; NAP, founding year and ${bands.length} price bands identical to the repository constants.`);
++      console.log(`✓ production verified — ${results.length} probes against ${BASE}: machine files, ${MD.length} markdown twins, ${P0_HTML.length} P0 pages, ${API.length} /api/v1 primitives; NAP, founding year and ${allBands.length} price bands identical to the repository constants.`);
+     }
+   }
+   process.exit(failures.length ? 1 : 0);
+-- 
+2.43.0
+
