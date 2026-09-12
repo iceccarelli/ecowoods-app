@@ -1,0 +1,92 @@
+[
+  {
+    "product": "white-oak",
+    "file": "grain-white-oak.webp",
+    "source": "white-oak-wideplank-02-detail.webp",
+    "crop": [
+      0.02,
+      0.15,
+      0.34,
+      0.85
+    ],
+    "why": "the left-hand board: clean quartered face, no seam and no bevel in frame",
+    "mean": [
+      184,
+      163,
+      144
+    ],
+    "bytes": 28572
+  },
+  {
+    "product": "red-oak",
+    "file": "grain-red-oak.webp",
+    "source": "red-oak-wideplank-02-detail.webp",
+    "crop": [
+      0.66,
+      0.3,
+      0.98,
+      0.92
+    ],
+    "why": "the right-hand board, below the window shadow that crosses the left of the frame",
+    "mean": [
+      186,
+      131,
+      83
+    ],
+    "bytes": 39464
+  },
+  {
+    "product": "black-walnut",
+    "file": "grain-black-walnut.webp",
+    "source": "walnut-wideplank-02-detail.webp",
+    "crop": [
+      0.02,
+      0.45,
+      0.45,
+      0.95
+    ],
+    "why": "the lower-left quadrant, clear of the mitred joint that runs across the top right",
+    "mean": [
+      131,
+      95,
+      74
+    ],
+    "bytes": 29986
+  },
+  {
+    "product": "hard-maple",
+    "file": "grain-hard-maple.webp",
+    "source": "maple-wideplank-02-detail.webp",
+    "crop": [
+      0.02,
+      0.7,
+      0.35,
+      0.98
+    ],
+    "why": "the bottom-left corner, below the diagonal joint that crosses the middle of the frame",
+    "mean": [
+      192,
+      162,
+      127
+    ],
+    "bytes": 9444
+  },
+  {
+    "product": "hickory",
+    "file": "grain-hickory.webp",
+    "source": "hickory-wideplank-02-detail.webp",
+    "crop": [
+      0.04,
+      0.06,
+      0.28,
+      0.94
+    ],
+    "why": "the left-hand board: hickory character marks without a seam, which is the species",
+    "mean": [
+      136,
+      98,
+      61
+    ],
+    "bytes": 27832
+  }
+]

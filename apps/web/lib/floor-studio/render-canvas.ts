@@ -115,9 +115,21 @@ export function paintPixels(canvas: HTMLCanvasElement, pixels: Pixels): void {
   ctx.putImageData(new ImageData(pixels.data, pixels.width, pixels.height), 0, 0);
 }
 
-/** A PNG data URL of a render, for download and for the design board. */
-export function pixelsToDataUrl(pixels: Pixels): string {
+/**
+ * A PNG data URL of a render, for download and for the design board.
+ *
+ * `overlay` draws into the same context after the pixels are in and before the
+ * PNG is taken, which is how the ecowoods.ca signature ends up INSIDE the saved
+ * file rather than only on the screen it was saved from. A picture of somebody's
+ * living room with a new floor in it, sent to their partner with no idea who
+ * made it, is a marketing asset thrown away.
+ */
+export function pixelsToDataUrl(
+  pixels: Pixels,
+  overlay?: (ctx: CanvasRenderingContext2D, width: number, height: number) => void,
+): string {
   const ctx = context2d(pixels.width, pixels.height);
   ctx.putImageData(new ImageData(pixels.data, pixels.width, pixels.height), 0, 0);
+  overlay?.(ctx, pixels.width, pixels.height);
   return ctx.canvas.toDataURL('image/png');
 }

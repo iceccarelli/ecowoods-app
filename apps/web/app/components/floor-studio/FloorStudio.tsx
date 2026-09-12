@@ -31,6 +31,8 @@ import {
 import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
 import { compositeFloor } from '@/lib/floor-studio/render';
 import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
+import { drawSignature, loadMark } from '@/lib/floor-studio/signature';
+import { EW_MARK } from '@/lib/brand';
 import { cameraAvailable } from '@/lib/floor-studio/live';
 import LiveRoom from './LiveRoom';
 import {
@@ -226,6 +228,12 @@ export default function FloorStudio() {
     }
   }, []);
 
+  /* The mark, loaded once and shared with every canvas that signs. */
+  const [mark, setMark] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    void loadMark(EW_MARK).then(setMark);
+  }, []);
+
   /* ── the ground the floor is laid into ─────────────────────────────────── */
   const ground = useMemo(() => photo ?? swatchGround(960, 640), [photo]);
   const activeQuad = photo ? quad : FULL_QUAD;
@@ -239,10 +247,6 @@ export default function FloorStudio() {
     [ground, activeQuad, design.config, design.squareFeet, boardScale],
   );
 
-  useEffect(() => {
-    if (beforeRef.current) paintPixels(beforeRef.current, ground);
-    if (afterRef.current) paintPixels(afterRef.current, render.pixels);
-  }, [ground, render]);
 
   const visualisedRef = useRef<string | null>(null);
   useEffect(() => {
@@ -279,6 +283,38 @@ export default function FloorStudio() {
     [design.config, design.squareFeet, design.country],
   );
   const movement = useMemo(() => movementFor(design.config), [design.config]);
+
+  /* THE PAINT EFFECT SITS BELOW `estimate`, AND THAT IS NOT COSMETIC.
+     It was written above the useMemo that declares `estimate` while naming it
+     in its dependency array — a temporal dead zone. tsc caught it as TS2448,
+     "Block-scoped variable 'estimate' used before its declaration", and the
+     build stopped, which is the guard working. Moving the effect is the fix; a
+     ref would have hidden the ordering rather than corrected it. */
+  useEffect(() => {
+    if (beforeRef.current) paintPixels(beforeRef.current, ground);
+    if (!afterRef.current) return;
+    paintPixels(afterRef.current, render.pixels);
+    /* SIGNED IN THE PIXELS (VIS-04).
+       Everything a visitor is shown of their own room with a new floor in it
+       carries the mark, the floor's name, the range and ecowoods.ca — because
+       the artefact this feature produces is a SCREENSHOT, and a screenshot
+       carries no DOM. A mark in the HTML around the canvas is a mark that is
+       not in the thing that gets sent to a partner. */
+    const ctx = afterRef.current.getContext('2d');
+    if (ctx) {
+      drawSignature(ctx, afterRef.current.width, afterRef.current.height, {
+        floor: describeConfiguration(design.config),
+        price: `${money(estimate.estimatedLowCad, estimate.currency)} – ${money(estimate.estimatedHighCad, estimate.currency)}`,
+        mark,
+      });
+    }
+    /* `stage` IS A DEPENDENCY, and leaving it out is how this feature breaks in
+       exactly the way it was reported broken. The verify screen and the studio
+       screen are different elements, so moving between them gives afterRef a
+       NEW canvas — blank until something paints it. Without `stage` here the
+       effect does not re-run on that transition and the visitor arrives at the
+       studio looking at an empty box. */
+  }, [ground, render, mark, design.config, estimate, stage]);
 
   /* ── persistence: every change survives a reload and a share ───────────── */
   useEffect(() => {
@@ -447,7 +483,16 @@ export default function FloorStudio() {
 
   const downloadImage = useCallback(() => {
     try {
-      const url = pixelsToDataUrl(render.pixels);
+      /* The saved file is signed the same way the screen is. A picture of
+         somebody's living room with a new floor in it, saved and sent on, with
+         no idea who made it, is a marketing asset thrown away. */
+      const url = pixelsToDataUrl(render.pixels, (ctx, w, h) =>
+        drawSignature(ctx, w, h, {
+          floor: describeConfiguration(design.config),
+          price: `${money(estimate.estimatedLowCad, estimate.currency)} – ${money(estimate.estimatedHighCad, estimate.currency)}`,
+          mark,
+        }),
+      );
       const a = document.createElement('a');
       a.href = url;
       a.download = `ecowoods-${reference}.png`;
@@ -456,7 +501,7 @@ export default function FloorStudio() {
     } catch {
       setError('We could not save that image here. Try the share link instead.');
     }
-  }, [render.pixels, reference, design.config]);
+  }, [render.pixels, reference, design.config, estimate, mark]);
 
   /* ── rendering ─────────────────────────────────────────────────────────── */
   const sampleProduct = publishedStudioProducts().find((p) => p.id === 'samples');
@@ -611,7 +656,23 @@ export default function FloorStudio() {
               onPointerUp={onStagePointerUp}
               onPointerCancel={onStagePointerUp}
             >
-              <canvas ref={beforeRef} className="fs-canvas" role="img" aria-label="Your room" />
+              {/* THE FLOOR CHANGES HERE, NOT TWO SCREENS LATER (VIS-04).
+                  This canvas used to paint `ground` — the visitor's own
+                  photograph, unchanged — with the four corners over it. So the
+                  first thing somebody saw after uploading a picture of their
+                  living room was their living room, with dots on it, and two
+                  more taps between them and any new floor at all. The report
+                  was exactly what that produces: "the floor did not change".
+                  It did. They never reached the screen that shows it.
+                  It paints the composite now: a real Ecowoods floor is already
+                  in the room, and the corners sit on top of it so the
+                  correction and the payoff are the same screen. */}
+              <canvas
+                ref={afterRef}
+                className="fs-canvas"
+                role="img"
+                aria-label={`Your room with ${describeConfiguration(design.config)}`}
+              />
               <svg className="fs-quad" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                 <polygon points={quad.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')} />
               </svg>
@@ -629,15 +690,22 @@ export default function FloorStudio() {
             </div>
 
             <div className="fs-verify-panel">
-              <h3 className="fs-h3">We found your room</h3>
+              <h3 className="fs-h3">
+                Here is {describeConfiguration(design.config).toLowerCase()} in your room
+              </h3>
+              <p className="fs-fine">
+                Already a real floor we can supply and install, laid into your own photo with your
+                room&rsquo;s own light. Change it to anything else on the next screen.
+              </p>
               <ul className="fs-notes">
                 {reading.notes.map((note) => (
                   <li key={note}>{note}</li>
                 ))}
               </ul>
               <p className="fs-fine">
-                Drag the four corners onto the floor if we got the edge wrong. This is the normal
-                thing to do, not the failure case — you can see your floor and we cannot.
+                Drag the four corners if we got the edge of the floor wrong — the new floor follows
+                them as you move. This is the normal thing to do, not the failure case: you can see
+                your room and we cannot.
               </p>
 
               <div className="fs-asks">
@@ -679,8 +747,17 @@ export default function FloorStudio() {
               </div>
 
               <div className="fs-verify-actions">
-                <button type="button" className="btn btn-copper" onClick={() => setStage('feel')}>
-                  That looks right — continue
+                {/* Straight to the floors. "How do you want the room to feel?"
+                    was a GATE between the visitor and the thing they came for,
+                    and it is a better question once they have seen one floor in
+                    their room than before they have seen any. It is still
+                    offered, second, for somebody who does not know where to
+                    start. */}
+                <button type="button" className="btn btn-copper btn-lg" onClick={() => setStage('studio')}>
+                  Show me every floor in this room
+                </button>
+                <button type="button" className="fs-link-btn" onClick={() => setStage('feel')}>
+                  Help me choose
                 </button>
                 <button type="button" className="fs-link-btn" onClick={() => setStage('start')}>
                   Try another photo

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EW_MARK } from '@/lib/brand';
-import { SITE_URL } from '@/lib/seo-data';
+import { drawSignature } from '@/lib/floor-studio/signature';
 import { track } from '@/lib/analytics';
 import { describeConfiguration, type FloorConfiguration } from '@/lib/floor-studio/catalog';
 import { compositeFloor } from '@/lib/floor-studio/render';
@@ -190,7 +190,7 @@ export default function LiveRoom({
       if (vctx) {
         vctx.imageSmoothingQuality = 'high';
         vctx.drawImage(work, 0, 0, view.width, view.height);
-        drawChrome(vctx, view.width, view.height, markRef.current, describeConfiguration(cfg), priceLine);
+        drawSignature(vctx, view.width, view.height, { floor: describeConfiguration(cfg), price: priceLine, mark: markRef.current });
       }
 
       const dt = performance.now() - t0;
@@ -280,57 +280,3 @@ export default function LiveRoom({
   );
 }
 
-const SITE_HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-
-/**
- * The mark, the floor and the range, drawn INTO the frame.
- *
- * A screenshot of a live camera view is the single most shared artefact this
- * feature will produce, and a screenshot carries no DOM. If the mark and the
- * configuration live in HTML around the canvas, every one of those screenshots
- * is an anonymous picture of somebody's living room. Drawn into the pixels they
- * travel with it — to a partner, a group chat, a contractor.
- */
-function drawChrome(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  mark: HTMLImageElement | null,
-  floor: string,
-  price: string,
-): void {
-  const pad = Math.round(w * 0.028);
-  const size = Math.round(w * 0.062);
-  const fontL = Math.round(w * 0.028);
-  const fontS = Math.round(w * 0.021);
-
-  ctx.save();
-  /* A readable plate under the type, because a camera frame can be any colour
-     and white text on a white wall is not a design. */
-  const plateH = size + pad;
-  const grad = ctx.createLinearGradient(0, h - plateH * 1.6, 0, h);
-  grad.addColorStop(0, 'rgba(24, 18, 12, 0)');
-  grad.addColorStop(1, 'rgba(24, 18, 12, 0.72)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, h - plateH * 1.6, w, plateH * 1.6);
-
-  if (mark?.complete && mark.naturalWidth > 0) {
-    ctx.drawImage(mark, pad, h - pad - size, size, size);
-  }
-
-  ctx.fillStyle = 'rgba(255, 252, 245, 0.96)';
-  ctx.textBaseline = 'alphabetic';
-  ctx.font = `600 ${fontL}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-  ctx.fillText(floor, pad + size + pad * 0.6, h - pad - size * 0.52);
-  ctx.font = `400 ${fontS}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 252, 245, 0.82)';
-  ctx.fillText(`${price} · estimated installed, not a quote`, pad + size + pad * 0.6, h - pad - size * 0.08);
-
-  ctx.textAlign = 'right';
-  ctx.font = `600 ${fontS}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 252, 245, 0.7)';
-  /* The host, from the one place the site's URL is defined — never a typed
-     string, which is how a wordmark ends up saying a domain nobody owns. */
-  ctx.fillText(SITE_HOST, w - pad, h - pad - size * 0.3);
-  ctx.restore();
-}

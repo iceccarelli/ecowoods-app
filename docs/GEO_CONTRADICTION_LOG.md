@@ -78,6 +78,9 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
 | AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
 | LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
+| VIS-04 | **closed by VIS-04** | the verify screen showed the visitor's ORIGINAL photograph with drag-corners on it, so "the floor did not change" was a true report of what they saw — it now paints the composite, and the primary action goes straight to the studio |
+| SIG-01 | **closed by VIS-04** | ecowoods.ca, the mark, the floor's name and the range are drawn INTO every rendered surface and into the downloaded PNG — a screenshot carries no DOM |
+| TEX-01 | **built, dormant, documented** | photographic wood cut from the real product shots: it does not beat the drawn grain at room scale yet, so it is not wired to the interface and the reason is written down |
 | AS-01 | **closed by ASSIST-01** | the assistant's 6,230-character prompt named zero pages and none of its five tools could return one; it now carries a derived site map and a find_on_site tool |
 | AS-02 | **closed by ASSIST-01** | a page the assistant recommended arrived as inert text; the widget links the one shape it is told to write |
 | AS-03 | **closed by ASSIST-01** | below 379px the search trigger is hidden and a phone has no ⌘, so the palette had no way in; the drawer has a search row now |
@@ -1129,3 +1132,94 @@ and the lead schema, which is a patch of its own and not one to hide inside
 this one. It is a misleading name, it is not a misleading claim: nothing a
 visitor or a machine reads says CAD about a USD figure. Logged here so it is
 not discovered as a surprise.
+
+---
+
+## VIS-04 · "the floor did not change" — it did, and they never saw it
+
+Reported from a phone, with screenshots. The report was accurate about the
+experience and wrong about the cause, which is the most expensive kind.
+
+### What the screenshots showed
+
+Three screens: "How do you want the room to feel?", then "We found your room"
+with the weak-confidence note, then a photograph of grey carpet with four
+corner handles on it and **no new floor anywhere**.
+
+### What was actually happening
+
+Reproduced the exact input — a portrait photograph of one flat carpet surface —
+through the real pipeline:
+
+```
+confidence : weak
+quad       : the default, bottom 45% with a taper
+painted    : 1.000
+pixels changed: 110,566 of 307,200 = 36.0%
+```
+
+**The renderer worked.** It changed a third of the picture. The visitor never
+saw it, because the verify screen paints `beforeRef` — their own photograph,
+unchanged, with the corners over it — and the composite only appears two taps
+later, behind a screen asking how they want the room to feel.
+
+So the sequence was: upload a photo of your room → see your room → answer a
+question about feelings → see your room → *then* see a floor. The one moment
+this entire feature exists for was third.
+
+### The fix
+
+- **The verify screen paints the composite.** A real Ecowoods floor is in the
+  room the instant the analysis finishes, and the four corners sit on top of
+  it — so the correction and the payoff are the same screen, and dragging a
+  corner visibly moves the new floor.
+- **The primary action goes straight to the studio.** "Show me every floor in
+  this room." The feel question is still offered, second, as "Help me choose" —
+  it is a better question once somebody has seen one floor in their room than
+  before they have seen any.
+- **The repaint effect depends on `stage`.** Verify and studio are different
+  elements, so the transition hands `afterRef` a new, blank canvas. Without
+  that dependency the effect does not re-run and the visitor arrives at the
+  studio looking at an empty box — the same bug again, one screen further on.
+
+### SIG-01 · ecowoods.ca, in the pixels
+
+The most-shared artefact this feature will ever produce is a screenshot, and a
+screenshot carries no DOM: a mark in the HTML around the canvas is a mark that
+is not in the thing that gets sent to a partner, a group chat or a contractor.
+
+`lib/floor-studio/signature.ts` draws the mark, the floor's catalogue name, the
+estimated range and `ecowoods.ca` into the bottom of every rendered surface —
+the verify screen, the studio, the live camera, and into the downloaded PNG via
+a new overlay hook on `pixelsToDataUrl`. The host comes from `SITE_URL` and the
+range from the estimate that produced the picture, so a signature can never
+name a domain nobody owns or a price nobody published.
+
+### TEX-01 · real photographic wood — built, and NOT turned on
+
+The ask was for the floor to be "a realistic floor that can be installed,
+closest to the real implementation". So: `scripts/textures/build-grain.py` cuts
+one seamless tile per species from `apps/web/public/gallery/<species>-wideplank-02-detail.webp`
+— photographs of the actual product — divides out the photograph's own
+illumination (otherwise its shadow is pasted into someone else's room and the
+renderer then multiplies their light in on top of it), and tiles without a
+mirror (reflecting a diagonal makes a chevron, and wood grain has no symmetry).
+The renderer samples it in board-local INCHES so one texture serves every
+pattern, with bilinear filtering, a per-board offset and a mip pyramid selected
+from the homography's own projective divisor.
+
+**It is not wired to the interface, because measured side by side it does not
+win yet.** The colour is right and the figure and the character marks are real;
+in the far half of the frame it still reads noisier than the procedural grain it
+was meant to replace, because a 512-pixel tile minified across a receding plane
+aliases and the mip selection does not fully answer that. What it needs is
+anisotropic sampling along the board's own axis, which is a patch and not a
+paragraph.
+
+Four crop-selection strategies were tried and three of them picked a board seam,
+which then repeats *inside* every board — white oak came out as dense vertical
+stripes. The crops are named by hand now, in the script, each with the reason.
+
+Shipping it in this state would make the product worse, which is the one thing
+this repository is not allowed to do. It is in, under test, dormant, and the
+reason is in the docblock.

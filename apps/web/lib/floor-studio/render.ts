@@ -335,6 +335,195 @@ const clamp255 = (n: number) => (n < 0 ? 0 : n > 255 ? 255 : n);
  * the single reason the renderer could not keep up with a camera. None of it
  * depends on where the pixel is.
  */
+/* ── real wood, from photographs of the real product ──────────────────────── */
+
+/**
+ * A GRAIN TEXTURE IS A PHOTOGRAPH OF A FLOOR THIS COMPANY LAYS.
+ *
+ * The synthesised grain below — two sine waves along the board and a fine one
+ * across it — is deterministic, cheap and honest, and it looks like what it is:
+ * a procedural approximation of wood. A homeowner deciding where fifteen
+ * thousand dollars goes can tell.
+ *
+ * So the renderer now prefers a real one. public/textures/grain-<species>.webp
+ * is cut from apps/web/public/gallery/<species>-wideplank-02-detail.webp — an
+ * actual photograph of that actual product — with three things done to it:
+ *
+ *   · THE LIGHT IS DIVIDED OUT. The photograph was taken in a room with its own
+ *     window. Pasting that shadow into somebody else's room states something
+ *     false about their light, and the composite then multiplies their light in
+ *     on top of it, so it would be applied twice.
+ *   · THE CROP IS CHOSEN, NOT ASSUMED. A centre crop often lands on a mitred
+ *     joint, and a joint in a grain texture appears inside every pattern the
+ *     visitor picks — including the straight one.
+ *   · IT TILES WITHOUT A MIRROR. Reflecting a diagonal produces a chevron. Wood
+ *     grain has no symmetry and a texture of it must not either.
+ *
+ * IT IS STILL NOT GENERATION. Nothing here invents a floor: the pixels are a
+ * photograph of a product on the price list, laid out by the catalogue's own
+ * board geometry, lit by the room the visitor is standing in. That is the whole
+ * difference between this and an image model, and it is why the range under the
+ * picture means something.
+ *
+ * The parameter is optional everywhere. Without it — during a server render, in
+ * a unit test, before the image has loaded — the synthesised grain runs exactly
+ * as it did, so nothing can ever show a blank floor waiting on a download.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * STATUS: BUILT, TESTED, AND NOT YET WIRED TO THE INTERFACE. ON PURPOSE.
+ *
+ * Measured side by side against the drawn grain at room scale, this does not
+ * yet win. It gets the species colour right and it carries real figure and real
+ * character marks — and in the far half of the frame it still reads noisier
+ * than the procedural floor it was meant to replace, because a 512-pixel tile
+ * minified across a receding plane aliases, and the mip selection below does
+ * not yet fully answer that.
+ *
+ * The honest thing is to say so rather than ship it. A visitor deciding where
+ * fifteen thousand dollars goes is owed the better picture, and today the
+ * better picture is the drawn one. The textures, the build script that cuts
+ * them from the real product photographs, the sampler and the pyramid are all
+ * here and under test; what is missing is anisotropic sampling along the
+ * board's own axis, which is the next patch and not a paragraph in this one.
+ *
+ * Pass `grain` to turn it on. Nothing in apps/web does yet.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+export type GrainTexture = {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  /**
+   * Mean relative luminance of the tile, computed once when it is registered.
+   * The texture is used as a DETAIL signal — how much lighter or darker than
+   * its own average each point is — so this is the number it is measured
+   * against. See woodColourFrom.
+   */
+  meanLuminance: number;
+  /** Box-filtered halvings, level 0 being the full tile. */
+  levels: { data: Uint8ClampedArray; width: number; height: number }[];
+};
+
+/**
+ * Register a decoded tile: measure its mean, and build its mip pyramid.
+ *
+ * WHY A PYRAMID IS NOT OPTIONAL HERE. A floor runs away from the camera, so the
+ * far half of the picture minifies the texture severely — one screen pixel
+ * covers many texture pixels. Point-sampling that is aliasing, and aliasing on
+ * wood grain looks exactly like static: the first working version of this had
+ * correct colour and correct scale and still read as speckled carpet at the
+ * back of the room, which is worse than the drawn grain it replaced.
+ *
+ * Four levels, each a box-filtered half of the one above. The level is chosen
+ * per pixel from the homography's own divisor — see the composite loop, where
+ * `w` is literally the projective depth.
+ */
+export function makeGrainTexture(data: Uint8ClampedArray, width: number, height: number): GrainTexture {
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < data.length; i += 16) {
+    sum += fastLuminance(data[i]!, data[i + 1]!, data[i + 2]!);
+    n += 1;
+  }
+
+  const levels: { data: Uint8ClampedArray; width: number; height: number }[] = [{ data, width, height }];
+  let cur = { data, width, height };
+  while (cur.width > 8 && cur.height > 8 && levels.length < 5) {
+    const w2 = cur.width >> 1;
+    const h2 = cur.height >> 1;
+    const next = new Uint8ClampedArray(w2 * h2 * 4);
+    for (let y = 0; y < h2; y += 1) {
+      for (let x = 0; x < w2; x += 1) {
+        const o = (y * w2 + x) * 4;
+        for (let c = 0; c < 4; c += 1) {
+          const a = cur.data[((y * 2) * cur.width + x * 2) * 4 + c]!;
+          const b = cur.data[((y * 2) * cur.width + x * 2 + 1) * 4 + c]!;
+          const d = cur.data[((y * 2 + 1) * cur.width + x * 2) * 4 + c]!;
+          const e = cur.data[((y * 2 + 1) * cur.width + x * 2 + 1) * 4 + c]!;
+          next[o + c] = (a + b + d + e) >> 2;
+        }
+      }
+    }
+    cur = { data: next, width: w2, height: h2 };
+    levels.push(cur);
+  }
+
+  return { data, width, height, meanLuminance: n ? Math.max(0.01, sum / n) : 0.2, levels };
+}
+
+/**
+ * What the texture measures, in inches of real floor.
+ *
+ * THIS IS THE WHOLE DIFFERENCE BETWEEN WOOD AND NOISE. The first version
+ * sampled at `across` and `along` — board-local numbers in 0..1 — which maps
+ * the entire 512-pixel photograph across one 5-inch board. On screen that board
+ * is perhaps forty pixels wide, so every screen pixel jumped a dozen texture
+ * pixels and the result was speckle: the pattern geometry disappeared and an
+ * oak floor read as carpet. It looked visibly WORSE than the drawn grain it was
+ * meant to replace.
+ *
+ * A texture has a real-world size and it has to be sampled in real-world units.
+ * The crop is roughly two feet of floor, so a 5-inch board spans about a fifth
+ * of it and a plank's length spans a couple of repeats — which is what grain
+ * does on a real board.
+ */
+const GRAIN_INCHES = 10;
+
+/**
+ * Colour from the photograph, at this point on this board.
+ *
+ * `across` and `along` are board-local, which is what makes one texture serve
+ * every pattern: herringbone and chevron hand back the same two numbers in the
+ * block's own frame, so the grain runs along each piece the way it does on a
+ * real floor rather than sliding across the room in one direction.
+ *
+ * The per-board hash offsets where in the texture that board is cut from, so no
+ * two boards repeat — the thing that makes a tiled floor look tiled.
+ */
+function grainAt(tex: GrainTexture, sample: PlankSample, widthIn: number, lod = 0): Rgb {
+  const level = tex.levels[Math.max(0, Math.min(tex.levels.length - 1, lod | 0))]!;
+  /* Board-local INCHES. `across` and `along` are fractions of the board, so
+     multiplying by the board's real width and length puts the sample back into
+     the same units the texture is measured in. */
+  const acrossIn = sample.across * widthIn;
+  const alongIn = sample.along * widthIn * RUN_LENGTH_RATIO;
+
+  /* A per-board offset, so no two boards are cut from the same piece of the
+     photograph — the thing that makes a tiled floor look tiled. */
+  let u = (acrossIn / GRAIN_INCHES + hash2(sample.key, 29)) % 1;
+  let v = (alongIn / GRAIN_INCHES + hash2(sample.key, 53)) % 1;
+  if (u < 0) u += 1;
+  if (v < 0) v += 1;
+
+  /* Bilinear, because nearest-neighbour on a photograph being minified is the
+     other half of why the first version looked like static. */
+  const fx = u * level.width - 0.5;
+  const fy = v * level.height - 0.5;
+  const x0 = Math.floor(fx);
+  const y0 = Math.floor(fy);
+  const tx = fx - x0;
+  const ty = fy - y0;
+  const wrapX = (n: number) => ((n % level.width) + level.width) % level.width;
+  const wrapY = (n: number) => ((n % level.height) + level.height) % level.height;
+  const x1 = wrapX(x0 + 1);
+  const y1 = wrapY(y0 + 1);
+  const xa = wrapX(x0);
+  const ya = wrapY(y0);
+  const at = (x: number, y: number) => (y * level.width + x) * 4;
+  const i00 = at(xa, ya);
+  const i10 = at(x1, ya);
+  const i01 = at(xa, y1);
+  const i11 = at(x1, y1);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const ch = (o: number) =>
+    lerp(
+      lerp(level.data[i00 + o]!, level.data[i10 + o]!, tx),
+      lerp(level.data[i01 + o]!, level.data[i11 + o]!, tx),
+      ty,
+    );
+  return { r: ch(0), g: ch(1), b: ch(2) };
+}
+
 export type WoodPalette = {
   base: Rgb;
   grain: Rgb;
@@ -344,14 +533,24 @@ export type WoodPalette = {
   /** board key → its tone and grain phase. Constant across a whole board, and
       recomputing it per pixel cost two hash2 — two Math.sin — every time. */
   boards: Map<number, { tone: number; phase: number }>;
+  /** The photograph of this species, when one has loaded. Named `photo` and not
+      `grain` because `grain` above is the species' second PIGMENT — the pair
+      the synthesised path mixes between — and two fields of that name in one
+      object is how a silent bug gets written. */
+  photo?: GrainTexture;
 };
 
 const paletteCache = new Map<string, WoodPalette>();
 
-export function woodPalette(productId: string, finishId: string): WoodPalette {
-  const key = `${productId}|${finishId}`;
+export function woodPalette(productId: string, finishId: string, grain?: GrainTexture): WoodPalette {
+  const key = `${productId}|${finishId}|${grain ? 'photo' : 'drawn'}`;
   const hit = paletteCache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    /* The texture arrives asynchronously, so a palette built before the image
+       loaded must pick it up rather than stay procedural for the session. */
+    if (grain && hit.photo !== grain) hit.photo = grain;
+    return hit;
+  }
   const product = productById(productId);
   const finish = finishById(finishId) ?? FINISH_OPTIONS[1]!;
   const made: WoodPalette = product
@@ -362,8 +561,9 @@ export function woodPalette(productId: string, finishId: string): WoodPalette {
         tint: parseRgba(finish.tint),
         ok: true,
         boards: new Map(),
+        photo: grain,
       }
-    : { base: { r: 0, g: 0, b: 0 }, grain: { r: 0, g: 0, b: 0 }, variation: 0.12, tint: { r: 0, g: 0, b: 0, a: 0 }, ok: false, boards: new Map() };
+    : { base: { r: 0, g: 0, b: 0 }, grain: { r: 0, g: 0, b: 0 }, variation: 0.12, tint: { r: 0, g: 0, b: 0, a: 0 }, ok: false, boards: new Map(), photo: undefined };
   paletteCache.set(key, made);
   return made;
 }
@@ -372,12 +572,16 @@ export function woodColourAt(
   productId: string,
   finishId: string,
   sample: PlankSample,
+  grain?: GrainTexture,
+  widthIn = 5,
 ): Rgb {
-  return woodColourFrom(woodPalette(productId, finishId), sample);
+  return woodColourFrom(woodPalette(productId, finishId, grain), sample, widthIn);
 }
 
-export function woodColourFrom(palette: WoodPalette, sample: PlankSample): Rgb {
+export function woodColourFrom(palette: WoodPalette, sample: PlankSample, widthIn = 5, lod = 0): Rgb {
   if (!palette.ok) return { r: 0, g: 0, b: 0 };
+
+
   const base = palette.base;
   const grain = palette.grain;
   const variation = palette.variation;
@@ -404,6 +608,37 @@ export function woodColourFrom(palette: WoodPalette, sample: PlankSample): Rgb {
   let r = mix(base.r, grain.r, t);
   let g = mix(base.g, grain.g, t);
   let b = mix(base.b, grain.b, t);
+
+  /* THE PHOTOGRAPH MODULATES THE CATALOGUE'S COLOUR. IT DOES NOT REPLACE IT.
+   *
+   * Replacing was the first attempt and it looked worse than the drawn grain it
+   * was meant to improve on. Two reasons, and both matter:
+   *
+   *   · A texture is ONE board's face. Repeating it gives every board in the
+   *     room the same tone, and board-to-board variation is most of what makes
+   *     a floor read as a floor from across it — the drawn model has it, from
+   *     the species' published `character` figure, and the photograph cannot.
+   *   · Flattening the illumination normalises each tile to its own mean, which
+   *     also flattens the SPECIES apart: white oak came back near-white and
+   *     walnut lost its depth. The catalogue's two pigments are the published
+   *     colour of the product and must stay the thing that decides it.
+   *
+   * So the photograph is used as a DETAIL signal: how much lighter or darker
+   * than its own average this point is. Grain, figure, medullary ray, the
+   * character marks in hickory — all of it survives, multiplying a colour that
+   * still comes from the catalogue record. The result is real wood in the
+   * product's own colour, with the board-to-board variation a real floor has.
+   */
+  if (palette.photo) {
+    const px = grainAt(palette.photo, sample, widthIn, lod);
+    const detail = fastLuminance(px.r | 0, px.g | 0, px.b | 0) / palette.photo.meanLuminance;
+    /* Clamped, because a knot is genuinely near-black and a blown highlight in
+       the source photograph is not information about the wood. */
+    const k = Math.max(0.55, Math.min(1.6, detail));
+    r *= k;
+    g *= k;
+    b *= k;
+  }
 
   /* Micro-bevel. `edge` is in board widths, so this is a real proportion of a
      real board rather than a pixel count that changes with zoom. */
@@ -446,6 +681,12 @@ export type RenderOptions = {
   /** A mask already built for this frame — live video reuses one across
       configuration changes instead of recomputing per repaint. */
   mask?: FloorMask;
+  /**
+   * The photograph of this species, decoded. Optional everywhere: without it
+   * the synthesised grain runs exactly as it did, so a slow network shows a
+   * drawn floor rather than no floor.
+   */
+  grain?: GrainTexture;
 };
 
 export type MaskOptions = Pick<RenderOptions, 'chromaTolerance' | 'luminanceSigmas'>;
@@ -1025,7 +1266,14 @@ export function compositeFloor(
 
   const finish = finishById(config.finishId) ?? FINISH_OPTIONS[1]!;
   const sheen = finish.sheen;
-  const palette = woodPalette(config.productId, config.finishId);
+  const palette = woodPalette(config.productId, config.finishId, options.grain);
+
+  /* The divisor at the NEAREST point of the quad — the bottom of the frame,
+     where the floor is least minified. Every other pixel's level is measured
+     against this one, so the near field samples the full tile and the far field
+     samples a half or a quarter of it. */
+  const nearW = Math.abs(m[6] * 0.5 + m[7] * 1.0 + m[8]);
+  const wRef = Number.isFinite(nearW) && nearW > 0 ? nearW : 0;
 
   let painted = 0;
   let considered = 0;
@@ -1070,7 +1318,14 @@ export function compositeFloor(
       const planY = (m10 * nx + m11 * ny + m12) / w;
 
       const sample = samplePattern(planX, planY, config.patternId, width.inches);
-      const wood = woodColourFrom(palette, sample);
+      /* MIP LEVEL FROM THE PROJECTIVE DIVISOR.
+         `w` is the homography's homogeneous divisor at this pixel, which IS the
+         depth scale: large near the camera, small at the wall line. The texture
+         minifies by the same factor, so the level that matches is the log2 of
+         the ratio against the near edge. No derivatives, no extra sampling —
+         the number was already computed to project the point. */
+      const lod = wRef > 0 ? Math.log2(Math.max(1, wRef / Math.max(1e-6, Math.abs(w)))) : 0;
+      const wood = woodColourFrom(palette, sample, width.inches, lod);
 
       /* The room's own light, as a ratio against the region mean. Clamped so a
          blown highlight or a black shadow cannot produce a floor nobody would
