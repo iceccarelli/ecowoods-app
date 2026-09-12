@@ -48,7 +48,7 @@ const url = `${SITE_URL}/floor-studio`;
 export const metadata: Metadata = {
   title: 'Floor Studio — see your new floor in your room',
   description:
-    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in CAD. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
+    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in the currency of the region the floor is in \u2014 Canadian dollars in Ontario, United States dollars in New York State. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
   openGraph: {
     images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
@@ -89,7 +89,7 @@ const STEPS = [
     id: 'step-price',
     title: 'A range, then a fixed price',
     body:
-      `The installed range updates as you change the floor, from the same numbers our estimator carries in the truck. ${PRICE_PROMISE} The studio hands your exact design to the estimate form — there is nothing to retype.`,
+      `The installed range updates as you change the floor, from the same numbers our estimator carries in the truck, against the bands published for the region the floor is in \u2014 Ontario or New York State, and the studio says which. ${PRICE_PROMISE} The studio hands your exact design to the estimate form — there is nothing to retype.`,
   },
 ];
 
@@ -123,7 +123,7 @@ export default function FloorStudioPage() {
           isPartOf: { '@id': `${SITE_URL}/#website` },
           publisher: { '@id': `${SITE_URL}/#organization` },
           description:
-            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in Canadian dollars. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
+            'Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood configurations rendered into it at video rate, with a live estimated installed range in the published bands of the region the floor is in — Canadian dollars in Ontario, United States dollars in New York State. Runs entirely in the browser: camera frames are analysed on the device and discarded, and no image is uploaded. No generative model is used \u2014 every floor shown is a configuration Ecowoods can supply and install.',
           featureList: [
             'Live camera view with the floor rendered in at video rate',
             'Species, finish, pattern and board width changed while the camera runs',
@@ -131,7 +131,7 @@ export default function FloorStudioPage() {
             'Correctable floor boundary',
             'Recommendations over installable configurations only',
             'Species, finish, pattern and board width',
-            'Live estimated installed range in CAD',
+            'Estimated installed range in the published bands of the region the floor is in \u2014 Canadian dollars in Ontario, United States dollars in New York State',
             'No generative model: every floor shown is a configuration that can be supplied and installed',
             'No upload: camera frames and photographs are analysed on the device and discarded',
             'Shareable design link',
@@ -154,8 +154,9 @@ export default function FloorStudioPage() {
           <p className="tlx-lede">
             Point your camera at the room and the floor changes while you move — or upload a photo,
             or start from a floor. Real {BUSINESS_NAP.name} hardwood in your own space: species,
-            finish, pattern and board width, with a live estimated installed range in Canadian
-            dollars. Design it digitally. Verify it professionally. Build it perfectly.
+            finish, pattern and board width, with a live estimated installed range in the currency
+            of the region the floor is in. Design it digitally. Verify it professionally. Build it
+            perfectly.
           </p>
         </div>
       </header>

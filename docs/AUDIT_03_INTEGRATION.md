@@ -161,20 +161,31 @@ Recorded because an audit that only lists faults is not an audit.
 | Footer as a full sitemap | **Yes** — 43 links |
 | Account / portal entry | **Yes** — login, My Page, Admin |
 | Docs surface for machines | **Beyond it** — 20 markdown twins, llms.txt, ai.txt, `/api/knowledge`, 36 agentic endpoints |
-| Region selector | **No, and this is GC-026** — 26 New York markets get a Canadian-dollar studio |
+| Region selector | **Yes, as of GEO-006** — the studio says which published bands it is pricing against, and the city pages link it with their own |
 
 ---
 
 ## 7. THE HONEST GRADE
 
-**A−, and the missing grade has one name: GC-026.**
+**A. GC-026 is closed by GEO-006, and it was the last one.**
 
-Every structural question in this audit now answers yes. What is left is not a
-gap in reachability, it is a contradiction in content: a homeowner in Amherst
-reads a United States band on their city page and is one tap from a tool that
-prices their floor in Canadian dollars. GEO-006 closes it, and until it does
-this platform states two versions of one fact — which is the single class of
-error this repository exists to prevent.
+When this audit was written the grade was A−, and the missing grade had one
+name: a homeowner in Amherst read a United States band on their city page and
+was one tap from a tool that priced their floor in Canadian dollars. The studio
+carries a region now — asked for and carried, never inferred — the 89 city pages
+link it with their own, and the share code and the estimate handoff both take it
+with them.
+
+Every structural question in this audit answers yes, and the contradiction that
+held the grade is gone. What remains is not a defect but a debt, recorded in the
+log rather than hidden: the estimate fields are still named `…Cad` while
+carrying whatever currency their band did. The values and every rendered figure
+are correct — `currency` says which — and renaming them crosses `packages/shared`,
+the chat tool, the estimate API and the lead schema, which is a patch of its own.
+
+Open, and none of them a contradiction: GC-021 (job cards keyed by display
+name), GC-023 (cache windows), and `ecowoodshardwood.com`, which needs a DNS
+panel rather than a commit.
 
 ---
 

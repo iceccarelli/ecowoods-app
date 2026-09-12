@@ -233,8 +233,24 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             Dust-free sanding that keeps you living at home, fixed written estimates with no
             &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
           </p>
-          <p style={{ marginTop: '1.5rem' }}>
+          <p style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center' }}>
             <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
+            {/* THE STUDIO, IN THIS CITY'S OWN CURRENCY (GEO-006).
+                Until now these pages reached Floor Studio only through the
+                header and footer, which are global and were therefore Canadian
+                — so a homeowner in Amherst read a United States band here and
+                was quoted in Canadian dollars one tap later. That is GC-026.
+                The region travels with the link, the studio says on screen
+                which bands it is using, and the visitor can change it: nothing
+                is inferred from an IP or a locale, because a Toronto laptop
+                planning a Buffalo rental is not a Canadian job. */}
+            <Link
+              href={`/floor-studio?region=${isUS ? 'US' : 'CA'}#live`}
+              className="btn btn-ghost btn-lg"
+              prefetch={false}
+            >
+              See it in your room, priced in {isUS ? 'US dollars' : 'Canadian dollars'}
+            </Link>
           </p>
         </div>
       </section>

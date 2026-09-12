@@ -37,6 +37,7 @@
  *   studio_live_opened   — a camera stream started
  *   studio_live_blocked  — it did not, and why (six possible reasons)
  *   studio_live_captured — a live frame was frozen into the studio
+ *   studio_region_changed — the visitor moved between the Ontario and New York bands
  */
 
 export type AnalyticsEvent =
@@ -84,7 +85,13 @@ export type AnalyticsEvent =
      classifyCameraError and nothing else. */
   | 'studio_live_opened'
   | 'studio_live_blocked'
-  | 'studio_live_captured';
+  | 'studio_live_captured'
+  /* GEO-006. Which band set the visitor is pricing against — 'CA' or 'US' and
+     nothing else. It is the only way to find out whether the New York links are
+     landing people in the right currency, and it carries no location: the
+     visitor chose it, and a choice between two published band sets is not a
+     place. */
+  | 'studio_region_changed';
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
   if (typeof window === 'undefined') return;

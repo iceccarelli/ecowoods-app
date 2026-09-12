@@ -34,6 +34,9 @@ const design: StudioDesign = {
   roomTypeId: 'living',
   room: { lightLevel: 'bright', wallUndertone: 'warm', existingFloorTone: 'mid' },
   budgetCad: 24000,
+  /* GEO-006: every design says which published bands it is priced against, and
+     the home country is the default so no older shared link changed meaning. */
+  country: 'CA',
   savedAt: AT.toISOString(),
 };
 

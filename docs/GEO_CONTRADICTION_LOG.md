@@ -74,7 +74,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | GC-023 | open | measure after the first geography deploy |
 | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
 | GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
-| GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
+| GC-026 | **closed by GEO-006** | the studio is priced against the bands of the region the floor is in; the region is asked for and carried, never inferred |
 | AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
 | AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
 | LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
@@ -1070,3 +1070,62 @@ somebody else's hostname, inside this company's own chat window. A trailing
 `verify-pricing-source` fired on a price literal in this work's own test file. It
 was removed rather than marked `pricing-allow`, on the same reasoning as before:
 a band written into a test is a second copy of a published band.
+
+---
+
+## GEO-006 · the studio has a country now
+
+GC-026, closed. The last surface on this site that assumed a visitor's country.
+
+### What was wrong
+
+GEO-004 set the rule: a New York surface shows no Canadian figure and an
+Ontario surface shows no United States one. `verify-geo` enforces it on every
+page that NAMES a market — and the studio names none, so the rule never reached
+it, while the header and footer link it from all 26 New York markets.
+
+| Where | What it did |
+|---|---|
+| `catalog.ts` | `bandForWork(work)` at its `'CA'` default |
+| `FloorStudio.tsx` | `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded |
+| the budget field | labelled "optional, CAD" |
+| `floor-studio/page.tsx` | told machines the range was "in Canadian dollars" |
+| `studioLeadNote` | wrote "CAD" into the estimating desk's note |
+
+A homeowner in Amherst read a United States band on `/service-areas/amherst`,
+tapped "see it in your room", and was quoted in Canadian dollars.
+
+### What closed it
+
+`StudioDesign` carries a `country`. It is ASKED FOR and CARRIED, never inferred
+— no IP lookup, no locale sniffing, because a visitor on a Toronto laptop
+planning a Buffalo rental is not a Canadian job, and guessing would put a wrong
+currency in front of them with no way to see why.
+
+- **The city pages set it.** All 89 now carry a studio CTA linking
+  `?region=US` or `?region=CA` — and until GEO-006 they reached the studio only
+  through the global chrome, which is exactly how the defect survived.
+- **The studio states it.** A region control sits above the range, saying which
+  bands are in use and where they apply, linked to `/pricing` where both are
+  published.
+- **The share code carries it.** `n=US` only when it is not the home country,
+  so no Ontario link that already exists changed meaning or grew.
+- **The handoff carries it.** `estimateHref` adds `region`, so the fixed price
+  is written against the band the visitor was actually shown.
+
+GEO-005 had already done the hard half: `EstimateResult` has carried `currency`
+from the band it was given since then, so nothing downstream needed to learn a
+country — only to read the currency instead of assuming one. Both figure sets
+come from their own published band times the area. **No exchange rate is applied
+anywhere**, because nobody published one.
+
+### Naming debt, recorded rather than hidden
+
+The fields are still `estimatedLowCad`, `estimatedHighCad`, `perSqftCad`,
+`budgetCad`. The VALUES are correct — they are whatever band came in, and
+`currency` says which — but the names now say CAD about a figure that may be
+USD. Renaming them crosses `packages/shared`, the chat tool, the estimate API
+and the lead schema, which is a patch of its own and not one to hide inside
+this one. It is a misleading name, it is not a misleading claim: nothing a
+visitor or a machine reads says CAD about a USD figure. Logged here so it is
+not discovered as a surprise.

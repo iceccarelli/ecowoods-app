@@ -49,6 +49,7 @@ import {
 import { ROOM_TYPES, isFeelTag, roomTypeById, type FeelTag } from './match';
 import type { LightLevel, RoomReading } from './room';
 import type { ToneKey, UndertoneKey } from './catalog';
+import type { PriceCountry } from '@/content/constants/pricing';
 
 export const STUDIO_CONFIG_KEY = 'ew-studio-v1';
 
@@ -71,10 +72,38 @@ export type StudioDesign = {
   roomTypeId?: string;
   /** The measured reading, where a photo was analysed. Never the photo. */
   room?: StudioRoomFacts;
+  /**
+   * WHICH BANDS THIS DESIGN IS PRICED AGAINST (GEO-006).
+   *
+   * GEO-004 established the rule the rest of this site holds: a New York
+   * surface shows no Canadian figure and an Ontario surface shows no United
+   * States one. verify-geo enforces it on the pages that NAME a market, and the
+   * studio names none — so the rule never reached it. Every figure it printed
+   * was Canadian, while the header and footer link it from all 26 New York
+   * markets. A homeowner in Amherst read a United States band on their city
+   * page and was quoted in Canadian dollars one click later.
+   *
+   * It is ASKED FOR and CARRIED, never inferred. No IP lookup, no locale
+   * sniffing: a visitor on a Toronto laptop planning a Buffalo rental is not a
+   * Canadian job, and guessing would put a wrong currency in front of them with
+   * no way to see why. The entry links set it, the control changes it, and the
+   * share code carries it so a link opens in the currency it was built in.
+   */
+  country: PriceCountry;
+  /** The optional budget the visitor typed, in the currency of `country`. */
   budgetCad?: number;
   /** ISO timestamp of the last edit. */
   savedAt: string;
 };
+
+/** The two countries this business publishes bands for. */
+export const STUDIO_COUNTRIES: { id: PriceCountry; label: string; where: string }[] = [
+  { id: 'CA', label: 'Ontario', where: 'Toronto, the GTA, Niagara and southwestern Ontario' },
+  { id: 'US', label: 'New York', where: 'Buffalo, Niagara County, Erie County and Rochester' },
+];
+
+export const countryOf = (value: string | null | undefined): PriceCountry =>
+  value === 'US' || value === 'us' ? 'US' : 'CA';
 
 export const roomFactsFrom = (reading: RoomReading): StudioRoomFacts => ({
   lightLevel: reading.lightLevel,
@@ -105,6 +134,9 @@ export function encodeStudioDesign(design: StudioDesign): string {
     params.set('e', design.room.existingFloorTone);
   }
   if (design.budgetCad && design.budgetCad > 0) params.set('b', String(Math.round(design.budgetCad)));
+  /* Only when it is not the home country, so an Ontario link stays as short as
+     it was before GEO-006 and a New York one says so out loud. */
+  if (design.country === 'US') params.set('n', 'US');
   return params.toString();
 }
 
@@ -161,6 +193,7 @@ export function decodeStudioDesign(input: string, now = new Date()): StudioDesig
     roomTypeId: roomTypeId && roomTypeById(roomTypeId) ? roomTypeId : undefined,
     room,
     budgetCad: Number.isFinite(budget) && budget > 0 ? Math.round(budget) : undefined,
+    country: countryOf(params.get('n')),
     savedAt: now.toISOString(),
   };
 }
@@ -226,6 +259,7 @@ export function readStudioDesign(now = Date.now()): StudioDesign | null {
       roomTypeId: parsed.roomTypeId && roomTypeById(parsed.roomTypeId) ? parsed.roomTypeId : undefined,
       room: parsed.room,
       budgetCad: typeof parsed.budgetCad === 'number' && parsed.budgetCad > 0 ? parsed.budgetCad : undefined,
+      country: countryOf(typeof parsed.country === 'string' ? parsed.country : null),
       savedAt: parsed.savedAt,
     };
   } catch {
@@ -242,10 +276,11 @@ export function clearStudioDesign(): void {
   }
 }
 
-export const emptyStudioDesign = (now = new Date()): StudioDesign => ({
+export const emptyStudioDesign = (now = new Date(), country: PriceCountry = 'CA'): StudioDesign => ({
   config: DEFAULT_CONFIGURATION,
   squareFeet: 900,
   feels: [],
+  country,
   savedAt: now.toISOString(),
 });
 
@@ -264,7 +299,7 @@ export function describeStudioDesign(design: StudioDesign): string {
  * somebody reads it before they knock on the door.
  */
 export function studioLeadNote(design: StudioDesign): string {
-  const estimate = priceConfiguration(design.config, design.squareFeet);
+  const estimate = priceConfiguration(design.config, design.squareFeet, design.country);
   const lines = [
     `Floor Studio ${studioRef(design)}`,
     describeStudioDesign(design),
@@ -276,7 +311,10 @@ export function studioLeadNote(design: StudioDesign): string {
       `Their photo read as: ${design.room.lightLevel} light, ${design.room.wallUndertone} walls, ${design.room.existingFloorTone} existing floor.`,
     );
   }
-  if (design.budgetCad) lines.push(`Budget they typed: ${design.budgetCad.toLocaleString('en-CA')} CAD.`);
+  lines.push(`Priced against the ${design.country === 'US' ? 'United States' : 'Ontario'} bands, in ${estimate.currency}.`);
+  if (design.budgetCad) {
+    lines.push(`Budget they typed: ${design.budgetCad.toLocaleString('en-CA')} ${estimate.currency}.`);
+  }
   return lines.join('\n');
 }
 
@@ -299,6 +337,10 @@ export function estimateHref(design: StudioDesign, service = 'installation'): st
     sqft: String(design.squareFeet),
     service,
     source: 'floor-studio',
+    /* The estimating desk has to know which band set produced the figure the
+       visitor was looking at, or the fixed price will be written against the
+       wrong one. GEO-006. */
+    region: design.country,
   });
   return `/estimate?${params.toString()}#form`;
 }

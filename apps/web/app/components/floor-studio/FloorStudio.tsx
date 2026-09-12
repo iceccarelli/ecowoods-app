@@ -12,7 +12,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
-import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
+import { NEW_INSTALL, US_NEW_INSTALL, formatBand } from '@/content/constants/pricing';
 import { publishedStudioProducts } from '@/content/constants/studio-products';
 import { track } from '@/lib/analytics';
 import {
@@ -46,6 +46,8 @@ import {
   decodeStudioDesign,
   describeStudioDesign,
   designHref,
+  STUDIO_COUNTRIES,
+  countryOf,
   emptyStudioDesign,
   encodeStudioDesign,
   estimateHref,
@@ -102,8 +104,27 @@ const ANALYSING_STEPS = [
 
 const MAX_COMPARE = 5;
 
-const cad = (n: number) =>
-  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
+/**
+ * MONEY FOLLOWS THE BAND (GEO-006).
+ *
+ * This was `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded, and
+ * it was the last place on this site that assumed a visitor's country. GEO-004
+ * established the rule — a New York surface shows no Canadian figure — and
+ * verify-geo holds it on every page that names a market. The studio names none,
+ * so the rule never reached it, while the header and footer link it from all 26
+ * New York markets.
+ *
+ * EstimateResult has carried `currency` from the band it was given since
+ * GEO-005, so nothing here has to know a country: it reads the currency the
+ * arithmetic actually used. The locale follows it too, because a US visitor
+ * reading "US$" is being told the same thing twice, and en-US simply writes $.
+ */
+const money = (n: number, currency: string) =>
+  new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'en-CA', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(n);
 
 /** A neutral plan-view ground for "start with a floor", with a little falloff
     so the boards are lit rather than flat. Not a room, and not pretending. */
@@ -143,6 +164,7 @@ export default function FloorStudio() {
   const [boardScale, setBoardScale] = useState(1);
 
   const [design, setDesign] = useState<StudioDesign>(() => emptyStudioDesign());
+  const regionNotedRef = useRef(false);
   const [compare, setCompare] = useState<string[]>([]);
   const [split, setSplit] = useState(60);
   const [repaired, setRepaired] = useState<string | null>(null);
@@ -169,6 +191,17 @@ export default function FloorStudio() {
          kilobyte of JavaScript to fire one event. */
       const src = new URLSearchParams(search).get('src');
       track('studio_open', src ? { src } : undefined);
+      /* WHICH BANDS TO OPEN ON (GEO-006).
+         `?region=US` is set by the links on the New York city pages, so a
+         homeowner in Amherst who taps "see it in your room" arrives already
+         priced in the currency their own city page quoted them. It is a
+         DEFAULT, not a verdict: the control below says which bands are in use
+         and changes them, and nothing is inferred from an IP or a locale — a
+         visitor on a Toronto laptop planning a Buffalo rental is not a Canadian
+         job, and guessing would put the wrong currency in front of them with no
+         way to see why. */
+      const region = new URLSearchParams(search).get('region');
+      if (region) setDesign((d) => ({ ...d, country: countryOf(region) }));
     }
     /* `/floor-studio#live` opens the camera directly. The header, the mobile
        drawer, ⌘K and the homepage all use it, so the fastest thing this site
@@ -229,8 +262,9 @@ export default function FloorStudio() {
         roomTypeId: design.roomTypeId,
         squareFeet: design.squareFeet,
         budgetCad: design.budgetCad,
+        country: design.country,
       }),
-    [design.feels, design.room, design.roomTypeId, design.squareFeet, design.budgetCad],
+    [design.feels, design.room, design.roomTypeId, design.squareFeet, design.budgetCad, design.country],
   );
 
   const matchesShownRef = useRef(false);
@@ -241,8 +275,8 @@ export default function FloorStudio() {
   }, [stage, matches]);
 
   const estimate = useMemo(
-    () => priceConfiguration(design.config, design.squareFeet),
-    [design.config, design.squareFeet],
+    () => priceConfiguration(design.config, design.squareFeet, design.country),
+    [design.config, design.squareFeet, design.country],
   );
   const movement = useMemo(() => movementFor(design.config), [design.config]);
 
@@ -500,7 +534,7 @@ export default function FloorStudio() {
               config={design.config}
               squareFeet={design.squareFeet}
               boardScale={boardScale}
-              priceLine={`${cad(estimate.estimatedLowCad)} – ${cad(estimate.estimatedHighCad)}`}
+              priceLine={`${money(estimate.estimatedLowCad, estimate.currency)} – ${money(estimate.estimatedHighCad, estimate.currency)}`}
               onCapture={onLiveCapture}
               onClose={() => setStage('start')}
             />
@@ -544,7 +578,7 @@ export default function FloorStudio() {
               )}
               <p className="fs-estimate-label">Estimated installed investment</p>
               <p className="fs-estimate-figure">
-                {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
+                {money(estimate.estimatedLowCad, estimate.currency)} <em>–</em> {money(estimate.estimatedHighCad, estimate.currency)}
               </p>
               <p className="fs-disclaimer">
                 A <strong>range, not a quote</strong>, for {design.squareFeet.toLocaleString('en-CA')} sq ft.
@@ -703,7 +737,7 @@ export default function FloorStudio() {
               </label>
               <label className="fs-field">
                 <span>
-                  A budget, if you have one <em>optional, CAD</em>
+                  A budget, if you have one <em>optional, {estimate.currency}</em>
                 </span>
                 <input
                   type="number"
@@ -790,7 +824,7 @@ export default function FloorStudio() {
                       ))}
                     </ul>
                     <p className="fs-match-price">
-                      {cad(match.estimate.estimatedLowCad)} – {cad(match.estimate.estimatedHighCad)}{' '}
+                      {money(match.estimate.estimatedLowCad, match.estimate.currency)} – {money(match.estimate.estimatedHighCad, match.estimate.currency)}{' '}
                       <em>estimated installed</em>
                     </p>
                     <div className="fs-match-actions">
@@ -889,11 +923,44 @@ export default function FloorStudio() {
                 </label>
               </div>
 
+              {/* WHICH BANDS THIS IS PRICED AGAINST (GEO-006).
+                  Stated on screen rather than assumed, because the studio is
+                  linked from the header and footer of 26 New York markets and
+                  quoted every one of them in Canadian dollars until now. */}
+              <fieldset className="fs-axis fs-region">
+                <legend>Where is the floor?</legend>
+                <div className="fs-axis-options">
+                  {STUDIO_COUNTRIES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="fs-option"
+                      aria-pressed={design.country === c.id}
+                      onClick={() => {
+                        setDesign((d) => ({ ...d, country: c.id }));
+                        if (!regionNotedRef.current) {
+                          regionNotedRef.current = true;
+                          track('studio_region_changed', { region: c.id });
+                        }
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="fs-axis-note">
+                  {design.country === 'US'
+                    ? `Priced against the New York bands, in US dollars — ${STUDIO_COUNTRIES[1]!.where}.`
+                    : `Priced against the Ontario bands, in Canadian dollars — ${STUDIO_COUNTRIES[0]!.where}.`}{' '}
+                  <Link href="/pricing">Both are published.</Link>
+                </p>
+              </fieldset>
+
               {/* The range */}
               <div className="fs-estimate">
                 <p className="fs-estimate-label">Estimated installed investment</p>
                 <p className="fs-estimate-figure">
-                  {cad(estimate.estimatedLowCad)} <em>–</em> {cad(estimate.estimatedHighCad)}
+                  {money(estimate.estimatedLowCad, estimate.currency)} <em>–</em> {money(estimate.estimatedHighCad, estimate.currency)}
                 </p>
                 <p className="fs-estimate-sub">
                   {estimate.perSqftCad} · {design.squareFeet.toLocaleString('en-CA')} sq ft ·{' '}
@@ -906,7 +973,8 @@ export default function FloorStudio() {
                 <details className="fs-why">
                   <summary>Why this price?</summary>
                   <p>
-                    New hardwood installation is published at {formatBand(NEW_INSTALL)} — see{' '}
+                    New hardwood installation is published at{' '}
+                    {formatBand(design.country === 'US' ? US_NEW_INSTALL : NEW_INSTALL)} — see{' '}
                     <Link href="/pricing">the published bands</Link>. Inside that, the species sets the
                     material, the finish sets how many passes the floor takes, and the pattern sets the
                     waste and the labour: a chevron is mitred point to point and is the hardest floor
@@ -925,13 +993,13 @@ export default function FloorStudio() {
                     {compare.map((id) => {
                       const config = parseConfigurationId(id);
                       if (!config) return null;
-                      const price = priceConfiguration(config, design.squareFeet);
+                      const price = priceConfiguration(config, design.squareFeet, design.country);
                       return (
                         <li key={id}>
                           <ComparePane ground={ground} quad={activeQuad} config={config} squareFeet={design.squareFeet} boardScale={boardScale} />
                           <strong>{describeConfiguration(config)}</strong>
                           <span>
-                            {cad(price.estimatedLowCad)} – {cad(price.estimatedHighCad)}
+                            {money(price.estimatedLowCad, price.currency)} – {money(price.estimatedHighCad, price.currency)}
                           </span>
                           <div className="fs-match-actions">
                             <button

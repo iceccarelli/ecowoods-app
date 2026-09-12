@@ -42,6 +42,7 @@
  * per species in the headline set, and says so here rather than hiding it.
  */
 import type { EstimateResult } from '@ecowoods/shared/ai';
+import type { PriceCountry } from '@/content/constants/pricing';
 import {
   BOARD_WIDTHS,
   FLOOR_PRODUCTS,
@@ -112,6 +113,13 @@ export type MatchInput = {
   room?: Pick<RoomReading, 'lightLevel' | 'wallUndertone' | 'existingFloorTone'>;
   roomTypeId?: string;
   squareFeet: number;
+  /**
+   * Which published band set to rank against (GEO-006). Optional, defaulting to
+   * the home country, so every existing caller keeps its meaning — and so a
+   * recommendation shown to a New York visitor is ranked against the prices
+   * they will actually be quoted rather than somebody else's.
+   */
+  country?: PriceCountry;
   /**
    * An installed budget the visitor typed, in CAD. Optional, and used only to
    * caveat — never to hide a floor. Somebody who says $20,000 and falls in love
@@ -419,7 +427,7 @@ export function recomputeScore(judgements: MatchReason[]): number {
 function judge(input: MatchInput, config: FloorConfiguration): Match | null {
   const product = productById(config.productId);
   if (!product) return null;
-  const estimate = priceConfiguration(config, input.squareFeet);
+  const estimate = priceConfiguration(config, input.squareFeet, input.country ?? 'CA');
   const ctx: Context = { input, config, product, estimate, feels: new Set(input.feels) };
 
   const judgements: MatchReason[] = [];

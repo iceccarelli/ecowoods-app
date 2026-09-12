@@ -80,7 +80,7 @@ import {
   type PatternOption,
 } from '@ecowoods/shared/ai';
 import { SPECIES as WOOD_SPECIES, computeMovement, type WoodSpecies } from '@/lib/wood';
-import { bandForWork } from '@/content/constants/pricing';
+import { bandForWork, type PriceCountry } from '@/content/constants/pricing';
 
 /* ── the axes ─────────────────────────────────────────────────────────────── */
 
@@ -418,12 +418,25 @@ export function describeConfiguration(c: FloorConfiguration): string {
  * Width is deliberately absent from the arguments passed downstream. See the
  * header: it changes the floor and the movement, not the published band.
  */
-export function priceConfiguration(c: FloorConfiguration, squareFeet: number): EstimateResult {
+/**
+ * `country` decides WHICH PUBLISHED BAND, and nothing else (GEO-006).
+ *
+ * It defaults to the home country so every existing caller keeps its meaning,
+ * and the studio passes the visitor's own choice. The returned EstimateResult
+ * already carries `currency` from the band it was given — that has been true
+ * since GEO-005 — so nothing downstream has to know a country, only to read
+ * the currency instead of assuming one.
+ */
+export function priceConfiguration(
+  c: FloorConfiguration,
+  squareFeet: number,
+  country: PriceCountry = 'CA',
+): EstimateResult {
   const product = productById(c.productId);
   const work = product?.rateKey ?? FLOOR_PRODUCTS[0].rateKey;
   return estimateInstalledRangeCad(
     { species: work, squareFeet, finish: c.finishId, pattern: c.patternId },
-    bandForWork(work),
+    bandForWork(work, country),
   );
 }
 
