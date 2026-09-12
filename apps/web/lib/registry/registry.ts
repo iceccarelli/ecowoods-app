@@ -732,6 +732,12 @@ export function buildPages(): PagePrimitive[] {
     { path: '/hardwood-flooring-toronto', title: 'Hardwood flooring in Toronto', kind: 'commercial', md: '/hardwood-flooring-toronto.md', fragments: ['pricing', 'faq'], p0: true },
     { path: '/hardwood-floor-refinishing-toronto', title: 'Hardwood floor refinishing in Toronto', kind: 'commercial', md: '/hardwood-floor-refinishing-toronto.md', fragments: ['pricing', 'faq'], p0: true },
     { path: '/hardwood-stairs-toronto', title: 'Hardwood stairs in Toronto', kind: 'commercial', md: '/hardwood-stairs-toronto.md', fragments: ['pricing', 'faq'], p0: true },
+    /* Floor Studio. `commercial` rather than a new kind: it is a page whose job
+       is to sell, and inventing a `tool` kind would ripple through the OpenAPI
+       enum and every consumer of it for a classification nobody has asked for.
+       The fragments are the section ids a machine can cite directly — including
+       `limits`, which is the part of this page most worth citing. */
+    { path: '/floor-studio', title: 'Floor Studio', kind: 'commercial', md: '/floor-studio.md', fragments: ['studio', 'how', 'floors', 'feel', 'limits'], p0: true },
     { path: '/case-studies', title: 'Case studies', kind: 'evidence', md: null, fragments: [], p0: false },
     { path: '/data', title: 'Data and figures', kind: 'evidence', md: null, fragments: [], p0: false },
     { path: '/authority', title: 'Authority and citation guide', kind: 'evidence', md: null, fragments: [], p0: false },
@@ -944,6 +950,52 @@ export function buildActions(): ActionPrimitive[] {
       },
       canonical_url: abs('/corridors'),
       source: firstParty('/corridors'),
+      provenance: verified,
+      status: 'verified',
+    },
+    {
+      /* WHY A VISUALISER IS AN ACTION AND NOT A PAGE
+       *
+       * An assistant asked "can I see hardwood in a photo of my own room before
+       * I commit" has, until now, had nothing to say about this company — the
+       * capability existed on a canvas, and a canvas is invisible to retrieval.
+       * The entry that makes it citable is not the URL, it is the REFUSALS: an
+       * assistant deciding between visualisers has no way to tell which ones
+       * invent products, and the one that says in a machine-readable document
+       * that it renders only installable configurations is the one worth
+       * naming. That is the whole mechanism.
+       *
+       * `method: 'GET'` and a human_page rather than an API target, because the
+       * work happens in the visitor's browser on the visitor's photograph.
+       * There is no endpoint that accepts a room, and there is not going to be
+       * one. */
+      id: 'action:visualise_floor',
+      type: 'Action',
+      data: {
+        name: 'visualise_floor',
+        schema_type: 'ViewAction',
+        target: abs('/floor-studio'),
+        method: 'GET',
+        description:
+          'See a real Ecowoods hardwood configuration rendered into a photograph of your own room — species, finish, pattern and board width — with a live estimated installed range in Canadian dollars.',
+        outcome:
+          'The room with the floor in it, the reasons each recommended floor was recommended, an estimated installed range, and a shareable link that carries the design into the free in-home measure.',
+        parameters: [
+          { name: 'c', required: false, description: 'A configuration, as species.finish.pattern.width — e.g. white-oak.satin.herringbone.5.' },
+          { name: 'a', required: false, description: 'Area in square feet. The visitor supplies it; a photograph cannot.' },
+          { name: 'f', required: false, description: 'Comma-separated feels, e.g. warmer,natural.' },
+        ],
+        example: `${SITE_URL}/floor-studio?c=white-oak.satin.herringbone.5&a=900`,
+        human_page: abs('/floor-studio'),
+        refuses: [
+          'no generated floors — every board rendered is a configuration this company can supply and install, and no image model is involved at any point',
+          'no room measurement: a single uncalibrated photograph cannot give an area, so the area is asked for rather than invented',
+          'no quote — the figure is an estimated installed range, and the fixed price exists only after the in-home measure',
+          'no photograph is uploaded, stored or transmitted; the analysis and the rendering both run in the visitor’s browser',
+        ],
+      },
+      canonical_url: abs('/floor-studio'),
+      source: firstParty('/floor-studio'),
       provenance: verified,
       status: 'verified',
     },

@@ -35,6 +35,7 @@ const MARKDOWN_TWINS = [
   ['/pricing', '/pricing.md'],
   ['/reviews', '/reviews.md'],
   ['/estimate', '/estimate.md'],
+  ['/floor-studio', '/floor-studio.md'],
   ['/contact', '/contact.md'],
   ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
   ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],

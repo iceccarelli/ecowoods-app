@@ -769,23 +769,35 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
         </div>
       </section>
 
-      {/* 5b · DESIGN YOUR FLOOR — teaser only. The full configurator lives at
-             /design so the landing page stays short; researchers click through,
-             buyers keep scrolling toward pricing and the estimate. */}
+      {/* 5b · SEE IT IN YOUR ROOM — Floor Studio first, the configurator second.
+
+             The order matters and it is the whole argument. "Design your floor"
+             asks a visitor to imagine; Floor Studio shows them. A homeowner who
+             has watched a real white oak herringbone appear in a photograph of
+             their own living room is a different person from one who has moved
+             three sliders, and the second CTA is there for the minority who
+             arrive already knowing what they want. Both surfaces share one
+             catalogue and one pricing function, so neither can contradict the
+             other. */}
       <section className="section-tight" id="design">
         <div className="shell">
           <div className="section-head reveal" style={{ maxWidth: '640px' }}>
-            <span className="eyebrow">Design your floor</span>
+            <span className="eyebrow">Floor Studio</span>
             <h2>
-              See it before we <span className="serif-italic">build it.</span>
+              Don’t imagine your new floor. <span className="serif-italic">See it.</span>
             </h2>
             <p>
-              Pick species, finish, and pattern — with a live installed-price range built from
-              the same numbers our estimator carries in the truck.
+              Upload a photo of your room and explore real Ecowoods floors in your own space —
+              species, finish, pattern and board width, with a live estimated installed range.
+              The photo never leaves your device.
             </p>
-            <Link href="/design" className="btn btn-copper">
-              Open the floor designer <span aria-hidden>→</span>
+            <Link href="/floor-studio" className="btn btn-copper">
+              Try your room <span aria-hidden>→</span>
             </Link>
+            <p>
+              Already know the specification?{' '}
+              <Link href="/design">Open the full floor designer</Link>.
+            </p>
           </div>
         </div>
       </section>

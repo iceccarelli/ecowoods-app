@@ -246,15 +246,18 @@ export type ActionData = {
   /**
    * `AssessAction` and `SearchAction` are the computational tools — the ones
    * an assistant can call and get an answer from without a human being
-   * involved. Everything else on this list ends in a person: a form, a phone,
-   * an inbox.
+   * involved. `ViewAction` is the third category and arrived with Floor Studio:
+   * work a machine cannot do FOR somebody, only send them to, because it needs
+   * their photograph and their device. Everything else on this list ends in a
+   * person: a form, a phone, an inbox.
    */
   schema_type:
     | 'QuoteAction'
     | 'CommunicateAction'
     | 'ReserveAction'
     | 'AssessAction'
-    | 'SearchAction';
+    | 'SearchAction'
+    | 'ViewAction';
   target: string;
   method: 'GET' | 'POST' | 'tel' | 'mailto';
   description: string;

@@ -35,6 +35,7 @@ export type FunnelId =
   | 'price'
   | 'evaluation'
   | 'design'
+  | 'studio'
   | 'purchase';
 
 export interface Funnel {
@@ -106,6 +107,21 @@ export const FUNNELS: Funnel[] = [
     notYet: 'Technical detail about substrate. It matters and it is not what they are here for yet.',
   },
   {
+    id: 'studio',
+    intent: 'I want to see it in my room before I believe any of this.',
+    tool: '/floor-studio',
+    steps: ['studio_open', 'studio_visualised', 'studio_estimate_handoff'],
+    /* NOT the estimate form, and the restraint is the point. Somebody who has
+       just watched a floor appear in a photograph of their own living room has
+       resolved desire, not doubt — the next uncertainty is whether the picture
+       is honest, and the answer to that is finished houses, not a booking
+       button. The studio page carries its own estimate CTA at the wow moment;
+       this is the call for the visitor who is not there yet. */
+    nextStep: { href: '/projects', label: 'See these floors in houses we finished' },
+    notYet:
+      'A deposit. They have seen a picture of a floor, not a floor. The sample in the hand and the measure in the house both come first.',
+  },
+  {
     id: 'purchase',
     intent: 'I want Ecowoods to do the work.',
     tool: '/estimate',
@@ -139,6 +155,7 @@ export const ROUTE_FUNNEL: Record<string, FunnelId> = {
   '/framework/assess': 'evaluation',
   '/guides/how-to-evaluate-a-hardwood-quote': 'evaluation',
   '/design': 'design',
+  '/floor-studio': 'studio',
   '/estimate': 'purchase',
 };
 

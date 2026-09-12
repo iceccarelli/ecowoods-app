@@ -67,6 +67,23 @@ function backTo(request: Request, ok: boolean): string {
   }
 }
 
+/**
+ * The note the estimating desk reads, with the Floor Studio design attached.
+ *
+ * The code is appended verbatim rather than expanded into prose here: expanding
+ * it would mean a second rendering of a design, in a file that knows nothing
+ * about the catalogue, which is exactly how two surfaces start describing the
+ * same floor differently. The desk pastes it into /floor-studio and sees the
+ * floor itself.
+ */
+function leadNotes(lead: { message?: unknown; design?: unknown }): string | null {
+  const parts = [
+    lead.message ? String(lead.message) : null,
+    lead.design ? `Floor Studio design code: ${String(lead.design)}` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join('\n\n') : null;
+}
+
 export async function POST(request: Request) {
   // P0.7 — CSRF hygiene. A browser POST carrying a foreign Origin header is
   // refused before anything is read. An absent Origin is allowed: the no-JS
@@ -179,7 +196,7 @@ export async function POST(request: Request) {
         service: lead.service ? String(lead.service) : null,
         squareFeet: lead.sqft ? Number(lead.sqft) : null,
         timeline: lead.timeline ? String(lead.timeline) : null,
-        notes: lead.message ? String(lead.message) : null,
+        notes: leadNotes(lead),
         userId: session?.user?.id ?? null,
       },
     });
@@ -223,7 +240,7 @@ export async function POST(request: Request) {
     phone: lead.phone ? String(lead.phone) : undefined,
     service: lead.service ? String(lead.service) : undefined,
     squareFeet: lead.sqft ? Number(lead.sqft) : undefined,
-    notes: lead.message ? String(lead.message) : undefined,
+    notes: leadNotes(lead) ?? undefined,
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
   );

@@ -32,6 +32,11 @@ export default function DesignPage() {
             Take your time here. When a combination feels right, one tap books the free
             in-home measure — or hands your exact configuration to EcowoodsGuide. No retyping.
           </p>
+          <p className="tlx-lede">
+            Want to see it in your own room first?{' '}
+            <Link href="/floor-studio">Open Floor Studio</Link> — the same floors, the same
+            numbers, rendered into a photo of your space.
+          </p>
         </div>
       </header>
       <ConfiguratorSection />

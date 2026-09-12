@@ -24,6 +24,16 @@
  *   commercial_cta       — a CTA on /commercial was activated
  *   realtor_cta          — a CTA on /realtors was activated
  *   recovery_opt_in      — the visitor consented to an unfinished-form reminder
+ *   studio_open          — /floor-studio was opened
+ *   studio_photo_analysed — a room photo was read (in the browser; nothing uploaded)
+ *   studio_boundary_corrected — the visitor dragged the floor boundary
+ *   studio_match_shown   — Floor Match returned its recommendations
+ *   studio_visualised    — a real configuration was rendered into their room
+ *   studio_config_changed — species / finish / pattern / width moved
+ *   studio_compare       — two or more floors were compared
+ *   studio_share         — a design link was copied or shared
+ *   studio_samples_request — samples were requested from the studio
+ *   studio_estimate_handoff — the design was carried into /estimate
  */
 
 export type AnalyticsEvent =
@@ -45,7 +55,24 @@ export type AnalyticsEvent =
      whether the wording is fair — a rate near zero means people did not
      understand it, and a rate near one means it was not really a choice. */
   | 'photo_retention_opt_in'
-  | 'framework_benchmark_contribute';
+  | 'framework_benchmark_contribute'
+  /* Floor Studio. The funnel this business has never been able to measure:
+     what a visitor does between wanting a floor and asking for a price.
+     studio_visualised is the wow moment; studio_estimate_handoff is the one
+     that pays for the feature, and lib/funnels binds it as the completion of
+     the studio funnel. None of these carries a photograph, a room, or
+     anything about the person — the parameters are a configuration id and a
+     count, and that is all they are allowed to be. */
+  | 'studio_open'
+  | 'studio_photo_analysed'
+  | 'studio_boundary_corrected'
+  | 'studio_match_shown'
+  | 'studio_visualised'
+  | 'studio_config_changed'
+  | 'studio_compare'
+  | 'studio_share'
+  | 'studio_samples_request'
+  | 'studio_estimate_handoff';
 
 export function track(event: AnalyticsEvent, params?: Record<string, string | number | boolean>): void {
   if (typeof window === 'undefined') return;

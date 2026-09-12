@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
+import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
 import Link from 'next/link';
 import {
   BUSINESS_NAP,
@@ -201,6 +202,26 @@ export default function HardwoodFlooringTorontoPage() {
           </div>
         </div>
       </header>
+
+      {/* BEFORE THE ASK, THE PICTURE.
+
+          The form below is the right thing to put above every explanatory
+          section and it is still a form. A visitor on the new-install head term
+          is deciding what to buy, not only whether to buy, and the cheapest way
+          to move that decision is to show them the floor in their own room —
+          free, instant, and no contact details. It sits above the form rather
+          than below it because the order of a sale is desire, then confidence,
+          then contact, and putting the form first only works on the minority
+          who arrived already decided. */}
+      <section className="tlx-section tlx-section--flush" aria-label="See this floor in your room">
+        <div className="shell">
+          <SeeInMyRoom
+            productId="white-oak"
+            label="Don’t imagine your new floor. See it in a photo of your own room, before anybody measures anything."
+            source="head-term:hardwood-flooring-toronto"
+          />
+        </div>
+      </section>
 
       {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
           This used to be a link to `/#quote`, which is a different url whose form

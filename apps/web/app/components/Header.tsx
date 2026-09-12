@@ -61,6 +61,11 @@ const SERVICES_MENU: MegaColumn[] = [
   {
     title: 'Start here',
     items: [
+      /* Floor Studio leads the menu because it is the only entry on this site
+         that costs the visitor nothing and shows them something they cannot get
+         anywhere else: their own room, with a floor we can actually lay in it.
+         In the chrome it is depth 0 — one click from every page. */
+      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
       { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
       { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
     ],

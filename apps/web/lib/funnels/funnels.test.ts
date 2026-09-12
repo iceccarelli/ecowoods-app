@@ -15,7 +15,7 @@ describe('funnels', () => {
   it('has one funnel per distinct intent, with no duplicate ids', () => {
     const ids = FUNNELS.map((f) => f.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(FUNNELS.length).toBe(6);
+    expect(FUNNELS.length).toBe(7);
   });
 
   it('completes on the last declared step, never a middle one', () => {
@@ -31,15 +31,18 @@ describe('funnels', () => {
 
   it('does not end five of six funnels at the estimate form', () => {
     // The failure this whole module exists to prevent: every page asking for a
-    // booking. At most two funnels may point at /estimate.
+    // booking. At most three funnels may point at /estimate — and the studio,
+    // the surface with the strongest pull toward one, deliberately does not.
     const toEstimate = FUNNELS.filter((f) => f.nextStep.href.startsWith('/estimate'));
     expect(toEstimate.length).toBeLessThanOrEqual(3);
     expect(funnelById('problem')!.notYet).toMatch(/price/i);
+    expect(funnelById('studio')!.nextStep.href.startsWith('/estimate')).toBe(false);
   });
 
   it('resolves a route to its funnel, and an unmapped route to nothing', () => {
     expect(funnelForRoute('/pricing')?.id).toBe('price');
     expect(funnelForRoute('/quote-check')?.id).toBe('evaluation');
+    expect(funnelForRoute('/floor-studio')?.id).toBe('studio');
     expect(funnelForRoute('/reviews')).toBeUndefined();
   });
 

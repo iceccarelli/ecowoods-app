@@ -13,6 +13,15 @@ import {
   describeDesignConfig,
   type DesignConfig,
 } from '@/lib/design-config';
+import {
+  decodeStudioDesign,
+  describeStudioDesign,
+  encodeStudioDesign,
+  studioHref,
+  studioLeadNote,
+  studioRef,
+  type StudioDesign,
+} from '@/lib/floor-studio/studio-config';
 
 /**
  * EstimateForm — the ask, rendered in HTML, on the page that earned it.
@@ -96,15 +105,31 @@ export function EstimateForm({
   const [photoConsent, setPhotoConsent] = useState(false);
   const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [design, setDesign] = useState<DesignConfig | null>(null);
+  const [studio, setStudio] = useState<StudioDesign | null>(null);
   const [recoverConsent, setRecoverConsent] = useState(false);
   const recoverySent = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const startedRef = useRef(false);
   const viewedRef = useRef(false);
 
-  /* Design handoff — read once on mount, never during render (SSR match). */
+  /* Design handoff — read once on mount, never during render (SSR match).
+
+     TWO SOURCES, AND THE LINK WINS.
+
+     `ew-design-v1` is what /design has always written. `?design=` is the Floor
+     Studio share code, and it is richer: the configuration, the board width,
+     the area, what the visitor asked for and what their photo read as. When
+     both are present the link is authoritative — somebody who followed a link
+     into this form is looking at the floor in that link, not at whatever they
+     configured on this device last month. */
   useEffect(() => {
     setDesign(readDesignConfig());
+    try {
+      const code = new URLSearchParams(window.location.search).get('design');
+      if (code) setStudio(decodeStudioDesign(code));
+    } catch {
+      /* a malformed querystring is not a reason to fail the form */
+    }
   }, []);
 
   /* #photo-triage in the URL (header “Send photos” CTA) opens track B. */
@@ -323,21 +348,39 @@ export function EstimateForm({
     </label>
   );
 
-  const designChip = design && (
-    <p className="ef-design-chip" data-testid="design-chip">
-      <span aria-hidden="true">🧭</span> From your floor design: <strong>{describeDesignConfig(design)}</strong>
+  const designChip = studio ? (
+    <p className="ef-design-chip" data-testid="studio-chip">
+      <span aria-hidden="true">🧭</span> From Floor Studio{' '}
+      <a className="ef-design-chip-ref" href={studioHref(studio)}>
+        {studioRef(studio)}
+      </a>
+      : <strong>{describeStudioDesign(studio)}</strong>
       <button
         type="button"
         className="ef-design-chip-x"
-        aria-label="Remove the floor-designer configuration from this request"
-        onClick={() => {
-          clearDesignConfig();
-          setDesign(null);
-        }}
+        aria-label="Remove the Floor Studio design from this request"
+        onClick={() => setStudio(null)}
       >
         ×
       </button>
     </p>
+  ) : (
+    design && (
+      <p className="ef-design-chip" data-testid="design-chip">
+        <span aria-hidden="true">🧭</span> From your floor design: <strong>{describeDesignConfig(design)}</strong>
+        <button
+          type="button"
+          className="ef-design-chip-x"
+          aria-label="Remove the floor-designer configuration from this request"
+          onClick={() => {
+            clearDesignConfig();
+            setDesign(null);
+          }}
+        >
+          ×
+        </button>
+      </p>
+    )
   );
 
   return (
@@ -370,6 +413,10 @@ export function EstimateForm({
       {trackTab === 'measure' && (
         <form className="ef-form" method="post" action="/api/leads" onSubmit={submitMeasure} noValidate onFocusCapture={onFirstInteraction}>
           <input type="hidden" name="source" value={source} />
+          {/* The Floor Studio design, as structured data rather than a paragraph.
+              /api/leads stores the code verbatim; the estimating desk pastes it
+              back into /floor-studio and sees the floor the visitor chose. */}
+          {studio && <input type="hidden" name="design" value={encodeStudioDesign(studio)} />}
 
           <div className="ef-row">
             <label className="ef-field">
@@ -422,8 +469,8 @@ export function EstimateForm({
                 min="1"
                 inputMode="numeric"
                 placeholder="900"
-                defaultValue={design ? design.sqft : undefined}
-                key={design ? `sqft-${design.sqft}` : 'sqft'}
+                defaultValue={studio ? studio.squareFeet : design ? design.sqft : undefined}
+                key={studio ? `sqft-${studio.squareFeet}` : design ? `sqft-${design.sqft}` : 'sqft'}
               />
             </label>
             <label className="ef-field">
@@ -434,8 +481,14 @@ export function EstimateForm({
                 name="message"
                 rows={3}
                 placeholder="Two bedrooms and a hallway, red oak, last refinished around 2005."
-                defaultValue={design ? `From the floor designer: ${describeDesignConfig(design)}.` : undefined}
-                key={design ? `msg-${design.savedAt}` : 'msg'}
+                defaultValue={
+                  studio
+                    ? studioLeadNote(studio)
+                    : design
+                      ? `From the floor designer: ${describeDesignConfig(design)}.`
+                      : undefined
+                }
+                key={studio ? `msg-${studioRef(studio)}` : design ? `msg-${design.savedAt}` : 'msg'}
               />
             </label>
           </div>
@@ -482,7 +535,11 @@ export function EstimateForm({
           onFocusCapture={onFirstInteraction}
         >
           <input type="hidden" name="source" value={source} />
-          {design && <input type="hidden" name="designSummary" value={describeDesignConfig(design)} />}
+          {studio ? (
+            <input type="hidden" name="designSummary" value={describeStudioDesign(studio)} />
+          ) : (
+            design && <input type="hidden" name="designSummary" value={describeDesignConfig(design)} />
+          )}
 
           <label className="ef-field">
             <span>Up to 3 photos of the floor</span>

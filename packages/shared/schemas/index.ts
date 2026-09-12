@@ -37,6 +37,17 @@ export const leadSchema = z.object({
   timeline: z.string().max(80).optional(),
   message: z.string().max(2000).optional(),
   source: z.string().max(120).optional(),
+  /**
+   * Floor Studio state, as the readable share code
+   * (`c=white-oak.satin.herringbone.5&a=900&…`). Structured, not prose: the
+   * estimating desk pastes it back into /floor-studio and sees exactly the
+   * floor the visitor was looking at when they asked for the measure. Parsed
+   * and validated by lib/floor-studio/studio-config.decodeStudioDesign; a code
+   * naming a floor we do not lay resolves to nothing rather than to a guess.
+   * It carries a configuration and an area. It never carries a photograph, a
+   * price, or anything personal.
+   */
+  design: z.string().max(400).optional(),
   /** The "email me if I leave this unfinished" checkbox — 'on' when ticked. */
   recoverConsent: z.union([z.string().max(10), z.boolean()]).optional(),
   // sqft comes in as a number (valueAsNumber) or NaN when left blank

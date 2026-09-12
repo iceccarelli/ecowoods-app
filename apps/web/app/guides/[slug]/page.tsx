@@ -14,6 +14,33 @@ import { SERVICES } from '@/lib/seo-data';
 import { IllustrationPair } from '../../components/Illustration';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
 import { NextStep } from '@/app/components/NextStep';
+import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
+
+/**
+ * Guide slug → the floor the guide is about.
+ *
+ * A species dossier is a good page and a dead end: somebody reads two thousand
+ * words about white oak, decides they like it, and then has to go and find the
+ * thing that shows it to them. These five carry the floor they are about into
+ * Floor Studio, preloaded.
+ *
+ * WHITE ASH IS DELIBERATELY ABSENT. It has a dossier and no catalogue entry —
+ * this company does not currently lay it — and <SeeInMyRoom> renders nothing
+ * for a species that is not in the catalogue rather than linking into a floor
+ * that cannot be bought. That silence is the same rule the renderer obeys.
+ */
+const GUIDE_FLOOR: Record<string, { productId: string; patternId?: string; label?: string }> = {
+  'white-oak-flooring-toronto': { productId: 'white-oak' },
+  'red-oak-flooring-toronto': { productId: 'red-oak' },
+  'hard-maple-flooring-toronto': { productId: 'hard-maple' },
+  'black-walnut-flooring-toronto': { productId: 'black-walnut' },
+  'hickory-flooring-toronto': { productId: 'hickory' },
+  'herringbone-chevron-parquet-toronto': {
+    productId: 'white-oak',
+    patternId: 'herringbone',
+    label: 'Herringbone is the one people photograph. See it in your own room before you commit to it.',
+  },
+};
 
 /* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
    drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
@@ -324,6 +351,19 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                 </div>
               ))}
             </dl>
+          </div>
+        </section>
+      )}
+
+      {GUIDE_FLOOR[guide.slug] && (
+        <section className="tlx-section tlx-section--flush" aria-label="See this floor in your room">
+          <div className="shell">
+            <SeeInMyRoom
+              productId={GUIDE_FLOOR[guide.slug]!.productId}
+              patternId={GUIDE_FLOOR[guide.slug]!.patternId}
+              label={GUIDE_FLOOR[guide.slug]!.label}
+              source={`guide:${guide.slug}`}
+            />
           </div>
         </section>
       )}

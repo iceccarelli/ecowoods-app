@@ -12,6 +12,7 @@ import {
 } from '@ecowoods/shared/ai';
 import { openAssistant } from '@/lib/assistant';
 import { saveDesignConfig } from '@/lib/design-config';
+import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { track } from '@/lib/analytics';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
 
@@ -30,6 +31,21 @@ import { EcowoodsLeaf } from './EcowoodsLeaf';
        estimate_project tool calls. The page and the agent cannot disagree.
    ──────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * The species list is no longer typed here.
+ *
+ * It was: five objects carrying a pigment, a Janka figure and a one-line note,
+ * sitting beside an identical five in lib/floor-studio/catalog.ts once Floor
+ * Studio landed. Two lists of the same five floors is how a visitor configures
+ * white oak in one surface and meets a different white oak in the other, and
+ * neither copy is wrong enough for anyone to notice until a number moves in one
+ * of them.
+ *
+ * So the catalogue is the record and this is a projection of it. `id` stays the
+ * rate key ('white oak', not 'white-oak') because that string is in every
+ * shared /design link and in `ew-design-v1` in people's browsers; changing it
+ * would break configurations that are already out there.
+ */
 type SpeciesSwatch = {
   /** Must match a key in FLOORING_RATES_CAD_PER_SQFT. */
   id: string;
@@ -40,13 +56,14 @@ type SpeciesSwatch = {
   note: string;
 };
 
-const SPECIES: readonly SpeciesSwatch[] = [
-  { id: 'white oak', name: 'White Oak',  janka: 'Janka 1360', base: '#c9a882', grain: '#a8865e', note: 'Calm, modern, takes any stain' },
-  { id: 'red oak',   name: 'Red Oak',    janka: 'Janka 1290', base: '#c69574', grain: '#a06f4d', note: 'The Canadian heritage floor' },
-  { id: 'walnut',    name: 'Black Walnut',     janka: 'Janka 1010', base: '#6b4b34', grain: '#4a3122', note: 'Deep, quiet, expensive-looking' },
-  { id: 'maple',     name: 'Hard Maple', janka: 'Janka 1450', base: '#e0c69f', grain: '#c4a87f', note: 'Bright, uniform, contemporary' },
-  { id: 'hickory',   name: 'Hickory',    janka: 'Janka 1820', base: '#c08e5e', grain: '#8a5c33', note: 'Hardest we lay. Family-proof.' },
-] as const;
+const SPECIES: readonly SpeciesSwatch[] = FLOOR_PRODUCTS.map((p) => ({
+  id: p.rateKey,
+  name: p.name,
+  janka: `Janka ${p.janka}`,
+  base: p.base,
+  grain: p.grain,
+  note: p.swatchNote,
+}));
 
 const SQFT_MIN = 200;
 const SQFT_MAX = 3000;

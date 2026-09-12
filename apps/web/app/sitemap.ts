@@ -141,6 +141,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const basePages: MetadataRoute.Sitemap = [
     entry('/', 'weekly', 1.0, newestChange, brandUrls()),         // newest publication
+    /* Floor Studio. Priority above /design because it is the door: the
+       configurator serves a visitor who already knows what they want, and the
+       studio serves everybody else. No date — nothing dated backs it, and a
+       build date wearing a disguise is what this file exists to refuse. */
+    entry('/floor-studio', 'monthly', 0.95),                       // no date
     entry('/design', 'monthly', 0.85),                             // no date
     entry('/technical-library', 'weekly', 0.95, newest([
       ...articles.map((x) => x.modifiedAt || x.publishedAt),

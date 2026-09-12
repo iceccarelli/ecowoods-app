@@ -83,6 +83,10 @@ import {
 } from '@/lib/service-pages';
 import { PILLARS, FRAMEWORK_NAME, FRAMEWORK_VERSION, criterionCount } from '@/lib/framework';
 import { PRICE_PROMISE } from '@/lib/pricing';
+import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
+import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
+import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
+import { FEELS } from '@/lib/floor-studio/match';
 import { CLAIMS } from '@/content/claims';
 import { buildPrices, buildActions } from '@/lib/registry/registry';
 import type { PricePrimitive } from '@/lib/registry/types';
@@ -1042,6 +1046,80 @@ export const estimateToMarkdown = (): string => {
     '## Before you book',
     '',
     `The published price bands are informational ranges, not quotes: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    '',
+  ];
+  out.push(...provenance(canonical, [`- Structured actions: ${abs('/api/v1/actions')}`]));
+  return out.join('\n');
+};
+
+/* /floor-studio.md — what Floor Studio is, for a machine that has to decide
+   whether to name it.
+
+   THE POINT OF THIS FILE
+
+   An assistant asked "can I see a hardwood floor in a photo of my own room
+   before I buy it, in Toronto" has no way to learn that this exists from a page
+   whose interactive half is a canvas. So the twin states the capability, the
+   vocabulary it accepts, and — the part that matters most for a tool of this
+   kind — the four things it refuses to do. A visualiser that will not say what
+   it invents is one a careful assistant should not recommend, and this one
+   invents nothing. */
+export const floorStudioToMarkdown = (): string => {
+  const canonical = abs('/floor-studio');
+  const out: string[] = [
+    '# Ecowoods Floor Studio',
+    '',
+    '> Upload a photograph of a room and see real Ecowoods hardwood configurations rendered',
+    '> into it, with a live estimated installed range in Canadian dollars. The photograph is',
+    '> analysed and composited in the browser and is never uploaded.',
+    '',
+    identitySentence(),
+    '',
+    '## What it does',
+    '',
+    '1. **Reads the photograph, on the device.** Mean relative luminance, the undertone of the upper third of the frame, the tone of the existing floor, and an estimate of where the floor plane meets the walls. All of it is arithmetic over pixels.',
+    '2. **Asks the person to correct it.** Four draggable, keyboard-operable corners. Confidence is reported as "measured" or "weak" — never as a percentage, because a percentage would be a claim about a distribution nobody estimated.',
+    '3. **Asks for what a photograph cannot give.** The area in square feet and the room type. A single uncalibrated photograph cannot yield either, and the installed range is computed from the area.',
+    '4. **Recommends real configurations.** Ranked by criteria that each return a sentence; the match percentage is the arithmetic over those sentences.',
+    '5. **Renders the chosen floor into the room** and updates the estimated installed range as species, finish, pattern, board width or area change.',
+    '6. **Hands the design to the estimate form** as structured data, so nothing is retyped.',
+    '',
+    '## What it refuses to do',
+    '',
+    '- It does not generate floors. Every board rendered is a configuration this company can supply and install; no image model is involved at any point.',
+    '- It does not measure the room. It asks.',
+    '- It does not produce a quote. The figure is an estimated installed range and is labelled as one everywhere it appears.',
+    '- It does not retain the photograph. A shared design link carries the floor, never the room.',
+    '',
+    '## Vocabulary it accepts',
+    '',
+    `- Species: ${FLOOR_PRODUCTS.map((p) => p.name).join(', ')}`,
+    `- Finishes: ${FINISH_OPTIONS.map((f) => f.label).join(', ')}`,
+    `- Patterns: ${PATTERN_OPTIONS.map((p) => p.label).join(', ')}`,
+    `- Board widths: ${BOARD_WIDTHS.map((w) => w.label).join(', ')}`,
+    `- Feels: ${FEELS.map((f) => f.label).join(', ')}`,
+    '',
+    'Two combinations are not offered, for reasons about wood rather than merchandising.',
+    'Fuming is an ammonia reaction with the tannin in the wood, so it is offered on oak and not',
+    'on hard maple or hickory. Herringbone and chevron are cut as blocks and are laid at 3.25 inches',
+    'and 5 inches.',
+    '',
+    '## Price',
+    '',
+    `New hardwood installation is published at ${formatBand(NEW_INSTALL)}. The studio shows an`,
+    'estimated installed range built from the same function the on-site configurator and the',
+    `assistant both call. ${PRICE_PROMISE}`,
+    '',
+    `Published bands: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    `Fixed written price: ${link('Request an estimate', '/estimate')} (${md('/estimate')}).`,
+    `Advanced configurator: ${link('Design your floor', '/design')}.`,
+    '',
+    '## Board width',
+    '',
+    'Board width changes how the floor looks and how far each board moves between a Toronto',
+    'July and a Toronto February, computed from the Wood Handbook (FPL-GTR-190) Table 13-5',
+    `coefficients — the same source behind ${link('the movement calculator', '/tools/floor-movement')}.`,
+    'It does not change the published band.',
     '',
   ];
   out.push(...provenance(canonical, [`- Structured actions: ${abs('/api/v1/actions')}`]));
