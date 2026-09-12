@@ -15,6 +15,7 @@ import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { ProcessVideo } from '../components/ProcessVideo';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
   description: `Hardwood floor refinishing and dust-free sanding across Toronto and the GTA. ${band('fullSandAndFinish')} per square foot for a full sand and finish, ${band('screenAndRecoat')} for a screen and recoat. The four-machine sequence is published in full.`,
   alternates: { canonical: '/hardwood-floor-refinishing-toronto', types: { 'text/markdown': '/hardwood-floor-refinishing-toronto.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-refinishing')?.src ?? '/illustrations/og-refinishing.webp', width: 1200, height: 630 }],
     title: 'Hardwood Floor Refinishing Toronto — Ecowoods',
     description: `Published prices, published machine sequence, HEPA containment so the house stays livable. Serving ${SERVICE_AREAS.length} areas.`,
     type: 'website',

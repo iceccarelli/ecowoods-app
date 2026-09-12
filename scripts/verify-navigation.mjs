@@ -43,9 +43,26 @@ const ROOT = process.cwd();
 const APP = join(ROOT, 'apps/web/app');
 const MAX_DEPTH = 3;
 
+/*
+ * WIDENING EDIT — NAV-03. Disclosed rather than quiet.
+ *
+ * This list is the set of files whose hrefs count as depth 0, because they
+ * render on every page. It named the two components. NAV-03 moved the menu DATA
+ * out of Header.tsx into lib/navigation.ts so that the command palette could
+ * read the same source as the panels and the drawer — the component still
+ * renders every one of those links on every page, but the strings no longer
+ * live in it, and this guard reads strings.
+ *
+ * Without this line the guard would see the chrome shrink by roughly fifty
+ * links and report pages as unreachable that a visitor can still reach in one
+ * click. That is a FALSE FAILURE, and the fix is to let the guard see where the
+ * links went. It widens what counts as chrome; it loosens no rule, lowers no
+ * threshold and exempts nothing. MAX_DEPTH is untouched.
+ */
 const CHROME = [
   join(APP, 'components/Header.tsx'),
   join(APP, 'components/SiteFooter.tsx'),
+  join(ROOT, 'apps/web/lib/navigation.ts'),
 ];
 
 if (!existsSync(APP)) {

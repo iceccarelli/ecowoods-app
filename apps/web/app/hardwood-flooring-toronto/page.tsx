@@ -20,6 +20,7 @@ import { Illustration } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
   description: `Hardwood flooring installation and refinishing across Toronto and the GTA. Price bands published up front (${band('newInstall')} per sq ft installed), the full installation standard published for anyone to hold us to, and salaried crews rather than subcontractors.`,
   alternates: { canonical: '/hardwood-flooring-toronto', types: { 'text/markdown': '/hardwood-flooring-toronto.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-installation')?.src ?? '/illustrations/og-installation.webp', width: 1200, height: 630 }],
     title: 'Hardwood Flooring Toronto — Ecowoods',
     description: `Published price bands, a published ${criterionCount()}-criterion installation standard, and no subcontractors. Serving ${SERVICE_AREAS.length} areas across ${TERRITORY_SHORT}.`,
     type: 'website',

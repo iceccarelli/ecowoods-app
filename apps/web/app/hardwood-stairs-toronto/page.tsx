@@ -15,6 +15,7 @@ import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { IllustrationPair } from '../components/Illustration';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY_SHORT } from '@/lib/geo/territory';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
     'square foot, what moves that number, and the standard the finished work is judged against.',
   alternates: { canonical: '/hardwood-stairs-toronto', types: { 'text/markdown': '/hardwood-stairs-toronto.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-stairs')?.src ?? '/illustrations/og-stairs.webp', width: 1200, height: 630 }],
     title: 'Hardwood Stairs Toronto — Ecowoods',
     description:
       'Treads, risers, nosings and stringers — the part of the job a floor quote usually ' +

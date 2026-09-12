@@ -133,6 +133,14 @@ const HREFS: Record<string, string> = {
   'og-commercial': '/commercial',
   'og-realtors': '/realtors',
   'og-corridors': '/corridors',
+  /* VIS-02 — the five pages that had no share card of their own. Four are the
+     commercial head terms and one is the flagship feature; every one of them
+     was serving the site default, which is the same card /terms serves. */
+  'og-installation': '/hardwood-flooring-toronto',
+  'og-refinishing': '/hardwood-floor-refinishing-toronto',
+  'og-stairs': '/hardwood-stairs-toronto',
+  'og-problems': '/hardwood-floor-problems-toronto',
+  'og-floor-studio': '/floor-studio',
   'og-service-areas': '/service-areas',
   'og-quote-check': '/quote-check',
   'og-contact': '/contact',
@@ -1475,6 +1483,34 @@ export const IMAGES: SiteImage[] = [
     'og-case-studies',
     'Ecowoods measured case studies — share card.',
     'A floor with an open document of readings beside it on a cream field, subject left, right third empty.',
+  ),
+  /* VIS-02. One idea per card, drawn in the same flat schematic language as the
+     nine above: cream field, subject in the left forty percent, right third left
+     empty because the platform lays its own title over it. */
+  og(
+    'og-installation',
+    'Ecowoods hardwood installation in Toronto — share card.',
+    'Five courses of plank with staggered end joints on a cream field, the starting course in copper, subject left, right third empty.',
+  ),
+  og(
+    'og-refinishing',
+    'Ecowoods hardwood floor refinishing in Toronto — share card.',
+    'Three abrasive passes from coarse to fine and then a single clean finish bar, on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-stairs',
+    'Ecowoods hardwood stairs in Toronto — share card.',
+    'A four-step stair section with treads picked out from risers, on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-problems',
+    'Cupping, crowning, gapping, buckling and edge peaking — share card.',
+    'Five board cross-sections showing five failures, all sitting on one subfloor line, on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-floor-studio',
+    'Ecowoods Floor Studio — see your new floor in your room — share card.',
+    'A room floor plane in perspective with a chevron pattern laid into it and a draggable handle at each corner, on a cream field, subject left, right third empty.',
   ),
 ];
 

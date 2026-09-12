@@ -11,6 +11,7 @@ import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { FEELS } from '@/lib/floor-studio/match';
 import { NextStep } from '@/app/components/NextStep';
 import FloorStudio from '@/app/components/floor-studio/FloorStudio';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 /**
  * /floor-studio — ECOWOODS FLOOR STUDIO.
@@ -50,6 +51,7 @@ export const metadata: Metadata = {
     `Upload a photo of your room and see real ${BUSINESS_NAP.name} floors in it — species, finish, pattern and board width, with a live estimated installed range in CAD. The photo never leaves your device.`,
   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],
     title: 'Ecowoods Floor Studio — see your new floor in your room',
     description:
       'A photo of your room, a real Ecowoods floor rendered into it, and a live installed range. A range, not a quote.',

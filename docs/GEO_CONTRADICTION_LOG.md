@@ -73,6 +73,13 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | GC-022 | open | no twins for corridors / where-we-work (none advertised) |
 | GC-023 | open | measure after the first geography deploy |
 | GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
+| GC-025 | **closed by GEO-005** | one price source; `FLOORING_RATES_CAD_PER_SQFT` and every invented multiplier deleted |
+| GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
+| AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
+| AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
+| NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
+| VIS-02 | **closed by VIS-02** | five pages carried a full openGraph block with no images key — the four commercial head terms and Floor Studio all served the site default, the same card /terms serves |
+| TREE-01 | **closed by VIS-02** | /technical-library is the breadcrumb parent of every article and sits at sitemap priority 0.95, and appeared in no menu; the Reference column now names it beside /resources with notes that distinguish them |
 
 Two existing checks were edited because they encoded the old geography, and
 both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
@@ -662,3 +669,238 @@ after a real geography deploy rather than assuming.
   `.md` twin.
 - The stale preview host `ecowoods-app.vercel.app` returns 404 (lead) and
   `vercel.json` 301s the legacy domain.
+
+---
+
+## GC-026 · P0 · the studio prices a New York room in Canadian dollars
+
+GEO-004 closed GC-024 by establishing the rule this repository now holds: a New
+York surface shows no Canadian figure and an Ontario surface shows no United
+States one. `verify-geo` enforces it on the city pages, the twins, the
+OfferCatalog and the FAQ.
+
+Floor Studio was never brought under the rule, and the rule never noticed,
+because the guard checks the pages that name a market and the studio names
+none.
+
+| Where | What it does |
+|---|---|
+| `apps/web/lib/floor-studio/catalog.ts:426` | `bandForWork(work)` — `country` left at its `'CA'` default |
+| `apps/web/app/components/floor-studio/FloorStudio.tsx:99` | `Intl.NumberFormat('en-CA', { currency: 'CAD' })`, hard-coded |
+| `apps/web/app/components/floor-studio/FloorStudio.tsx:589` | the budget field is labelled "optional, CAD" |
+| `apps/web/app/floor-studio/page.tsx:117` | the `WebApplication` JSON-LD tells machines the range is "in Canadian dollars" |
+| `apps/web/app/components/Header.tsx:68`, `SiteFooter.tsx:247` | link `/floor-studio` from every page, which is all 26 US markets |
+
+A homeowner in Amherst reads a United States band on `/service-areas/amherst`,
+clicks "See it in your room" in the header, and is quoted in Canadian dollars
+with no explanation. That is two published versions of one fact, which is the
+single class of error this log exists to catch.
+
+`bandForWork(work, country)` already takes the argument. Nothing calls it with
+one. Closed by GEO-006.
+
+---
+
+## AV-01 · P0 · the renderer paints hardwood over people
+
+`apps/web/lib/floor-studio/render.ts:474` is the entire object-protection
+system: a pixel is left alone if and only if its **chroma** differs from the
+floor region's mean chroma by more than 0.075. No luminance term, no texture,
+no edge, no spatial coherence, no segmentation.
+
+The renderer's own docblock states the intent — "a sofa leg, a rug, a plant pot
+inside the quad is not floor and must not be painted over… painting oak across
+the cat looks like a toy" — and the implementation does not meet it. It is
+conservative against *colour*, which makes it anti-conservative against exactly
+the objects standing on a hardwood floor in a hardwood customer's house.
+
+Executed against the real `compositeFloor()` by
+`scripts/audit/occlusion.audit.ts`, 14 objects on a known floor inside an honest
+quad: **6 painted over, 100% of their pixels** — a jute rug, a human leg, a
+golden retriever, an oak stair riser, a wooden table leg, a cardboard box. The
+8 survivors are the ones whose hue is not wood: a grey sofa, a charcoal rug, a
+plant, a black cat, a white toe-kick, a navy armchair, terracotta, brass.
+
+Consequence beyond the picture: `FloorStudio.tsx:625` warns "a lot of this room
+is furniture rather than floor" when `painted < 0.5`. Because wooden furniture
+is painted rather than skipped, `painted` stays high in precisely the rooms
+where the warning is needed. The safety net is wired to the wrong signal.
+
+Closed by VIS-02.
+
+---
+
+## AV-02 · P0 · `measured` is asserted where it is not true
+
+`room.ts` offers two confidence values and argues, correctly, that a percentage
+would be "a claim about a distribution nobody estimated". The argument is right;
+the boundary between the two values is wrong.
+
+`scripts/audit/boundary.audit.ts`, six synthetic rooms with a floor plane whose
+true coverage is 0.55 by construction:
+
+| Scene | Reported | Coverage | Error | Honest? |
+|---|---|---|---|---|
+| empty room, oak floor | `measured` | 0.551 | 0% | yes |
+| dark walnut floor | `measured` | 0.551 | 0% | yes |
+| **with a large pale area rug** | `measured` | 0.153 | **72%** | **no** |
+| with a sofa | `measured` | 0.551 | 0% | yes |
+| **rug + sofa (a real living room)** | `measured` | 0.153 | **72%** | **no** |
+| shot from a doorway (angled) | `measured` | 0.417 | 24% | yes |
+
+The estimator is excellent on an empty room and wrong by 72% the moment there is
+a rug, because a rug collapses the colour run exactly the way a wall does and
+the algorithm cannot tell them apart. `weak` fires only on degeneracies — an
+image under 8px, a run that never collapses, a far edge under a fifth of the
+frame — and never on the common case.
+
+So the screen headed "We found your room" says `measured` to a visitor whose
+floor has been cut to a sixth of its real size, and the copy inviting a
+correction is undercut by the label that has just said none is needed.
+
+Closed by VIS-03.
+
+---
+
+## NAV-03 · P0 · three navigation surfaces, two of them lying
+
+`verify-navigation` measures DEPTH and passed at the baseline: every public
+route within three clicks. It reads Header.tsx and SiteFooter.tsx, and both were
+honest. The surface it does not read is the one that was wrong.
+
+### The palette navigated by scrolling to an id that was not there
+
+`CommandPalette.tsx` shipped its own navigation, written when this site was one
+page:
+
+```ts
+const go = (hash: string) => () => {
+  close();
+  document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  history.replaceState(null, '', `#${hash}`);
+};
+```
+
+Six ids — `services`, `process`, `reviews`, `faq`, `quote`, `gallery`. All six
+are rendered by `home-client.tsx` and by nothing else:
+
+```
+$ for id in services process reviews faq quote gallery; do grep -rl "id=\"$id\"" apps/web/app; done
+services   Header.tsx  home-client.tsx
+process    services/[slug]/page.tsx  home-client.tsx
+reviews    home-client.tsx
+faq        services/[slug]/page.tsx  pricing/page.tsx  home-client.tsx
+quote      home-client.tsx
+gallery    home-client.tsx
+```
+
+So on 46 of 47 public routes the optional chain swallowed a null, nothing
+scrolled, the dialog closed — and `replaceState` ran anyway, rewriting the
+address bar to a fragment matching nothing on the page. **Six of thirteen
+actions, silently dead, everywhere but the homepage.** A control that does
+nothing is worse than a missing control: the visitor concludes the site is
+broken and stops using the mechanism.
+
+### And it could not reach the site
+
+Beyond the six anchors it knew `/design`, and that was all. Not Floor Studio,
+`/pricing`, `/service-areas`, `/corridors`, `/estimate`, `/guides`, `/papers`,
+`/case-studies`, `/quote-check` or `/framework` — the pages a visitor is most
+likely hunting when they reach for ⌘K in the first place.
+
+### Two pages were footer-only
+
+| Route | What it is | Where it appeared |
+|---|---|---|
+| `/pricing` | the three published bands — the source every other surface links to when it names a number | footer only |
+| `/where-we-work` | every published job, each linked to what was measured — the first-party proof page | footer only |
+
+Neither is a duplicate of anything: `/service-areas` is where we will go,
+`/corridors` is how we get there, `/where-we-work` is where we have been. The
+one carrying the evidence was the one no menu named.
+
+### The fix
+
+The menus moved to `apps/web/lib/navigation.ts` — no `use client`, no React —
+and the three surfaces project it: desktop panels, mobile drawer, and a ⌘K whose
+destination list is **derived** rather than written. A page added to a menu is
+searchable the same commit and cannot be forgotten, because nobody has to
+remember.
+
+`go()` now takes an href. A fragment on the current page still scrolls; anything
+else navigates. The palette's resting state stays short — the assistant, six
+high-intent destinations, the phone — and the first keystroke opens the whole
+corpus, so completeness costs nothing at rest.
+
+One widening edit, disclosed: `scripts/verify-navigation.mjs` `CHROME` gained
+`apps/web/lib/navigation.ts`, because the guard reads strings and the strings
+moved. It loosens no rule and `MAX_DEPTH` is untouched. Chrome link count 43 →
+44 after the move, with `/pricing` and `/where-we-work` added.
+
+---
+
+## VIS-02 · P1 · five pages shared one share card
+
+`verify:images` passed and was right about what it checks: no slot declared,
+bundled and sitemapped without a page drawing it. What it does not check is the
+image a page hands to WhatsApp, iMessage, Slack, LinkedIn and every crawler that
+reads Open Graph.
+
+Measured across 55 public routes: 24 declared `openGraph.images`, 31 did not.
+Most of the 31 are correct to inherit the default. Five were not, and each one
+carried a full `openGraph` block — title, description, type, url — with the
+`images` key simply absent:
+
+| Page | What it is |
+|---|---|
+| `/hardwood-flooring-toronto` | the installation head term |
+| `/hardwood-floor-refinishing-toronto` | the refinishing head term |
+| `/hardwood-stairs-toronto` | the stairs head term |
+| `/hardwood-floor-problems-toronto` | the problems head term |
+| `/floor-studio` | the flagship feature |
+
+So sharing the most commercially valuable page on this site produced a card
+identical to sharing the privacy policy. VIS-01 gave nine pages their own card
+and stopped; these five were the ones that needed it most.
+
+Five cards drawn in the same language as those nine — cream `#FAF7EF`, the
+brand's dark, green and copper, subject in the left forty percent, right third
+left empty because the platform lays its own title over it. One idea each:
+staggered courses with a copper starting course; three abrasive passes into a
+clean finish bar; a four-step section with treads picked out from risers; five
+board cross-sections on one subfloor line; a floor plane in perspective with
+chevron laid into it and a handle at each corner.
+
+Checked by brace depth on all five that `images` is a DIRECT child of
+`openGraph` rather than nested — that is the VIS-01a bug and it cost a build.
+
+`verify:images` after: 162 slots, 162 on disk, 0 pending, 0 orphans.
+
+---
+
+## TREE-01 · P1 · the article tree had a parent the menu never named
+
+Not a duplicate page. A wing of the tree with no door on the map.
+
+| Page | What it says it is | Where it appeared |
+|---|---|---|
+| `/resources` | "Everything we publish, organised by what you are trying to do" | the Reference column of the Library menu |
+| `/technical-library` | "The engineering reference behind our work" | no menu at all |
+
+Those are different jobs, and both are worth having. But `ArticleLayout.tsx:29`
+makes `/technical-library` the breadcrumb parent of EVERY article, `sitemap.ts`
+gives it priority 0.95, and `/resources` links down to it as a sub-item while it
+links back to nothing. A visitor following a breadcrumb up from an article
+landed on a page the navigation could not show them the position of.
+
+The Reference column now names both, with notes that say which is which. Same
+fix as UI-NAV-02 made for /floor-studio and /design, for the same reason: the
+labels alone read as duplicates and the notes do not.
+
+WHAT WAS MEASURED AND FOUND CLEAN
+
+Prose from all 58 public route templates, normalised and compared as 4-word
+shingles. Highest overlap between any two pages: 12.6%, `/guides/[slug]` against
+`/services/[slug]` — shared breadcrumb, CTA and next-step rail, not shared
+content. No identical title except the notFound fallback. No identical meta
+description. No pair of pages on this site tells the same story.

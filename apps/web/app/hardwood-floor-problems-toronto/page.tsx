@@ -15,6 +15,7 @@ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { IllustrationPair } from '../components/Illustration';
 import { NextStep } from '@/app/components/NextStep';
 import { TERRITORY } from '@/lib/geo/territory';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
     'Every failure mode on this page is one mechanism — moisture — and the diagnosis is free.',
   alternates: { canonical: '/hardwood-floor-problems-toronto' },
   openGraph: {
+    images: [{ url: illustrationImage('og-problems')?.src ?? '/illustrations/og-problems.webp', width: 1200, height: 630 }],
     title: 'Hardwood Floor Problems Toronto — Ecowoods',
     description:
       'Cupping, gapping, crowning, buckling, edge peaking. Cause, prognosis and price for each, ' +

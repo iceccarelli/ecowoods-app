@@ -1,8 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { MegaMenu, type MegaColumn } from './MegaMenu';
-import { CORRIDORS } from '@/content/geo/corridors';
-import { SERVICE_AREAS } from '@/lib/seo-data';
+import { MegaMenu } from './MegaMenu';
+import {
+  LIBRARY_MENU,
+  MOBILE_GROUPS,
+  SERVICES_LAYOUT,
+  SERVICES_MENU,
+  TOP_LINKS as navigation,
+} from '@/lib/navigation';
 
 import { useState, useEffect, useRef } from 'react';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
@@ -42,172 +47,11 @@ function useScrollState() {
 }
 
 /* ---------------------- Navigation ---------------------- */
-/* THE PANELS — the AWS "Products ▾" mechanism, applied to a corpus this site
- * had no way to show anyone.
- *
- * Curated, not generated. AWS does not list 240 services in its panel; it lists
- * the categories a visitor arrives with. Dumping forty-four glossary terms here
- * would be a directory, and a directory is what /glossary already is. These are
- * the entries that answer a question someone is holding.
- *
- * Every href is a real page and every one is also reachable from its hub, so
- * nothing here is the ONLY path to anything — a mega-menu that is the sole route
- * to a page is a page that dies the day the menu breaks.
- */
-const SERVICES_MENU: MegaColumn[] = [
-  /* "Send photos" no longer fits in the header — see the note on .topbar-photos
-     in globals.css. It is the fastest route a visitor has to a real answer, so
-     it does not simply disappear: it leads this menu, one click from every page. */
-  {
-    title: 'Start here',
-    items: [
-      /* Floor Studio leads the menu because it is the only entry on this site
-         that costs the visitor nothing and shows them something they cannot get
-         anywhere else: their own room, with a floor we can actually lay in it.
-         In the chrome it is depth 0 — one click from every page. */
-      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
-      /* The second door, one line under the first (UI-NAV-02). Floor Studio led
-         this menu alone, and /design — the configurator it hands people on to —
-         was reachable only from the footer. Two entries into one catalogue is
-         the design; one of them being invisible in the chrome was not. The
-         notes say which is which, because the labels alone read as duplicates. */
-      { label: 'Design the specification', href: '/design', note: 'Every axis at once, no photo needed' },
-      { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
-      { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
-    ],
-  },
-  {
-    title: 'By the job',
-    href: '/services',
-    items: [
-      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand' },
-      { label: 'New installation', href: '/hardwood-flooring-toronto', note: 'Solid and engineered' },
-      { label: 'Dust-free sanding', href: '/services/dust-free-sanding', note: 'HEPA-sealed, stay in the house' },
-      { label: 'Stairs', href: '/hardwood-stairs-toronto', note: 'Four different jobs, one word' },
-      { label: 'Floor restoration', href: '/services/floor-restoration' },
-      { label: 'Custom inlays', href: '/services/custom-inlays' },
-    ],
-  },
-  {
-    title: 'By who you are',
-    href: '/commercial',
-    items: [
-      { label: 'Condo boards & property managers', href: '/commercial', note: 'After-hours, COI, priced by area' },
-      { label: 'Realtors & sellers', href: '/realtors', note: 'Three-day pre-list recoat' },
-      { label: 'Score a quote you already have', href: '/framework/assess', note: 'Any contractor, including us' },
-    ],
-  },
-  {
-    title: 'By the problem',
-    href: '/hardwood-floor-problems-toronto',
-    items: [
-      { label: 'Cupping, gapping, crowning', href: '/hardwood-floor-problems-toronto', note: 'Five symptoms, one mechanism' },
-      { label: 'Buckling and edge peaking', href: '/hardwood-floor-problems-toronto' },
-      { label: 'Matching stairs to a floor', href: '/hardwood-stairs-toronto' },
-      { label: 'Is my floor refinishable?', href: '/guides/reference-refinishing-existing-hardwood' },
-    ],
-  },
-  {
-    /* The geography page was in the footer and not here. It is what a "hardwood
-       flooring near me" search lands on, it is the payoff of the whole corridor
-       model, and the primary navigation did not mention it. Both counts are
-       derived — the nav said "Nine routes" for a week after there were eleven. */
-    title: 'Where we work',
-    href: '/service-areas',
-    items: [
-      { label: 'Find your city', href: '/service-areas', note: `${SERVICE_AREAS.length} published areas, each with its own housing stock` },
-      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, in travel order` },
-      { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
-      { label: 'Mississauga', href: '/service-areas/mississauga' },
-      { label: 'Hamilton', href: '/service-areas/hamilton' },
-      /* The corridor page, not one town: it lists every Niagara municipality
-         with a page, from Grimsby to Fort Erie, in the order a crew reaches them. */
-      { label: 'Niagara', href: '/corridors/niagara-belt', note: 'Grimsby to Fort Erie, on the QEW' },
-      { label: 'Kitchener', href: '/service-areas/kitchener', note: 'On the 403 and Highway 6, with Cambridge and Guelph' },
-      { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
-    ],
-  },
-  {
-    title: 'Before you decide',
-    href: '/guides',
-    items: [
-      { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
-      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
-      { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
-      { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
-      { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
-      { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
-      { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
-    ],
-  },
-];
-
-/* Where each group sits in the desktop panel: four columns, groups stacked.
-   The mobile drawer lists SERVICES_MENU in its own order. */
-const SERVICES_LAYOUT: string[][] = [
-  ['Start here', 'By who you are'],
-  ['By the job', 'By the problem'],
-  ['Where we work'],
-  ['Before you decide'],
-];
-
-const LIBRARY_MENU: MegaColumn[] = [
-  {
-    title: 'Technical papers',
-    href: '/papers',
-    items: [
-      { label: 'Provenance', href: '/papers/where-toronto-hardwood-comes-from', note: 'Where the wood comes from' },
-      { label: 'Grade', href: '/papers/hardwood-grading-standards-nhla-nwfa', note: 'NHLA and NWFA, side by side' },
-      { label: 'Climate Mastery', href: '/papers/toronto-hardwood-climate-moisture-protocol' },
-      { label: 'The Craft', href: '/papers/hardwood-refinishing-machines-and-sequence' },
-      { label: 'Selection and cost', href: '/papers/hardwood-selection-and-cost-framework-gta' },
-    ],
-  },
-  {
-    title: 'Species dossiers',
-    href: '/guides',
-    items: [
-      { label: 'White oak', href: '/guides/white-oak-flooring-toronto' },
-      { label: 'Red oak', href: '/guides/red-oak-flooring-toronto' },
-      { label: 'Hard maple', href: '/guides/hard-maple-flooring-toronto' },
-      { label: 'White ash', href: '/guides/white-ash-flooring-toronto', note: 'Cut faster than it grows' },
-      { label: 'Hickory · Black walnut', href: '/guides/hickory-flooring-toronto' },
-    ],
-  },
-  {
-    title: 'Reference',
-    href: '/resources',
-    items: [
-      { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
-      /* The catalogues sit in Reference and not in the primary conversion nav:
-         Quote and Call come first, and a download is not a conversion. */
-      { label: 'Field catalogues', href: '/catalogues', note: 'Landscape PDFs, built to print, nothing gated' },
-      { label: 'Standards register', href: '/standards', note: 'NHLA, NWFA, ASTM, FPL' },
-      { label: 'Figures and data', href: '/data' },
-      { label: 'The Well-Installed Framework', href: '/framework' },
-      { label: 'Visual library', href: '/library' },
-    ],
-  },
-  {
-    title: 'Evidence',
-    href: '/case-studies',
-    items: [
-      { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
-      { label: 'Reviews', href: '/reviews' },
-      { label: 'What we publish about ourselves', href: '/about' },
-      { label: 'Everything, as it shipped', href: '/whats-new' },
-    ],
-  },
-];
-
-const navigation = [
-  /* Two panels and four links. See MegaMenu.tsx for why a panel beats a hub, and
-   * F-163 for why the five commercial pages are here at all. */
-  { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
-  { label: 'Installation', href: '/hardwood-flooring-toronto' },
-  { label: 'Stairs', href: '/hardwood-stairs-toronto' },
-  { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
-];
+/* The menus moved to lib/navigation.ts in NAV-03 so that ⌘K could read the
+   same data the panels and the drawer read. They were already shared between
+   desktop and mobile; the command palette was the surface still carrying its
+   own hand-written copy from when this site was one page. Nothing about the
+   content changed in the move — see the docblock there. */
 
 const MYPAGE_NAV = [
   { href: '/mypage', label: 'Dashboard' },
@@ -225,12 +69,6 @@ const ADMIN_NAV = [
   { href: '/admin/users', label: 'Customers' },
   { href: '/admin/inquiries', label: 'Inquiries' },
   { href: '/admin/settings', label: 'Settings' },
-];
-
-/* The drawer's accordions, in drawer order. */
-const MOBILE_GROUPS = [
-  { key: 'services', label: 'Services', cols: SERVICES_MENU },
-  { key: 'library', label: 'Library', cols: LIBRARY_MENU },
 ];
 
 /** Row numbers for the drawer: 01, 02 … 10 — never "010". */

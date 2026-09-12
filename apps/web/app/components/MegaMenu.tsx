@@ -38,12 +38,12 @@ import Link from 'next/link';
  * the panel has ever been opened.
  */
 
-export type MegaColumn = {
-  title: string;
-  /** Where the column heading itself goes. Optional — some columns are lists only. */
-  href?: string;
-  items: { label: string; href: string; note?: string }[];
-};
+/* The shape lives in lib/navigation.ts with the menus themselves (NAV-03), so
+   the panel, the drawer and ⌘K cannot drift into three different ideas of what
+   a menu column is. Re-exported here because this is where it was defined and
+   an import of it from this path should keep working. */
+export type { MegaColumn } from '@/lib/navigation';
+import type { MegaColumn } from '@/lib/navigation';
 
 /*
  * HOVER THAT A HUMAN CAN ACTUALLY FOLLOW (UI-NAV-01).

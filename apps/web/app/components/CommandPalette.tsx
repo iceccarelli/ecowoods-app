@@ -7,6 +7,7 @@ import { EcowoodsLeaf } from './EcowoodsLeaf';
 import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
 import { isTypingTarget } from '@/lib/keyboard';
 import { ASSISTANT } from '@/lib/assistant-identity';
+import { DESTINATIONS, type Destination } from '@/lib/navigation';
 
 /* ────────────────────────────────────────────────────────────────────────────
    ⌘K — for the 4% of visitors who type instead of scroll.
@@ -63,6 +64,24 @@ const I = {
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD');
 
+/**
+ * What ⌘K offers before a single key is pressed.
+ *
+ * Six hrefs, in the order a visitor's intent usually runs: see it, specify it,
+ * what it costs, where we go, is my quote fair, get the price in writing. They
+ * are hrefs and not rows — the label, the note and the existence of each one
+ * come from lib/navigation.ts, so this list can never name a page the menus no
+ * longer carry.
+ */
+const RESTING_HREFS = [
+  '/floor-studio',
+  '/design',
+  '/pricing',
+  '/service-areas',
+  '/quote-check',
+  '/estimate',
+];
+
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -79,16 +98,68 @@ export default function CommandPalette() {
     restoreFocus.current?.focus();
   }, []);
 
-  const go = useCallback((hash: string) => () => {
+  /**
+   * NAVIGATION THAT WORKS FROM SOMEWHERE OTHER THAN THE HOMEPAGE (NAV-03).
+   *
+   * This was `getElementById(hash)?.scrollIntoView()` followed, unconditionally,
+   * by `history.replaceState(null, '', '#' + hash)`. Every id it looked for —
+   * services, process, reviews, faq, quote, gallery — is rendered by
+   * home-client.tsx and by nothing else. So on 46 of this site's 47 public
+   * routes the optional chain swallowed a null, the page did not move, the
+   * dialog closed, and the address bar was rewritten to a fragment that matched
+   * nothing on it. Five of thirteen actions, silently dead, everywhere but one
+   * page.
+   *
+   * `go` now takes a real href. If it carries a fragment AND that element is on
+   * this page, it scrolls — which is the good behaviour the old one had on the
+   * homepage, kept. Otherwise it navigates, because a destination the visitor
+   * asked for out loud must not resolve to nothing happening.
+   */
+  const go = useCallback((href: string) => () => {
     close();
-    document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    history.replaceState(null, '', `#${hash}`);
+    const hash = href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
+    const path = href.includes('#') ? href.slice(0, href.indexOf('#')) : href;
+    const here = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
+    const samePage = !path || path.replace(/\/$/, '') === here;
+    if (hash && samePage) {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', `#${hash}`);
+        return;
+      }
+    }
+    window.location.assign(href);
   }, [close]);
 
   const ask = useCallback((prefill: string) => () => {
     close();
     openAssistant({ prefill, source: 'command-palette' });
   }, [close]);
+
+  /**
+   * The chrome's destinations, grouped by the column they came from.
+   *
+   * `keywords` is the label plus its note plus the path segments, which is what
+   * makes "buffalo", "herringbone" or "chevron" find a page whose label says
+   * none of those words. Derived, so it cannot go stale.
+   */
+  const paletteGroups: Group[] = useMemo(() => {
+    const byGroup = new Map<string, Action[]>();
+    for (const d of DESTINATIONS) {
+      const list = byGroup.get(d.group) ?? [];
+      list.push({
+        id: `nav:${d.href}:${d.label}`,
+        title: d.label,
+        hint: d.note,
+        keywords: `${d.label} ${d.note ?? ''} ${d.href.replace(/[/#-]+/g, ' ')}`,
+        icon: I.arrow,
+        run: go(d.href),
+      });
+      byGroup.set(d.group, list);
+    }
+    return [...byGroup.entries()].map(([label, actions]) => ({ label, actions }));
+  }, [go]);
 
   const groups: Group[] = useMemo(() => [
     {
@@ -104,23 +175,21 @@ export default function CommandPalette() {
           run: () => { close(); openAssistant({ source: 'command-palette' }); } },
       ],
     },
-    {
-      label: 'Design',
-      actions: [
-        { id: 'configurator', title: 'Design your floor', hint: 'Species, finish, pattern — live pricing', keywords: 'configurator design build customize herringbone chevron finish', icon: I.arrow, run: () => { close(); window.location.assign('/design'); } },
-        { id: 'gallery', title: 'See finished Toronto projects', keywords: 'gallery portfolio work photos results', icon: I.arrow, run: go('gallery') },
-      ],
-    },
-    {
-      label: 'Navigate',
-      actions: [
-        { id: 'services', title: 'Services', keywords: 'services install refinish sanding stairs inlay commercial', icon: I.arrow, run: go('services') },
-        { id: 'process', title: 'How it works', keywords: 'process steps how it works funnel', icon: I.arrow, run: go('process') },
-        { id: 'reviews', title: 'Reviews', keywords: 'reviews testimonials proof clients', icon: I.arrow, run: go('reviews') },
-        { id: 'faq', title: 'FAQ', keywords: 'faq questions warranty dust price fixed', icon: I.arrow, run: go('faq') },
-        { id: 'quote', title: 'Request a free estimate', keywords: 'quote contact estimate form request', icon: I.arrow, run: go('quote') },
-      ],
-    },
+    /* EVERY DESTINATION IN THE CHROME, DERIVED (NAV-03).
+     *
+     * What stood here was five hand-written rows naming homepage anchors, and a
+     * sixth naming /design. It was written when this site was one page and it
+     * was never revisited: by the time it was measured it could not reach Floor
+     * Studio, /pricing, /service-areas, /corridors, /estimate, /guides, /papers,
+     * /case-studies, /quote-check or /framework — the ten pages a visitor is
+     * most likely to be hunting for when they reach for ⌘K in the first place.
+     *
+     * It is now projected from lib/navigation.ts, the same module the desktop
+     * panels and the mobile drawer read. A page added to a menu is searchable
+     * here the same commit, and cannot be forgotten here, because nobody has to
+     * remember. Sections keep the menu's own column titles so the palette reads
+     * as the site's structure rather than a flat dump. */
+    ...paletteGroups,
     {
       label: 'Contact & appearance',
       actions: [
@@ -130,15 +199,52 @@ export default function CommandPalette() {
           run: () => { toggle(); close(); } },
       ],
     },
-  ], [ask, go, close, theme, toggle]);
+  ], [ask, close, theme, toggle, paletteGroups]);
 
+  /**
+   * AN EMPTY PALETTE IS A MENU; A TYPED ONE IS A SEARCH (NAV-03).
+   *
+   * Projecting the whole chrome in makes ⌘K complete, and a complete list is
+   * roughly fifty rows. Opening a dialog onto fifty rows is not a shortcut, it
+   * is a sitemap with a text box, and it throws away the thing this component
+   * was opinionated about: the first rows should be the three questions that
+   * precede a booking, not navigation.
+   *
+   * So the resting state is short — the assistant, a handful of the highest
+   * intent destinations, the phone — and the FIRST KEYSTROKE opens the whole
+   * corpus. Nothing is unreachable; it is one character away. The shortlist is
+   * selected BY HREF out of the derived set, so it carries the menu's own
+   * labels and notes and cannot describe a page differently from the panel that
+   * links it, or survive that page being removed.
+   */
   const filtered: Group[] = useMemo(() => {
     const q = norm(query.trim());
-    if (!q) return groups;
-    return groups
-      .map((g) => ({ ...g, actions: g.actions.filter((a) => norm(`${a.title} ${a.keywords}`).includes(q)) }))
-      .filter((g) => g.actions.length > 0);
-  }, [groups, query]);
+    if (q) {
+      return groups
+        .map((g) => ({ ...g, actions: g.actions.filter((a) => norm(`${a.title} ${a.keywords}`).includes(q)) }))
+        .filter((g) => g.actions.length > 0);
+    }
+    const byHref = new Map(DESTINATIONS.map((d) => [d.href, d]));
+    const jump = RESTING_HREFS.map((h) => byHref.get(h)).filter((d): d is Destination => Boolean(d));
+    const rest: Group = {
+      label: 'Jump to',
+      actions: jump.map((d) => ({
+        id: `nav:${d.href}:${d.label}`,
+        title: d.label,
+        hint: d.note,
+        keywords: d.label,
+        icon: I.arrow,
+        run: go(d.href),
+      })),
+    };
+    const first = groups[0];
+    const last = groups[groups.length - 1];
+    return [
+      ...(first ? [first] : []),
+      ...(rest.actions.length ? [rest] : []),
+      ...(last && last !== first ? [last] : []),
+    ];
+  }, [groups, query, go]);
 
   const flat = useMemo(() => filtered.flatMap((g) => g.actions), [filtered]);
 
