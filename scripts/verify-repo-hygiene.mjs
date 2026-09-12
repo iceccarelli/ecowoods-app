@@ -87,6 +87,47 @@ const ONE_OFF_SCRIPT = /^(integrate|apply|statecheck|state-check|fix|run|do)[-_a
 const problems = [];
 const kept = [];
 
+/*
+ * HYG-02 — THE HOLE THIS GUARD HAD, AND HOW IT WAS FOUND
+ *
+ * Everything below scans `readdirSync(ROOT)`: the WORKING DIRECTORY, at the
+ * repository root. That misses the case that actually happens, and it missed
+ * it in production on commit ba429cf.
+ *
+ * The sequence: a patch is uploaded through the GitHub web UI, which commits it
+ * to main (the web uploader does not consult .gitignore, so the `*.patch` rule
+ * two files away from here does not stop it). The patch is applied locally and
+ * `git rm`'d. The removal is staged but the amend that would have carried it is
+ * refused by the pre-commit hook. The working tree now has NO .patch file — so
+ * this guard reported "no transport artifacts" and passed — while HEAD still
+ * carried it, and the push shipped it.
+ *
+ * A guard that says "no transport artifacts" and means "none lying on the floor
+ * right now" is worse than no guard, because the sentence it prints is the one
+ * a person believes. This closes it by asking git what is TRACKED, anywhere in
+ * the repository, rather than asking the filesystem what is present at the root.
+ *
+ * It is not a new rule. It is the rule this file already claimed to enforce.
+ */
+const listTracked = (patterns) => {
+  try {
+    return execFileSync('git', ['ls-files', '--', ...patterns], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+  } catch {
+    /* not a git checkout, or git unavailable. The filesystem scan below still
+       runs; this check simply cannot contribute, and silence is correct — a
+       hygiene guard must never be the reason a build cannot start. */
+    return [];
+  }
+};
+
+const trackedTransport = listTracked(['*.patch', '*.diff', '*.zip']);
+
 for (const name of readdirSync(ROOT)) {
   const full = join(ROOT, name);
   let st;
@@ -238,4 +279,25 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`✓ repo hygiene verified — ${kept.length} file(s) at the root, no transport artifacts, no unvalidated duplicate configs`);
+if (trackedTransport.length) {
+  console.error('\n✗ transport artifacts are TRACKED in this repository:\n');
+  for (const f of trackedTransport) console.error(`    ${f}`);
+  console.error(
+    '\n  These are committed, not merely sitting on disk — so deleting the file is\n' +
+      '  not enough and a clean `git status` proves nothing. They are almost always\n' +
+      '  patches uploaded through the GitHub web UI, which commits to the branch you\n' +
+      '  are viewing and does not consult .gitignore.\n\n' +
+      '  Every one of them will be restored by the next `git reset --hard origin/main`\n' +
+      '  and replayed by scripts/ship.sh. Remove them from history going forward:\n\n' +
+      '      git rm --cached ' + trackedTransport.join(' ') + '\n' +
+      '      git commit -m "chore: drop transport artifacts"\n\n' +
+      '  Then stop using the web uploader: drag the .patch into the editor file tree\n' +
+      '  instead, which writes it to disk as an untracked file.\n',
+  );
+  process.exit(1);
+}
+
+console.log(
+  `✓ repo hygiene verified — ${kept.length} file(s) at the root, ` +
+    'no transport artifacts on disk or in the index, no unvalidated duplicate configs',
+);

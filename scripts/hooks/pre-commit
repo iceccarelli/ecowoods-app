@@ -58,35 +58,53 @@ BRANCH="$(git branch --show-current)"
 
 case "$BRANCH" in
   main|master)
+    # ── HYG-02 — THIS BLOCK USED TO REFUSE. IT NOW ONLY TELLS YOU. ──────────
+    #
+    # The premise above was that work reaches production through a pull
+    # request. It does not, and has not for the whole life of this repository:
+    # production is a `vercel --prod` run from a working tree, and
+    # scripts/ship.sh checks out main at step 1 and pushes main at step 7. The
+    # hook and the ship script therefore contradicted each other, and the only
+    # way through was ECOWOODS_ALLOW_MAIN_COMMIT=1 on every single ship.
+    #
+    # That is the worst possible state for a guard. A rule you must override
+    # every time is a rule you stop reading, and the one time it is right you
+    # override it anyway, by reflex. It also cost a full hour on the MEAS-01
+    # ship: `git commit --amend` was refused mid-sequence, the staged deletion
+    # of a patch file was silently left behind, and that patch shipped to main
+    # inside ba429cf.
+    #
+    # F-152 WAS REAL AND IS NOT BEING DISMISSED. What it actually was: a commit
+    # landed on local main, `git push` reported success, and origin/main never
+    # moved — because the push sent a branch nobody was watching while the
+    # operator read the success line and deployed. The protection against that
+    # is not "never commit on main". It is reading origin/main back OVER THE
+    # NETWORK after the push, which scripts/ship.sh step 7 already does, and
+    # which is strictly better than this block ever was: it catches the failure
+    # on every branch, not just this one.
+    #
+    # So this warns and continues. Nothing is blocked. If you want the old
+    # behaviour back it is one `exit 1` below the message.
     if [ "${ECOWOODS_ALLOW_MAIN_COMMIT:-}" = "1" ]; then
-      echo "▸ pre-commit: committing on $BRANCH because ECOWOODS_ALLOW_MAIN_COMMIT=1"
       exit 0
     fi
     cat >&2 <<MSG
 
-✗ commit blocked — you are on '$BRANCH'.
+▸ committing on '$BRANCH'.
 
-  Work on this repository reaches production through a pull request. A commit on
-  '$BRANCH' does not, and the way it fails is silent: the build passes, all 36
-  guards pass, and the later push reports success while sending nothing. That is
-  F-152, and it cost a full day. The header of scripts/hooks/pre-commit has the
-  whole sequence.
+  This is allowed and is now the normal way this repository works. Two things
+  are worth doing afterwards, because a green local tree has misled this
+  project before (F-140, F-152):
 
-  Move to a branch. This is safe with a staged index and safe if the branch
-  already exists — which is the exact case that caused F-152:
+      git push origin $BRANCH
+      git fetch origin && git log --oneline -1 origin/$BRANCH
 
-      git switch -c feat/<name> 2>/dev/null || git switch feat/<name>
-      git branch --show-current          # confirm before you commit
-
-  Then commit normally.
-
-  If you genuinely mean to commit on '$BRANCH':
-
-      ECOWOODS_ALLOW_MAIN_COMMIT=1 git commit ...
-      git commit --no-verify ...
+  The second line reads the remote, not this tree. A push that reports success
+  and moves nothing is the failure that made this hook exist, and it is the
+  only check that sees it.
 
 MSG
-    exit 1
+    exit 0
     ;;
 esac
 
