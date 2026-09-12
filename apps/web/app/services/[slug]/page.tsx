@@ -33,6 +33,10 @@ import {
    thing the figure exists to show. */
 const SERVICE_PAIRS: Record<string, [string, string][]> = {
   'hardwood-installation': [['protocol-timeline-install', 'protocol-timeline-install-b'], ['concept-acclimation-72h', 'concept-acclimation-72h-b']],
+  /* The section through a contained job, cross-fading with a conceptual scene
+     of the same thing in an occupied home. The scene's own caption says it is
+     conceptual; neither is a photograph of a named job. */
+  'dust-free-sanding': [['occupancy-containment-section', 'occupancy-containment-scene']],
 };
 
 export function generateStaticParams() {

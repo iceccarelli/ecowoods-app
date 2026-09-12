@@ -1064,6 +1064,68 @@ export const estimateToMarkdown = (): string => {
    kind — the four things it refuses to do. A visualiser that will not say what
    it invents is one a careful assistant should not recommend, and this one
    invents nothing. */
+/**
+ * /design.md — THE OTHER DOOR (UI-NAV-02).
+ *
+ * Floor Studio has had a machine edition since it shipped. The configurator it
+ * hands people on to had none, no breadcrumb schema and no entry in the primary
+ * navigation — so a retrieval system asking "can I specify a hardwood floor on
+ * this site" found one of the two doors and a person using the header found the
+ * same one. They are not duplicates: the studio shows a floor to somebody who
+ * does not yet know what they want, and this is where somebody who does
+ * finishes the specification. Both facts are now stated in both editions.
+ */
+export const designToMarkdown = (): string => {
+  const canonical = abs('/design');
+  const out: string[] = [
+    '# Design your floor — the Ecowoods configurator',
+    '',
+    '> Choose species, finish, pattern and board width and see the published installed band',
+    '> applied to your area, then hand the exact configuration to the estimate form or to the',
+    '> assistant without retyping it.',
+    '',
+    identitySentence(),
+    '',
+    '## Which of the two doors this is',
+    '',
+    `This site has two ways into the same catalogue, the same pricing function and the same`,
+    'handoff. They are for different people, not different products:',
+    '',
+    `- ${link('Floor Studio', '/floor-studio')} (${md('/floor-studio')}) — for somebody who does not`,
+    '  yet know what they want. Upload a photograph of the room and see a real configuration',
+    '  rendered into it.',
+    `- ${link('The configurator', '/design')} (${md('/design')}) — this page. For somebody who already`,
+    '  knows they want hardwood and wants to specify it: every axis at once, no photograph needed.',
+    '',
+    'Moving between them changes nothing about the floor, the catalogue or the price.',
+    '',
+    '## Vocabulary it accepts',
+    '',
+    `- Species: ${FLOOR_PRODUCTS.map((p) => p.name).join(', ')}`,
+    `- Finishes: ${FINISH_OPTIONS.map((f) => f.label).join(', ')}`,
+    `- Patterns: ${PATTERN_OPTIONS.map((p) => p.label).join(', ')}`,
+    `- Board widths: ${BOARD_WIDTHS.map((w) => w.label).join(', ')}`,
+    '',
+    '## Price',
+    '',
+    `New hardwood installation is published at ${formatBand(NEW_INSTALL)}. The configurator applies`,
+    'that published band to the area given. Species, finish, pattern and board width change the',
+    'floor and where the written price lands inside the band; they do not change the band.',
+    `${PRICE_PROMISE}`,
+    '',
+    `Published bands: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
+    `Fixed written price: ${link('Request an estimate', '/estimate')} (${md('/estimate')}).`,
+    '',
+    '## What it will not do',
+    '',
+    '- It does not produce a quote. The figure is an estimated installed range and is labelled as one.',
+    '- It does not measure the room. The area is given by the person, because a configurator cannot know it.',
+    '',
+  ];
+  out.push(...provenance(canonical, [`Companion: ${abs('/floor-studio')}`]));
+  return out.join('\n');
+};
+
 export const floorStudioToMarkdown = (): string => {
   const canonical = abs('/floor-studio');
   const out: string[] = [
@@ -1313,6 +1375,12 @@ export const mirrorIndexToMarkdown = (): string => {
       ...CORRIDORS.map((c): [string, string] => [c.name, `/corridors/${c.id}`]),
     ]),
     ...group('Proof of work', [['Where the work has been done', '/where-we-work']]),
+    /* Two doors into one catalogue (UI-NAV-02). Both are listed, because an
+       agent that finds only one of them recommends only one of them. */
+    ...group('Design a floor', [
+      ['Floor Studio — see it in your room', '/floor-studio'],
+      ['The configurator — specify it', '/design'],
+    ]),
     ...group('Technical papers', getPapers().map((p): [string, string] => [p.title, `/papers/${p.slug}`])),
     ...group('Decision guides and reference installations', getGuides().map((g): [string, string] => [g.seoTitle ?? g.title, `/guides/${g.slug}`])),
     ...group('Glossary', getTerms().map((t): [string, string] => [t.term, `/glossary/${t.slug}`])),

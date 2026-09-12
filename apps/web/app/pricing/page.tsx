@@ -22,6 +22,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
 import { Illustration } from '../components/Illustration';
 import { NextStep } from '@/app/components/NextStep';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 /**
  * /pricing — the canonical statement of the three published bands.
@@ -51,6 +52,7 @@ export const metadata: Metadata = {
     `Fixed in writing after a free in-home measure.`,
   alternates: { canonical: '/pricing', types: { 'text/markdown': '/pricing.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-pricing')?.src ?? '/illustrations/og-pricing.webp', width: 1200, height: 630 }],
     title: 'Hardwood flooring prices in Toronto — Ecowoods',
     description:
       `Three published bands per square foot in CAD, from ${formatBandBare(SCREEN_RECOAT)} for a screen and recoat ` +
@@ -198,6 +200,8 @@ export default async function PricingPage() {
         <div className="shell">
           <p className="tlx-kicker">Published bands</p>
           <h2 className="tlx-h2">The three bands</h2>
+          {/* The bands drawn to scale, above the table that carries the figures. */}
+          <Illustration id="pricing-service-levels" />
           <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Published price bands">
             <table className="wp-table">
               <caption>Published price bands, per square foot, in CAD, before tax</caption>
@@ -217,6 +221,9 @@ export default async function PricingPage() {
             starting-from number: the band is the whole published range.
           </p>
           <Illustration id="fig-installed-cost-bands" />
+          {/* Three different jobs, not three price points for one job. */}
+          <Illustration id="screen-vs-sand-vs-install" />
+          <Illustration id="screen-sand-install-scene" />
         </div>
       </section>
 

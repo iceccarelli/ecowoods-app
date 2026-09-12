@@ -5,6 +5,8 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { buildCorridorsIndexSchema } from '@/lib/schema/corridor-schema';
 import { SchemaScripts } from '@/lib/schema/components';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 export const metadata: Metadata = {
   title: 'Where we drive — the corridors this work is routed along',
@@ -14,6 +16,12 @@ export const metadata: Metadata = {
     /* The machine edition (GEO-002): the routes, their stops and every
        operational statement, as Markdown rather than as a parsed table. */
     types: { 'text/markdown': '/corridors.md' },
+  },
+  /* Its own share card, instead of the homepage image this page inherited
+     (VIS-01). A sibling of `alternates`, not a member of it — which is where it
+     first landed, and `Metadata.alternates` is typed, so tsc caught it. */
+  openGraph: {
+    images: [{ url: illustrationImage('og-corridors')?.src ?? '/illustrations/og-corridors.webp', width: 1200, height: 630 }],
   },
 };
 
@@ -74,6 +82,9 @@ export default function CorridorsPage() {
 
       <section className="tlx-section">
         <div className="shell">
+          {/* Coverage drawn as drives, not as coloured blobs. The membership
+              itself stays where it belongs: the table on each route page. */}
+          <Illustration id="corridor-system" />
           <ul className="pj-index">
             {CORRIDORS.map((c) => {
               const hub = marketBySlug(c.hub);

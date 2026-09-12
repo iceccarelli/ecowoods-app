@@ -170,17 +170,21 @@ export const DEFAULT_SPECIES = 'white oak';
 export const DEFAULT_FINISH = FINISH_OPTIONS[1].id;
 export const DEFAULT_PATTERN = PATTERN_OPTIONS[0].id;
 
+/**
+ * WHAT FLOOR THIS IS. Not what it costs.
+ *
+ * The band is deliberately NOT a field here. `describeFloorForChat` and
+ * `bookMeasureIntent` take this same shape to write a sentence, and they have
+ * no business knowing a price — the first cut of GEO-005 put `band` in this
+ * interface and broke both of them at the type level, failing `tsc --noEmit`.
+ * That was the compiler making exactly the right objection. Pricing takes the
+ * band as its own argument, so the two concerns cannot drift into each other.
+ */
 export interface EstimateInput {
   species: string;
   squareFeet: number;
   finish?: string;
   pattern?: string;
-  /**
-   * The published band this work is priced at. Required: there is no default,
-   * because a default would be a rate invented in this file, which is the
-   * whole defect GEO-005 removed.
-   */
-  band: PublishedBand;
 }
 
 export interface EstimateResult {
@@ -206,7 +210,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * Deterministic, side-effect free. Called from a React render loop on every
  * slider tick AND from a server-side AI tool. Keep it cheap and pure.
  */
-export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult {
+export function estimateInstalledRangeCad(input: EstimateInput, band: PublishedBand): EstimateResult {
   const speciesKey = input.species.toLowerCase().trim();
   const known = NAMED_SPECIES.has(speciesKey);
 
@@ -219,8 +223,8 @@ export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult 
   const patternApplies = speciesKey !== 'refinishing';
 
   const sqft = Math.max(0, input.squareFeet);
-  const low = round2(input.band.min);
-  const high = round2(input.band.max);
+  const low = round2(band.min);
+  const high = round2(band.max);
 
   return {
     species: known ? speciesKey : DEFAULT_SPECIES,
@@ -232,7 +236,7 @@ export function estimateInstalledRangeCad(input: EstimateInput): EstimateResult 
     estimatedLowCad: Math.round(low * sqft),
     estimatedHighCad: Math.round(high * sqft),
     perSqftCad: `$${low}-$${high}/sqft`,
-    currency: input.band.currency,
+    currency: band.currency,
     speciesFallback: !known,
     disclaimer:
       'This is the published band for this work applied to the area given — not a quote. Species, ' +

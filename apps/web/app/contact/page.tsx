@@ -12,6 +12,8 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 /**
  * /contact — the NAP, on a URL of its own.
@@ -51,6 +53,7 @@ export const metadata: Metadata = {
     `${HOURS_LINE}. Free in-home estimates across ${BUSINESS_NAP.region}.`,
   alternates: { canonical: '/contact', types: { 'text/markdown': '/contact.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-contact')?.src ?? '/illustrations/og-contact.webp', width: 1200, height: 630 }],
     title: 'Contact Ecowoods',
     description: `${BUSINESS_NAP.phoneDisplay} · ${BUSINESS_NAP.email} · ${BUSINESS_ADDRESS_LINE}`,
     type: 'website',
@@ -99,6 +102,7 @@ export default function ContactPage() {
         <div className="shell">
           <p className="tlx-kicker">Reach us</p>
           <h2 className="tlx-h2">Phone, email and showroom</h2>
+          <Illustration id="contact-showroom-in-territory" />
           <dl className="gd-spec">
             <div className="gd-spec-row">
               <dt>Phone</dt>

@@ -6,6 +6,7 @@ import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import TerritoryMap from '../components/TerritoryMap';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 export const metadata: Metadata = {
   /* The title said "Across the GTA" over an index that runs to Port Colborne
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
   title: `Service Areas — Hardwood Flooring Across ${TERRITORY_SHORT}`,
   description: `Ecowoods installs and refinishes hardwood floors in ${SERVICE_AREAS.length} published areas across ${TERRITORY_SHORT}, from Downtown Toronto outward. Find your city. Call ${BUSINESS.phoneDisplay}.`,
   alternates: { canonical: '/service-areas', types: { 'text/markdown': '/service-areas.md' } },
+  openGraph: {
+    images: [{ url: illustrationImage('og-service-areas')?.src ?? '/illustrations/og-service-areas.webp', width: 1200, height: 630 }],
+  },
 };
 
 export default function ServiceAreasIndex() {

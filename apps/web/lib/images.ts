@@ -112,6 +112,31 @@ export type SiteImage = {
  * visually. verify-images.mjs checks each target is a real route.
  */
 const HREFS: Record<string, string> = {
+  /* ── GEO/VIS-01: the remaining explanatory corners ─────────────────── */
+  'pricing-service-levels': '/pricing',
+  'screen-vs-sand-vs-install': '/pricing',
+  'screen-sand-install-scene': '/pricing',
+  'estimate-measurement-process': '/estimate',
+  'estimate-inhome-measure': '/estimate',
+  'written-estimate-anatomy': '/estimate',
+  'quote-same-job-checklist': '/quote-check',
+  'floor-movement-width-vs-length': '/tools/floor-movement',
+  'commercial-accountability-loop': '/commercial',
+  'realtors-prelist-three-day': '/realtors',
+  'job-process-six-gates': '/framework',
+  'contact-showroom-in-territory': '/contact',
+  'corridor-system': '/corridors',
+  'occupancy-containment-section': '/services/dust-free-sanding',
+  'occupancy-containment-scene': '/services/dust-free-sanding',
+  'og-pricing': '/pricing',
+  'og-estimate': '/estimate',
+  'og-commercial': '/commercial',
+  'og-realtors': '/realtors',
+  'og-corridors': '/corridors',
+  'og-service-areas': '/service-areas',
+  'og-quote-check': '/quote-check',
+  'og-contact': '/contact',
+  'og-case-studies': '/case-studies',
   'stairs-anatomy': '/hardwood-stairs-toronto',
   'stairs-anatomy-b': '/hardwood-stairs-toronto',
   'stairs-four-jobs': '/hardwood-stairs-toronto',
@@ -252,6 +277,21 @@ const HREFS: Record<string, string> = {
 };
 
 const DIMS: Record<string, [number, number]> = {
+  'pricing-service-levels': [2000, 1125],
+  'screen-vs-sand-vs-install': [2000, 850],
+  'screen-sand-install-scene': [1168, 784],
+  'estimate-measurement-process': [2000, 1000],
+  'estimate-inhome-measure': [1168, 784],
+  'written-estimate-anatomy': [2000, 875],
+  'quote-same-job-checklist': [2000, 975],
+  'floor-movement-width-vs-length': [2000, 925],
+  'commercial-accountability-loop': [2000, 775],
+  'realtors-prelist-three-day': [2000, 800],
+  'job-process-six-gates': [2000, 662],
+  'contact-showroom-in-territory': [2000, 975],
+  'corridor-system': [2000, 950],
+  'occupancy-containment-section': [2000, 912],
+  'occupancy-containment-scene': [1168, 784],
   'stairs-anatomy': [1151, 915],
   'stairs-anatomy-b': [1362, 980],
   'stairs-four-jobs': [1239, 382],
@@ -1291,6 +1331,150 @@ export const IMAGES: SiteImage[] = [
     'The documents that should accompany a hardwood floor delivery — the grade and species on the bundle, the moisture record taken on site, the manufacturer\'s specification sheet and the written fixed price.',
     'What should exist in writing before a deposit: species and grade as supplied, the subfloor and material moisture readings taken on site, the manufacturer\'s specification for the product, and the price. Documents shown are illustrative examples, not a client\'s paperwork.',
     'A photorealistic overhead scene on a plain neutral surface: a bundled stack of tongue-and-groove hardwood flooring at one edge of the frame with a printed paper band around it, and three printed documents fanned beside it — a record sheet with a short table of two measured values, a manufacturer specification sheet showing a range, and an itemised estimate with a boxed total. A pin-type moisture meter rests across one document. Educational callout labels on clean high-contrast plates identify the bundle band, the moisture record, the specification and the price. All document content generic and illustrative — no real names, no addresses, no company branding.',
+  ),
+  /* ── The remaining explanatory corners (VIS-01) ─────────────────────────
+     Twelve teaching diagrams, three conceptual scenes and nine share cards.
+     Every figure below sits beside prose that already makes the same claim —
+     scripts/verify-images.mjs fails a slot that is declared and drawn by no
+     page, which is the rule that keeps this from becoming a picture library.
+     None of these is a photograph of an Ecowoods job; the three scenes say so
+     in their own captions, and none of them is eligible for /api/v1/media. */
+  d(
+    'pricing-service-levels',
+    'Three published price bands drawn to scale as horizontal bars: a screen and recoat, a full sand and finish, and a new hardwood install, each longer than the last.',
+    'The three bands, drawn to scale against each other. A band is an informational range, not a quote — the figures themselves are on the table below, and the fixed price is written after the free in-home measure.',
+    'Three horizontal bars of increasing length on a cream field, labelled for the three published service bands, walnut and copper and sage, no numerals baked into the art.',
+  ),
+  d(
+    'screen-vs-sand-vs-install',
+    'Three different jobs side by side: screen and recoat where the finish film is intact, a full sand where the wood must be taken back to bare, and a new install where the floor cannot be saved or the room is new.',
+    'These are three different jobs, not three price points for one job. Which one a floor needs is decided by the wear layer and the finish, and it is decided at the measure.',
+    'A triptych on a cream field: an intact finish being abraded, a floor sanded to bare wood, and new boards going down over a prepared subfloor.',
+  ),
+  p(
+    'screen-sand-install-scene',
+    'A conceptual triptych: an intact finish, a floor sanded back to bare wood, and new boards over a subfloor.',
+    'Conceptual illustration of the three scopes, not three photographs of one Ecowoods project. The published jobs with their measurements are in the case studies.',
+    'Three adjoining conceptual interior vignettes showing an intact finish, bare sanded wood, and new boards over plywood.',
+  ),
+  d(
+    'estimate-measurement-process',
+    'Three gates to a written price: a free in-home measure with moisture readings, then a fixed written price with a schedule, then the work.',
+    'Nothing is priced before it is measured. The moisture readings are taken at the first gate, and they are what the written price is built on.',
+    'Three gates left to right on a cream field — measure, written price, work — with a moisture meter at the first.',
+  ),
+  p(
+    'estimate-inhome-measure',
+    'A conceptual in-home measure: one moisture meter on finished boards, one on plywood, a tape across the room, and a blank clipboard.',
+    'Conceptual illustration of what the free measure involves, not a photograph of a named Ecowoods visit. Both readings — material and subfloor — are taken, because the difference between them is what decides the schedule.',
+    'A conceptual interior vignette of a measure in progress: two moisture meters, a tape across the floor, a clipboard with nothing written on it yet.',
+  ),
+  d(
+    'written-estimate-anatomy',
+    'The eight lines a written estimate has to carry: rooms, substrate, method, both moisture readings, scope, extras, the fixed total, and the schedule.',
+    'If a quote you are holding is missing any of these lines, it is not priced for the same job. That is the whole reason two totals can disagree.',
+    'A document schematic on a cream field with eight labelled rows, copper rules between them.',
+  ),
+  d(
+    'quote-same-job-checklist',
+    'Six questions that decide whether two quotes are even for the same job: substrate preparation, moisture testing, stairs, transitions, furniture, and the finish system.',
+    'Put two quotes side by side and answer these six before you compare the totals. Most disagreements between quotes are scope, not price.',
+    'A six-row checklist on a cream field, each row a question with two answer columns.',
+  ),
+  d(
+    'floor-movement-width-vs-length',
+    'A board showing that wood moves across its width, barely moves along its length, and that many boards add the movement up at the walls.',
+    'This is why the expansion gap exists and why board width is a moisture decision before it is a design one. The arithmetic is in the calculator beside this figure.',
+    'A single plank on a cream field with a wide arrow across the grain, a hairline arrow along it, and a run of boards meeting a wall.',
+  ),
+  d(
+    'commercial-accountability-loop',
+    'The commercial sequence as a loop: measure, write, contain, sign off, and back to measure for the next phase.',
+    'A property manager needs the same four things every time, and the loop closes at sign-off rather than at invoice.',
+    'A four-station loop on a cream field labelled measure, write, contain, sign off.',
+  ),
+  d(
+    'realtors-prelist-three-day',
+    'The three-day pre-list recoat: measure and screen on day one, abrade and coat on day two, photograph window on day three.',
+    'Three days is the published turnaround for a recoat on a sound floor. It is not a claim about what the sale achieves.',
+    'A three-step horizontal timeline on a cream field labelled measure and screen, abrade and coat, photograph window.',
+  ),
+  d(
+    'job-process-six-gates',
+    'Six gates from first consultation to the final walk-through, with moisture testing closing the first physical gate before any deposit is taken.',
+    'Each gate has to close before the next opens. The first physical one is moisture, which is why nothing is scheduled off a phone call.',
+    'Six sequential gates on a cream field, the first carrying a moisture meter, copper markers between them.',
+  ),
+  d(
+    'contact-showroom-in-territory',
+    'A schematic locator: the Toronto showroom as the hub, with the published operating drives running out from it.',
+    'One shop, one showroom, one telephone number. Everything else on this map is a drive, not a second address.',
+    'A schematic hub-and-spoke locator on a cream field, one marked hub and several unlabelled routes out.',
+  ),
+  d(
+    'corridor-system',
+    'The named corridors drawn as routes running out from a hub, rather than as coloured coverage areas.',
+    'Coverage is a drive, not a shaded blob. Which municipalities sit on each route, and what coverage means in every one, is the table on the corridor pages.',
+    'A route diagram on a cream field: one hub, several named lines running outward, small stops along each.',
+  ),
+  d(
+    'occupancy-containment-section',
+    'A section through a job in progress: the sander hosed to a HEPA collector, containment sealing the doorway, and the next room still occupied.',
+    'This is what lets most refinishing clients sleep at home. Containment is at the room as well as at the machine.',
+    'A cutaway section on a cream field showing a sander, a hose to a collector, a sealed doorway and a furnished room beyond.',
+  ),
+  p(
+    'occupancy-containment-scene',
+    'A conceptual scene of contained sanding with the adjoining room still furnished and in use.',
+    'Conceptual illustration of containment in an occupied home, not a photograph of a named job.',
+    'A conceptual interior vignette: a sander under containment at a sealed doorway, a furnished room beyond it.',
+  ),
+
+  /* Share cards for the systems that were inheriting the homepage image. */
+  og(
+    'og-pricing',
+    'Ecowoods published price bands — share card.',
+    'Three bars of increasing length on a cream field, subject to the left, right third empty for the title.',
+  ),
+  og(
+    'og-estimate',
+    'Ecowoods free in-home measure and fixed written price — share card.',
+    'A tape and a moisture meter on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-commercial',
+    'Ecowoods commercial hardwood flooring — share card.',
+    'A corridor of hardwood in a commercial interior on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-realtors',
+    'Ecowoods pre-list recoat for realtors — share card.',
+    'A bright staged room with a recoated floor on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-corridors',
+    'Ecowoods coverage by corridor — share card.',
+    'A route diagram on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-service-areas',
+    'Ecowoods published service areas — share card.',
+    'A schematic of many small stops on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-quote-check',
+    'Compare two hardwood quotes for the same scope — share card.',
+    'Two documents side by side on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-contact',
+    'Ecowoods Toronto showroom and contact — share card.',
+    'A hub locator on a cream field, subject left, right third empty.',
+  ),
+  og(
+    'og-case-studies',
+    'Ecowoods measured case studies — share card.',
+    'A floor with an open document of readings beside it on a cream field, subject left, right third empty.',
   ),
 ];
 

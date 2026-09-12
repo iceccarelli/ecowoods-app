@@ -8,6 +8,8 @@ import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
 import { NextStep } from '@/app/components/NextStep';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 /**
  * /estimate — the conversion target.
@@ -33,6 +35,7 @@ export const metadata: Metadata = {
     `Free in-home visits across ${BUSINESS_NAP.region}. Call ${BUSINESS_NAP.phoneDisplay}.`,
   alternates: { canonical: '/estimate', types: { 'text/markdown': '/estimate.md' } },
   openGraph: {
+    images: [{ url: illustrationImage('og-estimate')?.src ?? '/illustrations/og-estimate.webp', width: 1200, height: 630 }],
     title: 'Request a free in-home estimate — Ecowoods',
     description: `Free in-home measure, fixed written price, committed schedule. ${BUSINESS_NAP.region}.`,
     type: 'website',
@@ -108,6 +111,8 @@ export default function EstimatePage() {
         <div className="shell">
           <p className="tlx-kicker">Three steps</p>
           <h2 className="tlx-h2">How the estimate works</h2>
+          {/* The three gates, above the three steps they name. */}
+          <Illustration id="estimate-measurement-process" />
           <ol className="wp-steps">
             {STEPS.map((s, i) => (
               <li key={s.id} id={s.id}>
@@ -118,6 +123,11 @@ export default function EstimatePage() {
               </li>
             ))}
           </ol>
+          {/* What the visit actually involves, and what the document it
+              produces has to carry. The first is a conceptual illustration and
+              says so in its own caption; neither is a photograph of a job. */}
+          <Illustration id="estimate-inhome-measure" />
+          <Illustration id="written-estimate-anatomy" />
           <p className="tlx-note">
             The three published price bands, and what moves a job inside each, are on{' '}
             <Link href="/pricing">the pricing page</Link>. The services the visit can quote:{' '}

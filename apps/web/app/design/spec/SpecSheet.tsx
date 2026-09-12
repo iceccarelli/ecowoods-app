@@ -88,13 +88,10 @@ export function SpecSheet() {
   const species = SPECIES[cfg.species] ?? { name: cfg.species, janka: '—' };
   const finish = FINISH_OPTIONS.find((f) => f.id === cfg.finish) ?? FINISH_OPTIONS[1];
   const pattern = PATTERN_OPTIONS.find((p) => p.id === cfg.pattern) ?? PATTERN_OPTIONS[0];
-  const estimate = estimateInstalledRangeCad({
-    species: cfg.species,
-    squareFeet: cfg.sqft,
-    finish: cfg.finish,
-    pattern: cfg.pattern,
-    band: bandForWork(cfg.species),
-  });
+  const estimate = estimateInstalledRangeCad(
+    { species: cfg.species, squareFeet: cfg.sqft, finish: cfg.finish, pattern: cfg.pattern },
+    bandForWork(cfg.species),
+  );
 
   const summary = `${species.name} · ${finish?.label} finish · ${pattern?.label} · ${cfg.sqft} sq ft`;
   const quoteHref = `/#quote?spec=${encodeURIComponent(summary)}`;

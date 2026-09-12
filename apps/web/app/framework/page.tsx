@@ -126,6 +126,7 @@ export default function FrameworkPage() {
       <section className="tlx-section tlx-section--flush" aria-label="The six pillars at a glance">
         <div className="shell">
           <Illustration id="framework-hero" priority motion="kenburns" />
+          <Illustration id="job-process-six-gates" />
         </div>
       </section>
 

@@ -6,12 +6,15 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { NextStep } from '@/app/components/NextStep';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 export const metadata: Metadata = {
   title: 'Compare hardwood flooring quotes — are they even for the same job?',
   description: `Put two or three hardwood quotes side by side against ${SCOPE_ITEMS.length} line items and find out whether their totals are comparable at all. Nothing is uploaded, nothing is stored, and no quote is ranked.`,
   alternates: { canonical: '/quote-check' },
   openGraph: {
+    images: [{ url: illustrationImage('og-quote-check')?.src ?? '/illustrations/og-quote-check.webp', width: 1200, height: 630 }],
     title: 'Three quotes, three different jobs',
     description:
       'The reason hardwood quotes disagree is usually that they are not pricing the same work. This puts them side by side, line by line.',
@@ -97,6 +100,7 @@ export default function QuoteCheckPage() {
 
       <section className="tlx-section">
         <div className="shell">
+          <Illustration id="quote-same-job-checklist" />
           <h2 className="tlx-h2">What this will not do</h2>
           <div className="tlx-body">
             <p>

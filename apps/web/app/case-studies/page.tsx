@@ -4,10 +4,14 @@ import { JOB_CARDS } from '@/content/job-cards';
 import Link from 'next/link';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { formatDate } from '@/lib/content/utils';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 export const metadata: Metadata = {
   title: 'Case Studies',
   alternates: { canonical: '/case-studies' },
+  openGraph: {
+    images: [{ url: illustrationImage('og-case-studies')?.src ?? '/illustrations/og-case-studies.webp', width: 1200, height: 630 }],
+  },
   description:
     'Hardwood flooring project write-ups from Toronto and the GTA: moisture engineering, species selection, staircases, and radiant-heat installations.',
 };

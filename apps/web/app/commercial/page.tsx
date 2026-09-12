@@ -11,6 +11,8 @@ import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -20,6 +22,7 @@ export const metadata: Metadata = {
   description: `Hardwood installation and refinishing for condo corporations, property managers and commercial spaces across Toronto and the GTA. After-hours work, certificate of insurance on request, ${band('fullSandAndFinish')} per square foot for a full sand and finish. Fixed written price.`,
   alternates: { canonical: '/commercial' },
   openGraph: {
+    images: [{ url: illustrationImage('og-commercial')?.src ?? '/illustrations/og-commercial.webp', width: 1200, height: 630 }],
     title: 'Commercial Hardwood Flooring Toronto — Ecowoods',
     description: `Corridors, lobbies, amenity rooms and unit turnovers. Salaried crews, after-hours scheduling, COI on request. Serving ${SERVICE_AREAS.length} areas.`,
     type: 'website',
@@ -150,6 +153,7 @@ export default function CommercialPage() {
       <section className="tlx-section" aria-label="After-hours protocol">
         <div className="shell">
           <p className="tlx-kicker">Scheduling</p>
+          <Illustration id="commercial-accountability-loop" />
           <h2 className="tlx-h2">The after-hours protocol</h2>
           <p className="tlx-note" style={{ maxWidth: '48rem' }}>
             A corridor cannot be closed for a week, and a lobby cannot be closed at all. The

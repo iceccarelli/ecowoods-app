@@ -6,6 +6,7 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { NextStep } from '@/app/components/NextStep';
+import { Illustration } from '@/app/components/Illustration';
 
 export const metadata: Metadata = {
   title: 'Hardwood movement calculator — how much will my floor move?',
@@ -66,6 +67,7 @@ export default function FloorMovementPage() {
       <section className="tlx-section" aria-label="What to do with this">
         <div className="shell">
           <p className="tlx-kicker">What this changes</p>
+          <Illustration id="floor-movement-width-vs-length" />
           <h2 className="tlx-h2">Three things this number is good for</h2>
           <div className="tlx-body">
             <ol>

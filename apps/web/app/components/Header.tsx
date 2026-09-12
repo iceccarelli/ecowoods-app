@@ -66,6 +66,12 @@ const SERVICES_MENU: MegaColumn[] = [
          anywhere else: their own room, with a floor we can actually lay in it.
          In the chrome it is depth 0 — one click from every page. */
       { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
+      /* The second door, one line under the first (UI-NAV-02). Floor Studio led
+         this menu alone, and /design — the configurator it hands people on to —
+         was reachable only from the footer. Two entries into one catalogue is
+         the design; one of them being invisible in the chrome was not. The
+         notes say which is which, because the labels alone read as duplicates. */
+      { label: 'Design the specification', href: '/design', note: 'Every axis at once, no photo needed' },
       { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
       { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
     ],

@@ -150,7 +150,7 @@ export default function FloorConfigurator() {
   const pattern = PATTERN_OPTIONS.find((p) => p.id === patternId) ?? PATTERN_OPTIONS[0];
 
   const estimate = useMemo(
-    () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId, band: bandForWork(speciesId) }),
+    () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId }, bandForWork(speciesId)),
     [speciesId, sqft, finishId, patternId],
   );
 

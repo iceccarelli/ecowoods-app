@@ -36,6 +36,7 @@ const MARKDOWN_TWINS = [
   ['/reviews', '/reviews.md'],
   ['/estimate', '/estimate.md'],
   ['/floor-studio', '/floor-studio.md'],
+  ['/design', '/design.md'],
   ['/contact', '/contact.md'],
   ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
   ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],
@@ -222,6 +223,12 @@ const nextConfig = {
       { source: '/service-areas.md', destination: '/md/service-areas' },
       { source: '/corridors.md', destination: '/md/corridors' },
       { source: '/where-we-work.md', destination: '/md/where-we-work' },
+      /* UI-NAV-02. /floor-studio.md was declared in MARKDOWN_TWINS and in the
+         page's own alternates.types when the studio shipped, but no rewrite was
+         ever added — so the twin 404'd while the Link header and <head> both
+         advertised it. /design.md is new here and lands with its rewrite. */
+      { source: '/floor-studio.md', destination: '/md/floor-studio' },
+      { source: '/design.md', destination: '/md/design' },
       { source: '/pricing.md', destination: '/md/pricing' },
       { source: '/reviews.md', destination: '/md/reviews' },
       { source: '/estimate.md', destination: '/md/estimate' },

@@ -11,6 +11,8 @@ import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
+import { Illustration } from '@/app/components/Illustration';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -22,6 +24,7 @@ export const metadata: Metadata = {
   description: `A three-day screen and recoat before a listing goes live, at ${band('screenAndRecoat')} per square foot. Tired floors photograph badly and cost more at the offer table than they cost to fix. Fixed written price for realtors across Toronto and the GTA.`,
   alternates: { canonical: '/realtors' },
   openGraph: {
+    images: [{ url: illustrationImage('og-realtors')?.src ?? '/illustrations/og-realtors.webp', width: 1200, height: 630 }],
     title: 'Pre-list floor recoat for realtors — Ecowoods',
     description: `Screen and recoat at ${band('screenAndRecoat')} per square foot, scheduled around a listing date. Serving ${SERVICE_AREAS.length} areas.`,
     type: 'website',
@@ -140,6 +143,7 @@ export default function RealtorsPage() {
         <div className="shell">
           <p className="tlx-kicker">The offer</p>
           <h2 className="tlx-h2">Three days, one price, before the photographer</h2>
+          <Illustration id="realtors-prelist-three-day" />
           <ol className="fw-criteria">
             <li>
               <strong>Day one — abrade and clean.</strong> The existing finish is screened back so a

@@ -183,13 +183,10 @@ describe('price is a delegation, not a calculation', () => {
   it('returns exactly what estimateInstalledRangeCad returns', () => {
     const config = { productId: 'black-walnut', finishId: 'wire-brushed', patternId: 'herringbone', widthId: '5' };
     const mine = priceConfiguration(config, 900);
-    const theirs = estimateInstalledRangeCad({
-      species: productById('black-walnut')!.rateKey,
-      squareFeet: 900,
-      finish: 'wire-brushed',
-      pattern: 'herringbone',
-      band: bandForWork(productById('black-walnut')!.rateKey),
-    });
+    const theirs = estimateInstalledRangeCad(
+      { species: productById('black-walnut')!.rateKey, squareFeet: 900, finish: 'wire-brushed', pattern: 'herringbone' },
+      bandForWork(productById('black-walnut')!.rateKey),
+    );
     expect(mine).toEqual(theirs);
   });
 

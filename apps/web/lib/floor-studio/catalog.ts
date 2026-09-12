@@ -421,13 +421,10 @@ export function describeConfiguration(c: FloorConfiguration): string {
 export function priceConfiguration(c: FloorConfiguration, squareFeet: number): EstimateResult {
   const product = productById(c.productId);
   const work = product?.rateKey ?? FLOOR_PRODUCTS[0].rateKey;
-  return estimateInstalledRangeCad({
-    species: work,
-    squareFeet,
-    finish: c.finishId,
-    pattern: c.patternId,
-    band: bandForWork(work),
-  });
+  return estimateInstalledRangeCad(
+    { species: work, squareFeet, finish: c.finishId, pattern: c.patternId },
+    bandForWork(work),
+  );
 }
 
 /* ── movement: computed from published coefficients, never stored ─────────── */

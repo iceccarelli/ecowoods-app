@@ -158,7 +158,7 @@ export async function POST(req: Request) {
         }),
         execute: async ({ species, squareFeet, finish, pattern }) => {
           // Same function the configurator calls in the browser. Single source of truth.
-          const r = estimateInstalledRangeCad({ species, squareFeet, finish, pattern, band: bandForWork(species) });
+          const r = estimateInstalledRangeCad({ species, squareFeet, finish, pattern }, bandForWork(species));
           return {
             species: r.species,
             squareFeet: r.squareFeet,

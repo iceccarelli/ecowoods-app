@@ -111,7 +111,7 @@ function handle(input: Record<string, unknown>, request: Request, headers: Recor
     return NextResponse.json({ ok: true, ...band, ...bandPayload() }, { headers });
   }
 
-  const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern, band: bandForWork(species) });
+  const result = estimateInstalledRangeCad({ species, squareFeet, finish, pattern }, bandForWork(species));
   return NextResponse.json({ ok: true, estimate: { ...result, is_quote: false }, ...bandPayload() }, { headers });
 }
 
