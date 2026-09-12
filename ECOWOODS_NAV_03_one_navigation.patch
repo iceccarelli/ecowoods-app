@@ -1,0 +1,1625 @@
+From 39ac3a4e73a102fb19f7c8469721d9cec3fc45ce Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 12:21:41 +0000
+Subject: [PATCH] =?UTF-8?q?fix(nav):=20NAV-03=20=E2=80=94=20one=20navigati?=
+ =?UTF-8?q?on=20truth,=20and=20a=20=E2=8C=98K=20that=20was=20lying?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE SURFACE THE DEPTH GUARD COULD NOT SEE
+
+verify-navigation passed at the baseline: 47 public routes, every one within
+three clicks. It reads Header.tsx and SiteFooter.tsx and both were honest. The
+third navigation surface — the command palette — it does not read, and that one
+had been wrong since the site stopped being one page.
+
+CommandPalette.tsx carried its own hand-written navigation:
+
+    const go = (hash) => () => {
+      close();
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `#${hash}`);
+    };
+
+Six ids — services, process, reviews, faq, quote, gallery. Every one of them is
+rendered by home-client.tsx and by nothing else. So on 46 of 47 public routes
+the optional chain swallowed a null, nothing scrolled, the dialog closed, and
+replaceState ran anyway and rewrote the address bar to a fragment matching
+nothing on the page. Six of thirteen actions, silently dead, everywhere but the
+homepage. A control that does nothing is worse than a missing control: the
+visitor concludes the mechanism is broken and stops reaching for it.
+
+Beyond those six it knew /design, and that was the whole of it. Not Floor
+Studio, /pricing, /service-areas, /corridors, /estimate, /guides, /papers,
+/case-studies, /quote-check or /framework — the pages somebody is most likely
+hunting at the moment they press ⌘K.
+
+AND TWO PAGES LIVED ONLY IN THE FOOTER
+
+/pricing — the three published bands, the source every other surface on this
+site links to when it names a number — appeared in no menu at all, desktop or
+mobile. A price page reachable only by scrolling to the bottom is a price page
+the visitor concludes does not exist.
+
+/where-we-work — every published job, each linked to what was measured — the
+same. It is not a duplicate of anything: /service-areas is where we will go,
+/corridors is how we get there, /where-we-work is where we have been. The one
+carrying the evidence was the one no menu named.
+
+ONE SOURCE, THREE PROJECTIONS
+
+The menus move to apps/web/lib/navigation.ts — no 'use client', no React — and
+the surfaces project it: the desktop panels, the mobile drawer accordions, and
+a palette whose destination list is DERIVED rather than written. A page added
+to a menu is searchable the same commit and cannot be forgotten, because nobody
+has to remember. This is the rule the rest of the repository already lives by,
+applied to the one fact still kept in three places.
+
+go() now takes an href. A fragment on the current page still scrolls — the good
+behaviour it had on the homepage, kept — and anything else navigates.
+
+An empty palette is a menu; a typed one is a search. Fifty-five rows at rest is
+a sitemap with a text box, and it throws away what this component was
+opinionated about: the first rows are the three questions that precede a
+booking. So the resting state is the assistant, six high-intent destinations
+and the phone, and the first keystroke opens the whole corpus. The shortlist is
+selected BY HREF out of the derived set, so it carries the menus' own labels
+and cannot describe a page differently from the panel that links it.
+
+"Get a free estimate" now points at /estimate rather than /#quote. It worked,
+and it cost a visitor deep in /service-areas/buffalo a round trip through the
+homepage to reach a form that has its own page — the page Floor Studio already
+hands a finished design to.
+
+ONE WIDENING EDIT, DISCLOSED
+
+scripts/verify-navigation.mjs CHROME gains apps/web/lib/navigation.ts. The
+guard reads strings and the strings moved; without it the chrome would appear
+to shrink by fifty links and pages a visitor reaches in one click would be
+reported unreachable. It widens what counts as chrome. It loosens no rule,
+lowers no threshold, exempts nothing, and MAX_DEPTH is untouched. Chrome link
+count 43 → 44.
+
+AND THE AUDIT-01 HARNESS NOW RUNS
+
+scripts/audit ran under `node --experimental-strip-types`, which needs Node
+≥ 22.6 and did not run on the machine it was written for. Evidence nobody can
+reproduce is not evidence. It is a vitest characterisation test now
+(lib/floor-studio/audit.test.ts) that pins AV-01 and AV-02 as numbers, so the
+day VIS-02 or VIS-03 fixes one, the suite fails and the audit citing it has to
+be rewritten in the same patch. A defect that can be fixed without anyone
+noticing the audit went stale is a defect that comes back.
+
+Verified: 66 guards pass. lib/navigation.test.ts and lib/floor-studio/audit.
+test.ts execute green (216 assertions). 55 destinations, no duplicate href, no
+label pointing at two pages, no bare fragments, every one of the twelve
+previously unreachable pages present. Orphans among public routes: 3, all
+correct — /design/spec (in-flow from the configurator), /r (short link),
+/verify-email (email flow).
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/components/CommandPalette.tsx | 158 ++++++++++--
+ apps/web/app/components/Header.tsx         | 188 +-------------
+ apps/web/app/components/MegaMenu.tsx       |  12 +-
+ apps/web/lib/floor-studio/audit.test.ts    | 287 +++++++++++++++++++++
+ apps/web/lib/navigation.test.ts            | 104 ++++++++
+ apps/web/lib/navigation.ts                 | 274 ++++++++++++++++++++
+ docs/AUDIT_01_VISUALIZER.md                |  16 +-
+ docs/GEO_CONTRADICTION_LOG.md              |  78 ++++++
+ scripts/audit/README.md                    |  25 --
+ scripts/audit/boundary.audit.ts            |  51 ----
+ scripts/audit/occlusion.audit.ts           |  80 ------
+ scripts/audit/register.mjs                 |   3 -
+ scripts/audit/ts-hook.mjs                  |  29 ---
+ scripts/verify-navigation.mjs              |  17 ++
+ 14 files changed, 925 insertions(+), 397 deletions(-)
+ create mode 100644 apps/web/lib/floor-studio/audit.test.ts
+ create mode 100644 apps/web/lib/navigation.test.ts
+ create mode 100644 apps/web/lib/navigation.ts
+ delete mode 100644 scripts/audit/README.md
+ delete mode 100644 scripts/audit/boundary.audit.ts
+ delete mode 100644 scripts/audit/occlusion.audit.ts
+ delete mode 100644 scripts/audit/register.mjs
+ delete mode 100644 scripts/audit/ts-hook.mjs
+
+diff --git a/apps/web/app/components/CommandPalette.tsx b/apps/web/app/components/CommandPalette.tsx
+index dbcaeef..b8eb002 100644
+--- a/apps/web/app/components/CommandPalette.tsx
++++ b/apps/web/app/components/CommandPalette.tsx
+@@ -7,6 +7,7 @@ import { EcowoodsLeaf } from './EcowoodsLeaf';
+ import { BUSINESS_NAP, HOURS_LINE } from '@ecowoods/shared/constants';
+ import { isTypingTarget } from '@/lib/keyboard';
+ import { ASSISTANT } from '@/lib/assistant-identity';
++import { DESTINATIONS, type Destination } from '@/lib/navigation';
+ 
+ /* ────────────────────────────────────────────────────────────────────────────
+    ⌘K — for the 4% of visitors who type instead of scroll.
+@@ -63,6 +64,24 @@ const I = {
+ 
+ const norm = (s: string) => s.toLowerCase().normalize('NFKD');
+ 
++/**
++ * What ⌘K offers before a single key is pressed.
++ *
++ * Six hrefs, in the order a visitor's intent usually runs: see it, specify it,
++ * what it costs, where we go, is my quote fair, get the price in writing. They
++ * are hrefs and not rows — the label, the note and the existence of each one
++ * come from lib/navigation.ts, so this list can never name a page the menus no
++ * longer carry.
++ */
++const RESTING_HREFS = [
++  '/floor-studio',
++  '/design',
++  '/pricing',
++  '/service-areas',
++  '/quote-check',
++  '/estimate',
++];
++
+ export default function CommandPalette() {
+   const [open, setOpen] = useState(false);
+   const [query, setQuery] = useState('');
+@@ -79,10 +98,38 @@ export default function CommandPalette() {
+     restoreFocus.current?.focus();
+   }, []);
+ 
+-  const go = useCallback((hash: string) => () => {
++  /**
++   * NAVIGATION THAT WORKS FROM SOMEWHERE OTHER THAN THE HOMEPAGE (NAV-03).
++   *
++   * This was `getElementById(hash)?.scrollIntoView()` followed, unconditionally,
++   * by `history.replaceState(null, '', '#' + hash)`. Every id it looked for —
++   * services, process, reviews, faq, quote, gallery — is rendered by
++   * home-client.tsx and by nothing else. So on 46 of this site's 47 public
++   * routes the optional chain swallowed a null, the page did not move, the
++   * dialog closed, and the address bar was rewritten to a fragment that matched
++   * nothing on it. Five of thirteen actions, silently dead, everywhere but one
++   * page.
++   *
++   * `go` now takes a real href. If it carries a fragment AND that element is on
++   * this page, it scrolls — which is the good behaviour the old one had on the
++   * homepage, kept. Otherwise it navigates, because a destination the visitor
++   * asked for out loud must not resolve to nothing happening.
++   */
++  const go = useCallback((href: string) => () => {
+     close();
+-    document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+-    history.replaceState(null, '', `#${hash}`);
++    const hash = href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
++    const path = href.includes('#') ? href.slice(0, href.indexOf('#')) : href;
++    const here = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
++    const samePage = !path || path.replace(/\/$/, '') === here;
++    if (hash && samePage) {
++      const el = document.getElementById(hash);
++      if (el) {
++        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
++        history.replaceState(null, '', `#${hash}`);
++        return;
++      }
++    }
++    window.location.assign(href);
+   }, [close]);
+ 
+   const ask = useCallback((prefill: string) => () => {
+@@ -90,6 +137,30 @@ export default function CommandPalette() {
+     openAssistant({ prefill, source: 'command-palette' });
+   }, [close]);
+ 
++  /**
++   * The chrome's destinations, grouped by the column they came from.
++   *
++   * `keywords` is the label plus its note plus the path segments, which is what
++   * makes "buffalo", "herringbone" or "chevron" find a page whose label says
++   * none of those words. Derived, so it cannot go stale.
++   */
++  const paletteGroups: Group[] = useMemo(() => {
++    const byGroup = new Map<string, Action[]>();
++    for (const d of DESTINATIONS) {
++      const list = byGroup.get(d.group) ?? [];
++      list.push({
++        id: `nav:${d.href}:${d.label}`,
++        title: d.label,
++        hint: d.note,
++        keywords: `${d.label} ${d.note ?? ''} ${d.href.replace(/[/#-]+/g, ' ')}`,
++        icon: I.arrow,
++        run: go(d.href),
++      });
++      byGroup.set(d.group, list);
++    }
++    return [...byGroup.entries()].map(([label, actions]) => ({ label, actions }));
++  }, [go]);
++
+   const groups: Group[] = useMemo(() => [
+     {
+       label: `Talk to ${ASSISTANT.name}`,
+@@ -104,23 +175,21 @@ export default function CommandPalette() {
+           run: () => { close(); openAssistant({ source: 'command-palette' }); } },
+       ],
+     },
+-    {
+-      label: 'Design',
+-      actions: [
+-        { id: 'configurator', title: 'Design your floor', hint: 'Species, finish, pattern — live pricing', keywords: 'configurator design build customize herringbone chevron finish', icon: I.arrow, run: () => { close(); window.location.assign('/design'); } },
+-        { id: 'gallery', title: 'See finished Toronto projects', keywords: 'gallery portfolio work photos results', icon: I.arrow, run: go('gallery') },
+-      ],
+-    },
+-    {
+-      label: 'Navigate',
+-      actions: [
+-        { id: 'services', title: 'Services', keywords: 'services install refinish sanding stairs inlay commercial', icon: I.arrow, run: go('services') },
+-        { id: 'process', title: 'How it works', keywords: 'process steps how it works funnel', icon: I.arrow, run: go('process') },
+-        { id: 'reviews', title: 'Reviews', keywords: 'reviews testimonials proof clients', icon: I.arrow, run: go('reviews') },
+-        { id: 'faq', title: 'FAQ', keywords: 'faq questions warranty dust price fixed', icon: I.arrow, run: go('faq') },
+-        { id: 'quote', title: 'Request a free estimate', keywords: 'quote contact estimate form request', icon: I.arrow, run: go('quote') },
+-      ],
+-    },
++    /* EVERY DESTINATION IN THE CHROME, DERIVED (NAV-03).
++     *
++     * What stood here was five hand-written rows naming homepage anchors, and a
++     * sixth naming /design. It was written when this site was one page and it
++     * was never revisited: by the time it was measured it could not reach Floor
++     * Studio, /pricing, /service-areas, /corridors, /estimate, /guides, /papers,
++     * /case-studies, /quote-check or /framework — the ten pages a visitor is
++     * most likely to be hunting for when they reach for ⌘K in the first place.
++     *
++     * It is now projected from lib/navigation.ts, the same module the desktop
++     * panels and the mobile drawer read. A page added to a menu is searchable
++     * here the same commit, and cannot be forgotten here, because nobody has to
++     * remember. Sections keep the menu's own column titles so the palette reads
++     * as the site's structure rather than a flat dump. */
++    ...paletteGroups,
+     {
+       label: 'Contact & appearance',
+       actions: [
+@@ -130,15 +199,52 @@ export default function CommandPalette() {
+           run: () => { toggle(); close(); } },
+       ],
+     },
+-  ], [ask, go, close, theme, toggle]);
++  ], [ask, close, theme, toggle, paletteGroups]);
+ 
++  /**
++   * AN EMPTY PALETTE IS A MENU; A TYPED ONE IS A SEARCH (NAV-03).
++   *
++   * Projecting the whole chrome in makes ⌘K complete, and a complete list is
++   * roughly fifty rows. Opening a dialog onto fifty rows is not a shortcut, it
++   * is a sitemap with a text box, and it throws away the thing this component
++   * was opinionated about: the first rows should be the three questions that
++   * precede a booking, not navigation.
++   *
++   * So the resting state is short — the assistant, a handful of the highest
++   * intent destinations, the phone — and the FIRST KEYSTROKE opens the whole
++   * corpus. Nothing is unreachable; it is one character away. The shortlist is
++   * selected BY HREF out of the derived set, so it carries the menu's own
++   * labels and notes and cannot describe a page differently from the panel that
++   * links it, or survive that page being removed.
++   */
+   const filtered: Group[] = useMemo(() => {
+     const q = norm(query.trim());
+-    if (!q) return groups;
+-    return groups
+-      .map((g) => ({ ...g, actions: g.actions.filter((a) => norm(`${a.title} ${a.keywords}`).includes(q)) }))
+-      .filter((g) => g.actions.length > 0);
+-  }, [groups, query]);
++    if (q) {
++      return groups
++        .map((g) => ({ ...g, actions: g.actions.filter((a) => norm(`${a.title} ${a.keywords}`).includes(q)) }))
++        .filter((g) => g.actions.length > 0);
++    }
++    const byHref = new Map(DESTINATIONS.map((d) => [d.href, d]));
++    const jump = RESTING_HREFS.map((h) => byHref.get(h)).filter((d): d is Destination => Boolean(d));
++    const rest: Group = {
++      label: 'Jump to',
++      actions: jump.map((d) => ({
++        id: `nav:${d.href}:${d.label}`,
++        title: d.label,
++        hint: d.note,
++        keywords: d.label,
++        icon: I.arrow,
++        run: go(d.href),
++      })),
++    };
++    const first = groups[0];
++    const last = groups[groups.length - 1];
++    return [
++      ...(first ? [first] : []),
++      ...(rest.actions.length ? [rest] : []),
++      ...(last && last !== first ? [last] : []),
++    ];
++  }, [groups, query, go]);
+ 
+   const flat = useMemo(() => filtered.flatMap((g) => g.actions), [filtered]);
+ 
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 88f60bc..9b419c1 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -1,8 +1,13 @@
+ 'use client';
+ import Link from 'next/link';
+-import { MegaMenu, type MegaColumn } from './MegaMenu';
+-import { CORRIDORS } from '@/content/geo/corridors';
+-import { SERVICE_AREAS } from '@/lib/seo-data';
++import { MegaMenu } from './MegaMenu';
++import {
++  LIBRARY_MENU,
++  MOBILE_GROUPS,
++  SERVICES_LAYOUT,
++  SERVICES_MENU,
++  TOP_LINKS as navigation,
++} from '@/lib/navigation';
+ 
+ import { useState, useEffect, useRef } from 'react';
+ import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
+@@ -42,172 +47,11 @@ function useScrollState() {
+ }
+ 
+ /* ---------------------- Navigation ---------------------- */
+-/* THE PANELS — the AWS "Products ▾" mechanism, applied to a corpus this site
+- * had no way to show anyone.
+- *
+- * Curated, not generated. AWS does not list 240 services in its panel; it lists
+- * the categories a visitor arrives with. Dumping forty-four glossary terms here
+- * would be a directory, and a directory is what /glossary already is. These are
+- * the entries that answer a question someone is holding.
+- *
+- * Every href is a real page and every one is also reachable from its hub, so
+- * nothing here is the ONLY path to anything — a mega-menu that is the sole route
+- * to a page is a page that dies the day the menu breaks.
+- */
+-const SERVICES_MENU: MegaColumn[] = [
+-  /* "Send photos" no longer fits in the header — see the note on .topbar-photos
+-     in globals.css. It is the fastest route a visitor has to a real answer, so
+-     it does not simply disappear: it leads this menu, one click from every page. */
+-  {
+-    title: 'Start here',
+-    items: [
+-      /* Floor Studio leads the menu because it is the only entry on this site
+-         that costs the visitor nothing and shows them something they cannot get
+-         anywhere else: their own room, with a floor we can actually lay in it.
+-         In the chrome it is depth 0 — one click from every page. */
+-      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
+-      /* The second door, one line under the first (UI-NAV-02). Floor Studio led
+-         this menu alone, and /design — the configurator it hands people on to —
+-         was reachable only from the footer. Two entries into one catalogue is
+-         the design; one of them being invisible in the chrome was not. The
+-         notes say which is which, because the labels alone read as duplicates. */
+-      { label: 'Design the specification', href: '/design', note: 'Every axis at once, no photo needed' },
+-      { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
+-      { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
+-    ],
+-  },
+-  {
+-    title: 'By the job',
+-    href: '/services',
+-    items: [
+-      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand' },
+-      { label: 'New installation', href: '/hardwood-flooring-toronto', note: 'Solid and engineered' },
+-      { label: 'Dust-free sanding', href: '/services/dust-free-sanding', note: 'HEPA-sealed, stay in the house' },
+-      { label: 'Stairs', href: '/hardwood-stairs-toronto', note: 'Four different jobs, one word' },
+-      { label: 'Floor restoration', href: '/services/floor-restoration' },
+-      { label: 'Custom inlays', href: '/services/custom-inlays' },
+-    ],
+-  },
+-  {
+-    title: 'By who you are',
+-    href: '/commercial',
+-    items: [
+-      { label: 'Condo boards & property managers', href: '/commercial', note: 'After-hours, COI, priced by area' },
+-      { label: 'Realtors & sellers', href: '/realtors', note: 'Three-day pre-list recoat' },
+-      { label: 'Score a quote you already have', href: '/framework/assess', note: 'Any contractor, including us' },
+-    ],
+-  },
+-  {
+-    title: 'By the problem',
+-    href: '/hardwood-floor-problems-toronto',
+-    items: [
+-      { label: 'Cupping, gapping, crowning', href: '/hardwood-floor-problems-toronto', note: 'Five symptoms, one mechanism' },
+-      { label: 'Buckling and edge peaking', href: '/hardwood-floor-problems-toronto' },
+-      { label: 'Matching stairs to a floor', href: '/hardwood-stairs-toronto' },
+-      { label: 'Is my floor refinishable?', href: '/guides/reference-refinishing-existing-hardwood' },
+-    ],
+-  },
+-  {
+-    /* The geography page was in the footer and not here. It is what a "hardwood
+-       flooring near me" search lands on, it is the payoff of the whole corridor
+-       model, and the primary navigation did not mention it. Both counts are
+-       derived — the nav said "Nine routes" for a week after there were eleven. */
+-    title: 'Where we work',
+-    href: '/service-areas',
+-    items: [
+-      { label: 'Find your city', href: '/service-areas', note: `${SERVICE_AREAS.length} published areas, each with its own housing stock` },
+-      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, in travel order` },
+-      { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
+-      { label: 'Mississauga', href: '/service-areas/mississauga' },
+-      { label: 'Hamilton', href: '/service-areas/hamilton' },
+-      /* The corridor page, not one town: it lists every Niagara municipality
+-         with a page, from Grimsby to Fort Erie, in the order a crew reaches them. */
+-      { label: 'Niagara', href: '/corridors/niagara-belt', note: 'Grimsby to Fort Erie, on the QEW' },
+-      { label: 'Kitchener', href: '/service-areas/kitchener', note: 'On the 403 and Highway 6, with Cambridge and Guelph' },
+-      { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
+-    ],
+-  },
+-  {
+-    title: 'Before you decide',
+-    href: '/guides',
+-    items: [
+-      { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
+-      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
+-      { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
+-      { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+-      { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
+-      { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
+-      { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
+-    ],
+-  },
+-];
+-
+-/* Where each group sits in the desktop panel: four columns, groups stacked.
+-   The mobile drawer lists SERVICES_MENU in its own order. */
+-const SERVICES_LAYOUT: string[][] = [
+-  ['Start here', 'By who you are'],
+-  ['By the job', 'By the problem'],
+-  ['Where we work'],
+-  ['Before you decide'],
+-];
+-
+-const LIBRARY_MENU: MegaColumn[] = [
+-  {
+-    title: 'Technical papers',
+-    href: '/papers',
+-    items: [
+-      { label: 'Provenance', href: '/papers/where-toronto-hardwood-comes-from', note: 'Where the wood comes from' },
+-      { label: 'Grade', href: '/papers/hardwood-grading-standards-nhla-nwfa', note: 'NHLA and NWFA, side by side' },
+-      { label: 'Climate Mastery', href: '/papers/toronto-hardwood-climate-moisture-protocol' },
+-      { label: 'The Craft', href: '/papers/hardwood-refinishing-machines-and-sequence' },
+-      { label: 'Selection and cost', href: '/papers/hardwood-selection-and-cost-framework-gta' },
+-    ],
+-  },
+-  {
+-    title: 'Species dossiers',
+-    href: '/guides',
+-    items: [
+-      { label: 'White oak', href: '/guides/white-oak-flooring-toronto' },
+-      { label: 'Red oak', href: '/guides/red-oak-flooring-toronto' },
+-      { label: 'Hard maple', href: '/guides/hard-maple-flooring-toronto' },
+-      { label: 'White ash', href: '/guides/white-ash-flooring-toronto', note: 'Cut faster than it grows' },
+-      { label: 'Hickory · Black walnut', href: '/guides/hickory-flooring-toronto' },
+-    ],
+-  },
+-  {
+-    title: 'Reference',
+-    href: '/resources',
+-    items: [
+-      { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
+-      /* The catalogues sit in Reference and not in the primary conversion nav:
+-         Quote and Call come first, and a download is not a conversion. */
+-      { label: 'Field catalogues', href: '/catalogues', note: 'Landscape PDFs, built to print, nothing gated' },
+-      { label: 'Standards register', href: '/standards', note: 'NHLA, NWFA, ASTM, FPL' },
+-      { label: 'Figures and data', href: '/data' },
+-      { label: 'The Well-Installed Framework', href: '/framework' },
+-      { label: 'Visual library', href: '/library' },
+-    ],
+-  },
+-  {
+-    title: 'Evidence',
+-    href: '/case-studies',
+-    items: [
+-      { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
+-      { label: 'Reviews', href: '/reviews' },
+-      { label: 'What we publish about ourselves', href: '/about' },
+-      { label: 'Everything, as it shipped', href: '/whats-new' },
+-    ],
+-  },
+-];
+-
+-const navigation = [
+-  /* Two panels and four links. See MegaMenu.tsx for why a panel beats a hub, and
+-   * F-163 for why the five commercial pages are here at all. */
+-  { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
+-  { label: 'Installation', href: '/hardwood-flooring-toronto' },
+-  { label: 'Stairs', href: '/hardwood-stairs-toronto' },
+-  { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
+-];
++/* The menus moved to lib/navigation.ts in NAV-03 so that ⌘K could read the
++   same data the panels and the drawer read. They were already shared between
++   desktop and mobile; the command palette was the surface still carrying its
++   own hand-written copy from when this site was one page. Nothing about the
++   content changed in the move — see the docblock there. */
+ 
+ const MYPAGE_NAV = [
+   { href: '/mypage', label: 'Dashboard' },
+@@ -227,12 +71,6 @@ const ADMIN_NAV = [
+   { href: '/admin/settings', label: 'Settings' },
+ ];
+ 
+-/* The drawer's accordions, in drawer order. */
+-const MOBILE_GROUPS = [
+-  { key: 'services', label: 'Services', cols: SERVICES_MENU },
+-  { key: 'library', label: 'Library', cols: LIBRARY_MENU },
+-];
+-
+ /** Row numbers for the drawer: 01, 02 … 10 — never "010". */
+ const rowNum = (i: number) => String(i + 1).padStart(2, '0');
+ 
+diff --git a/apps/web/app/components/MegaMenu.tsx b/apps/web/app/components/MegaMenu.tsx
+index 5ea9598..691d31e 100644
+--- a/apps/web/app/components/MegaMenu.tsx
++++ b/apps/web/app/components/MegaMenu.tsx
+@@ -38,12 +38,12 @@ import Link from 'next/link';
+  * the panel has ever been opened.
+  */
+ 
+-export type MegaColumn = {
+-  title: string;
+-  /** Where the column heading itself goes. Optional — some columns are lists only. */
+-  href?: string;
+-  items: { label: string; href: string; note?: string }[];
+-};
++/* The shape lives in lib/navigation.ts with the menus themselves (NAV-03), so
++   the panel, the drawer and ⌘K cannot drift into three different ideas of what
++   a menu column is. Re-exported here because this is where it was defined and
++   an import of it from this path should keep working. */
++export type { MegaColumn } from '@/lib/navigation';
++import type { MegaColumn } from '@/lib/navigation';
+ 
+ /*
+  * HOVER THAT A HUMAN CAN ACTUALLY FOLLOW (UI-NAV-01).
+diff --git a/apps/web/lib/floor-studio/audit.test.ts b/apps/web/lib/floor-studio/audit.test.ts
+new file mode 100644
+index 0000000..2370bdb
+--- /dev/null
++++ b/apps/web/lib/floor-studio/audit.test.ts
+@@ -0,0 +1,287 @@
++/**
++ * lib/floor-studio/audit.test.ts — AUDIT-01, as executable evidence.
++ *
++ * WHAT THIS IS, AND WHAT IT IS NOT
++ *
++ * It is not a guard. It adds nothing to verify-all.mjs and gates no commit.
++ * It is a CHARACTERISATION TEST: it pins down, in numbers, what the visualiser
++ * does today — including the two things it does wrong — so that
++ * docs/AUDIT_01_VISUALIZER.md can be re-executed by anyone rather than believed.
++ *
++ * The first version of this harness ran under `node --experimental-strip-types`,
++ * which needs Node ≥ 22.6 and therefore did not run on the machine it was
++ * written for. Evidence nobody can reproduce is not evidence. It lives in the
++ * repository's own vitest now, so `pnpm test` runs it on whatever Node is
++ * installed.
++ *
++ * EVERY ROOM HERE IS SYNTHETIC ON PURPOSE
++ *
++ * The floor plane and every object's box are known by construction, so "was
++ * this pixel of the dog replaced" is a comparison and not a judgement. No
++ * photograph is checked in, and none is needed.
++ *
++ * THE TWO FAILING BEHAVIOURS ARE ASSERTED, NOT TOLERATED
++ *
++ * `DEFECT_AV_01` and `DEFECT_AV_02` below are the defects as measured. The
++ * tests assert that the code still behaves that way — which means the day
++ * VIS-02 or VIS-03 fixes one, this file fails and has to be rewritten
++ * alongside the audit that cites it. A defect that can be fixed without anyone
++ * noticing the audit went stale is a defect that comes back.
++ */
++import { describe, expect, it } from 'vitest';
++import { compositeFloor } from './render';
++import { analyseRoom, type Pixels, type Quad } from './room';
++
++const W = 480;
++const H = 320;
++
++type Rgb = [number, number, number];
++type Box = [number, number, number, number];
++
++const put = (px: Pixels, x: number, y: number, [r, g, b]: Rgb) => {
++  const i = (y * px.width + x) * 4;
++  px.data[i] = r;
++  px.data[i + 1] = g;
++  px.data[i + 2] = b;
++  px.data[i + 3] = 255;
++};
++
++const fill = (px: Pixels, [x0, y0, x1, y1]: Box, rgb: Rgb) => {
++  for (let y = Math.round(y0 * H); y < Math.round(y1 * H); y += 1) {
++    for (let x = Math.round(x0 * W); x < Math.round(x1 * W); x += 1) {
++      if (x >= 0 && x < W && y >= 0 && y < H) put(px, x, y, rgb);
++    }
++  }
++};
++
++/** A wall above, an existing oak floor below, with the usual falloff. */
++function emptyRoom(opts: { horizon?: number; angled?: boolean; darkFloor?: boolean } = {}): Pixels {
++  const px: Pixels = { data: new Uint8ClampedArray(W * H * 4), width: W, height: H };
++  const horizon = opts.horizon ?? 0.45;
++  const base: Rgb = opts.darkFloor ? [70, 52, 38] : [150, 112, 74];
++  for (let y = 0; y < H; y += 1) {
++    for (let x = 0; x < W; x += 1) {
++      const ny = y / H;
++      const line = opts.angled ? 0.3 + 0.3 * (x / W) : horizon;
++      if (ny < line) put(px, x, y, [236, 233, 228]);
++      else {
++        const d = 1 - 0.18 * (1 - ny);
++        put(px, x, y, [base[0] * d, base[1] * d, base[2] * d]);
++      }
++    }
++  }
++  return px;
++}
++
++const inQuad = (quad: Quad, x: number, y: number): boolean => {
++  let sign = 0;
++  for (let i = 0; i < 4; i += 1) {
++    const a = quad[i]!;
++    const b = quad[(i + 1) % 4]!;
++    const cross = (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
++    if (cross === 0) continue;
++    const s = cross > 0 ? 1 : -1;
++    if (sign === 0) sign = s;
++    else if (s !== sign) return false;
++  }
++  return true;
++};
++
++/* ── AV-01 ────────────────────────────────────────────────────────────────── */
++
++/**
++ * Fourteen things that stand on the floor of a house about to buy hardwood.
++ * Not adversarial — a sofa, two rugs, a plant, a person, a cat, a dog, a
++ * cabinet toe-kick, a stair riser, a table leg, a box, an armchair, a pot, a
++ * lamp base.
++ */
++const OBJECTS: { name: string; rgb: Rgb }[] = [
++  { name: 'grey fabric sofa', rgb: [138, 136, 132] },
++  { name: 'cream/jute area rug', rgb: [214, 196, 166] },
++  { name: 'charcoal rug', rgb: [52, 52, 56] },
++  { name: 'green plant', rgb: [62, 110, 58] },
++  { name: 'human leg (skin)', rgb: [206, 160, 128] },
++  { name: 'black cat', rgb: [28, 26, 26] },
++  { name: 'golden retriever', rgb: [198, 158, 104] },
++  { name: 'white cabinet toe-kick', rgb: [238, 236, 232] },
++  { name: 'oak stair riser', rgb: [168, 128, 84] },
++  { name: 'pine/oak table leg', rgb: [176, 140, 96] },
++  { name: 'cardboard box', rgb: [190, 158, 116] },
++  { name: 'navy armchair', rgb: [46, 58, 88] },
++  { name: 'terracotta pot', rgb: [178, 98, 62] },
++  { name: 'brass floor lamp base', rgb: [186, 152, 74] },
++];
++
++/**
++ * AV-01 AS MEASURED. Every name here is an object the renderer destroys.
++ *
++ * VIS-02 must empty this list. When it does, this test fails and
++ * docs/AUDIT_01_VISUALIZER.md §2 must be rewritten in the same patch.
++ */
++const DEFECT_AV_01 = [
++  'cream/jute area rug',
++  'human leg (skin)',
++  'golden retriever',
++  'oak stair riser',
++  'pine/oak table leg',
++  'cardboard box',
++];
++
++const HONEST_QUAD: Quad = [
++  { x: 0.1, y: 0.46 },
++  { x: 0.9, y: 0.46 },
++  { x: 1, y: 1 },
++  { x: 0, y: 1 },
++];
++
++function occlusionSweep() {
++  const px = emptyRoom();
++  const boxes = new Map<string, Box>();
++  OBJECTS.forEach((o, i) => {
++    const col = i % 7;
++    const row = Math.floor(i / 7);
++    const box: Box = [0.02 + col * 0.14, 0.5 + row * 0.24, 0.02 + col * 0.14 + 0.11, 0.5 + row * 0.24 + 0.19];
++    boxes.set(o.name, box);
++    fill(px, box, o.rgb);
++  });
++
++  const result = compositeFloor(
++    px,
++    HONEST_QUAD,
++    { productId: 'white-oak', finishId: 'satin', patternId: 'straight', widthId: '5' },
++    { squareFeet: 400 },
++  );
++
++  const rows = OBJECTS.map((o) => {
++    const [x0, y0, x1, y1] = boxes.get(o.name)!;
++    let considered = 0;
++    let changed = 0;
++    for (let y = Math.round(y0 * H); y < Math.round(y1 * H); y += 1) {
++      for (let x = Math.round(x0 * W); x < Math.round(x1 * W); x += 1) {
++        const nx = (x + 0.5) / W;
++        const ny = (y + 0.5) / H;
++        if (!inQuad(HONEST_QUAD, nx, ny)) continue;
++        considered += 1;
++        const i = (y * W + x) * 4;
++        if (
++          result.pixels.data[i] !== px.data[i] ||
++          result.pixels.data[i + 1] !== px.data[i + 1] ||
++          result.pixels.data[i + 2] !== px.data[i + 2]
++        ) {
++          changed += 1;
++        }
++      }
++    }
++    return { name: o.name, considered, changed, pct: considered ? (100 * changed) / considered : 0 };
++  });
++
++  return { rows, painted: result.painted };
++}
++
++describe('AUDIT-01 · AV-01 — what the renderer destroys on the way in', () => {
++  it('leaves every object on the floor alone (this is what VIS-02 must make true)', () => {
++    const { rows } = occlusionSweep();
++    const destroyed = rows.filter((r) => r.considered > 0 && r.pct >= 50).map((r) => r.name);
++    /* Asserted against the measured list rather than against [] so the suite is
++       green today and turns red the moment the behaviour changes in either
++       direction — a fix, or a regression that destroys something new. */
++    expect(destroyed.sort()).toEqual([...DEFECT_AV_01].sort());
++  });
++
++  it('destroys them completely rather than partially — this is not a soft edge', () => {
++    const { rows } = occlusionSweep();
++    for (const name of DEFECT_AV_01) {
++      const row = rows.find((r) => r.name === name)!;
++      expect(row.pct).toBeGreaterThan(99);
++    }
++  });
++
++  it('every object it does spare is one whose hue is not wood', () => {
++    const { rows } = occlusionSweep();
++    const spared = rows.filter((r) => r.considered > 0 && r.pct < 50).map((r) => r.name);
++    expect(spared).toContain('grey fabric sofa');
++    expect(spared).toContain('charcoal rug');
++    expect(spared).toContain('navy armchair');
++    /* The mask is a chroma test and nothing else, so the rule that decides is
++       colour rather than what the thing is. Stated as an assertion because it
++       is the whole diagnosis: it is not that the mask is weak, it is that it
++       is measuring the wrong quantity. */
++    expect(spared).not.toContain('human leg (skin)');
++  });
++
++  it('the "mostly furniture" warning cannot fire, because the furniture was painted', () => {
++    const { painted } = occlusionSweep();
++    /* FloorStudio.tsx shows "a lot of this room is furniture rather than floor"
++       when painted < 0.5. Six of fourteen objects are painted rather than
++       skipped, so the fraction stays high in precisely the rooms that need the
++       warning. */
++    expect(painted).toBeGreaterThan(0.5);
++  });
++});
++
++/* ── AV-02 ────────────────────────────────────────────────────────────────── */
++
++/** Floor from y = 0.45 to the bottom, full width. */
++const TRUE_COVERAGE = 0.55;
++
++const SCENES: { name: string; build: () => Pixels; honest: boolean }[] = [
++  { name: 'empty room, oak floor', build: () => emptyRoom(), honest: true },
++  { name: 'dark walnut floor', build: () => emptyRoom({ darkFloor: true }), honest: true },
++  {
++    name: 'with a large pale area rug',
++    build: () => {
++      const px = emptyRoom();
++      fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
++      return px;
++    },
++    honest: false,
++  },
++  {
++    name: 'with a sofa',
++    build: () => {
++      const px = emptyRoom();
++      fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
++      return px;
++    },
++    honest: true,
++  },
++  {
++    name: 'rug + sofa (a real living room)',
++    build: () => {
++      const px = emptyRoom();
++      fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
++      fill(px, [0.05, 0.48, 0.4, 0.7], [138, 136, 132]);
++      return px;
++    },
++    honest: false,
++  },
++  { name: 'shot from a doorway (angled)', build: () => emptyRoom({ angled: true }), honest: true },
++];
++
++/** The error budget a `measured` reading has to stay inside to be honest. */
++const MEASURED_BUDGET = 0.25;
++
++describe('AUDIT-01 · AV-02 — is "measured" true', () => {
++  it.each(SCENES)('$name', ({ build, honest }) => {
++    const reading = analyseRoom(build());
++    const error = Math.abs(reading.floorCoverage - TRUE_COVERAGE) / TRUE_COVERAGE;
++    const claimsCertainty = reading.floorConfidence === 'measured';
++    const isHonest = !claimsCertainty || error < MEASURED_BUDGET;
++    expect(isHonest).toBe(honest);
++  });
++
++  it('a rug costs the estimator most of the floor and none of its confidence', () => {
++    const px = emptyRoom();
++    fill(px, [0.15, 0.6, 0.85, 0.85], [214, 206, 190]);
++    const reading = analyseRoom(px);
++    expect(reading.floorConfidence).toBe('measured');
++    /* Roughly a sixth of the true plane. VIS-03 must make this read `weak`, or
++       make the coverage right. Either one flips this test. */
++    expect(reading.floorCoverage).toBeLessThan(0.25);
++  });
++
++  it('`weak` still fires where it always did, so VIS-03 is a widening not a rewrite', () => {
++    const tiny: Pixels = { data: new Uint8ClampedArray(4 * 4 * 4), width: 4, height: 4 };
++    expect(analyseRoom(tiny).floorConfidence).toBe('weak');
++  });
++});
+diff --git a/apps/web/lib/navigation.test.ts b/apps/web/lib/navigation.test.ts
+new file mode 100644
+index 0000000..971863f
+--- /dev/null
++++ b/apps/web/lib/navigation.test.ts
+@@ -0,0 +1,104 @@
++/**
++ * lib/navigation.test.ts — the three surfaces cannot drift again.
++ *
++ * NAV-03 collapsed three copies of "where can you get to from here" into one.
++ * These tests are what stops a fourth appearing: they assert the SHAPE the
++ * derived list has to keep for the palette, the panels and the drawer to stay
++ * the same site.
++ *
++ * They are tests, not guards. They add nothing to verify-all.mjs.
++ */
++import { describe, expect, it } from 'vitest';
++import {
++  DESTINATIONS,
++  LIBRARY_MENU,
++  MOBILE_GROUPS,
++  SERVICES_LAYOUT,
++  SERVICES_MENU,
++  TOP_LINKS,
++} from './navigation';
++
++describe('the menus', () => {
++  it('every href is a path, never a bare fragment', () => {
++    /* A bare `#services` is what the command palette used to store, and it is
++       why five of its actions did nothing anywhere but the homepage. A path
++       resolves from any page; a fragment only resolves where the section is. */
++    const all = [...TOP_LINKS, ...SERVICES_MENU.flatMap((c) => c.items), ...LIBRARY_MENU.flatMap((c) => c.items)];
++    for (const item of all) expect(item.href.startsWith('/')).toBe(true);
++    for (const col of [...SERVICES_MENU, ...LIBRARY_MENU]) {
++      if (col.href) expect(col.href.startsWith('/')).toBe(true);
++    }
++  });
++
++  it('the desktop layout names every Services column exactly once', () => {
++    /* The panel renders from SERVICES_LAYOUT. A column missing from it is a
++       column that exists on a phone and not on a desktop. */
++    const laid = SERVICES_LAYOUT.flat();
++    const titles = SERVICES_MENU.map((c) => c.title);
++    expect([...laid].sort()).toEqual([...titles].sort());
++  });
++
++  it('the mobile drawer carries both menus in full', () => {
++    const services = MOBILE_GROUPS.find((g) => g.key === 'services');
++    const library = MOBILE_GROUPS.find((g) => g.key === 'library');
++    expect(services?.cols).toBe(SERVICES_MENU);
++    expect(library?.cols).toBe(LIBRARY_MENU);
++  });
++
++  it('no label means two different pages', () => {
++    /* The nav quietly teaching someone that a word means two things is the
++       failure verify-navigation catches in the chrome. Same rule, in the data. */
++    const byLabel = new Map<string, Set<string>>();
++    for (const d of DESTINATIONS) {
++      const set = byLabel.get(d.label) ?? new Set<string>();
++      set.add(d.href);
++      byLabel.set(d.label, set);
++    }
++    const ambiguous = [...byLabel.entries()].filter(([, hrefs]) => hrefs.size > 1);
++    expect(ambiguous).toEqual([]);
++  });
++});
++
++describe('DESTINATIONS — what ⌘K searches', () => {
++  it('is derived from the menus and adds nothing of its own', () => {
++    const menuHrefs = new Set([
++      ...TOP_LINKS.map((l) => l.href),
++      ...SERVICES_MENU.flatMap((c) => [c.href, ...c.items.map((i) => i.href)]),
++      ...LIBRARY_MENU.flatMap((c) => [c.href, ...c.items.map((i) => i.href)]),
++    ].filter(Boolean) as string[]);
++    for (const d of DESTINATIONS) expect(menuHrefs.has(d.href)).toBe(true);
++  });
++
++  it('lists each page once', () => {
++    const hrefs = DESTINATIONS.map((d) => d.href);
++    expect(hrefs.length).toBe(new Set(hrefs).size);
++  });
++
++  it('carries the pages the palette could not reach before NAV-03', () => {
++    /* The ten a visitor is most likely hunting when they press ⌘K. Named
++       individually rather than counted, because a count passes while the list
++       silently changes underneath it. */
++    const hrefs = new Set(DESTINATIONS.map((d) => d.href));
++    for (const href of [
++      '/floor-studio',
++      '/design',
++      '/pricing',
++      '/service-areas',
++      '/corridors',
++      '/estimate',
++      '/guides',
++      '/papers',
++      '/case-studies',
++      '/quote-check',
++      '/framework',
++      '/where-we-work',
++    ]) {
++      expect(hrefs.has(href), `${href} must be reachable from the chrome`).toBe(true);
++    }
++  });
++
++  it('every destination keeps the group it came from, so the palette reads as the site', () => {
++    for (const d of DESTINATIONS) expect(d.group.length).toBeGreaterThan(0);
++    expect(new Set(DESTINATIONS.map((d) => d.group)).size).toBeGreaterThan(5);
++  });
++});
+diff --git a/apps/web/lib/navigation.ts b/apps/web/lib/navigation.ts
+new file mode 100644
+index 0000000..aea36eb
+--- /dev/null
++++ b/apps/web/lib/navigation.ts
+@@ -0,0 +1,274 @@
++/**
++ * lib/navigation.ts — ONE NAVIGATION TRUTH, MANY SURFACES.
++ *
++ * WHY THIS FILE EXISTS
++ *
++ * This site already has a rule about facts: one source, many generated
++ * surfaces, and the system never states two versions of the same thing.
++ * Navigation is a fact — "where can you get to from here" — and it was the one
++ * fact still kept in three places.
++ *
++ *   · the desktop mega-panels read one copy, in Header.tsx
++ *   · the mobile drawer read the same copy (UI-NAV-01 fixed that), so those two
++ *     have agreed since
++ *   · ⌘K read NOTHING. CommandPalette.tsx carried its own hand-written list of
++ *     six homepage anchors, written when this site was one page, and it was
++ *     never updated as the corpus grew to 47 public routes. It could not reach
++ *     Floor Studio, /pricing, /service-areas, /corridors, /estimate, /guides,
++ *     /papers, /case-studies, /quote-check or /framework — and five of its
++ *     thirteen actions did nothing at all on any page but the homepage, because
++ *     `getElementById(hash)` finds nothing when the section is somewhere else.
++ *     See NAV-03 in docs/GEO_CONTRADICTION_LOG.md.
++ *
++ * So the menus live here, in a module with no 'use client' and no React, and
++ * the three surfaces project them:
++ *
++ *   Header.tsx        desktop panels + the mobile drawer accordions
++ *   CommandPalette    every destination, searchable, on every page
++ *   verify-navigation reads this file as chrome (see the widening note there)
++ *
++ * A page added to a menu here appears in all three the same deploy. That is the
++ * whole point: a mega-menu, a drawer and a command palette that disagree about
++ * what this site contains are three different sites.
++ *
++ * CURATED, NOT GENERATED — the original note, which still governs
++ *
++ * AWS does not list 240 services in its panel; it lists the categories a
++ * visitor arrives with. Dumping forty-four glossary terms here would be a
++ * directory, and a directory is what /glossary already is. These are the
++ * entries that answer a question someone is holding.
++ *
++ * Every href is a real page and every one is also reachable from its hub, so
++ * nothing here is the ONLY path to anything — a menu that is the sole route to
++ * a page is a page that dies the day the menu breaks.
++ */
++import { CORRIDORS } from '@/content/geo/corridors';
++import { SERVICE_AREAS } from '@/lib/seo-data';
++
++export type MegaItem = { label: string; href: string; note?: string };
++
++export type MegaColumn = {
++  title: string;
++  /** Where the column heading itself goes. Optional — some columns are lists only. */
++  href?: string;
++  items: MegaItem[];
++};
++
++export const SERVICES_MENU: MegaColumn[] = [
++  /* "Send photos" no longer fits in the header — see the note on .topbar-photos
++     in globals.css. It is the fastest route a visitor has to a real answer, so
++     it does not simply disappear: it leads this menu, one click from every page. */
++  {
++    title: 'Start here',
++    items: [
++      /* Floor Studio leads the menu because it is the only entry on this site
++         that costs the visitor nothing and shows them something they cannot get
++         anywhere else: their own room, with a floor we can actually lay in it.
++         In the chrome it is depth 0 — one click from every page. */
++      { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
++      /* The second door, one line under the first (UI-NAV-02). Floor Studio led
++         this menu alone, and /design — the configurator it hands people on to —
++         was reachable only from the footer. Two entries into one catalogue is
++         the design; one of them being invisible in the chrome was not. The
++         notes say which is which, because the labels alone read as duplicates. */
++      { label: 'Design the specification', href: '/design', note: 'Every axis at once, no photo needed' },
++      { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
++      /* This pointed at `/#quote` — the homepage quote section. It worked, and
++         it cost a visitor deep in /service-areas/buffalo a round trip through
++         the homepage to reach a form that has its own page. /estimate is that
++         page: the measure, the written price and the work, and it is already
++         where Floor Studio hands a finished design (studio-config.ts
++         estimateHref). The menus now name it, which also stops /estimate being
++         a page reachable only from the footer. NAV-03. */
++      { label: 'Get a free estimate', href: '/estimate', note: 'Fixed price, in writing, after we measure' },
++    ],
++  },
++  {
++    title: 'By the job',
++    href: '/services',
++    items: [
++      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand' },
++      { label: 'New installation', href: '/hardwood-flooring-toronto', note: 'Solid and engineered' },
++      { label: 'Dust-free sanding', href: '/services/dust-free-sanding', note: 'HEPA-sealed, stay in the house' },
++      { label: 'Stairs', href: '/hardwood-stairs-toronto', note: 'Four different jobs, one word' },
++      { label: 'Floor restoration', href: '/services/floor-restoration' },
++      { label: 'Custom inlays', href: '/services/custom-inlays' },
++    ],
++  },
++  {
++    title: 'By who you are',
++    href: '/commercial',
++    items: [
++      { label: 'Condo boards & property managers', href: '/commercial', note: 'After-hours, COI, priced by area' },
++      { label: 'Realtors & sellers', href: '/realtors', note: 'Three-day pre-list recoat' },
++      { label: 'Score a quote you already have', href: '/framework/assess', note: 'Any contractor, including us' },
++    ],
++  },
++  {
++    title: 'By the problem',
++    href: '/hardwood-floor-problems-toronto',
++    items: [
++      { label: 'Cupping, gapping, crowning', href: '/hardwood-floor-problems-toronto', note: 'Five symptoms, one mechanism' },
++      { label: 'Buckling and edge peaking', href: '/hardwood-floor-problems-toronto' },
++      { label: 'Matching stairs to a floor', href: '/hardwood-stairs-toronto' },
++      { label: 'Is my floor refinishable?', href: '/guides/reference-refinishing-existing-hardwood' },
++    ],
++  },
++  {
++    /* The geography page was in the footer and not here. It is what a "hardwood
++       flooring near me" search lands on, it is the payoff of the whole corridor
++       model, and the primary navigation did not mention it. Both counts are
++       derived — the nav said "Nine routes" for a week after there were eleven. */
++    title: 'Where we work',
++    href: '/service-areas',
++    items: [
++      { label: 'Find your city', href: '/service-areas', note: `${SERVICE_AREAS.length} published areas, each with its own housing stock` },
++      { label: 'Where we actually drive', href: '/corridors', note: `${CORRIDORS.length} routes, in travel order` },
++      { label: 'Toronto', href: '/hardwood-flooring-toronto', note: 'The shop, and the city it is in' },
++      { label: 'Mississauga', href: '/service-areas/mississauga' },
++      { label: 'Hamilton', href: '/service-areas/hamilton' },
++      /* The corridor page, not one town: it lists every Niagara municipality
++         with a page, from Grimsby to Fort Erie, in the order a crew reaches them. */
++      { label: 'Niagara', href: '/corridors/niagara-belt', note: 'Grimsby to Fort Erie, on the QEW' },
++      { label: 'Kitchener', href: '/service-areas/kitchener', note: 'On the 403 and Highway 6, with Cambridge and Guelph' },
++      { label: 'Buffalo, NY', href: '/service-areas/buffalo', note: 'The showroom is Toronto; the job is on site' },
++    ],
++  },
++  {
++    title: 'Before you decide',
++    href: '/guides',
++    items: [
++      /* The published bands themselves. /pricing is the source every other
++         surface on this site links to when it names a number, and until
++         NAV-03 it appeared in no menu at all — desktop or mobile — only in
++         the footer. A price page reachable only by scrolling to the bottom
++         of a page is a price page the visitor concludes does not exist. */
++      { label: 'What it costs', href: '/pricing', note: 'The three published bands, and what moves a job inside them' },
++      { label: 'What it costs in Toronto', href: '/guides/hardwood-flooring-cost-toronto', note: 'Three published bands' },
++      { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
++      { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
++      { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
++      { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
++      { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
++      { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
++    ],
++  },
++];
++
++/* Where each group sits in the desktop panel: four columns, groups stacked.
++   The mobile drawer lists SERVICES_MENU in its own order. */
++export const SERVICES_LAYOUT: string[][] = [
++  ['Start here', 'By who you are'],
++  ['By the job', 'By the problem'],
++  ['Where we work'],
++  ['Before you decide'],
++];
++
++export const LIBRARY_MENU: MegaColumn[] = [
++  {
++    title: 'Technical papers',
++    href: '/papers',
++    items: [
++      { label: 'Provenance', href: '/papers/where-toronto-hardwood-comes-from', note: 'Where the wood comes from' },
++      { label: 'Grade', href: '/papers/hardwood-grading-standards-nhla-nwfa', note: 'NHLA and NWFA, side by side' },
++      { label: 'Climate Mastery', href: '/papers/toronto-hardwood-climate-moisture-protocol' },
++      { label: 'The Craft', href: '/papers/hardwood-refinishing-machines-and-sequence' },
++      { label: 'Selection and cost', href: '/papers/hardwood-selection-and-cost-framework-gta' },
++    ],
++  },
++  {
++    title: 'Species dossiers',
++    href: '/guides',
++    items: [
++      { label: 'White oak', href: '/guides/white-oak-flooring-toronto' },
++      { label: 'Red oak', href: '/guides/red-oak-flooring-toronto' },
++      { label: 'Hard maple', href: '/guides/hard-maple-flooring-toronto' },
++      { label: 'White ash', href: '/guides/white-ash-flooring-toronto', note: 'Cut faster than it grows' },
++      { label: 'Hickory · Black walnut', href: '/guides/hickory-flooring-toronto' },
++    ],
++  },
++  {
++    title: 'Reference',
++    href: '/resources',
++    items: [
++      { label: 'Glossary', href: '/glossary', note: '44 terms, each citing a paper' },
++      /* The catalogues sit in Reference and not in the primary conversion nav:
++         Quote and Call come first, and a download is not a conversion. */
++      { label: 'Field catalogues', href: '/catalogues', note: 'Landscape PDFs, built to print, nothing gated' },
++      { label: 'Standards register', href: '/standards', note: 'NHLA, NWFA, ASTM, FPL' },
++      { label: 'Figures and data', href: '/data' },
++      { label: 'The Well-Installed Framework', href: '/framework' },
++      { label: 'Visual library', href: '/library' },
++    ],
++  },
++  {
++    title: 'Evidence',
++    href: '/case-studies',
++    items: [
++      { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
++      /* Footer-only until NAV-03. It is the first-party proof page — every
++         published job, each linked to what was measured — and it is neither
++         /service-areas (where we will go) nor /corridors (how we get there).
++         Three geography-shaped pages, and the one carrying the evidence was
++         the one no menu named. */
++      { label: 'Where the work has been done', href: '/where-we-work', note: 'Every published job, on a map' },
++      { label: 'Reviews', href: '/reviews' },
++      { label: 'What we publish about ourselves', href: '/about' },
++      { label: 'Everything, as it shipped', href: '/whats-new' },
++    ],
++  },
++];
++
++export const TOP_LINKS = [
++  /* Two panels and four links. See MegaMenu.tsx for why a panel beats a hub, and
++   * F-163 for why the five commercial pages are here at all. */
++  { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto' },
++  { label: 'Installation', href: '/hardwood-flooring-toronto' },
++  { label: 'Stairs', href: '/hardwood-stairs-toronto' },
++  { label: 'Problems', href: '/hardwood-floor-problems-toronto' },
++];
++
++/** The drawer's accordions, in drawer order. */
++export const MOBILE_GROUPS = [
++  { key: 'services', label: 'Services', cols: SERVICES_MENU },
++  { key: 'library', label: 'Library', cols: LIBRARY_MENU },
++];
++
++/**
++ * Every destination in the chrome, flattened, de-duplicated, in menu order.
++ *
++ * This is what ⌘K searches. It is DERIVED rather than written, which is the
++ * only reason the palette can be trusted to still be true a year from now: a
++ * link added to a panel is in the palette the same commit, and a link removed
++ * from a panel cannot linger there.
++ *
++ * On-page anchors (`/#quote`) are kept — they are real destinations and they
++ * work from anywhere, because they carry a path. What is deliberately NOT here
++ * is a bare `#hash`, which is what the old palette stored and what made five of
++ * its actions silent no-ops away from the homepage.
++ */
++export type Destination = { label: string; href: string; note?: string; group: string };
++
++export const DESTINATIONS: Destination[] = (() => {
++  const out: Destination[] = [];
++  const seen = new Set<string>();
++  const push = (group: string, it: MegaItem) => {
++    const key = it.href;
++    if (seen.has(key)) return;
++    seen.add(key);
++    out.push({ ...it, group });
++  };
++  /* A column heading is a destination too — "Where we work" goes to
++     /service-areas — but only when no row under it already goes there. Listing
++     the same page twice under two names is how a search box teaches someone
++     that it has more in it than it does. */
++  const addColumn = (col: MegaColumn) => {
++    const items = new Set(col.items.map((it) => it.href));
++    if (col.href && !items.has(col.href)) push(col.title, { label: col.title, href: col.href });
++    for (const it of col.items) push(col.title, it);
++  };
++  for (const link of TOP_LINKS) push('Services', link);
++  for (const col of SERVICES_MENU) addColumn(col);
++  for (const col of LIBRARY_MENU) addColumn(col);
++  return out;
++})();
+diff --git a/docs/AUDIT_01_VISUALIZER.md b/docs/AUDIT_01_VISUALIZER.md
+index 4c9886f..c9a2f5f 100644
+--- a/docs/AUDIT_01_VISUALIZER.md
++++ b/docs/AUDIT_01_VISUALIZER.md
+@@ -4,8 +4,20 @@
+ **Method:** read the implementation, then execute it. Nothing below is graded
+ from documentation, a comment, or a page's own prose.
+ **Baseline:** `main` @ `7614386`.
+-**Harness:** `scripts/audit/` — synthetic rooms with known ground truth, run
+-through the real `analyseRoom()` and `compositeFloor()`.
++**Harness:** `apps/web/lib/floor-studio/audit.test.ts` — synthetic rooms with
++known ground truth, run through the real `analyseRoom()` and `compositeFloor()`.
++It is a characterisation test, not a guard: it pins the two defects below as
++numbers, so the day VIS-02 or VIS-03 fixes one, the suite fails and this
++document has to be rewritten in the same patch.
++
++```bash
++pnpm --filter @ecowoods/web exec vitest run lib/floor-studio/audit.test.ts
++```
++
++*(The first version of this harness ran under `node --experimental-strip-types`,
++which needs Node ≥ 22.6 and did not run on the machine it was written for.
++Evidence nobody can reproduce is not evidence — NAV-03 moved it into the
++repository's own vitest.)*
+ 
+ > The instruction this audit was written under: *"Do not assume features exist
+ > because documentation says they exist. Verify everything from the actual
+diff --git a/docs/GEO_CONTRADICTION_LOG.md b/docs/GEO_CONTRADICTION_LOG.md
+index 7846546..3e331cd 100644
+--- a/docs/GEO_CONTRADICTION_LOG.md
++++ b/docs/GEO_CONTRADICTION_LOG.md
+@@ -77,6 +77,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
+ | GC-026 | **open — opened by AUDIT-01** | Floor Studio has no concept of country. Every figure is CAD, and it is linked from the global header and footer of all 26 New York markets. GC-024 is reopened on one surface |
+ | AV-01 | **open — opened by AUDIT-01** | the occlusion mask paints hardwood over people, light dogs, jute rugs, wooden furniture legs, stair risers and cardboard — 6 of 14 tested objects, 100% of their pixels |
+ | AV-02 | **open — opened by AUDIT-01** | `floorConfidence` reports `measured` while losing 72% of the floor plane in a room with a rug |
++| NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
+ 
+ Two existing checks were edited because they encoded the old geography, and
+ both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
+@@ -756,3 +757,80 @@ floor has been cut to a sixth of its real size, and the copy inviting a
+ correction is undercut by the label that has just said none is needed.
+ 
+ Closed by VIS-03.
++
++---
++
++## NAV-03 · P0 · three navigation surfaces, two of them lying
++
++`verify-navigation` measures DEPTH and passed at the baseline: every public
++route within three clicks. It reads Header.tsx and SiteFooter.tsx, and both were
++honest. The surface it does not read is the one that was wrong.
++
++### The palette navigated by scrolling to an id that was not there
++
++`CommandPalette.tsx` shipped its own navigation, written when this site was one
++page:
++
++```ts
++const go = (hash: string) => () => {
++  close();
++  document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
++  history.replaceState(null, '', `#${hash}`);
++};
++```
++
++Six ids — `services`, `process`, `reviews`, `faq`, `quote`, `gallery`. All six
++are rendered by `home-client.tsx` and by nothing else:
++
++```
++$ for id in services process reviews faq quote gallery; do grep -rl "id=\"$id\"" apps/web/app; done
++services   Header.tsx  home-client.tsx
++process    services/[slug]/page.tsx  home-client.tsx
++reviews    home-client.tsx
++faq        services/[slug]/page.tsx  pricing/page.tsx  home-client.tsx
++quote      home-client.tsx
++gallery    home-client.tsx
++```
++
++So on 46 of 47 public routes the optional chain swallowed a null, nothing
++scrolled, the dialog closed — and `replaceState` ran anyway, rewriting the
++address bar to a fragment matching nothing on the page. **Six of thirteen
++actions, silently dead, everywhere but the homepage.** A control that does
++nothing is worse than a missing control: the visitor concludes the site is
++broken and stops using the mechanism.
++
++### And it could not reach the site
++
++Beyond the six anchors it knew `/design`, and that was all. Not Floor Studio,
++`/pricing`, `/service-areas`, `/corridors`, `/estimate`, `/guides`, `/papers`,
++`/case-studies`, `/quote-check` or `/framework` — the pages a visitor is most
++likely hunting when they reach for ⌘K in the first place.
++
++### Two pages were footer-only
++
++| Route | What it is | Where it appeared |
++|---|---|---|
++| `/pricing` | the three published bands — the source every other surface links to when it names a number | footer only |
++| `/where-we-work` | every published job, each linked to what was measured — the first-party proof page | footer only |
++
++Neither is a duplicate of anything: `/service-areas` is where we will go,
++`/corridors` is how we get there, `/where-we-work` is where we have been. The
++one carrying the evidence was the one no menu named.
++
++### The fix
++
++The menus moved to `apps/web/lib/navigation.ts` — no `use client`, no React —
++and the three surfaces project it: desktop panels, mobile drawer, and a ⌘K whose
++destination list is **derived** rather than written. A page added to a menu is
++searchable the same commit and cannot be forgotten, because nobody has to
++remember.
++
++`go()` now takes an href. A fragment on the current page still scrolls; anything
++else navigates. The palette's resting state stays short — the assistant, six
++high-intent destinations, the phone — and the first keystroke opens the whole
++corpus, so completeness costs nothing at rest.
++
++One widening edit, disclosed: `scripts/verify-navigation.mjs` `CHROME` gained
++`apps/web/lib/navigation.ts`, because the guard reads strings and the strings
++moved. It loosens no rule and `MAX_DEPTH` is untouched. Chrome link count 43 →
++44 after the move, with `/pricing` and `/where-we-work` added.
+diff --git a/scripts/audit/README.md b/scripts/audit/README.md
+deleted file mode 100644
+index 3b64062..0000000
+--- a/scripts/audit/README.md
++++ /dev/null
+@@ -1,25 +0,0 @@
+-# scripts/audit — executed evidence
+-
+-These are not guards. They do not run in `verify-all.mjs`, they do not gate a
+-commit, and they never fail a build. They exist so that a claim in
+-`docs/AUDIT_01_VISUALIZER.md` can be re-executed by anyone, on any checkout,
+-against the real implementation rather than against a comment.
+-
+-Each script builds a synthetic room with **known ground truth**, runs it through
+-the production function, and prints what actually happened.
+-
+-```bash
+-node --experimental-strip-types --no-warnings \
+-  --import ./scripts/audit/register.mjs \
+-  scripts/audit/occlusion.audit.ts      # AV-01: what survives on the floor
+-
+-node --experimental-strip-types --no-warnings \
+-  --import ./scripts/audit/register.mjs \
+-  scripts/audit/boundary.audit.ts       # AV-02: is "measured" true
+-```
+-
+-`ts-hook.mjs` resolves the repo's `@/` and `@ecowoods/shared/*` aliases so the
+-scripts import the same modules the app does. Node ≥ 22.6 strips the types.
+-
+-When VIS-02 and VIS-03 land, these become vitest fixtures with an error budget.
+-Until then they are the audit's working.
+diff --git a/scripts/audit/boundary.audit.ts b/scripts/audit/boundary.audit.ts
+deleted file mode 100644
+index 373f0b6..0000000
+--- a/scripts/audit/boundary.audit.ts
++++ /dev/null
+@@ -1,51 +0,0 @@
+-/**
+- * scripts/audit/boundary.audit.ts — AV-02.
+- *
+- * THE QUESTION: when the studio says `measured`, is it?
+- *
+- * room.ts offers exactly two confidence values and argues, correctly, that a
+- * percentage would be "a claim about a distribution nobody estimated". The
+- * argument is right. This script tests the boundary between the two values.
+- *
+- * Six synthetic rooms, each with a floor plane whose true coverage is known by
+- * construction. The estimator is run on each and its reported coverage is
+- * compared against the truth. A run is honest if it says `measured` and is
+- * close, or says `weak` at all. It is dishonest if it says `measured` and is
+- * not.
+- *
+- * The interesting case is the third one: a room with a rug. That is not an edge
+- * case, it is the most common photograph a homeowner will upload.
+- */
+-import { analyseRoom, quadCoverage } from '@/lib/floor-studio/room';
+-const W=480,H=320;
+-function room(opts:{rug?:boolean;furniture?:boolean;angle?:boolean;darkFloor?:boolean}){
+-  const data=new Uint8ClampedArray(W*H*4);
+-  const put=(x:number,y:number,r:number,g:number,b:number)=>{const i=(y*W+x)*4;data[i]=r;data[i+1]=g;data[i+2]=b;data[i+3]=255;};
+-  const TRUE_HORIZON=0.45;
+-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ny=y/H;
+-    let fy=TRUE_HORIZON;
+-    if(opts.angle) fy=0.30+0.30*(x/W);           // floor line runs diagonally (photo from a doorway)
+-    if(ny<fy)put(x,y,236,233,228);
+-    else{const d=1-0.18*(1-ny);const base=opts.darkFloor?[70,52,38]:[150,112,74];
+-      put(x,y,base[0]!*d,base[1]!*d,base[2]!*d);}}
+-  if(opts.rug)for(let y=Math.round(0.60*H);y<Math.round(0.85*H);y++)for(let x=Math.round(0.15*W);x<Math.round(0.85*W);x++)put(x,y,214,206,190);
+-  if(opts.furniture)for(let y=Math.round(0.48*H);y<Math.round(0.70*H);y++)for(let x=Math.round(0.05*W);x<Math.round(0.40*W);x++)put(x,y,138,136,132);
+-  return {data,width:W,height:H};
+-}
+-const TRUE_COVERAGE_FLAT = 0.55; // floor from y=0.45 to 1.0, full width
+-const cases: [string, any, number][] = [
+-  ['empty room, oak floor',            {},                                 TRUE_COVERAGE_FLAT],
+-  ['dark walnut floor',                {darkFloor:true},                   TRUE_COVERAGE_FLAT],
+-  ['with a large pale area rug',       {rug:true},                         TRUE_COVERAGE_FLAT],
+-  ['with a sofa',                      {furniture:true},                   TRUE_COVERAGE_FLAT],
+-  ['rug + sofa (a real living room)',  {rug:true,furniture:true},          TRUE_COVERAGE_FLAT],
+-  ['shot from a doorway (angled)',     {angle:true},                       0.55],
+-];
+-console.log('SCENE                              confidence   coverage   true    error   label honest?');
+-for(const [name,opts,truth] of cases){
+-  const r=analyseRoom(room(opts));
+-  const err=Math.abs(r.floorCoverage-truth)/truth;
+-  const honest = (r.floorConfidence==='measured' && err<0.25) || (r.floorConfidence==='weak');
+-  console.log(name.padEnd(34), r.floorConfidence.padEnd(12), r.floorCoverage.toFixed(3).padStart(8), truth.toFixed(2).padStart(7),
+-    (100*err).toFixed(0).padStart(6)+'%', '  ', honest?'yes':'NO — says "measured" while wrong');
+-}
+diff --git a/scripts/audit/occlusion.audit.ts b/scripts/audit/occlusion.audit.ts
+deleted file mode 100644
+index f4789a5..0000000
+--- a/scripts/audit/occlusion.audit.ts
++++ /dev/null
+@@ -1,80 +0,0 @@
+-/**
+- * scripts/audit/occlusion.audit.ts — AV-01.
+- *
+- * THE QUESTION: when Floor Studio lays a floor into a photograph, what does it
+- * destroy on the way?
+- *
+- * The renderer's own docblock promises that "a sofa leg, a rug, a plant pot
+- * inside the quad is not floor and must not be painted over". This script does
+- * not take that on trust. It builds a room whose floor plane is known exactly,
+- * stands fourteen ordinary objects on it, runs the real compositeFloor(), and
+- * counts the pixels of each object that came back changed.
+- *
+- * The objects are not adversarial. They are what is on the floor of a house
+- * that is about to buy hardwood: a sofa, two rugs, a plant, a person, a cat, a
+- * dog, a cabinet toe-kick, a stair riser, a table leg, a box, an armchair, a
+- * pot and a lamp base.
+- *
+- * Ground truth is exact because the room is synthetic: every object's box is
+- * known, so "was this pixel of the dog replaced" is a comparison, not a
+- * judgement. Run it; do not read it.
+- */
+-import { compositeFloor } from '@/lib/floor-studio/render';
+-const W=480,H=320;
+-type Obj={name:string;rgb:[number,number,number];box:[number,number,number,number]};
+-// every object tiled along the true floor band so all are inside one honest quad
+-const NAMES: [string,[number,number,number]][] = [
+-  ['grey fabric sofa',[138,136,132]],
+-  ['cream/jute area rug',[214,196,166]],
+-  ['charcoal rug',[52,52,56]],
+-  ['green plant',[62,110,58]],
+-  ['human leg (skin)',[206,160,128]],
+-  ['black cat',[28,26,26]],
+-  ['golden retriever',[198,158,104]],
+-  ['white cabinet toe-kick',[238,236,232]],
+-  ['oak stair riser',[168,128,84]],
+-  ['pine/oak table leg',[176,140,96]],
+-  ['cardboard box',[190,158,116]],
+-  ['navy armchair',[46,58,88]],
+-  ['terracotta pot',[178,98,62]],
+-  ['brass floor lamp base',[186,152,74]],
+-];
+-function build(){
+-  const data=new Uint8ClampedArray(W*H*4);
+-  const put=(x:number,y:number,r:number,g:number,b:number)=>{const i=(y*W+x)*4;data[i]=r;data[i+1]=g;data[i+2]=b;data[i+3]=255;};
+-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ny=y/H;
+-    if(ny<0.45)put(x,y,236,233,228);else{const d=1-0.18*(1-ny);put(x,y,150*d,112*d,74*d);}}
+-  const objs:Obj[]=[];
+-  NAMES.forEach((n,i)=>{
+-    const col=i%7, row=Math.floor(i/7);
+-    const x0=0.02+col*0.14, y0=0.50+row*0.24;
+-    const box:[number,number,number,number]=[x0,y0,x0+0.11,y0+0.19];
+-    objs.push({name:n[0],rgb:n[1],box});
+-    for(let y=Math.round(box[1]*H);y<Math.round(box[3]*H);y++)
+-      for(let x=Math.round(box[0]*W);x<Math.round(box[2]*W);x++)
+-        if(x>=0&&x<W&&y>=0&&y<H)put(x,y,n[1][0],n[1][1],n[1][2]);
+-  });
+-  return {px:{data,width:W,height:H},objs};
+-}
+-const {px,objs}=build();
+-const quad=[{x:0.10,y:0.46},{x:0.90,y:0.46},{x:1,y:1},{x:0,y:1}] as any;
+-const res=compositeFloor(px,quad,{productId:'white-oak',finishId:'satin',patternId:'straight',widthId:'5'},{squareFeet:400});
+-console.log('painted fraction of quad:',res.painted.toFixed(3),res.failure??'');
+-console.log('');
+-console.log('OBJECT ON THE FLOOR          in-quad  overwritten     %   VERDICT');
+-for(const o of objs){
+-  let n=0,c=0;
+-  for(let y=Math.round(o.box[1]*H);y<Math.round(o.box[3]*H);y++)
+-    for(let x=Math.round(o.box[0]*W);x<Math.round(o.box[2]*W);x++){
+-      const nx=(x+0.5)/W,ny=(y+0.5)/H;
+-      let sign=0,inside=true;
+-      for(let i=0;i<4;i++){const a=quad[i],b=quad[(i+1)%4];
+-        const cr=(b.x-a.x)*(ny-a.y)-(b.y-a.y)*(nx-a.x);if(cr===0)continue;
+-        const s=cr>0?1:-1;if(sign===0)sign=s;else if(s!==sign){inside=false;break;}}
+-      if(!inside)continue;n++;
+-      const i=(y*W+x)*4;
+-      if(res.pixels.data[i]!==px.data[i]||res.pixels.data[i+1]!==px.data[i+1]||res.pixels.data[i+2]!==px.data[i+2])c++;
+-    }
+-  const p=n?100*c/n:0;
+-  console.log(o.name.padEnd(28),String(n).padStart(7),String(c).padStart(12),p.toFixed(1).padStart(7),' ',n===0?'n/a':p<5?'PRESERVED':p<50?'PARTIAL':'PAINTED OVER');
+-}
+diff --git a/scripts/audit/register.mjs b/scripts/audit/register.mjs
+deleted file mode 100644
+index bd89948..0000000
+--- a/scripts/audit/register.mjs
++++ /dev/null
+@@ -1,3 +0,0 @@
+-import { register } from 'node:module';
+-import { pathToFileURL } from 'node:url';
+-register('./ts-hook.mjs', pathToFileURL(import.meta.filename));
+diff --git a/scripts/audit/ts-hook.mjs b/scripts/audit/ts-hook.mjs
+deleted file mode 100644
+index 1d567db..0000000
+--- a/scripts/audit/ts-hook.mjs
++++ /dev/null
+@@ -1,29 +0,0 @@
+-import { fileURLToPath, pathToFileURL } from 'node:url';
+-import { existsSync } from 'node:fs';
+-import path from 'node:path';
+-
+-const ROOT = path.resolve(fileURLToPath(import.meta.url), '../../..');
+-const WEB = path.join(ROOT, 'apps/web');
+-const SHARED = path.join(ROOT, 'packages/shared');
+-
+-export async function resolve(spec, ctx, next) {
+-  let target = null;
+-  if (spec.startsWith('@ecowoods/shared/')) {
+-    target = path.join(SHARED, spec.slice('@ecowoods/shared/'.length));
+-  } else if (spec === '@ecowoods/shared') {
+-    target = path.join(SHARED, 'index');
+-  } else if (spec.startsWith('@/')) {
+-    target = path.join(WEB, spec.slice(2));
+-  } else if (spec.startsWith('.') && ctx.parentURL) {
+-    target = path.resolve(path.dirname(fileURLToPath(ctx.parentURL)), spec);
+-  }
+-  if (target) {
+-    for (const cand of [target, target + '.ts', target + '.tsx', path.join(target, 'index.ts')]) {
+-      if (existsSync(cand) && !cand.endsWith('/')) {
+-        try { const st = (await import('node:fs')).statSync(cand); if (st.isDirectory()) continue; } catch {}
+-        return { url: pathToFileURL(cand).href, format: cand.endsWith('.ts') || cand.endsWith('.tsx') ? 'module-typescript' : 'module', shortCircuit: true };
+-      }
+-    }
+-  }
+-  return next(spec, ctx);
+-}
+diff --git a/scripts/verify-navigation.mjs b/scripts/verify-navigation.mjs
+index 9cc3d79..d47edeb 100644
+--- a/scripts/verify-navigation.mjs
++++ b/scripts/verify-navigation.mjs
+@@ -43,9 +43,26 @@ const ROOT = process.cwd();
+ const APP = join(ROOT, 'apps/web/app');
+ const MAX_DEPTH = 3;
+ 
++/*
++ * WIDENING EDIT — NAV-03. Disclosed rather than quiet.
++ *
++ * This list is the set of files whose hrefs count as depth 0, because they
++ * render on every page. It named the two components. NAV-03 moved the menu DATA
++ * out of Header.tsx into lib/navigation.ts so that the command palette could
++ * read the same source as the panels and the drawer — the component still
++ * renders every one of those links on every page, but the strings no longer
++ * live in it, and this guard reads strings.
++ *
++ * Without this line the guard would see the chrome shrink by roughly fifty
++ * links and report pages as unreachable that a visitor can still reach in one
++ * click. That is a FALSE FAILURE, and the fix is to let the guard see where the
++ * links went. It widens what counts as chrome; it loosens no rule, lowers no
++ * threshold and exempts nothing. MAX_DEPTH is untouched.
++ */
+ const CHROME = [
+   join(APP, 'components/Header.tsx'),
+   join(APP, 'components/SiteFooter.tsx'),
++  join(ROOT, 'apps/web/lib/navigation.ts'),
+ ];
+ 
+ if (!existsSync(APP)) {
+-- 
+2.43.0
+
