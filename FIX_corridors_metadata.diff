@@ -1,0 +1,19 @@
+diff --git a/apps/web/app/corridors/page.tsx b/apps/web/app/corridors/page.tsx
+index 8605ce5..f404e52 100644
+--- a/apps/web/app/corridors/page.tsx
++++ b/apps/web/app/corridors/page.tsx
+@@ -16,10 +16,13 @@ export const metadata: Metadata = {
+     /* The machine edition (GEO-002): the routes, their stops and every
+        operational statement, as Markdown rather than as a parsed table. */
+     types: { 'text/markdown': '/corridors.md' },
++  },
++  /* Its own share card, instead of the homepage image this page inherited
++     (VIS-01). A sibling of `alternates`, not a member of it — which is where it
++     first landed, and `Metadata.alternates` is typed, so tsc caught it. */
+   openGraph: {
+     images: [{ url: illustrationImage('og-corridors')?.src ?? '/illustrations/og-corridors.webp', width: 1200, height: 630 }],
+   },
+-  },
+ };
+ 
+ /**
