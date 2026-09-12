@@ -75,7 +75,7 @@ export default function ServiceAreasIndex() {
             ))}
           </p>
           <p className="tlx-note">
-            Price bands are published before you call and do not change by postal code:{' '}
+            Price bands are published before you call and do not change by postal code within a country:{' '}
             <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
             <Link href="/hardwood-stairs-toronto">stairs</Link>. What does change by address is the

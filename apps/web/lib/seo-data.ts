@@ -11,6 +11,9 @@ import {
   SCREEN_RECOAT,
   FULL_SAND_FINISH,
   NEW_INSTALL,
+  US_SCREEN_RECOAT,
+  US_FULL_SAND_FINISH,
+  US_NEW_INSTALL,
   formatBandBare as bandBare,
 } from '@/content/constants/pricing';
 
@@ -299,6 +302,37 @@ export const FAQ_ITEMS: FaqItem[] = [
   { q: 'Solid or engineered hardwood — which should I install?', a: 'The substrate decides, not the budget. Plywood over joists can take solid; concrete slabs, radiant heat, and wide humidity swings favour engineered. A generational wear layer only matters where solid is structurally allowed. Walk the solid-vs-engineered guide before you buy material.' },
 
 ];
+
+/**
+ * THE SAME FAQ, ASKED WHERE THE PRICE IS DIFFERENT (GEO-004).
+ *
+ * `FAQ_ITEMS` is emitted as FAQPage JSON-LD on every page of this site,
+ * including the twenty-six New York ones, and its cost answer named Toronto and
+ * quoted Canadian dollars. A homeowner in Amherst reading a page about Amherst
+ * was being given an Ontario price in a currency that is not theirs
+ * (docs/GEO_CONTRADICTION_LOG.md GC-024).
+ *
+ * One question is swapped, not the whole list: everything this business says
+ * about substrates, dust containment and how to choose a contractor is true on
+ * both sides of the river and is answered identically there. Only the price
+ * changes, so only the price question changes — and it changes its QUESTION as
+ * well as its answer, because two different answers to one question is the
+ * divergence scripts/verify-schema.mjs exists to catch.
+ */
+const CA_COST_QUESTION = 'How much does hardwood flooring cost in Toronto?';
+
+export const US_COST_FAQ: FaqItem = {
+  q: 'How much does hardwood flooring cost in Western New York?',
+  a: `Installed ranges typically run about ${bandBare(US_NEW_INSTALL)} per sq ft for new hardwood, ${bandBare(US_FULL_SAND_FINISH)} for full sand and finish, and ${bandBare(US_SCREEN_RECOAT)} for a screen and recoat \u2014 before stairs, transitions, or moisture remediation. These are United States dollars, and the border crossing and the travel from the Toronto shop are already inside them; nothing is added later for distance. Species, pattern, and substrate move the number. The fixed price is written after a free in-home measure, not from a phone quote.`,
+};
+
+/** The FAQ as it is answered on a New York page. */
+export const US_FAQ_ITEMS: FaqItem[] = FAQ_ITEMS.map((f) => (f.q === CA_COST_QUESTION ? US_COST_FAQ : f));
+
+/** The FAQ for an area page, by country. */
+export const faqItemsForArea = (slug: string): FaqItem[] =>
+  US_AREA_SLUGS.has(slug) ? US_FAQ_ITEMS : FAQ_ITEMS;
+
 
 // ── City-specific content ──────────────────────────────────────────────────
 // The differentiator that lifts a service-area page above thin/doorway
@@ -732,7 +766,7 @@ export const CITY_CONTENT: Record<string, CityContent> = {
     housingNote:
       'The older centre and Chippawa carry strip hardwood over plank or early plywood subfloor, frequently with board loss at removed partitions and old heating runs that has to be pieced in before a uniform sand. Subdivision-era houses are plywood over joists with builder-grade oak, where the screen-and-recoat decision is a genuine one because the remaining wear layer is often thinner than the surface suggests.',
     localConsideration:
-      'This is the far end of the daily-return radius from the Toronto shop, so work here is scheduled as a trip, confirmed in advance and priced with that in the written quote. The published price bands do not change with distance; the schedule does.',
+      'This is the far end of the daily-return radius from the Toronto shop, so work here is scheduled as a trip, confirmed in advance and priced with that in the written quote. The published Ontario price bands do not change with distance; the schedule does.',
   },
 
   barrie: {

@@ -109,6 +109,89 @@ export const NEW_INSTALL: PriceBand = {
 /** All three, in the order a homeowner meets them: cheapest intervention first. */
 export const PRICE_BANDS = [SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL] as const;
 
+/* ── New York State ───────────────────────────────────────────── */
+
+/**
+ * THE UNITED STATES BANDS (GEO-004, owner decision D6, 2026-09-11).
+ *
+ * Until this existed, every New York area page showed the Ontario bands in
+ * Canadian dollars — while content/geo/markets.ts said, in three separate
+ * places, that the bands are Toronto facts and appear on no page as local
+ * United States facts. Both statements were in the repository at once and one
+ * of them was on the pages (docs/GEO_CONTRADICTION_LOG.md GC-024).
+ *
+ * These are published prices for work in New York State. They are not a
+ * conversion the reader is expected to perform, and no exchange rate and no
+ * travel uplift is emitted on any surface — a published rate is stale within a
+ * day, and a published uplift is one division away from the margin. How the
+ * numbers were arrived at is recorded once, in docs/GEO_SOURCE_MAP.md under
+ * decision D6, for whoever maintains them.
+ *
+ * ONE SET FOR THE WHOLE STATE, deliberately. The drive to Fort Erie and the
+ * drive to Rochester are not the same job, and the temptation was three rate
+ * cards by corridor. This site has told every visitor, on the area pages, the
+ * corridor pages and in the machine editions, that the published bands do not
+ * change by place and that distance shows up in the written price after the
+ * measure. Three rate cards would have made that sentence false to sell a
+ * little more precision. The distance still lives where that sentence says it
+ * lives: in the quote.
+ *
+ * Changing one of these is changing a price. It is done here, once.
+ */
+
+/** Existing finish is sound; abrade and recoat without going to bare wood. */
+export const US_SCREEN_RECOAT: PriceBand = {
+  min: 2.0,
+  max: 3.25,
+  unit: 'sq ft',
+  currency: 'USD',
+  label: 'Screen & Recoat',
+  key: 'screenAndRecoat',
+} as const;
+
+/** Sand to bare wood, re-stain where specified, re-finish. */
+export const US_FULL_SAND_FINISH: PriceBand = {
+  min: 4.0,
+  max: 6.25,
+  unit: 'sq ft',
+  currency: 'USD',
+  label: 'Full Sand & Finish',
+  key: 'fullSandAndFinish',
+} as const;
+
+/** New hardwood supplied and installed, solid or engineered. */
+export const US_NEW_INSTALL: PriceBand = {
+  min: 9.25,
+  max: 15.0,
+  unit: 'sq ft',
+  currency: 'USD',
+  label: 'New Hardwood Install',
+  key: 'newInstall',
+} as const;
+
+export const US_PRICE_BANDS = [US_SCREEN_RECOAT, US_FULL_SAND_FINISH, US_NEW_INSTALL] as const;
+
+/** The country a band set belongs to. The only two this business publishes in. */
+export type PriceCountry = 'CA' | 'US';
+
+/**
+ * The bands that apply to a job in this country.
+ *
+ * Every surface that shows a price to somebody in a place asks this rather than
+ * reaching for `PRICE_BANDS` — which is, and stays, the Ontario set. A page
+ * about Buffalo that imports `PRICE_BANDS` directly is the bug this function
+ * exists to make unnecessary.
+ */
+export const bandsForCountry = (country: PriceCountry): readonly PriceBand[] =>
+  country === 'US' ? US_PRICE_BANDS : PRICE_BANDS;
+
+/** One band, for a country. */
+export const bandForCountry = (key: PriceBandKey, country: PriceCountry): PriceBand =>
+  country === 'US' ? US_PRICE_BANDS_BY_KEY[key] : PRICE_BANDS_BY_KEY[key];
+
+/** Every published band, both countries — for the surfaces that enumerate all prices. */
+export const ALL_PRICE_BANDS: readonly PriceBand[] = [...PRICE_BANDS, ...US_PRICE_BANDS];
+
 /** Keyed by the name every existing consumer already uses. */
 export const PRICE_BANDS_BY_KEY = {
   screenAndRecoat: SCREEN_RECOAT,
@@ -117,6 +200,13 @@ export const PRICE_BANDS_BY_KEY = {
 } as const;
 
 export type PriceBandKey = keyof typeof PRICE_BANDS_BY_KEY;
+
+/** The same three keys, in United States dollars. */
+export const US_PRICE_BANDS_BY_KEY = {
+  screenAndRecoat: US_SCREEN_RECOAT,
+  fullSandAndFinish: US_FULL_SAND_FINISH,
+  newInstall: US_NEW_INSTALL,
+} as const;
 
 /**
  * The code a band carries in prose: nothing for the home currency, the ISO code

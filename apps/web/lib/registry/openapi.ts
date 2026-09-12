@@ -284,7 +284,7 @@ export function buildOpenApi() {
           required: ['band_key', 'label', 'service_id', 'min', 'max', 'currency', 'unit', 'formatted', 'caveat', 'is_quote'],
           properties: {
             band_key: { type: 'string' }, label: { type: 'string' }, service_id: { type: 'string' },
-            min: { type: 'number' }, max: { type: 'number' }, currency: { type: 'string', const: 'CAD' }, unit: { type: 'string', const: 'sq ft' }, unit_code: { type: 'string', const: 'FTK' },
+            min: { type: 'number' }, max: { type: 'number' }, currency: { type: 'string', enum: ['CAD', 'USD'] }, unit: { type: 'string', const: 'sq ft' }, unit_code: { type: 'string', const: 'FTK' },
             formatted: { type: 'string' }, conditions: { type: 'array', items: { type: 'string' } }, caveat: { type: 'string' }, is_quote: { type: 'boolean', const: false },
           },
         },

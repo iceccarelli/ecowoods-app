@@ -202,10 +202,12 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
           <h2 className="tlx-h2">Before you call about a market on this route</h2>
           <div className="tlx-body">
             <p>
-              The published <Link href="/pricing">price bands</Link> are the same everywhere; distance shows up
-              in the written price after the measure, not as a different rate card. If you are holding quotes
-              already, <Link href="/quote-check">put them side by side</Link> before comparing the totals — the
-              usual reason two quotes disagree is that they are pricing different work.
+              The published <Link href="/pricing">price bands</Link> are the same everywhere in Ontario, and
+              New York State has its own published bands in US dollars with the crossing already inside them.
+              Within a country, distance shows up in the written price after the measure, not as a different
+              rate card. If you are holding quotes already, <Link href="/quote-check">put them side by side</Link>{' '}
+              before comparing the totals — the usual reason two quotes disagree is that they are pricing
+              different work.
             </p>
             <p>
               Everything on <Link href="/corridors">the other routes</Link>, and the full model behind these

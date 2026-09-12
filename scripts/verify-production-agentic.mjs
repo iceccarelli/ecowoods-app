@@ -60,15 +60,38 @@ const FACTS = {
   postal: pick(constantsSrc, 'postalCode'),
   founded: pickNum(constantsSrc, 'foundedYear'),
 };
-const bands = [];
+/**
+ * GEO-004 widened this reader. It parsed every `PriceBand` block and asserted
+ * there were exactly three, which was true for as long as this business
+ * published one currency. There are now six — three Ontario bands in Canadian
+ * dollars and three New York bands in United States dollars — and the
+ * assertion below still holds the line it was written to hold: the three
+ * Ontario bands must be byte-identical on the Ontario surfaces this script
+ * probes. It reads the currency rather than counting blocks.
+ */
+const allBands = [];
 for (const block of pricingSrc.split(/export const /).slice(1)) {
   const label = pick(block, 'label');
+  const currency = pick(block, 'currency');
   const min = pickNum(block, 'min');
   const max = pickNum(block, 'max');
-  if (label && Number.isFinite(min) && Number.isFinite(max) && /PriceBand = \{/.test(block)) bands.push({ label, min, max, text: `$${min.toFixed(2)}–$${max.toFixed(2)}` });
+  if (label && currency && Number.isFinite(min) && Number.isFinite(max) && /PriceBand = \{/.test(block)) {
+    allBands.push({
+      label,
+      currency,
+      min,
+      max,
+      text: `$${min.toFixed(2)}–$${max.toFixed(2)}${currency === 'CAD' ? '' : ` ${currency}`}`,
+    });
+  }
 }
+/* The probes below read /llms.txt, /index.md, /pricing.md and the Ontario P0
+   pages. The Canadian bands are the ones those surfaces must carry verbatim. */
+const bands = allBands.filter((b) => b.currency === 'CAD');
+const usBands = allBands.filter((b) => b.currency !== 'CAD');
 for (const [k, v] of Object.entries(FACTS)) if (v === undefined || Number.isNaN(v)) { console.error(`✗ could not parse ${k} from constants`); process.exit(1); }
-if (bands.length !== 3) { console.error(`✗ expected 3 price bands in pricing.ts, parsed ${bands.length}`); process.exit(1); }
+if (bands.length !== 3) { console.error(`✗ expected 3 Canadian price bands in pricing.ts, parsed ${bands.length}`); process.exit(1); }
+if (usBands.length !== 3) { console.error(`✗ expected 3 United States price bands in pricing.ts, parsed ${usBands.length}`); process.exit(1); }
 
 /* ── probe helpers ──────────────────────────────────────────────────────── */
 const results = [];
@@ -185,6 +208,8 @@ async function main() {
   if (!homeMd.body.includes(FACTS.phoneDisplay)) fail('/index.md', 'missing phone');
   const pricingMd = await get('/pricing.md');
   for (const b of bands) if (!pricingMd.body.includes(b.text)) fail('/pricing.md', `missing band ${b.text}`);
+  /* /pricing.md publishes both sets — it is the page that names every band. */
+  for (const b of usBands) if (!pricingMd.body.includes(b.text)) fail('/pricing.md', `missing New York band ${b.text}`);
 
   // P0 HTML pages.
   for (const p of P0_HTML) {
@@ -242,7 +267,7 @@ async function main() {
       if (d.email !== FACTS.email) fail(p, `email ${d.email}`);
     }
     if (p === '/api/v1/pricing') {
-      for (const b of bands) if (!(json.items || []).some((i) => i.data?.min === b.min && i.data?.max === b.max)) fail(p, `band ${b.label} ${b.text} missing`);
+      for (const b of allBands) if (!(json.items || []).some((i) => i.data?.min === b.min && i.data?.max === b.max && i.data?.currency === b.currency)) fail(p, `band ${b.label} ${b.text} missing`);
     }
     if (p === '/api/v1/manifest') {
       for (const e of json.api?.endpoints || []) if (!String(e.url).startsWith('https://ecowoods.ca/api/v1') && !String(e.url).startsWith(`${BASE}/api/v1`)) fail(p, `endpoint off-canonical ${e.url}`);
@@ -271,7 +296,7 @@ async function main() {
       console.log(`✗ ${failures.length} production problem(s):`);
       for (const f of failures) console.log(`  · ${f}`);
     } else {
-      console.log(`✓ production verified — ${results.length} probes against ${BASE}: machine files, ${MD.length} markdown twins, ${P0_HTML.length} P0 pages, ${API.length} /api/v1 primitives; NAP, founding year and ${bands.length} price bands identical to the repository constants.`);
+      console.log(`✓ production verified — ${results.length} probes against ${BASE}: machine files, ${MD.length} markdown twins, ${P0_HTML.length} P0 pages, ${API.length} /api/v1 primitives; NAP, founding year and ${allBands.length} price bands identical to the repository constants.`);
     }
   }
   process.exit(failures.length ? 1 : 0);

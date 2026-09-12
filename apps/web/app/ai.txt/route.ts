@@ -7,7 +7,7 @@ import {
   HOURS_LINE,
   REVIEW_EVIDENCE,
 } from '@ecowoods/shared';
-import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { getPapers } from '@/lib/papers';
@@ -70,7 +70,14 @@ export async function GET() {
     '',
     '## Published figures',
     '',
-    ...PRICE_BANDS.map((b) => `- ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure`),
+    /* Both band sets since GEO-004, each naming the place it applies to. A
+       figure block that listed three bands and no country handed an American
+       reader a Canadian price. */
+    ...ALL_PRICE_BANDS.map(
+      (b) =>
+        `- ${b.label} (${b.currency === 'CAD' ? 'Ontario' : 'New York State'}): ${formatBand(b)} ${b.currency}, ` +
+        'fixed in writing after a free in-home measure',
+    ),
     ...REVIEW_EVIDENCE.map(
       (r) => `- Reviews: ${r.count} at ${r.rating.toFixed(1)}/${r.outOf} on ${r.platform}, read ${r.asOf} — ${r.href}`,
     ),

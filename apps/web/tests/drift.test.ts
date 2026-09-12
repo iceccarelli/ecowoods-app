@@ -25,7 +25,7 @@ import robots from '@/app/robots';
 import { entityToMarkdown, serviceMarkdown, areaMarkdown } from '@/lib/markdown-export';
 import { ROOT_ORGANIZATION_SCHEMA } from '@/lib/schema/root-schema';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE, REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
-import { PRICE_BANDS, formatBand, formatBandBare } from '@/content/constants/pricing';
+import { PRICE_BANDS, ALL_PRICE_BANDS, formatBand, formatBandBare } from '@/content/constants/pricing';
 import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
 
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -161,10 +161,13 @@ describe('markdown mirrors', () => {
 describe('APIs', () => {
   it('/api/knowledge pricing equals the bands; /api/v1/entity equals JSON-LD and the constants', async () => {
     const k = await (await knowledgeGet(new NextRequest(`${SITE_URL}/api/knowledge?collection=pricing`))).json();
-    expect(k.pricing).toHaveLength(PRICE_BANDS.length);
-    for (const b of PRICE_BANDS) {
-      const row = k.pricing.find((p: any) => JSON.stringify(p).includes(b.label));
-      expect(row, b.label).toBeDefined();
+    expect(k.pricing).toHaveLength(ALL_PRICE_BANDS.length);
+    for (const b of ALL_PRICE_BANDS) {
+      /* Matched on currency as well as label since GEO-004 — "Screen & Recoat"
+         names two bands now, and a match on the label alone would check the
+         Ontario numbers twice and never look at New York. */
+      const row = k.pricing.find((p: any) => p.label === b.label && p.currency === b.currency);
+      expect(row, `${b.label} ${b.currency}`).toBeDefined();
       expect(JSON.stringify(row)).toContain(String(b.min));
       expect(JSON.stringify(row)).toContain(String(b.max));
     }
@@ -175,7 +178,14 @@ describe('APIs', () => {
     expect(e.data.legal_name).toBe(ld.legalName);
     expect(e.data.schema_id).toBe(ld['@id']);
     const p = await (await pricingGet(new Request(`${SITE_URL}/api/v1/pricing`))).json();
-    for (const b of PRICE_BANDS) expect(p.items.some((x: any) => x.data.min === b.min && x.data.max === b.max && x.data.label === b.label)).toBe(true);
+    for (const b of ALL_PRICE_BANDS) {
+      expect(
+        p.items.some(
+          (x: any) => x.data.min === b.min && x.data.max === b.max && x.data.label === b.label && x.data.currency === b.currency,
+        ),
+        `${b.label} ${b.currency}`,
+      ).toBe(true);
+    }
   });
 });
 

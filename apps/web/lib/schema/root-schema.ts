@@ -14,7 +14,7 @@
  */
 
 import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
-import { PRICE_BANDS, priceSpecification, type PriceBand } from '@/content/constants/pricing';
+import { PRICE_BANDS, ALL_PRICE_BANDS, HOME_CURRENCY, priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 import { BUSINESS_NAP, GOOGLE_PLACE, HOMESTARS_CANONICAL } from '@ecowoods/shared/constants';
@@ -111,6 +111,16 @@ const SERVED_CITY_NODES: AreaServedCity[] = GTA.map((name) => cityNode(name, slu
  */
 const PRICE_BAND_CITY_NODES: AreaServedCity[] = GTA
   .filter((name) => countryOfSlug(slugOf(name)) === 'CA')
+  .map((name) => cityNode(name, slugOf(name)));
+
+/**
+ * The other half of the same rule (GEO-004). The New York cities now have
+ * bands of their own, in their own currency, so they get offers of their own —
+ * the Ontario offers still name only Ontario, and a consumer can no longer read
+ * a Canadian-dollar price as applying in Buffalo.
+ */
+const US_BAND_CITY_NODES: AreaServedCity[] = GTA
+  .filter((name) => countryOfSlug(slugOf(name)) === 'US')
   .map((name) => cityNode(name, slugOf(name)));
 
 /**
@@ -284,17 +294,29 @@ const BAND_SERVICE_SLUG: Record<PriceBand['key'], string> = {
   newInstall: 'hardwood-installation',
 };
 
+/**
+ * ONE CATALOG, SIX OFFERS, EACH SCOPED TO WHERE IT APPLIES (GEO-004).
+ *
+ * Three Canadian-dollar offers naming the Ontario cities, three United States
+ * dollar offers naming the New York ones. Not two catalogs: a catalog is what
+ * this business offers, and an offer is what it costs in a place — which is
+ * exactly the distinction a second catalog would blur.
+ *
+ * The offer NAMES differ too. Two `Offer` nodes both called "Screen & Recoat",
+ * differing only in a currency field and an areaServed array, is the shape a
+ * consumer flattens into one offer with two prices.
+ */
 const BAND_OFFER_CATALOG = {
   '@type': 'OfferCatalog' as const,
   name: 'Hardwood flooring — published price bands',
-  itemListElement: PRICE_BANDS.map((band) => ({
+  itemListElement: ALL_PRICE_BANDS.map((band) => ({
     '@context': 'https://schema.org' as const,
     '@type': 'Offer' as const,
-    name: band.label,
+    name: band.currency === HOME_CURRENCY ? band.label : `${band.label} — New York State`,
     priceCurrency: band.currency,
     priceSpecification: priceSpecification(band),
     itemOffered: { '@id': `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}#service` },
-    areaServed: PRICE_BAND_CITY_NODES,
+    areaServed: band.currency === HOME_CURRENCY ? PRICE_BAND_CITY_NODES : US_BAND_CITY_NODES,
     availability: 'https://schema.org/InStock',
     url: `${SITE_URL}/services/${BAND_SERVICE_SLUG[band.key]}`,
   })),

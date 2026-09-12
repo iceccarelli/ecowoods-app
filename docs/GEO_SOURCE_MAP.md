@@ -332,6 +332,9 @@ GEO-002  corridors: districts out of the member lists (GEO-013), corridor JSON-L
          the twins for /corridors, /corridors/{id} and /where-we-work (GEO-009 decision)
 GEO-003  currency made explicit. No public output change at all — 34 surfaces byte-identical
          before and after. The groundwork GC-024 needs before a second currency can exist.
+GEO-004  New York priced in New York (D6). Closes GC-024: three USD bands, the offer catalog
+         split by country, a New York FAQ, and eleven "one rate card everywhere" sentences
+         rescoped to "within a country" so the promise and the prices agree.
 ```
 
 **The protocol's plan, for the record:**

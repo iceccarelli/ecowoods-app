@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { SERVICE_AREAS, SERVICES, FAQ_ITEMS, SITE_URL, BUSINESS, cityBySlug, cityContent, areaDisplayName, US_AREA_SLUGS, type City } from '@/lib/seo-data';
-import { SERVICE_PAGES, priceBand } from '@/lib/service-pages';
+import { SERVICE_AREAS, SERVICES, SITE_URL, BUSINESS, cityBySlug, cityContent, areaDisplayName, faqItemsForArea, US_AREA_SLUGS, type City } from '@/lib/seo-data';
+import { SERVICE_PAGES, priceBandIn } from '@/lib/service-pages';
 import { breadcrumbSchema, faqPageSchema } from '@/lib/structured-data';
 import { placeForArea } from '@/lib/schema/root-schema';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
@@ -111,7 +111,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
       { name: city.name, url },
     ]),
-    faqPageSchema(),
+    /* The FAQ a New York visitor gets answers the cost question in their own
+       currency (GEO-004). Every other answer is identical on both sides of the
+       river, because every other answer is about wood. */
+    faqPageSchema(faqItemsForArea(city.slug)),
     /* An area-scoped Service node. It carries its OWN @id — the page's URL, not
        the global /services/<slug>#service id — because those global nodes are
        emitted site-wide with `areaServed` covering the whole GTA. Re-emitting
@@ -289,7 +292,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
                 Etobicoke had no way through. See F-154. */}
             {SERVICE_PAGES.map((sp) => {
               const s = SERVICES.find((x) => x.slug === sp.slug);
-              const band = priceBand(sp);
+              /* The band in the currency of the country this page is about
+                 (GEO-004). These cards read the Ontario set on every page,
+                 including the twenty-six in New York State. */
+              const band = priceBandIn(sp, isUS ? 'US' : 'CA');
               return (
                 <Link
                   key={sp.slug}
@@ -311,7 +317,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       {/* The only in-content path from a local query to the two commercial
           head terms. Thirty-two pages x two links, with the city in the
           anchor text. See the note on the component. */}
-      <CommercialHeadTermRail city={city.name} />
+      <CommercialHeadTermRail city={city.name} country={isUS ? 'US' : 'CA'} />
 
       <section className="section">
         <div className="shell">
@@ -334,7 +340,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           <span className="eyebrow">Common questions</span>
           <h2>Straight answers.</h2>
           <div style={{ maxWidth: '52rem', marginTop: '1rem' }}>
-            {FAQ_ITEMS.map((f) => (
+            {faqItemsForArea(city.slug).map((f) => (
               <details key={f.q} style={{ padding: '1rem 0', borderBottom: '1px solid rgba(128,128,128,0.18)' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{f.q}</summary>
                 <p style={{ marginTop: '0.6rem', opacity: 0.85 }}>{f.a}</p>

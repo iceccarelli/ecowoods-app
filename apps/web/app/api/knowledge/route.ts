@@ -9,7 +9,9 @@ import { getFigures } from '@/lib/figures';
 import { getChangelog } from '@/lib/changelog';
 import { getStandards } from '@/lib/standards';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
-import { PRICE_BANDS, formatBand } from '@/content/constants/pricing';
+/* PRICE_BANDS is named here so scripts/verify-knowledge-parity.mjs can see that
+   this surface derives from the constants; ALL_PRICE_BANDS is what it renders. */
+import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { CLUSTERS } from '@/content/search/topic-map';
 import {
   PILLARS,
@@ -350,17 +352,25 @@ async function build() {
      without a currency is read as USD by Google's parser, and a price without a
      unit is read as a price per item — which for a per-square-foot trade is off
      by three orders of magnitude. */
-  const pricing = PRICE_BANDS.map((b) => ({
-    id: `price:${b.key}`,
+  const pricing = ALL_PRICE_BANDS.map((b) => ({
+    id: b.currency === 'CAD' ? `price:${b.key}` : `price:${b.key}:${b.currency.toLowerCase()}`,
     service: b.key,
     label: b.label,
+    /* Which country's band this is (GEO-004). Two rows can carry the same
+       label, and a consumer that cannot tell them apart will pick whichever it
+       met first. */
+    country: b.currency === 'CAD' ? 'CA' : 'US',
+    applies_in: b.currency === 'CAD' ? 'Ontario' : 'New York State',
     min: b.min,
     max: b.max,
     unit: b.unit,
     currency: b.currency,
     display: formatBand(b),
     fixedInWriting: true,
-    note: 'Published band. The final price is fixed in writing after a free in-home measure.',
+    note:
+      b.currency === 'CAD'
+        ? 'Published band. The final price is fixed in writing after a free in-home measure.'
+        : 'Published band for New York State. The border crossing and the travel from the Toronto shop are already inside it. The final price is fixed in writing after a free in-home measure.',
     source: url('/hardwood-flooring-toronto'),
   }));
 

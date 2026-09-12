@@ -72,7 +72,7 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | GC-021 | open | job cards still keyed by display name |
 | GC-022 | open | no twins for corridors / where-we-work (none advertised) |
 | GC-023 | open | measure after the first geography deploy |
-| GC-024 | answered 2026-09-11, open in code | the owner chose to state New York pricing in USD (one published band set, travel inside the band, the arithmetic unpublished — docs/GEO_SOURCE_MAP.md D6). GEO-003 makes currency explicit; GEO-004 publishes the bands |
+| GC-024 | **closed by GEO-004** | New York pages publish United States bands in United States dollars; 0 Canadian figures remain on any New York surface, HTML or twin. Method recorded in docs/GEO_SOURCE_MAP.md D6 and published nowhere |
 
 Two existing checks were edited because they encoded the old geography, and
 both edits widen rather than tighten: `scripts/verify-work-map.mjs` now also
@@ -154,6 +154,69 @@ to look is worth less than a format that cannot be confused.
 Still open after this patch: GC-024 itself (no USD band exists yet — GEO-004),
 GC-021, GC-023, and `openapi.ts:287` `currency: { const: 'CAD' }`, which is
 accurate today and must widen when the second band set lands.
+
+---
+
+## Status after GEO-004 — New York is priced in New York
+
+**GC-024 is closed.** The bands a New York visitor is shown are United States
+bands in United States dollars, and no Canadian figure appears on any of the
+twenty-six New York surfaces.
+
+Measured by rendering every area page and every area twin:
+
+| Page | HTML: CAD figures | HTML: USD figures | Twin: CAD | Twin: USD |
+|---|---|---|---|---|
+| Etobicoke, Hamilton, Niagara Falls ON (and the other 71 Ontario areas) | 3 | 0 | 2 | 0 |
+| Buffalo, Amherst, Rochester, Williamsville (and the other 22 NY areas) | **0** (was 3) | 3 | 0 | 2 |
+
+**Where the Canadian figures were reaching New York pages.** Four places, three
+of which the first pass missed and a rendered diff caught:
+
+| Surface | What a Buffalo visitor saw |
+|---|---|
+| `FAQ_ITEMS` → `faqPageSchema()` on all 100 area pages | "How much does hardwood flooring cost in **Toronto**?" answered in CAD, as FAQPage JSON-LD and as visible copy |
+| the "Services delivered here" cards | `priceBand()`, which is the Ontario set, under a Buffalo heading |
+| `CommercialHeadTermRail` | "Hardwood floor refinishing in **Buffalo** — a full sand and finish runs $4.75–$7.50 per square foot", in content, above the fold, on 26 pages |
+| `areaToMarkdown` | the same Ontario bands in the machine edition |
+
+The rail is the one worth naming: it built its own `$X–$Y` strings from
+`PRICING` and had no idea a second currency existed. It is the fifth
+hand-written price string this series has removed, and the only one that put a
+foreign price next to an American place name.
+
+**What is published, and what is not.**
+
+| | |
+|---|---|
+| Published | Three USD bands; that the crossing and the travel are already inside them; that there is no mobilisation line and no later surcharge; that the fixed price follows the free in-home measure, as in Ontario |
+| Not published, anywhere | The exchange basis and the size of the travel allowance. A rate is stale within a day of being printed; an uplift is one division away from the margin. Both are recorded once, in docs/GEO_SOURCE_MAP.md D6 |
+
+**One rate card per country, not per corridor.** The site tells every visitor
+that the bands do not change by place and that distance shows up in the written
+price after the measure. Three corridor rate cards would have made that false
+to buy a little precision. Eleven sentences across the HTML, the twins and
+llms.txt were rescoped to say "within a country" instead of "everywhere", so
+the promise and the prices agree.
+
+**Guards.** None added. One widened and disclosed:
+`scripts/verify-production-agentic.mjs` parsed every `PriceBand` block and
+asserted there were exactly three. It now reads each band's currency, still
+requires exactly three Canadian bands on the Ontario surfaces it probes, and
+additionally requires the three New York bands on `/pricing.md` and all six in
+`/api/v1/pricing`. It checks more than it did.
+
+Also widened, mechanically: `openapi.ts` `currency` moved from
+`const: 'CAD'` to `enum: ['CAD', 'USD']`, and three test assertions that
+counted three bands now count six and match on currency as well as label —
+matching on label alone would have checked the Ontario numbers twice and never
+looked at New York.
+
+Registry ids are additive: `price:screen-and-recoat` and its two siblings are
+unchanged, and the New York primitives are `price:screen-and-recoat-usd` and so
+on. Nothing that resolved before resolves differently.
+
+Still open: GC-021 (job cards keyed by display name) and GC-023 (cache windows).
 
 ---
 

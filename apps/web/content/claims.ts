@@ -50,7 +50,11 @@
  */
 import { BUSINESS_NAP, REVIEW_EVIDENCE, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS } from '@/lib/seo-data';
-import { SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL, formatBand } from '@/content/constants/pricing';
+import {
+  SCREEN_RECOAT, FULL_SAND_FINISH, NEW_INSTALL,
+  US_SCREEN_RECOAT, US_FULL_SAND_FINISH, US_NEW_INSTALL,
+  formatBand,
+} from '@/content/constants/pricing';
 
 /** Where a claim is allowed to appear. Ordered loosest to strictest. */
 export type ClaimContext =
@@ -172,6 +176,38 @@ export const CLAIMS: Claim[] = [
     status: 'verified',
     source: 'Owner-published service band. content/constants/pricing.ts → NEW_INSTALL.',
     verifiedAt: '2026-08-24',
+    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
+  },
+  /* The United States bands (GEO-004, owner decision D6). Registered as claims
+     of their own rather than sharing the Ontario ones: a claim carries a value,
+     and $4.75–$7.50 and $4.00–$6.25 USD are two different values for two
+     different places. The source names the decision record, which is where the
+     method lives — it is deliberately not restated on any public surface. */
+  {
+    id: 'pricing.us.screenAndRecoat',
+    statement: `In New York State, screen and recoat is published at ${formatBand(US_SCREEN_RECOAT)}.`,
+    value: formatBand(US_SCREEN_RECOAT),
+    status: 'verified',
+    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_SCREEN_RECOAT.',
+    verifiedAt: '2026-09-11',
+    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
+  },
+  {
+    id: 'pricing.us.fullSandAndFinish',
+    statement: `In New York State, a full sand and finish is published at ${formatBand(US_FULL_SAND_FINISH)}.`,
+    value: formatBand(US_FULL_SAND_FINISH),
+    status: 'verified',
+    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_FULL_SAND_FINISH.',
+    verifiedAt: '2026-09-11',
+    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
+  },
+  {
+    id: 'pricing.us.newInstall',
+    statement: `In New York State, new hardwood supplied and installed is published at ${formatBand(US_NEW_INSTALL)}.`,
+    value: formatBand(US_NEW_INSTALL),
+    status: 'verified',
+    source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_NEW_INSTALL.',
+    verifiedAt: '2026-09-11',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
   {

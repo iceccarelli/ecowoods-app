@@ -77,6 +77,7 @@ import {
   getServicePage,
   serviceFor,
   priceBand,
+  priceBandIn,
   faqsFor,
   type ServicePage,
 } from '@/lib/service-pages';
@@ -390,8 +391,20 @@ export const areaToMarkdown = (slug: string, name: string, cc: CityContent): str
   out.push('## Services delivered here', '');
   for (const sp of getServicePages()) {
     const svc = serviceFor(sp);
-    const band = priceBand(sp);
+    /* The band for the country this area is in (GEO-004). This called
+       priceBand(), which is the Ontario set, so every New York twin published
+       Canadian dollars under an American place name. */
+    const band = priceBandIn(sp, isUS ? 'US' : 'CA');
     out.push(`- **${svc?.name ?? sp.h1}**${band ? ` (${band})` : ''} — ${SITE_URL}/services/${sp.slug}`);
+  }
+  if (isUS) {
+    out.push(
+      '',
+      'These bands are published in United States dollars for work in New York State. The border crossing ' +
+        'and the travel from the Toronto shop are already inside them: there is no mobilisation line and no ' +
+        'distance surcharge added later, and the fixed price is written after the free in-home measure, ' +
+        `exactly as it is in Ontario. Both published sets: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
+    );
   }
   out.push('');
   out.push(...provenance(canonical));
@@ -461,7 +474,9 @@ const priceFragment = (p: PricePrimitive): string => p.canonical_url.split('#')[
 
 /** A heading whose GitHub-style slug equals the registry fragment id: `screen-and-recoat` → "Screen and recoat". */
 const fragmentHeading = (fragment: string): string => {
-  const words = fragment.split('-');
+  /* Currency codes stay upper case, so `full-sand-and-finish-usd` reads "Full
+     sand and finish USD" rather than "… usd" (GEO-004). */
+  const words = fragment.split('-').map((w) => (/^(usd|cad)$/.test(w) ? w.toUpperCase() : w));
   return words[0].charAt(0).toUpperCase() + words[0].slice(1) + (words.length > 1 ? ` ${words.slice(1).join(' ')}` : '');
 };
 
@@ -470,10 +485,14 @@ const fragmentHeading = (fragment: string): string => {
  * not decoration: it is the sentence the registry says must travel with the
  * number, and a table quoted without it is a quote this business never gave.
  */
+/** Where a band applies, named with its currency. Two rows can say "Screen & Recoat". */
+const bandScope = (p: PricePrimitive): string =>
+  p.data.currency === 'CAD' ? 'Ontario (CAD)' : 'New York State (USD)';
+
 const priceTable = (list: PricePrimitive[] = prices()): string[] => [
   ...table(
-    ['Scope', 'Published band', 'Applies when'],
-    list.map((p) => [p.data.label, `${p.data.formatted} (${p.data.currency})`, p.data.conditions[0] ?? '']),
+    ['Scope', 'Where', 'Published band', 'Applies when'],
+    list.map((p) => [p.data.label, bandScope(p), p.data.formatted, p.data.conditions[0] ?? '']),
   ),
   `${PRICE_PROMISE} A band is an informational range, not a quote; the fixed price is written after the free in-home measure.`,
   '',
@@ -633,7 +652,10 @@ export const areasHubToMarkdown = (): string => {
     '',
     '## What does not change by area',
     '',
-    `- The price bands. They are published once and do not change by postal code: ${link('Pricing', '/pricing')}.`,
+    `- The price bands. They are published once and do not change by postal code: ${link('Pricing', '/pricing')}. ` +
+      `Ontario is published in Canadian dollars and New York State in United States dollars, with the border ` +
+      `crossing and the travel already inside the New York band — two published band sets, not a rate that ` +
+      `varies by town.`,
     ...(crew ? [`- The crew model. ${crew}`] : []),
     `- The services: ${SERVICES.map((s) => link(s.name, `/services/${s.slug}`)).join(', ')}.`,
     '',
@@ -839,8 +861,9 @@ export const corridorToMarkdown = (c: Corridor): string => {
   out.push(
     '## Before you call about a market on this route',
     '',
-    `The published price bands are the same everywhere: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
-    'Distance shows up in the written price after the measure, not as a different rate card.',
+    `The published price bands are the same everywhere in Ontario, and New York State has its own published ` +
+      `bands in United States dollars: ${link('Pricing', '/pricing')} (markdown: ${md('/pricing')}).`,
+    'Within a country, distance shows up in the written price after the measure, not as a different rate card.',
     '',
     `Every route: ${link('Corridors', '/corridors')} (markdown: ${md('/corridors')}).`,
     '',
@@ -930,9 +953,11 @@ export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string => 
     '',
     identitySentence(),
     '',
-    'The bands below are the only prices this business publishes. Every band is per square foot, in ' +
-      'Canadian dollars, and is an informational range: the fixed price is written after the free ' +
-      'in-home measure, not from a range.',
+    'The bands below are the only prices this business publishes. Every band is per square foot and is ' +
+      'an informational range: the fixed price is written after the free in-home measure, not from a ' +
+      'range. There are two sets, one per country — Ontario in Canadian dollars, New York State in ' +
+      'United States dollars with the border crossing and the travel already inside the band. Within a ' +
+      'country a band does not change by town; distance shows up in the written price after the measure.',
     '',
     ...priceTable(list),
     '## Conditions',
@@ -942,7 +967,7 @@ export const pricingToMarkdown = (list: PricePrimitive[] = prices()): string => 
   ];
   for (const p of list) {
     const fragment = priceFragment(p);
-    out.push(`### ${fragmentHeading(fragment)}`, '', `**${p.data.label}** — ${p.data.formatted} (${p.data.currency}).`, '');
+    out.push(`### ${fragmentHeading(fragment)}`, '', `**${p.data.label}**, ${bandScope(p)} — ${p.data.formatted}.`, '');
     for (const c of p.data.conditions) out.push(`- ${c}`);
     out.push('', `Anchor on the page: ${abs('/pricing')}#${fragment} · last verified ${p.provenance.verified_at}.`, '');
   }

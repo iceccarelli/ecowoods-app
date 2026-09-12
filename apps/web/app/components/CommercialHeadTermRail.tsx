@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PRICING } from '@/lib/pricing';
+import { bandForCountry, formatBandBare, type PriceBandKey, type PriceCountry } from '@/content/constants/pricing';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import { criterionCount } from '@/lib/framework';
 
@@ -22,10 +22,17 @@ import { criterionCount } from '@/lib/framework';
  * mechanism by which a site tells a crawler which of its pages it considers
  * most important.
  *
- * EVERY FIGURE IS DERIVED. The bands come from lib/pricing.ts and the criterion
- * count from lib/framework.ts, so this component cannot state a price the rest
- * of the site does not state. Nothing is typed by hand — which is the only
- * reason it is safe to render the same numbers in fifty places.
+ * EVERY FIGURE IS DERIVED. The bands come from content/constants/pricing.ts and
+ * the criterion count from lib/framework.ts, so this component cannot state a
+ * price the rest of the site does not state. Nothing is typed by hand — which
+ * is the only reason it is safe to render the same numbers in fifty places.
+ *
+ * AND IN THE RIGHT CURRENCY (GEO-004). This rail renders on all 100 area pages
+ * with the place name interpolated into the heading, and it built its own
+ * `$X–$Y` strings out of the Ontario bands. On the twenty-six New York pages
+ * that produced "Hardwood floor refinishing in Buffalo — a full sand and finish
+ * runs $4.75–$7.50 per square foot", which is a Canadian price under an
+ * American place name, in content, above the fold. It takes the country now.
  *
  * ONE DESIGN SYSTEM, NOT A THIRD. This site has two: .section/.shell for
  * marketing and .tlx-* for editorial. The rail appears in both, so it uses
@@ -34,10 +41,8 @@ import { criterionCount } from '@/lib/framework';
  * above the .chr rules in globals.css.
  */
 
-const money = (n: number) => `$${n.toFixed(2)}`;
-const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
-
-export function CommercialHeadTermRail({ city }: { city?: string }) {
+export function CommercialHeadTermRail({ city, country = 'CA' }: { city?: string; country?: PriceCountry }) {
+  const band = (k: PriceBandKey) => formatBandBare(bandForCountry(k, country));
   /* The city variant exists because the service-area pages are where this rail
      does the most work: it is the only in-content path from a local query to
      the page that answers the commercial one. The anchor text changes; the

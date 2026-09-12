@@ -34,7 +34,9 @@ import {
   HOMESTARS_CANONICAL,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
-import { PRICE_BANDS, PRICE_BANDS_BY_KEY, formatBand, type PriceBand } from '@/content/constants/pricing';
+import {
+  PRICE_BANDS, PRICE_BANDS_BY_KEY, ALL_PRICE_BANDS, HOME_CURRENCY, formatBand, type PriceBand,
+} from '@/content/constants/pricing';
 import { PRICE_PROMISE } from '@/lib/pricing';
 import { SITE_URL, SERVICES, CITIES, FAQ_ITEMS, cityContent } from '@/lib/seo-data';
 import { SERVICE_PAGES, type ServicePage } from '@/lib/service-pages';
@@ -106,6 +108,20 @@ export const ORG_ID = 'org:ecowoods';
 export const serviceId = (slug: string) => `service:${slug}`;
 export const locationId = (slug: string) => `location:${slug}`;
 export const priceId = (key: PriceBand['key']) => `price:${PRICE_KEY_SLUG[key]}`;
+
+/**
+ * The id and the /pricing fragment for a band, in its own currency (GEO-004).
+ *
+ * The Ontario bands keep the ids they have had since the registry existed —
+ * `price:full-sand-and-finish` is in the golden-query fixtures and in anything
+ * anybody has already cited. The United States bands are additive and carry
+ * their currency: `price:full-sand-and-finish-usd`. Nothing that resolved
+ * before resolves differently now.
+ */
+export const priceSlugFor = (b: PriceBand): string =>
+  b.currency === HOME_CURRENCY ? PRICE_KEY_SLUG[b.key] : `${PRICE_KEY_SLUG[b.key]}-${b.currency.toLowerCase()}`;
+
+export const priceIdFor = (b: PriceBand) => `price:${priceSlugFor(b)}`;
 export const pageId = (path: string) => `page:${path === '/' ? 'home' : path.replace(/^\//, '').replace(/\//g, '.')}`;
 export const faqId = (question: string) =>
   `faq:${question.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60)}`;
@@ -129,6 +145,16 @@ const PRICE_CLAIM_ID: Record<PriceBand['key'], string> = {
   newInstall: 'pricing.newInstall',
 };
 
+/** The registered claim behind a band. The United States bands have their own. */
+const US_PRICE_CLAIM_ID: Record<PriceBand['key'], string> = {
+  screenAndRecoat: 'pricing.us.screenAndRecoat',
+  fullSandAndFinish: 'pricing.us.fullSandAndFinish',
+  newInstall: 'pricing.us.newInstall',
+};
+
+const priceClaimId = (b: PriceBand): string =>
+  b.currency === HOME_CURRENCY ? PRICE_CLAIM_ID[b.key] : US_PRICE_CLAIM_ID[b.key];
+
 /** What moves each band. Editorial, no figures; the numbers live in the band. */
 const PRICE_CONDITIONS: Record<PriceBand['key'], string[]> = {
   screenAndRecoat: [
@@ -147,6 +173,26 @@ const PRICE_CONDITIONS: Record<PriceBand['key'], string[]> = {
     'Removal of existing flooring, levelling and stairs are itemised separately in the written estimate.',
   ],
 };
+
+/**
+ * The sentence every United States band carries in addition to its own
+ * conditions (GEO-004).
+ *
+ * This is the whole of what is said about the crossing, and it is said on
+ * every surface that carries a New York band. What is NOT said, anywhere, is
+ * the exchange basis or the size of the travel allowance: the first is stale
+ * within a day of being published and the second is the margin.
+ */
+const US_BAND_CONDITION =
+  'Published in United States dollars for work in New York State. The border crossing and the ' +
+  'travel from the Toronto shop are already inside this band \u2014 there is no separate mobilisation ' +
+  'line and no surcharge added later. The fixed price is written after the free in-home measure, ' +
+  'exactly as it is in Ontario.';
+
+const priceConditions = (b: PriceBand): string[] =>
+  b.currency === HOME_CURRENCY
+    ? PRICE_CONDITIONS[b.key]
+    : [...PRICE_CONDITIONS[b.key], US_BAND_CONDITION];
 
 /** Situations where a service is the wrong call, and what to do instead. Editorial, no figures. */
 const WRONG_WHEN: Record<string, { situation: string; use_instead: string }[]> = {
@@ -351,11 +397,14 @@ export function buildLocations(): LocationPrimitive[] {
 /* ── pricing ────────────────────────────────────────────────────────────── */
 
 export function buildPrices(): PricePrimitive[] {
-  return PRICE_BANDS.map((b) => {
-    const c = claim(PRICE_CLAIM_ID[b.key]);
+  /* Both band sets since GEO-004. A consumer asking this endpoint what the
+     work costs gets the Ontario answer and the New York answer, each carrying
+     its own currency, rather than the Ontario answer presented as universal. */
+  return ALL_PRICE_BANDS.map((b) => {
+    const c = claim(priceClaimId(b));
     const promise = claim('pricing.fixedInWriting');
     return {
-      id: priceId(b.key),
+      id: priceIdFor(b),
       type: 'Price',
       data: {
         band_key: b.key,
@@ -367,16 +416,16 @@ export function buildPrices(): PricePrimitive[] {
         unit: b.unit,
         unit_code: 'FTK',
         formatted: formatBand(b),
-        conditions: PRICE_CONDITIONS[b.key],
+        conditions: priceConditions(b),
         caveat: PRICE_PROMISE,
         is_quote: false,
       },
-      canonical_url: abs(`/pricing#${PRICE_KEY_SLUG[b.key]}`),
+      canonical_url: abs(`/pricing#${priceSlugFor(b)}`),
       source: firstParty('/pricing'),
       provenance: {
         verified_at: latestDate(c?.verifiedAt, promise?.verifiedAt),
         method: 'owner_confirmed',
-        claim_ids: [PRICE_CLAIM_ID[b.key], 'pricing.fixedInWriting'],
+        claim_ids: [priceClaimId(b), 'pricing.fixedInWriting'],
         note: 'Informational range per square foot. The fixed price is written after a free in-home measure; a range is never a quote.',
       },
       status: claimStatus(c),
@@ -667,7 +716,7 @@ export function buildPages(): PagePrimitive[] {
       fragments: ['what', 'wrong-service', 'process', 'price', 'related', 'evidence', 'faq', 'estimate'],
       p0: true,
     })),
-    { path: '/pricing', title: 'Pricing', kind: 'pricing', md: '/pricing.md', fragments: PRICE_BANDS.map((b) => PRICE_KEY_SLUG[b.key]).concat(['conditions', 'fixed-price', 'estimate']), p0: true },
+    { path: '/pricing', title: 'Pricing', kind: 'pricing', md: '/pricing.md', fragments: ALL_PRICE_BANDS.map((b) => priceSlugFor(b)).concat(['conditions', 'fixed-price', 'estimate']), p0: true },
     { path: '/service-areas', title: 'Service areas', kind: 'area_hub', md: '/service-areas.md', fragments: ['what-changes', 'what-does-not'], p0: true },
     ...LOCATION_NODES.filter((n) => n.coverage === 'published').map((n) => ({
       path: `/service-areas/${n.slug}`,

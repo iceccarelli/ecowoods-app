@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import {
-  PRICE_BANDS_BY_KEY,
   SCREEN_RECOAT,
   FULL_SAND_FINISH,
   NEW_INSTALL,
+  US_SCREEN_RECOAT,
+  US_FULL_SAND_FINISH,
+  US_NEW_INSTALL,
+  bandForCountry,
   formatBandBare,
   type PriceBandKey,
 } from '@/content/constants/pricing';
@@ -87,7 +90,10 @@ function BandRow({ id, price }: { id: string; price: PricePrimitive }) {
     throw new Error(`/pricing: row id "${id}" does not match the registry fragment "#${fragment}" for ${price.id}`);
   }
   const key = price.data.band_key as PriceBandKey;
-  const band = PRICE_BANDS_BY_KEY[key];
+  /* The band in the primitive's OWN currency (GEO-004). This read
+     PRICE_BANDS_BY_KEY unconditionally, which is the Ontario set — a New York
+     row would have rendered Canadian numbers under a US-dollar heading. */
+  const band = bandForCountry(key, price.data.currency === 'USD' ? 'US' : 'CA');
   const pricedHere = getServicePages().filter((p) => p.pricing === key);
   return (
     <tr id={id}>
@@ -115,9 +121,9 @@ function BandRow({ id, price }: { id: string; price: PricePrimitive }) {
 
 export default async function PricingPage() {
   const reg = await getRegistry();
-  const priceFor = (key: PriceBandKey): PricePrimitive => {
-    const p = reg.prices.find((x) => x.data.band_key === key);
-    if (!p) throw new Error(`/pricing: the registry publishes no Price primitive for band "${key}"`);
+  const priceFor = (key: PriceBandKey, currency: 'CAD' | 'USD' = 'CAD'): PricePrimitive => {
+    const p = reg.prices.find((x) => x.data.band_key === key && x.data.currency === currency);
+    if (!p) throw new Error(`/pricing: the registry publishes no ${currency} Price primitive for band "${key}"`);
     return p;
   };
 
@@ -127,10 +133,19 @@ export default async function PricingPage() {
     <BandRow key="full-sand-and-finish" id="full-sand-and-finish" price={priceFor('fullSandAndFinish')} />,
     <BandRow key="new-install" id="new-install" price={priceFor('newInstall')} />,
   ];
-  if (rows.length !== reg.prices.length) {
-    throw new Error(`/pricing renders ${rows.length} band row(s) but the registry publishes ${reg.prices.length}`);
+  /* The New York table (GEO-004). Same three services, published in United
+     States dollars with the crossing already inside the band. */
+  const usRows = [
+    <BandRow key="screen-and-recoat-usd" id="screen-and-recoat-usd" price={priceFor('screenAndRecoat', 'USD')} />,
+    <BandRow key="full-sand-and-finish-usd" id="full-sand-and-finish-usd" price={priceFor('fullSandAndFinish', 'USD')} />,
+    <BandRow key="new-install-usd" id="new-install-usd" price={priceFor('newInstall', 'USD')} />,
+  ];
+  if (rows.length + usRows.length !== reg.prices.length) {
+    throw new Error(
+      `/pricing renders ${rows.length + usRows.length} band row(s) but the registry publishes ${reg.prices.length}`,
+    );
   }
-  const prices = (['screenAndRecoat', 'fullSandAndFinish', 'newInstall'] as const).map(priceFor);
+  const prices = (['screenAndRecoat', 'fullSandAndFinish', 'newInstall'] as const).map((k) => priceFor(k));
 
   const costGuide = getGuide('hardwood-flooring-cost-toronto');
   const servicePages = getServicePages();
@@ -169,9 +184,11 @@ export default async function PricingPage() {
             {BUSINESS_NAP.legalName} publishes three price bands for hardwood work in{' '}
             {BUSINESS_NAP.region}, each per square foot in Canadian dollars: a screen and recoat at{' '}
             {formatBandBare(SCREEN_RECOAT)}, a full sand and finish at {formatBandBare(FULL_SAND_FINISH)},
-            and new hardwood supplied and installed at {formatBandBare(NEW_INSTALL)}. A band is an
-            informational range, not a quote. The fixed price is written after a free in-home
-            measure, and it does not move afterwards.
+            and new hardwood supplied and installed at {formatBandBare(NEW_INSTALL)}. The same three bands
+            are published for New York State in US dollars — {formatBandBare(US_SCREEN_RECOAT)},{' '}
+            {formatBandBare(US_FULL_SAND_FINISH)} and {formatBandBare(US_NEW_INSTALL)} — with the border
+            crossing already inside them. A band is an informational range, not a quote. The fixed price is
+            written after a free in-home measure, and it does not move afterwards.
           </p>
         </div>
       </header>
@@ -200,6 +217,48 @@ export default async function PricingPage() {
             starting-from number: the band is the whole published range.
           </p>
           <Illustration id="fig-installed-cost-bands" />
+        </div>
+      </section>
+
+      {/* (b2) New York State (GEO-004). A second published band set, not a
+          conversion the reader is asked to perform — and not a second rate card
+          either: within each country the bands do not move by town. */}
+      <section className="tlx-section" id="new-york" aria-label="Published price bands, New York State">
+        <div className="shell">
+          <p className="tlx-kicker">New York State</p>
+          <h2 className="tlx-h2">The same three bands, in US dollars</h2>
+          <p className="tlx-note">
+            Ecowoods works across western New York — the{' '}
+            <Link href="/corridors/buffalo-niagara">Buffalo–Niagara</Link>,{' '}
+            <Link href="/corridors/buffalo-metro">Buffalo metro</Link> and{' '}
+            <Link href="/corridors/rochester-east">Rochester east</Link> routes. The work is the same work
+            and the crews are the same salaried employees; the price is published in the currency of the
+            country the floor is in.
+          </p>
+          <div className="wp-table-wrap" role="region" tabIndex={0} aria-label="Published price bands, New York State">
+            <table className="wp-table">
+              <caption>Published price bands, per square foot, in USD, before tax</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Service band</th>
+                  {/* No "(USD)" here: every value in this column already ends
+                      in USD, and stating it twice reads as two facts. The
+                      Ontario table above carries it in the header instead,
+                      because its values do not. */}
+                  <th scope="col">Price per sq ft</th>
+                  <th scope="col">What it covers</th>
+                </tr>
+              </thead>
+              <tbody>{usRows}</tbody>
+            </table>
+          </div>
+          <p className="tlx-note">
+            The border crossing and the travel from the Toronto shop are already inside these bands. There is
+            no mobilisation line, no distance surcharge and nothing added after the measure — and there is no
+            second address, telephone number or crew in New York State: the shop and the showroom are at{' '}
+            {BUSINESS_NAP.address.streetAddress} in {BUSINESS_NAP.address.addressLocality}. What travels is
+            the work.
+          </p>
         </div>
       </section>
 

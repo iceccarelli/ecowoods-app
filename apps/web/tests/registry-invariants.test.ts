@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { getRegistry, buildGraph } from '@/lib/registry/registry';
 import { ROOT_ORGANIZATION_SCHEMA } from '@/lib/schema/root-schema';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
-import { PRICE_BANDS } from '@/content/constants/pricing';
+import { PRICE_BANDS, ALL_PRICE_BANDS } from '@/content/constants/pricing';
 import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
 
 const digits = (s: string) => s.replace(/\D/g, '');
@@ -39,11 +39,16 @@ describe('§21 invariants', () => {
     expect(all.length).toBeGreaterThan(100);
   });
 
-  it('5: price bands in the registry equal the pricing constants', async () => {
+  it('5: price bands in the registry equal the pricing constants, both countries', async () => {
     const reg = await getRegistry();
-    expect(reg.prices).toHaveLength(PRICE_BANDS.length);
-    for (const b of PRICE_BANDS) {
-      const p = reg.prices.find((x) => x.data.band_key === b.key)!;
+    /* Six since GEO-004: three Ontario bands in Canadian dollars and three New
+       York bands in United States dollars. A band is now found by key AND
+       currency — looking it up by key alone would find whichever set came
+       first and pass while comparing the wrong numbers. */
+    expect(reg.prices).toHaveLength(ALL_PRICE_BANDS.length);
+    for (const b of ALL_PRICE_BANDS) {
+      const p = reg.prices.find((x) => x.data.band_key === b.key && x.data.currency === b.currency)!;
+      expect(p, `${b.key} ${b.currency}`).toBeDefined();
       expect(p.data.min).toBe(b.min);
       expect(p.data.max).toBe(b.max);
       expect(p.data.currency).toBe(b.currency);

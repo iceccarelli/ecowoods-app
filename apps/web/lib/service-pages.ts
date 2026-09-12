@@ -41,7 +41,7 @@
  */
 import { SERVICES, type Service } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE, bandFor, type PricingService } from '@/lib/pricing';
-import { formatBand, type PriceBand } from '@/content/constants/pricing';
+import { formatBand, bandForCountry, type PriceBand, type PriceCountry } from '@/content/constants/pricing';
 import { getGuide } from '@/lib/guides';
 import { getTerm } from '@/lib/glossary';
 import { PILLARS } from '@/lib/framework';
@@ -182,6 +182,16 @@ export const priceBand = (page: ServicePage): string | undefined => {
   const b = bandForPage(page);
   return b ? formatBand(b) : undefined;
 };
+
+/**
+ * The rendered band for this service in a country (GEO-004).
+ *
+ * `priceBand` is the Ontario answer and stays that. A surface about a place
+ * asks this one — the New York area twins listed Canadian dollars under a
+ * Buffalo heading until they did.
+ */
+export const priceBandIn = (page: ServicePage, country: PriceCountry): string | undefined =>
+  page.pricing ? formatBand(bandForCountry(page.pricing, country)) : undefined;
 
 export const priceLabel = (page: ServicePage): string | undefined =>
   page.pricing ? PRICING[page.pricing].label : undefined;

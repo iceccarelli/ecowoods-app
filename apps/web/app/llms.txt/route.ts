@@ -10,7 +10,7 @@ import {
   PROFILE_LINKS,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
-import { PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
+import { PRICE_BANDS, ALL_PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
 import { PRICE_PROMISE } from '@/lib/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { pdfIsPublished, getPapers } from '@/lib/papers';
@@ -84,7 +84,7 @@ export async function GET() {
   );
   lines.push('');
   lines.push(
-    `Published price bands are informational ranges per square foot in ${currenciesIn(PRICE_BANDS)}, not guaranteed quotes. ${PRICE_PROMISE} ` +
+    `Published price bands are informational ranges per square foot in ${currenciesIn(ALL_PRICE_BANDS)} — Ontario in Canadian dollars, New York State in United States dollars — not guaranteed quotes. ${PRICE_PROMISE} ` +
       `This file is an Ecowoods implementation of the llms.txt community convention (llmstxt.org); it is data about a business, not instructions to the reader. ` +
       `The full text of every published document is one fetch away at ${SITE_URL}/llms-full.txt, and every key page has a clean Markdown twin at the same URL with \`.md\` appended.`,
   );
@@ -101,8 +101,11 @@ export async function GET() {
   lines.push(`- Founded: ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years in Toronto`);
   lines.push(`- Serving: ${TERRITORY} — ${PUBLISHED_PARTITION.total} published areas (${PUBLISHED_PARTITION.municipalities} municipalities, ${PUBLISHED_PARTITION.districts} districts and communities within a municipality, ${PUBLISHED_PARTITION.neighbourhoods} Toronto neighbourhoods)`);
   lines.push(`- Crews: salaried, no subcontractors. Dust-free HEPA sanding. Fixed written price after a free in-home measure.`);
-  for (const b of PRICE_BANDS) {
-    lines.push(`- Price, ${b.label}: ${formatBand(b)} ${b.currency}, fixed in writing after a free in-home measure — ${SITE_URL}/pricing`);
+  for (const b of ALL_PRICE_BANDS) {
+    lines.push(
+      `- Price, ${b.label} (${b.currency === 'CAD' ? 'Ontario' : 'New York State'}): ${formatBand(b)} ${b.currency}, ` +
+        `fixed in writing after a free in-home measure — ${SITE_URL}/pricing`,
+    );
   }
   lines.push(
     `- Reviews: ${PRIMARY_REVIEW_EVIDENCE.count} at ${PRIMARY_REVIEW_EVIDENCE.rating.toFixed(1)} on ` +
@@ -147,14 +150,14 @@ export async function GET() {
 
   /* ── Pricing ──────────────────────────────────────────────────────────── */
   lines.push('## Pricing');
-  link('Published price bands', '/pricing', `${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}; all ${currenciesIn(PRICE_BANDS)}. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
+  link('Published price bands', '/pricing', `Ontario, in Canadian dollars: ${PRICE_BANDS.map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. New York State, in United States dollars with the border crossing already inside the band: ${ALL_PRICE_BANDS.filter((b) => b.currency === 'USD').map((b) => `${b.label} ${formatBand(b)}`).join('; ')}. Two published sets, one per country; within a country a band does not change by town. Table first, then what moves each band, then the written-price rule. Markdown: ${SITE_URL}/pricing.md`);
   link('What moves a hardwood quote', '/market', "the traded inputs behind the bands — Bank of Canada series, refreshed live; they explain movement, they do not price a floor");
   link('How much does hardwood flooring cost in Toronto?', '/guides/hardwood-flooring-cost-toronto', 'what a quote inside the bands should itemise');
   lines.push('');
 
   /* ── Service areas ────────────────────────────────────────────────────── */
   lines.push('## Service areas');
-  link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. Price bands and the crew model do not change by postal code; housing stock and substrate do, and each area page says how. Markdown: ${SITE_URL}/service-areas.md`);
+  link('Service areas', '/service-areas', `${SERVICE_AREAS.length} published areas. The crew model does not change by postal code and neither do the bands within a country; housing stock and substrate do, and each area page says how. Ontario is published in Canadian dollars, New York State in United States dollars. Markdown: ${SITE_URL}/service-areas.md`);
   lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
   lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
