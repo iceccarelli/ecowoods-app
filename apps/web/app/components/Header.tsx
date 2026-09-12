@@ -13,7 +13,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
-import CommandPalette from './CommandPalette';
+import CommandPalette, { openCommandPalette } from './CommandPalette';
 import { EW_MARK, EW_MARK_ALT, EW_MARK_SIZE } from '@/lib/brand';
 
 /* ---------------------- Hooks ---------------------- */
@@ -169,7 +169,7 @@ export default function Header() {
   const isLoggedIn = status === 'authenticated';
   const portalLabel = isAdmin ? 'Admin' : 'My Page';
   const portalNav = isAdmin ? ADMIN_NAV : MYPAGE_NAV;
-  const portalIndex = rowNum(navigation.length + MOBILE_GROUPS.length + 2);
+  const portalIndex = rowNum(navigation.length + MOBILE_GROUPS.length + 3);
 
   return (
     <>
@@ -423,14 +423,33 @@ export default function Header() {
             </div>
           ))}
 
+          {/* SEARCH, IN THE DRAWER (ASSIST-01).
+              The ⌘K trigger is hidden below 379px to leave room for the brand
+              and the hamburger, and a phone has no ⌘ — so on a small handset
+              the search that reaches all fifty-five destinations on this site
+              had no way in at all. AWS puts it in the drawer for exactly this
+              reason. */}
+          <button
+            type="button"
+            className="mnav-search"
+            onClick={() => {
+              setMobileOpen(false);
+              /* After the drawer's own close, or the dialog opens behind it. */
+              requestAnimationFrame(() => openCommandPalette());
+            }}
+          >
+            Search this site
+            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length)}</span>
+          </button>
+
           <a href="/service-areas" onClick={() => setMobileOpen(false)}>
             Service areas
-            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length)}</span>
+            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length + 1)}</span>
           </a>
 
           <a href={`${baseUrl}#estimate`} onClick={() => setMobileOpen(false)}>
             Get a written price
-            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length + 1)}</span>
+            <span className="num">{rowNum(navigation.length + MOBILE_GROUPS.length + 2)}</span>
           </a>
 
           {/* Portal section — Login or My Page / Admin */}

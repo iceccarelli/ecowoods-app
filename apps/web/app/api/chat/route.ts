@@ -17,6 +17,7 @@ import {
 import { chatRequestSchema, CHAT_MAX_BODY_BYTES } from '@ecowoods/shared/schemas';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { bandForWork } from '@/content/constants/pricing';
+import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -132,10 +133,48 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
-    system: ECOWOODS_GUIDE_SYSTEM_PROMPT,
+    /* The prompt itself lives in packages/shared, which is upstream of this app
+       and cannot import a route table. What this site HAS is appended here, and
+       it is derived from lib/navigation.ts — the one module the panels, the
+       drawer and ⌘K already read. So a page added to a menu is in the
+       assistant's head the same commit, in the same words. ASSIST-01. */
+    system: ECOWOODS_GUIDE_SYSTEM_PROMPT + siteCapabilitiesBlock(),
     messages,
     stopWhen: stepCountIs(8),
     tools: {
+      /**
+       * FIND A PAGE ON THIS SITE.
+       *
+       * Every other tool here is transactional — context, an estimate, a
+       * calendar, a lead. Not one of them could hand a visitor a page, so an
+       * assistant on a site with fifty-five of them could not send anyone to a
+       * single one. A homeowner asking "can I see what walnut looks like in my
+       * room" got the six services and an offer of a measure, from a company
+       * whose site renders walnut into their living room, live, from their
+       * phone, for free.
+       *
+       * The index is DERIVED from lib/navigation.ts, so this tool cannot return
+       * a path that is not in the site's own navigation, and cannot describe a
+       * page differently from the menu that links it.
+       */
+      find_on_site: tool({
+        description:
+          'Search this website for a page that answers the homeowner better than a sentence can — a guide, a paper, a tool, a town, a corridor, a case study, the price bands, the live camera. ' +
+          'Returns real paths from the site navigation. Use the path it returns verbatim and never invent one. Call this whenever they ask about a topic rather than about their own project.',
+        inputSchema: z.object({
+          query: z.string().min(2).max(120).describe('What they are looking for, in their words — e.g. "white oak", "cost in Toronto", "buffalo", "herringbone", "see it in my room".'),
+        }),
+        execute: async ({ query }) => {
+          const hits = findOnSite(query);
+          if (!hits.length) return { found: 0, note: 'Nothing on the site matches that. Do not invent a path; answer from what you know and offer the free in-home measure.' };
+          return {
+            found: hits.length,
+            pages: hits.map((h) => ({ path: h.href, title: h.label, what: h.note ?? null, section: h.group })),
+            note: 'Give at most ONE of these, written plainly as ecowoods.ca<path>. The chat window turns it into a link.',
+          };
+        },
+      }),
+
       get_company_context: tool({
         description: 'Get real Ecowoods contact facts (phone, email) before sharing them.',
         inputSchema: z.object({}),

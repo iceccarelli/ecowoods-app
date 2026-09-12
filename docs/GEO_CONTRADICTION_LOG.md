@@ -78,6 +78,10 @@ measured by `node scripts/geo-measure.mjs` after deploy):
 | AV-01 | **closed by LIVE-01** | the occlusion mask is region-based now: 13 of 14 fixture objects preserved, the oak stair riser named as a documented limit |
 | AV-02 | **closed by LIVE-01** | the floor is a connected region, so a rug is a hole in it rather than the end of it. 72% coverage error → 3%, and a shape a trapezoid cannot describe reports `weak` |
 | LIVE-01 | **shipped** | live camera: getUserMedia, per-frame composite of real catalogue floors, adaptive resolution ladder, the mark and the range drawn into the pixels, reachable at /floor-studio#live from every page |
+| AS-01 | **closed by ASSIST-01** | the assistant's 6,230-character prompt named zero pages and none of its five tools could return one; it now carries a derived site map and a find_on_site tool |
+| AS-02 | **closed by ASSIST-01** | a page the assistant recommended arrived as inert text; the widget links the one shape it is told to write |
+| AS-03 | **closed by ASSIST-01** | below 379px the search trigger is hidden and a phone has no ⌘, so the palette had no way in; the drawer has a search row now |
+| AS-04 | **closed by ASSIST-01** | the link matcher would have rendered ecowoods.ca inside another hostname as a link — caught by its own test before shipping |
 | NAV-03 | **closed by NAV-03** | ⌘K carried its own hand-written nav from when this site was one page: 6 of 13 actions were homepage-only anchors that silently no-opped on 46 of 47 public routes, and it could reach none of the corpus. One navigation source now feeds the panels, the drawer and the palette |
 | VIS-02 | **closed by VIS-02** | five pages carried a full openGraph block with no images key — the four commercial head terms and Floor Studio all served the site default, the same card /terms serves |
 | TREE-01 | **closed by VIS-02** | /technical-library is the breadcrumb parent of every article and sits at sitemap priority 0.95, and appeared in no menu; the Reference column now names it beside /resources with notes that distinguish them |
@@ -992,3 +996,77 @@ panel, the mobile drawer, ⌘K and the homepage — four surfaces, one entry in
 `lib/navigation.ts`, because NAV-03 made that one source. The fragment has a
 real `id="live"` behind it so it lands correctly without JavaScript, which
 `verify-destinations` caught and required.
+
+---
+
+## ASSIST-01 · the assistant did not know the website existed
+
+`verify:navigation` measures whether a person can reach a page. Nothing measured
+whether the thing that greets them on every page could send them to one.
+
+### AS-01 · P0 · zero paths in 6,230 characters
+
+Measured against the shipped `ECOWOODS_GUIDE_SYSTEM_PROMPT`:
+
+```
+Floor Studio 0 · camera 0 · /design 0 · /pricing 0 · /quote-check 0 ·
+framework 0 · service-areas 0 · corridors 0 · papers 0 · glossary 0 ·
+samples 0 · photo triage 0
+```
+
+Its five tools — get_company_context, estimate_project, get_availability,
+book_measure, create_quote_request — are all transactional. Not one could hand a
+visitor a page. A homeowner asking "can I see what walnut would look like in my
+living room" got the six services and an offer of a measure, from a company
+whose site renders walnut into a photograph of their living room, live, from
+their phone, for free.
+
+The prompt is not careless — it is careful about voice, price honesty, prompt
+injection and closing on a next step. It was never told what had been built
+around it.
+
+Closed by `apps/web/lib/assistant-site.ts`: a capabilities block appended to the
+prompt at request time, and a sixth tool, `find_on_site`. Both derive from
+`lib/navigation.ts`, so the assistant cannot name a path the navigation does not
+carry, or describe a page differently from the menu that links it. The block
+is instruction rather than list, caps recommendations at one per reply, and
+carries the honesty into the assistant's mouth: rendering, not generation, and
+that is why the price under it means something.
+
+`packages/shared` is upstream of `apps/web` and cannot import a route table —
+the direction GEO-005 records — so the app appends rather than the prompt
+hard-coding.
+
+### AS-02 · P1 · a recommendation you had to retype
+
+`ChatWidget` rendered `{m.content}` as a raw text node. The prompt forbids
+markdown for a good reason recorded there — a 392px bubble with no renderer
+turns `[a](b)` into literal brackets — and nobody followed it through: a path
+the assistant named was inert.
+
+The widget links the one shape the assistant is told to write,
+`ecowoods.ca/<path>`, and nothing else. The parsing is pure and tested,
+including giving a trailing full stop back to the sentence — without that the
+href is `/pricing.`, a 404, from the most common thing a model writes.
+
+### AS-03 · P1 · no search on a small phone
+
+The ⌘K trigger hides below 379px to leave room for the brand and the hamburger,
+a phone has no ⌘, and the drawer had no search row. So on an iPhone SE the one
+control that reaches all 55 destinations could not be opened at all. The drawer
+has a "Search this site" row now, opening the palette through a window event.
+
+### AS-04 · P1 · the test that earned its keep
+
+The first matcher was `/\b(?:https?:\/\/)?(?:www\.)?ecowoods\.ca(\/[…]*)?/g`.
+Its own test — written to assert no other domain becomes clickable — failed on
+`ecowoods.ca.evil.example.com/pricing`. The href stayed internal, so not an open
+redirect; what it did was render this company's name as a link in the middle of
+somebody else's hostname, inside this company's own chat window. A trailing
+`(?![A-Za-z0-9\-.])` closes it, and the case is asserted by name.
+
+### Also recorded
+
+`verify-pricing-source` fired on a price literal in this work's own test file. It
+was removed rather than marked `pricing-allow`, on the same reasoning as before:
+a band written into a test is a second copy of a published band.

@@ -65,6 +65,28 @@ const I = {
 const norm = (s: string) => s.toLowerCase().normalize('NFKD');
 
 /**
+ * OPEN ⌘K FROM SOMEWHERE THAT IS NOT ⌘K (ASSIST-01).
+ *
+ * The palette had exactly two ways in: the keyboard shortcut, and its own
+ * trigger in the header bar. Both disappear on a small phone — the trigger is
+ * hidden below 379px to leave room for the brand and the hamburger, and a
+ * phone has no ⌘. So on an iPhone SE, and on most Android handsets held in one
+ * hand, the search that reaches all fifty-five destinations on this site could
+ * not be opened at all.
+ *
+ * AWS puts search in the drawer for the same reason. This is the door the
+ * drawer knocks on: a window event rather than a prop, because the drawer lives
+ * in Header and the palette is Header's own child, and threading a ref through
+ * a hamburger to do it would be worse than one line of DOM.
+ */
+export const OPEN_PALETTE_EVENT = 'ecowoods:open-palette';
+
+export function openCommandPalette(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(OPEN_PALETTE_EVENT));
+}
+
+/**
  * What ⌘K offers before a single key is pressed.
  *
  * Six hrefs, in the order a visitor's intent usually runs: see it, specify it,
@@ -249,6 +271,17 @@ export default function CommandPalette() {
   const flat = useMemo(() => filtered.flatMap((g) => g.actions), [filtered]);
 
   useEffect(() => { setActive(0); }, [query]);
+
+  /* Opened from the mobile drawer, where neither the shortcut nor the trigger
+     exists. Focus is restored to whatever asked for it, same as the trigger. */
+  useEffect(() => {
+    const onOpen = () => {
+      restoreFocus.current = document.activeElement as HTMLElement;
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
+  }, []);
 
   /* Global hotkey. Ignore when the visitor is typing somewhere real.
      This component had the check right — and hand-rolled, which is why it was

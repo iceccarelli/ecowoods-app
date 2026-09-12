@@ -11725,3 +11725,20 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 @media (prefers-reduced-motion: reduce) {
   .fs-live-view { transition: none; }
 }
+
+/* The drawer's search row. A <button> rather than an <a> because it opens a
+   dialog rather than going anywhere, styled to sit in the same numbered list as
+   its neighbours so the drawer still reads as one thing (ASSIST-01). */
+.mobile-sheet nav .mnav-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}

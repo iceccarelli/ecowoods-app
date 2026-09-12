@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { EW_MARK } from '@/lib/brand';
 import { onAssistantOpen } from '@/lib/assistant';
 import { ASSISTANT, ASSISTANT_GREETING, ASSISTANT_CHIPS } from '@/lib/assistant-identity';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { isOpenNow, nextOpeningLabel } from '@/lib/business-hours';
+import { splitReply } from '@/lib/assistant-site';
 
 // Theme-aware by construction: these are CSS custom properties, resolved by
 // the browser on every paint. Flipping data-theme on <html> restyles the whole
@@ -25,6 +26,30 @@ const C = {
 type Msg = { id: string; role: 'user' | 'assistant'; content: string };
 const QUICK = ASSISTANT_CHIPS;
 const uid = () => Math.random().toString(36).slice(2);
+
+/**
+ * Render the paths the assistant named as links (ASSIST-01).
+ *
+ * The parsing is in lib/assistant-site.ts, pure and tested. This is only the
+ * markup: a path becomes an anchor inside this site and nothing else does.
+ */
+function linkify(text: string): ReactNode {
+  const parts = splitReply(text);
+  if (parts.length === 1 && 'text' in parts[0]!) return text;
+  return parts.map((part, i) =>
+    'path' in part ? (
+      <a
+        key={`${i}-${part.path}`}
+        href={part.path}
+        style={{ color: C.bronzeDark, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2 }}
+      >
+        ecowoods.ca{part.path === '/' ? '' : part.path}
+      </a>
+    ) : (
+      <span key={i}>{part.text}</span>
+    ),
+  );
+}
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -236,7 +261,7 @@ export default function ChatWidget() {
               const isUser = m.role === 'user';
               return (
                 <div key={m.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', margin: '10px 0' }}>
-                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` : C.paper, color: isUser ? 'var(--cta-fg)' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px var(--rg-bubble-shadow)' }}>{m.content}</div>
+                  <div style={{ maxWidth: '84%', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: isUser ? `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` : C.paper, color: isUser ? 'var(--cta-fg)' : C.brown, border: isUser ? 'none' : `1px solid ${C.border}`, boxShadow: isUser ? '0 4px 14px rgba(168,95,46,.22)' : '0 4px 14px var(--rg-bubble-shadow)' }}>{isUser ? m.content : linkify(m.content)}</div>
                 </div>
               );
             })}
