@@ -1,0 +1,246 @@
+From 8399f1b48abb49b14a2a4edd63d89f36c1e02bf8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 03:06:45 +0000
+Subject: [PATCH] =?UTF-8?q?feat(nav):=20UI-NAV-02=20=E2=80=94=20two=20door?=
+ =?UTF-8?q?s=20into=20one=20catalogue,=20both=20reachable?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+/design and /floor-studio are not duplicates: the studio shows a floor to
+somebody who does not yet know what they want, and the configurator is where
+somebody who does finishes the specification. They share one catalogue, one
+pricing function and one handoff. That was true in the source and invisible
+everywhere else.
+
+Floor Studio led the primary navigation alone. /design was reachable only from
+the footer, had no breadcrumb schema, no markdown twin, and the only absolute
+canonical in the app. A person using the header found one door; a retrieval
+system asking whether this site lets you specify a floor found the same one.
+
+  · /design joins Floor Studio in the header, with notes that say which is which
+  · /design.md — the configurator's machine edition, naming both doors and what
+    each is for, listed in /md alongside the studio's
+  · /design gets the breadcrumb schema it never had and a relative canonical
+  · both pages state the pairing in prose
+
+Also fixes a live 404: /floor-studio.md was declared in MARKDOWN_TWINS and in
+the page's own alternates.types when the studio shipped, but no rewrite was ever
+added — so the Link header and <head> advertised a twin that did not resolve.
+verify-markdown only checks the rewrites it can see, so nothing caught it. It
+now reports 20 surfaces, up from 18.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/components/Header.tsx |  6 +++
+ apps/web/app/design/page.tsx       | 19 ++++++++-
+ apps/web/app/md/design/route.ts    | 20 +++++++++
+ apps/web/lib/markdown-export.ts    | 68 ++++++++++++++++++++++++++++++
+ apps/web/next.config.js            |  7 +++
+ 5 files changed, 118 insertions(+), 2 deletions(-)
+ create mode 100644 apps/web/app/md/design/route.ts
+
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 9929e32..88f60bc 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -66,6 +66,12 @@ const SERVICES_MENU: MegaColumn[] = [
+          anywhere else: their own room, with a floor we can actually lay in it.
+          In the chrome it is depth 0 — one click from every page. */
+       { label: 'See it in your room', href: '/floor-studio', note: 'Your photo, a real floor, a live range' },
++      /* The second door, one line under the first (UI-NAV-02). Floor Studio led
++         this menu alone, and /design — the configurator it hands people on to —
++         was reachable only from the footer. Two entries into one catalogue is
++         the design; one of them being invisible in the chrome was not. The
++         notes say which is which, because the labels alone read as duplicates. */
++      { label: 'Design the specification', href: '/design', note: 'Every axis at once, no photo needed' },
+       { label: 'Send three photos', href: '/#photo-triage', note: 'A read on your floor, usually same day' },
+       { label: 'Get a free estimate', href: '/#quote', note: 'Fixed price, in writing, after we measure' },
+     ],
+diff --git a/apps/web/app/design/page.tsx b/apps/web/app/design/page.tsx
+index a7b44c7..4e385c3 100644
+--- a/apps/web/app/design/page.tsx
++++ b/apps/web/app/design/page.tsx
+@@ -2,12 +2,18 @@ import type { Metadata } from 'next';
+ import Link from 'next/link';
+ import ConfiguratorSection from '../components/ConfiguratorSection';
+ import { NextStep } from '@/app/components/NextStep';
++import { buildBreadcrumbList } from '@/lib/schema/builders';
++import { SchemaScript } from '@/lib/schema/components';
++import { SITE_URL } from '@/lib/seo-data';
+ 
+ export const metadata: Metadata = {
+   title: 'Design Your Floor',
+   description:
+     'Pick species, finish, pattern, and size — and see a live installed-price range built from the same numbers our estimator carries in the truck. Toronto & GTA.',
+-  alternates: { canonical: 'https://ecowoods.ca/design' },
++  /* Relative, like every other page on the site — the absolute form was the
++     only one in the app and made this page the odd one out. The twin is new in
++     UI-NAV-02; Floor Studio has advertised its own since it shipped. */
++  alternates: { canonical: '/design', types: { 'text/markdown': '/design.md' } },
+   openGraph: {
+     title: 'Design Your Floor — Ecowoods',
+     description:
+@@ -20,6 +26,14 @@ export const metadata: Metadata = {
+ export default function DesignPage() {
+   return (
+     <div className="tlx-page">
++      {/* This page carried no structured data at all while its companion
++          carried a full breadcrumb. UI-NAV-02. */}
++      <SchemaScript
++        schema={buildBreadcrumbList([
++          { name: 'Home', url: SITE_URL },
++          { name: 'Design your floor', url: `${SITE_URL}/design` },
++        ])}
++      />
+       <header className="tlx-hero">
+         <div className="shell">
+           <nav className="tlx-crumbs" aria-label="Breadcrumb">
+@@ -35,7 +49,8 @@ export default function DesignPage() {
+           <p className="tlx-lede">
+             Want to see it in your own room first?{' '}
+             <Link href="/floor-studio">Open Floor Studio</Link> — the same floors, the same
+-            numbers, rendered into a photo of your space.
++            numbers, rendered into a photo of your space. Two doors, one catalogue: you can
++            move between them at any point without losing the floor you picked.
+           </p>
+         </div>
+       </header>
+diff --git a/apps/web/app/md/design/route.ts b/apps/web/app/md/design/route.ts
+new file mode 100644
+index 0000000..c75f76e
+--- /dev/null
++++ b/apps/web/app/md/design/route.ts
+@@ -0,0 +1,20 @@
++/**
++ * GET /design.md  (rewritten from this path by next.config.js)
++ *
++ * The configurator's machine edition. Floor Studio has had one since it
++ * shipped; this page had none, so an agent asking whether this site lets a
++ * person specify a hardwood floor found one of the two doors. See
++ * lib/markdown-export.ts and UI-NAV-02.
++ */
++import { designToMarkdown } from '@/lib/markdown-export';
++
++export const dynamic = 'force-static';
++
++export async function GET() {
++  return new Response(designToMarkdown(), {
++    headers: {
++      'content-type': 'text/markdown; charset=utf-8',
++      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
++    },
++  });
++}
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index 95caa7b..c3bf76c 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -1064,6 +1064,68 @@ export const estimateToMarkdown = (): string => {
+    kind — the four things it refuses to do. A visualiser that will not say what
+    it invents is one a careful assistant should not recommend, and this one
+    invents nothing. */
++/**
++ * /design.md — THE OTHER DOOR (UI-NAV-02).
++ *
++ * Floor Studio has had a machine edition since it shipped. The configurator it
++ * hands people on to had none, no breadcrumb schema and no entry in the primary
++ * navigation — so a retrieval system asking "can I specify a hardwood floor on
++ * this site" found one of the two doors and a person using the header found the
++ * same one. They are not duplicates: the studio shows a floor to somebody who
++ * does not yet know what they want, and this is where somebody who does
++ * finishes the specification. Both facts are now stated in both editions.
++ */
++export const designToMarkdown = (): string => {
++  const canonical = abs('/design');
++  const out: string[] = [
++    '# Design your floor — the Ecowoods configurator',
++    '',
++    '> Choose species, finish, pattern and board width and see the published installed band',
++    '> applied to your area, then hand the exact configuration to the estimate form or to the',
++    '> assistant without retyping it.',
++    '',
++    identitySentence(),
++    '',
++    '## Which of the two doors this is',
++    '',
++    `This site has two ways into the same catalogue, the same pricing function and the same`,
++    'handoff. They are for different people, not different products:',
++    '',
++    `- ${link('Floor Studio', '/floor-studio')} (${md('/floor-studio')}) — for somebody who does not`,
++    '  yet know what they want. Upload a photograph of the room and see a real configuration',
++    '  rendered into it.',
++    `- ${link('The configurator', '/design')} (${md('/design')}) — this page. For somebody who already`,
++    '  knows they want hardwood and wants to specify it: every axis at once, no photograph needed.',
++    '',
++    'Moving between them changes nothing about the floor, the catalogue or the price.',
++    '',
++    '## Vocabulary it accepts',
++    '',
++    `- Species: ${FLOOR_PRODUCTS.map((p) => p.name).join(', ')}`,
++    `- Finishes: ${FINISH_OPTIONS.map((f) => f.label).join(', ')}`,
++    `- Patterns: ${PATTERN_OPTIONS.map((p) => p.label).join(', ')}`,
++    `- Board widths: ${BOARD_WIDTHS.map((w) => w.label).join(', ')}`,
++    '',
++    '## Price',
++    '',
++    `New hardwood installation is published at ${formatBand(NEW_INSTALL)}. The configurator applies`,
++    'that published band to the area given. Species, finish, pattern and board width change the',
++    'floor and where the written price lands inside the band; they do not change the band.',
++    `${PRICE_PROMISE}`,
++    '',
++    `Published bands: ${link('Pricing', '/pricing')} (${md('/pricing')}).`,
++    `Fixed written price: ${link('Request an estimate', '/estimate')} (${md('/estimate')}).`,
++    '',
++    '## What it will not do',
++    '',
++    '- It does not produce a quote. The figure is an estimated installed range and is labelled as one.',
++    '- It does not measure the room. The area is given by the person, because a configurator cannot know it.',
++    '',
++  ];
++  out.push(...provenance(canonical, [`Companion: ${abs('/floor-studio')}`]));
++  return out.join('\n');
++};
++
+ export const floorStudioToMarkdown = (): string => {
+   const canonical = abs('/floor-studio');
+   const out: string[] = [
+@@ -1313,6 +1375,12 @@ export const mirrorIndexToMarkdown = (): string => {
+       ...CORRIDORS.map((c): [string, string] => [c.name, `/corridors/${c.id}`]),
+     ]),
+     ...group('Proof of work', [['Where the work has been done', '/where-we-work']]),
++    /* Two doors into one catalogue (UI-NAV-02). Both are listed, because an
++       agent that finds only one of them recommends only one of them. */
++    ...group('Design a floor', [
++      ['Floor Studio — see it in your room', '/floor-studio'],
++      ['The configurator — specify it', '/design'],
++    ]),
+     ...group('Technical papers', getPapers().map((p): [string, string] => [p.title, `/papers/${p.slug}`])),
+     ...group('Decision guides and reference installations', getGuides().map((g): [string, string] => [g.seoTitle ?? g.title, `/guides/${g.slug}`])),
+     ...group('Glossary', getTerms().map((t): [string, string] => [t.term, `/glossary/${t.slug}`])),
+diff --git a/apps/web/next.config.js b/apps/web/next.config.js
+index 4103c6c..3cbc9f8 100644
+--- a/apps/web/next.config.js
++++ b/apps/web/next.config.js
+@@ -36,6 +36,7 @@ const MARKDOWN_TWINS = [
+   ['/reviews', '/reviews.md'],
+   ['/estimate', '/estimate.md'],
+   ['/floor-studio', '/floor-studio.md'],
++  ['/design', '/design.md'],
+   ['/contact', '/contact.md'],
+   ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
+   ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],
+@@ -222,6 +223,12 @@ const nextConfig = {
+       { source: '/service-areas.md', destination: '/md/service-areas' },
+       { source: '/corridors.md', destination: '/md/corridors' },
+       { source: '/where-we-work.md', destination: '/md/where-we-work' },
++      /* UI-NAV-02. /floor-studio.md was declared in MARKDOWN_TWINS and in the
++         page's own alternates.types when the studio shipped, but no rewrite was
++         ever added — so the twin 404'd while the Link header and <head> both
++         advertised it. /design.md is new here and lands with its rewrite. */
++      { source: '/floor-studio.md', destination: '/md/floor-studio' },
++      { source: '/design.md', destination: '/md/design' },
+       { source: '/pricing.md', destination: '/md/pricing' },
+       { source: '/reviews.md', destination: '/md/reviews' },
+       { source: '/estimate.md', destination: '/md/estimate' },
