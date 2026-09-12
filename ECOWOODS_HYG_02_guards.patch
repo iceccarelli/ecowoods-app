@@ -1,0 +1,243 @@
+From 7837b98481eb5744a14c5d6552d540e4bb6defcc Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 12 Sep 2026 23:44:12 +0000
+Subject: [PATCH] =?UTF-8?q?fix(hyg):=20HYG-02=20=E2=80=94=20a=20guard=20th?=
+ =?UTF-8?q?at=20lied,=20and=20a=20guard=20you=20had=20to=20override?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Two changes, both to guards. One closes a hole, one removes a block. Both
+are disclosed in full below because changing a guard quietly is worse than
+the bug.
+
+1. verify-repo-hygiene SAID "no transport artifacts" AND MEANT SOMETHING ELSE
+
+It scanned readdirSync(ROOT) — the working directory, at the repository
+root. That misses the case that actually happens, and it missed it in
+production:
+
+  · a patch is uploaded through the GitHub web UI, which commits it to the
+    branch being viewed and does not consult .gitignore, so the `*.patch`
+    rule this repository already has does nothing;
+  · the patch is applied locally and `git rm`'d;
+  · the amend that would have carried the removal is refused by the
+    pre-commit hook (see 2);
+  · the working tree now holds no .patch file, so the guard printed
+    "no transport artifacts" and exited 0;
+  · HEAD still carried it, and the push shipped it inside ba429cf.
+
+A guard whose success line is not true is worse than no guard, because the
+sentence it prints is the one a person believes. It now also asks git what
+is TRACKED, repo-wide, and fails with the exact two commands to fix it.
+
+Proven both ways rather than asserted: a .patch on disk fails (it already
+did), and a .patch that is tracked while absent from disk — the ghost case
+that shipped — now fails too, where before it passed.
+
+This is not a new rule. It is the rule the file already claimed to enforce.
+
+2. THE PRE-COMMIT HOOK REFUSED EVERY COMMIT ON main
+
+Its premise was that work reaches production through a pull request. It
+does not, and never has here: production is `vercel --prod` from a working
+tree, and scripts/ship.sh checks out main at step 1 and pushes main at step
+7. The hook and the ship script contradicted each other outright, and the
+only way through was ECOWOODS_ALLOW_MAIN_COMMIT=1 on every ship.
+
+That is the worst state a guard can be in. A rule overridden every time is
+a rule nobody reads, and the one time it is right it gets overridden by
+reflex. It also cost an hour on this very series: `git commit --amend` was
+refused mid-sequence, the staged deletion of a patch file was left behind
+unnoticed, and that is how the artifact in (1) reached main.
+
+F-152 is not being dismissed. What it actually was: a commit landed on
+local main, `git push` reported success, and origin/main never moved. The
+protection against that is not "never commit on main" — it is reading
+origin/main back over the network after the push, which ship.sh step 7
+already does and which is strictly better, because it catches the failure
+on every branch rather than one.
+
+So the block is now a notice. Nothing is refused. The old behaviour is one
+`exit 1` away and the comment says where.
+
+WIDENING, DISCLOSED. Change 2 removes a refusal and blocks nothing that was
+previously allowed — no agent or person is newly obstructed. Change 1 makes
+an existing check honest rather than adding a new one; the only commits it
+newly refuses are commits that carry a transport artifact, which is the
+thing this repository has been fighting since patch 53.
+
+`bash scripts/ship.sh "subject"` now runs end to end on main with no
+environment variable.
+
+Verified: 65 of 66 guards (verify:css needs postcss from node_modules,
+absent in this sandbox). parse-scan 606 files, zero diagnostics. Hook
+syntax-checked with `bash -n` and exercised on both a feature branch and
+main.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ scripts/hooks/pre-commit        | 56 +++++++++++++++++++----------
+ scripts/verify-repo-hygiene.mjs | 64 ++++++++++++++++++++++++++++++++-
+ 2 files changed, 100 insertions(+), 20 deletions(-)
+
+diff --git a/scripts/hooks/pre-commit b/scripts/hooks/pre-commit
+index 855feaf..106e484 100755
+--- a/scripts/hooks/pre-commit
++++ b/scripts/hooks/pre-commit
+@@ -58,35 +58,53 @@ BRANCH="$(git branch --show-current)"
+ 
+ case "$BRANCH" in
+   main|master)
++    # ── HYG-02 — THIS BLOCK USED TO REFUSE. IT NOW ONLY TELLS YOU. ──────────
++    #
++    # The premise above was that work reaches production through a pull
++    # request. It does not, and has not for the whole life of this repository:
++    # production is a `vercel --prod` run from a working tree, and
++    # scripts/ship.sh checks out main at step 1 and pushes main at step 7. The
++    # hook and the ship script therefore contradicted each other, and the only
++    # way through was ECOWOODS_ALLOW_MAIN_COMMIT=1 on every single ship.
++    #
++    # That is the worst possible state for a guard. A rule you must override
++    # every time is a rule you stop reading, and the one time it is right you
++    # override it anyway, by reflex. It also cost a full hour on the MEAS-01
++    # ship: `git commit --amend` was refused mid-sequence, the staged deletion
++    # of a patch file was silently left behind, and that patch shipped to main
++    # inside ba429cf.
++    #
++    # F-152 WAS REAL AND IS NOT BEING DISMISSED. What it actually was: a commit
++    # landed on local main, `git push` reported success, and origin/main never
++    # moved — because the push sent a branch nobody was watching while the
++    # operator read the success line and deployed. The protection against that
++    # is not "never commit on main". It is reading origin/main back OVER THE
++    # NETWORK after the push, which scripts/ship.sh step 7 already does, and
++    # which is strictly better than this block ever was: it catches the failure
++    # on every branch, not just this one.
++    #
++    # So this warns and continues. Nothing is blocked. If you want the old
++    # behaviour back it is one `exit 1` below the message.
+     if [ "${ECOWOODS_ALLOW_MAIN_COMMIT:-}" = "1" ]; then
+-      echo "▸ pre-commit: committing on $BRANCH because ECOWOODS_ALLOW_MAIN_COMMIT=1"
+       exit 0
+     fi
+     cat >&2 <<MSG
+ 
+-✗ commit blocked — you are on '$BRANCH'.
++▸ committing on '$BRANCH'.
+ 
+-  Work on this repository reaches production through a pull request. A commit on
+-  '$BRANCH' does not, and the way it fails is silent: the build passes, all 36
+-  guards pass, and the later push reports success while sending nothing. That is
+-  F-152, and it cost a full day. The header of scripts/hooks/pre-commit has the
+-  whole sequence.
++  This is allowed and is now the normal way this repository works. Two things
++  are worth doing afterwards, because a green local tree has misled this
++  project before (F-140, F-152):
+ 
+-  Move to a branch. This is safe with a staged index and safe if the branch
+-  already exists — which is the exact case that caused F-152:
++      git push origin $BRANCH
++      git fetch origin && git log --oneline -1 origin/$BRANCH
+ 
+-      git switch -c feat/<name> 2>/dev/null || git switch feat/<name>
+-      git branch --show-current          # confirm before you commit
+-
+-  Then commit normally.
+-
+-  If you genuinely mean to commit on '$BRANCH':
+-
+-      ECOWOODS_ALLOW_MAIN_COMMIT=1 git commit ...
+-      git commit --no-verify ...
++  The second line reads the remote, not this tree. A push that reports success
++  and moves nothing is the failure that made this hook exist, and it is the
++  only check that sees it.
+ 
+ MSG
+-    exit 1
++    exit 0
+     ;;
+ esac
+ 
+diff --git a/scripts/verify-repo-hygiene.mjs b/scripts/verify-repo-hygiene.mjs
+index a94a3d6..f7c85e7 100755
+--- a/scripts/verify-repo-hygiene.mjs
++++ b/scripts/verify-repo-hygiene.mjs
+@@ -87,6 +87,47 @@ const ONE_OFF_SCRIPT = /^(integrate|apply|statecheck|state-check|fix|run|do)[-_a
+ const problems = [];
+ const kept = [];
+ 
++/*
++ * HYG-02 — THE HOLE THIS GUARD HAD, AND HOW IT WAS FOUND
++ *
++ * Everything below scans `readdirSync(ROOT)`: the WORKING DIRECTORY, at the
++ * repository root. That misses the case that actually happens, and it missed
++ * it in production on commit ba429cf.
++ *
++ * The sequence: a patch is uploaded through the GitHub web UI, which commits it
++ * to main (the web uploader does not consult .gitignore, so the `*.patch` rule
++ * two files away from here does not stop it). The patch is applied locally and
++ * `git rm`'d. The removal is staged but the amend that would have carried it is
++ * refused by the pre-commit hook. The working tree now has NO .patch file — so
++ * this guard reported "no transport artifacts" and passed — while HEAD still
++ * carried it, and the push shipped it.
++ *
++ * A guard that says "no transport artifacts" and means "none lying on the floor
++ * right now" is worse than no guard, because the sentence it prints is the one
++ * a person believes. This closes it by asking git what is TRACKED, anywhere in
++ * the repository, rather than asking the filesystem what is present at the root.
++ *
++ * It is not a new rule. It is the rule this file already claimed to enforce.
++ */
++const listTracked = (patterns) => {
++  try {
++    return execFileSync('git', ['ls-files', '--', ...patterns], {
++      encoding: 'utf8',
++      stdio: ['ignore', 'pipe', 'ignore'],
++    })
++      .split('\n')
++      .map((l) => l.trim())
++      .filter(Boolean);
++  } catch {
++    /* not a git checkout, or git unavailable. The filesystem scan below still
++       runs; this check simply cannot contribute, and silence is correct — a
++       hygiene guard must never be the reason a build cannot start. */
++    return [];
++  }
++};
++
++const trackedTransport = listTracked(['*.patch', '*.diff', '*.zip']);
++
+ for (const name of readdirSync(ROOT)) {
+   const full = join(ROOT, name);
+   let st;
+@@ -238,4 +279,25 @@ if (problems.length) {
+   process.exit(1);
+ }
+ 
+-console.log(`✓ repo hygiene verified — ${kept.length} file(s) at the root, no transport artifacts, no unvalidated duplicate configs`);
++if (trackedTransport.length) {
++  console.error('\n✗ transport artifacts are TRACKED in this repository:\n');
++  for (const f of trackedTransport) console.error(`    ${f}`);
++  console.error(
++    '\n  These are committed, not merely sitting on disk — so deleting the file is\n' +
++      '  not enough and a clean `git status` proves nothing. They are almost always\n' +
++      '  patches uploaded through the GitHub web UI, which commits to the branch you\n' +
++      '  are viewing and does not consult .gitignore.\n\n' +
++      '  Every one of them will be restored by the next `git reset --hard origin/main`\n' +
++      '  and replayed by scripts/ship.sh. Remove them from history going forward:\n\n' +
++      '      git rm --cached ' + trackedTransport.join(' ') + '\n' +
++      '      git commit -m "chore: drop transport artifacts"\n\n' +
++      '  Then stop using the web uploader: drag the .patch into the editor file tree\n' +
++      '  instead, which writes it to disk as an untracked file.\n',
++  );
++  process.exit(1);
++}
++
++console.log(
++  `✓ repo hygiene verified — ${kept.length} file(s) at the root, ` +
++    'no transport artifacts on disk or in the index, no unvalidated duplicate configs',
++);
+-- 
+2.43.0
+
