@@ -7,6 +7,7 @@ import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import TerritoryMap from '../components/TerritoryMap';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { areaGroups } from '@/lib/area-groups';
 
 export const metadata: Metadata = {
   /* The title said "Across the GTA" over an index that runs to Port Colborne
@@ -20,6 +21,10 @@ export const metadata: Metadata = {
 };
 
 export default function ServiceAreasIndex() {
+  /* GROUP-01 — computed once, from lib/area-groups.ts, so the shape is
+     testable rather than assembled inline in JSX. */
+  const groups = areaGroups();
+
   const ld = breadcrumbSchema([
     { name: 'Home', url: SITE_URL },
     { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
@@ -42,14 +47,57 @@ export default function ServiceAreasIndex() {
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
             {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas across ${TERRITORY}. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1.75rem' }}>
-            {SERVICE_AREAS.map((c) => (
-              <Link key={c.slug} href={`/service-areas/${c.slug}`}
-                style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
-                Hardwood Flooring in {areaDisplayName(c)} →
-              </Link>
+          {/* GROUP-01 — ONE HUNDRED TILES IN ONE FLAT GRID WAS THE MARATHON.
+              
+              On a phone that is a hundred cards in a single column before the
+              page says anything else. Grouped by CORRIDOR — the routes this
+              business already publishes, already drives, and already models in
+              content/geo/corridors.ts. Measured: all 100 published areas map to
+              a corridor and none falls outside one, so this is the data's own
+              shape rather than a taxonomy invented to tidy a list.
+
+              Native <details>, no JavaScript, the same mechanism the footer
+              already uses on mobile. Every link stays in the DOM whether the
+              group is open or shut, so a crawler and an assistant see all one
+              hundred either way — the collapsing costs discoverability nothing
+              and costs a human ninety scroll-lengths.
+
+              A city on more than one corridor is listed under the first, once.
+              Listing it twice would double a hundred links into two hundred and
+              make the counts in the summaries wrong. */}
+          <nav className="gl-jump" aria-label="Jump to a corridor" style={{ marginTop: '1.5rem' }}>
+            {groups.map((g) => (
+              <a key={g.id} href={`#corridor-${g.id}`}>
+                {g.name} <span aria-hidden="true">({g.cities.length})</span>
+              </a>
             ))}
-          </div>
+          </nav>
+
+          {groups.map((g, gi) => (
+            <details
+              key={g.id}
+              id={`corridor-${g.id}`}
+              /* The largest group is open, so the page never looks empty and a
+                 visitor sees the shape immediately. The rest are one tap. */
+              open={gi === 0}
+              style={{ marginTop: '1.25rem', borderTop: '1px solid rgba(128,128,128,0.2)', paddingTop: '1rem' }}
+            >
+              <summary style={{ cursor: 'pointer', fontWeight: 600, listStyle: 'revert' }}>
+                {g.name}{' '}
+                <span style={{ fontWeight: 400, opacity: 0.7 }}>
+                  — {g.cities.length} {g.cities.length === 1 ? 'area' : 'areas'}
+                </span>
+              </summary>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+                {g.cities.map((c) => (
+                  <Link key={c.slug} href={`/service-areas/${c.slug}`}
+                    style={{ padding: '0.9rem 1.1rem', border: '1px solid rgba(128,128,128,0.2)', borderRadius: '12px', textDecoration: 'none' }}>
+                    Hardwood Flooring in {areaDisplayName(c)} →
+                  </Link>
+                ))}
+              </div>
+            </details>
+          ))}
           <p style={{ marginTop: '2rem' }}>
             <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
           </p>
