@@ -16,6 +16,7 @@ import { RotatingBackground } from './components/RotatingBackground';
 import { HeroBackdrop } from './components/HeroBackdrop';
 import { ProcessVideo } from './components/ProcessVideo';
 import PricingSection from './components/PricingSection';
+import { FloorAssembly } from './components/FloorAssembly';
 import { HOME_ROTATION } from './data/rotator-slides';
 import HeroRotator from './components/HeroRotator';
 import { HERO_VARIANTS } from './data/hero-variants';
@@ -551,6 +552,17 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
       {/* 3 · THE NUMBER — the three published bands, before anything asks for
              a click. Every figure derives from content/constants/pricing.ts. */}
       <PricingSection />
+
+      {/* 3a · WHAT THE PRICE IS BUYING (VIS-05).
+             Directly after the bands, because the question a person has the
+             moment they read a price is what is actually in it. Five layers,
+             exploded, in the real photographed grain of whichever species they
+             pick — and each one carrying the question to put to whoever is
+             quoting them. Nothing here is a claim about a job: it is how
+             hardwood floors are built. See components/FloorAssembly.tsx for
+             why the moving part contains no text (F-205) and why this is not
+             the hero (P0.4). */}
+      <FloorAssembly />
 
       {/* 4a · THE FLOOR ITSELF, BEFORE AND AFTER.
              The JobCardRail below is typographic on purpose — no stock
