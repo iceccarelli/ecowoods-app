@@ -283,6 +283,11 @@ export function saveStudioDesign(design: StudioDesign): void {
       finish: design.config.finishId,
       pattern: design.config.patternId,
       sqft: clampSqft(design.squareFeet),
+      /* MEAS-04 — the SAME id, not a new one. Without this the mirror mints
+         its own, and one design carries two keys: the studio reports it under
+         one and a later /design edit reports it under the other, so a single
+         customer counts twice in the funnel. */
+      designId: full.designId,
     });
   }
 }

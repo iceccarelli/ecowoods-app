@@ -11,7 +11,8 @@ import {
   bookMeasureIntent,
 } from '@ecowoods/shared/ai';
 import { openAssistant } from '@/lib/assistant';
-import { saveDesignConfig } from '@/lib/design-config';
+import { designEstimateHref, readDesignConfig, saveDesignConfig } from '@/lib/design-config';
+import { ensureDesignId } from '@/lib/floor-studio/design-id';
 import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { track } from '@/lib/analytics';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
@@ -102,6 +103,7 @@ function useCountUp(target: number, enabled: boolean) {
 
 export default function FloorConfigurator() {
   const [speciesId, setSpeciesId] = useState<string>('white oak');
+  const [designId, setDesignId] = useState<string | undefined>(undefined);
   const [finishId, setFinishId] = useState<string>(DEFAULT_FINISH);
   const [patternId, setPatternId] = useState<string>(DEFAULT_PATTERN);
   const [sqft, setSqft] = useState<number>(900);
@@ -129,10 +131,21 @@ export default function FloorConfigurator() {
     if (Number.isFinite(qsSqft) && qsSqft >= SQFT_MIN && qsSqft <= SQFT_MAX) setSqft(qsSqft);
   }, []);
 
+  /* MEAS-04 — mint the join key once, on mount, reusing whatever this browser
+     already has. In an effect rather than during render: two renders would
+     mint two ids and React would report a hydration mismatch. */
+  useEffect(() => {
+    setDesignId(ensureDesignId(readDesignConfig()?.designId));
+  }, []);
+
   /* P0.5 — every change persists: localStorage `ew-design-v1` (the quote form
      reads it and prefills) + the querystring (reload- and share-proof). */
   useEffect(() => {
-    saveDesignConfig({ species: speciesId, finish: finishId, pattern: patternId, sqft });
+    /* Wait for the id. Saving without it would write a config with no key and
+       then overwrite it a tick later, which is harmless but makes the stored
+       shape briefly disagree with what the CTA is about to carry. */
+    if (!designId) return;
+    saveDesignConfig({ species: speciesId, finish: finishId, pattern: patternId, sqft, designId });
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('species', speciesId);
@@ -143,7 +156,13 @@ export default function FloorConfigurator() {
     } catch {
       /* history unavailable — localStorage still carries it */
     }
-  }, [speciesId, finishId, patternId, sqft]);
+  }, [speciesId, finishId, patternId, sqft, designId]);
+
+  /* MEAS-04 — one builder, shared with the spec sheet. */
+  const quoteHref = designEstimateHref(
+    { species: speciesId, finish: finishId, pattern: patternId, sqft, designId, savedAt: '' },
+    'design',
+  );
 
   const species = SPECIES.find((s) => s.id === speciesId) ?? SPECIES[0];
   const finish = FINISH_OPTIONS.find((f) => f.id === finishId) ?? FINISH_OPTIONS[1];
@@ -318,10 +337,23 @@ export default function FloorConfigurator() {
 
             <div>
              <div className="fc-actions">
+              {/* MEAS-04. Was a bare `/#quote` carrying nothing at all —
+                  continuity rested entirely on localStorage, so this link in a
+                  different browser, a private window, or a message to a spouse
+                  arrived empty and the visitor retyped everything. */}
               <a
                 className="btn btn-copper btn-lg fc-cta"
-                href="/#quote"
-                onClick={() => track('design_handoff', { species: speciesId, finish: finishId, pattern: patternId, sqft })}
+                href={quoteHref}
+                onClick={() =>
+                  track('design_handoff', {
+                    species: speciesId,
+                    finish: finishId,
+                    pattern: patternId,
+                    sqft,
+                    design_id: designId,
+                    carried: quoteHref.includes('species='),
+                  })
+                }
               >
                 Get this floor priced in writing
                 <span className="btn-arrow" aria-hidden="true">→</span>

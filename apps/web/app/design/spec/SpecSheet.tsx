@@ -11,7 +11,13 @@ import {
 } from '@ecowoods/shared/ai';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { PRICE_PROMISE } from '@/lib/pricing';
-import { readDesignConfig, saveDesignConfig } from '@/lib/design-config';
+import {
+  designConfigFromParams,
+  designEstimateHref,
+  readDesignConfig,
+  saveDesignConfig,
+  type DesignConfig,
+} from '@/lib/design-config';
 import { track } from '@/lib/analytics';
 import { bandForWork } from '@/content/constants/pricing';
 
@@ -41,35 +47,31 @@ const cad = (n: number) =>
   new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
 
 export function SpecSheet() {
-  const [cfg, setCfg] = useState<{ species: string; finish: string; pattern: string; sqft: number } | null>(null);
+  /* MEAS-04 — the full DesignConfig, not a hand-rolled subset of it.
+     The subset was why this page could not use the shared exit builder or
+     carry a design id: it had structurally thrown both away before the render
+     that needed them. */
+  const [cfg, setCfg] = useState<DesignConfig | null>(null);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    const fromQuery = {
-      species: q.get('species') ?? '',
-      finish: q.get('finish') ?? '',
-      pattern: q.get('pattern') ?? '',
-      sqft: Number(q.get('sqft')),
-    };
-    if (fromQuery.species && Number.isFinite(fromQuery.sqft) && fromQuery.sqft > 0) {
-      setCfg({
-        species: fromQuery.species,
+    /* One parser, shared with the estimate form, so "what counts as a usable
+       configuration in a link" has a single answer. */
+    const fromQuery = designConfigFromParams(q);
+    if (fromQuery) {
+      const filled: DesignConfig = {
+        ...fromQuery,
         finish: fromQuery.finish || DEFAULT_FINISH,
         pattern: fromQuery.pattern || DEFAULT_PATTERN,
-        sqft: fromQuery.sqft,
-      });
+      };
+      setCfg(filled);
       // Keep the two sources agreeing: a sheet opened from a shared link
       // becomes this browser's working configuration too.
-      saveDesignConfig({
-        species: fromQuery.species,
-        finish: fromQuery.finish || DEFAULT_FINISH,
-        pattern: fromQuery.pattern || DEFAULT_PATTERN,
-        sqft: fromQuery.sqft,
-      });
+      saveDesignConfig(filled);
       return;
     }
     const stored = readDesignConfig();
-    if (stored) setCfg({ species: stored.species, finish: stored.finish, pattern: stored.pattern, sqft: stored.sqft });
+    if (stored) setCfg(stored);
   }, []);
 
   if (!cfg) {
@@ -94,7 +96,11 @@ export function SpecSheet() {
   );
 
   const summary = `${species.name} · ${finish?.label} finish · ${pattern?.label} · ${cfg.sqft} sq ft`;
-  const quoteHref = `/#quote?spec=${encodeURIComponent(summary)}`;
+  /* MEAS-04. Was `/#quote?spec=…` — the query string placed AFTER the
+     fragment, so it arrived as part of the hash and nothing ever read it. One
+     builder now, shared with /design, so the two exits cannot drift apart
+     again. */
+  const quoteHref = designEstimateHref(cfg, 'spec-sheet');
 
   return (
     <section className="tlx-section">
@@ -153,7 +159,19 @@ export function SpecSheet() {
             <Link
               className="btn btn-copper"
               href={quoteHref}
-              onClick={() => track('design_handoff', { from: 'spec-sheet', species: cfg.species, sqft: cfg.sqft })}
+              /* `carried` is the whole point of MEAS-04. This event used to
+                 fire on a link that discarded its payload, so the funnel
+                 recorded a successful handoff every time one failed. It now
+                 reports whether the configuration actually travelled. */
+              onClick={() =>
+                track('design_handoff', {
+                  from: 'spec-sheet',
+                  species: cfg.species,
+                  sqft: cfg.sqft,
+                  design_id: cfg.designId,
+                  carried: quoteHref.includes('species='),
+                })
+              }
             >
               Send this spec to Ecowoods
             </Link>

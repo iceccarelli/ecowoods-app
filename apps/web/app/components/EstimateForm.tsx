@@ -12,6 +12,7 @@ import {
   readDesignConfig,
   clearDesignConfig,
   describeDesignConfig,
+  designConfigFromParams,
   type DesignConfig,
 } from '@/lib/design-config';
 import {
@@ -140,6 +141,12 @@ export function EstimateForm({
          attribution quietly worse exactly where the funnel is already
          leaking. */
       setDesignId(designIdOf(params.get('did')));
+      /* MEAS-04 — a /design configuration arriving in the link BEATS whatever
+         this browser last stored, by the same rule the studio code already
+         follows: somebody who followed a link is looking at the floor in that
+         link, not at what they configured on this device last month. */
+      const fromLink = designConfigFromParams(params);
+      if (fromLink) setDesign(fromLink);
     } catch {
       /* a malformed querystring is not a reason to fail the form */
     }
