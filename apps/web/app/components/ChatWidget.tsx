@@ -1,5 +1,6 @@
 'use client';
 
+import { track } from '@/lib/analytics';
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { EW_MARK } from '@/lib/brand';
 import { onAssistantOpen } from '@/lib/assistant';
@@ -108,6 +109,11 @@ export default function ChatWidget() {
     if (!t || busy) return;
     setErrored(false);
     const history = [...messages, { id: uid(), role: 'user' as const, content: t }];
+    /* MEAS-03 — the depth of the conversation, and nothing else. `turn` is a
+       count of the visitor's own messages; the text never leaves here. A
+       one-turn session and an eight-turn session are different products and
+       were previously indistinguishable. */
+    track('assistant_message', { turn: history.filter((m) => m.role === 'user').length });
     setMessages(history);
     setInput('');
     setBusy(true);
@@ -158,10 +164,12 @@ export default function ChatWidget() {
       setInput(prefill);
       setTimeout(() => inputRef.current?.focus(), 250);
     }
-    if (source && typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      // Dev-only telemetry breadcrumb; wire to a real analytics sink for prod.
-      console.log(JSON.stringify({ event: 'assistant.opened', source }));
-    }
+    /* MEAS-03. This was a console.log guarded by NODE_ENV !== 'production',
+       marked "wire to a real analytics sink for prod" — so the assistant
+       reported nothing anywhere it mattered, while creating real leads and
+       booking real measures. `source` is which control opened the panel; no
+       message and nothing the visitor typed goes with it. */
+    track('assistant_open', source ? { source } : undefined);
   }), []);
 
   const waiting = busy && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content;

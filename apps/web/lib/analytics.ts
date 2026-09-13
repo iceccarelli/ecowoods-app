@@ -106,7 +106,32 @@ export type AnalyticsEvent =
      landing people in the right currency, and it carries no location: the
      visitor chose it, and a choice between two published band sets is not a
      place. */
-  | 'studio_region_changed';
+  | 'studio_region_changed'
+  /* MEAS-03 — the surfaces that produced value and reported nothing.
+   *
+   * PG0 found the assistant firing ZERO events while creating real
+   * QuoteRequest rows and booking real Appointments, and the movement
+   * calculator and quote comparator firing none at all. Three tools that a
+   * visitor can spend ten minutes inside, invisible to every report, so the
+   * honest answer to "is EcowoodsGuide worth what it costs to run" was that
+   * nobody could tell.
+   *
+   * The commercial outcomes of a chat are recorded SERVER-side in the funnel
+   * ledger, where they are authoritative and do not depend on consent. These
+   * client events are the denominator: how many people opened it and how far
+   * the conversation got. Neither carries a message, a name, or anything the
+   * visitor typed — `turn` is a count and `source` is which button opened the
+   * panel.
+   *
+   * movement_calculated and quote_check_compared carry only what was chosen
+   * from a fixed list and how many quotes were pasted in. Never a price, never
+   * a document, never a filename: both tools promise on their face that
+   * nothing is uploaded and nothing is stored, and an analytics event that
+   * carried the contents would make that sentence false. */
+  | 'assistant_open'
+  | 'assistant_message'
+  | 'movement_calculated'
+  | 'quote_check_compared';
 
 export function track(
   event: AnalyticsEvent,

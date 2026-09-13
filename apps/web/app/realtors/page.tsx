@@ -13,6 +13,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '@/app/components/Illustration';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { TrackedCta } from '@/app/components/TrackedCta';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -129,9 +130,9 @@ export default function RealtorsPage() {
             Three working days · Fixed price in writing · Salaried crews, so the date holds
           </p>
           <div className="fw-actions">
-            <a className="fw-cta" href="#estimate">
+            <TrackedCta className="fw-cta" href="#estimate" event="realtor_cta" label="hero">
               Book a pre-list walkthrough
-            </a>
+            </TrackedCta>
             <a className="fw-cta fw-cta--ghost" href={BUSINESS_NAP.phoneHref}>
               Call {BUSINESS_NAP.phoneDisplay}
             </a>

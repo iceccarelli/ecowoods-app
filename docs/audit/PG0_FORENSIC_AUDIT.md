@@ -204,7 +204,7 @@ proven to have worked.
 | **PG0** | This audit | 0 | Docs only — SHIPPED |
 | **MEAS-01** | Design ID — one identity from first render to job outcome | 1 | Yes — SHIPPED |
 | **MEAS-02** | The funnel ledger — six server-side commercial stages, plus /admin/funnel | 1 | Yes — SHIPPED |
-| **MEAS-03** | The unmeasured tools: chat, movement, quote-check; kill dead events | 1 | Yes |
+| **MEAS-03** | The unmeasured tools: assistant, movement, quote-check; dead events wired | 1 | Yes — SHIPPED |
 | **MEAS-04** | The lying handoff: one exit builder, `design_handoff` reports carriage | 1 | Yes — SHIPPED |
 | **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes |
 | **SALE-02** | Save My Floor + specification export | 2 | Yes |

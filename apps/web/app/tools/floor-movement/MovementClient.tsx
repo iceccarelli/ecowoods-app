@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { track } from '@/lib/analytics';
 import Link from 'next/link';
 import {
   SPECIES,
@@ -69,6 +70,31 @@ export default function MovementClient() {
   const [rhHigh, setRhHigh] = useState(DEFAULTS.rhHigh);
 
   const species = speciesById(speciesId) ?? SPECIES[0]!;
+
+  /* MEAS-03 — this tool had ZERO analytics. A visitor could spend five minutes
+     tuning it to their exact floor and no report anywhere would know the page
+     had been used, which made it impossible to argue for connecting it to
+     anything.
+
+     Fires ONCE, and only when an input actually moves off its default. A page
+     view is not use of a calculator, and counting arrivals as usage would have
+     made the least-used tool on the site look like one of the busiest. The
+     parameters are the species and board width chosen from fixed lists —
+     nothing typed, nothing about the person, and no result. */
+  const usedRef = useRef(false);
+  useEffect(() => {
+    if (usedRef.current) return;
+    const touched =
+      speciesId !== DEFAULTS.speciesId ||
+      orientation !== DEFAULTS.orientation ||
+      boardWidthMm !== DEFAULTS.boardWidthMm ||
+      runWidthM !== DEFAULTS.runWidthM ||
+      rhLow !== DEFAULTS.rhLow ||
+      rhHigh !== DEFAULTS.rhHigh;
+    if (!touched) return;
+    usedRef.current = true;
+    track('movement_calculated', { species: speciesId, orientation, board_mm: boardWidthMm });
+  }, [speciesId, orientation, boardWidthMm, runWidthM, rhLow, rhHigh]);
 
   const result = useMemo(
     () =>

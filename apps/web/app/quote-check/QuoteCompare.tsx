@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { track } from '@/lib/analytics';
 import Link from 'next/link';
 import { SCOPE_ITEMS, SCOPE_GROUPS, compare, type QuoteInput } from '@/lib/quote-check';
 
@@ -31,6 +32,25 @@ export default function QuoteCompare() {
   ]);
 
   const result = useMemo(() => compare(quotes), [quotes]);
+
+  /* MEAS-03 — this tool had ZERO analytics either. Fires once, and only when
+     two quotes both carry a real total, because that is the first moment a
+     COMPARISON exists; before it the visitor is still typing.
+
+     The event carries a count and nothing else. No total, no area, no company
+     name, no line item. The page promises three times over that nothing is
+     uploaded and nothing is stored, and an analytics event carrying any of
+     the figures would make that sentence false — which matters more here than
+     anywhere else on the site, because the visitor is holding another
+     company's commercial document. */
+  const comparedRef = useRef(false);
+  useEffect(() => {
+    if (comparedRef.current) return;
+    const priced = quotes.filter((q) => typeof q.total === 'number' && q.total > 0).length;
+    if (priced < 2) return;
+    comparedRef.current = true;
+    track('quote_check_compared', { quotes: priced });
+  }, [quotes]);
 
   const setQuote = (i: number, patch: Partial<QuoteInput>) =>
     setQuotes((prev) => prev.map((q, n) => (n === i ? { ...q, ...patch } : q)));

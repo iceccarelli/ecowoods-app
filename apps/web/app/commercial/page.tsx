@@ -13,6 +13,7 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '@/app/components/Illustration';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { TrackedCta } from '@/app/components/TrackedCta';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -140,9 +141,9 @@ export default function CommercialPage() {
             Salaried crews, never subcontractors · HEPA-sealed containment · Fixed price in writing
           </p>
           <div className="fw-actions">
-            <a className="fw-cta" href="#estimate">
+            <TrackedCta className="fw-cta" href="#estimate" event="commercial_cta" label="hero">
               Request a commercial estimate
-            </a>
+            </TrackedCta>
             <a className="fw-cta fw-cta--ghost" href={BUSINESS_NAP.phoneHref}>
               Call {BUSINESS_NAP.phoneDisplay}
             </a>
@@ -199,9 +200,9 @@ export default function CommercialPage() {
               here on purpose: a certificate names a party and a project, and a generic copy is not
               the document your board needs on file.
             </p>
-            <a className="btn btn-copper" href="#estimate">
+            <TrackedCta className="btn btn-copper" href="#estimate" event="commercial_cta" label="footer">
               Request the certificate with your estimate
-            </a>
+            </TrackedCta>
           </div>
         </div>
       </section>

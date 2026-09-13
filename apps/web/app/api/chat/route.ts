@@ -18,6 +18,7 @@ import { chatRequestSchema, CHAT_MAX_BODY_BYTES } from '@ecowoods/shared/schemas
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { bandForWork } from '@/content/constants/pricing';
 import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
+import { recordFunnelEvent } from '@/lib/funnel-ledger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -281,6 +282,20 @@ export async function POST(req: Request) {
             sendAppointmentConfirmationEmail({ to: b.email, name: b.name, whenLabel: label, durationMinutes: SLOT_DURATION_MINUTES, service }).catch((e) => console.error('[chat] confirm email failed:', e));
             sendAdminNewQuoteEmail({ quoteId: quote.id, name: b.name, email: b.email, phone: b.phone, city: b.postal, service, squareFeet: b.squareFeet, notes: `In-home measure booked for ${label}.${b.notes ? ' ' + b.notes : ''}` }).catch((e) => console.error('[chat] admin email failed:', e));
             console.log(JSON.stringify({ event: 'measure.booked', source: 'chat', quoteId: quote.id, apptId: appt.id, startsAt: startsAt.toISOString() }));
+            /* MEAS-03 closes a hole MEAS-02 left. The ledger was wired to
+               /api/leads and /api/appointments, and this tool writes the same
+               two tables without going through either — so every measure the
+               assistant booked was invisible to /admin/funnel, and the
+               assistant looked like it produced nothing.
+
+               BOTH stages, because this one call is both: a lead was captured
+               and an appointment was booked, and a funnel that recorded only
+               the second would show more bookings than leads. Outside the
+               transaction and not awaited: a measurement row must never be
+               able to roll back a booking the customer has been told is
+               confirmed. */
+            void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: quote.id });
+            void recordFunnelEvent({ stage: 'APPOINTMENT_BOOKED', source: 'assistant', quoteId: quote.id });
             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
@@ -311,6 +326,12 @@ export async function POST(req: Request) {
             }});
             adminNotify(q.id);
             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: q.id }));
+            /* MEAS-03 — see book_measure above. Only on the path where a row
+               actually exists: the fallback below deliberately has no quoteId,
+               and a ledger row pointing at nothing would count a lead the
+               funnel could never follow. The durable log line is what carries
+               that case. */
+            void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: q.id });
             return { ok: true, quoteId: q.id, message: 'Saved. A specialist will call within 1 business day.' };
           } catch (err) {
             // DB hiccup must NOT lose the lead — notify admin anyway with the raw details.
