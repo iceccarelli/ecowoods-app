@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { format, subDays } from 'date-fns';
+import { AGE_BAND_LABEL, buildQueue, summarise } from '@/lib/lead-queue';
 
 function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
@@ -20,6 +21,7 @@ export default async function AdminDashboard() {
     recentPayments,
     openInquiries,
     recentQuotes,
+    pendingQuoteCount,
     newOrders,
   ] = await Promise.all([
     db.quoteRequest.count(),
@@ -37,15 +39,37 @@ export default async function AdminDashboard() {
       include: { invoice: { select: { number: true, project: { select: { title: true } } } } },
     }),
     db.inquiry.count({ where: { status: { in: ['NEW', 'IN_PROGRESS'] } } }),
+    /* DESK-01 — OLDEST FIRST, and ten rather than six.
+       
+       This was `createdAt: 'desc'`, take 6. Newest-first is right for a feed
+       and exactly wrong for a queue of unanswered work: measured on production,
+       fourteen enquiries are PENDING and the oldest is eighty-five days old, so
+       the one that most needs answering was the last row in the list or off the
+       bottom of it. */
     db.quoteRequest.findMany({
       where: { status: { in: ['PENDING'] } },
-      orderBy: { createdAt: 'desc' },
-      take: 6,
+      orderBy: { createdAt: 'asc' },
+      take: 10,
     }),
+    db.quoteRequest.count({ where: { status: 'PENDING' } }),
     db.order.count({
       where: { status: { in: ['PENDING', 'PAID'] }, createdAt: { gte: thirtyDaysAgo } },
     }),
   ]);
+
+  /* DESK-01 — the ageing queue. Oldest first, with an age and a band, and an
+     indicative range from the SAME published bands the visitor was shown. */
+  const queue = buildQueue(
+    recentQuotes.map((q) => ({
+      id: q.id,
+      name: q.name,
+      city: q.city,
+      service: q.service,
+      squareFeet: q.squareFeet,
+      createdAt: q.createdAt,
+    })),
+  );
+  const waiting = summarise(queue);
 
   const pendingBankPayments = await db.payment.count({
     where: { method: 'BANK_TRANSFER', status: 'PENDING' },
@@ -108,28 +132,57 @@ export default async function AdminDashboard() {
         {/* Unreviewed quotes */}
         <div className="portal-card">
           <div className="portal-card-header">
-            <h2>New Leads Requiring Review</h2>
+            <h2>Waiting for a reply</h2>
             <Link href="/admin/quotes" className="portal-card-link">All quotes ({totalQuotes})</Link>
           </div>
-          {recentQuotes.length === 0 ? (
+          {/* DESK-01 — the number and the age, before the list. A panel that
+              showed six dates could be read as six recent enquiries; it was
+              fourteen, and the oldest had been waiting eighty-five days. */}
+          {queue.length > 0 && (
+            <p style={{ margin: '0 0 .75rem', fontSize: 'var(--fs-sm)' }}>
+              <strong>
+                {pendingQuoteCount} waiting
+              </strong>
+              {' · oldest '}
+              {waiting.oldestDays} {waiting.oldestDays === 1 ? 'day' : 'days'}
+              {waiting.late > 0 && (
+                <>
+                  {' · '}
+                  <strong>{waiting.late} past the one-business-day reply this site promises</strong>
+                </>
+              )}
+            </p>
+          )}
+          {queue.length === 0 ? (
             <p className="portal-empty">No new quotes — inbox zero! 🎉</p>
           ) : (
             <div className="portal-list">
-              {recentQuotes.map((q) => (
+              {queue.map((q) => (
                 <Link key={q.id} href={`/admin/quotes/${q.id}`} className="portal-list-item portal-list-item-link">
                   <div>
                     <div style={{ fontWeight: 600 }}>{q.name}</div>
                     <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
-                      {q.city}, {q.province} · {q.service ?? 'General'}
+                      {q.city ?? '—'} · {q.service ?? 'General'}
                       {q.squareFeet ? ` · ${q.squareFeet.toLocaleString()} sq ft` : ''}
+                      {/* Published band × stated area. Not a quote, and only
+                          where the area was actually given. */}
+                      {q.indicative
+                        ? ` · ~${q.indicative.low.toLocaleString()}–${q.indicative.high.toLocaleString()} ${q.indicative.currency} at published bands`
+                        : ''}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span className={`portal-badge portal-badge-${q.status === 'PENDING' ? 'info' : 'warning'}`}>
-                      {q.status}
+                    {/* The AGE, not the date. "20 Jun" reads as a fact;
+                        "85 days" reads as a problem. */}
+                    <span
+                      className={`portal-badge portal-badge-${
+                        q.band === 'cold' || q.band === 'overdue' ? 'warning' : 'info'
+                      }`}
+                    >
+                      {AGE_BAND_LABEL[q.band]}
                     </span>
                     <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--muted)', marginTop: '0.25rem' }}>
-                      {format(q.createdAt, 'MMM d')}
+                      {q.ageDays === 0 ? 'today' : `${q.ageDays}d`} · {format(q.createdAt, 'MMM d')}
                     </div>
                   </div>
                 </Link>
