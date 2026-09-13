@@ -206,7 +206,7 @@ proven to have worked.
 | **MEAS-02** | The funnel ledger — six server-side commercial stages, plus /admin/funnel | 1 | Yes — SHIPPED |
 | **MEAS-03** | The unmeasured tools: assistant, movement, quote-check; dead events wired | 1 | Yes — SHIPPED |
 | **MEAS-04** | The lying handoff: one exit builder, `design_handoff` reports carriage | 1 | Yes — SHIPPED |
-| **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes |
+| **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes — SHIPPED |
 | **SALE-02** | Save My Floor + specification export | 2 | Yes |
 | **ECON-01** | Predicted labour/material, so variance is computable | 4 | Yes |
 | **OWN-01** | Floor Passport — first write to `FloorRecord`, from `JobOutcome` | 7 | Yes |

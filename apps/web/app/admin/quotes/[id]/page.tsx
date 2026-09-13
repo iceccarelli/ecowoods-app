@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import EstimateBuilder from './EstimateBuilder';
 import ConvertToProjectForm from './ConvertToProjectForm';
+import { StudioDesignCard } from './StudioDesignCard';
 
 export default async function AdminQuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -102,6 +103,12 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
               )}
             </dl>
           </div>
+
+          {/* SALE-01 — the floor this lead designed, decoded against the live
+              catalogue, instead of a code an estimator had to find in the note
+              above and paste into /floor-studio by hand. Renders nothing for a
+              lead that carried no design, which is most of them. */}
+          <StudioDesignCard quote={quote} />
 
           {/* Linked customer */}
           {quote.user ? (

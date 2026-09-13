@@ -322,6 +322,22 @@ model QuoteRequest {
   /// service page or the chat assistant, and a lead without a design is a
   /// perfectly good lead — it is simply not attributable to the studio.
   designId    String?     @db.VarChar(16)
+
+  /// SALE-01 — the Floor Studio share code, as structured data.
+  ///
+  /// It was already arriving: /api/leads appended it verbatim into the
+  /// free-text `notes` field, and the estimating desk read it out of an email
+  /// and pasted it back into /floor-studio by hand. studio-config.ts says so in
+  /// its own comment. That is a working process built on parsing prose, and it
+  /// breaks the first time somebody edits a note.
+  ///
+  /// The code itself, not an expansion of it: expanding it here would mean a
+  /// second rendering of a design in a table that knows nothing about the
+  /// catalogue, which is how two surfaces start describing one floor
+  /// differently. It stays the code; the admin screen decodes it against the
+  /// live catalogue, so a retired floor resolves to nothing rather than to a
+  /// stale description of something we no longer lay.
+  designCode  String?     @db.VarChar(400)
   adminNotes  String?     @db.Text
 
   stripeCheckoutSessionId String?

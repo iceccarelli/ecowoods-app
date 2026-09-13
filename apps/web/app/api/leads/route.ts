@@ -7,6 +7,8 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } 
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 import { designIdOf } from '@/lib/floor-studio/design-id';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
+import { productById } from '@/lib/floor-studio/catalog';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -205,6 +207,19 @@ export async function POST(request: Request) {
            one: null says "we do not know", a bad id says "we know, and it was
            this design". */
         designId: designIdOf(lead.designId) ?? null,
+        /* SALE-01 — the share code as a column, so the estimating desk stops
+           reading it out of prose. Still ALSO appended to notes by leadNotes()
+           below: the note is what a human reads in an email notification, and
+           removing it would take the floor out of the one place the desk sees
+           a lead before opening the admin screen. */
+        designCode: typeof lead.design === 'string' ? lead.design.slice(0, 400) : null,
+        /* Seeded from the design so nobody retypes what the visitor already
+           chose. Only ever set at creation, when it is necessarily empty —
+           an estimator who edits it afterwards is not overwritten. */
+        species: speciesFromDesign(
+          designFor({ designCode: typeof lead.design === 'string' ? lead.design : null }),
+          (id) => productById(id)?.rateKey,
+        ) ?? undefined,
         userId: session?.user?.id ?? null,
       },
     });
