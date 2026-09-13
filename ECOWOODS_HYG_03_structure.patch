@@ -1,0 +1,401 @@
+From 740e6aac8a9ab63fefbe396d4438ca78cd33ccc3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 13 Sep 2026 18:51:56 +0000
+Subject: [PATCH] =?UTF-8?q?fix(hyg):=20HYG-03=20=E2=80=94=20the=20file=20t?=
+ =?UTF-8?q?hat=20tells=20you=20how=20to=20configure=20this=20described=20a?=
+ =?UTF-8?q?=20different=20application?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE ONE THAT MATTERED
+
+`.env.example` listed POSTGRES_USER, POSTGRES_PASSWORD, API_PORT, SECRET_KEY,
+DEBUG and CORS_ORIGINS. Not one of those is read anywhere in apps/web or
+packages/*. They belong to `backend/` — a Python FastAPI project that is not
+in pnpm-workspace.yaml, is not built by turbo, is not deployed by either
+vercel.json, and shares no code with the site that serves ecowoods.ca.
+
+So the single file whose entire job is telling a new contributor — or another
+agent — what to configure was pointing at the wrong system, and the
+forty-one variables the real application reads were written down nowhere.
+That is worse than an empty file. An empty file makes somebody go and look.
+
+It now lists every variable extracted from the source, grouped by what breaks
+without it, because "optional" with no consequence attached reads as "ignore
+this" and then something is quietly wrong in production for a month. The
+entries that matter most are the ones with a silent failure mode: CRON_SECRET
+unset means the hourly quote-recovery and review-request sweeps return 401
+forever and nobody is told; no BLOB_READ_WRITE_TOKEN and no Supabase key on
+Vercel means generated PDFs are written to a disk that disappears.
+
+FOUR DEAD PATH ALIASES
+
+apps/web/tsconfig.json mapped @ecowoods/ui, @ecowoods/auth, @ecowoods/config
+and @ecowoods/utils. Measured across apps and packages, excluding each
+package's own directory: zero code imports each. `packages/utils` has no
+source directory at all — only a package.json — so its alias pointed at a
+path that does not exist, and `packages/config` holds one file nobody reads.
+
+Removed. Zero importers means zero resolution change.
+
+WHAT I FOUND AND DID NOT TOUCH, AND WHY
+
+docs/REPO_STRUCTURE.md is new and carries the measurements. Three findings
+are deliberately left alone:
+
+`@ecowoods/shared` is aliased to ../../packages/shared/src. THAT DIRECTORY
+DOES NOT EXIST — the package is flat. All 101 import sites work because
+TypeScript falls through to the workspace link in node_modules, so the alias
+is inert. Correcting it changes how a hundred imports resolve, and this
+sandbox cannot run a production build to prove the new resolution is
+identical. A config change that looks tidy and quietly alters module
+resolution for a hundred files is the kind that gets discovered in
+production.
+
+@ecowoods/ui and @ecowoods/auth stay in apps/web/package.json. Removing them
+edits the dependency graph and makes pnpm-lock.yaml stale; ship.sh runs a
+plain `pnpm install` that currently reports "Lockfile is up to date,
+resolution step is skipped". Spending a deploy cycle on two unused symlinks
+is a bad trade. The doc carries the two-line command to do it properly with
+pnpm regenerating the lockfile.
+
+`backend/`, `apps/admin/` and the older React Native app in
+apps/mobile/frontend/ are all dead by the same measure — nothing builds,
+serves or imports them. None is deleted. Deleting somebody's Python backend
+or their previous mobile app on the strength of "nothing imports it" is their
+decision, not a tidiness patch's. They are written down so the choice is
+deliberate rather than forgotten.
+
+A GUARD WAS CONSIDERED AND NOT WRITTEN
+
+`verify:workspace` — fail when a workspace package has zero importers, or a
+tsconfig path points at a directory that is not there — would keep this true
+without anybody re-reading it. It is not here, deliberately: the standing
+instruction on this repository is not to add guards that stand between a
+contributor and their work, and this one would fire on a new package the
+moment it is created and before it is wired up. The structure is documented
+instead, and the doc carries the argument for the guard if documentation
+proves not to hold.
+
+Verified: 65 of 66 guards. verify:css needs postcss from node_modules, absent
+in this sandbox. repo hygiene clean. tsconfig.json still parses as JSON.
+parse-scan 618 files, zero diagnostics. No source file changed, so no test
+changed.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .env.example           | 177 +++++++++++++++++++++++++++++++++++++----
+ apps/web/tsconfig.json |  10 +--
+ docs/REPO_STRUCTURE.md |  94 ++++++++++++++++++++++
+ 3 files changed, 256 insertions(+), 25 deletions(-)
+ create mode 100644 docs/REPO_STRUCTURE.md
+
+diff --git a/.env.example b/.env.example
+index 94891e9..c7b0c03 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,16 +1,161 @@
+-# EcoWoods Platform - Environment Variables
+-# Copy this file to .env and update values for your environment.
+-
+-# PostgreSQL
+-POSTGRES_USER=ecowoods
+-POSTGRES_PASSWORD=ecowoods_secret
+-POSTGRES_DB=ecowoods_db
+-DB_PORT=5432
+-
+-# Backend API
+-API_PORT=8000
+-SECRET_KEY=change-me-in-production-use-a-long-random-string
+-DEBUG=false
+-
+-# CORS Origins (JSON array)
+-CORS_ORIGINS=["*"]
++# Ecowoods — environment variables, as the application actually reads them.
++#
++# WHAT THIS FILE USED TO BE
++#
++# Until HYG-03 this file documented POSTGRES_USER, POSTGRES_PASSWORD,
++# API_PORT, SECRET_KEY, DEBUG and CORS_ORIGINS. Not one of those is read
++# anywhere in apps/web or packages/*. They belong to backend/ — a Python
++# FastAPI project that is not in pnpm-workspace.yaml, is not built by turbo,
++# is not deployed by either vercel.json, and shares no code with the site
++# that serves ecowoods.ca.
++#
++# So the one file whose entire job is to tell a new contributor what to
++# configure was describing a different application, and the forty-one
++# variables the real one reads were written down nowhere. That is worse than
++# an empty file: an empty file makes somebody go and look.
++#
++# Every variable below was extracted from the source. Each says what breaks
++# without it, because "optional" with no consequence attached gets read as
++# "ignore this" and then something is silently off in production for a month.
++#
++# Copy to .env.local for development.
++
++# ─────────────────────────────────────────────────────────────────────────
++# REQUIRED — the site does not work without these
++# ─────────────────────────────────────────────────────────────────────────
++
++# Postgres connection string. Everything commercial stops without it: leads
++# fall through to the durable log, the portal cannot render, the admin
++# screens 500.
++DATABASE_URL=
++
++# Direct (non-pooled) connection. Prisma migrations use this; the pooled
++# DATABASE_URL cannot run DDL. Read by prisma/schema.prisma only.
++DIRECT_URL=
++
++# Sessions. Without it Auth.js cannot sign a cookie and nobody can log in —
++# not a customer to /mypage, not an admin to /admin.
++NEXTAUTH_SECRET=
++# The absolute origin. Wrong here means password-reset and verification
++# emails contain links to the wrong host.
++NEXTAUTH_URL=https://ecowoods.ca
++
++# The canonical origin used for schema.org, sitemaps, feeds and every
++# absolute URL the machine surfaces emit.
++NEXT_PUBLIC_SITE_URL=https://ecowoods.ca
++
++# ─────────────────────────────────────────────────────────────────────────
++# LEADS AND NOTIFICATION — set these or leads arrive nowhere
++# ─────────────────────────────────────────────────────────────────────────
++
++# Where a new lead is emailed. Unset, the lead is still captured in the
++# database and the durable log, and nobody is told about it.
++ADMIN_EMAIL=
++
++# Resend is tried first. Without it lib/email falls back to SMTP; without
++# both, email is logged to the console and never sent.
++RESEND_API_KEY=
++RESEND_FROM_EMAIL=
++
++# SMTP fallback, used only when RESEND_API_KEY is absent.
++SMTP_HOST=
++SMTP_PORT=587
++SMTP_USER=
++SMTP_PASS=
++SMTP_FROM=
++
++# SALE-04 — the text message to the estimating desk when a lead arrives.
++# All four are required together; with any missing, lead-alert logs one line
++# and sends nothing. ALERT_SMS_TO is E.164, comma-separated for more than
++# one estimator. Declared as a data processor in lib/legal.ts and rendered
++# on /privacy — if you change provider, change that too.
++TWILIO_ACCOUNT_SID=
++TWILIO_AUTH_TOKEN=
++TWILIO_FROM=
++ALERT_SMS_TO=
++
++# Optional CRM hook. A public https URL, SSRF-guarded by lib/outbound-webhook.
++LEADS_WEBHOOK_URL=
++PILOT_LEADS_WEBHOOK_URL=
++
++# ─────────────────────────────────────────────────────────────────────────
++# PAYMENTS
++# ─────────────────────────────────────────────────────────────────────────
++
++# Without these, invoices render but cannot be paid online and the webhook
++# that marks them PAID never fires. The build prints a warning and continues.
++STRIPE_SECRET_KEY=
++STRIPE_WEBHOOK_SECRET=
++
++# ─────────────────────────────────────────────────────────────────────────
++# AI
++# ─────────────────────────────────────────────────────────────────────────
++
++# EcowoodsGuide, the chat assistant. Unset, the widget renders and the route
++# cannot answer.
++ANTHROPIC_API_KEY=
++
++# lib/ai.ts falls back to template responses when this is absent. That is a
++# designed fallback, not a failure.
++OPENAI_API_KEY=
++
++# ─────────────────────────────────────────────────────────────────────────
++# STORAGE — where generated PDFs go
++# ─────────────────────────────────────────────────────────────────────────
++
++# Vercel Blob first, then Supabase, then the local filesystem. The local
++# fallback does NOT survive a serverless deploy: on Vercel with neither token
++# set, a generated quote PDF is written to a disk that disappears.
++BLOB_READ_WRITE_TOKEN=
++NEXT_PUBLIC_SUPABASE_URL=
++SUPABASE_SERVICE_ROLE_KEY=
++
++# ─────────────────────────────────────────────────────────────────────────
++# SCHEDULED WORK
++# ─────────────────────────────────────────────────────────────────────────
++
++# Bearer token for /api/cron/*. Unset, the quote-recovery and review-request
++# sweeps registered in vercel.json return 401 every hour, silently.
++CRON_SECRET=
++
++# ─────────────────────────────────────────────────────────────────────────
++# OPTIONAL — social login, each independent
++# ─────────────────────────────────────────────────────────────────────────
++
++AUTH_GOOGLE_ID=
++AUTH_GOOGLE_SECRET=
++AUTH_FACEBOOK_ID=
++AUTH_FACEBOOK_SECRET=
++AUTH_TWITTER_ID=
++AUTH_TWITTER_SECRET=
++
++# ─────────────────────────────────────────────────────────────────────────
++# OPTIONAL — analytics, verification, media
++# ─────────────────────────────────────────────────────────────────────────
++
++# GA4. Loads only after the visitor consents in the cookie banner.
++NEXT_PUBLIC_GA_MEASUREMENT_ID=
++
++NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
++NEXT_PUBLIC_BING_SITE_VERIFICATION=
++
++NEXT_PUBLIC_BOOKING_URL=
++NEXT_PUBLIC_WHATSAPP_NUMBER=
++NEXT_PUBLIC_YOUTUBE_PROCESS_ID=
++
++# /api/backgrounds returns an empty list when this is unset or a placeholder.
++UNSPLASH_ACCESS_KEY=
++
++# Client error reporting. ERROR_WEBHOOK_TIMEOUT_MS defaults if unset.
++ERROR_WEBHOOK_URL=
++ERROR_WEBHOOK_TIMEOUT_MS=
++
++# ─────────────────────────────────────────────────────────────────────────
++# NOT SET BY HAND
++# ─────────────────────────────────────────────────────────────────────────
++#
++# NODE_ENV, VERCEL_ENV, VERCEL_GIT_COMMIT_SHA — supplied by the platform.
++#
++# INDEXNOW_KEY is read from a file in the repository, NOT from the
++# environment. See app/api/indexnow and F-158: it was an env var, and the
++# guard that checks the published key file could not see it.
+diff --git a/apps/web/tsconfig.json b/apps/web/tsconfig.json
+index 16e822d..3210682 100644
+--- a/apps/web/tsconfig.json
++++ b/apps/web/tsconfig.json
+@@ -22,16 +22,8 @@
+       "@ecowoods/shared/*": ["../../packages/shared/src/*"],
+       "@ecowoods/api-client": ["../../packages/api-client/src"],
+       "@ecowoods/api-client/*": ["../../packages/api-client/src/*"],
+-      "@ecowoods/ui": ["../../packages/ui/src"],
+-      "@ecowoods/ui/*": ["../../packages/ui/src/*"],
+-      "@ecowoods/auth": ["../../packages/auth/src"],
+-      "@ecowoods/auth/*": ["../../packages/auth/src/*"],
+       "@ecowoods/types": ["../../packages/types/src"],
+-      "@ecowoods/types/*": ["../../packages/types/src/*"],
+-      "@ecowoods/config": ["../../packages/config/src"],
+-      "@ecowoods/config/*": ["../../packages/config/src/*"],
+-      "@ecowoods/utils": ["../../packages/utils/src"],
+-      "@ecowoods/utils/*": ["../../packages/utils/src/*"]
++      "@ecowoods/types/*": ["../../packages/types/src/*"]
+     }
+   },
+   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+diff --git a/docs/REPO_STRUCTURE.md b/docs/REPO_STRUCTURE.md
+new file mode 100644
+index 0000000..19d1b36
+--- /dev/null
++++ b/docs/REPO_STRUCTURE.md
+@@ -0,0 +1,94 @@
++# Where things belong
++
++Measured on `c5413bc`, not remembered. Every count in this file came from the
++repository, and the method is stated so it can be re-run.
++
++## What ships
++
++One application. `apps/web` is the whole of ecowoods.ca: 261 indexed URLs, 67
++API routes, and every machine surface. Both `vercel.json` files build only it —
++the root one runs `turbo build --filter=@ecowoods/web`, the other `cd apps/web`.
++
++| Package | Source files | Files importing it | Status |
++|---|---:|---:|---|
++| `@ecowoods/shared` | flat (`index.ts`, `ai/`, `constants/`, `schemas/`, `theme/`, `types/`) | **101** | Load-bearing |
++| `@ecowoods/types` | 1 | 6 | Used by mobile and `packages/ui` |
++| `@ecowoods/api-client` | 3 | 5 | Used by web and mobile |
++| `@ecowoods/ui` | 6 | **0** | No code imports it, anywhere |
++| `@ecowoods/auth` | 2 | **0** | `apps/web/lib/auth.ts` does this job instead |
++| `@ecowoods/config` | 1 | **0** | Orphan |
++| `@ecowoods/utils` | **0** | **0** | Has no source directory at all — only a `package.json` |
++
++Method: `grep -rl "@ecowoods/<pkg>" apps packages --include=*.ts --include=*.tsx`,
++excluding the package's own directory. JSON manifests excluded, because a
++dependency entry is not an import.
++
++## What does not ship, and is still in the tree
++
++- **`backend/`** — a Python/FastAPI/SQLite project with its own Alembic
++  migrations and pytest suite. Not in `pnpm-workspace.yaml`, not built by
++  turbo, not deployed by either `vercel.json`, and sharing no code with
++  `apps/web`. It is a third codebase living in the same repository.
++- **`apps/admin/`** — four static HTML/CSS/JS files. No `package.json`, so not
++  a workspace member; nothing builds or serves it. The live admin is
++  `apps/web/app/admin/*`.
++- **`apps/mobile/frontend/`** — a second, older React Native app sitting beside
++  the current Expo Router app in `apps/mobile/app/`, with its own
++  `package.json` and `eas.json`.
++
++None of these is deleted here. Deleting somebody's Python backend or their
++older mobile app on the strength of "nothing imports it" is a decision for the
++person who wrote it, not a tidiness patch. They are written down so the choice
++is deliberate rather than forgotten.
++
++## Fixed by HYG-03
++
++**`.env.example` described a different application.** It listed
++`POSTGRES_USER`, `POSTGRES_PASSWORD`, `API_PORT`, `SECRET_KEY`, `DEBUG` and
++`CORS_ORIGINS` — every one of them belonging to `backend/`, none read anywhere
++in `apps/web` or `packages/*`. The forty-one variables the real application
++reads were documented nowhere.
++
++The one file whose entire job is telling a new contributor what to configure
++was pointing at the wrong system. It now lists every variable extracted from
++the source, grouped by what breaks without it.
++
++**Four `tsconfig` path aliases pointed at packages nothing imports**, two of
++them at directories that do not exist (`packages/utils/src`,
++`packages/config/src` has one file). Removed. Zero importers means zero
++resolution change, and a path alias to a directory that is not there is a
++statement the compiler silently ignores.
++
++## Known, measured, and deliberately not changed
++
++**`apps/web/tsconfig.json` maps `@ecowoods/shared` to
++`../../packages/shared/src`. That directory does not exist** — the package is
++flat. The 101 import sites work because TypeScript falls through to the
++workspace link in `node_modules`.
++
++So the alias is inert. Correcting it would change how 101 imports resolve, and
++this sandbox cannot run a production build to prove the new resolution is
++identical. A config change that looks tidy and quietly alters module resolution
++for a hundred files is the kind that is discovered in production. It is left
++alone, and written down here.
++
++**`@ecowoods/ui` and `@ecowoods/auth` remain in `apps/web/package.json`.** They
++are unused, and removing them edits the dependency graph, which makes
++`pnpm-lock.yaml` stale. `scripts/ship.sh` runs a plain `pnpm install` that
++currently reports "Lockfile is up to date, resolution step is skipped". Costing
++a deploy cycle over two unused symlinks is a bad trade. Done properly, locally:
++
++    pnpm --filter @ecowoods/web remove @ecowoods/ui @ecowoods/auth
++    git add apps/web/package.json pnpm-lock.yaml
++
++## A guard was considered and not written
++
++A `verify:workspace` check — fail when a workspace package has zero importers,
++or when a `tsconfig` path points at a directory that does not exist — would
++keep this true without anybody re-reading it.
++
++It is not in this patch, deliberately. The standing instruction on this
++repository is not to add guards that stand between a contributor and their
++work, and this one would fire on a package the moment it is created and before
++it is wired up. The structure is documented instead. If that proves not to hold,
++a guard is the answer and this paragraph is the argument for it.
+-- 
+2.43.0
+
