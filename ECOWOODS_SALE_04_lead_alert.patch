@@ -1,0 +1,570 @@
+From 75267573fc5537219b13d9b424eb8019dd06ae49 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 13 Sep 2026 17:49:51 +0000
+Subject: [PATCH] =?UTF-8?q?feat(sale):=20SALE-04=20=E2=80=94=20the=20text?=
+ =?UTF-8?q?=20message=20that=20wakes=20somebody=20up?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A lead arriving today produces two emails. That is the whole notification
+path. There is no SMS anywhere in this repository — `grep -rni twilio`
+across every package.json and every source file returned nothing.
+
+So the interval between a homeowner asking for a measure and anyone at this
+business knowing about it is bounded only by how often somebody opens an
+inbox. For home services that interval is the largest single determinant of
+close rate, and it was the one stage of the funnel with no mechanism at all
+— every other stage now has a ledger row and an event.
+
+Wired at the three places a real lead actually lands: /api/leads,
+/api/appointments, and both of the assistant's writing tools. A measure
+booked by EcowoodsGuide at 23:40 is precisely the case email was never going
+to cover.
+
+NO NEW DEPENDENCY, DELIBERATELY
+
+Twilio's REST API is an HTTPS form POST with basic auth. The npm package adds
+a lockfile entry to a repository whose install expects the lockfile to be
+current — a dependency added in a patch is a dependency that breaks `pnpm
+install` on the machine applying it. Fifteen lines of `fetch` instead, with
+a hard timeout and redirects refused. The cost is stated in the file: this
+speaks Twilio's wire format, and changing provider changes this one file.
+
+THE GUARD CAUGHT ME, AND IT WAS RIGHT
+
+`pnpm seo:legal` failed:
+
+    `twilio` is imported but no processor named like "twilio" is declared
+    → It receives data. /privacy lists everyone who does, and a list that is
+      missing one is not an oversight in a marketing page — it is an
+      inaccurate statement about where a customer's information goes.
+
+I was about to ship a feature that sends a customer's name and phone number
+to a third party the privacy page did not mention. lib/legal.ts now declares
+Twilio, /privacy renders it from the same list, and LEGAL_LAST_REVIEWED moves
+to today. This is the guard doing the job it was written for, on me.
+
+WHAT THE MESSAGE IS ALLOWED TO CONTAIN
+
+An SMS crosses a carrier in the clear and lands on a lock screen anybody
+standing nearby can read. So it carries the least that still lets someone
+return the call: what happened, the name, the number, the city or postal
+code, the service, and which page produced it.
+
+It carries no email, no message body, no address, and nothing about the floor
+they designed. That is enforced by the shape of the type rather than by
+discipline — LeadAlert has no field for them — and a test asserts the shape
+holds, because a future "just add the email so I can reply from my phone" is
+exactly how a lock-screen leak gets written.
+
+Provider errors log the STATUS and never the response body: an error body can
+echo the request back, and the request contains a customer's phone number.
+
+IT CANNOT BREAK A LEAD
+
+Never awaited, never throws, hard four-second timeout. Unconfigured it
+resolves quietly with one structured log line — most environments have no
+credentials, and an alert path that shouted on every lead would be switched
+off within a day and then be off on the day it mattered. Recipients must be
+E.164 or they are dropped rather than handed to a carrier, and
+ALERT_SMS_TO takes a list so a second estimator needs no deploy.
+
+To turn it on: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM and
+ALERT_SMS_TO. Until all four are set nothing changes.
+
+THE THIRD TEST NEEDLE THIS SESSION THAT HAD TO BE MADE CODE-SHAPED
+
+"LeadAlert must have no `message` field" failed on the docblock for `phone`,
+which reads "the entire point of the message". It matches a field declaration
+now. Word-shaped needles keep finding prose; that is three for three.
+
+Verified: 64 of 66 guards. verify:css needs postcss from node_modules, absent
+here. verify:hygiene fails on a tracked patch file sitting on origin/main
+from a web upload — HYG-02 on a real artifact, cleared when ship.sh applies.
+parse-scan 616 files, zero diagnostics. Resolving typecheck clean. 36 new
+assertions.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/api/appointments/route.ts |  12 ++
+ apps/web/app/api/chat/route.ts         |  19 +++
+ apps/web/app/api/leads/route.ts        |  12 ++
+ apps/web/lib/lead-alert.test.ts        | 157 ++++++++++++++++++++++++
+ apps/web/lib/lead-alert.ts             | 163 +++++++++++++++++++++++++
+ apps/web/lib/legal.ts                  |  13 +-
+ 6 files changed, 375 insertions(+), 1 deletion(-)
+ create mode 100644 apps/web/lib/lead-alert.test.ts
+ create mode 100644 apps/web/lib/lead-alert.ts
+
+diff --git a/apps/web/app/api/appointments/route.ts b/apps/web/app/api/appointments/route.ts
+index 0984277..b3d233e 100644
+--- a/apps/web/app/api/appointments/route.ts
++++ b/apps/web/app/api/appointments/route.ts
+@@ -9,6 +9,7 @@ import {
+ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+ import { recordFunnelEvent } from '@/lib/funnel-ledger';
++import { sendLeadAlert } from '@/lib/lead-alert';
+ 
+ export const runtime = 'nodejs';
+ export const dynamic = 'force-dynamic';
+@@ -125,6 +126,17 @@ export async function POST(request: Request) {
+        purpose: a measurement row must never be able to roll back a booking
+        that the customer has already been shown as confirmed. Not awaited, for
+        the same reason it is not inside the transaction. */
++    /* SALE-04 — a booked measure is the most time-critical alert of the
++       three: a slot is now held, and if it needs moving the customer should
++       hear that today rather than on the day. */
++    void sendLeadAlert({
++      kind: 'measure booked',
++      name: data.name,
++      phone: data.phone ?? null,
++      where: data.postal ?? null,
++      service: data.service,
++      source: 'booking',
++    });
+     void recordFunnelEvent({
+       stage: 'APPOINTMENT_BOOKED',
+       designId: (data as { designId?: string }).designId,
+diff --git a/apps/web/app/api/chat/route.ts b/apps/web/app/api/chat/route.ts
+index ee77aeb..fc9bd14 100644
+--- a/apps/web/app/api/chat/route.ts
++++ b/apps/web/app/api/chat/route.ts
+@@ -19,6 +19,7 @@ import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
+ import { bandForWork } from '@/content/constants/pricing';
+ import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
+ import { recordFunnelEvent } from '@/lib/funnel-ledger';
++import { sendLeadAlert } from '@/lib/lead-alert';
+ 
+ export const runtime = 'nodejs';
+ export const maxDuration = 30;
+@@ -296,6 +297,16 @@ export async function POST(req: Request) {
+                confirmed. */
+             void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: quote.id });
+             void recordFunnelEvent({ stage: 'APPOINTMENT_BOOKED', source: 'assistant', quoteId: quote.id });
++            /* SALE-04 — a measure booked by the assistant at 23:40 is exactly
++               the case email was never going to cover. */
++            void sendLeadAlert({
++              kind: 'measure booked',
++              name: b.name,
++              phone: b.phone,
++              where: b.postal ?? null,
++              service,
++              source: 'assistant',
++            });
+             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
+           } catch (err) {
+             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
+@@ -332,6 +343,14 @@ export async function POST(req: Request) {
+                funnel could never follow. The durable log line is what carries
+                that case. */
+             void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: q.id });
++            void sendLeadAlert({
++              kind: 'lead',
++              name: lead.name,
++              phone: lead.phone,
++              where: lead.postal,
++              service: lead.service ?? lead.species ?? null,
++              source: 'assistant',
++            });
+             return { ok: true, quoteId: q.id, message: 'Saved. A specialist will call within 1 business day.' };
+           } catch (err) {
+             // DB hiccup must NOT lose the lead — notify admin anyway with the raw details.
+diff --git a/apps/web/app/api/leads/route.ts b/apps/web/app/api/leads/route.ts
+index 5ecd01c..77a8c2c 100644
+--- a/apps/web/app/api/leads/route.ts
++++ b/apps/web/app/api/leads/route.ts
+@@ -7,6 +7,7 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT }
+ import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
+ import { designIdOf } from '@/lib/floor-studio/design-id';
+ import { recordFunnelEvent } from '@/lib/funnel-ledger';
++import { sendLeadAlert } from '@/lib/lead-alert';
+ import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
+ import { productById } from '@/lib/floor-studio/catalog';
+ 
+@@ -233,6 +234,17 @@ export async function POST(request: Request) {
+       source: lead.source as string | undefined,
+       quoteId: quote.id,
+     });
++    /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
++       reason the ledger row is not: a homeowner's request must not wait on a
++       carrier. Inert and silent when no credentials are set. */
++    void sendLeadAlert({
++      kind: 'lead',
++      name: String(lead.name ?? ''),
++      phone: lead.phone ? String(lead.phone) : null,
++      where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
++      service: lead.service ? String(lead.service) : null,
++      source: lead.source ? String(lead.source) : null,
++    });
+   } catch (err) {
+     console.error(JSON.stringify({
+       event: 'lead.db_persist_failed', leadId,
+diff --git a/apps/web/lib/lead-alert.test.ts b/apps/web/lib/lead-alert.test.ts
+new file mode 100644
+index 0000000..e88e8cd
+--- /dev/null
++++ b/apps/web/lib/lead-alert.test.ts
+@@ -0,0 +1,157 @@
++/**
++ * lead-alert.test.ts — SALE-04.
++ *
++ * Two things are worth testing here and one of them is unusual: what the
++ * message is NOT allowed to contain. An SMS crosses a carrier in the clear and
++ * lands on a lock screen, so the contents are a privacy decision, not a
++ * formatting one.
++ */
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import { describe, expect, it } from 'vitest';
++import { alertConfig, composeLeadAlert, sendLeadAlert } from './lead-alert';
++
++const WEB = process.cwd().endsWith('apps/web') ? process.cwd() : join(process.cwd(), 'apps/web');
++const read = (rel: string) => readFileSync(join(WEB, rel), 'utf8');
++
++const CONFIGURED = {
++  TWILIO_ACCOUNT_SID: 'AC' + 'x'.repeat(30),
++  TWILIO_AUTH_TOKEN: 'tok',
++  TWILIO_FROM: '+14165550100',
++  ALERT_SMS_TO: '+14165550111',
++};
++
++describe('what the message carries, and what it must not', () => {
++  it('leads with what happened, then who and the number to ring', () => {
++    const msg = composeLeadAlert({
++      kind: 'measure booked',
++      name: 'J. Tremblay',
++      phone: '+14165550123',
++      where: 'M4C 1B5',
++      service: 'installation',
++      source: 'service-area-east-york',
++    });
++    expect(msg.startsWith('Ecowoods — measure booked')).toBe(true);
++    expect(msg).toContain('J. Tremblay');
++    expect(msg).toContain('+14165550123');
++    expect(msg).toContain('via service-area-east-york');
++  });
++
++  it('cannot carry an email, a message body, or an address', () => {
++    /* The shape of LeadAlert is the guarantee: there is no field for them.
++       This asserts the shape holds, because a future "just add the email so I
++       can reply from my phone" is exactly how a lock-screen leak is written. */
++    const src = read('lib/lead-alert.ts');
++    const type = src.slice(src.indexOf('export type LeadAlert'), src.indexOf('};', src.indexOf('export type LeadAlert')));
++    /* A FIELD DECLARATION, not the bare word. The docblock on `phone` says
++       "the entire point of the message", and matching prose is how a test
++       starts forbidding its own documentation — the third time this session
++       that a needle had to be made code-shaped rather than word-shaped. */
++    for (const forbidden of ['email', 'message', 'notes', 'address', 'design']) {
++      expect(type, `LeadAlert must have no ${forbidden} field`).not.toMatch(
++        new RegExp(`\\n\\s*${forbidden}\\??:`),
++      );
++    }
++  });
++
++  it('is bounded, so a carrier does not split it into out-of-order parts', () => {
++    const msg = composeLeadAlert({
++      kind: 'lead',
++      name: 'x'.repeat(500),
++      phone: '+14165550123',
++      where: 'y'.repeat(500),
++      service: 'z'.repeat(500),
++    });
++    expect(msg.length).toBeLessThanOrEqual(320);
++  });
++
++  it('drops absent fields rather than printing empty separators', () => {
++    expect(composeLeadAlert({ kind: 'lead', name: 'A. Singh' })).toBe('Ecowoods — lead · A. Singh');
++  });
++});
++
++describe('configuration', () => {
++  it('needs all four values before it will send anything', () => {
++    expect(alertConfig({})).toBeNull();
++    for (const k of Object.keys(CONFIGURED)) {
++      const partial = { ...CONFIGURED, [k]: '' };
++      expect(alertConfig(partial), `${k} must be required`).toBeNull();
++    }
++    expect(alertConfig(CONFIGURED)).not.toBeNull();
++  });
++
++  it('accepts several recipients, so a second estimator needs no deploy', () => {
++    const cfg = alertConfig({ ...CONFIGURED, ALERT_SMS_TO: '+14165550111, +12895550222' });
++    expect(cfg?.to).toEqual(['+14165550111', '+12895550222']);
++  });
++
++  it('refuses anything that is not E.164, rather than handing it to a carrier', () => {
++    for (const bad of ['4165550111', '+1 416 555 0111', 'not-a-number', '+0123', '+']) {
++      expect(alertConfig({ ...CONFIGURED, ALERT_SMS_TO: bad }), bad).toBeNull();
++    }
++  });
++});
++
++describe('it can never break a lead', () => {
++  it('resolves quietly when unconfigured', async () => {
++    /* Most environments have no credentials. An alert path that threw, or even
++       warned loudly, on every lead would be switched off within a day — and
++       then be off on the day it mattered. */
++    expect(await sendLeadAlert({ kind: 'lead', name: 'A' }, {})).toBeUndefined();
++  });
++
++  it('never throws when the network does', async () => {
++    const g = globalThis as { fetch: typeof fetch };
++    const original = g.fetch;
++    g.fetch = (() => Promise.reject(new Error('carrier unreachable'))) as typeof fetch;
++    try {
++      expect(
++        await sendLeadAlert({ kind: 'lead', name: 'A', phone: '+14165550123' }, CONFIGURED),
++      ).toBeUndefined();
++    } finally {
++      g.fetch = original;
++    }
++  });
++});
++
++describe('the call sites', () => {
++  it('every path that creates a real lead alerts', () => {
++    for (const f of [
++      'app/api/leads/route.ts',
++      'app/api/appointments/route.ts',
++      'app/api/chat/route.ts',
++    ]) {
++      expect(read(f), `${f} must alert`).toContain('sendLeadAlert({');
++    }
++  });
++
++  it('none of them awaits it', () => {
++    /* A customer's request must not wait on a carrier, and an alert failure
++       must never turn a captured lead into a 500. */
++    for (const f of [
++      'app/api/leads/route.ts',
++      'app/api/appointments/route.ts',
++      'app/api/chat/route.ts',
++    ]) {
++      expect(read(f), `${f} must not await the alert`).not.toContain('await sendLeadAlert');
++    }
++  });
++
++  it('adds no dependency', () => {
++    /* Twilio's REST API is a form POST. The package would add a lockfile entry
++       to a repository whose install expects the lockfile to be current — a
++       dependency added in a patch is a dependency that breaks `pnpm install`
++       on the machine applying it. */
++    expect(read('lib/lead-alert.ts')).not.toContain("from 'twilio'");
++    expect(read('../../package.json')).not.toContain('"twilio"');
++  });
++
++  it('logs a provider status but never a provider response body', () => {
++    /* An error body can echo the request back, and the request contains a
++       customer's phone number. */
++    const src = read('lib/lead-alert.ts');
++    expect(src).toContain('status: res.status');
++    expect(src).not.toContain('res.text()');
++    expect(src).not.toContain('res.json()');
++  });
++});
+diff --git a/apps/web/lib/lead-alert.ts b/apps/web/lib/lead-alert.ts
+new file mode 100644
+index 0000000..600c6ca
+--- /dev/null
++++ b/apps/web/lib/lead-alert.ts
+@@ -0,0 +1,163 @@
++/**
++ * lib/lead-alert.ts — SALE-04. The text message that wakes somebody up.
++ *
++ * THE GAP THIS CLOSES
++ *
++ * A lead arriving at /api/leads today produces two emails: one to ADMIN_EMAIL
++ * and one to the customer. That is the entire notification path. There is no
++ * SMS anywhere in this repository — `grep -rni twilio` across every
++ * package.json and every source file returns nothing.
++ *
++ * So the interval between a homeowner asking for a measure and somebody
++ * knowing about it is bounded only by how often a person opens an inbox. For a
++ * home-services business that interval is the single largest determinant of
++ * close rate, and it is the one part of the funnel this site had no mechanism
++ * for at all — every other stage now has a ledger row and an event.
++ *
++ * NO NEW DEPENDENCY, DELIBERATELY
++ *
++ * Twilio's REST API is an HTTPS form POST with basic auth. The npm package
++ * adds a lockfile entry, a resolution step and a supply-chain surface for
++ * something `fetch` does in fifteen lines — and this repository installs with
++ * a lockfile that is expected to be already up to date, so a dependency added
++ * in a patch is a dependency that breaks `pnpm install` on the machine that
++ * applies it.
++ *
++ * The consequence worth stating: this speaks Twilio's wire format. If the
++ * business moves to another provider, this file changes. That is a smaller
++ * cost than the alternative, and it is one file.
++ *
++ * EVERY RULE THE REST OF THIS CODEBASE ALREADY FOLLOWS
++ *
++ *   - Never throws. A lead that was captured is captured whether or not the
++ *     alert sends, and an alert failure must never turn a 201 into a 500.
++ *   - Never awaited by a caller with commercial work left to do.
++ *   - Silent and inert when unconfigured, with one structured log line, so a
++ *     deployment without credentials behaves exactly as it does today rather
++ *     than erroring on every lead.
++ *   - Hard timeout, no redirects.
++ */
++
++/** Twilio's own endpoint. Not operator-supplied, so there is nothing to guard. */
++const TWILIO_HOST = 'https://api.twilio.com';
++
++/** Long enough for a carrier hop, short enough not to hold a serverless invocation. */
++const TIMEOUT_MS = 4000;
++
++export type LeadAlert = {
++  /** What happened. Kept short — it is the first thing read on a lock screen. */
++  kind: 'lead' | 'measure booked' | 'photos';
++  name: string;
++  /** The number to call back. This is the entire point of the message. */
++  phone?: string | null;
++  /** Postal code or city as the visitor typed it. */
++  where?: string | null;
++  service?: string | null;
++  /** Which page or tool produced it — service-area-etobicoke, assistant, … */
++  source?: string | null;
++};
++
++/**
++ * What the estimator's phone actually shows.
++ *
++ * Deliberately minimal: who, where, what, and the number to ring. It does NOT
++ * carry the email, the message body, the design, or the address. An SMS
++ * crosses a carrier in the clear and lands on a lock screen that anybody
++ * standing nearby can read — so it carries the least that still lets someone
++ * return the call, and the full record stays in the admin screen and the email.
++ */
++export function composeLeadAlert(a: LeadAlert): string {
++  const parts = [
++    `Ecowoods — ${a.kind}`,
++    a.name,
++    a.phone ?? null,
++    a.where ?? null,
++    a.service ?? null,
++    a.source ? `via ${a.source}` : null,
++  ].filter(Boolean);
++  /* One segment where possible. Longer messages are split by the carrier and
++     arrive out of order often enough to matter on a phone in a van. */
++  return parts.join(' · ').slice(0, 320);
++}
++
++type TwilioConfig = { sid: string; token: string; from: string; to: string[] };
++
++/**
++ * Read the configuration, or report exactly why there is none.
++ *
++ * Returns null rather than throwing, and never logs a token. `ALERT_SMS_TO`
++ * takes a comma-separated list so a second estimator can be added without a
++ * deploy.
++ */
++export function alertConfig(env: Record<string, string | undefined>): TwilioConfig | null {
++  const sid = env.TWILIO_ACCOUNT_SID?.trim();
++  const token = env.TWILIO_AUTH_TOKEN?.trim();
++  const from = env.TWILIO_FROM?.trim();
++  const to = (env.ALERT_SMS_TO ?? '')
++    .split(',')
++    .map((n) => n.trim())
++    .filter((n) => /^\+[1-9]\d{6,14}$/.test(n));
++  if (!sid || !token || !from || to.length === 0) return null;
++  return { sid, token, from, to };
++}
++
++/**
++ * Send it. Fire and forget.
++ *
++ * Returns a promise so a test can await it. No production caller does: the
++ * customer's request must not wait on a carrier.
++ */
++export function sendLeadAlert(
++  alert: LeadAlert,
++  env: Record<string, string | undefined> = process.env,
++): Promise<void> {
++  const cfg = alertConfig(env);
++  if (!cfg) {
++    /* Not an error. Most environments — preview builds, local development, a
++       deployment that has not bought a number yet — have no credentials, and
++       an alert path that shouted on every lead would be turned off within a
++       day and then be off when it mattered. */
++    console.log(JSON.stringify({ event: 'lead_alert.skipped', reason: 'not configured' }));
++    return Promise.resolve();
++  }
++
++  const body = composeLeadAlert(alert);
++  const auth = Buffer.from(`${cfg.sid}:${cfg.token}`).toString('base64');
++
++  return Promise.allSettled(
++    cfg.to.map(async (to) => {
++      const controller = new AbortController();
++      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
++      try {
++        const res = await fetch(`${TWILIO_HOST}/2010-04-01/Accounts/${cfg.sid}/Messages.json`, {
++          method: 'POST',
++          redirect: 'error',
++          signal: controller.signal,
++          headers: {
++            authorization: `Basic ${auth}`,
++            'content-type': 'application/x-www-form-urlencoded',
++          },
++          body: new URLSearchParams({ To: to, From: cfg.from, Body: body }).toString(),
++        });
++        if (!res.ok) {
++          /* The STATUS, never the response body: a provider error can echo the
++             request back, and that request contains a customer's phone number. */
++          console.error(
++            JSON.stringify({ event: 'lead_alert.rejected', status: res.status, kind: alert.kind }),
++          );
++        }
++      } catch (err) {
++        console.error(
++          JSON.stringify({
++            event: 'lead_alert.failed',
++            kind: alert.kind,
++            error: err instanceof Error ? err.message : 'unknown',
++            hint: 'The lead itself is safe — see lead.captured above and the admin email.',
++          }),
++        );
++      } finally {
++        clearTimeout(timer);
++      }
++    }),
++  ).then(() => undefined);
++}
+diff --git a/apps/web/lib/legal.ts b/apps/web/lib/legal.ts
+index e3a4ec6..9da1146 100644
+--- a/apps/web/lib/legal.ts
++++ b/apps/web/lib/legal.ts
+@@ -38,7 +38,7 @@
+  */
+ 
+ /** ISO date the descriptions below were last checked against the code. */
+-export const LEGAL_LAST_REVIEWED = '2026-08-31';
++export const LEGAL_LAST_REVIEWED = '2026-09-13';
+ 
+ /**
+  * Owner/legal sign-off status. Rendered on both pages, because a policy whose
+@@ -93,6 +93,17 @@ export const PROCESSORS: Processor[] = [
+     data: 'Your name and email address, and the contents of the message being sent to you.',
+     evidence: "apps/web/lib/email/index.ts — `new Resend(process.env.RESEND_API_KEY)`.",
+   },
++  {
++    name: 'Twilio',
++    purpose:
++      'Sends one text message to the Ecowoods estimating desk the moment you ask for a measure, ' +
++      'so somebody calls you back the same day rather than whenever an inbox is next opened.',
++    data:
++      'Your name and the phone number you gave us, with the city or postal code and the service ' +
++      'you asked about. Not your email, not your message, not your address, and nothing about ' +
++      'the floor you designed — the alert carries only what is needed to return your call.',
++    evidence: "apps/web/lib/lead-alert.ts — a direct HTTPS request to Twilio's Messages API.",
++  },
+   {
+     name: 'Stripe',
+     purpose: 'Takes payment when you pay an invoice online.',
+-- 
+2.43.0
+
