@@ -7,6 +7,7 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } 
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 import { designIdOf } from '@/lib/floor-studio/design-id';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { sendLeadAlert } from '@/lib/lead-alert';
 import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
 import { productById } from '@/lib/floor-studio/catalog';
 
@@ -232,6 +233,17 @@ export async function POST(request: Request) {
       designId: lead.designId as string | undefined,
       source: lead.source as string | undefined,
       quoteId: quote.id,
+    });
+    /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
+       reason the ledger row is not: a homeowner's request must not wait on a
+       carrier. Inert and silent when no credentials are set. */
+    void sendLeadAlert({
+      kind: 'lead',
+      name: String(lead.name ?? ''),
+      phone: lead.phone ? String(lead.phone) : null,
+      where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
+      service: lead.service ? String(lead.service) : null,
+      source: lead.source ? String(lead.source) : null,
     });
   } catch (err) {
     console.error(JSON.stringify({

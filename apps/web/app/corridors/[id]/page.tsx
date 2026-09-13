@@ -8,6 +8,7 @@ import { SITE_URL, cityContent, BUSINESS } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { buildCorridorSchema } from '@/lib/schema/corridor-schema';
 import { SchemaScripts } from '@/lib/schema/components';
+import { EstimateForm } from '@/app/components/EstimateForm';
 
 export const dynamicParams = false;
 export const generateStaticParams = () => CORRIDORS.map((c) => ({ id: c.id }));
@@ -216,6 +217,22 @@ export default async function CorridorPage({ params }: { params: Promise<{ id: s
               at <Link href={`/corridors/${corridor.id}.md`}>{`/corridors/${corridor.id}.md`}</Link>.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* SALE-03 — the corridor pages had no form either, and no CTA at all.
+          Eleven routes describing exactly where this business will and will not
+          drive, read by somebody working out whether they are inside the
+          service area — which is the moment to ask, not a moment to send them
+          to the homepage. `source` carries the corridor, so the funnel ledger
+          can answer whether a route pays for the trips it implies. */}
+      <section className="tlx-section" id="quote" aria-label={`Request an estimate on ${corridor.name}`}>
+        <div className="shell">
+          <EstimateForm
+            source={`corridor-${corridor.id}`}
+            heading="Get a fixed written price on this route"
+            intro="A senior estimator measures, then writes one price. It does not move afterwards."
+          />
         </div>
       </section>
     </div>

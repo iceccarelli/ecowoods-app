@@ -11,6 +11,7 @@ import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
+import { EstimateForm } from '@/app/components/EstimateForm';
 
 export function generateStaticParams() {
   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
@@ -234,7 +235,14 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
           </p>
           <p style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center' }}>
-            <a href="/#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
+            {/* SALE-03 — SAME PAGE. This was `/#quote`, a cross-page anchor:
+                a homeowner who searched for this city, landed here, and pressed
+                the primary button was sent to the homepage to scroll for a
+                form. EstimateForm's own docblock records F-160 fixing exactly
+                this pattern — it reached /services, /pricing, /commercial,
+                /realtors and the four Toronto landing pages, and never reached
+                the hundred pages that carry the entire geographic footprint. */}
+            <a href="#quote" className="btn btn-copper btn-lg">Book your free in-home estimate</a>
             {/* THE STUDIO, IN THIS CITY'S OWN CURRENCY (GEO-006).
                 Until now these pages reached Floor Studio only through the
                 header and footer, which are global and were therefore Canadian
@@ -366,6 +374,33 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         </div>
       </section>
 
+      {/* SALE-03 — THE FORM, ON THE PAGE.
+          
+          This page type had none. Its primary button, twice, pointed at
+          `/#quote` on the homepage, and the only contact mechanism here was a
+          `tel:` link in the sixth section. One hundred URLs, every one of them
+          a local commercial-intent search result, every one of them asking a
+          homeowner to load a second page before typing anything.
+
+          `source` carries the city. That is the whole point of MEAS-01 and
+          MEAS-02 arriving first: a lead from Etobicoke is now distinguishable
+          from a lead from Oakville in the funnel ledger, so the question "which
+          cities actually produce deposits" becomes answerable instead of
+          assumed — and the answer is what decides where the next real job
+          photograph and the next piece of local proof should come from.
+
+          It sits before the NAP block and after the local content, so a visitor
+          reads the reason to believe we work here first and is then asked. */}
+      <section className="tlx-section" id="quote" aria-label={`Request an estimate in ${city.name}`}>
+        <div className="shell">
+          <EstimateForm
+            source={`service-area-${city.slug}`}
+            heading={`Get a fixed written price in ${city.name}`}
+            intro="A senior estimator measures, then writes one price. It does not move afterwards."
+          />
+        </div>
+      </section>
+
       {/* The NAP block, byte-identical to every other surface because every
           field is interpolated from BUSINESS_NAP. A local landing page that
           states the address differently from the homepage, the footer and the
@@ -401,7 +436,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             ))}
           </p>
           <p style={{ marginTop: '1.5rem' }}>
-            <a href="/#quote" className="btn btn-copper btn-lg">Get your fixed-price estimate in {city.name}</a>
+            <a href="#quote" className="btn btn-copper btn-lg">Get your fixed-price estimate in {city.name}</a>
           </p>
         </div>
       </section>

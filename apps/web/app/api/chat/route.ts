@@ -19,6 +19,7 @@ import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { bandForWork } from '@/content/constants/pricing';
 import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { sendLeadAlert } from '@/lib/lead-alert';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -296,6 +297,16 @@ export async function POST(req: Request) {
                confirmed. */
             void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: quote.id });
             void recordFunnelEvent({ stage: 'APPOINTMENT_BOOKED', source: 'assistant', quoteId: quote.id });
+            /* SALE-04 — a measure booked by the assistant at 23:40 is exactly
+               the case email was never going to cover. */
+            void sendLeadAlert({
+              kind: 'measure booked',
+              name: b.name,
+              phone: b.phone,
+              where: b.postal ?? null,
+              service,
+              source: 'assistant',
+            });
             return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
@@ -332,6 +343,14 @@ export async function POST(req: Request) {
                funnel could never follow. The durable log line is what carries
                that case. */
             void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: q.id });
+            void sendLeadAlert({
+              kind: 'lead',
+              name: lead.name,
+              phone: lead.phone,
+              where: lead.postal,
+              service: lead.service ?? lead.species ?? null,
+              source: 'assistant',
+            });
             return { ok: true, quoteId: q.id, message: 'Saved. A specialist will call within 1 business day.' };
           } catch (err) {
             // DB hiccup must NOT lose the lead — notify admin anyway with the raw details.

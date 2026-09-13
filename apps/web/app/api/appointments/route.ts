@@ -9,6 +9,7 @@ import {
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { sendLeadAlert } from '@/lib/lead-alert';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -125,6 +126,17 @@ export async function POST(request: Request) {
        purpose: a measurement row must never be able to roll back a booking
        that the customer has already been shown as confirmed. Not awaited, for
        the same reason it is not inside the transaction. */
+    /* SALE-04 — a booked measure is the most time-critical alert of the
+       three: a slot is now held, and if it needs moving the customer should
+       hear that today rather than on the day. */
+    void sendLeadAlert({
+      kind: 'measure booked',
+      name: data.name,
+      phone: data.phone ?? null,
+      where: data.postal ?? null,
+      service: data.service,
+      source: 'booking',
+    });
     void recordFunnelEvent({
       stage: 'APPOINTMENT_BOOKED',
       designId: (data as { designId?: string }).designId,

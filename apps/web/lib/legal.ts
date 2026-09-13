@@ -38,7 +38,7 @@
  */
 
 /** ISO date the descriptions below were last checked against the code. */
-export const LEGAL_LAST_REVIEWED = '2026-08-31';
+export const LEGAL_LAST_REVIEWED = '2026-09-13';
 
 /**
  * Owner/legal sign-off status. Rendered on both pages, because a policy whose
@@ -92,6 +92,17 @@ export const PROCESSORS: Processor[] = [
     purpose: 'Sends the email you get back — confirmations, quotes, appointment reminders.',
     data: 'Your name and email address, and the contents of the message being sent to you.',
     evidence: "apps/web/lib/email/index.ts — `new Resend(process.env.RESEND_API_KEY)`.",
+  },
+  {
+    name: 'Twilio',
+    purpose:
+      'Sends one text message to the Ecowoods estimating desk the moment you ask for a measure, ' +
+      'so somebody calls you back the same day rather than whenever an inbox is next opened.',
+    data:
+      'Your name and the phone number you gave us, with the city or postal code and the service ' +
+      'you asked about. Not your email, not your message, not your address, and nothing about ' +
+      'the floor you designed — the alert carries only what is needed to return your call.',
+    evidence: "apps/web/lib/lead-alert.ts — a direct HTTPS request to Twilio's Messages API.",
   },
   {
     name: 'Stripe',
