@@ -405,6 +405,19 @@ export function estimateHref(design: StudioDesign, service = 'installation'): st
   return `/estimate?${params.toString()}#form`;
 }
 
+/**
+ * The specification sheet, carrying a studio design.
+ *
+ * SALE-02 — the brief's SPECIFICATION EXPORT. It points at the sheet that
+ * already exists rather than a second one: /design/spec has been rendering a
+ * printable Ecowoods floor specification since the configurator shipped, and
+ * building a studio-flavoured copy of it is precisely the duplication the
+ * transformation brief's Rule #5 forbids. The sheet now reads a studio share
+ * code as well as a /design configuration, so one document serves both.
+ */
+export const specHref = (design: StudioDesign): string =>
+  `/design/spec?design=${encodeURIComponent(encodeStudioDesign(design))}`;
+
 /** The advanced configurator, on the same floor. */
 export function designHref(design: StudioDesign): string {
   const product = productById(design.config.productId);

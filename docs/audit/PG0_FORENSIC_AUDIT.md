@@ -207,7 +207,7 @@ proven to have worked.
 | **MEAS-03** | The unmeasured tools: assistant, movement, quote-check; dead events wired | 1 | Yes — SHIPPED |
 | **MEAS-04** | The lying handoff: one exit builder, `design_handoff` reports carriage | 1 | Yes — SHIPPED |
 | **SALE-01** | Structured design on `QuoteRequest` + admin decoder (stop retyping) | 2 | Yes — SHIPPED |
-| **SALE-02** | Save My Floor + specification export | 2 | Yes |
+| **SALE-02** | Specification export — one sheet serves the studio and the configurator | 2 | Yes — SHIPPED |
 | **ECON-01** | Predicted labour/material, so variance is computable | 4 | Yes |
 | **OWN-01** | Floor Passport — first write to `FloorRecord`, from `JobOutcome` | 7 | Yes |
 | **OWN-02** | Referral model, referral code, reward attribution | 7 | Yes |

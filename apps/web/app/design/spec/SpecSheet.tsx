@@ -19,6 +19,17 @@ import {
   type DesignConfig,
 } from '@/lib/design-config';
 import { track } from '@/lib/analytics';
+import {
+  decodeStudioDesign,
+  studioRef,
+  type StudioDesign,
+} from '@/lib/floor-studio/studio-config';
+import {
+  BOARD_WIDTHS,
+  priceConfiguration,
+  productById as studioProductById,
+} from '@/lib/floor-studio/catalog';
+import { formatDesignId } from '@/lib/floor-studio/design-id';
 import { bandForWork } from '@/content/constants/pricing';
 
 /**
@@ -43,8 +54,19 @@ const SPECIES: Record<string, { name: string; janka: string }> = {
   hickory: { name: 'Hickory', janka: '1820' },
 };
 
-const cad = (n: number) =>
-  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
+/**
+ * SALE-02 — formats in the currency the band set was written in.
+ *
+ * The EstimateResult field names still read `…Cad` (a naming debt from before
+ * New York bands existed) but the VALUE is whatever `currency` says, and this
+ * formatter follows the currency rather than the field name.
+ */
+const money = (n: number, currency = 'CAD') =>
+  new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'en-CA', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(n);
 
 export function SpecSheet() {
   /* MEAS-04 — the full DesignConfig, not a hand-rolled subset of it.
@@ -52,9 +74,35 @@ export function SpecSheet() {
      carry a design id: it had structurally thrown both away before the render
      that needed them. */
   const [cfg, setCfg] = useState<DesignConfig | null>(null);
+  /* SALE-02 — a Floor Studio design, when the link carries one. Held beside
+     the configuration rather than converted into it, because it knows things a
+     DesignConfig cannot hold: the board width, which band set priced it, what
+     the visitor asked the floor to feel like, and what their photo read as. */
+  const [studio, setStudio] = useState<StudioDesign | null>(null);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
+
+    /* A studio share code wins over loose parameters: it is richer and it is
+       what the visitor was actually looking at. */
+    const code = q.get('design');
+    const fromStudio = code ? decodeStudioDesign(code) : null;
+    if (fromStudio) {
+      setStudio(fromStudio);
+      const product = studioProductById(fromStudio.config.productId);
+      const mirrored: DesignConfig = {
+        species: product?.rateKey ?? '',
+        finish: fromStudio.config.finishId,
+        pattern: fromStudio.config.patternId,
+        sqft: fromStudio.squareFeet,
+        ...(fromStudio.designId ? { designId: fromStudio.designId } : {}),
+        savedAt: new Date().toISOString(),
+      };
+      setCfg(mirrored);
+      saveDesignConfig(mirrored);
+      return;
+    }
+
     /* One parser, shared with the estimate form, so "what counts as a usable
        configuration in a link" has a single answer. */
     const fromQuery = designConfigFromParams(q);
@@ -90,10 +138,19 @@ export function SpecSheet() {
   const species = SPECIES[cfg.species] ?? { name: cfg.species, janka: '—' };
   const finish = FINISH_OPTIONS.find((f) => f.id === cfg.finish) ?? FINISH_OPTIONS[1];
   const pattern = PATTERN_OPTIONS.find((p) => p.id === cfg.pattern) ?? PATTERN_OPTIONS[0];
-  const estimate = estimateInstalledRangeCad(
-    { species: cfg.species, squareFeet: cfg.sqft, finish: cfg.finish, pattern: cfg.pattern },
-    bandForWork(cfg.species),
-  );
+  /* SALE-02 — priced against the band set the design was BUILT in.
+     `cad()` below formatted Canadian dollars unconditionally, which was right
+     while this sheet only ever saw a /design configuration. A studio design
+     carries its country, and printing an Ontario figure on a specification a
+     Buffalo homeowner is about to hand their contractor is exactly the
+     currency mistake GEO-006 exists to prevent. */
+  const estimate = studio
+    ? priceConfiguration(studio.config, studio.squareFeet, studio.country)
+    : estimateInstalledRangeCad(
+        { species: cfg.species, squareFeet: cfg.sqft, finish: cfg.finish, pattern: cfg.pattern },
+        bandForWork(cfg.species),
+      );
+  const width = studio ? BOARD_WIDTHS.find((w) => w.id === studio.config.widthId) : undefined;
 
   const summary = `${species.name} · ${finish?.label} finish · ${pattern?.label} · ${cfg.sqft} sq ft`;
   /* MEAS-04. Was `/#quote?spec=…` — the query string placed AFTER the
@@ -142,12 +199,53 @@ export function SpecSheet() {
               <dt>Area</dt>
               <dd>{cfg.sqft.toLocaleString('en-CA')} sq ft</dd>
             </div>
+            {/* SALE-02 — the rows only a studio design can fill. Each is
+                rendered from data the visitor supplied or their browser
+                measured; none of it came off a photograph that reached a
+                server, because none ever does. */}
+            {width && (
+              <div>
+                <dt>Board width</dt>
+                <dd>{width.label}</dd>
+              </div>
+            )}
+            {studio && (
+              <div>
+                <dt>Reference</dt>
+                <dd>
+                  {studioRef(studio)}
+                  {studio.designId && <> · {formatDesignId(studio.designId)}</>}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Indicative installed range</dt>
               <dd>
-                {cad(estimate.estimatedLowCad)}–{cad(estimate.estimatedHighCad)}
+                {money(estimate.estimatedLowCad, estimate.currency)}–
+                {money(estimate.estimatedHighCad, estimate.currency)}
               </dd>
             </div>
+            {studio && (
+              <div>
+                <dt>Priced against</dt>
+                <dd>{studio.country === 'US' ? 'New York bands (USD)' : 'Ontario bands (CAD)'}</dd>
+              </div>
+            )}
+            {studio && studio.feels.length > 0 && (
+              <div>
+                <dt>Asked for</dt>
+                <dd>{studio.feels.join(', ')}</dd>
+              </div>
+            )}
+            {studio?.room && (
+              <div>
+                <dt>Room reading</dt>
+                <dd>
+                  {studio.room.lightLevel} light · {studio.room.wallUndertone} walls ·{' '}
+                  {studio.room.existingFloorTone} existing floor
+                </dd>
+              </div>
+            )}
           </dl>
 
           <p className="ds-sheet-note">

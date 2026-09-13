@@ -59,6 +59,7 @@ import {
   studioHref,
   studioRef,
   type StudioDesign,
+  specHref,
 } from '@/lib/floor-studio/studio-config';
 
 /**
@@ -1152,6 +1153,22 @@ export default function FloorStudio() {
                   <button type="button" className="fs-link-btn" onClick={downloadImage}>
                     Download the image
                   </button>
+                  {/* SALE-02 — the specification, as a document the visitor can
+                      print or hand to a spouse, a designer, or their own
+                      contractor. It opens the sheet that already exists rather
+                      than a studio-flavoured copy of it. */}
+                  <Link
+                    className="fs-link-btn"
+                    href={specHref(design)}
+                    onClick={() =>
+                      track('studio_spec_opened', {
+                        config: configurationId(design.config),
+                        design_id: design.designId,
+                      })
+                    }
+                  >
+                    Print the specification
+                  </Link>
                   <Link className="fs-link-btn" href={designHref(design)}>
                     Open it in the full configurator
                   </Link>

@@ -19,19 +19,19 @@ import { isDesignId, newDesignId } from './floor-studio/design-id';
 const WEB = process.cwd().endsWith('apps/web') ? process.cwd() : join(process.cwd(), 'apps/web');
 const read = (rel: string) => readFileSync(join(WEB, rel), 'utf8');
 
-/**
- * The same file with every comment removed.
+/*
+ * SALE-02 removed a comment-stripper that used to live here.
  *
- * The first version of the test below searched the raw source and failed on
- * the DOCBLOCK that explains the bug — a comment quoting the broken URL read
- * to it exactly like the broken URL. Asserting against prose is how a test
- * starts forbidding its own explanation, so these assertions read the code.
+ * It existed so "no hand-built quote link" would not match the docblock that
+ * explains the bug. Measured later, the same regex removed THIRTEEN real
+ * statements from FloorStudio.tsx: a regex is not a TypeScript lexer, and an
+ * over-eager one turns a `not.toContain` into a test that passes because the
+ * code it was looking for was deleted before the search.
+ *
+ * The assertions below are positive and code-shaped instead. "The CTA is built
+ * by the shared builder" is both what we actually require and something prose
+ * cannot accidentally satisfy.
  */
-const code = (rel: string) =>
-  read(rel)
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
 
 const cfg = (over: Partial<DesignConfig> = {}): DesignConfig => ({
   species: 'white oak',
@@ -70,9 +70,11 @@ describe('the bug this patch exists to end', () => {
   it('is the only place either exit is built', () => {
     /* Two CTAs assembling their own URLs is how one of them broke alone. */
     for (const file of ['app/components/FloorConfigurator.tsx', 'app/design/spec/SpecSheet.tsx']) {
-      const src = code(file);
-      expect(src, `${file} must use the shared builder`).toContain('designEstimateHref');
-      expect(src, `${file} must not hand-build a quote link`).not.toContain('/#quote?');
+      const src = read(file);
+      expect(src, `${file} must build its exit with the shared builder`).toContain(
+        'const quoteHref = designEstimateHref(',
+      );
+      expect(src, `${file} must render that href`).toContain('href={quoteHref}');
       expect(src, `${file} must not use the bare homepage anchor`).not.toContain('href="/#quote"');
     }
   });
@@ -82,7 +84,7 @@ describe('the bug this patch exists to end', () => {
        lost its payload. A metric that fails in the optimistic direction is
        worse than no metric. */
     for (const file of ['app/components/FloorConfigurator.tsx', 'app/design/spec/SpecSheet.tsx']) {
-      expect(code(file), `${file} must report carriage`).toContain('carried:');
+      expect(read(file), `${file} must report carriage`).toContain('carried:');
     }
   });
 });
@@ -138,12 +140,12 @@ describe('one design, one id', () => {
     /* Two ids for one design means the studio reports it under one key and a
        later /design edit reports it under the other — one customer, counted
        twice. */
-    const src = code('lib/floor-studio/studio-config.ts');
+    const src = read('lib/floor-studio/studio-config.ts');
     expect(src).toContain('designId: full.designId');
   });
 
   it('mints a real id shape when a caller has none', () => {
-    const src = code('lib/design-config.ts');
+    const src = read('lib/design-config.ts');
     expect(src).toContain('ensureDesignId(config.designId)');
     expect(isDesignId(newDesignId())).toBe(true);
   });
@@ -151,7 +153,7 @@ describe('one design, one id', () => {
 
 describe('the estimate form reads the link', () => {
   it('prefers a configuration in the link over whatever this browser stored', () => {
-    const src = code('app/components/EstimateForm.tsx');
+    const src = read('app/components/EstimateForm.tsx');
     expect(src).toContain('designConfigFromParams');
   });
 });

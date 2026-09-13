@@ -131,7 +131,12 @@ export type AnalyticsEvent =
   | 'assistant_open'
   | 'assistant_message'
   | 'movement_calculated'
-  | 'quote_check_compared';
+  | 'quote_check_compared'
+  /* SALE-02 — the specification was opened. The brief's SPECIFICATION EXPORT
+     exists so a design can be handed to a spouse, a designer or a contractor,
+     and this is the only way to find out whether anybody does that. Carries a
+     configuration id and the design id, same as every other studio event. */
+  | 'studio_spec_opened';
 
 export function track(
   event: AnalyticsEvent,
