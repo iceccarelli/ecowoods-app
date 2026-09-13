@@ -7,6 +7,7 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../../components/Illustration';
+import { routeForPaper } from '@/lib/authority-routes';
 
 /**
  * /glossary/<term> — one addressable page per term.
@@ -84,6 +85,9 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
   const related = (t.related ?? []).map(getTerm).filter((x): x is NonNullable<typeof x> => !!x);
   const inbound = backlinks(t.slug);
   const sourceHref = `/papers/${t.source.paper}#${t.source.section}`;
+  /* AUTH-01 — null for a paper we have not mapped, and the block below is
+     simply not rendered. */
+  const route = routeForPaper(t.source.paper);
   const siblings = getTerms().filter((x) => x.slug !== t.slug).slice(0, 8);
 
   const schema = {
@@ -201,6 +205,29 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
                 })}
               </ul>
             </>
+          )}
+
+          {/* AUTH-01 — the way out.
+              
+              These 47 entries linked to the homepage, the glossary index, a
+              framework pillar and their source paper. Nothing commercial, on
+              any of them. A reader who has just worked out why their floor
+              cupped had nowhere to go, and /estimate had six inbound links in
+              the whole codebase with none from a paper, a guide or a term.
+
+              The service comes from the term's SOURCE PAPER, not from a
+              per-term judgement — see lib/authority-routes.ts for why, and for
+              the sentence justifying each of the five. A term whose paper is
+              not mapped renders no block at all, because silence is the right
+              output for "we do not know what this person needs". */}
+          {route && (
+            <div className="fw-actions" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '.5rem' }}>
+              <p>
+                If you are dealing with this on a real floor:{' '}
+                <Link href={`/services/${route.service}`}>{route.label}</Link>, or{' '}
+                <Link href="/estimate">get a fixed written price</Link> after a measure.
+              </p>
+            </div>
           )}
 
           <div className="fw-actions">

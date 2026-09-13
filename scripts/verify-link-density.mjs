@@ -167,7 +167,13 @@ const CATEGORIES = {
   caseStudies: (h) => h === '/case-studies/*' || (h.startsWith('/case-studies/') && h !== '/case-studies'),
   papers: (h) => h === '/papers/*' || (h.startsWith('/papers/') && h !== '/papers'),
   framework: (h) => h === '/framework' || h.startsWith('/framework/'),
-  cta: (h) => h === '#quote' || h === '/#quote',
+  /* AUTH-01 — WIDENED. `/estimate` is a call to action and always was: it is a
+     real page with a real form, whereas `/#quote` is a fragment on a different
+     URL. The guard predates the estimate route being the preferred target, so
+     it counted the anchor and not the page, and moving a CTA from the anchor to
+     the page made a compliant page fail. Widening only — every href that
+     counted before still counts. */
+  cta: (h) => h === '#quote' || h === '/#quote' || h === '/estimate',
 };
 
 /**

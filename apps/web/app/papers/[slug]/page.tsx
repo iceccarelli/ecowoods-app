@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { getPaper, getPapers, pdfHref, pdfIsPublished, type Paper } from '@/lib/papers';
 import { SchemaScripts } from '@/lib/schema/components';
 import { IllustrationPair } from '../../components/Illustration';
+import { routeForPaper } from '@/lib/authority-routes';
 
 /* One fact, two drawings of it. `<id>` and `<id>-b` were briefed once and
    drawn twice; IllustrationPair alternates them by cross-fade. Not kenburns —
@@ -248,6 +249,9 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
   if (!paper) notFound();
 
   const others = getPapers().filter((p) => p.slug !== paper.slug);
+  /* AUTH-01 — keyed by the paper's own slug, through the same mapping the
+     glossary uses, so the two tiers cannot disagree. Null renders nothing. */
+  const paperRoute = routeForPaper(slug);
 
   return (
     <div className="tlx-page">
@@ -451,6 +455,29 @@ export default async function PaperPage({ params }: { params: Promise<{ slug: st
           )}
         </article>
       </div>
+
+      {/* AUTH-01 — the papers had NO commercial link of any kind. Not a
+          service, not the estimate form, not even the homepage anchor the rest
+          of the authority tier uses. They also carry the second-highest
+          inbound internal link count in the application, which makes them the
+          largest accumulation of authority on this site routing nowhere.
+
+          The service comes from the paper's own slug through the same mapping
+          the glossary uses, so the two tiers cannot disagree about what a
+          subject bears on. A paper with no mapping renders nothing. */}
+      {paperRoute && (
+        <section className="tlx-section" aria-label="Work this paper bears on">
+          <div className="shell">
+            <p className="tlx-body">
+              If you are acting on this rather than reading it:{' '}
+              <Link href={`/services/${paperRoute.service}`}>{paperRoute.label}</Link>, or{' '}
+              <Link href="/estimate">get a fixed written price</Link> after an in-home measure.
+              The figures above are the reasoning; the price is written once somebody has seen the
+              floor.
+            </p>
+          </div>
+        </section>
+      )}
 
       {others.length > 0 && (
         <section className="tlx-section" aria-label="More papers">

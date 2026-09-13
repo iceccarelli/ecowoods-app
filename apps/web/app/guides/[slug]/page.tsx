@@ -444,7 +444,12 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <Link href="/hardwood-floor-problems-toronto">what your floor is telling you</Link>.
           </p>
           <div className="fw-actions">
-            <Link className="fw-cta" href="/#quote">
+            {/* AUTH-01 — /estimate, not the homepage anchor. `/#quote` works,
+                but it costs a page load and it means the page built to take an
+                estimate request has six inbound links in the whole codebase
+                while the homepage collects every one the authority tier
+                earns. */}
+            <Link className="fw-cta" href="/estimate">
               Get a fixed written price →
             </Link>
             <Link className="fw-cta fw-cta--ghost" href="/framework">
