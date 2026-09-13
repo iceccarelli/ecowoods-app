@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  ASSEMBLY_DEFAULT_PATTERN,
   ASSEMBLY_DEFAULT_SPECIES,
   ASSEMBLY_LAYERS,
+  ASSEMBLY_PATTERNS,
   ASSEMBLY_SPECIES,
   assemblyDesignHref,
+  boardFace,
+  boardsFor,
   grainTextureFor,
 } from '@/lib/floor-assembly';
 
@@ -47,37 +51,94 @@ import {
  * element, and the ranking this page exists to win is worth more than the
  * animation. This sits below the price, where it costs the LCP nothing.
  *
+ * ── VIS-06: IT MOVES BY ITSELF, AND IT IS MADE OF BOARDS ───────────────────
+ *
+ * The wear layer was one flat rectangle with a grain photograph stretched over
+ * it. It is now the actual floor: individual boards, laid in whichever of the
+ * four patterns this company lays — straight, diagonal, herringbone, chevron —
+ * each board cut from a different part of the same photographed crop so no two
+ * are the same piece of wood, in any of the five species.
+ *
+ * And it is never still. The stack drifts on a twenty-six second cycle and the
+ * five layers float against each other on cycles that do not divide into it, so
+ * the assembly never returns to the same pose twice inside a visit. It is slow
+ * and it is weighted, because that is how a floor moves — wood settles and
+ * breathes, it does not spin.
+ *
+ * WHAT KEEPS THAT HONEST RATHER THAN EXPENSIVE:
+ *
+ *   - Only the STACK and the five LAYERS animate. The several hundred boards
+ *     never do. They ride along as one already-rasterised composited layer, so
+ *     the frame cost does not grow with the board count, and a herringbone
+ *     floor costs the same per frame as a straight one.
+ *   - Board shading is a flat colour layer, not a CSS `filter`. A filter on
+ *     several hundred elements makes the browser re-rasterise every one of them
+ *     on every frame that the stack is moving — and the stack is always moving.
+ *   - Nothing animates off screen. `animation-play-state` is `paused` in the
+ *     stylesheet and only the IntersectionObserver below sets it running, so a
+ *     visitor who never scrolls here pays nothing at all.
+ *   - Nothing animates for somebody who asked it not to. Under
+ *     prefers-reduced-motion the keyframes are removed outright.
+ *
  * ── WHY NO ANIMATION LIBRARY ───────────────────────────────────────────────
  *
  * framer-motion is declared in package.json and has no importers. It stays that
- * way here for a reason that is about correctness rather than weight: a
- * declarative motion library server-renders its INITIAL state into the style
- * attribute, so a scroll-triggered reveal ships the COLLAPSED stack in the HTML
- * and anything that does not run JavaScript — which includes several of the
- * answer engines this site is written for — sees a flat rectangle.
+ * way, and the reason is correctness rather than weight: a declarative motion
+ * library server-renders its INITIAL state into the style attribute, so a
+ * scroll-triggered reveal ships the COLLAPSED stack in the HTML and anything
+ * that does not run JavaScript — which includes several of the answer engines
+ * this site is written for — sees a flat rectangle. It also cannot express an
+ * animation that is paused before it is ever scrolled to without running a
+ * JavaScript frame loop, which is exactly the cost this avoids.
  *
  * Here the exploded, annotated, readable state is the CSS default. It is what
- * renders with no JavaScript, and what renders under prefers-reduced-motion.
- * The only thing script does is take that away for a moment, below the fold,
- * so it can be given back as movement. The graphic is never less informative
- * because of the animation, and the homepage carries no new bytes for it.
+ * renders with no JavaScript and under prefers-reduced-motion. Script only
+ * takes it away for a moment, below the fold, so it can be given back as
+ * movement — and the homepage carries no new bytes for any of it.
+ *
+ * ── THE HERO VARIANT ───────────────────────────────────────────────────────
+ *
+ * `variant="hero"` renders the same assembly as a full-bleed backdrop with the
+ * legend collapsed behind a native <details>, for use above the fold. It is
+ * built and it works. It is not what the homepage passes, because the hero is
+ * the LCP element and this would become it. Switching is a one-word change in
+ * home-client.tsx whenever that trade is worth making.
  */
-export function FloorAssembly() {
+export type FloorAssemblyProps = {
+  /** 'section' is the below-the-fold band. 'hero' is the full-bleed backdrop. */
+  variant?: 'section' | 'hero';
+};
+
+export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [speciesId, setSpeciesId] = useState(ASSEMBLY_DEFAULT_SPECIES);
+  const [patternId, setPatternId] = useState(ASSEMBLY_DEFAULT_PATTERN);
   const [active, setActive] = useState<string | null>(null);
 
   const species =
     ASSEMBLY_SPECIES.find((s) => s.id === speciesId) ?? ASSEMBLY_SPECIES[0]!;
+  const pattern =
+    ASSEMBLY_PATTERNS.find((p) => p.id === patternId) ?? ASSEMBLY_PATTERNS[0]!;
+  const field = boardsFor(pattern.id);
+  const texture = grainTextureFor(species.id);
 
   /**
-   * The reveal, and the two cases it deliberately refuses to run in.
+   * Two jobs, one observer.
    *
-   * The stack is exploded in CSS. This collapses it and then lets it open when
-   * it is scrolled to — but only when collapsing is invisible. If the section
-   * is ALREADY on screen when this mounts, collapsing it would be a flash of
-   * the wrong state in front of somebody who is looking straight at it, so the
-   * effect returns and the stack simply stays open. Same under reduced motion.
+   * FIRST, the reveal. The stack is exploded in CSS. This collapses it and
+   * lets it open when it is scrolled to — but only when collapsing is
+   * invisible. If the section is ALREADY on screen when this mounts,
+   * collapsing it would be a flash of the wrong state in front of somebody
+   * looking straight at it, so that is skipped and the stack stays open.
+   *
+   * SECOND, and this is the one that matters for the battery in somebody's
+   * pocket, the idle motion. `animation-play-state` is `paused` in the
+   * stylesheet. Nothing here ever runs until the assembly is actually on
+   * screen, and it is paused again the moment it leaves — so the observer is
+   * NOT disconnected after the first hit the way the reveal alone would want.
+   *
+   * Under prefers-reduced-motion neither job runs: the stylesheet drops the
+   * keyframes, and the stack simply stays in its final readable state.
    */
   useEffect(() => {
     const node = stageRef.current;
@@ -86,24 +147,32 @@ export function FloorAssembly() {
 
     const box = node.getBoundingClientRect();
     const onScreen = box.top < window.innerHeight && box.bottom > 0;
-    if (onScreen) return;
+    if (onScreen) node.dataset.live = 'true';
+    else node.dataset.collapsed = 'true';
 
-    node.dataset.collapsed = 'true';
     const obs = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          delete node.dataset.collapsed;
-          obs.disconnect();
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            delete node.dataset.collapsed;
+            node.dataset.live = 'true';
+          } else {
+            delete node.dataset.live;
+          }
         }
       },
-      { threshold: 0.3 },
+      { threshold: 0.15 },
     );
     obs.observe(node);
     return () => obs.disconnect();
   }, []);
 
   return (
-    <section className="section fa-section wood-grain-dark noise-overlay" id="assembly">
+    <section
+      className="section fa-section wood-grain-dark noise-overlay"
+      data-variant={variant}
+      id="assembly"
+    >
       <div className="shell">
         <div className="fa-head">
           <p className="fa-kicker">What a floor is made of</p>
@@ -128,14 +197,45 @@ export function FloorAssembly() {
                 className="fa-layer"
                 data-i={i}
                 data-active={active === l.id ? 'true' : undefined}
-                style={
-                  i === 1
-                    ? {
-                        backgroundImage: `linear-gradient(155deg, rgba(140,84,38,.55), rgba(92,52,22,.62)), url(${grainTextureFor(species.id)})`,
-                      }
-                    : undefined
-                }
-              />
+              >
+                {/* Only layer 02 is a floor. The other four are a coating, a
+                    fastening pattern, a membrane and a substrate, and each is
+                    painted by its own rule in the stylesheet. */}
+                {i === 1 && (
+                  <div
+                    className="fa-boards"
+                    data-pattern={pattern.id}
+                    style={{
+                      transform: `translate(-50%, -50%) rotate(${field.fieldRot}deg) scale(${field.scale})`,
+                    }}
+                  >
+                    {field.boards.map((b, bi) => {
+                      const face = boardFace(bi);
+                      return (
+                        <span
+                          key={bi}
+                          className="fa-board"
+                          style={{
+                            left: `${b.x}%`,
+                            top: `${b.y}%`,
+                            width: `${b.w}%`,
+                            height: `${b.h}%`,
+                            transform: `rotate(${b.rot}deg)`,
+                            /* The warm cast and this board's own darkening,
+                               multiplied into the crop ONCE when the board is
+                               rasterised. Doing it with mix-blend-mode over the
+                               field instead costs 23% of the frame rate for the
+                               whole life of the animation — measured. */
+                            backgroundImage: `linear-gradient(rgba(112,60,24,${(0.34 + face.shade).toFixed(3)}), rgba(112,60,24,${(0.34 + face.shade).toFixed(3)})), url(${texture})`,
+                            backgroundBlendMode: 'multiply, normal',
+                            backgroundPosition: `${face.posX}% ${face.posY}%`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -163,6 +263,30 @@ export function FloorAssembly() {
           </p>
         </div>
 
+        {/* THE PATTERN. Four layouts, laid board by board rather than drawn as
+            a repeating texture — so herringbone really is interlocking L-pairs
+            and chevron really is mitred point-to-point, which is the
+            difference most people cannot name and can always see. */}
+        <div className="fa-species fa-patterns">
+          <span className="fa-species-label">Laid in</span>
+          <div className="fa-species-chips" role="group" aria-label="Lay the floor in a pattern">
+            {ASSEMBLY_PATTERNS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="fa-chip"
+                aria-pressed={p.id === pattern.id}
+                onClick={() => setPatternId(p.id)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <p className="fa-species-note">
+            {pattern.label} · {pattern.blurb} · {field.boards.length} boards on screen
+          </p>
+        </div>
+
         <ol className="fa-legend">
           {ASSEMBLY_LAYERS.map((l) => (
             <li
@@ -187,7 +311,10 @@ export function FloorAssembly() {
         </ol>
 
         <div className="fa-actions">
-          <Link className="btn btn-copper btn-lg" href={assemblyDesignHref(species)}>
+          <Link
+            className="btn btn-copper btn-lg"
+            href={assemblyDesignHref(species, pattern.id)}
+          >
             Specify this floor in {species.name}
           </Link>
           <a className="btn btn-ghost-light btn-lg" href="#quote">

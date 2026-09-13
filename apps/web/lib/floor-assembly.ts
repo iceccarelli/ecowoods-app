@@ -29,6 +29,7 @@
  * built; the copy describes the trade, not a customer, an address or a result.
  */
 import { FLOOR_PRODUCTS, type FloorProduct } from '@/lib/floor-studio/catalog';
+import { PATTERN_OPTIONS, DEFAULT_PATTERN, type PatternOption } from '@ecowoods/shared/ai';
 
 export type AssemblyLayer = {
   /** Display index, top of the build-up first. */
@@ -129,7 +130,130 @@ export const ASSEMBLY_DEFAULT_SPECIES = 'white-oak';
  * through designEstimateHref, with the area filled in, and the handoff holds.
  * floor-assembly.test.ts asserts the rateKey round-trip against the catalogue.
  */
-export function assemblyDesignHref(product: FloorProduct): string {
+export function assemblyDesignHref(product: FloorProduct, patternId?: string): string {
   const params = new URLSearchParams({ species: product.rateKey, source: 'assembly' });
+  /* The pattern param IS keyed by id — FloorConfigurator matches it against
+     PATTERN_OPTIONS, whose id is the id. Only the species list is rekeyed.
+     Sent only when it is a pattern that list actually contains, so a stale
+     link cannot put the configurator into a state it has no option for. */
+  if (patternId && PATTERN_OPTIONS.some((p) => p.id === patternId)) {
+    params.set('pattern', patternId);
+  }
   return `/design?${params.toString()}`;
+}
+
+/* ── the boards ───────────────────────────────────────────────────────────── */
+
+/** The patterns the assembly can be laid in — the shared list, not a copy. */
+export const ASSEMBLY_PATTERNS: readonly PatternOption[] = PATTERN_OPTIONS;
+
+/** The shared default, not a second opinion about what it should be. */
+export const ASSEMBLY_DEFAULT_PATTERN = DEFAULT_PATTERN;
+
+export type Board = {
+  /** Position and size as a percentage of the board FIELD, which is square. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Rotation in degrees about the board's top-left corner. */
+  rot: number;
+};
+
+export type BoardField = {
+  boards: readonly Board[];
+  /** Rotation applied to the whole field, in degrees. */
+  fieldRot: number;
+  /** Oversize factor, so a rotated field still covers the plane's corners. */
+  scale: number;
+};
+
+/**
+ * WHY THE FIELD IS SQUARE, AND WHY THAT IS NOT A DETAIL.
+ *
+ * The wear layer is a 1.55 rectangle. Positioning boards in percentages of a
+ * RECTANGLE means one percent of x and one percent of y are different physical
+ * lengths — so a board written as `rotate(45deg)` does not come out at 45
+ * degrees, and two boards meant to meet at a mitre miss each other. The first
+ * herringbone built that way tiled with a repeating band of holes through it
+ * that looked like a generation-range bug and was not.
+ *
+ * So every number below is a percentage of a SQUARE field, which the stylesheet
+ * sizes from the plane's width and centres; the plane clips it. Inside that
+ * square, 45 degrees is 45 degrees and the mitres land.
+ *
+ * Deterministic — no Math.random anywhere — because these coordinates are
+ * rendered on the server and again in the browser, and a random number would
+ * mean a hydration mismatch on every load.
+ */
+export function boardsFor(patternId: string, opts: { width?: number } = {}): BoardField {
+  const W = opts.width ?? 7.5;
+  const L = W * 4.6;
+  const out: Board[] = [];
+  const push = (x: number, y: number, w: number, h: number, rot: number) =>
+    out.push({ x, y, w, h, rot });
+
+  if (patternId === 'straight' || patternId === 'diagonal') {
+    /* Running bond: each course's end joints offset by a third of a board, so
+       no two joints line up. Laying them flush is the mark of a rushed floor. */
+    const rows = Math.ceil(100 / W);
+    for (let r = 0; r < rows; r++) {
+      const off = ((r % 3) * L) / 3;
+      for (let x = -L + off; x < 110; x += L + 0.4) push(x, r * W, L, W - 0.28, 0);
+    }
+    return {
+      boards: out,
+      fieldRot: patternId === 'diagonal' ? 45 : 0,
+      scale: patternId === 'diagonal' ? 1.5 : 1,
+    };
+  }
+
+  if (patternId === 'herringbone') {
+    /* Interlocking L-pairs: each board butts into the SIDE of its neighbour and
+       the courses STEP. That step is the whole difference from chevron. */
+    const colW = L * 0.72;
+    for (let c = -3; c < Math.ceil(100 / colW) + 3; c++) {
+      const sign = c % 2 === 0 ? -45 : 45;
+      for (let k = -14; k < 26; k++) {
+        push(c * colW, k * (W + 0.5) * 1.42 - 60, L + W * 1.6, W - 0.28, sign);
+      }
+    }
+    return { boards: out, fieldRot: 0, scale: 1.25 };
+  }
+
+  /* Chevron: mitred, meeting point-to-point, so the apexes line up into
+     continuous rows. `d` is the reach of a board turned 45 degrees; a rising
+     board starts a full d lower so its far end lands on the seam where the
+     falling board begins. The small overlap covers the corner void a
+     rectangle leaves where a real mitre would close. */
+  const d = L / Math.SQRT2;
+  const rowH = (W + 0.6) * Math.SQRT2;
+  for (let r = -8; r < Math.ceil(100 / rowH) + 8; r++) {
+    for (let c = -3; c < Math.ceil(100 / d) + 3; c++) {
+      const rising = c % 2 === 0;
+      push(c * d, r * rowH + (rising ? d : 0), L + W * 0.75, W - 0.28, rising ? -45 : 45);
+    }
+  }
+  return { boards: out, fieldRot: 0, scale: 1.1 };
+}
+
+/**
+ * Per-board variation, so no two boards are the same piece of wood.
+ *
+ * One texture is reused for every board — one request, one decode — and the
+ * difference between boards is where in that crop each one is cut from, plus a
+ * little darkening. Both are derived from the board index by multiplying by a
+ * prime and wrapping, which gives a stable spread with no randomness and so
+ * survives being rendered twice.
+ *
+ * The darkening is a flat colour layer rather than a CSS `filter`, because a
+ * filter on several hundred elements makes the browser re-rasterise them every
+ * frame the stack is moving, and the stack is always moving.
+ */
+export function boardFace(i: number): { posX: number; posY: number; shade: number } {
+  return {
+    posX: (i * 37) % 100,
+    posY: (i * 53) % 100,
+    shade: Number((((i * 29) % 22) / 220).toFixed(3)),
+  };
 }

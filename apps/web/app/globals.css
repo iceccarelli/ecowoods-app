@@ -11852,20 +11852,60 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 
 /* 01 FINISH — a coating, so it is glaze rather than pigment. */
 .fa-layer[data-i='0'] {
-  background: linear-gradient(125deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04));
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  /* No backdrop-filter. It reads as glass from the gradient alone, and a
+     backdrop filter over a moving stack is re-evaluated every frame. */
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.05));
 }
 
-/* 02 WEAR LAYER — the only layer that is a photograph. The crop is set inline
-   from grainTextureFor(species), so switching species repaints this one rule. */
+/* 02 WEAR LAYER — the only layer that is an actual floor. It used to be one
+   photograph stretched over a rectangle; it is now several hundred boards laid
+   in a pattern (VIS-06). The dark ground shows through the seams. */
 .fa-layer[data-i='1'] {
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: multiply, normal;
+  background: #241a12;
+  overflow: hidden;
   box-shadow:
     0 30px 52px rgba(0, 0, 0, 0.6),
     inset 0 -6px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* THE BOARD FIELD IS SQUARE, AND THAT IS NOT A DETAIL.
+   The layer is a 1.55 rectangle, so one percent of x and one percent of y are
+   different lengths in it — a board written as rotate(45deg) does not come out
+   at 45 degrees and two boards meant to meet at a mitre miss each other. The
+   first herringbone laid that way tiled with a repeating band of holes that
+   looked like a generation-range bug and was not. See lib/floor-assembly.ts. */
+.fa-boards {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 116%;
+  aspect-ratio: 1;
+  transform-origin: 50% 50%;
+}
+
+/* Raking light across the field, so the plane reads as lit rather than flat.
+   NOT mix-blend-mode. A blend mode over an animating ancestor is recomposited
+   on every single frame: measured at a 23% frame-rate cost for the whole life
+   of the animation. The warm multiply that needs a blend mode is done per
+   board instead, where it is rasterised once and never again. */
+.fa-layer[data-i='1']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(155deg, rgba(255, 228, 196, 0.1), rgba(28, 16, 8, 0.34));
+}
+
+.fa-board {
+  position: absolute;
+  display: block;
+  transform-origin: 0 0;
+  border-radius: 1px;
+  background-size: 420% 420%;
+  background-blend-mode: normal;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.34),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 /* 03 FASTENING — cleats at a spacing, read end-on. */
@@ -12033,12 +12073,114 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   }
 }
 
+/* ── VIS-06: THE ASSEMBLY IS NEVER STILL ────────────────────────────────────
+   The stack drifts on a 26s cycle and the five layers float against it on
+   cycles that do not divide into it (11/13/17/19/23s), so the assembly never
+   returns to the same pose twice inside a visit.
+
+   ONLY THE STACK AND THE FIVE LAYERS MOVE. The several hundred boards never
+   do — they ride as one already-rasterised composited layer, so the cost per
+   frame does not grow with the board count and a herringbone floor costs the
+   same as a straight one.
+
+   The float uses the `translate` PROPERTY rather than a transform, because the
+   layers' explode already owns `transform`. The two compose (translate is
+   applied before transform) instead of one silently winning.
+
+   EVERYTHING IS PAUSED UNTIL IT IS ON SCREEN. `paused` is the value in the
+   stylesheet; only the IntersectionObserver in FloorAssembly.tsx sets it
+   running, and it clears it again on exit. A visitor who never scrolls this
+   far pays nothing at all. */
+@keyframes fa-drift {
+  0%,
+  100% {
+    transform: rotateX(58deg) rotateZ(var(--fa-rot));
+  }
+  50% {
+    transform: rotateX(52deg) rotateZ(calc(var(--fa-rot) + 15deg));
+  }
+}
+
+@keyframes fa-float {
+  0%,
+  100% {
+    translate: 0 0 0;
+  }
+  50% {
+    translate: 0 0 14px;
+  }
+}
+
+.fa-stack {
+  animation: fa-drift 26s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.fa-layer {
+  animation: fa-float 17s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.fa-layer[data-i='0'] { animation-duration: 23s; }
+.fa-layer[data-i='1'] { animation-duration: 19s; }
+.fa-layer[data-i='2'] { animation-duration: 13s; }
+.fa-layer[data-i='3'] { animation-duration: 11s; }
+.fa-layer[data-i='4'] { animation-duration: 29s; }
+
+.fa-stage[data-live='true'] .fa-stack,
+.fa-stage[data-live='true'] .fa-layer {
+  animation-play-state: running;
+}
+
+/* ── VIS-06: THE HERO VARIANT ───────────────────────────────────────────────
+   The same assembly as a full-bleed backdrop. Built, and not what the homepage
+   passes: the hero is the LCP element and this would become it. Switching is a
+   one-word change in home-client.tsx. */
+.fa-section[data-variant='hero'] {
+  min-height: 88svh;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.fa-section[data-variant='hero'] .fa-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+.fa-section[data-variant='hero'] .shell > *:not(.fa-stage) {
+  position: relative;
+  z-index: 1;
+}
+
+.fa-section[data-variant='hero'] .fa-h2 {
+  font-size: var(--fs-3xl);
+}
+
+.fa-section[data-variant='hero'] .fa-legend {
+  max-height: 0;
+  overflow: hidden;
+  margin: 0;
+}
+
 /* The graphic never animates for somebody who asked it not to. It is already
    in its final, readable state; this removes the transition so a species
-   switch or a legend hover changes it instantly rather than gliding. */
+   switch or a legend hover changes it instantly rather than gliding, and
+   removes the idle motion outright rather than merely pausing it. */
 @media (prefers-reduced-motion: reduce) {
   .fa-layer {
     transition: none;
     transition-delay: 0s;
+  }
+  .fa-stack,
+  .fa-layer,
+  .fa-stage[data-live='true'] .fa-stack,
+  .fa-stage[data-live='true'] .fa-layer {
+    animation: none;
   }
 }
