@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { format, subDays } from 'date-fns';
 import { AGE_BAND_LABEL, buildQueue, summarise } from '@/lib/lead-queue';
+import { deliveryHealth } from '@/lib/delivery-health';
 
 function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
@@ -71,6 +72,11 @@ export default async function AdminDashboard() {
   );
   const waiting = summarise(queue);
 
+  /* ALERT-01 — read the environment on the server, on every render. Not
+     cached and not computed at build time: the whole point is to report what
+     THIS running deployment will do with the next lead. */
+  const delivery = deliveryHealth();
+
   const pendingBankPayments = await db.payment.count({
     where: { method: 'BANK_TRANSFER', status: 'PENDING' },
   });
@@ -119,6 +125,66 @@ export default async function AdminDashboard() {
           <Link href="/admin/orders" className="portal-stat-link">View orders →</Link>
         </div>
       </div>
+
+      {/* ALERT-01 — THE ONE THAT COMES FIRST.
+          Above the bank-transfer notice on purpose: a payment waiting to be
+          confirmed is money already won, and this is about whether the next
+          one is ever heard of. Shown only when NOTHING delivers, because a
+          warning that is always on screen is furniture within a week. */}
+      {!delivery.anyLive && (
+        <div
+          role="alert"
+          className="admin-alert admin-alert-danger"
+          style={{
+            marginBottom: '1.5rem',
+            padding: '1rem 1.25rem',
+            background: 'rgba(176, 72, 72, 0.12)',
+            border: '1px solid rgba(176, 72, 72, 0.4)',
+            borderRadius: 'var(--radius)',
+            color: 'var(--ink)',
+          }}
+        >
+          <strong>Nothing tells anyone when a quote request arrives.</strong>
+          <p style={{ margin: '0.5rem 0 0', fontSize: 'var(--fs-sm)' }}>
+            Email and SMS are both unconfigured on this deployment. A request is
+            saved and the page thanks the visitor exactly as it does when the
+            notification works — <strong>no error is raised and nothing is logged</strong>,
+            because the email transport falls back to writing the message to the
+            server log and returning successfully.
+            {pendingQuoteCount > 0 && (
+              <>
+                {' '}Right now {pendingQuoteCount} {pendingQuoteCount === 1 ? 'request is' : 'requests are'} waiting
+                {waiting.oldestDays > 0 && <> and the oldest has been waiting {waiting.oldestDays} days</>}.
+              </>
+            )}
+          </p>
+          <ul style={{ margin: '0.6rem 0 0', paddingLeft: '1.1rem', fontSize: 'var(--fs-sm)' }}>
+            {delivery.channels.map((c) => (
+              <li key={c.id} style={{ marginBottom: '0.25rem' }}>
+                <strong>{c.label}:</strong> {c.detail}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Delivery, when it IS configured: one quiet line, so it can be checked
+          rather than assumed. Destinations are masked. */}
+      {delivery.anyLive && (
+        <p style={{ margin: '0 0 1.25rem', fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
+          New requests reach{' '}
+          {delivery.channels
+            .filter((c) => c.live)
+            .map((c) => `${c.to} by ${c.via}`)
+            .join(' and ')}
+          {delivery.channels.some((c) => !c.live) && (
+            <>
+              {' · '}
+              {delivery.channels.filter((c) => !c.live).map((c) => c.label).join(' and ')} not configured
+            </>
+          )}
+        </p>
+      )}
 
       {/* Alerts */}
       {pendingBankPayments > 0 && (
