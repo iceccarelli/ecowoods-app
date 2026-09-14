@@ -78,10 +78,18 @@ export type WorkPlace = {
  * So `COORDS_VERIFIED` is false, and the Place/GeoCoordinates JSON-LD stays
  * unemitted until somebody opens a map, reads off each centroid and flips it.
  * Same rule as PROFILE_LINKS: the site renders what it has, and asserts only
- * what somebody has checked. Runbook §11 is the 20-minute task.
+ * what somebody has checked.
+ *
+ * THE TASK, WRITTEN HERE BECAUSE THE FILE IT POINTED AT DOES NOT EXIST.
+ * This said "Runbook §11 is the 20-minute task" and there is no
+ * ops/DOMINATION-RUNBOOK.md in this repository — so the one thing a reader
+ * needed was the one thing they could not reach. It is: open each
+ * neighbourhood below on a mapping source, read its centroid to three decimal
+ * places, replace the pair here, and flip COORDS_VERIFIED to true. Nothing
+ * else has to change; the JSON-LD is already written and gated on that flag.
  */
 export const COORDS_SOURCE =
-  'Approximate neighbourhood centroids, 3 dp (~110 m). NOT yet verified against a mapping source — see ops/DOMINATION-RUNBOOK.md §11.';
+  'Approximate neighbourhood centroids, 3 dp (~110 m). Not yet checked against a mapping source, so they are not published as structured data.';
 export const COORDS_VERIFIED = false;
 
 /** The frame the map is drawn in. Every pin must fall inside it. */

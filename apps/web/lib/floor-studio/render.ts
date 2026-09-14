@@ -427,23 +427,50 @@ const clamp255 = (n: number) => (n < 0 ? 0 : n > 255 ? 255 : n);
  * as it did, so nothing can ever show a blank floor waiting on a download.
  *
  * ────────────────────────────────────────────────────────────────────────────
- * STATUS: BUILT, TESTED, AND NOT YET WIRED TO THE INTERFACE. ON PURPOSE.
+ * STATUS: WIRED. /design renders from these, and so does the room visualiser.
  *
- * Measured side by side against the drawn grain at room scale, this does not
- * yet win. It gets the species colour right and it carries real figure and real
- * character marks — and in the far half of the frame it still reads noisier
- * than the procedural floor it was meant to replace, because a 512-pixel tile
- * minified across a receding plane aliases, and the mip selection below does
- * not yet fully answer that.
+ * This block used to say the opposite, at length: that the photographic path
+ * was built and tested and deliberately not shipped, because "measured side by
+ * side against the drawn grain at room scale, this does not yet win", and that
+ * what remained was anisotropic sampling. It was honest when written and every
+ * word of it is now wrong, which is worse than never having written it — the
+ * next person to open this file would have believed the photographs were off
+ * on purpose and left them off.
  *
- * The honest thing is to say so rather than ship it. A visitor deciding where
- * fifteen thousand dollars goes is owed the better picture, and today the
- * better picture is the drawn one. The textures, the build script that cuts
- * them from the real product photographs, the sampler and the pyramid are all
- * here and under test; what is missing is anisotropic sampling along the
- * board's own axis, which is the next patch and not a paragraph in this one.
+ * The diagnosis in it was also wrong. It was not one missing feature. It was
+ * six separate arithmetic defects, each of which on its own made a photograph
+ * of real oak look worse than two hex colours, which is exactly why it sat
+ * unwired instead of being noticed:
  *
- * Pass `grain` to turn it on. Nothing in apps/web does yet.
+ *   1. The mip pyramid stopped at five levels. A 512-texel tile over ten
+ *      inches, in a photograph where one screen pixel covers an inch of floor,
+ *      needs level 5.7. A pyramid that bottoms out before the scene does is
+ *      the same aliasing as no pyramid, only quieter.                (CAM-02)
+ *   2. The level was chosen RELATIVE to the near edge of the quad rather than
+ *      measured, so the whole pyramid sat nearly five levels too fine for
+ *      every pixel in the frame.                                     (CAM-02)
+ *   3. `along` is a fraction, and the inches it stands for are the fraction
+ *      times THIS board's length — nine widths for a run, four for a parquet
+ *      block. Reading nine everywhere stretched the grain by 9/4.     (CAM-02)
+ *   4. Four of the five tiles had their grain running across the board rather
+ *      than along it, because two of the source photographs are of herringbone
+ *      and chevron floors. Nothing in the pipeline measured the angle.
+ *                                                        (DESIGN-01, DESIGN-02)
+ *   5. The tiles were square. A board is four feet long, so a six-inch tile
+ *      repeated eight times down every one of them, and that repeat is what
+ *      the eye reads as a ripple running across the floor.          (DESIGN-01)
+ *   6. The detail ratio was computed in linear light and applied to
+ *      gamma-encoded colour, so a grain feature ten percent darker in the
+ *      photograph came out twenty-four percent darker on the floor.  (DESIGN-01)
+ *
+ * Measured on the neighbour-delta speckle metric, far field: the photographic
+ * floor went from 19.0 against the drawn path's 2.9 — six times noisier than
+ * the thing it was meant to improve on — to 3.62 against 3.64. It is now as
+ * quiet as the drawn floor and carries the real grain.
+ *
+ * `grain` is still optional everywhere, and that has not changed: without it
+ * the synthesised path runs exactly as it did, which is what a server render,
+ * a unit test and a slow network all get.
  * ────────────────────────────────────────────────────────────────────────────
  */
 export type GrainTexture = {

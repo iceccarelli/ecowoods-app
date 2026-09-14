@@ -300,12 +300,13 @@ const standardPillars: Pillar[] = [
 ];
 
 /**
- * Service ticker — share of recent project mix, shown exchange-style.
+ * Service ticker — the work this company does, shown exchange-style.
  *
- * ⚠️ PLACEHOLDER FIGURES. `share` and `trend` below are invented stand-ins so
- * the component renders. They are published to homeowners as facts about
- * Ecowoods, so REPLACE THEM WITH REAL NUMBERS from the job book before this
- * ships. Shares are shown as a share of project mix and should total ~100.
+ * A "⚠️ PLACEHOLDER FIGURES — replace before this ships" warning used to stand
+ * here, above the comment that already records those figures being removed.
+ * The warning outlived the problem: there is nothing left to replace, and a
+ * standing warning about a fixed defect trains the next reader to skim past
+ * the ones that are still real.
  */
 /**
  * Labels only. The previous 34/28/14/10/8/6 "share of project mix" figures were

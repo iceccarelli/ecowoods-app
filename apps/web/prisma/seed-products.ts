@@ -5,13 +5,30 @@
  * Checkout section. Safe to re-run — it never deletes rows, so it can be
  * used against a live database.
  *
- * ⚠️ PRICES ARE PLACEHOLDER MATERIAL RATES — replace `basePrice` /
- *    `priceDelta` with Ecowoods' real per-sq-ft material cost and accessory
- *    pricing before this goes live (same convention as PricingSection.tsx's
- *    labor rates).
+ * ⚠️ THE PRICES BELOW ARE PLACEHOLDERS AND THIS SCRIPT NOW REFUSES TO WRITE
+ *    THEM WITHOUT BEING TOLD TO.
+ *
+ * The warning that used to stand here said to replace `basePrice` /
+ * `priceDelta` with real per-sq-ft material cost "before this goes live". It
+ * went live. Every one of the seventeen rows in the database matches the
+ * numbers in this file exactly, the shop on /mypage sells from those rows, and
+ * /api/shop/checkout creates a Stripe session from them. Nothing has actually
+ * been bought — the orders that exist are pending sessions with no payment
+ * intent — so this has cost nothing yet. It is a loaded gun rather than a
+ * wound, and a comment is not a safety catch.
+ *
+ * So the catch is real now. Running this without SHOP_PRICES_ARE_REAL=1 exits
+ * without touching the database and prints what to do. Setting that variable is
+ * a person saying, in one deliberate act, that the numbers in this file are the
+ * numbers Ecowoods actually charges. It is not a formality and it should not be
+ * put in a .env file.
+ *
+ * This guards the WRITE path only. Rows already in the database are data, and
+ * changing somebody's live prices is not a script's decision — see the README
+ * note this patch adds for the two ways to deal with what is already there.
  *
  * Usage:
- *   npx tsx prisma/seed-products.ts
+ *   SHOP_PRICES_ARE_REAL=1 npx tsx prisma/seed-products.ts
  */
 
 import { PrismaClient, ProductCategory, ProductUnit } from '@prisma/client';
@@ -67,7 +84,35 @@ const accessories: Array<{
   { slug: 'premium-rug-pad-8x10', name: 'Non-Slip Rug Pad — 8x10 ft', basePrice: 85, description: 'Felt + rubber pad sized for an 8x10 ft area rug, safe on hardwood.' },
 ];
 
+/**
+ * Refuse unless somebody has said the prices are real.
+ *
+ * Checked before the first write rather than per row, so a refusal leaves the
+ * database exactly as it found it instead of half-seeded.
+ */
+function pricesAcknowledged(): boolean {
+  return process.env.SHOP_PRICES_ARE_REAL === '1';
+}
+
 async function main() {
+  if (!pricesAcknowledged()) {
+    console.error(`
+This script writes SHOP PRICES that customers are charged, and the numbers in
+it are placeholders. It has not written anything.
+
+  materials     ${materials.length} rows, $${Math.min(...materials.map((m) => m.basePrice)).toFixed(2)}–$${Math.max(...materials.map((m) => m.basePrice)).toFixed(2)} per sq ft
+  accessories   ${accessories.length} rows, $${Math.min(...accessories.map((a) => a.basePrice)).toFixed(2)}–$${Math.max(...accessories.map((a) => a.basePrice)).toFixed(2)} each
+
+If these are the prices Ecowoods actually charges, say so explicitly:
+
+  SHOP_PRICES_ARE_REAL=1 npx tsx prisma/seed-products.ts
+
+If they are not, edit them in this file first. Do not set the variable to make
+the message go away — /api/shop/checkout bills from these rows.
+`);
+    process.exit(1);
+  }
+
   console.log('🌱 Seeding shop products (upsert by slug — non-destructive)...\n');
 
   for (const m of materials) {

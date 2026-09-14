@@ -28,7 +28,9 @@
  * offers it as the primary path, with the built-in scheduler kept underneath as
  * the fallback that still works if the third party is down. Unset — which is
  * the state today — nothing changes and no half-wired integration ships.
- * Documented in apps/web/.env.example and ops/DOMINATION-RUNBOOK.md.
+ * Documented in apps/web/.env.example. (It also pointed at
+ * ops/DOMINATION-RUNBOOK.md, which does not exist in this repository — the
+ * env var and this comment are the whole of the instruction.)
  */
 
 import { HOURS_LINE_SHORT } from '@ecowoods/shared/constants';
