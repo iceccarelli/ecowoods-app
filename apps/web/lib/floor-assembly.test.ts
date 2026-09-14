@@ -13,20 +13,27 @@ import { describe, expect, it, vi } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+  ASSEMBLY_CHOICE_COUNT,
+  ASSEMBLY_DEFAULT_FINISH,
+  ASSEMBLY_DEFAULT_PATTERN,
   ASSEMBLY_DEFAULT_SPECIES,
+  ASSEMBLY_DEFAULT_WIDTH,
+  ASSEMBLY_FINISHES,
   ASSEMBLY_LAYERS,
   ASSEMBLY_LAYER_COUNT,
-  ASSEMBLY_SPECIES,
-  ASSEMBLY_DEFAULT_PATTERN,
   ASSEMBLY_PATTERNS,
+  ASSEMBLY_SPECIES,
+  ASSEMBLY_WIDTHS,
+  UNDER_THE_BOARD,
   assemblyDesignHref,
   boardFace,
   boardsFor,
+  fieldWidthFor,
   grainTextureFor,
   layerById,
 } from './floor-assembly';
-import { FLOOR_PRODUCTS } from './floor-studio/catalog';
-import { PATTERN_OPTIONS } from '@ecowoods/shared/ai';
+import { BOARD_WIDTHS, FLOOR_PRODUCTS } from './floor-studio/catalog';
+import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 
 /* next/link needs a Next request context it will not have here, and the thing
    under test is the MARKUP, not the router. */
@@ -75,13 +82,21 @@ const code = (rel: string) =>
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 describe('the layers', () => {
-  it('are five, numbered in order, top of the build-up first', () => {
-    expect(ASSEMBLY_LAYER_COUNT).toBe(5);
-    expect(ASSEMBLY_LAYERS.map((l) => l.n)).toEqual(['01', '02', '03', '04', '05']);
+  /* VIS-07 — THREE. A board has three layers; the five-layer version drew the
+     installation as though it were part of the board, which it is not. */
+  it('are three, numbered in order, top of the board first', () => {
+    expect(ASSEMBLY_LAYER_COUNT).toBe(3);
+    expect(ASSEMBLY_LAYERS.map((l) => l.n)).toEqual(['01', '02', '03']);
+    expect(ASSEMBLY_LAYERS.map((l) => l.id)).toEqual(['finish', 'wear-layer', 'cross-ply-core']);
+  });
+
+  it('keep the three installation questions, numbered on from the board', () => {
+    expect(UNDER_THE_BOARD.map((l) => l.n)).toEqual(['04', '05', '06']);
+    expect(UNDER_THE_BOARD.map((l) => l.id)).toEqual(['fastening', 'moisture-control', 'substrate']);
   });
 
   it('have unique ids and resolve through layerById', () => {
-    const ids = ASSEMBLY_LAYERS.map((l) => l.id);
+    const ids = [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD].map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(layerById(id)?.id).toBe(id);
     expect(layerById('not-a-layer')).toBeUndefined();
@@ -90,7 +105,7 @@ describe('the layers', () => {
   /* The `ask` is the commercial payload of the whole graphic. A layer without
      one is a layer that decorates instead of selling. */
   it('each carry a question a buyer can put to a contractor', () => {
-    for (const l of ASSEMBLY_LAYERS) {
+    for (const l of [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD]) {
       expect(l.ask.length, l.id).toBeGreaterThan(30);
       /* Contains a question — not "is exactly one sentence". Two of these
          put the question and then say what the answer tells you, which is
@@ -102,7 +117,10 @@ describe('the layers', () => {
   /* Do not invent customers, jobs, addresses or results. The layer copy
      describes how hardwood floors are built and must not describe a job. */
   it('describe the trade, never a customer or a job', () => {
-    const prose = ASSEMBLY_LAYERS.map((l) => `${l.body} ${l.ask}`).join(' ').toLowerCase();
+    const prose = [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD]
+      .map((l) => `${l.body} ${l.ask}`)
+      .join(' ')
+      .toLowerCase();
     for (const banned of ['our customer', 'client', 'testimonial', 'reviewed', 'street', 'avenue']) {
       expect(prose, banned).not.toContain(banned);
     }
@@ -188,7 +206,8 @@ describe('the component keeps text out of the animated element (F-205)', () => {
   });
 
   it('hides the stage from the accessibility tree, since the legend carries the words', () => {
-    expect(src).toContain('className="fa-stage" ref={stageRef} aria-hidden="true"');
+    expect(src).toContain('className="fa-stage"');
+    expect(src).toContain('aria-hidden="true"');
   });
 
   it('paints the wear layer from grainTextureFor rather than a hardcoded path', () => {
@@ -399,8 +418,12 @@ describe('the served HTML publishes every string exactly once', () => {
   });
 
   it('publishes each layer name, description and question once', () => {
-    for (const l of ASSEMBLY_LAYERS) {
-      expect(once(l.title), l.title).toBe(1);
+    /* HEADING-SHAPED, NOT WORD-SHAPED. Counting the bare title fails on
+       "Finish", which also occurs inside the "Finished in" chip label and an
+       aria-label — three substring hits for one published heading. F-205 is
+       about a VALUE published twice, so count the element that publishes it. */
+    for (const l of [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD]) {
+      expect(once(`<p class="fa-t">${l.title}</p>`), l.title).toBe(1);
       expect(once(l.body.slice(0, 40)), `${l.id} body`).toBe(1);
       expect(once(l.ask.slice(0, 40)), `${l.id} ask`).toBe(1);
     }
@@ -429,7 +452,9 @@ describe('the served HTML publishes every string exactly once', () => {
 
   it('ships the boards server-side, so the floor is in the HTML', () => {
     const n = (html.match(/class="fa-board"/g) ?? []).length;
-    expect(n).toBe(boardsFor(ASSEMBLY_DEFAULT_PATTERN).boards.length);
+    expect(n).toBe(
+      boardsFor(ASSEMBLY_DEFAULT_PATTERN, { width: fieldWidthFor(ASSEMBLY_DEFAULT_WIDTH) }).boards.length,
+    );
   });
 
   it('carries species and pattern on the exit link', () => {
@@ -441,5 +466,174 @@ describe('the served HTML publishes every string exactly once', () => {
     const hero = renderToStaticMarkup(createElement(FloorAssembly, { variant: 'hero' as const }));
     expect(hero).toContain('data-variant="hero"');
     for (const l of ASSEMBLY_LAYERS) expect(hero, l.title).toContain(l.title);
+  });
+});
+
+/* ══ VIS-07 ═══════════════════════════════════════════════════════════════ */
+
+describe('eighteen choices, and not one of them is new', () => {
+  it('offers at least fifteen options across the four axes', () => {
+    expect(ASSEMBLY_CHOICE_COUNT).toBeGreaterThanOrEqual(15);
+    expect(ASSEMBLY_CHOICE_COUNT).toBe(
+      ASSEMBLY_SPECIES.length + ASSEMBLY_FINISHES.length + ASSEMBLY_PATTERNS.length + ASSEMBLY_WIDTHS.length,
+    );
+  });
+
+  /* Every axis is the catalogue's own list. A copy is how the homepage comes
+     to offer a finish that /design does not have and pricing does not price. */
+  it('takes every axis from the catalogue rather than copying it', () => {
+    expect(ASSEMBLY_SPECIES.map((s) => s.id)).toEqual(FLOOR_PRODUCTS.map((p) => p.id));
+    expect(ASSEMBLY_FINISHES.map((f) => f.id)).toEqual(FINISH_OPTIONS.map((f) => f.id));
+    expect(ASSEMBLY_PATTERNS.map((p) => p.id)).toEqual(PATTERN_OPTIONS.map((p) => p.id));
+    expect(ASSEMBLY_WIDTHS.map((w) => w.id)).toEqual(BOARD_WIDTHS.map((w) => w.id));
+  });
+
+  it('defaults to options that exist on their own axis', () => {
+    expect(ASSEMBLY_FINISHES.some((f) => f.id === ASSEMBLY_DEFAULT_FINISH)).toBe(true);
+    expect(ASSEMBLY_WIDTHS.some((w) => w.id === ASSEMBLY_DEFAULT_WIDTH)).toBe(true);
+  });
+
+  /* A choice that does not change the picture is a decoration pretending to
+     be a configurator. Width is the one that is easiest to fake, so it is the
+     one asserted: the board count must follow the REAL inches. */
+  it('makes width change the picture in proportion to its real inches', () => {
+    const counts = ASSEMBLY_WIDTHS.map((w) => ({
+      inches: w.inches,
+      boards: boardsFor('straight', { width: fieldWidthFor(w.id) }).boards.length,
+    }));
+    for (let i = 1; i < counts.length; i += 1) {
+      expect(counts[i]!.inches, 'widths ascend').toBeGreaterThan(counts[i - 1]!.inches);
+      expect(counts[i]!.boards, `${counts[i]!.inches}" lays fewer boards`).toBeLessThan(counts[i - 1]!.boards);
+    }
+    const narrow = counts[0]!.boards;
+    const widest = counts[counts.length - 1]!.boards;
+    expect(narrow).toBeGreaterThan(widest * 2);
+  });
+
+  it('derives the field width from inches rather than a hand-made table', () => {
+    for (const w of ASSEMBLY_WIDTHS) {
+      expect(fieldWidthFor(w.id), w.id).toBeCloseTo((w.inches / 5) * 7.5, 2);
+    }
+    /* An unknown width must fall back, never produce NaN and a blank floor. */
+    expect(Number.isFinite(fieldWidthFor('not-a-width'))).toBe(true);
+  });
+});
+
+describe('the handoff carries what /design reads, and nothing it does not', () => {
+  const href = assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'chevron', 'wire-brushed');
+  const q = new URLSearchParams(href.slice(href.indexOf('?') + 1));
+
+  it('carries species, finish and pattern', () => {
+    expect(q.get('species')).toBe(ASSEMBLY_SPECIES[0]!.rateKey);
+    expect(q.get('finish')).toBe('wire-brushed');
+    expect(q.get('pattern')).toBe('chevron');
+  });
+
+  it('refuses a finish the configurator has no option for', () => {
+    expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'straight', 'lacquered')).not.toContain('finish=');
+  });
+
+  /* THE SILENT DROP, AVOIDED FOR THE THIRD TIME. FloorConfigurator reads four
+     parameters and has no width control, so `width=` would be read by nobody. */
+  it('does not send a width, because nothing reads one', () => {
+    expect(href).not.toContain('width=');
+    const cfg = read('app/components/FloorConfigurator.tsx');
+    expect(cfg).not.toContain("q.get('width')");
+  });
+
+  it('and FloorConfigurator really does match finishes by id', () => {
+    expect(read('app/components/FloorConfigurator.tsx')).toContain(
+      'FINISH_OPTIONS.some((f) => f.id === qsFinish)',
+    );
+  });
+});
+
+describe('the board is described the way the glossary describes it', () => {
+  const glossary = read('lib/glossary.ts');
+
+  /* The homepage and the glossary must not drift. These are the load-bearing
+     phrases: if the glossary is reworded, this fails and someone decides. */
+  it('uses the published definition of the wear layer', () => {
+    const wear = ASSEMBLY_LAYERS.find((l) => l.id === 'wear-layer')!;
+    expect(wear.body).toContain('above the core');
+    expect(glossary).toContain('The thickness of real hardwood above the core');
+  });
+
+  it('uses the published definition of the cross-ply core', () => {
+    const core = ASSEMBLY_LAYERS.find((l) => l.id === 'cross-ply-core')!;
+    expect(core.body).toContain('90°');
+    expect(glossary).toContain('each layer oriented at 90° to the one beside it');
+  });
+
+  /* Do not put a competitor's product claim in this company's mouth. The
+     reference for this section was another manufacturer's page describing
+     THEIR board — a two-layer solid core with a UV-cured urethane finish.
+     Ecowoods sells solid or engineered; it does not sell that product. */
+  it('makes no claim copied from another manufacturer', () => {
+    const prose = [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD]
+      .map((l) => `${l.title} ${l.body} ${l.ask}`)
+      .join(' ')
+      .toLowerCase();
+    for (const claim of ['two-layer', 'solid core', 'uv cured', 'uv-cured', 'toxic-free']) {
+      expect(prose, claim).not.toContain(claim);
+    }
+  });
+});
+
+describe('the finish is applied, not just labelled', () => {
+  const src = read('app/components/FloorAssembly.tsx');
+  const css = read('app/globals.css');
+
+  it('passes the published sheen and tint into the render', () => {
+    expect(src).toContain("'--fa-sheen': String(finish.sheen)");
+    expect(src).toContain("'--fa-tint': finish.tint");
+
+    /* The tint must be in the BOARD's own background stack, not merely
+       declared as a variable somewhere. Read that one declaration and check
+       it there — asserting on the whole file would pass on the --fa-tint line
+       alone, and asserting on the template text would need a literal ${...}
+       inside a plain string, which parse-scan rightly refuses. */
+    const at = src.indexOf('backgroundImage:');
+    expect(at, 'no backgroundImage on the board').toBeGreaterThan(-1);
+    const decl = src.slice(at, src.indexOf('\n', at + 1));
+    expect(decl, 'the board is not tinted by the finish').toContain('finish.tint');
+    expect(src).toContain("backgroundBlendMode: 'multiply, multiply, normal'");
+  });
+
+  it('and the stylesheet actually reads the sheen', () => {
+    expect(css).toContain('var(--fa-sheen');
+  });
+
+  it('every finish carries a sheen that can differ on screen', () => {
+    const sheens = new Set(ASSEMBLY_FINISHES.map((f) => f.sheen));
+    expect(sheens.size).toBeGreaterThan(1);
+    for (const f of ASSEMBLY_FINISHES) expect(f.tint, f.id).toContain('rgba');
+  });
+});
+
+describe('the motion has amplitude a person can see', () => {
+  const css = read('app/globals.css');
+
+  /* The first version turned 15° over 26 seconds, which is real motion and is
+     below the threshold at which someone glancing at it believes it moves. */
+  it('turns far enough, and does not retrace its own path', () => {
+    const drift = css.slice(css.indexOf('@keyframes fa-drift'), css.indexOf('@keyframes fa-float'));
+    const degs = [...drift.matchAll(/\+ (\d+)deg/g)].map((m) => Number(m[1]));
+    expect(Math.max(...degs, 0)).toBeGreaterThanOrEqual(20);
+    expect(drift).toContain('35%');
+    expect(drift).toContain('70%');
+  });
+
+  it('floats the layers far enough to read as separate', () => {
+    const float = css.slice(css.indexOf('@keyframes fa-float'));
+    expect(float.slice(0, 200)).toMatch(/translate: 0 0 (\d\d)px/);
+  });
+
+  it('gives all three layers different periods so they never re-sync', () => {
+    const durations = [...css.matchAll(/\.fa-layer\[data-i='\d'\] \{ animation-duration: (\d+)s/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(durations.length).toBe(3);
+    expect(new Set(durations).size).toBe(3);
   });
 });

@@ -29,7 +29,15 @@
  * built; the copy describes the trade, not a customer, an address or a result.
  */
 import { FLOOR_PRODUCTS, type FloorProduct } from '@/lib/floor-studio/catalog';
-import { PATTERN_OPTIONS, DEFAULT_PATTERN, type PatternOption } from '@ecowoods/shared/ai';
+import { FLOOR_PRODUCTS as _P, BOARD_WIDTHS, DEFAULT_WIDTH, type BoardWidth } from '@/lib/floor-studio/catalog';
+import {
+  PATTERN_OPTIONS,
+  FINISH_OPTIONS,
+  DEFAULT_PATTERN,
+  DEFAULT_FINISH,
+  type PatternOption,
+  type FinishOption,
+} from '@ecowoods/shared/ai';
 
 export type AssemblyLayer = {
   /** Display index, top of the build-up first. */
@@ -46,38 +54,83 @@ export type AssemblyLayer = {
   ask: string;
 };
 
-/** Top of the build-up first — the order you meet them, not the order they are laid. */
+/**
+ * THREE LAYERS, BECAUSE THAT IS WHAT A BOARD IS.
+ *
+ * This used to list five: finish, wear layer, fastening, moisture control,
+ * substrate. Every one of those is real, but they are not one object — they are
+ * the floor SYSTEM as installed, and three of them are things that happen
+ * underneath a board rather than parts of it. Drawing them as a single exploded
+ * stack said a board has five layers, and a board does not.
+ *
+ * What is drawn now is the board: an engineered board, which glossary.ts calls
+ * "the correct specification for the majority of Toronto projects — not a
+ * compromise, and not a cheaper substitute".
+ *
+ * EVERY DEFINITION BELOW IS THE ONE THIS SITE ALREADY PUBLISHES, in
+ * lib/glossary.ts, so the homepage and the glossary cannot drift:
+ *
+ *   wear layer        "The thickness of real hardwood above the core — what
+ *                      determines how many times a floor can be refinished."
+ *   cross-ply core    "each layer oriented at 90° to the one beside it";
+ *                     "Each layer's tendency to move across its own grain is
+ *                      resisted by the layer bonded to it at a right angle."
+ *
+ * The installation questions the five-layer version carried — fastening,
+ * moisture reading, substrate flatness — were the best part of it and are NOT
+ * discarded: they move to UNDER_THE_BOARD below, which the section renders as
+ * a separate short list, because they belong to the quote rather than to the
+ * board.
+ */
 export const ASSEMBLY_LAYERS: readonly AssemblyLayer[] = [
   {
     n: '01',
     id: 'finish',
     title: 'Finish',
-    body: 'Coats applied on site or in the mill. What you walk on, and the only layer that can be renewed without lifting a board.',
-    ask: 'How many coats, and of what — and is the last one sanded between?',
+    body: 'Coats applied in the mill or on site. What you actually walk on, and the only layer that can be renewed without lifting a board.',
+    ask: 'How many coats, of what, and is it sanded between them?',
   },
   {
     n: '02',
     id: 'wear-layer',
     title: 'Wear layer',
-    body: 'The sandable thickness above the tongue. It decides how many times this floor can ever be refinished.',
-    ask: 'How many millimetres above the tongue? That number sets how many refinishes you get.',
+    body: 'Real hardwood above the core. Its thickness is what determines how many times this floor can ever be refinished — and cutting through it cannot be undone.',
+    ask: 'How many millimetres of hardwood above the core? That number is the floor\u2019s lifespan, and it is the one most quotes never state.',
   },
   {
     n: '03',
+    id: 'cross-ply-core',
+    title: 'Cross-ply core',
+    body: 'Layers bonded at 90° to each other, so each layer\u2019s tendency to move across its own grain is resisted by the one beside it. This is what makes a board stable over a slab, in a condo, and above radiant heat.',
+    ask: 'How many plies, and what species is the core?',
+  },
+] as const;
+
+/**
+ * The three questions that are about the INSTALLATION rather than the board.
+ *
+ * These were layers 03, 04 and 05 of the five-layer version. They are not
+ * parts of a board and drawing them as such was the error; they are still the
+ * three things that decide whether a correctly specified board survives its
+ * second winter, and a buyer who asks them can tell two quotes apart.
+ */
+export const UNDER_THE_BOARD: readonly AssemblyLayer[] = [
+  {
+    n: '04',
     id: 'fastening',
     title: 'Fastening',
     body: 'Cleat, staple or adhesive, chosen for the substrate underneath. The wrong choice is silent for a year and then audible every winter.',
     ask: 'Which fastening, and why that one for my subfloor?',
   },
   {
-    n: '04',
+    n: '05',
     id: 'moisture-control',
     title: 'Moisture control',
     body: 'Barrier or membrane, specified from a meter reading of the slab or the plywood rather than from habit.',
     ask: 'What did the moisture meter read, on what day, and what did you specify from it?',
   },
   {
-    n: '05',
+    n: '06',
     id: 'substrate',
     title: 'Substrate',
     body: 'Plywood or slab, flattened to tolerance before anything is laid on it. Everything above inherits whatever is wrong here.',
@@ -89,7 +142,7 @@ export const ASSEMBLY_LAYERS: readonly AssemblyLayer[] = [
 export const ASSEMBLY_LAYER_COUNT = ASSEMBLY_LAYERS.length;
 
 export function layerById(id: string): AssemblyLayer | undefined {
-  return ASSEMBLY_LAYERS.find((l) => l.id === id);
+  return [...ASSEMBLY_LAYERS, ...UNDER_THE_BOARD].find((l) => l.id === id);
 }
 
 /**
@@ -130,8 +183,18 @@ export const ASSEMBLY_DEFAULT_SPECIES = 'white-oak';
  * through designEstimateHref, with the area filled in, and the handoff holds.
  * floor-assembly.test.ts asserts the rateKey round-trip against the catalogue.
  */
-export function assemblyDesignHref(product: FloorProduct, patternId?: string): string {
+export function assemblyDesignHref(
+  product: FloorProduct,
+  patternId?: string,
+  finishId?: string,
+): string {
   const params = new URLSearchParams({ species: product.rateKey, source: 'assembly' });
+  /* Finish is keyed by id and /design matches it against FINISH_OPTIONS by id,
+     so it carries. Checked here for the same reason the pattern is: a value
+     that list does not contain is dropped on arrival without an error. */
+  if (finishId && FINISH_OPTIONS.some((f) => f.id === finishId)) {
+    params.set('finish', finishId);
+  }
   /* The pattern param IS keyed by id — FloorConfigurator matches it against
      PATTERN_OPTIONS, whose id is the id. Only the species list is rekeyed.
      Sent only when it is a pattern that list actually contains, so a stale
@@ -139,13 +202,64 @@ export function assemblyDesignHref(product: FloorProduct, patternId?: string): s
   if (patternId && PATTERN_OPTIONS.some((p) => p.id === patternId)) {
     params.set('pattern', patternId);
   }
+  /* WIDTH IS DELIBERATELY NOT SENT. FloorConfigurator reads exactly four
+     parameters — species, finish, pattern, sqft — and has no board-width
+     control at all, so `width=` would be a parameter nobody reads: the
+     visitor picks 3¼″ strip, sees it in the picture, and arrives at a
+     configurator with no trace of it. Showing a width we cannot hand over is
+     honest; pretending to hand it over is the silent drop this file already
+     documents twice. floor-assembly.test.ts asserts it stays out. */
   return `/design?${params.toString()}`;
 }
 
 /* ── the boards ───────────────────────────────────────────────────────────── */
 
+/* ── the four axes ────────────────────────────────────────────────────────
+   EIGHTEEN CHOICES, AND NOT ONE OF THEM IS NEW.
+
+   The section offered five species and nothing else. It now offers all four
+   axes this business actually sells on — 5 species, 5 finishes, 4 patterns,
+   4 board widths — and every one of them is the catalogue's own list rather
+   than a copy, so nothing here can drift from what /design and /floor-studio
+   offer or from what content/constants/pricing.ts prices.
+
+   All four change the picture, from the catalogue's own data: the species
+   selects the photographed crop, the finish applies its published tint and
+   sheen, the pattern lays the boards, and the width sets how many boards
+   there are. A choice that did not change the picture would be a decoration
+   pretending to be a configurator. */
+
 /** The patterns the assembly can be laid in — the shared list, not a copy. */
 export const ASSEMBLY_PATTERNS: readonly PatternOption[] = PATTERN_OPTIONS;
+
+/** The finishes. Each carries its own published tint and sheen. */
+export const ASSEMBLY_FINISHES: readonly FinishOption[] = FINISH_OPTIONS;
+export const ASSEMBLY_DEFAULT_FINISH = DEFAULT_FINISH;
+
+/** The four widths Ecowoods lays, in the trade's own names. */
+export const ASSEMBLY_WIDTHS: readonly BoardWidth[] = BOARD_WIDTHS;
+export const ASSEMBLY_DEFAULT_WIDTH = DEFAULT_WIDTH;
+
+/** Total selectable options across every axis — what the section offers. */
+export const ASSEMBLY_CHOICE_COUNT =
+  ASSEMBLY_SPECIES.length +
+  ASSEMBLY_FINISHES.length +
+  ASSEMBLY_PATTERNS.length +
+  ASSEMBLY_WIDTHS.length;
+
+/**
+ * Face width in percent of the board field, from the width's REAL inches.
+ *
+ * The field is a fixed square, so a board's share of it is the only thing that
+ * can carry the difference between a 3¼″ strip and an 8″ plank — and it has to
+ * be proportional, or the labels are decorative. 5″ is the modern default and
+ * anchors the scale at the 7.5% the field was built around; every other width
+ * follows from its own `inches`.
+ */
+export function fieldWidthFor(widthId: string): number {
+  const w = BOARD_WIDTHS.find((b) => b.id === widthId) ?? BOARD_WIDTHS[1]!;
+  return Number(((w.inches / 5) * 7.5).toFixed(3));
+}
 
 /** The shared default, not a second opinion about what it should be. */
 export const ASSEMBLY_DEFAULT_PATTERN = DEFAULT_PATTERN;

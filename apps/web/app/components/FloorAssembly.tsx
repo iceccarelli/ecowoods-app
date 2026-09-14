@@ -3,14 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  ASSEMBLY_CHOICE_COUNT,
+  ASSEMBLY_DEFAULT_FINISH,
   ASSEMBLY_DEFAULT_PATTERN,
   ASSEMBLY_DEFAULT_SPECIES,
+  ASSEMBLY_DEFAULT_WIDTH,
+  ASSEMBLY_FINISHES,
   ASSEMBLY_LAYERS,
   ASSEMBLY_PATTERNS,
   ASSEMBLY_SPECIES,
+  ASSEMBLY_WIDTHS,
+  UNDER_THE_BOARD,
   assemblyDesignHref,
   boardFace,
   boardsFor,
+  fieldWidthFor,
   grainTextureFor,
 } from '@/lib/floor-assembly';
 
@@ -113,13 +120,23 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [speciesId, setSpeciesId] = useState(ASSEMBLY_DEFAULT_SPECIES);
   const [patternId, setPatternId] = useState(ASSEMBLY_DEFAULT_PATTERN);
+  const [finishId, setFinishId] = useState(ASSEMBLY_DEFAULT_FINISH);
+  const [widthId, setWidthId] = useState(ASSEMBLY_DEFAULT_WIDTH);
   const [active, setActive] = useState<string | null>(null);
 
   const species =
     ASSEMBLY_SPECIES.find((s) => s.id === speciesId) ?? ASSEMBLY_SPECIES[0]!;
   const pattern =
     ASSEMBLY_PATTERNS.find((p) => p.id === patternId) ?? ASSEMBLY_PATTERNS[0]!;
-  const field = boardsFor(pattern.id);
+  const finish =
+    ASSEMBLY_FINISHES.find((f) => f.id === finishId) ?? ASSEMBLY_FINISHES[0]!;
+  const width =
+    ASSEMBLY_WIDTHS.find((w) => w.id === widthId) ?? ASSEMBLY_WIDTHS[1]!;
+
+  /* The picture is rebuilt from all four choices. The width is the one that
+     changes the BOARD COUNT, which is what makes a 3¼″ strip look like a strip
+     floor rather than a wide plank with a different label on it. */
+  const field = boardsFor(pattern.id, { width: fieldWidthFor(width.id) });
   const texture = grainTextureFor(species.id);
 
   /**
@@ -175,21 +192,34 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
     >
       <div className="shell">
         <div className="fa-head">
-          <p className="fa-kicker">What a floor is made of</p>
+          <p className="fa-kicker">What a board is made of</p>
           <h2 className="fa-h2">
-            Five layers. Four of them are{' '}
-            <span className="serif-italic">invisible once we leave.</span>
+            Three layers. The one that decides its lifespan is{' '}
+            <span className="serif-italic">the one nobody quotes.</span>
           </h2>
           <p className="fa-lede">
-            Every quote prices the same five layers. The difference between a floor that
-            lasts thirty years and one that cups in its second winter is in the four you
-            never see again — so each layer below carries the question to put to whoever
-            is quoting you, including us.
+            An engineered board: real hardwood over a 90° cross-ply core, which is the
+            correct specification for the majority of Toronto projects — not a compromise
+            and not a cheaper substitute. Each layer below carries the question to put to
+            whoever is quoting you, including us.
           </p>
         </div>
 
         {/* THE MOVING PART. Five empty divs. No text enters here. */}
-        <div className="fa-stage" ref={stageRef} aria-hidden="true">
+        <div
+          className="fa-stage"
+          ref={stageRef}
+          aria-hidden="true"
+          /* The finish is not a label. Its published sheen sets how much light
+             the top coat returns, and its published tint is multiplied into
+             every board — both straight off FINISH_OPTIONS. */
+          style={
+            {
+              '--fa-sheen': String(finish.sheen),
+              '--fa-tint': finish.tint,
+            } as React.CSSProperties
+          }
+        >
           <div className="fa-stack">
             {ASSEMBLY_LAYERS.map((l, i) => (
               <div
@@ -226,8 +256,8 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
                                rasterised. Doing it with mix-blend-mode over the
                                field instead costs 23% of the frame rate for the
                                whole life of the animation — measured. */
-                            backgroundImage: `linear-gradient(rgba(112,60,24,${(0.34 + face.shade).toFixed(3)}), rgba(112,60,24,${(0.34 + face.shade).toFixed(3)})), url(${texture})`,
-                            backgroundBlendMode: 'multiply, normal',
+                            backgroundImage: `linear-gradient(${finish.tint}, ${finish.tint}), linear-gradient(rgba(112,60,24,${(0.34 + face.shade).toFixed(3)}), rgba(112,60,24,${(0.34 + face.shade).toFixed(3)})), url(${texture})`,
+                            backgroundBlendMode: 'multiply, multiply, normal',
                             backgroundPosition: `${face.posX}% ${face.posY}%`,
                           }}
                         />
@@ -287,6 +317,52 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
           </p>
         </div>
 
+        {/* THE FINISH. Its published sheen and tint are applied to the render,
+            so picking one changes the top coat and the colour of every board
+            rather than just the label under the picture. */}
+        <div className="fa-species fa-patterns">
+          <span className="fa-species-label">Finished in</span>
+          <div className="fa-species-chips" role="group" aria-label="Finish the floor">
+            {ASSEMBLY_FINISHES.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className="fa-chip"
+                aria-pressed={f.id === finish.id}
+                onClick={() => setFinishId(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <p className="fa-species-note">
+            {finish.label} · {finish.blurb}
+          </p>
+        </div>
+
+        {/* THE WIDTH. Real inches from the catalogue, and the board count on
+            screen follows from them — a 3¼″ strip floor has more than twice
+            the boards of an 8″ plank, which is most of what the two look like. */}
+        <div className="fa-species fa-patterns">
+          <span className="fa-species-label">Board width</span>
+          <div className="fa-species-chips" role="group" aria-label="Choose a board width">
+            {ASSEMBLY_WIDTHS.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                className="fa-chip"
+                aria-pressed={w.id === width.id}
+                onClick={() => setWidthId(w.id)}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+          <p className="fa-species-note">
+            {width.label} · {width.note}
+          </p>
+        </div>
+
         <ol className="fa-legend">
           {ASSEMBLY_LAYERS.map((l) => (
             <li
@@ -310,10 +386,33 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
           ))}
         </ol>
 
+        {/* UNDER THE BOARD. Not layers of it — the three things that decide
+            whether a correctly specified board survives its second winter.
+            They were drawn as part of the board before, which was wrong. */}
+        <div className="fa-under">
+          <p className="fa-under-h">
+            And three more the quote has to answer, which are not part of the board
+          </p>
+          <ol className="fa-legend fa-legend-tight">
+            {UNDER_THE_BOARD.map((l) => (
+              <li key={l.id} className="fa-item">
+                <span className="fa-n">{l.n}</span>
+                <div>
+                  <p className="fa-t">{l.title}</p>
+                  <p className="fa-d">{l.body}</p>
+                  <p className="fa-ask">
+                    <span className="fa-ask-label">Ask any contractor:</span> {l.ask}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
         <div className="fa-actions">
           <Link
             className="btn btn-copper btn-lg"
-            href={assemblyDesignHref(species, pattern.id)}
+            href={assemblyDesignHref(species, pattern.id, finish.id)}
           >
             Specify this floor in {species.name}
           </Link>
