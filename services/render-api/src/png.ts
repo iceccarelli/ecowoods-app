@@ -58,22 +58,50 @@ function chunk(type: string, body: Buffer): Buffer {
 /**
  * Encode RGBA to PNG.
  *
- * Filter 0 (None) on every scanline. The adaptive filter heuristic buys a few
- * percent on photographic data and costs a pass over every byte; the wire is
- * not where this service spends its time, the renderer is.
+ * FILTER 1 (SUB), NOT 0 (NONE), AND THE COMMENT THAT USED TO BE HERE WAS WRONG.
+ *
+ * It said the filter heuristic "buys a few percent on photographic data and
+ * costs a pass over every byte; the wire is not where this service spends its
+ * time". Measured on a 900×675 hickory plate:
+ *
+ *     RGBA, filter 0 (what shipped)   710 KB
+ *     RGBA, filter 1 (Sub)            557 KB     −21%
+ *     RGBA, filter 4 (Paeth)          613 KB     −14%
+ *     RGB,  filter 1 (Sub)            518 KB     −27%
+ *
+ * Twenty-one percent, for one subtraction per byte. The wire is not where the
+ * service spends its TIME, but egress is metered and billed and a quarter of it
+ * is a quarter of a real cost. Sub beats Paeth here because a rendered floor is
+ * strongly correlated along a scanline — boards run across the frame and the
+ * light falls smoothly — and Sub is the cheaper of the two.
+ *
+ * `opaque` drops the alpha channel, which the caller must actually mean: a
+ * plate is opaque by construction (createPlateBuffer fills 255 and every write
+ * sets it) and a test asserts it. A composite over somebody's photograph is
+ * not, and does not pass it.
  */
-export function encodePng({ data, width, height }: Raw): Buffer {
-  const stride = width * 4;
+export function encodePng({ data, width, height }: Raw, opaque = false): Buffer {
+  const channels = opaque ? 3 : 4;
+  const stride = width * channels;
   const raw = Buffer.alloc((stride + 1) * height);
   for (let y = 0; y < height; y += 1) {
-    raw[y * (stride + 1)] = 0;
-    Buffer.from(data.buffer, data.byteOffset + y * stride, stride).copy(raw, y * (stride + 1) + 1);
+    const o = y * (stride + 1);
+    raw[o] = 1; // Sub
+    const src = y * width * 4;
+    for (let x = 0; x < width; x += 1) {
+      for (let c = 0; c < channels; c += 1) {
+        const v = data[src + x * 4 + c]!;
+        /* Sub is the byte minus the same channel of the pixel to its left,
+           modulo 256. The first pixel of a row has nothing to its left. */
+        raw[o + 1 + x * channels + c] = x === 0 ? v : (v - data[src + (x - 1) * 4 + c]!) & 255;
+      }
+    }
   }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // colour type: RGBA
+  ihdr[9] = opaque ? 2 : 6; // colour type: RGB or RGBA
   return Buffer.concat([
     SIG,
     chunk('IHDR', ihdr),

@@ -70,9 +70,62 @@ timing-safe.
 
 ### `GET /health` · `GET /v1/floors` — open, no key
 
-`/v1/floors` returns the live catalogue: 5 species, 5 finishes, 4 patterns,
-4 board widths, with the ids the other endpoints take. Read it rather than
-hardcoding ids.
+`/v1/floors` returns the live catalogue: every species, finish, pattern and
+board width, with the ids the other endpoints take, and a `photographed` flag
+per species saying whether that floor renders from a photograph of the wood or
+from the catalogue's two pigments. Read it rather than hardcoding ids — the list
+grows.
+
+`/health` also reports how many grain tiles decoded at boot. A missing tile is
+not an outage: that species renders from its pigments instead, which is a
+plainer floor and not a broken one. It is reported rather than hidden.
+
+### `GET /v1/plate` — a floor, with no photograph required
+
+```bash
+curl -G https://ecowoods-render-api.fly.dev/v1/plate \
+  -H "Authorization: Bearer ew_live_<id>_<secret>" \
+  -d species=hickory -d pattern=herringbone -d width=7 -d finish=satin \
+  -d w=1200 -d h=900 \
+  -o hickory-herringbone.png
+```
+
+`/v1/render` needs a room. That is the flagship and it is useless to anybody who
+has not taken a photograph yet — which is everybody, on the first page they land
+on. This draws the floor on its own, under a real perspective camera in a
+synthesised room, from a query string. One GET, no body, no upload.
+
+The answer is a pure function of the query string, so it is returned
+`immutable` with a one-year max-age. Put it straight in an `<img src>` on a
+catalogue page and a CDN pays for each variant once, not once per visitor.
+
+| parameter | default | notes |
+| --- | --- | --- |
+| `species` | — | required; see `/v1/floors` |
+| `pattern` | `straight` | straight, diagonal, herringbone, chevron |
+| `width` | `5` | board width id, not inches |
+| `finish` | `satin` | |
+| `w`, `h` | 1200 × 900 | capped at `MAX_PLATE_PIXELS` (default 2.4M) |
+| `pitch` | 18 | degrees the lens is tilted down, 2–40 |
+| `eye` | 48 | lens height above the floor, inches, 18–96 |
+| `fov` | 62 | horizontal field of view, degrees, 20–100 |
+| `wall` | on | `wall=0` replaces the wall with flat white |
+
+`x-grain-source` on the response says `photograph` or `catalogue-pigment`, so a
+caller can tell which they got without looking at the picture.
+
+The camera is a camera: 48 inches is the seated eye line interiors are shot
+from, 62 degrees is a 28mm lens on full frame, and the wall line is a
+consequence of the pitch rather than four corners chosen by eye.
+
+That matters for two things people will want. **Floor edge to edge, no horizon:**
+raise `pitch` past the point where the wall line leaves the top of the frame —
+about 24 degrees on a 4:3 plate, and `pitch=35` is safely past it at any aspect.
+Do not use `wall=0` for this; it paints flat white where the wall was, which is
+for compositing your own background behind the floor, and above the horizon
+there is no floor to draw at any tilt. **A tighter crop of the boards:** lower
+`fov`. A long lens flattens the perspective and fills the frame with wood, which
+is what a catalogue thumbnail wants; the default 62 degrees is a room.
 
 ### `POST /v1/analyse` — what the photograph contains
 
@@ -114,6 +167,12 @@ const png = await new Promise(r => canvas.toBlob(r, 'image/png'));
 
 16-bit, palette and interlaced PNG are refused **by name**, not silently.
 
+Out, the encoder uses Sub filtering, and `/v1/plate` drops the alpha channel
+because a plate is opaque by construction. Measured on a 900×675 hickory plate:
+710 KB with neither, 518 KB with both — 27% off every byte the endpoint serves,
+for one subtraction per byte. Egress is metered; the renderer is where the time
+goes, but the wire is where some of the money does.
+
 ## What this does not do yet, stated plainly
 
 - **Billing reads the log stream.** Every request writes one JSON line
@@ -124,7 +183,12 @@ const png = await new Promise(r => canvas.toBlob(r, 'image/png'));
 - **The rate limiter is per process.** `fly.toml` pins `max_machines_count = 1`
   for exactly that reason: a second machine would silently double every
   caller's limit. Raise it only together with a shared counter.
-- **No JPEG, no WebP, no HEIC.** See above.
+- **No JPEG, no WebP, no HEIC.** See above. This is also why the grain tiles
+  exist twice: the website serves webp and this service reads PNG copies of the
+  same tiles, cut by the same script from the same photographs, at a quarter of
+  the linear resolution. What is *not* duplicated is their size in inches, which
+  is imported — two copies of that number would be two chances for the website's
+  floor and the API's floor to be different floors.
 - **Nothing is stored.** The photograph is decoded, rendered and dropped. That
   is a deliberate consequence of the privacy design in `room.ts` — PIPEDA case
   summary #2006-349 treats photographs of a dwelling's interior as personal

@@ -35,7 +35,10 @@ import { analyseRoom, estimateFloorQuad, type Pixels, type Quad } from '@/lib/fl
 import { compositeFloor } from '@/lib/floor-studio/render';
 import { FLOOR_PRODUCTS, BOARD_WIDTHS, productById, widthById } from '@/lib/floor-studio/catalog';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
+import { DEFAULT_CAMERA, renderFloorPlate } from '@/lib/floor-studio/plate';
+import { GRAIN_TILES } from '@/lib/floor-studio/grain';
 import { decodePng, encodePng } from './png.ts';
+import { grainFor, warmGrain } from './textures.ts';
 import { parseKeys, verify, RateLimiter, usageLine, type KeyRecord } from './keys.ts';
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -43,6 +46,10 @@ const PORT = Number(process.env.PORT ?? 8080);
 const MAX_BODY = Number(process.env.MAX_BODY_BYTES ?? 8_000_000);
 /** Above this the render is slower than anyone will wait for. Measured, not felt. */
 const MAX_PIXELS = Number(process.env.MAX_PIXELS ?? 4_000_000);
+
+/** The largest plate we will draw. Above this the render costs more than the
+    bandwidth and nobody is displaying it at that size anyway. */
+const MAX_PLATE = Number(process.env.MAX_PLATE_PIXELS ?? 2_400_000);
 
 const KEYS = parseKeys(process.env.RENDER_API_KEYS);
 const limiter = new RateLimiter();
@@ -72,6 +79,18 @@ function readBody(req: IncomingMessage): Promise<Buffer> {
   });
 }
 
+/** A query-string number, or the default, never outside the stated bounds. */
+function clampNum(raw: string | null, fallback: number, lo: number, hi: number): number {
+  const n = Number(raw);
+  if (raw === null || !Number.isFinite(n)) return fallback;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+/* Decode the tiles at boot, not on the first request. This is why the service
+   is a warm machine rather than a function: 180ms paid once, by us, instead of
+   by whichever customer happens to arrive first after a cold start. */
+const warmed = warmGrain();
+
 /** A quad from the caller, validated. Absent means: estimate it. */
 function readQuad(v: unknown): Quad | null {
   if (!Array.isArray(v) || v.length !== 4) return null;
@@ -86,7 +105,15 @@ function readQuad(v: unknown): Quad | null {
 
 /* ── the catalogue, so an integrator does not have to guess ids ───────────── */
 const catalogue = () => ({
-  species: FLOOR_PRODUCTS.map((p) => ({ id: p.id, name: p.name, janka: p.janka })),
+  species: FLOOR_PRODUCTS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    janka: p.janka,
+    /* Whether this species renders from a photograph of the wood or from the
+       catalogue's two pigments. An integrator choosing what to show their own
+       customers is entitled to know which. */
+    photographed: GRAIN_TILES.some((t) => t.product === p.id),
+  })),
   finishes: FINISH_OPTIONS.map((f) => ({ id: f.id, label: f.label })),
   patterns: PATTERN_OPTIONS.map((p) => ({ id: p.id, label: p.label })),
   widths: BOARD_WIDTHS.map((w) => ({ id: w.id, label: w.label, inches: w.inches })),
@@ -97,7 +124,90 @@ async function handle(req: IncomingMessage, res: ServerResponse, key: KeyRecord 
   const route = url.pathname;
 
   if (route === '/health') {
-    json(res, 200, { ok: true, keys: KEYS.size, uptimeSeconds: Math.round(process.uptime()) });
+    json(res, 200, {
+      ok: true,
+      keys: KEYS.size,
+      uptimeSeconds: Math.round(process.uptime()),
+      /* What actually decoded at boot. A tile that failed to load is not an
+         outage — the floor still renders from the catalogue's pigments — but it
+         is a silently plainer product, so it is reported rather than hidden. */
+      grainTiles: GRAIN_TILES.length,
+      grainLoaded: warmed.loaded,
+      grainMissing: warmed.missing,
+    });
+    return 200;
+  }
+
+  /* ── /v1/plate ────────────────────────────────────────────────────────────
+     A floor, with no photograph required.
+
+     /v1/render needs a room: the customer sends a picture of theirs and gets it
+     back with our floor in it. That is the flagship and it is useless to
+     anybody who has not taken a photograph yet — which is everybody, on the
+     first page they land on. This draws the floor on its own, under a real
+     perspective camera in a synthesised room, from a query string. One GET, no
+     body, no upload, cacheable forever because the answer is a pure function of
+     the parameters.
+
+     It is the cheap tier and the one that sells the expensive one. A flooring
+     retailer can put every species, pattern and board width they carry on their
+     own catalogue pages with an <img src>, and the first time one of their
+     customers wants to see it in their own hallway, that is /v1/render. */
+  if (route === '/v1/plate' && req.method === 'GET') {
+    const q = url.searchParams;
+    const productId = q.get('species') ?? q.get('productId') ?? '';
+    const widthId = q.get('width') ?? q.get('widthId') ?? '5';
+    if (!productById(productId)) {
+      json(res, 400, { error: 'unknown_species', message: `no such species: ${productId || '(missing)'}`, valid: FLOOR_PRODUCTS.map((p) => p.id) });
+      return 400;
+    }
+    if (!widthById(widthId)) {
+      json(res, 400, { error: 'unknown_width', message: `no such width: ${widthId}`, valid: BOARD_WIDTHS.map((w) => w.id) });
+      return 400;
+    }
+    const w = Math.max(64, Math.min(4096, Number(q.get('w') ?? 1200)));
+    const h = Math.max(64, Math.min(4096, Number(q.get('h') ?? 900)));
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w * h > MAX_PLATE) {
+      json(res, 413, { error: 'plate_too_large', message: `${w}×${h} exceeds ${MAX_PLATE} pixels` });
+      return 413;
+    }
+    /* The shot is a parameter, not a constant, because a catalogue tile and a
+       hero image want different framing from the same floor. Bounded to angles
+       that are still a room: past forty degrees of tilt there is no wall left
+       and it stops being a photograph of anything. */
+    const camera = {
+      eyeHeightIn: clampNum(q.get('eye'), DEFAULT_CAMERA.eyeHeightIn, 18, 96),
+      pitchDeg: clampNum(q.get('pitch'), DEFAULT_CAMERA.pitchDeg, 2, 40),
+      fovDeg: clampNum(q.get('fov'), DEFAULT_CAMERA.fovDeg, 20, 100),
+    };
+    const grain = grainFor(productId) ?? undefined;
+    const plate = renderFloorPlate({
+      width: w,
+      height: h,
+      config: {
+        productId,
+        finishId: q.get('finish') ?? q.get('finishId') ?? 'satin',
+        patternId: q.get('pattern') ?? q.get('patternId') ?? 'straight',
+        widthId,
+      },
+      grain,
+      camera,
+      wall: q.get('wall') !== '0',
+    });
+    /* Opaque: a plate is a photograph of a room, not an overlay. Three
+       channels instead of four, and the encoder's Sub filter on top of that,
+       is 27% off every byte this endpoint will ever serve. */
+    const png = encodePng(plate, true);
+    res.writeHead(200, {
+      'content-type': 'image/png',
+      'content-length': png.length,
+      /* Pure function of the query string, so it can sit in a CDN for a year.
+         A caller putting this in an <img src> on a catalogue page pays for it
+         once per variant, not once per visitor. */
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-grain-source': grain ? 'photograph' : 'catalogue-pigment',
+    });
+    res.end(png);
     return 200;
   }
 

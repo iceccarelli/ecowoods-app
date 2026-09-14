@@ -6,6 +6,6 @@
   "type": "module",
   "scripts": {
     "start": "node --experimental-strip-types --import ./src/register.mjs ./src/server.ts",
-    "test": "node --experimental-strip-types ./src/keys.test.ts"
+    "test": "node --experimental-strip-types ./src/keys.test.ts && node --experimental-strip-types --import ./src/register.mjs ./src/plate.test.ts"
   }
 }

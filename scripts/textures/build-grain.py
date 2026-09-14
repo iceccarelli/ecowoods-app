@@ -84,6 +84,14 @@ import json, math, os, sys
 
 SRC = 'apps/web/public/gallery'
 OUT = 'apps/web/public/textures'
+# The render API decodes PNG and nothing else — it has zero dependencies and
+# there is no webp decoder in node:zlib. So the same tiles are written a second
+# time, as PNG, for the service. At a quarter of the linear resolution, which is
+# not a compromise: a 256-texel tile across three inches is 85 texels to the
+# inch, and the largest plate the API will render still MINIFIES that. It is the
+# same wood, one megabyte instead of five.
+API_OUT = 'services/render-api/textures'
+API_TILE_WIDTH = 256
 
 TILE_WIDTH = 512
 TILE_ASPECT = 3.0          # height : width, along the grain
@@ -371,6 +379,7 @@ def write_table(manifest) -> None:
 
 def main() -> int:
     os.makedirs(OUT, exist_ok=True)
+    os.makedirs(API_OUT, exist_ok=True)
     manifest = []
     worst = 0.0
     worst_seam = 0.0
@@ -382,6 +391,13 @@ def main() -> int:
             return 1
         path = f'{OUT}/{entry["file"]}'
         tile.save(path, 'WEBP', quality=92, method=6)
+
+        api_h = max(16, round(tile.height * API_TILE_WIDTH / tile.width))
+        api_path = f'{API_OUT}/grain-{product}.png'
+        tile.resize((API_TILE_WIDTH, api_h), Image.LANCZOS).save(api_path, 'PNG', optimize=True)
+        entry['apiFile'] = f'grain-{product}.png'
+        entry['apiWidth'] = API_TILE_WIDTH
+        entry['apiHeight'] = api_h
         entry['mean'] = [round(v) for v in ImageStat.Stat(tile).mean]
         entry['bytes'] = os.path.getsize(path)
         manifest.append(entry)
@@ -401,6 +417,7 @@ def main() -> int:
     write_table(manifest)
 
     print(f'\n{len(manifest)} species tiles → {OUT}')
+    print(f'{len(manifest)} PNG copies at {API_TILE_WIDTH}px → {API_OUT}')
     print(f'worst grain angle off vertical: {worst:.1f}°')
     print(f'worst seam, as a fraction of the tile\'s own contrast: {worst_seam:.3f}')
     if worst > 5.0:

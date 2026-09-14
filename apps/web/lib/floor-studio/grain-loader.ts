@@ -70,13 +70,14 @@ async function decode(productId: string): Promise<GrainTexture | null> {
     return null;
   }
 
-  /* The tile's declared size in inches is what the renderer samples by; its
-     declared pixel size is checked against what actually decoded, because a
-     mismatch means the table and the asset have drifted and the grain would be
-     rendered at the wrong scale silently. */
-  const across = w === tile.width ? tile.inchesAcross : (tile.inchesAcross * w) / tile.width;
-  const along = h === tile.height ? tile.inchesAlong : (tile.inchesAlong * h) / tile.height;
-  return makeGrainTexture(new Uint8ClampedArray(pixels.data), w, h, across, along);
+  /* The declared inches, whatever the decoded pixel size turns out to be.
+     A tile is a photograph of a real piece of wood: six inches of hickory is
+     six inches of hickory at 512 texels or at 256, so the inches are a property
+     of the wood and the pixels are only how finely it was sampled. Scaling one
+     by the other is right for a crop and wrong for a resize, and the render-api
+     copy of this loader did exactly that for an hour — every floor it drew came
+     out at double the grain scale, looking entirely plausible. */
+  return makeGrainTexture(new Uint8ClampedArray(pixels.data), w, h, tile.inchesAcross, tile.inchesAlong);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
