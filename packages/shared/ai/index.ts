@@ -163,7 +163,7 @@ export const PATTERN_OPTIONS: readonly PatternOption[] = [
  * we talk about or one we do not.
  */
 export const NAMED_SPECIES: ReadonlySet<string> = new Set([
-  'red oak', 'white oak', 'maple', 'walnut', 'hickory', 'engineered', 'refinishing',
+  'red oak', 'white oak', 'maple', 'walnut', 'hickory', 'ash', 'engineered', 'refinishing',
 ]);
 
 export const DEFAULT_SPECIES = 'white oak';

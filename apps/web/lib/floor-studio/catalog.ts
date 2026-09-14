@@ -248,6 +248,37 @@ export const FLOOR_PRODUCTS: readonly FloorProduct[] = [
     suitedTo: ['kitchens', 'entryways', 'houses with dogs', 'rentals'],
     finishes: NON_REACTIVE_FINISHES,
   },
+  {
+    /* WHITE ASH WAS ALREADY A PRODUCT AND HAD NO CONFIGURATOR ENTRY.
+       It has two floors in app/data/floors.ts — wide plank and herringbone —
+       with copy, six photographs in public/gallery, a guide page in the topic
+       map, and a tone in SpeciesSwatch whose comment reads, in as many words,
+       "White Ash has no configurator entry". Someone could read about our ash
+       floor, look at photographs of it, and then not find it on the page where
+       a person designs one. This is that omission closed, not a new product:
+       every figure below already existed somewhere in this repository. */
+    id: 'white-ash',
+    name: 'White Ash',
+    rateKey: 'ash',
+    movementSpeciesId: 'white-ash',
+    /* Fraxinus americana, 1320 lbf — the published side hardness, between the
+       two oaks and well under hickory, which is what the copy already claims
+       when it says real resilience underfoot. */
+    janka: 1320,
+    /* The pigments SpeciesSwatch has been painting ash with since it was
+       written. Moving them here rather than picking new ones is what keeps the
+       swatch on the home page and the floor on /design the same floor. */
+    base: '#dcc7a6',
+    grain: '#b89f7d',
+    tone: 'light',
+    undertone: 'neutral',
+    durability: 'hard',
+    maintenance: 'low',
+    note: 'The pale Scandinavian palette of white oak with a straighter, more open grain. Ontario-grown, and it takes a knock.',
+    swatchNote: 'Pale, open grain, Ontario-grown',
+    suitedTo: ['small rooms', 'north-facing rooms', 'condos', 'contemporary interiors'],
+    finishes: ALL_FINISHES,
+  },
 ] as const;
 
 export const DEFAULT_PRODUCT = FLOOR_PRODUCTS[0].id;

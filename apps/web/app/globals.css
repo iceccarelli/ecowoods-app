@@ -5060,6 +5060,37 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
   box-shadow: var(--shadow-md);
 }
 
+/* THE PLATE.
+   The canvas sits over the CSS plane, in the same box, at the same aspect. The
+   plane is what a person sees until the canvas has painted a pixel — and what
+   they keep if it never does, which is the case with JavaScript off, with a
+   tile that will not load, and in any browser that hands back no 2-D context.
+   `data-painted` is set by the component the first time it puts an image, so
+   the handover is one declaration and not a second opinion about capability. */
+.fc-plate {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--surface-2);
+}
+.fc-plate-fallback,
+.fc-plate-canvas { position: absolute; inset: 0; }
+.fc-plate-fallback { display: block; }
+.fc-plate-fallback .fc-plank { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+.fc-plate-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  /* A short fade, so the drawn plate becoming the photographed one is a change
+     in the floor rather than a flicker in the page. Under reduced motion the
+     global reset removes the transition and it simply appears. */
+  transition: opacity 260ms var(--ease-out-quart);
+}
+.fc-plate-fallback[data-painted='1'] + .fc-plate-canvas { opacity: 1; }
+
 .fc-plank {
   /* THE ROOM.
      Was a flat top-down swatch: a rectangle of stripes that told you the
@@ -5213,7 +5244,19 @@ html[data-theme='dark'] .gallery-tile:focus-within img {
 }
 .fc-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .fc-swatch[aria-pressed='true'] { border-color: var(--copper); box-shadow: 0 0 0 1px var(--copper), var(--shadow-warm); }
-.fc-swatch-chip { display: block; height: 42px; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.fc-swatch-chip {
+  display: block;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  /* The chip carries the species' own photographed tile. `cover` on a tile
+     that is three times taller than it is wide crops to the middle of the
+     board, which is the part worth showing; `background-position` holds it
+     there rather than letting the browser pick an edge. */
+  background-size: cover;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+}
 .fc-swatch-name { font-size: var(--fs-2xs); font-weight: 600; color: var(--ink-soft); }
 
 .fc-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }

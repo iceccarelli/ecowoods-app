@@ -218,8 +218,9 @@ export function assemblyDesignHref(
    EIGHTEEN CHOICES, AND NOT ONE OF THEM IS NEW.
 
    The section offered five species and nothing else. It now offers all four
-   axes this business actually sells on — 5 species, 5 finishes, 4 patterns,
-   4 board widths — and every one of them is the catalogue's own list rather
+   axes this business actually sells on — the catalogue's species, 5 finishes,
+   4 patterns, 4 board widths — and every one of them is read from the
+   catalogue's own list rather
    than a copy, so nothing here can drift from what /design and /floor-studio
    offer or from what content/constants/pricing.ts prices.
 

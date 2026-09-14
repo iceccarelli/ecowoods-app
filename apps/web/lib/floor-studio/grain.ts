@@ -1,0 +1,85 @@
+/**
+ * The photographed grain tiles, and how to get one into the renderer.
+ *
+ * These are cut from our own photographs by scripts/textures/build-grain.py,
+ * which writes both the .webp files and grain-manifest.json beside them. The
+ * table below is the same numbers in a form the bundle can read without a
+ * network round trip — grain.test.ts asserts the two agree, because a tile
+ * whose declared size is wrong is a floor rendered at the wrong grain scale,
+ * and nothing about the page would look broken enough for anyone to check.
+ *
+ * WHY THE SIZE IN INCHES IS HERE AT ALL. The renderer samples in board-local
+ * inches. A tile is a photograph of a real piece of wood, so it has a real
+ * size, and without it there is no way to know whether five inches of board
+ * should cross the tile once or five times. That number used to be a single
+ * constant — ten inches, for every tile, on both axes — and the tiles are
+ * neither square nor the same size as each other.
+ */
+export type GrainTile = {
+  /** FloorProduct id. */
+  product: string;
+  /** File name under /textures. */
+  file: string;
+  width: number;
+  height: number;
+  /** What the tile measures on a real floor, across the grain and along it. */
+  inchesAcross: number;
+  inchesAlong: number;
+};
+
+export const GRAIN_TILES: readonly GrainTile[] = [
+  {
+    product: 'white-oak',
+    file: 'grain-white-oak.webp',
+    width: 512,
+    height: 1538,
+    inchesAcross: 3.26,
+    inchesAlong: 9.79,
+  },
+  {
+    product: 'red-oak',
+    file: 'grain-red-oak.webp',
+    width: 512,
+    height: 1538,
+    inchesAcross: 3.3,
+    inchesAlong: 9.91,
+  },
+  {
+    product: 'black-walnut',
+    file: 'grain-black-walnut.webp',
+    width: 512,
+    height: 1536,
+    inchesAcross: 2.45,
+    inchesAlong: 7.35,
+  },
+  {
+    product: 'hard-maple',
+    file: 'grain-hard-maple.webp',
+    width: 512,
+    height: 1540,
+    inchesAcross: 2.64,
+    inchesAlong: 7.94,
+  },
+  {
+    product: 'hickory',
+    file: 'grain-hickory.webp',
+    width: 512,
+    height: 1538,
+    inchesAcross: 5.81,
+    inchesAlong: 17.45,
+  },
+  {
+    product: 'white-ash',
+    file: 'grain-white-ash.webp',
+    width: 512,
+    height: 1537,
+    inchesAcross: 4.62,
+    inchesAlong: 13.87,
+  },
+] as const;
+
+export const grainTileFor = (productId: string): GrainTile | undefined =>
+  GRAIN_TILES.find((t) => t.product === productId);
+
+/** Where a tile is served from. One place, so the test and the loader agree. */
+export const grainTileHref = (tile: GrainTile): string => `/textures/${tile.file}`;

@@ -371,8 +371,8 @@ export const CLUSTERS: QueryCluster[] = [
       '/blog/white-oak-vs-red-oak-tannin-behavior',
       '/blog/species-comparison-matrix-toronto-renovations',
       '/papers/hardwood-selection-and-cost-framework-gta',
-      /* The five species dossiers sit UNDER this canonical rather than beside
-         it, and that is a deliberate refusal to add five more clusters. This
+      /* The species dossiers sit UNDER this canonical rather than beside
+         it, and that is a deliberate refusal to add a cluster per species. This
          cluster already owns "white oak vs red oak", "maple vs oak flooring"
          and "best hardwood species Toronto"; a red-oak cluster claiming the
          same queries is split intent, which this guard exists to prevent and

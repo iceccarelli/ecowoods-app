@@ -1,0 +1,105 @@
+/**
+ * The tiles, and the numbers that describe them.
+ *
+ * A grain tile is the one asset in this renderer whose METADATA is load-bearing
+ * in a way nobody would notice going wrong. If the declared size in inches
+ * drifts from what the tile actually is, the floor renders at the wrong grain
+ * scale — five-inch oak with the figure of a two-inch board, or a three-foot
+ * one — and every page still looks like a page. So the table in grain.ts and
+ * the manifest the build script writes are checked against each other and
+ * against the catalogue, here, where a mismatch is a failing test rather than a
+ * floor that is quietly the wrong floor.
+ */
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { GRAIN_TILES, grainTileFor, grainTileHref } from './grain';
+import { FLOOR_PRODUCTS } from './catalog';
+
+const TEXTURES = path.join(process.cwd(), 'public', 'textures');
+const manifest = JSON.parse(
+  readFileSync(path.join(TEXTURES, 'grain-manifest.json'), 'utf8'),
+) as {
+  product: string;
+  file: string;
+  width: number;
+  height: number;
+  inchesAcross: number;
+  inchesAlong: number;
+  grainDegAfter: number;
+  rotateDeg: number;
+}[];
+
+describe('the grain tiles', () => {
+  it('say the same thing as the manifest the build script wrote', () => {
+    /* Two copies of the same numbers, because the bundle cannot read a JSON
+       file at module scope and a fetch for six small integers is a network
+       round trip on the critical path. Two copies are fine; two copies that
+       disagree are not, and this is the thing that stops them. */
+    expect(GRAIN_TILES.map((t) => t.product).sort()).toEqual(
+      manifest.map((m) => m.product).sort(),
+    );
+    for (const entry of manifest) {
+      const tile = grainTileFor(entry.product);
+      expect(tile, entry.product).toBeDefined();
+      expect(tile!.file).toBe(entry.file);
+      expect(tile!.width).toBe(entry.width);
+      expect(tile!.height).toBe(entry.height);
+      expect(tile!.inchesAcross).toBe(entry.inchesAcross);
+      expect(tile!.inchesAlong).toBe(entry.inchesAlong);
+    }
+  });
+
+  it('exist on disk at the path the page will ask for', () => {
+    for (const tile of GRAIN_TILES) {
+      expect(grainTileHref(tile)).toBe(`/textures/${tile.file}`);
+      expect(existsSync(path.join(TEXTURES, tile.file)), tile.file).toBe(true);
+    }
+  });
+
+  it('covers every species in the catalogue', () => {
+    /* A product with no tile still renders — the drawn path needs no
+       photograph — but it renders visibly plainer than the ones beside it, and
+       a person comparing six species would read that as the wood. */
+    for (const product of FLOOR_PRODUCTS) {
+      expect(grainTileFor(product.id), product.id).toBeDefined();
+    }
+  });
+
+  it('runs its grain along the board, in every tile', () => {
+    /* The defect that made the photographic floor read as crumpled foil: of the
+       five tiles originally shipped, one had its grain on the axis the renderer
+       maps to the length of a board. The build script measures the angle after
+       rotating and refuses to write a set where any tile is more than five
+       degrees off; this is the same claim, asserted where a reader of the
+       repository can see it. */
+    for (const entry of manifest) {
+      const offVertical = Math.abs(90 - Math.abs(entry.grainDegAfter));
+      expect(offVertical, `${entry.product} is ${offVertical.toFixed(1)}° off`).toBeLessThan(5);
+    }
+  });
+
+  it('is a strip along the grain, not a square', () => {
+    /* A tile a few inches long repeats six or eight times down a four-foot
+       board, and that repeat is visible as a ripple running across the floor.
+       Every tile is cut three to one; allow a little slack for the rounding
+       that lands on whole pixels. */
+    for (const tile of GRAIN_TILES) {
+      expect(tile.inchesAlong / tile.inchesAcross, tile.product).toBeGreaterThan(2.5);
+      expect(tile.height / tile.width, tile.product).toBeGreaterThan(2.5);
+    }
+  });
+
+  it('measures a plausible piece of a real board', () => {
+    /* The inches are estimated from the board's share of the frame, so they are
+       not exact. They are, however, bounded by what a board IS: nothing in this
+       catalogue is under two inches across or over a foot, and no photograph in
+       public/gallery frames more than a couple of feet of floor. A tile outside
+       that is an arithmetic mistake in the build script, not an estimate. */
+    for (const tile of GRAIN_TILES) {
+      expect(tile.inchesAcross, tile.product).toBeGreaterThan(2);
+      expect(tile.inchesAcross, tile.product).toBeLessThan(12);
+      expect(tile.inchesAlong, tile.product).toBeLessThan(48);
+    }
+  });
+});

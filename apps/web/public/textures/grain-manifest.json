@@ -4,36 +4,54 @@
     "file": "grain-white-oak.webp",
     "source": "white-oak-wideplank-02-detail.webp",
     "crop": [
-      0.02,
-      0.15,
-      0.34,
-      0.85
+      0.54,
+      0.06,
+      0.97,
+      0.94
     ],
-    "why": "the left-hand board: clean quartered face, no seam and no bevel in frame",
+    "why": "the right-hand board: no seam and no bevel in frame, and the sharper of the two",
+    "rotateDeg": -18.1,
+    "grainDegBefore": 71.9,
+    "grainDegAfter": -87.6,
+    "coherence": 0.68,
+    "width": 512,
+    "height": 1538,
+    "inchesAcross": 3.26,
+    "inchesAlong": 9.79,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.48 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      184,
-      163,
-      144
+      169,
+      142,
+      119
     ],
-    "bytes": 28572
+    "bytes": 71194
   },
   {
     "product": "red-oak",
     "file": "grain-red-oak.webp",
     "source": "red-oak-wideplank-02-detail.webp",
     "crop": [
-      0.66,
-      0.3,
-      0.98,
-      0.92
+      0.55,
+      0.32,
+      0.96,
+      0.97
     ],
-    "why": "the right-hand board, below the window shadow that crosses the left of the frame",
+    "why": "the right-hand board below the window shadow that crosses the top of the frame",
+    "rotateDeg": 0.0,
+    "grainDegBefore": -89.0,
+    "grainDegAfter": -89.0,
+    "coherence": 0.768,
+    "width": 512,
+    "height": 1538,
+    "inchesAcross": 3.3,
+    "inchesAlong": 9.91,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.45 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      186,
-      131,
-      83
+      201,
+      142,
+      92
     ],
-    "bytes": 39464
+    "bytes": 78208
   },
   {
     "product": "black-walnut",
@@ -41,52 +59,106 @@
     "source": "walnut-wideplank-02-detail.webp",
     "crop": [
       0.02,
-      0.45,
-      0.45,
-      0.95
+      0.6,
+      0.46,
+      0.98
     ],
     "why": "the lower-left quadrant, clear of the mitred joint that runs across the top right",
+    "rotateDeg": -51.2,
+    "grainDegBefore": 38.8,
+    "grainDegAfter": 88.4,
+    "coherence": 0.487,
+    "width": 512,
+    "height": 1536,
+    "inchesAcross": 2.45,
+    "inchesAlong": 7.35,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.4 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      131,
-      95,
-      74
+      132,
+      96,
+      75
     ],
-    "bytes": 29986
+    "bytes": 31764
   },
   {
     "product": "hard-maple",
     "file": "grain-hard-maple.webp",
-    "source": "maple-wideplank-02-detail.webp",
+    "source": "maple-herringbone-02-detail.webp",
     "crop": [
-      0.02,
-      0.7,
-      0.35,
-      0.98
+      0.03,
+      0.08,
+      0.4,
+      0.75
     ],
-    "why": "the bottom-left corner, below the diagonal joint that crosses the middle of the frame",
+    "why": "the left-hand column of blocks, above the joint that crosses the lower middle",
+    "rotateDeg": -44.8,
+    "grainDegBefore": 45.2,
+    "grainDegAfter": -88.5,
+    "coherence": 0.326,
+    "width": 512,
+    "height": 1540,
+    "inchesAcross": 2.64,
+    "inchesAlong": 7.94,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.34 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      192,
-      162,
-      127
+      206,
+      180,
+      149
     ],
-    "bytes": 9444
+    "bytes": 19930
   },
   {
     "product": "hickory",
     "file": "grain-hickory.webp",
     "source": "hickory-wideplank-02-detail.webp",
     "crop": [
-      0.04,
-      0.06,
-      0.28,
-      0.94
+      0.33,
+      0.05,
+      0.61,
+      0.95
     ],
-    "why": "the left-hand board: hickory character marks without a seam, which is the species",
+    "why": "the second board: hickory character marks without a seam, which is the species",
+    "rotateDeg": 0.0,
+    "grainDegBefore": -89.6,
+    "grainDegAfter": -89.8,
+    "coherence": 0.684,
+    "width": 512,
+    "height": 1538,
+    "inchesAcross": 5.81,
+    "inchesAlong": 17.45,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.33 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      136,
-      98,
-      61
+      164,
+      120,
+      79
     ],
-    "bytes": 27832
+    "bytes": 56442
+  },
+  {
+    "product": "white-ash",
+    "file": "grain-white-ash.webp",
+    "source": "ash-wideplank-02-detail.webp",
+    "crop": [
+      0.03,
+      0.04,
+      0.44,
+      0.96
+    ],
+    "why": "the left-hand board, full height; the window fall across it is divided out",
+    "rotateDeg": -2.0,
+    "grainDegBefore": 88.0,
+    "grainDegAfter": 89.7,
+    "coherence": 0.803,
+    "width": 512,
+    "height": 1537,
+    "inchesAcross": 4.62,
+    "inchesAlong": 13.87,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.45 of the frame \u2014 an estimate, read off the photograph",
+    "mean": [
+      165,
+      143,
+      118
+    ],
+    "bytes": 47582
   }
 ]

@@ -13,7 +13,9 @@ import {
 import { openAssistant } from '@/lib/assistant';
 import { designEstimateHref, readDesignConfig, saveDesignConfig } from '@/lib/design-config';
 import { ensureDesignId } from '@/lib/floor-studio/design-id';
-import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
+import { FLOOR_PRODUCTS, BOARD_WIDTHS, DEFAULT_WIDTH } from '@/lib/floor-studio/catalog';
+import { grainTileFor, grainTileHref } from '@/lib/floor-studio/grain';
+import { FloorPlate } from './FloorPlate';
 import { track } from '@/lib/analytics';
 import { EcowoodsLeaf } from './EcowoodsLeaf';
 import { bandForWork } from '@/content/constants/pricing';
@@ -51,21 +53,30 @@ import { bandForWork } from '@/content/constants/pricing';
 type SpeciesSwatch = {
   /** Must match a key in FLOORING_RATES_CAD_PER_SQFT. */
   id: string;
+  /** The catalogue's own id — what the renderer and the grain tile are keyed by. */
+  productId: string;
   name: string;
   janka: string;
   base: string;
   grain: string;
   note: string;
+  /** The photographed tile for this species, when there is one. */
+  tile?: string;
 };
 
-const SPECIES: readonly SpeciesSwatch[] = FLOOR_PRODUCTS.map((p) => ({
-  id: p.rateKey,
-  name: p.name,
-  janka: `Janka ${p.janka}`,
-  base: p.base,
-  grain: p.grain,
-  note: p.swatchNote,
-}));
+const SPECIES: readonly SpeciesSwatch[] = FLOOR_PRODUCTS.map((p) => {
+  const tile = grainTileFor(p.id);
+  return {
+    id: p.rateKey,
+    productId: p.id,
+    name: p.name,
+    janka: `Janka ${p.janka}`,
+    base: p.base,
+    grain: p.grain,
+    note: p.swatchNote,
+    tile: tile ? grainTileHref(tile) : undefined,
+  };
+});
 
 const SQFT_MIN = 200;
 const SQFT_MAX = 3000;
@@ -106,6 +117,7 @@ export default function FloorConfigurator() {
   const [designId, setDesignId] = useState<string | undefined>(undefined);
   const [finishId, setFinishId] = useState<string>(DEFAULT_FINISH);
   const [patternId, setPatternId] = useState<string>(DEFAULT_PATTERN);
+  const [widthId, setWidthId] = useState<string>(DEFAULT_WIDTH);
   const [sqft, setSqft] = useState<number>(900);
   const [postal, setPostal] = useState<string>('');
   const [animate, setAnimate] = useState(false);
@@ -128,6 +140,8 @@ export default function FloorConfigurator() {
     if (qsSpecies && SPECIES.some((s) => s.id === qsSpecies)) setSpeciesId(qsSpecies);
     if (qsFinish && FINISH_OPTIONS.some((f) => f.id === qsFinish)) setFinishId(qsFinish);
     if (qsPattern && PATTERN_OPTIONS.some((p) => p.id === qsPattern)) setPatternId(qsPattern);
+    const qsWidth = q.get('width');
+    if (qsWidth && BOARD_WIDTHS.some((w) => w.id === qsWidth)) setWidthId(qsWidth);
     if (Number.isFinite(qsSqft) && qsSqft >= SQFT_MIN && qsSqft <= SQFT_MAX) setSqft(qsSqft);
   }, []);
 
@@ -151,12 +165,13 @@ export default function FloorConfigurator() {
       url.searchParams.set('species', speciesId);
       url.searchParams.set('finish', finishId);
       url.searchParams.set('pattern', patternId);
+      url.searchParams.set('width', widthId);
       url.searchParams.set('sqft', String(sqft));
       window.history.replaceState(null, '', url.toString());
     } catch {
       /* history unavailable — localStorage still carries it */
     }
-  }, [speciesId, finishId, patternId, sqft, designId]);
+  }, [speciesId, finishId, patternId, widthId, sqft, designId]);
 
   /* MEAS-04 — one builder, shared with the spec sheet. */
   const quoteHref = designEstimateHref(
@@ -167,6 +182,15 @@ export default function FloorConfigurator() {
   const species = SPECIES.find((s) => s.id === speciesId) ?? SPECIES[0];
   const finish = FINISH_OPTIONS.find((f) => f.id === finishId) ?? FINISH_OPTIONS[1];
   const pattern = PATTERN_OPTIONS.find((p) => p.id === patternId) ?? PATTERN_OPTIONS[0];
+  const boardWidth = BOARD_WIDTHS.find((w) => w.id === widthId) ?? BOARD_WIDTHS[1];
+
+  /* One object, memoised, because it is the dependency of the render effect in
+     FloorPlate: a fresh literal every keystroke in the postal field would
+     restart a 300ms plate render on every character. */
+  const plateConfig = useMemo(
+    () => ({ productId: species.productId, finishId, patternId, widthId }),
+    [species.productId, finishId, patternId, widthId],
+  );
 
   const estimate = useMemo(
     () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId }, bandForWork(speciesId)),
@@ -199,30 +223,38 @@ export default function FloorConfigurator() {
         <div className="fc-grid reveal">
           {/* ── Preview ─────────────────────────────────────────── */}
           <div className="fc-preview">
-            <div
-              className={`fc-plank fc-plank--${pattern.id}`}
-              role="img"
-              aria-label={`Preview: ${species.name}, ${finish.label} finish, ${pattern.label}`}
-              style={
-                {
-                  '--fc-base': species.base,
-                  '--fc-grain': species.grain,
-                  '--fc-tint': finish.tint,
-                  '--fc-sheen': finish.sheen,
-                } as React.CSSProperties
-              }
+            <FloorPlate
+              config={plateConfig}
+              label={`Preview: ${species.name}, ${finish.label} finish, ${pattern.label}, ${boardWidth.label}`}
             >
-              <span className="fc-plank-sheen" aria-hidden="true" />
-            </div>
+              {/* The CSS plane stays. It is what a person sees before the
+                  canvas has painted, and what they keep if it never does. */}
+              <div
+                className={`fc-plank fc-plank--${pattern.id}`}
+                aria-hidden="true"
+                style={
+                  {
+                    '--fc-base': species.base,
+                    '--fc-grain': species.grain,
+                    '--fc-tint': finish.tint,
+                    '--fc-sheen': finish.sheen,
+                  } as React.CSSProperties
+                }
+              >
+                <span className="fc-plank-sheen" aria-hidden="true" />
+              </div>
+            </FloorPlate>
 
             <dl className="fc-spec">
               <div><dt>Species</dt><dd>{species.name}</dd></div>
               <div><dt>Hardness</dt><dd>{species.janka}</dd></div>
               <div><dt>Finish</dt><dd>{finish.label}</dd></div>
               <div><dt>Pattern</dt><dd>{estimate.pattern === patternId ? pattern.label : 'n/a for refinishing'}</dd></div>
+              <div><dt>Board</dt><dd>{boardWidth.label}</dd></div>
             </dl>
             <p className="fc-note">{finish.blurb}</p>
             <p className="fc-note">{pattern.blurb}</p>
+            <p className="fc-note">{boardWidth.note}</p>
           </div>
 
           {/* ── Controls ────────────────────────────────────────── */}
@@ -239,7 +271,20 @@ export default function FloorConfigurator() {
                     onClick={() => setSpeciesId(s.id)}
                     title={s.note}
                   >
-                    <span className="fc-swatch-chip" style={{ background: `linear-gradient(135deg, ${s.base}, ${s.grain})` }} />
+                    {/* The chip is the PHOTOGRAPH of the species where we have
+                        one — the same tile the preview is rendered from — not
+                        two hex values on a diagonal. The gradient stays as the
+                        ground underneath, so a chip is never empty while its
+                        image is still arriving. */}
+                    <span
+                      className="fc-swatch-chip"
+                      style={{
+                        backgroundColor: s.base,
+                        backgroundImage: s.tile
+                          ? `url(${s.tile}), linear-gradient(135deg, ${s.base}, ${s.grain})`
+                          : `linear-gradient(135deg, ${s.base}, ${s.grain})`,
+                      }}
+                    />
                     <span className="fc-swatch-name">{s.name}</span>
                   </button>
                 ))}
@@ -269,8 +314,19 @@ export default function FloorConfigurator() {
             </fieldset>
 
             <fieldset className="fc-field">
+              <legend><span className="fc-step">04</span> Board width</legend>
+              <div className="fc-pills" data-count={BOARD_WIDTHS.length}>
+                {BOARD_WIDTHS.map((w) => (
+                  <button key={w.id} type="button" className="fc-pill" aria-pressed={w.id === widthId} onClick={() => setWidthId(w.id)} title={w.note}>
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="fc-field">
               <legend>
-                <span className="fc-step">04</span> Area
+                <span className="fc-step">05</span> Area
                 <output className="fc-sqft" htmlFor="fc-sqft">{sqft.toLocaleString('en-CA')} sq ft</output>
               </legend>
               <input

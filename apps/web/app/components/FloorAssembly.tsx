@@ -64,7 +64,7 @@ import {
  * it. It is now the actual floor: individual boards, laid in whichever of the
  * four patterns this company lays — straight, diagonal, herringbone, chevron —
  * each board cut from a different part of the same photographed crop so no two
- * are the same piece of wood, in any of the five species.
+ * are the same piece of wood, in any of the six species.
  *
  * And it is never still. The stack drifts on a twenty-six second cycle and the
  * five layers float against each other on cycles that do not divide into it, so
