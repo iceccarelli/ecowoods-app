@@ -191,6 +191,37 @@ describe('the plate', () => {
     }
   });
 
+  it('does not blow out a pale floor with its own sheen', () => {
+    /* The specular used to be ADDED, which is fine on walnut and ruinous on
+       maple: a pale floor already sits near the top of the range, so the
+       addition clips, and what clips is the grain. White ash lost half a
+       percent of its floor to pure white and read as a flat bright field.
+       Screening — adding a fraction of the REMAINING headroom — cannot exceed
+       white by construction, so a bright floor gets brighter and keeps its
+       figure. It is also the better physical model: a surface cannot return
+       more light than arrives at it.
+
+       Checked on the two palest species at the glossiest finish, which is
+       where it broke. */
+    for (const productId of ['hard-maple', 'white-ash']) {
+      const px = renderFloorPlate({
+        width: 200,
+        height: 150,
+        config: { productId, finishId: 'satin', patternId: 'straight', widthId: '5' },
+      });
+      let clipped = 0;
+      let n = 0;
+      for (let y = 60; y < 150; y += 1) {
+        for (let x = 0; x < 200; x += 1) {
+          const c = at(px, x, y);
+          if (c.r >= 254 && c.g >= 254 && c.b >= 254) clipped += 1;
+          n += 1;
+        }
+      }
+      expect(clipped / n, `${productId} clipped to white`).toBeLessThan(0.001);
+    }
+  });
+
   it('starts opaque, so a plate that is still arriving is not a hole', () => {
     const buffer = createPlateBuffer(32, 32);
     for (let i = 0; i < buffer.data.length; i += 1) expect(buffer.data[i]).toBe(255);

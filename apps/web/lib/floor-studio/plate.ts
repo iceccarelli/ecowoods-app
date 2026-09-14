@@ -327,10 +327,22 @@ export function renderFloorPlate(options: PlateOptions): Pixels {
       const vig = 1 - 0.14 * vx * vx;
 
       const k = shade * vig;
-      const lift = 255 * spec * 0.55;
-      out.data[i] = clamp255(wood.r * k + lift);
-      out.data[i + 1] = clamp255(wood.g * k + lift * 0.99);
-      out.data[i + 2] = clamp255(wood.b * k + lift * 0.96);
+      /* SPECULAR SCREENS, IT DOES NOT ADD.
+         Adding a fixed lift is fine on walnut and ruinous on maple: a pale
+         floor is already near the top of the range, so the addition clips, and
+         what clips is the grain. Maple and white ash both came out as flat
+         bright fields with the wood washed out of them. Screening — adding a
+         fraction of the REMAINING headroom — cannot exceed white by
+         construction, so a bright floor gets brighter and keeps its figure.
+         It is also the better physical model: a specular return is light the
+         surface sends back, and a surface cannot send back more than arrives. */
+      const r = wood.r * k;
+      const g = wood.g * k;
+      const b = wood.b * k;
+      const sr = spec * 0.62;
+      out.data[i] = clamp255(r + (255 - r) * sr);
+      out.data[i + 1] = clamp255(g + (255 - g) * sr * 0.99);
+      out.data[i + 2] = clamp255(b + (255 - b) * sr * 0.96);
       out.data[i + 3] = 255;
     }
   }
