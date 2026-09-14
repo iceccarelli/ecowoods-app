@@ -1,0 +1,203 @@
+From 9dd1333a15bfe4f01c791d32b634af705123595b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 20:12:20 +0000
+Subject: [PATCH] fix(build): MAINT-01 - a .dockerignore Docker was never going
+ to read
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three things found by auditing what shipped rather than by reading it again.
+
+1. THE .dockerignore WAS IN A PLACE DOCKER DOES NOT LOOK.
+
+It sat at services/render-api/.dockerignore, next to the Dockerfile it was
+written for, which reads as the obvious place and is a place Docker never
+reads. Docker takes .dockerignore from the BUILD CONTEXT ROOT, and both images
+in this repository are built with the repository root as their context — the
+README's own deploy line is `fly deploy --dockerfile
+services/render-api/Dockerfile`, run from the root, and docker-compose.yml says
+`context: .`.
+
+So it was silently dead. Measured on this checkout:
+
+    context sent today                 673 MB   (564 MB of it .git)
+    context after this change           85 MB
+
+and that is a tree with no node_modules in it; on a working machine the figure
+today is well over a gigabyte, all of it uploaded to the builder and baked into
+a node:24-slim image on every deploy. Nothing failed, because nothing about a
+fat image fails. It is just slow and large, which is exactly the kind of defect
+that survives until somebody measures an image. The service has not been
+deployed yet, so this was caught before it cost anything.
+
+Moved to the root, where both builds read it, with the reason written at the
+top so the next person does not "tidy" it back next to the Dockerfile. Two
+paths added while it is finally live: /public, which vercel.json's buildCommand
+fills with a second copy of every asset in apps/web/public, and /.vercel.
+
+2. `pnpm --filter @ecowoods/render-api test` HAS NEVER RUN ANYTHING.
+
+It answers "No projects matched the filters", because pnpm-workspace.yaml
+covers apps/* and packages/* and this service lives under services/. Both of
+its test files — seventeen assertions across the auth, the meter, the tile
+loader, the plate and the PNG round trip — have never run automatically. The
+command is in the README and in three of my own commit messages, and it was
+never doing anything.
+
+Fixed with a root script, `pnpm test:render-api`, which invokes node directly.
+NOT by adding services/* to the workspace, which is the tidier-looking answer:
+that adds an importer to pnpm-lock.yaml, this repository installs with
+--frozen-lockfile, and a lockfile that does not match the workspace fails the
+install for everyone in this tree including every other agent working in it. I
+cannot run pnpm install in this environment to regenerate it and verify, and an
+unverifiable lockfile edit is not worth a nicer command. The README now says
+which command to use and why the other one cannot work.
+
+3. fly.toml SET MAX_PIXELS AND NOT MAX_PLATE_PIXELS.
+
+The plate endpoint's ceiling existed only as a default in the code. They are
+separate costs — an uploaded photograph is decoded once, a plate is rendered
+pixel by pixel, and 2.4M of the second is about a second and a half of CPU — so
+both are declared where somebody looking up what this machine will do can find
+them.
+
+Nothing else moved. The audit came back clean on everything it could have
+found: no stale references to the renderer internals renamed in CAM-02 and
+DESIGN-01, no code left assuming a square tile, all six service PNG tiles
+tracked, and the repo-root public/ correctly gitignored down to four
+whitelisted files rather than carrying a second copy of the textures.
+
+65 of 66 guards here; verify:css needs an install and passes on a machine that
+has one. parse-scan clean on 642 files. Both service suites pass.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .dockerignore                     | 36 +++++++++++++++++++++++++++++++
+ package.json                      |  1 +
+ services/render-api/.dockerignore |  8 -------
+ services/render-api/README.md     | 17 +++++++++++++++
+ services/render-api/fly.toml      |  7 ++++++
+ 5 files changed, 61 insertions(+), 8 deletions(-)
+ create mode 100644 .dockerignore
+ delete mode 100644 services/render-api/.dockerignore
+
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..266f509
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,36 @@
++# Docker reads .dockerignore FROM THE BUILD CONTEXT ROOT, and both images in
++# this repository are built with the repository root as their context:
++#
++#     fly deploy --dockerfile services/render-api/Dockerfile     (render API)
++#     docker compose up --build                                  (backend/Dockerfile, context: .)
++#
++# This file used to live at services/render-api/.dockerignore, next to the
++# Dockerfile it was written for, which reads as the obvious place and is a
++# place Docker never looks. It was silently dead: every build would have sent
++# node_modules, .next, .turbo, .git, the whole photograph gallery and the audit
++# corpus into the daemon and then into the image. Nothing failed, because
++# nothing about a fat image fails — it is just slow and large, which is exactly
++# the kind of defect that survives until someone measures an image.
++#
++# Keep it here. A copy next to a Dockerfile is decoration.
++
++**/node_modules
++**/.next
++**/.turbo
++.git
++
++# Build-time copies, not sources. vercel.json's buildCommand mirrors
++# apps/web/public into the repo-root public/ so Vercel serves it as the static
++# root (see docs/PUBLIC_ASSETS.md). After any local build that is a second copy
++# of every asset in the repository, and neither image serves static files.
++/public
++/.vercel
++
++# Photographs the API does not read. The render service samples its own PNG
++# tiles under services/render-api/textures; the gallery and the illustrations
++# are for the website and are the largest thing in the tree.
++apps/web/public/gallery
++apps/web/public/illustrations
++
++docs
++audit
+diff --git a/package.json b/package.json
+index d20487d..4227cde 100644
+--- a/package.json
++++ b/package.json
+@@ -73,6 +73,7 @@
+     "verify:allocation": "node scripts/verify-allocation.mjs",
+     "verify:geo:green": "node scripts/verify-geo-green.mjs",
+     "test:web": "pnpm --filter @ecowoods/web test",
++    "test:render-api": "node --experimental-strip-types ./services/render-api/src/keys.test.ts && node --experimental-strip-types --import ./services/render-api/src/register.mjs ./services/render-api/src/plate.test.ts",
+     "seo:audit": "node scripts/audit-current-state.mjs",
+     "seo:pricing": "node scripts/verify-pricing-source.mjs",
+     "seo:claims": "node scripts/verify-claims.mjs",
+diff --git a/services/render-api/.dockerignore b/services/render-api/.dockerignore
+deleted file mode 100644
+index 29fd0fc..0000000
+--- a/services/render-api/.dockerignore
++++ /dev/null
+@@ -1,8 +0,0 @@
+-**/node_modules
+-**/.next
+-**/.turbo
+-.git
+-apps/web/public/gallery
+-apps/web/public/illustrations
+-docs
+-audit
+diff --git a/services/render-api/README.md b/services/render-api/README.md
+index edff13d..68069d6 100644
+--- a/services/render-api/README.md
++++ b/services/render-api/README.md
+@@ -32,6 +32,23 @@ shared-cpu-2x the table above says roughly 190 renders a minute at 1280×960
+ before the queue builds, which is the rung to leave it on until p95 says
+ otherwise.
+ 
++## Running its tests
++
++```bash
++pnpm test:render-api          # from the repository root
++```
++
++NOT `pnpm --filter @ecowoods/render-api test`, which answers "No projects
++matched the filters" — `services/*` is not in `pnpm-workspace.yaml`, so this
++package is not a workspace member and pnpm cannot see it.
++
++That is deliberate, and it is the same decision as the section below. Adding
++`services/*` to the workspace adds an importer entry to `pnpm-lock.yaml`, and
++this repository installs with `--frozen-lockfile`: a lockfile that does not
++match the workspace fails the install for everyone, everywhere, including every
++other agent working in this tree. A package with no dependencies gains nothing
++from being an importer. It gains a script at the root, which is what it has.
++
+ ## Zero dependencies, deliberately
+ 
+ `package.json` has no dependencies and there is no build step. The repository
+diff --git a/services/render-api/fly.toml b/services/render-api/fly.toml
+index 1841191..5216850 100644
+--- a/services/render-api/fly.toml
++++ b/services/render-api/fly.toml
+@@ -11,7 +11,14 @@ primary_region = "yyz"
+ 
+ [env]
+   PORT = "8080"
++  # The ceiling on a photograph a caller uploads to /v1/render.
+   MAX_PIXELS = "4000000"
++  # And on a plate /v1/plate will draw. Separate because they are separate
++  # costs: an uploaded photograph is decoded once, a plate is rendered pixel by
++  # pixel, and 2.4M of the second is about a second and a half of CPU. It was
++  # only a default in the code; a limit that exists in one place is a limit
++  # nobody can see when they go looking for what this machine will do.
++  MAX_PLATE_PIXELS = "2400000"
+ 
+ [http_service]
+   internal_port = 8080
+-- 
+2.43.0
+
