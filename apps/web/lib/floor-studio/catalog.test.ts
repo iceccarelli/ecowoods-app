@@ -146,15 +146,56 @@ describe('withAxis never strands a visitor on a floor that does not exist', () =
     expect(isLayable(config)).toBe(true);
   });
 
-  it('never touches the axis the visitor just moved', () => {
-    for (const product of FLOOR_PRODUCTS) {
-      for (const pattern of PATTERN_OPTIONS) {
-        const { config } = withAxis(DEFAULT_CONFIGURATION, 'patternId', pattern.id);
-        expect(config.patternId).toBe(pattern.id);
-        const moved = withAxis(DEFAULT_CONFIGURATION, 'productId', product.id);
-        expect(moved.config.productId).toBe(product.id);
+  it('moves the species when the visitor asks for a finish it cannot take', () => {
+    /* Fuming is an ammonia reaction with tannin. Maple has too little, so
+       maple-and-smoked is not a product — but the visitor pressed the FINISH,
+       and the rule is that the axis they pressed is the one that stands.
+
+       This branch did not exist. The finish repair was guarded by
+       `axis !== 'finishId'`, correctly, and nothing took its place, so this
+       call fell through to the DEFAULT_CONFIGURATION fallback at the bottom:
+       it threw away the species, the pattern AND the width, and reported
+       `repairedAxes: []` while doing it — which is the list the UI builds its
+       "we moved the ..." sentence from, so the visitor was told nothing. */
+    const from = { productId: 'hard-maple', finishId: 'satin', patternId: 'chevron', widthId: '5' };
+    const { config, repairedAxes } = withAxis(from, 'finishId', 'smoked');
+    expect(config.finishId).toBe('smoked');
+    expect(repairedAxes).toContain('productId');
+    expect(isLayable(config)).toBe(true);
+    /* and it kept everything it did not have to move */
+    expect(config.patternId).toBe('chevron');
+    expect(config.widthId).toBe('5');
+  });
+
+  it('never touches the axis the visitor just moved — on any axis, from anywhere', () => {
+    /* The version of this test that shipped looped one axis from one starting
+       configuration, which is why the case above survived. This is every
+       control press this site can offer: four axes, every value, from every
+       layable starting point. 9,120 of them. */
+    const axes = {
+      productId: FLOOR_PRODUCTS.map((p) => p.id),
+      finishId: FINISH_OPTIONS.map((f) => f.id),
+      patternId: PATTERN_OPTIONS.map((p) => p.id),
+      widthId: BOARD_WIDTHS.map((w) => w.id),
+    } as const;
+
+    let pressed = 0;
+    for (const from of allConfigurations()) {
+      for (const axis of Object.keys(axes) as (keyof typeof axes)[]) {
+        for (const value of axes[axis]) {
+          const { config, repairedAxes } = withAxis(from, axis, value);
+          pressed += 1;
+          expect(config[axis], `${axis} -> ${value}`).toBe(value);
+          expect(isLayable(config), `${axis} -> ${value} from ${JSON.stringify(from)}`).toBe(true);
+          /* and the narration names every axis that actually moved, because a
+             sentence built from an incomplete list is worse than none */
+          for (const a of Object.keys(axes) as (keyof typeof axes)[]) {
+            if (a !== axis && config[a] !== from[a]) expect(repairedAxes, `${axis} -> ${value}`).toContain(a);
+          }
+        }
       }
     }
+    expect(pressed).toBeGreaterThan(5000);
   });
 });
 

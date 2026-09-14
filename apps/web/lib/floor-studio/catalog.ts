@@ -393,9 +393,38 @@ export function withAxis(
   if (isLayable(next)) return { config: next, repairedAxes: repaired };
 
   const product = productById(next.productId);
-  if (product && !product.finishes.includes(next.finishId) && axis !== 'finishId') {
-    next.finishId = product.finishes.includes(DEFAULT_FINISH) ? DEFAULT_FINISH : product.finishes[0]!;
-    repaired.push('finishId');
+  if (product && !product.finishes.includes(next.finishId)) {
+    if (axis === 'finishId') {
+      /* THEY PRESSED THE FINISH, SO THE SPECIES IS WHAT MOVES.
+         This branch did not exist: the finish repair was guarded by
+         `axis !== 'finishId'`, correctly, and nothing took its place — so
+         pressing "Fumed & Smoked" on maple fell all the way through to the
+         DEFAULT_CONFIGURATION fallback at the bottom and silently threw away
+         the visitor's species, pattern AND width, while reporting no repairs
+         at all. The one test covering this rule only moved the pattern axis,
+         so it never saw it.
+
+         Moving the species is the answer the rule already implies: fuming is
+         an ammonia reaction with tannin, somebody pressing it wants a fumed
+         floor, and oak is the wood that takes it. Prefer the default species
+         when it qualifies so the result is the one most people mean. */
+      const able =
+        FLOOR_PRODUCTS.find((p) => p.id === DEFAULT_PRODUCT && p.finishes.includes(next.finishId)) ??
+        FLOOR_PRODUCTS.find((p) => p.finishes.includes(next.finishId));
+      if (able) {
+        next.productId = able.id;
+        repaired.push('productId');
+      } else {
+        /* No species takes it. Cannot happen with today's catalogue — every
+           finish is offered by at least white oak — but a finish added without
+           a species would otherwise land in the silent reset again. */
+        next.finishId = product.finishes.includes(DEFAULT_FINISH) ? DEFAULT_FINISH : product.finishes[0]!;
+        repaired.push('finishId');
+      }
+    } else {
+      next.finishId = product.finishes.includes(DEFAULT_FINISH) ? DEFAULT_FINISH : product.finishes[0]!;
+      repaired.push('finishId');
+    }
   }
 
   const width = widthById(next.widthId);
@@ -409,7 +438,18 @@ export function withAxis(
     }
   }
 
-  return { config: isLayable(next) ? next : DEFAULT_CONFIGURATION, repairedAxes: repaired };
+  if (isLayable(next)) return { config: next, repairedAxes: repaired };
+
+  /* THE LAST RESORT REPORTS WHAT IT TOOK.
+     Falling back to the default configuration is correct — better a floor we
+     lay than one we do not — but returning it with an empty `repairedAxes` is
+     a lie the UI then tells the visitor, because the narration is built from
+     that list. Whatever actually moved is named. */
+  const axes: (keyof FloorConfiguration)[] = ['productId', 'finishId', 'patternId', 'widthId'];
+  return {
+    config: DEFAULT_CONFIGURATION,
+    repairedAxes: axes.filter((a) => DEFAULT_CONFIGURATION[a] !== config[a] && a !== axis),
+  };
 }
 
 /** Every layable combination. Used by tests, the API primitive and the matcher. */

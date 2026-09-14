@@ -13,7 +13,15 @@ import {
 import { openAssistant } from '@/lib/assistant';
 import { designEstimateHref, readDesignConfig, saveDesignConfig } from '@/lib/design-config';
 import { ensureDesignId } from '@/lib/floor-studio/design-id';
-import { FLOOR_PRODUCTS, BOARD_WIDTHS, DEFAULT_WIDTH } from '@/lib/floor-studio/catalog';
+import {
+  FLOOR_PRODUCTS,
+  BOARD_WIDTHS,
+  DEFAULT_WIDTH,
+  incompatibilities,
+  isLayable,
+  withAxis,
+  type FloorConfiguration,
+} from '@/lib/floor-studio/catalog';
 import { grainTileFor, grainTileHref } from '@/lib/floor-studio/grain';
 import { FloorPlate } from './FloorPlate';
 import { track } from '@/lib/analytics';
@@ -118,6 +126,7 @@ export default function FloorConfigurator() {
   const [finishId, setFinishId] = useState<string>(DEFAULT_FINISH);
   const [patternId, setPatternId] = useState<string>(DEFAULT_PATTERN);
   const [widthId, setWidthId] = useState<string>(DEFAULT_WIDTH);
+  const [repaired, setRepaired] = useState<string | null>(null);
   const [sqft, setSqft] = useState<number>(900);
   const [postal, setPostal] = useState<string>('');
   const [animate, setAnimate] = useState(false);
@@ -191,6 +200,63 @@ export default function FloorConfigurator() {
     () => ({ productId: species.productId, finishId, patternId, widthId }),
     [species.productId, finishId, patternId, widthId],
   );
+
+  /* ── ONLY FLOORS WE ACTUALLY LAY ──────────────────────────────────────────
+     The catalogue has always known which combinations are not products, and
+     /floor-studio has always asked it. This page did not, and when DESIGN-01
+     added the board-width control it started offering two that do not exist:
+
+       · Fumed & Smoked on walnut, maple or hickory. Fuming is an ammonia
+         reaction with the tannin in the wood and those three do not carry
+         enough of it, which is a fact about the wood and not a policy.
+       · Herringbone or chevron at 7in or wider. Both are cut as blocks, and
+         past 5in the proportion stops reading as a pattern. We lay them at
+         3 1/4in and 5in.
+
+     Every control now moves through withAxis, which changes the axis the
+     visitor touched and repairs whichever other one broke — never the one they
+     just pressed. That is the rule the studio already follows and it is the
+     right one: a person who picks 8in plank and then herringbone should get
+     herringbone at a width we lay it, not a silent refusal.
+
+     Nothing is disabled. incompatibilities returns REASONS because the reason
+     is worth more than the refusal — "hard maple has no tannin for the ammonia
+     to react with" tells somebody something true about wood, and a control
+     that greys itself out only tells them the site is broken. */
+  const applyAxis = (axis: keyof FloorConfiguration, value: string) => {
+    const current: FloorConfiguration = { productId: species.productId, finishId, patternId, widthId };
+    const { config, repairedAxes } = withAxis(current, axis, value);
+    const nextSpecies = SPECIES.find((s) => s.productId === config.productId) ?? SPECIES[0];
+    setSpeciesId(nextSpecies.id);
+    setFinishId(config.finishId);
+    setPatternId(config.patternId);
+    setWidthId(config.widthId);
+    setRepaired(
+      repairedAxes.length
+        ? `We moved the ${repairedAxes
+            .map((a) => ({ productId: 'species', finishId: 'finish', patternId: 'pattern', widthId: 'board width' })[a])
+            .join(' and ')} to keep this a floor we can lay.`
+        : null,
+    );
+  };
+
+  /* A shared link, or a configuration saved in this browser before the width
+     control existed, can name a combination that is not a product. Repair it
+     on arrival, keeping the species the link asked for and moving whatever
+     else has to move. */
+  useEffect(() => {
+    const current: FloorConfiguration = { productId: species.productId, finishId, patternId, widthId };
+    if (isLayable(current)) return;
+    const { config } = withAxis(current, 'productId', species.productId);
+    setFinishId(config.finishId);
+    setPatternId(config.patternId);
+    setWidthId(config.widthId);
+  }, [species.productId, finishId, patternId, widthId]);
+
+  /** The reason this option is not a product, for the control that offers it. */
+  const reasonFor = (axis: keyof FloorConfiguration, value: string): string | undefined =>
+    incompatibilities({ productId: species.productId, finishId, patternId, widthId, [axis]: value })
+      .map((r) => r.reason)[0];
 
   const estimate = useMemo(
     () => estimateInstalledRangeCad({ species: speciesId, squareFeet: sqft, finish: finishId, pattern: patternId }, bandForWork(speciesId)),
@@ -268,8 +334,9 @@ export default function FloorConfigurator() {
                     type="button"
                     className="fc-swatch"
                     aria-pressed={s.id === speciesId}
-                    onClick={() => setSpeciesId(s.id)}
-                    title={s.note}
+                    onClick={() => applyAxis('productId', s.productId)}
+                    title={reasonFor('productId', s.productId) ?? s.note}
+                    data-unavailable={reasonFor('productId', s.productId) ? '1' : undefined}
                   >
                     {/* The chip is the PHOTOGRAPH of the species where we have
                         one — the same tile the preview is rendered from — not
@@ -295,7 +362,15 @@ export default function FloorConfigurator() {
               <legend><span className="fc-step">02</span> Finish</legend>
               <div className="fc-pills" data-count={FINISH_OPTIONS.length}>
                 {FINISH_OPTIONS.map((f) => (
-                  <button key={f.id} type="button" className="fc-pill" aria-pressed={f.id === finishId} onClick={() => setFinishId(f.id)}>
+                  <button
+                    key={f.id}
+                    type="button"
+                    className="fc-pill"
+                    aria-pressed={f.id === finishId}
+                    onClick={() => applyAxis('finishId', f.id)}
+                    title={reasonFor('finishId', f.id)}
+                    data-unavailable={reasonFor('finishId', f.id) ? '1' : undefined}
+                  >
                     {f.label}
                   </button>
                 ))}
@@ -306,7 +381,15 @@ export default function FloorConfigurator() {
               <legend><span className="fc-step">03</span> Pattern</legend>
               <div className="fc-pills" data-count={PATTERN_OPTIONS.length}>
                 {PATTERN_OPTIONS.map((p) => (
-                  <button key={p.id} type="button" className="fc-pill" aria-pressed={p.id === patternId} onClick={() => setPatternId(p.id)}>
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="fc-pill"
+                    aria-pressed={p.id === patternId}
+                    onClick={() => applyAxis('patternId', p.id)}
+                    title={reasonFor('patternId', p.id)}
+                    data-unavailable={reasonFor('patternId', p.id) ? '1' : undefined}
+                  >
                     {p.label}
                   </button>
                 ))}
@@ -317,12 +400,26 @@ export default function FloorConfigurator() {
               <legend><span className="fc-step">04</span> Board width</legend>
               <div className="fc-pills" data-count={BOARD_WIDTHS.length}>
                 {BOARD_WIDTHS.map((w) => (
-                  <button key={w.id} type="button" className="fc-pill" aria-pressed={w.id === widthId} onClick={() => setWidthId(w.id)} title={w.note}>
+                  <button
+                    key={w.id}
+                    type="button"
+                    className="fc-pill"
+                    aria-pressed={w.id === widthId}
+                    onClick={() => applyAxis('widthId', w.id)}
+                    title={reasonFor('widthId', w.id) ?? w.note}
+                    data-unavailable={reasonFor('widthId', w.id) ? '1' : undefined}
+                  >
                     {w.label}
                   </button>
                 ))}
               </div>
             </fieldset>
+
+            {repaired && (
+              <p className="fc-repaired" role="status">
+                {repaired}
+              </p>
+            )}
 
             <fieldset className="fc-field">
               <legend>

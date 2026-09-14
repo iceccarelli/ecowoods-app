@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'design-photographic-v1',
+    date: '2026-09-14',
+    kind: 'tool',
+    title: 'Design a floor from a photograph of the wood, not from two colours',
+    body: 'The preview on /design was a drawing \u2014 two colours per species and a repeating gradient. It is now rendered from a photograph of each of the six woods, by the same code that lays your floor into a photograph of your own room, so the two cannot show you different oak. White ash joins the page it should always have been on: it has had its own dossier, its own photographs and its own supply figures here for weeks and was the one species you could not configure. Board width joins it too \u2014 3\u00bc\u2033 strip through 8\u2033 and wider \u2014 because the width changes how a floor reads more than most people expect. And the page now offers only floors we actually lay: ask for a fumed maple and it will tell you that fuming is an ammonia reaction with tannin and maple has too little, then move you to a wood that takes it.',
+    href: '/design',
+  },
+  {
     id: 'provenance-paper-v1',
     date: '2026-08-27',
     kind: 'paper',
