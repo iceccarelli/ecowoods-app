@@ -16,7 +16,7 @@ numbers in their own block's frame, and the grain runs along each piece the way
 it does on a real floor. The catalogue's geometry draws the seams and the
 bevels; the photograph supplies the face.
 
-FIVE DECISIONS, AND WHY EACH ONE IS NOT AUTOMATIC
+SIX DECISIONS, AND WHY EACH ONE IS NOT AUTOMATIC
 
 1. THE CROP IS NAMED, NOT SEARCHED. Two scoring functions were tried and both
    picked a seam: one rewarded axial gradient, which is exactly what a board
@@ -58,7 +58,20 @@ FIVE DECISIONS, AND WHY EACH ONE IS NOT AUTOMATIC
    feet. Three inches is above every feature of the wood and below anything the
    room does.
 
-5. IT TILES WITHOUT A MIRROR, AND WITHOUT A PATCHWORK. Reflecting a crop makes
+5. THE TONE IS LEVELLED ALONG THE GRAIN, AND ONLY ALONG IT. Dividing out the
+   light at three inches leaves a slow end-to-end drift down the strip, and a
+   tile that is brighter at one end than the other repeats that step every tile
+   length — which on a floor is a horizontal BAND crossing every board at a
+   fixed interval. It was the largest single defect in the set and it was
+   invisible in a contact sheet: red oak spent 11.2 of its 15.5 grey levels of
+   contrast on the drift and white ash 12.4 of 16.3, so on both of them about
+   three quarters of what a person saw in the tile was the drift rather than
+   the wood. Rows only — a row crosses the grain, so its mean is lighting; a
+   column's mean is the grain itself, and levelling that deletes the wood. See
+   deband(), which runs on both sides of the wrap because the wrap puts some
+   of it back.
+
+6. IT TILES WITHOUT A MIRROR, AND WITHOUT A PATCHWORK. Reflecting a crop makes
    its edges match, and makes a chevron out of any diagonal in it — which then
    appears inside the straight pattern. Wood grain has no symmetry. Blending
    against a half-period roll of the whole image, which is what this did
@@ -93,6 +106,7 @@ OUT = 'apps/web/public/textures'
 API_OUT = 'services/render-api/textures'
 API_TILE_WIDTH = 256
 
+# A MAXIMUM, NOT A TARGET. See the resample note in build().
 TILE_WIDTH = 512
 TILE_ASPECT = 3.0          # height : width, along the grain
 WIDE_PLANK_INCHES = 7.0
@@ -100,16 +114,31 @@ FLATTEN_INCHES = 3.0
 
 # species → source photo, crop as fractions, the board's share of the frame, why
 CROPS = [
-    ('white-oak', 'white-oak-wideplank-02-detail', (0.54, 0.06, 0.97, 0.94), 0.48,
-     'the right-hand board: no seam and no bevel in frame, and the sharper of the two'),
-    ('red-oak', 'red-oak-wideplank-02-detail', (0.53, 0.34, 0.99, 0.98), 0.49,
-     'the right-hand board BELOW the window shadow. The full board is wider and '
-     'red oak wants width — its cathedral figure is board-scale — but the shadow '
-     'across the top of that frame has an edge too sharp for a three-inch flatten '
-     'to divide out, and a dark diagonal printed across every plank in the room '
-     'is a worse defect than a tile that repeats'),
-    ('black-walnut', 'walnut-wideplank-02-detail', (0.02, 0.60, 0.46, 0.98), 0.40,
-     'the lower-left quadrant, clear of the mitred joint that runs across the top right'),
+    ('white-oak', 'white-oak-wideplank-02-detail', (0.50, 0.463, 0.765, 0.96), 0.48,
+     'the lower half of the right-hand board. The full-height crop that stood here '
+     'read on the floor as a blocky patchwork and measured it: seam 0.147 against '
+     'its own contrast, nearly twice anything else in the set, because at -18.1° of '
+     'rotation the inscribed strip ran the whole height of the board and its ends '
+     'picked up the bevel. Chosen by scoring the FINISHED tile over 232 candidates '
+     'inside this board — seam 0.147 → 0.055, blob 0.059 — at the cost of repeating '
+     '2.2 times across a board instead of 1.5'),
+    ('red-oak', 'red-oak-wideplank-02-detail', (0.284, 0.198, 0.50, 0.684), 0.49,
+     'the straightest-grained column of the LEFT board. The right board was used '
+     'first and is the most heavily figured piece in the set — broad cathedral '
+     'arcs and two knots — which tiled read on the floor as quilting rather than '
+     'as grain. Re-searched after deband() existed, because the earlier search '
+     'ran on tiles whose dominant feature was the tonal band and therefore '
+     'ranked crops largely by how evenly the photograph was lit: with the band '
+     'gone, this board yields a crop half an inch wider and a repeat less per '
+     'board than the one that search picked'),
+    ('black-walnut', 'walnut-wideplank-02-detail', (0.068, 0.605, 0.461, 0.99), 0.40,
+     'the bottom-left corner, below the mitred joint that crosses the frame. This '
+     'photograph is shot obliquely and the walnut itself is swirly, so every crop '
+     'in it carries some figure; the four best-scoring candidates were rendered at '
+     'floor scale and compared, and the top-scoring one was the WORST of them — its '
+     'coherence came from broad smooth swirls, which the score rewards and the eye '
+     'reads as burl veneer. This one scored 0.006 behind it and has the lowest seam '
+     'in the board (0.041), which is what broke the tie'),
     ('hard-maple', 'maple-herringbone-02-detail', (0.03, 0.08, 0.40, 0.75), 0.34,
      'the left-hand column of blocks, above the joint that crosses the lower middle'),
     ('hickory', 'hickory-wideplank-02-detail', (0.33, 0.05, 0.61, 0.95), 0.33,
@@ -186,6 +215,48 @@ def flatten(im: Image.Image, px_per_inch: float) -> Image.Image:
     b = np.asarray(blur, dtype=np.float32)
     mean = a.reshape(-1, 3).mean(axis=0)
     return Image.fromarray(np.clip(a * mean / np.maximum(b, 1.0), 0, 255).astype(np.uint8))
+
+
+def deband(a: np.ndarray) -> np.ndarray:
+    """Flatten the tone profile ALONG the grain, and only along it.
+
+    flatten() divides out the room's light at a three-inch radius, which is
+    right for a window falling across a floor and blind to what is left: a
+    slow end-to-end drift down the strip, brighter at one end than the other.
+    That drift survives every step after it, and a tile whose top is darker
+    than its bottom does not stop being periodic — it repeats the step from
+    bottom back to top every tile length, which on the floor is a horizontal
+    BAND crossing every board at a fixed interval.
+
+    It measured far worse than it looked in a contact sheet. Red oak carried
+    11.2 grey levels of row-mean variation against a total tile contrast of
+    15.5, and white ash 12.4 against 16.3: on both, roughly three quarters of
+    everything a person sees in the tile was the drift rather than the wood.
+    The other four sit at or under 2.6, which is why this reads as two bad
+    tiles rather than as a defect in the recipe — it is one, and the same fix
+    costs the other four between 0.05 and 0.32 grey levels of contrast.
+
+    ROWS ONLY, and the asymmetry is the whole point. The grain runs down the
+    tile after rotation, so a row crosses it and a row's mean is lighting; a
+    COLUMN's mean is the grain's own cross-section. Flattening the column
+    profile too — which is the symmetric-looking thing to write — deletes the
+    wood and leaves pore noise. So this normalises each row to the global mean
+    and leaves every column alone.
+
+    The wrap in seamless() cannot do this job. A roll-blend matches content at
+    the edges; it cannot remove a ramp that runs the whole length, it can only
+    compress it into the blend band, which is what made the band a band rather
+    than a gradient.
+    """
+    f = a.astype(np.float32)
+    row_mean = f.mean(axis=1, keepdims=True)
+    global_mean = f.reshape(-1, f.shape[-1]).mean(axis=0)
+    return np.clip(f * global_mean / np.maximum(row_mean, 1.0), 0, 255)
+
+
+def row_profile(a: np.ndarray) -> float:
+    """Row-mean variation in grey levels — the band this recipe removes."""
+    return round(float(a.astype(np.float32).mean(axis=2).mean(axis=1).std()), 2)
 
 
 def _smoothstep(t):
@@ -304,12 +375,43 @@ def build(product, photo, box, board_frac, why):
                           int((rotated.width - sw) / 2) + sw, int((rotated.height - sh) / 2) + sh))
 
     flat = flatten(strip, px_per_inch)
-    height = max(64, int(round(TILE_WIDTH * flat.height / flat.width)))
-    scaled = flat.resize((TILE_WIDTH, height), Image.LANCZOS)
-    tile = Image.fromarray(seamless(np.asarray(scaled, dtype=np.float32)))
+
+    # NEVER UPSCALE. This resized every strip to exactly TILE_WIDTH, which
+    # quietly UPSAMPLED any strip narrower than 512 px — and red oak's is 427,
+    # because a 1.2x enlargement is what you get when a short crop is forced to
+    # a 3:1 aspect. The result was a soft, smeared tile whose low-frequency
+    # blobs then read on the floor as quilting: at 1.69 repeats per board it
+    # looked markedly worse than walnut at 2.04, which is how the cause was
+    # found — the repeat count was not the variable, sharpness was.
+    #
+    # Enlarging a photograph adds no grain, and the renderer never needs it:
+    # it mips DOWN from here and the largest plate the API will draw still
+    # minifies a 256-texel tile. So the width is whatever the strip actually
+    # has, capped at TILE_WIDTH. A smaller sharp tile beats a larger soft one.
+    out_width = min(TILE_WIDTH, flat.width)
+    height = max(64, int(round(out_width * flat.height / flat.width)))
+    resample_factor = round(out_width / flat.width, 3)
+    scaled = flat.resize((out_width, height), Image.LANCZOS)
+    # BEFORE AND AFTER THE WRAP, and it needs both.
+    #
+    # Before, because seamless() rolls the strip by half its length and blends
+    # the two ends together: run on a strip whose top is darker than its bottom
+    # and that blend mixes dark into light, which is a worse band than the drift
+    # it started from.
+    #
+    # After, because the blend then perturbs the row means it just matched — not
+    # by much, but white ash came out of the wrap with 1.5 grey levels of band
+    # restored from the 12.7 this had removed, which is still a visible line at
+    # ash's contrast. A row-wise scale cannot break what the wrap established:
+    # it multiplies a whole row by one number, so it is uniform across x, and
+    # rows 0 and h-1 already match, so they take the same scale and still match.
+    band_before = row_profile(np.asarray(scaled))
+    levelled = deband(np.asarray(scaled, dtype=np.float32))
+    tile = Image.fromarray(
+        np.clip(deband(seamless(levelled).astype(np.float32)), 0, 255).astype(np.uint8))
 
     inches_across = round(inches_across_box * sw / cw, 2)
-    inches_along = round(inches_across * height / TILE_WIDTH, 2)
+    inches_along = round(inches_across * height / out_width, 2)
     final, coherence = grain_angle(tile)
     seam_x, seam_y, near_x, near_y = seam_step(np.asarray(tile))
     return tile, {
@@ -322,11 +424,14 @@ def build(product, photo, box, board_frac, why):
         'grainDegBefore': round(before, 1),
         'grainDegAfter': round(final, 1),
         'coherence': round(coherence, 3),
+        'resampleFactor': resample_factor,
+        'rowBandBefore': band_before,
+        'rowBandAfter': row_profile(np.asarray(tile)),
         'seamAcross': seam_x,
         'seamAlong': seam_y,
         'seamVsNeighbourAcross': near_x,
         'seamVsNeighbourAlong': near_y,
-        'width': TILE_WIDTH,
+        'width': out_width,
         'height': height,
         'inchesAcross': inches_across,
         'inchesAlong': inches_along,
@@ -383,6 +488,8 @@ def main() -> int:
     manifest = []
     worst = 0.0
     worst_seam = 0.0
+    worst_upscale = 0.0
+    worst_band = 0.0
     for product, photo, box, board_frac, why in CROPS:
         try:
             tile, entry = build(product, photo, box, board_frac, why)
@@ -392,22 +499,28 @@ def main() -> int:
         path = f'{OUT}/{entry["file"]}'
         tile.save(path, 'WEBP', quality=92, method=6)
 
-        api_h = max(16, round(tile.height * API_TILE_WIDTH / tile.width))
+        # Same rule as above: a cap, never an enlargement. A tile that is
+        # already narrower than this is copied as it is.
+        api_w = min(API_TILE_WIDTH, tile.width)
+        api_h = max(16, round(tile.height * api_w / tile.width))
         api_path = f'{API_OUT}/grain-{product}.png'
-        tile.resize((API_TILE_WIDTH, api_h), Image.LANCZOS).save(api_path, 'PNG', optimize=True)
+        tile.resize((api_w, api_h), Image.LANCZOS).save(api_path, 'PNG', optimize=True)
         entry['apiFile'] = f'grain-{product}.png'
-        entry['apiWidth'] = API_TILE_WIDTH
+        entry['apiWidth'] = api_w
         entry['apiHeight'] = api_h
         entry['mean'] = [round(v) for v in ImageStat.Stat(tile).mean]
         entry['bytes'] = os.path.getsize(path)
         manifest.append(entry)
         worst = max(worst, off_vertical(entry['grainDegAfter']))
         worst_seam = max(worst_seam, entry['seamAcross'], entry['seamAlong'])
+        worst_upscale = max(worst_upscale, entry['resampleFactor'])
+        worst_band = max(worst_band, entry['rowBandAfter'])
         print(f'  grain-{product:<13} {entry["width"]}x{entry["height"]:<5} '
               f'{entry["inchesAcross"]:>5}" x {entry["inchesAlong"]:>6}"  '
               f'grain {entry["grainDegBefore"]:>6}° → {entry["rotateDeg"]:>6}° → '
               f'{entry["grainDegAfter"]:>6}°  coh {entry["coherence"]:.2f}  '
               f'seam {entry["seamAcross"]:.3f}/{entry["seamAlong"]:.3f}  '
+              f'band {entry["rowBandBefore"]:.1f}→{entry["rowBandAfter"]:.1f}  '
               f'{entry["bytes"]:6} B')
 
     with open(f'{OUT}/grain-manifest.json', 'w') as fh:
@@ -420,9 +533,20 @@ def main() -> int:
     print(f'{len(manifest)} PNG copies at {API_TILE_WIDTH}px → {API_OUT}')
     print(f'worst grain angle off vertical: {worst:.1f}°')
     print(f'worst seam, as a fraction of the tile\'s own contrast: {worst_seam:.3f}')
+    print(f'largest resample: {worst_upscale:.2f}x  (over 1.00 would be an enlargement)')
+    print(f'worst residual row band: {worst_band:.2f} grey levels')
     if worst > 5.0:
         print('  REFUSING: a tile whose grain does not run along the board is the defect '
               'this script exists to remove.', file=sys.stderr)
+        return 1
+    if worst_upscale > 1.001:
+        print('  REFUSING: a tile was enlarged. Enlarging a photograph adds no grain and '
+              'costs sharpness; widen the crop or lower TILE_WIDTH.', file=sys.stderr)
+        return 1
+    if worst_band > 0.5:
+        print('  REFUSING: a tile whose tone drifts along its length repeats that drift as '
+              'a band across every board at a fixed interval. deband() should have '
+              'removed it; if this fires, seamless() is putting it back.', file=sys.stderr)
         return 1
     if worst_seam > 0.25:
         print('  REFUSING: a tile whose wrap stands out against its own grain will print '
