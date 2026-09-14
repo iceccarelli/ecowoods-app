@@ -79,17 +79,21 @@ const SOCIAL_LINKS: { label: string; href?: string; icon: ReactNode }[] = [
 function FooterCol({
   title,
   mobile,
+  /** A column with enough groups to run long flows into two on a wide screen. */
+  flow = false,
   children,
 }: {
   title: string;
   mobile: boolean;
+  flow?: boolean;
   children: ReactNode;
 }) {
+  const body = <div className={flow ? 'footer-col-flow' : undefined}>{children}</div>;
   if (!mobile) {
     return (
       <div>
         <h5>{title}</h5>
-        {children}
+        {body}
       </div>
     );
   }
@@ -99,8 +103,31 @@ function FooterCol({
         <h5>{title}</h5>
         <span className="footer-col-chevron" aria-hidden="true" />
       </summary>
-      <div className="footer-col-body">{children}</div>
+      <div className="footer-col-body">{body}</div>
     </details>
+  );
+}
+
+/**
+ * NAV-04 — a named cluster inside a column.
+ *
+ * The Learn column was twenty-eight links in one flat list and Services was
+ * seventeen. A list that long is not a menu, it is a scroll: nothing in it is
+ * findable because nothing in it is grouped, and the reader's only strategy is
+ * to read all twenty-eight labels in order.
+ *
+ * NOT a second accordion. The column is already a <details> on mobile, and
+ * nesting one inside it would put two taps between a person and a link — which
+ * is worse than the scroll it replaced. These are labelled clusters: visible
+ * the moment the column is open, scannable by heading, and identical in
+ * structure on desktop and phone.
+ */
+function FooterGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="footer-group">
+      <p className="footer-group-label">{label}</p>
+      <div className="footer-links">{children}</div>
+    </div>
   );
 }
 
@@ -185,76 +212,100 @@ export default function SiteFooter() {
               Labels are the published SERVICES names so the link text, the page
               H1 and the schema `name` are one string, not three that drift. */}
           <FooterCol title="Services" mobile={m}>
-            <div className="footer-links">
+            <FooterGroup label="What we do">
               <a href="/hardwood-flooring-toronto">Hardwood Flooring Toronto</a>
               <a href="/hardwood-floor-refinishing-toronto">Floor Refinishing Toronto</a>
               <a href="/hardwood-stairs-toronto">Hardwood Stairs Toronto</a>
               <a href="/hardwood-floor-problems-toronto">Floor Problems &amp; Repairs</a>
-              {/* Protocol v2 §15 — the three P0 conversion/fact pages. Pricing
-                  is the canonical statement of the bands; /estimate is the URL
-                  every machine surface names as the request_estimate action;
-                  /contact is the NAP on a page of its own. */}
-              <a href="/pricing">Pricing — the three published bands</a>
-              <a href="/estimate">Request a free estimate</a>
-              <a href="/contact">Contact &amp; hours</a>
-              {/* P1 — the two buyers who are not homeowners. In the Services
-                  column rather than Learn because that is what they are buying,
-                  and because a page with no inbound chrome link fails
-                  verify-links no matter how good it is. */}
-              <a href="/commercial">Commercial &amp; Property Managers</a>
-              <a href="/realtors">For Realtors — Pre-List Recoat</a>
-              <a href="/refer">Refer Someone</a>
               {SERVICES.map((s) => (
                 <a key={s.slug} href={`/services/${s.slug}`}>
                   {s.name}
                 </a>
               ))}
               <a href="/services">All services</a>
-            </div>
+            </FooterGroup>
+
+            {/* Protocol v2 §15 — the three P0 conversion/fact pages. Pricing is
+                the canonical statement of the bands; /estimate is the URL every
+                machine surface names as the request_estimate action; /contact is
+                the NAP on a page of its own. Together in their own group because
+                they are the three things a visitor who has decided is looking
+                for, and they were previously buried at position five of
+                seventeen. */}
+            <FooterGroup label="Get a price">
+              <a href="/pricing">Pricing — the three published bands</a>
+              <a href="/estimate">Request a free estimate</a>
+              <a href="/contact">Contact &amp; hours</a>
+            </FooterGroup>
+
+            {/* P1 — the two buyers who are not homeowners, plus the referral
+                route. In the Services column rather than Learn because that is
+                what they are buying, and because a page with no inbound chrome
+                link fails verify-links no matter how good it is. */}
+            <FooterGroup label="Trade &amp; referrals">
+              <a href="/commercial">Commercial &amp; Property Managers</a>
+              <a href="/realtors">For Realtors — Pre-List Recoat</a>
+              <a href="/refer">Refer Someone</a>
+            </FooterGroup>
           </FooterCol>
 
           {/* Learn — every page on the site that is written to be read.
               Until this existed, /papers and /case-studies were reachable only
               from the header or from inside another article. */}
-          <FooterCol title="Learn" mobile={m}>
-            <div className="footer-links">
+          <FooterCol title="Learn" mobile={m} flow>
+            <FooterGroup label="The company">
               <a href="/about">About Ecowoods</a>
               <a href="/team">The crew — salaried, no subcontractors</a>
               <a href="/reviews">Reviews</a>
               <a href="/press">Press &amp; Media Kit</a>
+            </FooterGroup>
+
+            {/* The things a visitor can USE rather than read. They were spread
+                across positions 10, 11, 24, 25 and 26 of a twenty-eight-item
+                list, which is the same as not having them. */}
+            <FooterGroup label="Tools">
+              <a href="/framework/assess">Score a quote</a>
+              <a href="/tools/floor-movement">Movement calculator</a>
+              <a href="/floor-studio">Floor Studio</a>
+              <a href="/design">Floor Designer</a>
+              {/* F-163 moved FloorForge out of the primary nav, where it spent a
+                  tenth of the header on a product name a homeowner comparing
+                  three quotes has never heard. It is a real page and it keeps a
+                  real inbound link — verify-links.mjs failed the build the
+                  moment it had none, which is exactly what that guard is for. */}
+              <a href="/products/floorforge">FloorForge</a>
+            </FooterGroup>
+
+            <FooterGroup label="Reference">
+              <a href="/glossary">Glossary</a>
+              <a href="/standards">Standards Register</a>
+              <a href="/framework">The Well-Installed Framework</a>
+              <a href="/papers">Technical Papers</a>
+              <a href="/technical-library">Technical Library</a>
+              <a href="/data">Data &amp; Figures</a>
+              <a href="/authority">Citation Guide</a>
+            </FooterGroup>
+
+            <FooterGroup label="Reading">
               <a href="/resources">All resources</a>
               <a href="/whats-new">What&rsquo;s New</a>
               <a href="/market">What Moves a Quote</a>
-              <a href="/standards">Standards Register</a>
-              <a href="/framework">The Well-Installed Framework</a>
-              <a href="/framework/assess">Score a quote</a>
-              <a href="/tools/floor-movement">Movement calculator</a>
-              <a href="/projects">Projects, photographed</a>
-              <a href="/equipment">Sanding equipment</a>
               <a href="/guides">Decision Guides</a>
-              <a href="/glossary">Glossary</a>
-              <a href="/data">Data &amp; Figures</a>
-              <a href="/library">Visual Library</a>
-              <a href="/papers">Technical Papers</a>
-              <a href="/technical-library">Technical Library</a>
               <a href="/catalogues">Field Catalogues</a>
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>
+              <a href="/feed.xml">RSS Feed</a>
+            </FooterGroup>
+
+            <FooterGroup label="Our work">
+              <a href="/projects">Projects, photographed</a>
               {/* The map has to be reachable from the chrome or verify-links.mjs
                   is right to call it an orphan: a page in the sitemap with no way
                   in reads as unimportant no matter what the sitemap says. */}
               <a href="/where-we-work">Where We Work</a>
-              <a href="/floor-studio">Floor Studio</a>
-              <a href="/design">Floor Designer</a>
-              {/* F-163 moved FloorForge out of the primary nav, where it spent a
-                  tenth of the header on a product name a homeowner comparing three
-                  quotes has never heard. It is a real page and it keeps a real
-                  inbound link — verify-links.mjs failed the build the moment it
-                  had none, which is exactly what that guard is for. */}
-              <a href="/products/floorforge">FloorForge</a>
-              <a href="/authority">Citation Guide</a>
-              <a href="/feed.xml">RSS Feed</a>
-            </div>
+              <a href="/library">Visual Library</a>
+              <a href="/equipment">Sanding equipment</a>
+            </FooterGroup>
           </FooterCol>
 
           {/* Service Areas — real routes, not homepage anchors.
