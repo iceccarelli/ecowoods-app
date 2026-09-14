@@ -926,6 +926,24 @@ export type RenderOptions = {
       configuration changes instead of recomputing per repaint. */
   mask?: FloorMask;
   /**
+   * Reuse this buffer instead of allocating one, and paint only these rows.
+   *
+   * A composite at studio size is a fifth of a second of arithmetic, and a
+   * fifth of a second spent in one call is a fifth of a second in which the
+   * page ignores every click. So the render is resumable: the caller seeds a
+   * buffer with createCompositeBuffer, asks for a band of rows, paints it,
+   * yields to the next animation frame, and asks for the next.
+   *
+   * The buffer must START as a copy of the source photograph, which is what
+   * createCompositeBuffer gives you — the rows this call does not touch are
+   * meant to still be the room, not transparent black. Passing a blank buffer
+   * is the one way to use this wrong and it is the reason there is a
+   * constructor for it rather than a note saying to copy it yourself.
+   */
+  into?: Pixels;
+  /** Half-open row range, [from, to). Defaults to the whole frame. */
+  rows?: [number, number];
+  /**
    * The photograph of this species, decoded. Optional everywhere: without it
    * the synthesised grain runs exactly as it did, so a slow network shows a
    * drawn floor rather than no floor.
@@ -937,8 +955,17 @@ export type MaskOptions = Pick<RenderOptions, 'chromaTolerance' | 'luminanceSigm
 
 export type RenderResult = {
   pixels: Pixels;
-  /** Fraction of the quad actually painted. Low means heavy occlusion. */
+  /**
+   * Fraction of the quad actually painted. Low means heavy occlusion.
+   *
+   * OVER THE ROWS THIS CALL WAS ASKED FOR, which for a whole-frame render is
+   * the frame. A caller rendering in bands must weight by `considered` to get
+   * the figure for the picture — the top band of a room is mostly wall and
+   * would otherwise drag the average down on its own.
+   */
   painted: number;
+  /** How many pixels inside the quad this call looked at. See `painted`. */
+  considered: number;
   /** Why nothing was painted, where that happened. */
   failure?: 'degenerate-quad' | 'empty-region';
 };
@@ -1639,21 +1666,34 @@ function floorCoverageAt(px: Pixels, x: number, y: number, mask: FloorMask, cell
  * Returns a NEW Pixels; the input is never mutated, because the original is
  * the before half of the before/after and the visitor will drag between them.
  */
+/**
+ * A buffer for compositeFloor to paint bands into.
+ *
+ * A COPY OF THE PHOTOGRAPH, not a blank. The rows a band does not touch have to
+ * still be the room — a floor half-painted over transparent black is a hole in
+ * somebody's living room, and it is what a naive `new Uint8ClampedArray(...)`
+ * gives you.
+ */
+export function createCompositeBuffer(px: Pixels): Pixels {
+  return { data: new Uint8ClampedArray(px.data), width: px.width, height: px.height };
+}
+
 export function compositeFloor(
   px: Pixels,
   quad: Quad,
   config: FloorConfiguration,
   options: RenderOptions,
 ): RenderResult {
-  const out: Pixels = {
-    data: new Uint8ClampedArray(px.data),
-    width: px.width,
-    height: px.height,
-  };
+  const out: Pixels =
+    options.into && options.into.width === px.width && options.into.height === px.height
+      ? options.into
+      : { data: new Uint8ClampedArray(px.data), width: px.width, height: px.height };
+  const rowFrom = Math.max(0, Math.min(px.height, options.rows ? options.rows[0] : 0));
+  const rowTo = Math.max(rowFrom, Math.min(px.height, options.rows ? options.rows[1] : px.height));
 
   const width = widthById(config.widthId);
   const product = productById(config.productId);
-  if (!width || !product) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
+  if (!width || !product) return { pixels: out, painted: 0, considered: 0, failure: 'degenerate-quad' };
 
   const plan = planSizeInches(options.squareFeet, options.boardScale ?? 1);
   const planQuad: Quad = [
@@ -1666,7 +1706,7 @@ export function compositeFloor(
   /* Pixels are given in normalised coordinates so the map is resolution
      independent — the same quad renders the same floor at any preview size. */
   const m = solveHomography(quad, planQuad);
-  if (!m) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
+  if (!m) return { pixels: out, painted: 0, considered: 0, failure: 'degenerate-quad' };
 
   /* The mask decides WHERE, and carries the robust luminance centre the
      shading is measured against. One pass, reusable across a configuration
@@ -1675,7 +1715,7 @@ export function compositeFloor(
   if (mask.medianLuminance === 0 && mask.occluded === 0) {
     let any = false;
     for (let c = 0; c < mask.floor.length && !any; c += 1) if (mask.floor[c] === 1) any = true;
-    if (!any) return { pixels: out, painted: 0, failure: 'empty-region' };
+    if (!any) return { pixels: out, painted: 0, considered: 0, failure: 'empty-region' };
   }
   const meanLum = Math.max(0.01, mask.medianLuminance);
 
@@ -1703,7 +1743,7 @@ export function compositeFloor(
   const m21 = m[7];
   const m22 = m[8];
 
-  for (let y = 0; y < px.height; y += 1) {
+  for (let y = rowFrom; y < rowTo; y += 1) {
     const ny = (y + 0.5) / px.height;
     const cellRow = ((y / CELL) | 0) * mask.cols;
     for (let x = 0; x < px.width; x += 1) {
@@ -1772,5 +1812,5 @@ export function compositeFloor(
     }
   }
 
-  return { pixels: out, painted: considered === 0 ? 0 : painted / considered };
+  return { pixels: out, painted: considered === 0 ? 0 : painted / considered, considered };
 }

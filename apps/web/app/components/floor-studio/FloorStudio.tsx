@@ -30,7 +30,8 @@ import {
   type FloorConfiguration,
 } from '@/lib/floor-studio/catalog';
 import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
-import { compositeFloor } from '@/lib/floor-studio/render';
+import { compositeFloor, createCompositeBuffer, type RenderResult } from '@/lib/floor-studio/render';
+import { loadGrainTexture } from '@/lib/floor-studio/grain-loader';
 import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
 import { drawSignature, loadMark } from '@/lib/floor-studio/signature';
 import { EW_MARK } from '@/lib/brand';
@@ -240,7 +241,10 @@ export default function FloorStudio() {
   const ground = useMemo(() => photo ?? swatchGround(960, 640), [photo]);
   const activeQuad = photo ? quad : FULL_QUAD;
 
-  const render = useMemo(
+  /* THE DRAWN FLOOR, IMMEDIATELY.
+     Synchronous and unchanged: it needs no photograph, it is on screen before
+     the next paint, and it is what a person gets if the tile never arrives. */
+  const drawn = useMemo(
     () =>
       compositeFloor(ground, activeQuad, design.config, {
         squareFeet: design.squareFeet,
@@ -248,6 +252,66 @@ export default function FloorStudio() {
       }),
     [ground, activeQuad, design.config, design.squareFeet, boardScale],
   );
+
+  /* THE PHOTOGRAPHED FLOOR, WHEN IT HAS FINISHED ARRIVING.
+     The photograph triples the cost of a composite — measured at studio size,
+     75ms drawn against 212ms with the tile — and a fifth of a second spent in
+     one call is a fifth of a second in which the page ignores every click. So
+     it is rendered a band of rows per animation frame, inside a budget, and
+     swapped in when it is whole. Never half: a floor that is oak at the top
+     and drawn at the bottom has a seam across it that reads as a defect in the
+     room rather than as progress. */
+  const [photographic, setPhotographic] = useState<RenderResult | null>(null);
+  useEffect(() => {
+    setPhotographic(null);
+    let cancelled = false;
+    let raf = 0;
+    void loadGrainTexture(design.config.productId).then((grain) => {
+      if (cancelled || !grain) return;
+      const buffer = createCompositeBuffer(ground);
+      let row = 0;
+      let painted = 0;
+      let considered = 0;
+      const band = Math.max(16, Math.round(ground.height / 10));
+      const step = () => {
+        if (cancelled) return;
+        const started = performance.now();
+        while (row < ground.height && performance.now() - started < 10) {
+          const to = Math.min(ground.height, row + band);
+          const part = compositeFloor(ground, activeQuad, design.config, {
+            squareFeet: design.squareFeet,
+            boardScale,
+            grain,
+            into: buffer,
+            rows: [row, to],
+          });
+          /* Weighted by what each band actually looked at. The top of a room is
+             mostly wall and would otherwise drag the figure down on its own —
+             and that figure is what decides whether the visitor is told their
+             photograph is mostly furniture. */
+          painted += part.painted * part.considered;
+          considered += part.considered;
+          row = to;
+        }
+        if (row < ground.height) {
+          raf = requestAnimationFrame(step);
+          return;
+        }
+        setPhotographic({
+          pixels: buffer,
+          painted: considered === 0 ? 0 : painted / considered,
+          considered,
+        });
+      };
+      raf = requestAnimationFrame(step);
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [ground, activeQuad, design.config, design.squareFeet, boardScale]);
+
+  const render = photographic ?? drawn;
 
 
   const visualisedRef = useRef<string | null>(null);

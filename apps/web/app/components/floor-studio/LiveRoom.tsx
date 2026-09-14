@@ -50,6 +50,25 @@ import type { Pixels, Quad } from '@/lib/floor-studio/room';
  * analysis size climbs and falls with what the device is actually managing —
  * see lib/floor-studio/live.ts, where the rule lives as a pure function with
  * its own tests, because a frame loop cannot be tested and a number can.
+ *
+ * THE LIVE VIEW IS DRAWN, NOT PHOTOGRAPHED, AND THAT IS THE DECISION
+ *
+ * The renderer can sample a photograph of the species — /design and the studio
+ * still both do, and the difference is not subtle. Here it is deliberately off,
+ * and the ladder above is exactly why. Measured, the photograph costs about
+ * three times a drawn composite: 75ms against 212ms at 960x640. The ladder
+ * would not drop frames over that, it would pay for it by dropping RESOLUTION,
+ * and it would drop it by roughly a factor of three.
+ *
+ * A live camera view is being judged on whether the floor tracks the room. A
+ * sharp drawn floor that holds still against the skirting board answers that
+ * question; a soft photographic one at a third of the resolution does not, and
+ * the grain is the first thing lost to the downscale anyway. So the live view
+ * stays drawn and the STILL is photographed — which is the frame a person
+ * screenshots, sends to their partner and looks at twice.
+ *
+ * If this is ever revisited: the thing to change is not this flag. It is to
+ * give the live path its own smaller tile and measure the ladder again.
  */
 
 export type LiveRoomProps = {

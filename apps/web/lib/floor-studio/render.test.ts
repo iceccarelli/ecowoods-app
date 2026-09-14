@@ -18,6 +18,8 @@ import {
   planSizeInches,
   samplePattern,
   solveHomography,
+  buildFloorMask,
+  createCompositeBuffer,
   woodColourAt,
   woodColourFrom,
   woodPalette,
@@ -512,5 +514,94 @@ describe('a board knows its own length', () => {
       checked += 1;
     }
     expect(checked).toBeGreaterThan(300);
+  });
+});
+
+
+describe('a composite done in bands', () => {
+  /* The studio renders the photographic floor a band of rows per animation
+     frame, because at studio size the photograph triples the cost — 75ms drawn
+     against 212ms measured — and a fifth of a second in one call is a fifth of
+     a second in which the page ignores every click.
+
+     That is only safe if a band depends on nothing carried over from the last
+     one. If it did, the floor would show seams wherever an animation frame
+     happened to end, and they would move around with the device. */
+  const room = frame(180, 140, (x, y) => {
+    if (y < 56) return { r: 238, g: 235, b: 230 };
+    const v = Math.round(172 * (0.82 + 0.28 * ((y - 56) / 84)) * (1 + 0.08 * Math.sin(x * 0.13)));
+    /* Something standing on it, so `painted` is not trivially 1 and the
+       weighting the caller has to do is actually exercised. */
+    if (y > 96 && y < 126 && x > 42 && x < 138) return { r: 214, g: 212, b: 206 };
+    return { r: v, g: Math.round(v * 0.94), b: Math.round(v * 0.86) };
+  });
+  const QUAD: Quad = [
+    { x: 0.08, y: 0.4 },
+    { x: 0.92, y: 0.4 },
+    { x: 1.2, y: 1 },
+    { x: -0.2, y: 1 },
+  ];
+
+  it('is the same picture as one done in a single pass', () => {
+    const mask = buildFloorMask(room, QUAD, {});
+    for (const patternId of ['straight', 'diagonal', 'herringbone', 'chevron']) {
+      const config = { ...CONFIG, patternId };
+      const whole = compositeFloor(room, QUAD, config, { squareFeet: 400, mask });
+      const buffer = createCompositeBuffer(room);
+      for (let y = 0; y < room.height; y += 23) {
+        compositeFloor(room, QUAD, config, {
+          squareFeet: 400,
+          mask,
+          into: buffer,
+          rows: [y, Math.min(room.height, y + 23)],
+        });
+      }
+      let differing = 0;
+      for (let i = 0; i < whole.pixels.data.length; i += 1) {
+        if (whole.pixels.data[i] !== buffer.data[i]) differing += 1;
+      }
+      expect(differing, patternId).toBe(0);
+    }
+  });
+
+  it('reports a painted fraction the caller can add up correctly', () => {
+    /* `painted` is over the rows THIS call was asked for. The top band of a
+       room is mostly wall; averaging the bands unweighted would drag the figure
+       down on its own, and that figure is what decides whether a visitor is
+       told their photograph is mostly furniture. Weighted by `considered` it
+       comes out exactly equal to the whole-frame answer. */
+    const mask = buildFloorMask(room, QUAD, {});
+    const whole = compositeFloor(room, QUAD, CONFIG, { squareFeet: 400, mask });
+    const buffer = createCompositeBuffer(room);
+    let painted = 0;
+    let considered = 0;
+    for (let y = 0; y < room.height; y += 23) {
+      const part = compositeFloor(room, QUAD, CONFIG, {
+        squareFeet: 400,
+        mask,
+        into: buffer,
+        rows: [y, Math.min(room.height, y + 23)],
+      });
+      painted += part.painted * part.considered;
+      considered += part.considered;
+    }
+    expect(considered).toBe(whole.considered);
+    expect(considered).toBeGreaterThan(0);
+    /* And the rug is actually being protected, or this measures nothing. */
+    expect(whole.painted).toBeLessThan(0.95);
+    expect(painted / considered).toBeCloseTo(whole.painted, 10);
+  });
+
+  it('starts from the room, so an unfinished band is not a hole in it', () => {
+    /* The one way to use this wrong is to hand it a blank buffer. The rows a
+       band has not reached yet have to still be the photograph. */
+    const buffer = createCompositeBuffer(room);
+    compositeFloor(room, QUAD, CONFIG, { squareFeet: 400, into: buffer, rows: [0, 20] });
+    for (let y = 100; y < room.height; y += 1) {
+      for (let x = 0; x < room.width; x += 7) {
+        const i = (y * room.width + x) * 4;
+        expect(buffer.data[i], `row ${y}`).toBe(room.data[i]);
+      }
+    }
   });
 });
