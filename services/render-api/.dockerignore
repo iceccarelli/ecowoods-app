@@ -1,0 +1,8 @@
+**/node_modules
+**/.next
+**/.turbo
+.git
+apps/web/public/gallery
+apps/web/public/illustrations
+docs
+audit

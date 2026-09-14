@@ -1,0 +1,11 @@
+{
+  "name": "@ecowoods/render-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The Ecowoods room visualiser, as a callable service. No dependencies on purpose.",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types --import ./src/register.mjs ./src/server.ts",
+    "test": "node --experimental-strip-types ./src/keys.test.ts"
+  }
+}

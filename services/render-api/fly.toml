@@ -1,0 +1,48 @@
+# Ecowoods render API.
+#
+# yyz is Toronto: the customers, the crew and the existing Postgres region are
+# all within a few milliseconds of it, and an image round-trip is the one call
+# where that shows.
+app = "ecowoods-render-api"
+primary_region = "yyz"
+
+[build]
+  dockerfile = "services/render-api/Dockerfile"
+
+[env]
+  PORT = "8080"
+  MAX_PIXELS = "4000000"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # A render is CPU-bound and finishes in well under a second. Stopping the
+  # machine when nobody is calling turns a flat monthly cost into a usage one,
+  # and the cold start is a container that runs `node` with nothing to install.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+  # ONE MACHINE, DELIBERATELY. The rate limiter in src/keys.ts is per process:
+  # a second machine would silently double every caller's limit. Raise this
+  # only together with a shared counter.
+  max_machines_count = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 8
+    hard_limit = 16
+
+[[vm]]
+  # Measured: a 640x480 composite is ~35ms of CPU and a 2MP still is ~450ms.
+  # shared-cpu-2x at 2GB is $10.70/month at the time of writing and holds the
+  # textures warm. performance-1x ($31) is the next rung if p95 stops fitting.
+  size = "shared-cpu-2x"
+  memory = "2gb"
+
+[checks.health]
+  type = "http"
+  port = 8080
+  path = "/health"
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
