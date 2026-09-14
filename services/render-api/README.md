@@ -38,6 +38,26 @@ otherwise.
 pnpm test:render-api          # from the repository root
 ```
 
+**This service needs Node 22.6 or newer, and the devcontainer pins node:20.**
+It is TypeScript that Node strips at load time, which is what
+`--experimental-strip-types` does, and that flag arrived in 22.6. On Node 20 the
+answer is `node: bad option: --experimental-strip-types`, which says nothing
+about versions; scripts/render-api-test.mjs checks first and says what is
+actually wrong.
+
+Production is unaffected — the Dockerfile pins `node:24-slim` — and so is the
+website, which touches none of this. What cannot be done on Node 20 is running
+or testing this service locally. Either use the image it deploys from:
+
+```bash
+docker run --rm -v "$PWD":/app -w /app node:24-slim \
+  node --experimental-strip-types scripts/render-api-test.mjs
+```
+
+or raise `.devcontainer/devcontainer.json` to `node:22-bookworm` and rebuild.
+That second one changes the environment for everything else in this repository,
+so it belongs to whoever owns the repository rather than to this README.
+
 NOT `pnpm --filter @ecowoods/render-api test`, which answers "No projects
 matched the filters" — `services/*` is not in `pnpm-workspace.yaml`, so this
 package is not a workspace member and pnpm cannot see it.
