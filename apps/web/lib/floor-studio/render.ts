@@ -141,6 +141,19 @@ export type PlankSample = {
   across: number;
   /** 0 for a board running with plan-Y, 1 for one running with plan-X. */
   axis: 0 | 1;
+  /**
+   * The board's own length, in inches.
+   *
+   * `along` is a FRACTION of the board, and a fraction is not a distance. To
+   * put a sample back into the inches a photograph is measured in you need the
+   * length that fraction is a fraction OF — and it is not the same length for
+   * every pattern. A straight run is nine widths long (RUN_LENGTH_RATIO); a
+   * herringbone or chevron block is four (BLOCK_RATIO). Assuming nine
+   * everywhere stretched the grain on a herringbone floor by 9/4 — the
+   * photograph ran more than twice as fast along the block as the wood does.
+   * The sampler knows the number, so the sampler reports it.
+   */
+  lenIn: number;
 };
 
 const rot45 = (x: number, y: number) => ({ x: (x + y) * Math.SQRT1_2, y: (y - x) * Math.SQRT1_2 });
@@ -191,6 +204,7 @@ function runSample(x: number, y: number, widthIn: number, axisFlag: 0 | 1): Plan
     along: inPlank / len,
     across: inBand / w,
     axis: axisFlag,
+    lenIn: len,
   };
 }
 
@@ -222,6 +236,7 @@ function herringboneSample(x: number, y: number, widthIn: number): PlankSample {
       along,
       across: fy,
       axis: 1,
+      lenIn: L * widthIn,
     };
   }
   const v = L - d; // 0 down to 1−L
@@ -232,6 +247,7 @@ function herringboneSample(x: number, y: number, widthIn: number): PlankSample {
     along: alongCells / L,
     across: fx,
     axis: 0,
+    lenIn: L * widthIn,
   };
 }
 
@@ -259,6 +275,7 @@ function chevronSample(x: number, y: number, widthIn: number): PlankSample {
     along: inAlong / len,
     across: inBand / widthIn,
     axis: sign > 0 ? 0 : 1,
+    lenIn: len,
   };
 }
 
@@ -414,9 +431,16 @@ export type GrainTexture = {
  * correct colour and correct scale and still read as speckled carpet at the
  * back of the room, which is worse than the drawn grain it replaced.
  *
- * Four levels, each a box-filtered half of the one above. The level is chosen
- * per pixel from the homography's own divisor — see the composite loop, where
- * `w` is literally the projective depth.
+ * Every level down to a single texel, each a box-filtered half of the one
+ * above. The pyramid used to stop at five levels, which was a guess, and the
+ * guess was wrong by a factor of fifty: in a 560-pixel photograph of a
+ * twenty-foot room one screen pixel covers between half an inch and two inches
+ * of floor, and the tile measures ten inches across 512 texels. That is 29 to
+ * 102 texels per pixel — level 4.9 to level 6.7 — and the deepest level on
+ * offer was 4. A pyramid that bottoms out before the scene does is the same
+ * aliasing as no pyramid at all, just quieter, and on wood grain it reads as
+ * static. The levels cost a third of the tile in memory, once, and 512 → 1 is
+ * ten of them.
  */
 export function makeGrainTexture(data: Uint8ClampedArray, width: number, height: number): GrainTexture {
   let sum = 0;
@@ -428,18 +452,26 @@ export function makeGrainTexture(data: Uint8ClampedArray, width: number, height:
 
   const levels: { data: Uint8ClampedArray; width: number; height: number }[] = [{ data, width, height }];
   let cur = { data, width, height };
-  while (cur.width > 8 && cur.height > 8 && levels.length < 5) {
-    const w2 = cur.width >> 1;
-    const h2 = cur.height >> 1;
+  while (cur.width > 1 || cur.height > 1) {
+    const w2 = Math.max(1, cur.width >> 1);
+    const h2 = Math.max(1, cur.height >> 1);
     const next = new Uint8ClampedArray(w2 * h2 * 4);
     for (let y = 0; y < h2; y += 1) {
       for (let x = 0; x < w2; x += 1) {
         const o = (y * w2 + x) * 4;
+        /* A non-square tile, or an odd dimension, runs out of source rows or
+           columns before the other axis does. Clamping the second tap to the
+           first averages two samples instead of four on that axis, which is
+           the correct box filter for a level that is not halving there. */
+        const xa = x * 2;
+        const xb = Math.min(cur.width - 1, xa + 1);
+        const ya = y * 2;
+        const yb = Math.min(cur.height - 1, ya + 1);
         for (let c = 0; c < 4; c += 1) {
-          const a = cur.data[((y * 2) * cur.width + x * 2) * 4 + c]!;
-          const b = cur.data[((y * 2) * cur.width + x * 2 + 1) * 4 + c]!;
-          const d = cur.data[((y * 2 + 1) * cur.width + x * 2) * 4 + c]!;
-          const e = cur.data[((y * 2 + 1) * cur.width + x * 2 + 1) * 4 + c]!;
+          const a = cur.data[(ya * cur.width + xa) * 4 + c]!;
+          const b = cur.data[(ya * cur.width + xb) * 4 + c]!;
+          const d = cur.data[(yb * cur.width + xa) * 4 + c]!;
+          const e = cur.data[(yb * cur.width + xb) * 4 + c]!;
           next[o + c] = (a + b + d + e) >> 2;
         }
       }
@@ -480,13 +512,42 @@ const GRAIN_INCHES = 10;
  * The per-board hash offsets where in the texture that board is cut from, so no
  * two boards repeat — the thing that makes a tiled floor look tiled.
  */
-function grainAt(tex: GrainTexture, sample: PlankSample, widthIn: number, lod = 0): Rgb {
-  const level = tex.levels[Math.max(0, Math.min(tex.levels.length - 1, lod | 0))]!;
+function grainAt(tex: GrainTexture, sample: PlankSample, widthIn: number, footprintIn = 0): Rgb {
+  /* THE MIP LEVEL IS AN ABSOLUTE MEASUREMENT, NOT A RELATIVE ONE.
+   *
+   * The first version derived the level from the ratio of the projective
+   * divisor against the divisor at the near edge of the quad — level 0 at the
+   * bottom of the frame, rising towards the wall. That is the right SHAPE and
+   * the wrong ORIGIN. The near edge of a room photograph is not where one
+   * screen pixel covers one texel; on a 512-pixel tile covering ten inches it
+   * is where one screen pixel covers about twenty of them. So the whole
+   * pyramid was offset by four and a half levels and every pixel in the frame
+   * sampled a texture far finer than it could resolve. Measured on the
+   * neighbour-delta speckle metric the photographic path scored 19.0 against
+   * the drawn path's 2.9 — it was six times noisier than the thing it was
+   * meant to replace, and forcing the level down by hand improved it
+   * monotonically, which is what named the cause.
+   *
+   * The level a pixel needs does not depend on the rest of the frame. It is
+   * how many texels that ONE pixel covers: its footprint on the floor in
+   * inches, times the tile's texels per inch. The caller measures the
+   * footprint from the homography's own derivatives; the conversion belongs
+   * here, because the texel density is a property of the texture.
+   */
+  const texelsPerInch = tex.width / GRAIN_INCHES;
+  const texels = footprintIn * texelsPerInch;
+  const lod = texels > 1 ? Math.log2(texels) : 0;
+  const top = tex.levels.length - 1;
+  const lo = Math.max(0, Math.min(top, Math.floor(lod)));
+  const hi = Math.min(top, lo + 1);
+  const blend = lo === hi ? 0 : Math.max(0, Math.min(1, lod - lo));
+
   /* Board-local INCHES. `across` and `along` are fractions of the board, so
      multiplying by the board's real width and length puts the sample back into
-     the same units the texture is measured in. */
+     the same units the texture is measured in. `lenIn` is the board's own
+     length and is not the same multiple of the width for every pattern. */
   const acrossIn = sample.across * widthIn;
-  const alongIn = sample.along * widthIn * RUN_LENGTH_RATIO;
+  const alongIn = sample.along * sample.lenIn;
 
   /* A per-board offset, so no two boards are cut from the same piece of the
      photograph — the thing that makes a tiled floor look tiled. */
@@ -495,33 +556,39 @@ function grainAt(tex: GrainTexture, sample: PlankSample, widthIn: number, lod = 
   if (u < 0) u += 1;
   if (v < 0) v += 1;
 
-  /* Bilinear, because nearest-neighbour on a photograph being minified is the
-     other half of why the first version looked like static. */
-  const fx = u * level.width - 0.5;
-  const fy = v * level.height - 0.5;
-  const x0 = Math.floor(fx);
-  const y0 = Math.floor(fy);
-  const tx = fx - x0;
-  const ty = fy - y0;
-  const wrapX = (n: number) => ((n % level.width) + level.width) % level.width;
-  const wrapY = (n: number) => ((n % level.height) + level.height) % level.height;
-  const x1 = wrapX(x0 + 1);
-  const y1 = wrapY(y0 + 1);
-  const xa = wrapX(x0);
-  const ya = wrapY(y0);
-  const at = (x: number, y: number) => (y * level.width + x) * 4;
-  const i00 = at(xa, ya);
-  const i10 = at(x1, ya);
-  const i01 = at(xa, y1);
-  const i11 = at(x1, y1);
+  /* Bilinear within a level, and linear BETWEEN the two levels either side of
+     the measured one. Snapping to the nearer level instead puts a visible seam
+     across the floor wherever the level changes — a band of sharper grain with
+     a hard line at its edge, which on a photograph of a room reads as a crease
+     in the floor. Trilinear costs one more bilinear fetch and removes it. */
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  const ch = (o: number) =>
-    lerp(
-      lerp(level.data[i00 + o]!, level.data[i10 + o]!, tx),
-      lerp(level.data[i01 + o]!, level.data[i11 + o]!, tx),
+  const fetch = (lv: { data: Uint8ClampedArray; width: number; height: number }, o: number) => {
+    const fx = u * lv.width - 0.5;
+    const fy = v * lv.height - 0.5;
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    const tx = fx - x0;
+    const ty = fy - y0;
+    const xa = ((x0 % lv.width) + lv.width) % lv.width;
+    const ya = ((y0 % lv.height) + lv.height) % lv.height;
+    const x1 = xa + 1 >= lv.width ? 0 : xa + 1;
+    const y1 = ya + 1 >= lv.height ? 0 : ya + 1;
+    const rowA = ya * lv.width;
+    const rowB = y1 * lv.width;
+    return lerp(
+      lerp(lv.data[(rowA + xa) * 4 + o]!, lv.data[(rowA + x1) * 4 + o]!, tx),
+      lerp(lv.data[(rowB + xa) * 4 + o]!, lv.data[(rowB + x1) * 4 + o]!, tx),
       ty,
     );
-  return { r: ch(0), g: ch(1), b: ch(2) };
+  };
+  const a = tex.levels[lo]!;
+  if (blend <= 0) return { r: fetch(a, 0), g: fetch(a, 1), b: fetch(a, 2) };
+  const b = tex.levels[hi]!;
+  return {
+    r: lerp(fetch(a, 0), fetch(b, 0), blend),
+    g: lerp(fetch(a, 1), fetch(b, 1), blend),
+    b: lerp(fetch(a, 2), fetch(b, 2), blend),
+  };
 }
 
 export type WoodPalette = {
@@ -578,7 +645,7 @@ export function woodColourAt(
   return woodColourFrom(woodPalette(productId, finishId, grain), sample, widthIn);
 }
 
-export function woodColourFrom(palette: WoodPalette, sample: PlankSample, widthIn = 5, lod = 0): Rgb {
+export function woodColourFrom(palette: WoodPalette, sample: PlankSample, widthIn = 5, footprintIn = 0): Rgb {
   if (!palette.ok) return { r: 0, g: 0, b: 0 };
 
 
@@ -630,7 +697,7 @@ export function woodColourFrom(palette: WoodPalette, sample: PlankSample, widthI
    * product's own colour, with the board-to-board variation a real floor has.
    */
   if (palette.photo) {
-    const px = grainAt(palette.photo, sample, widthIn, lod);
+    const px = grainAt(palette.photo, sample, widthIn, footprintIn);
     const detail = fastLuminance(px.r | 0, px.g | 0, px.b | 0) / palette.photo.meanLuminance;
     /* Clamped, because a knot is genuinely near-black and a blown highlight in
        the source photograph is not information about the wood. */
@@ -1439,12 +1506,12 @@ export function compositeFloor(
   const sheen = finish.sheen;
   const palette = woodPalette(config.productId, config.finishId, options.grain);
 
-  /* The divisor at the NEAREST point of the quad — the bottom of the frame,
-     where the floor is least minified. Every other pixel's level is measured
-     against this one, so the near field samples the full tile and the far field
-     samples a half or a quarter of it. */
-  const nearW = Math.abs(m[6] * 0.5 + m[7] * 1.0 + m[8]);
-  const wRef = Number.isFinite(nearW) && nearW > 0 ? nearW : 0;
+  /* How many inches of floor one screen pixel covers, measured per pixel from
+     the homography's own derivatives — see the composite loop. The scale is in
+     the same units the plan is: `runSample` divides plan-X by the board width
+     in inches, so plan-space IS inches. */
+  const invW = 1 / Math.max(1, px.width);
+  const invH = 1 / Math.max(1, px.height);
 
   let painted = 0;
   let considered = 0;
@@ -1497,14 +1564,27 @@ export function compositeFloor(
       const planY = (m10 * nx + m11 * ny + m12) / w;
 
       const sample = samplePattern(planX, planY, config.patternId, width.inches);
-      /* MIP LEVEL FROM THE PROJECTIVE DIVISOR.
-         `w` is the homography's homogeneous divisor at this pixel, which IS the
-         depth scale: large near the camera, small at the wall line. The texture
-         minifies by the same factor, so the level that matches is the log2 of
-         the ratio against the near edge. No derivatives, no extra sampling —
-         the number was already computed to project the point. */
-      const lod = wRef > 0 ? Math.log2(Math.max(1, wRef / Math.max(1e-6, Math.abs(w)))) : 0;
-      const wood = woodColourFrom(palette, sample, width.inches, lod);
+
+      /* THE PIXEL'S FOOTPRINT ON THE FLOOR, IN INCHES.
+         A perspective floor minifies towards the wall, so a pixel at the back
+         of the room covers many inches and a pixel at the front covers a
+         fraction of one. That number decides which mip level can be resolved,
+         and it is available in closed form: differentiating the homography
+         gives d(plan)/d(n) = (mᵢⱼ − plan·m₂ⱼ) / w, and w was already computed
+         to project the point. Two divisions and four multiplies, no second
+         sample, no screen-space derivative pass.
+         The larger of the two screen axes is the one that decides — taking the
+         smaller, or the average, under-filters along the direction the floor is
+         actually running away in, which is the direction that aliases. */
+      const iw = 1 / w;
+      const dXdx = (m00 - planX * m20) * iw * invW;
+      const dYdx = (m10 - planY * m20) * iw * invW;
+      const dXdy = (m01 - planX * m21) * iw * invH;
+      const dYdy = (m11 - planY * m21) * iw * invH;
+      const footprintIn = Math.sqrt(
+        Math.max(dXdx * dXdx + dYdx * dYdx, dXdy * dXdy + dYdy * dYdy),
+      );
+      const wood = woodColourFrom(palette, sample, width.inches, footprintIn);
 
       /* The room's own light, as a ratio against the region mean. Clamped so a
          blown highlight or a black shadow cannot produce a floor nobody would

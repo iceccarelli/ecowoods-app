@@ -19,6 +19,10 @@ import {
   samplePattern,
   solveHomography,
   woodColourAt,
+  woodColourFrom,
+  woodPalette,
+  makeGrainTexture,
+  RUN_LENGTH_RATIO,
 } from './render';
 import { relativeLuminance, type Pixels, type Quad } from './room';
 import { FLOOR_PRODUCTS, allConfigurations, type FloorConfiguration } from './catalog';
@@ -202,7 +206,7 @@ describe('the wood is drawn from the catalogue and nothing else', () => {
     const spread = (id: string) => {
       const values: number[] = [];
       for (let k = 0; k < 200; k += 1) {
-        values.push(woodColourAt(id, 'natural-matte', { key: k, edge: 1, along: 0.5, across: 0.5, axis: 0 }).r);
+        values.push(woodColourAt(id, 'natural-matte', { key: k, edge: 1, along: 0.5, across: 0.5, axis: 0, lenIn: 45 }).r);
       }
       return Math.max(...values) - Math.min(...values);
     };
@@ -349,5 +353,164 @@ describe('compositing a floor into a photograph', () => {
       return total / n;
     };
     expect(lum(satin.pixels)).toBeGreaterThan(lum(matte.pixels));
+  });
+});
+
+/**
+ * A grating: one smooth cycle every eight texels, at low contrast.
+ *
+ * Wood grain is a band-limited signal, and this is the smallest honest model of
+ * one. Low contrast because the renderer clamps the photograph's detail term —
+ * a knot is genuinely near-black and a blown highlight is not information — and
+ * a probe that sits on the clamp measures the clamp instead of the filter. A
+ * one-texel checkerboard is the other trap: bilinear reconstruction of it is
+ * itself an aliasing pattern, so the measurement moves with the sampling grid.
+ */
+function gratingTexture(size = 64, cycleTexels = 8) {
+  const data = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const v = 128 + 25 * Math.sin((2 * Math.PI * (x + y * 0.3)) / cycleTexels);
+      const i = (y * size + x) * 4;
+      data[i] = v;
+      data[i + 1] = v;
+      data[i + 2] = v;
+      data[i + 3] = 255;
+    }
+  }
+  return makeGrainTexture(data, size, size);
+}
+
+function flatTexture(size = 64) {
+  const data = new Uint8ClampedArray(size * size * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 128;
+    data[i + 1] = 128;
+    data[i + 2] = 128;
+    data[i + 3] = 255;
+  }
+  return makeGrainTexture(data, size, size);
+}
+
+describe('the mip pyramid', () => {
+  it('goes all the way down to one texel', () => {
+    const tex = flatTexture(64);
+    expect(tex.levels.map((l) => l.width)).toEqual([64, 32, 16, 8, 4, 2, 1]);
+    expect(tex.levels[tex.levels.length - 1]!.height).toBe(1);
+  });
+
+  it('box-filters, so a grating flattens towards its own mean', () => {
+    /* One cycle every eight texels is gone by the third halving, and what is
+       left must be the mean — not a phase of the original. A level that still
+       carries the grating is point-sampling, and the pyramid is decoration. */
+    const tex = gratingTexture(64, 8);
+    const swing = (lv: { data: Uint8ClampedArray }) => {
+      let lo = 255;
+      let hi = 0;
+      for (let i = 0; i < lv.data.length; i += 4) {
+        lo = Math.min(lo, lv.data[i]!);
+        hi = Math.max(hi, lv.data[i]!);
+      }
+      return hi - lo;
+    };
+    expect(swing(tex.levels[0]!)).toBeGreaterThan(40);
+    expect(swing(tex.levels[3]!)).toBeLessThan(6);
+  });
+
+  it('does not stop before a room-sized scene needs it to', () => {
+    /* A 512-texel tile covering ten inches, in a photograph where one screen
+       pixel covers an inch of floor, needs level 5.7. The pyramid that shipped
+       stopped at 4 and every pixel in the frame sampled a texture finer than it
+       could resolve — which is what made the photographic floor read as static.
+       Ten levels is 512 → 1; anything short of that reintroduces the bug. */
+    expect(flatTexture(512).levels.length).toBe(10);
+  });
+});
+
+describe('the mip level a pixel asks for', () => {
+  /* `tex` is explicit and has NO default. Writing a default here and then
+     passing `undefined` to mean "no photograph" is how a test quietly measures
+     a thing against itself: JavaScript fills the default in for an explicit
+     undefined, so both sides of the comparison would have had the grating. */
+  const spreadAt = (footprintIn: number, tex: ReturnType<typeof gratingTexture> | undefined) => {
+    const palette = woodPalette('white-oak', 'satin', tex);
+    const out: number[] = [];
+    /* Both axes, and an irrational-ish step, so the probe cannot lock to the
+       grating's own period and report a phase as a filter. */
+    for (let i = 0; i < 40; i += 1) {
+      for (let j = 0; j < 40; j += 1) {
+        const c = woodColourFrom(
+          palette,
+          { key: 11, edge: 1, along: i / 41, across: j / 41, axis: 0, lenIn: 45 },
+          5,
+          footprintIn,
+        );
+        out.push(c.r);
+      }
+    }
+    const mean = out.reduce((a, b) => a + b, 0) / out.length;
+    return Math.sqrt(out.reduce((a, b) => a + (b - mean) ** 2, 0) / out.length);
+  };
+
+  it('resolves the texture when one pixel covers less than one texel', () => {
+    /* A 64-texel tile over ten inches is 6.4 texels to the inch, so a pixel
+       covering a fiftieth of an inch is well inside level 0 and the grating
+       must still be there. */
+    expect(spreadAt(0.02, gratingTexture(64, 8))).toBeGreaterThan(5);
+  });
+
+  it('filters the texture away when one pixel covers many texels', () => {
+    /* Two inches per pixel is thirteen texels — more than a full cycle of the
+       grating — so nothing of the grating can survive, and what is left must be
+       what the renderer would have drawn with no photograph at all. Measuring
+       against THAT rather than against zero is the point: the drawn grain is
+       still in the picture and has no footprint term, so a bare threshold here
+       would be measuring the sine waves and calling it the filter. Detail that
+       survives a thirteen-texel pixel is the renderer inventing information the
+       scene cannot carry, which is exactly what aliasing is. */
+    const drawnOnly = spreadAt(2, undefined);
+    expect(Math.abs(spreadAt(2, gratingTexture(64, 8)) - drawnOnly)).toBeLessThan(0.2);
+  });
+
+  it('never gets noisier as the pixel gets larger', () => {
+    /* The property the shipped version broke. Its level came from the ratio
+       against the near edge of the quad, so the near field asked for level 0
+       while really covering twenty texels — and the whole pyramid sat four and
+       a half levels too fine for every pixel in the frame. */
+    const spreads = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 4].map((f) => spreadAt(f, gratingTexture(64, 8)));
+    for (let i = 1; i < spreads.length; i += 1) {
+      expect(spreads[i]!).toBeLessThanOrEqual(spreads[i - 1]! + 0.25);
+    }
+    expect(spreads[spreads.length - 1]!).toBeLessThan(spreads[0]! / 4);
+  });
+});
+
+describe('a board knows its own length', () => {
+  it('reports the run length for a straight board and the block for a parquet', () => {
+    /* `along` is a fraction, and the inches it stands for are the fraction
+       times THIS board's length. A straight run is nine widths; a herringbone
+       or chevron block is four. Reading nine for all of them stretched the
+       photograph along a parquet block by 9/4. */
+    const w = 5;
+    expect(samplePattern(1, 1, 'straight', w).lenIn).toBeCloseTo(w * RUN_LENGTH_RATIO, 6);
+    expect(samplePattern(1, 1, 'diagonal', w).lenIn).toBeCloseTo(w * RUN_LENGTH_RATIO, 6);
+    expect(samplePattern(1, 1, 'herringbone', w).lenIn).toBeCloseTo(w * BLOCK_RATIO, 6);
+    expect(samplePattern(1, 1, 'chevron', w).lenIn).toBeCloseTo(w * BLOCK_RATIO, 6);
+  });
+
+  it('measures the same inch of board wherever you sample it', () => {
+    /* along × lenIn is a distance, and stepping a tenth of an inch along the
+       plan must move it a tenth of an inch — within one board, and allowing
+       for the wrap at the end seam. */
+    const w = 5;
+    let checked = 0;
+    for (let t = 0; t < 400; t += 1) {
+      const a = samplePattern(3.1, 2 + t * 0.1, 'straight', w);
+      const b = samplePattern(3.1, 2 + (t + 1) * 0.1, 'straight', w);
+      if (a.key !== b.key) continue;
+      expect(b.along * b.lenIn - a.along * a.lenIn).toBeCloseTo(0.1, 6);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(300);
   });
 });
