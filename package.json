@@ -73,6 +73,7 @@
     "verify:allocation": "node scripts/verify-allocation.mjs",
     "verify:geo:green": "node scripts/verify-geo-green.mjs",
     "test:web": "pnpm --filter @ecowoods/web test",
+    "test:render-api": "node --experimental-strip-types ./services/render-api/src/keys.test.ts && node --experimental-strip-types --import ./services/render-api/src/register.mjs ./services/render-api/src/plate.test.ts",
     "seo:audit": "node scripts/audit-current-state.mjs",
     "seo:pricing": "node scripts/verify-pricing-source.mjs",
     "seo:claims": "node scripts/verify-claims.mjs",

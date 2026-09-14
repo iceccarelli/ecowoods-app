@@ -11,7 +11,14 @@ primary_region = "yyz"
 
 [env]
   PORT = "8080"
+  # The ceiling on a photograph a caller uploads to /v1/render.
   MAX_PIXELS = "4000000"
+  # And on a plate /v1/plate will draw. Separate because they are separate
+  # costs: an uploaded photograph is decoded once, a plate is rendered pixel by
+  # pixel, and 2.4M of the second is about a second and a half of CPU. It was
+  # only a default in the code; a limit that exists in one place is a limit
+  # nobody can see when they go looking for what this machine will do.
+  MAX_PLATE_PIXELS = "2400000"
 
 [http_service]
   internal_port = 8080

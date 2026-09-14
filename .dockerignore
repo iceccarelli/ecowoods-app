@@ -1,0 +1,36 @@
+# Docker reads .dockerignore FROM THE BUILD CONTEXT ROOT, and both images in
+# this repository are built with the repository root as their context:
+#
+#     fly deploy --dockerfile services/render-api/Dockerfile     (render API)
+#     docker compose up --build                                  (backend/Dockerfile, context: .)
+#
+# This file used to live at services/render-api/.dockerignore, next to the
+# Dockerfile it was written for, which reads as the obvious place and is a
+# place Docker never looks. It was silently dead: every build would have sent
+# node_modules, .next, .turbo, .git, the whole photograph gallery and the audit
+# corpus into the daemon and then into the image. Nothing failed, because
+# nothing about a fat image fails — it is just slow and large, which is exactly
+# the kind of defect that survives until someone measures an image.
+#
+# Keep it here. A copy next to a Dockerfile is decoration.
+
+**/node_modules
+**/.next
+**/.turbo
+.git
+
+# Build-time copies, not sources. vercel.json's buildCommand mirrors
+# apps/web/public into the repo-root public/ so Vercel serves it as the static
+# root (see docs/PUBLIC_ASSETS.md). After any local build that is a second copy
+# of every asset in the repository, and neither image serves static files.
+/public
+/.vercel
+
+# Photographs the API does not read. The render service samples its own PNG
+# tiles under services/render-api/textures; the gallery and the illustrations
+# are for the website and are the largest thing in the tree.
+apps/web/public/gallery
+apps/web/public/illustrations
+
+docs
+audit

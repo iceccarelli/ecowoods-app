@@ -32,6 +32,23 @@ shared-cpu-2x the table above says roughly 190 renders a minute at 1280×960
 before the queue builds, which is the rung to leave it on until p95 says
 otherwise.
 
+## Running its tests
+
+```bash
+pnpm test:render-api          # from the repository root
+```
+
+NOT `pnpm --filter @ecowoods/render-api test`, which answers "No projects
+matched the filters" — `services/*` is not in `pnpm-workspace.yaml`, so this
+package is not a workspace member and pnpm cannot see it.
+
+That is deliberate, and it is the same decision as the section below. Adding
+`services/*` to the workspace adds an importer entry to `pnpm-lock.yaml`, and
+this repository installs with `--frozen-lockfile`: a lockfile that does not
+match the workspace fails the install for everyone, everywhere, including every
+other agent working in this tree. A package with no dependencies gains nothing
+from being an importer. It gains a script at the root, which is what it has.
+
 ## Zero dependencies, deliberately
 
 `package.json` has no dependencies and there is no build step. The repository
