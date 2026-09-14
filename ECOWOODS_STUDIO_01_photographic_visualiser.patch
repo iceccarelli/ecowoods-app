@@ -1,0 +1,429 @@
+From daff25e4cd472738ebd430064d3fdd3a6b2852f9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 19:22:36 +0000
+Subject: [PATCH] feat(studio): STUDIO-01 - the room visualiser gets the
+ photographs too
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+CAM-02 made the renderer able to carry a photograph. /design started using it.
+The room visualiser — the feature a person points at their own living room —
+still did not: compositeFloor was called with no `grain`, so /floor-studio has
+been drawing the same two-pigment floor it always drew while the page next door
+draws oak. One product, two answers, which is the thing the shared renderer
+exists to prevent.
+
+It costs three times a drawn composite. Measured at studio size, 960x640:
+
+    drawn          75ms
+    photographic  212ms
+    buildFloorMask 62ms   (already cached across configuration changes)
+
+A fifth of a second spent in one call is a fifth of a second in which the page
+ignores every click, and on a phone it is closer to a second. So compositeFloor
+is now resumable in the same way renderFloorPlate is: `into` a buffer, `rows` a
+band at a time. The studio renders the drawn floor synchronously as before — no
+regression, on screen before the next paint, and what a person gets if the tile
+never arrives — then fills in the photographic one a band per animation frame
+and swaps it in WHOLE. Never half: a floor that is oak at the top and drawn at
+the bottom has a seam across it that reads as a defect in the room rather than
+as progress.
+
+TWO THINGS THE BANDING HAD TO GET RIGHT, BOTH TESTED
+
+The buffer starts as a COPY of the photograph, not as a blank. The rows a band
+has not reached yet have to still be the room; a blank one is a hole in
+somebody's living room. That is the only way to use this wrong, which is why
+there is a createCompositeBuffer rather than a note saying to copy it yourself.
+
+And `painted` — the fraction of the quad actually covered, which is what
+decides whether a visitor is told their photograph is mostly furniture — is now
+reported over the rows THIS call was asked for, alongside a new `considered`
+count. The top band of a room is mostly wall and would drag an unweighted
+average down on its own. Weighted by `considered` the banded figure comes out
+equal to the whole-frame one to ten decimal places, on a room with a rug in it
+so the number is not trivially 1.
+
+Byte-identical to a single pass across all four patterns, with and without a
+photograph, with a shared mask and without.
+
+THE LIVE CAMERA VIEW STAYS DRAWN, AND THAT IS A DECISION
+
+LiveRoom composites inside a requestAnimationFrame tick against an adaptive
+resolution ladder. Tripling the per-frame cost there would not drop frames — the
+ladder does not let it — it would pay for the photograph by dropping RESOLUTION,
+by roughly a factor of three. A live camera view is being judged on whether the
+floor tracks the room, and a sharp drawn floor that holds still against the
+skirting board answers that question better than a soft photographic one at a
+third of the size, where the grain is the first thing the downscale takes
+anyway. The reasoning is written into LiveRoom.tsx so the next person to look
+at it does not have to rediscover the measurement, along with what to change if
+it is ever revisited: not a flag, a smaller tile and a fresh ladder reading.
+
+65 of 66 guards. parse-scan clean. verify:css cannot run without an install.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .../components/floor-studio/FloorStudio.tsx   | 68 +++++++++++++-
+ .../app/components/floor-studio/LiveRoom.tsx  | 19 ++++
+ apps/web/lib/floor-studio/render.test.ts      | 91 +++++++++++++++++++
+ apps/web/lib/floor-studio/render.ts           | 62 ++++++++++---
+ 4 files changed, 227 insertions(+), 13 deletions(-)
+
+diff --git a/apps/web/app/components/floor-studio/FloorStudio.tsx b/apps/web/app/components/floor-studio/FloorStudio.tsx
+index 1240b3b..692d061 100644
+--- a/apps/web/app/components/floor-studio/FloorStudio.tsx
++++ b/apps/web/app/components/floor-studio/FloorStudio.tsx
+@@ -30,7 +30,8 @@ import {
+   type FloorConfiguration,
+ } from '@/lib/floor-studio/catalog';
+ import { FEELS, ROOM_TYPES, matchFloors, type Match } from '@/lib/floor-studio/match';
+-import { compositeFloor } from '@/lib/floor-studio/render';
++import { compositeFloor, createCompositeBuffer, type RenderResult } from '@/lib/floor-studio/render';
++import { loadGrainTexture } from '@/lib/floor-studio/grain-loader';
+ import { decodePhoto, paintPixels, pixelsToDataUrl } from '@/lib/floor-studio/render-canvas';
+ import { drawSignature, loadMark } from '@/lib/floor-studio/signature';
+ import { EW_MARK } from '@/lib/brand';
+@@ -240,7 +241,10 @@ export default function FloorStudio() {
+   const ground = useMemo(() => photo ?? swatchGround(960, 640), [photo]);
+   const activeQuad = photo ? quad : FULL_QUAD;
+ 
+-  const render = useMemo(
++  /* THE DRAWN FLOOR, IMMEDIATELY.
++     Synchronous and unchanged: it needs no photograph, it is on screen before
++     the next paint, and it is what a person gets if the tile never arrives. */
++  const drawn = useMemo(
+     () =>
+       compositeFloor(ground, activeQuad, design.config, {
+         squareFeet: design.squareFeet,
+@@ -249,6 +253,66 @@ export default function FloorStudio() {
+     [ground, activeQuad, design.config, design.squareFeet, boardScale],
+   );
+ 
++  /* THE PHOTOGRAPHED FLOOR, WHEN IT HAS FINISHED ARRIVING.
++     The photograph triples the cost of a composite — measured at studio size,
++     75ms drawn against 212ms with the tile — and a fifth of a second spent in
++     one call is a fifth of a second in which the page ignores every click. So
++     it is rendered a band of rows per animation frame, inside a budget, and
++     swapped in when it is whole. Never half: a floor that is oak at the top
++     and drawn at the bottom has a seam across it that reads as a defect in the
++     room rather than as progress. */
++  const [photographic, setPhotographic] = useState<RenderResult | null>(null);
++  useEffect(() => {
++    setPhotographic(null);
++    let cancelled = false;
++    let raf = 0;
++    void loadGrainTexture(design.config.productId).then((grain) => {
++      if (cancelled || !grain) return;
++      const buffer = createCompositeBuffer(ground);
++      let row = 0;
++      let painted = 0;
++      let considered = 0;
++      const band = Math.max(16, Math.round(ground.height / 10));
++      const step = () => {
++        if (cancelled) return;
++        const started = performance.now();
++        while (row < ground.height && performance.now() - started < 10) {
++          const to = Math.min(ground.height, row + band);
++          const part = compositeFloor(ground, activeQuad, design.config, {
++            squareFeet: design.squareFeet,
++            boardScale,
++            grain,
++            into: buffer,
++            rows: [row, to],
++          });
++          /* Weighted by what each band actually looked at. The top of a room is
++             mostly wall and would otherwise drag the figure down on its own —
++             and that figure is what decides whether the visitor is told their
++             photograph is mostly furniture. */
++          painted += part.painted * part.considered;
++          considered += part.considered;
++          row = to;
++        }
++        if (row < ground.height) {
++          raf = requestAnimationFrame(step);
++          return;
++        }
++        setPhotographic({
++          pixels: buffer,
++          painted: considered === 0 ? 0 : painted / considered,
++          considered,
++        });
++      };
++      raf = requestAnimationFrame(step);
++    });
++    return () => {
++      cancelled = true;
++      cancelAnimationFrame(raf);
++    };
++  }, [ground, activeQuad, design.config, design.squareFeet, boardScale]);
++
++  const render = photographic ?? drawn;
++
+ 
+   const visualisedRef = useRef<string | null>(null);
+   useEffect(() => {
+diff --git a/apps/web/app/components/floor-studio/LiveRoom.tsx b/apps/web/app/components/floor-studio/LiveRoom.tsx
+index a85bb8b..9de3f37 100644
+--- a/apps/web/app/components/floor-studio/LiveRoom.tsx
++++ b/apps/web/app/components/floor-studio/LiveRoom.tsx
+@@ -50,6 +50,25 @@ import type { Pixels, Quad } from '@/lib/floor-studio/room';
+  * analysis size climbs and falls with what the device is actually managing —
+  * see lib/floor-studio/live.ts, where the rule lives as a pure function with
+  * its own tests, because a frame loop cannot be tested and a number can.
++ *
++ * THE LIVE VIEW IS DRAWN, NOT PHOTOGRAPHED, AND THAT IS THE DECISION
++ *
++ * The renderer can sample a photograph of the species — /design and the studio
++ * still both do, and the difference is not subtle. Here it is deliberately off,
++ * and the ladder above is exactly why. Measured, the photograph costs about
++ * three times a drawn composite: 75ms against 212ms at 960x640. The ladder
++ * would not drop frames over that, it would pay for it by dropping RESOLUTION,
++ * and it would drop it by roughly a factor of three.
++ *
++ * A live camera view is being judged on whether the floor tracks the room. A
++ * sharp drawn floor that holds still against the skirting board answers that
++ * question; a soft photographic one at a third of the resolution does not, and
++ * the grain is the first thing lost to the downscale anyway. So the live view
++ * stays drawn and the STILL is photographed — which is the frame a person
++ * screenshots, sends to their partner and looks at twice.
++ *
++ * If this is ever revisited: the thing to change is not this flag. It is to
++ * give the live path its own smaller tile and measure the ladder again.
+  */
+ 
+ export type LiveRoomProps = {
+diff --git a/apps/web/lib/floor-studio/render.test.ts b/apps/web/lib/floor-studio/render.test.ts
+index 1644d59..866fc82 100644
+--- a/apps/web/lib/floor-studio/render.test.ts
++++ b/apps/web/lib/floor-studio/render.test.ts
+@@ -18,6 +18,8 @@ import {
+   planSizeInches,
+   samplePattern,
+   solveHomography,
++  buildFloorMask,
++  createCompositeBuffer,
+   woodColourAt,
+   woodColourFrom,
+   woodPalette,
+@@ -514,3 +516,92 @@ describe('a board knows its own length', () => {
+     expect(checked).toBeGreaterThan(300);
+   });
+ });
++
++
++describe('a composite done in bands', () => {
++  /* The studio renders the photographic floor a band of rows per animation
++     frame, because at studio size the photograph triples the cost — 75ms drawn
++     against 212ms measured — and a fifth of a second in one call is a fifth of
++     a second in which the page ignores every click.
++
++     That is only safe if a band depends on nothing carried over from the last
++     one. If it did, the floor would show seams wherever an animation frame
++     happened to end, and they would move around with the device. */
++  const room = frame(180, 140, (x, y) => {
++    if (y < 56) return { r: 238, g: 235, b: 230 };
++    const v = Math.round(172 * (0.82 + 0.28 * ((y - 56) / 84)) * (1 + 0.08 * Math.sin(x * 0.13)));
++    /* Something standing on it, so `painted` is not trivially 1 and the
++       weighting the caller has to do is actually exercised. */
++    if (y > 96 && y < 126 && x > 42 && x < 138) return { r: 214, g: 212, b: 206 };
++    return { r: v, g: Math.round(v * 0.94), b: Math.round(v * 0.86) };
++  });
++  const QUAD: Quad = [
++    { x: 0.08, y: 0.4 },
++    { x: 0.92, y: 0.4 },
++    { x: 1.2, y: 1 },
++    { x: -0.2, y: 1 },
++  ];
++
++  it('is the same picture as one done in a single pass', () => {
++    const mask = buildFloorMask(room, QUAD, {});
++    for (const patternId of ['straight', 'diagonal', 'herringbone', 'chevron']) {
++      const config = { ...CONFIG, patternId };
++      const whole = compositeFloor(room, QUAD, config, { squareFeet: 400, mask });
++      const buffer = createCompositeBuffer(room);
++      for (let y = 0; y < room.height; y += 23) {
++        compositeFloor(room, QUAD, config, {
++          squareFeet: 400,
++          mask,
++          into: buffer,
++          rows: [y, Math.min(room.height, y + 23)],
++        });
++      }
++      let differing = 0;
++      for (let i = 0; i < whole.pixels.data.length; i += 1) {
++        if (whole.pixels.data[i] !== buffer.data[i]) differing += 1;
++      }
++      expect(differing, patternId).toBe(0);
++    }
++  });
++
++  it('reports a painted fraction the caller can add up correctly', () => {
++    /* `painted` is over the rows THIS call was asked for. The top band of a
++       room is mostly wall; averaging the bands unweighted would drag the figure
++       down on its own, and that figure is what decides whether a visitor is
++       told their photograph is mostly furniture. Weighted by `considered` it
++       comes out exactly equal to the whole-frame answer. */
++    const mask = buildFloorMask(room, QUAD, {});
++    const whole = compositeFloor(room, QUAD, CONFIG, { squareFeet: 400, mask });
++    const buffer = createCompositeBuffer(room);
++    let painted = 0;
++    let considered = 0;
++    for (let y = 0; y < room.height; y += 23) {
++      const part = compositeFloor(room, QUAD, CONFIG, {
++        squareFeet: 400,
++        mask,
++        into: buffer,
++        rows: [y, Math.min(room.height, y + 23)],
++      });
++      painted += part.painted * part.considered;
++      considered += part.considered;
++    }
++    expect(considered).toBe(whole.considered);
++    expect(considered).toBeGreaterThan(0);
++    /* And the rug is actually being protected, or this measures nothing. */
++    expect(whole.painted).toBeLessThan(0.95);
++    expect(painted / considered).toBeCloseTo(whole.painted, 10);
++  });
++
++  it('starts from the room, so an unfinished band is not a hole in it', () => {
++    /* The one way to use this wrong is to hand it a blank buffer. The rows a
++       band has not reached yet have to still be the photograph. */
++    const buffer = createCompositeBuffer(room);
++    compositeFloor(room, QUAD, CONFIG, { squareFeet: 400, into: buffer, rows: [0, 20] });
++    for (let y = 100; y < room.height; y += 1) {
++      for (let x = 0; x < room.width; x += 7) {
++        const i = (y * room.width + x) * 4;
++        expect(buffer.data[i], `row ${y}`).toBe(room.data[i]);
++      }
++    }
++  });
++});
+diff --git a/apps/web/lib/floor-studio/render.ts b/apps/web/lib/floor-studio/render.ts
+index 48a605a..0306292 100644
+--- a/apps/web/lib/floor-studio/render.ts
++++ b/apps/web/lib/floor-studio/render.ts
+@@ -925,6 +925,24 @@ export type RenderOptions = {
+   /** A mask already built for this frame — live video reuses one across
+       configuration changes instead of recomputing per repaint. */
+   mask?: FloorMask;
++  /**
++   * Reuse this buffer instead of allocating one, and paint only these rows.
++   *
++   * A composite at studio size is a fifth of a second of arithmetic, and a
++   * fifth of a second spent in one call is a fifth of a second in which the
++   * page ignores every click. So the render is resumable: the caller seeds a
++   * buffer with createCompositeBuffer, asks for a band of rows, paints it,
++   * yields to the next animation frame, and asks for the next.
++   *
++   * The buffer must START as a copy of the source photograph, which is what
++   * createCompositeBuffer gives you — the rows this call does not touch are
++   * meant to still be the room, not transparent black. Passing a blank buffer
++   * is the one way to use this wrong and it is the reason there is a
++   * constructor for it rather than a note saying to copy it yourself.
++   */
++  into?: Pixels;
++  /** Half-open row range, [from, to). Defaults to the whole frame. */
++  rows?: [number, number];
+   /**
+    * The photograph of this species, decoded. Optional everywhere: without it
+    * the synthesised grain runs exactly as it did, so a slow network shows a
+@@ -937,8 +955,17 @@ export type MaskOptions = Pick<RenderOptions, 'chromaTolerance' | 'luminanceSigm
+ 
+ export type RenderResult = {
+   pixels: Pixels;
+-  /** Fraction of the quad actually painted. Low means heavy occlusion. */
++  /**
++   * Fraction of the quad actually painted. Low means heavy occlusion.
++   *
++   * OVER THE ROWS THIS CALL WAS ASKED FOR, which for a whole-frame render is
++   * the frame. A caller rendering in bands must weight by `considered` to get
++   * the figure for the picture — the top band of a room is mostly wall and
++   * would otherwise drag the average down on its own.
++   */
+   painted: number;
++  /** How many pixels inside the quad this call looked at. See `painted`. */
++  considered: number;
+   /** Why nothing was painted, where that happened. */
+   failure?: 'degenerate-quad' | 'empty-region';
+ };
+@@ -1639,21 +1666,34 @@ function floorCoverageAt(px: Pixels, x: number, y: number, mask: FloorMask, cell
+  * Returns a NEW Pixels; the input is never mutated, because the original is
+  * the before half of the before/after and the visitor will drag between them.
+  */
++/**
++ * A buffer for compositeFloor to paint bands into.
++ *
++ * A COPY OF THE PHOTOGRAPH, not a blank. The rows a band does not touch have to
++ * still be the room — a floor half-painted over transparent black is a hole in
++ * somebody's living room, and it is what a naive `new Uint8ClampedArray(...)`
++ * gives you.
++ */
++export function createCompositeBuffer(px: Pixels): Pixels {
++  return { data: new Uint8ClampedArray(px.data), width: px.width, height: px.height };
++}
++
+ export function compositeFloor(
+   px: Pixels,
+   quad: Quad,
+   config: FloorConfiguration,
+   options: RenderOptions,
+ ): RenderResult {
+-  const out: Pixels = {
+-    data: new Uint8ClampedArray(px.data),
+-    width: px.width,
+-    height: px.height,
+-  };
++  const out: Pixels =
++    options.into && options.into.width === px.width && options.into.height === px.height
++      ? options.into
++      : { data: new Uint8ClampedArray(px.data), width: px.width, height: px.height };
++  const rowFrom = Math.max(0, Math.min(px.height, options.rows ? options.rows[0] : 0));
++  const rowTo = Math.max(rowFrom, Math.min(px.height, options.rows ? options.rows[1] : px.height));
+ 
+   const width = widthById(config.widthId);
+   const product = productById(config.productId);
+-  if (!width || !product) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
++  if (!width || !product) return { pixels: out, painted: 0, considered: 0, failure: 'degenerate-quad' };
+ 
+   const plan = planSizeInches(options.squareFeet, options.boardScale ?? 1);
+   const planQuad: Quad = [
+@@ -1666,7 +1706,7 @@ export function compositeFloor(
+   /* Pixels are given in normalised coordinates so the map is resolution
+      independent — the same quad renders the same floor at any preview size. */
+   const m = solveHomography(quad, planQuad);
+-  if (!m) return { pixels: out, painted: 0, failure: 'degenerate-quad' };
++  if (!m) return { pixels: out, painted: 0, considered: 0, failure: 'degenerate-quad' };
+ 
+   /* The mask decides WHERE, and carries the robust luminance centre the
+      shading is measured against. One pass, reusable across a configuration
+@@ -1675,7 +1715,7 @@ export function compositeFloor(
+   if (mask.medianLuminance === 0 && mask.occluded === 0) {
+     let any = false;
+     for (let c = 0; c < mask.floor.length && !any; c += 1) if (mask.floor[c] === 1) any = true;
+-    if (!any) return { pixels: out, painted: 0, failure: 'empty-region' };
++    if (!any) return { pixels: out, painted: 0, considered: 0, failure: 'empty-region' };
+   }
+   const meanLum = Math.max(0.01, mask.medianLuminance);
+ 
+@@ -1703,7 +1743,7 @@ export function compositeFloor(
+   const m21 = m[7];
+   const m22 = m[8];
+ 
+-  for (let y = 0; y < px.height; y += 1) {
++  for (let y = rowFrom; y < rowTo; y += 1) {
+     const ny = (y + 0.5) / px.height;
+     const cellRow = ((y / CELL) | 0) * mask.cols;
+     for (let x = 0; x < px.width; x += 1) {
+@@ -1772,5 +1812,5 @@ export function compositeFloor(
+     }
+   }
+ 
+-  return { pixels: out, painted: considered === 0 ? 0 : painted / considered };
++  return { pixels: out, painted: considered === 0 ? 0 : painted / considered, considered };
+ }
+-- 
+2.43.0
+
