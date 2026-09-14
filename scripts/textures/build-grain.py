@@ -58,10 +58,13 @@ FIVE DECISIONS, AND WHY EACH ONE IS NOT AUTOMATIC
    feet. Three inches is above every feature of the wood and below anything the
    room does.
 
-5. IT TILES WITHOUT A MIRROR. Reflecting a crop makes its edges match, and makes
-   a chevron out of any diagonal in it — which then appears inside the straight
-   pattern. Wood grain has no symmetry. Blending against a half-period roll
-   gives edges that match by construction and no symmetry at all.
+5. IT TILES WITHOUT A MIRROR, AND WITHOUT A PATCHWORK. Reflecting a crop makes
+   its edges match, and makes a chevron out of any diagonal in it — which then
+   appears inside the straight pattern. Wood grain has no symmetry. Blending
+   against a half-period roll of the whole image, which is what this did
+   instead, matches the edges and leaves a rectangular patch boundary across
+   the middle of the tile; see seamless() for why that was invisible until the
+   tiles got wider. Only the edge bands are touched now.
 
 WHAT THE INCHES ARE, HONESTLY
 
@@ -91,8 +94,12 @@ FLATTEN_INCHES = 3.0
 CROPS = [
     ('white-oak', 'white-oak-wideplank-02-detail', (0.54, 0.06, 0.97, 0.94), 0.48,
      'the right-hand board: no seam and no bevel in frame, and the sharper of the two'),
-    ('red-oak', 'red-oak-wideplank-02-detail', (0.55, 0.32, 0.96, 0.97), 0.45,
-     'the right-hand board below the window shadow that crosses the top of the frame'),
+    ('red-oak', 'red-oak-wideplank-02-detail', (0.53, 0.34, 0.99, 0.98), 0.49,
+     'the right-hand board BELOW the window shadow. The full board is wider and '
+     'red oak wants width — its cathedral figure is board-scale — but the shadow '
+     'across the top of that frame has an edge too sharp for a three-inch flatten '
+     'to divide out, and a dark diagonal printed across every plank in the room '
+     'is a worse defect than a tile that repeats'),
     ('black-walnut', 'walnut-wideplank-02-detail', (0.02, 0.60, 0.46, 0.98), 0.40,
      'the lower-left quadrant, clear of the mitred joint that runs across the top right'),
     ('hard-maple', 'maple-herringbone-02-detail', (0.03, 0.08, 0.40, 0.75), 0.34,
@@ -173,19 +180,88 @@ def flatten(im: Image.Image, px_per_inch: float) -> Image.Image:
     return Image.fromarray(np.clip(a * mean / np.maximum(b, 1.0), 0, 255).astype(np.uint8))
 
 
-def smoothstep(t):
+def _smoothstep(t):
     return t * t * (3 - 2 * t)
 
 
-def seamless(a: np.ndarray) -> np.ndarray:
-    h, w, _ = a.shape
-    x = np.abs(np.linspace(-1, 1, w, endpoint=False) + 1.0 / w)
-    y = np.abs(np.linspace(-1, 1, h, endpoint=False) + 1.0 / h)
-    wx = smoothstep(np.clip((0.7 - x) / 0.7, 0, 1))[None, :, None]
-    wy = smoothstep(np.clip((0.7 - y) / 0.7, 0, 1))[:, None, None]
-    rolled = np.roll(np.roll(a, w // 2, axis=1), h // 2, axis=0)
-    m = wx * wy
-    return np.clip(a * m + rolled * (1 - m), 0, 255).astype(np.uint8)
+def _wrap_axis(a: np.ndarray, axis: int, band_frac: float) -> np.ndarray:
+    """Make one axis wrap, by fading the edges into a half-period roll.
+
+    Rolling is what makes this correct rather than approximately correct. A
+    cyclic roll by half the length is continuous across the tile boundary by
+    construction — the two columns that meet there came from the middle of the
+    original, where they were already neighbours. So a weight that reaches one
+    AT the edge hands the boundary entirely to content that already matches
+    across it, and there is nothing left to match up by hand.
+
+    A cross-fade of each edge against the opposite edge, which is the obvious
+    thing to write and what this was for an afternoon, does NOT have that
+    property: the first column ends up a mixture of two columns and the last
+    column a mixture of two DIFFERENT ones, and the seam metric said so — 16x
+    the local contrast on red oak while looking fine to me in a contact sheet.
+    """
+    n = a.shape[axis]
+    band = max(2, int(round(n * band_frac)))
+    i = np.arange(n, dtype=np.float32)
+    edge = np.minimum(i, n - 1 - i) / band
+    w = 1.0 - _smoothstep(np.clip(edge, 0.0, 1.0))        # 1 at the edges, 0 inside
+    shape = [1, 1, 1]
+    shape[axis] = n
+    w = w.reshape(shape)
+    rolled = np.roll(a, n // 2, axis=axis)
+    return a * (1 - w) + rolled * w
+
+
+def seamless(a: np.ndarray, band_frac: float = 0.16) -> np.ndarray:
+    """Make the tile wrap on both axes.
+
+    ONE AXIS AT A TIME, and that is the whole correction over the version this
+    replaces. That one multiplied an x weight by a y weight, so the boundary
+    between "mostly original" and "mostly rolled" traced a RECTANGLE across the
+    middle of the tile, and two different pieces of wood either side of a
+    rectangle is a patchwork. It was invisible while the tiles repeated eight
+    times across a board and unmissable the moment one repeated one and a half
+    times.
+
+    Done in sequence, each pass's weight depends on one coordinate only, so
+    neither leaves a closed boundary anywhere. The second pass preserves what
+    the first established: rolling along y cannot break periodicity along x,
+    and a blend of two x-periodic images is x-periodic.
+
+    Mirroring would also make the edges match, and is not used: reflecting a
+    crop makes a chevron out of any diagonal in it, which then appears inside
+    the straight pattern. Wood grain has no symmetry.
+    """
+    out = _wrap_axis(a.astype(np.float32), 1, band_frac)
+    out = _wrap_axis(out, 0, band_frac)
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def seam_step(a: np.ndarray) -> tuple:
+    """How visible the wrap is, against the tile's own contrast.
+
+    The first version of this measured the step across the seam as a multiple of
+    the step between neighbouring interior columns, which sounds right and is
+    not. Grain runs along the tile, so neighbouring ROWS are nearly identical —
+    on hard maple the mean row-to-row difference is 0.22 grey levels — and
+    dividing by a number that small turns a seam of 0.87 out of 255 into a
+    "3.95x" that reads like a failure. It is not one: 0.87 grey levels is below
+    what a display can show.
+
+    So the denominator is the tile's own standard deviation, which is the
+    contrast a person actually sees when they look at the wood. A seam a fifth
+    of that is invisible against the grain beside it; the set currently runs
+    between 0.04 and 0.18. The neighbour ratio is still recorded, because it is
+    the more sensitive of the two and a regression will move it first.
+    """
+    f = a.astype(np.float32)
+    std = max(1e-6, float(f.reshape(-1, f.shape[-1]).std()))
+    col_seam = float(np.abs(f[:, 0, :] - f[:, -1, :]).mean())
+    row_seam = float(np.abs(f[0, :, :] - f[-1, :, :]).mean())
+    col_local = max(1e-6, float(np.abs(np.diff(f, axis=1)).mean()))
+    row_local = max(1e-6, float(np.abs(np.diff(f, axis=0)).mean()))
+    return (round(col_seam / std, 3), round(row_seam / std, 3),
+            round(col_seam / col_local, 2), round(row_seam / row_local, 2))
 
 
 # ── the recipe ────────────────────────────────────────────────────────────────
@@ -227,6 +303,7 @@ def build(product, photo, box, board_frac, why):
     inches_across = round(inches_across_box * sw / cw, 2)
     inches_along = round(inches_across * height / TILE_WIDTH, 2)
     final, coherence = grain_angle(tile)
+    seam_x, seam_y, near_x, near_y = seam_step(np.asarray(tile))
     return tile, {
         'product': product,
         'file': f'grain-{product}.webp',
@@ -237,6 +314,10 @@ def build(product, photo, box, board_frac, why):
         'grainDegBefore': round(before, 1),
         'grainDegAfter': round(final, 1),
         'coherence': round(coherence, 3),
+        'seamAcross': seam_x,
+        'seamAlong': seam_y,
+        'seamVsNeighbourAcross': near_x,
+        'seamVsNeighbourAlong': near_y,
         'width': TILE_WIDTH,
         'height': height,
         'inchesAcross': inches_across,
@@ -246,10 +327,53 @@ def build(product, photo, box, board_frac, why):
     }
 
 
+
+TABLE = 'apps/web/lib/floor-studio/grain.ts'
+TABLE_START = '// ── generated by scripts/textures/build-grain.py ──────────────────────────────'
+TABLE_END = '// ── end generated ────────────────────────────────────────────────────────────'
+
+
+def write_table(manifest) -> None:
+    """Rewrite the table in grain.ts between its two markers.
+
+    The bundle cannot read a JSON file at module scope, and fetching six small
+    integers over the network before the first floor can be drawn is a round
+    trip on the critical path. So the numbers exist twice — and two copies of a
+    number are only safe if one of them is never typed by a person. This script
+    writes both, and grain.test.ts asserts they still agree, which catches the
+    one remaining way they can drift: somebody editing the generated block by
+    hand instead of re-running this.
+    """
+    rows = []
+    for e in manifest:
+        rows.append(
+            f"  {{\n"
+            f"    product: '{e['product']}',\n"
+            f"    file: '{e['file']}',\n"
+            f"    width: {e['width']},\n"
+            f"    height: {e['height']},\n"
+            f"    inchesAcross: {e['inchesAcross']},\n"
+            f"    inchesAlong: {e['inchesAlong']},\n"
+            f"  }},"
+        )
+    block = (f'{TABLE_START}\n'
+             'export const GRAIN_TILES: readonly GrainTile[] = [\n'
+             + '\n'.join(rows) + '\n'
+             '] as const;\n'
+             f'{TABLE_END}')
+
+    src = open(TABLE, encoding='utf-8').read()
+    a = src.index(TABLE_START)
+    b = src.index(TABLE_END) + len(TABLE_END)
+    open(TABLE, 'w', encoding='utf-8').write(src[:a] + block + src[b:])
+    print(f'  {TABLE} rewritten from the manifest')
+
+
 def main() -> int:
     os.makedirs(OUT, exist_ok=True)
     manifest = []
     worst = 0.0
+    worst_seam = 0.0
     for product, photo, box, board_frac, why in CROPS:
         try:
             tile, entry = build(product, photo, box, board_frac, why)
@@ -262,21 +386,30 @@ def main() -> int:
         entry['bytes'] = os.path.getsize(path)
         manifest.append(entry)
         worst = max(worst, off_vertical(entry['grainDegAfter']))
+        worst_seam = max(worst_seam, entry['seamAcross'], entry['seamAlong'])
         print(f'  grain-{product:<13} {entry["width"]}x{entry["height"]:<5} '
               f'{entry["inchesAcross"]:>5}" x {entry["inchesAlong"]:>6}"  '
               f'grain {entry["grainDegBefore"]:>6}° → {entry["rotateDeg"]:>6}° → '
               f'{entry["grainDegAfter"]:>6}°  coh {entry["coherence"]:.2f}  '
+              f'seam {entry["seamAcross"]:.3f}/{entry["seamAlong"]:.3f}  '
               f'{entry["bytes"]:6} B')
 
     with open(f'{OUT}/grain-manifest.json', 'w') as fh:
         json.dump(manifest, fh, indent=2)
         fh.write('\n')
 
+    write_table(manifest)
+
     print(f'\n{len(manifest)} species tiles → {OUT}')
     print(f'worst grain angle off vertical: {worst:.1f}°')
+    print(f'worst seam, as a fraction of the tile\'s own contrast: {worst_seam:.3f}')
     if worst > 5.0:
         print('  REFUSING: a tile whose grain does not run along the board is the defect '
               'this script exists to remove.', file=sys.stderr)
+        return 1
+    if worst_seam > 0.25:
+        print('  REFUSING: a tile whose wrap stands out against its own grain will print '
+              'that line across every board in the room.', file=sys.stderr)
         return 1
     return 0
 

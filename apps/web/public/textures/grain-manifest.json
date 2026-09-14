@@ -12,8 +12,12 @@
     "why": "the right-hand board: no seam and no bevel in frame, and the sharper of the two",
     "rotateDeg": -18.1,
     "grainDegBefore": 71.9,
-    "grainDegAfter": -87.6,
-    "coherence": 0.68,
+    "grainDegAfter": -87.0,
+    "coherence": 0.687,
+    "seamAcross": 0.129,
+    "seamAlong": 0.127,
+    "seamVsNeighbourAcross": 1.01,
+    "seamVsNeighbourAlong": 2.09,
     "width": 512,
     "height": 1538,
     "inchesAcross": 3.26,
@@ -24,34 +28,38 @@
       142,
       119
     ],
-    "bytes": 71194
+    "bytes": 76046
   },
   {
     "product": "red-oak",
     "file": "grain-red-oak.webp",
     "source": "red-oak-wideplank-02-detail.webp",
     "crop": [
-      0.55,
-      0.32,
-      0.96,
-      0.97
+      0.53,
+      0.34,
+      0.99,
+      0.98
     ],
-    "why": "the right-hand board below the window shadow that crosses the top of the frame",
-    "rotateDeg": 0.0,
-    "grainDegBefore": -89.0,
-    "grainDegAfter": -89.0,
-    "coherence": 0.768,
+    "why": "the right-hand board BELOW the window shadow. The full board is wider and red oak wants width \u2014 its cathedral figure is board-scale \u2014 but the shadow across the top of that frame has an edge too sharp for a three-inch flatten to divide out, and a dark diagonal printed across every plank in the room is a worse defect than a tile that repeats",
+    "rotateDeg": 1.1,
+    "grainDegBefore": -88.9,
+    "grainDegAfter": 90.0,
+    "coherence": 0.786,
+    "seamAcross": 0.098,
+    "seamAlong": 0.02,
+    "seamVsNeighbourAcross": 1.14,
+    "seamVsNeighbourAlong": 0.76,
     "width": 512,
-    "height": 1538,
-    "inchesAcross": 3.3,
-    "inchesAlong": 9.91,
-    "inchesBasis": "a wide plank is 7in and this board fills 0.45 of the frame \u2014 an estimate, read off the photograph",
+    "height": 1537,
+    "inchesAcross": 2.96,
+    "inchesAlong": 8.89,
+    "inchesBasis": "a wide plank is 7in and this board fills 0.49 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      201,
-      142,
-      92
+      199,
+      140,
+      90
     ],
-    "bytes": 78208
+    "bytes": 76836
   },
   {
     "product": "black-walnut",
@@ -66,19 +74,23 @@
     "why": "the lower-left quadrant, clear of the mitred joint that runs across the top right",
     "rotateDeg": -51.2,
     "grainDegBefore": 38.8,
-    "grainDegAfter": 88.4,
-    "coherence": 0.487,
+    "grainDegAfter": 88.5,
+    "coherence": 0.459,
+    "seamAcross": 0.045,
+    "seamAlong": 0.032,
+    "seamVsNeighbourAcross": 1.37,
+    "seamVsNeighbourAlong": 1.54,
     "width": 512,
     "height": 1536,
     "inchesAcross": 2.45,
     "inchesAlong": 7.35,
     "inchesBasis": "a wide plank is 7in and this board fills 0.4 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      132,
-      96,
-      75
+      131,
+      95,
+      74
     ],
-    "bytes": 31764
+    "bytes": 31066
   },
   {
     "product": "hard-maple",
@@ -93,8 +105,12 @@
     "why": "the left-hand column of blocks, above the joint that crosses the lower middle",
     "rotateDeg": -44.8,
     "grainDegBefore": 45.2,
-    "grainDegAfter": -88.5,
-    "coherence": 0.326,
+    "grainDegAfter": -88.2,
+    "coherence": 0.312,
+    "seamAcross": 0.028,
+    "seamAlong": 0.025,
+    "seamVsNeighbourAcross": 1.45,
+    "seamVsNeighbourAlong": 1.69,
     "width": 512,
     "height": 1540,
     "inchesAcross": 2.64,
@@ -105,7 +121,7 @@
       180,
       149
     ],
-    "bytes": 19930
+    "bytes": 19334
   },
   {
     "product": "hickory",
@@ -120,19 +136,23 @@
     "why": "the second board: hickory character marks without a seam, which is the species",
     "rotateDeg": 0.0,
     "grainDegBefore": -89.6,
-    "grainDegAfter": -89.8,
-    "coherence": 0.684,
+    "grainDegAfter": -89.7,
+    "coherence": 0.689,
+    "seamAcross": 0.067,
+    "seamAlong": 0.032,
+    "seamVsNeighbourAcross": 1.17,
+    "seamVsNeighbourAlong": 1.32,
     "width": 512,
     "height": 1538,
     "inchesAcross": 5.81,
     "inchesAlong": 17.45,
     "inchesBasis": "a wide plank is 7in and this board fills 0.33 of the frame \u2014 an estimate, read off the photograph",
     "mean": [
-      164,
-      120,
-      79
+      163,
+      119,
+      78
     ],
-    "bytes": 56442
+    "bytes": 54472
   },
   {
     "product": "white-ash",
@@ -147,8 +167,12 @@
     "why": "the left-hand board, full height; the window fall across it is divided out",
     "rotateDeg": -2.0,
     "grainDegBefore": 88.0,
-    "grainDegAfter": 89.7,
-    "coherence": 0.803,
+    "grainDegAfter": 89.6,
+    "coherence": 0.788,
+    "seamAcross": 0.076,
+    "seamAlong": 0.029,
+    "seamVsNeighbourAcross": 0.93,
+    "seamVsNeighbourAlong": 0.96,
     "width": 512,
     "height": 1537,
     "inchesAcross": 4.62,
@@ -159,6 +183,6 @@
       143,
       118
     ],
-    "bytes": 47582
+    "bytes": 46052
   }
 ]

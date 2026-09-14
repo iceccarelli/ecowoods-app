@@ -28,6 +28,8 @@ const manifest = JSON.parse(
   inchesAlong: number;
   grainDegAfter: number;
   rotateDeg: number;
+  seamAcross: number;
+  seamAlong: number;
 }[];
 
 describe('the grain tiles', () => {
@@ -76,6 +78,24 @@ describe('the grain tiles', () => {
     for (const entry of manifest) {
       const offVertical = Math.abs(90 - Math.abs(entry.grainDegAfter));
       expect(offVertical, `${entry.product} is ${offVertical.toFixed(1)}° off`).toBeLessThan(5);
+    }
+  });
+
+  it('wraps without printing a line across every board', () => {
+    /* A tile is sampled as a torus — the last column is adjacent to the first
+       in the render — so a step across that join repeats down every board in
+       the room. The build script measures it against the tile's own contrast
+       and refuses to write a set above a quarter; this is the same claim where
+       a reader can see it. The set runs between 0.02 and 0.13.
+
+       The number is a fraction of the tile's standard deviation, NOT of the
+       step between neighbouring pixels. Grain runs along the tile, so
+       neighbouring rows are nearly identical, and dividing by that turns a seam
+       of under one grey level in 255 on hard maple into a number that reads
+       like a failure. */
+    for (const entry of manifest) {
+      expect(entry.seamAcross, `${entry.product} across`).toBeLessThan(0.25);
+      expect(entry.seamAlong, `${entry.product} along`).toBeLessThan(0.25);
     }
   });
 
