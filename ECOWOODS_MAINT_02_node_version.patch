@@ -1,0 +1,205 @@
+From a30b9627689926c8b620ff284df335c166f9ec7d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 20:38:34 +0000
+Subject: [PATCH] fix(build): MAINT-02 - the service needs Node 22.6 and the
+ devcontainer pins 20
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`pnpm test:render-api`, which I added in MAINT-01 and said would work, does not
+work. It answers:
+
+    node: bad option: --experimental-strip-types
+
+I verified that script on a Node 22.22 machine and did not check what this
+repository declares. .devcontainer/devcontainer.json pins `node:20-bookworm`,
+and --experimental-strip-types arrived in Node 22.6. It was never going to run.
+
+THE SCRIPT IS THE SMALL HALF. The service itself is TypeScript that Node strips
+at load time, so its `start` script, both its test files and register.mjs all
+need 22.6 — which means services/render-api cannot be run or tested at all in
+this repository's own declared development environment. That is a RENDER-01
+defect, not a MAINT-01 one; MAINT-01 only made it visible by adding a command
+that hits it.
+
+What is NOT affected, checked rather than assumed: the Dockerfile pins
+node:24-slim, so the image this deploys from has had the feature for two major
+versions and production is fine. Nothing else in the tree uses the flag — the
+66 guards, parse-scan and the Next build are plain JavaScript or go through
+Next's own compiler. The blast radius is exactly this service, run locally.
+
+So the commands now say the one thing that is wrong. scripts/render-api-test.mjs
+is plain JavaScript, so it starts on any Node, checks the version first, and
+prints the versions side by side with the two ways forward. It exits 1 rather
+than passing quietly. Both package.json scripts route through it, and the
+service declares `engines: { node: ">=22.6.0" }` so the requirement is written
+where somebody looks for it.
+
+The two ways forward are stated and neither is taken here. Running it in
+node:24-slim under Docker needs nothing installed, because the service has no
+dependencies. Raising the devcontainer to node:22-bookworm is the tidier
+answer and is a change to everyone's environment — including anything else
+working in this repository — so it is a decision to be made rather than a side
+effect of a patch, and I cannot run an install here to prove the rest of the
+stack is happy on 22.
+
+One fact worth having when that decision gets made: Node 20 left maintenance in
+April 2026. It is already out of support.
+
+65 of 66 guards here; verify:css needs an install. parse-scan clean on 642
+files. Both service suites pass on Node 22.22, and the version gate was
+exercised at a simulated Node 20.11.1 and exits 1 with the message above.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ package.json                     |  2 +-
+ scripts/render-api-test.mjs      | 74 ++++++++++++++++++++++++++++++++
+ services/render-api/README.md    | 20 +++++++++
+ services/render-api/package.json |  5 ++-
+ 4 files changed, 99 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/render-api-test.mjs
+
+diff --git a/package.json b/package.json
+index 4227cde..d9c5f38 100644
+--- a/package.json
++++ b/package.json
+@@ -73,7 +73,7 @@
+     "verify:allocation": "node scripts/verify-allocation.mjs",
+     "verify:geo:green": "node scripts/verify-geo-green.mjs",
+     "test:web": "pnpm --filter @ecowoods/web test",
+-    "test:render-api": "node --experimental-strip-types ./services/render-api/src/keys.test.ts && node --experimental-strip-types --import ./services/render-api/src/register.mjs ./services/render-api/src/plate.test.ts",
++    "test:render-api": "node scripts/render-api-test.mjs",
+     "seo:audit": "node scripts/audit-current-state.mjs",
+     "seo:pricing": "node scripts/verify-pricing-source.mjs",
+     "seo:claims": "node scripts/verify-claims.mjs",
+diff --git a/scripts/render-api-test.mjs b/scripts/render-api-test.mjs
+new file mode 100644
+index 0000000..fcb65f5
+--- /dev/null
++++ b/scripts/render-api-test.mjs
+@@ -0,0 +1,74 @@
++#!/usr/bin/env node
++/**
++ * scripts/render-api-test.mjs — run the render API's tests, or say why not.
++ *
++ * WHY THIS FILE EXISTS INSTEAD OF TWO NODE COMMANDS IN package.json
++ *
++ * The service is TypeScript that Node strips at load time, which needs
++ * `--experimental-strip-types`. That landed in Node 22.6. This repository's
++ * devcontainer pins `node:20-bookworm`, where the flag does not exist, and Node
++ * answers a flag it does not know with:
++ *
++ *     node: bad option: --experimental-strip-types
++ *
++ * — which says nothing about versions and sends you looking for a typo. The
++ * root script that produced that message was added by me after verifying it on
++ * a Node 22 machine and not checking what the repository declares. This runner
++ * is plain JavaScript, so it starts on any Node, checks the version first, and
++ * explains the one thing that is actually wrong.
++ *
++ * WHAT IS AND IS NOT BROKEN BY THIS
++ *
++ * Production is fine: services/render-api/Dockerfile pins node:24-slim, so the
++ * image this deploys from has had the feature for two major versions. Nothing
++ * on the website touches it — the 66 guards, parse-scan and the Next build are
++ * all plain JavaScript or run through Next's own compiler. What cannot happen
++ * on Node 20 is running or testing this service locally, which is a real gap
++ * and is the whole of the gap.
++ */
++import { spawnSync } from 'node:child_process';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const REQUIRED = [22, 6];
++
++const [major, minor] = process.versions.node.split('.').map(Number);
++const tooOld = major < REQUIRED[0] || (major === REQUIRED[0] && minor < REQUIRED[1]);
++
++if (tooOld) {
++  console.error(`
++The render API is TypeScript that Node strips at load time, which needs
++--experimental-strip-types. That arrived in Node ${REQUIRED.join('.')}.
++
++  this shell is running   Node ${process.versions.node}
++  the service needs       Node ${REQUIRED.join('.')} or newer
++  .devcontainer pins      node:20-bookworm
++  the deployed image is   node:24-slim   (so production is unaffected)
++
++Two ways forward, and the choice is not this script's to make:
++
++  · Run it in the image it deploys from, which needs nothing installed:
++      docker run --rm -v "$PWD":/app -w /app node:24-slim \\
++        node --experimental-strip-types scripts/render-api-test.mjs
++
++  · Or raise the devcontainer to node:22-bookworm and rebuild it. That is a
++    change to everyone's environment, including anything else working in this
++    repository, so it wants to be a decision rather than a side effect.
++`);
++  process.exit(1);
++}
++
++const run = (args) =>
++  spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit' }).status ?? 1;
++
++const failed =
++  run(['--experimental-strip-types', 'services/render-api/src/keys.test.ts']) ||
++  run([
++    '--experimental-strip-types',
++    '--import',
++    './services/render-api/src/register.mjs',
++    'services/render-api/src/plate.test.ts',
++  ]);
++
++process.exit(failed ? 1 : 0);
+diff --git a/services/render-api/README.md b/services/render-api/README.md
+index 68069d6..c61c692 100644
+--- a/services/render-api/README.md
++++ b/services/render-api/README.md
+@@ -38,6 +38,26 @@ otherwise.
+ pnpm test:render-api          # from the repository root
+ ```
+ 
++**This service needs Node 22.6 or newer, and the devcontainer pins node:20.**
++It is TypeScript that Node strips at load time, which is what
++`--experimental-strip-types` does, and that flag arrived in 22.6. On Node 20 the
++answer is `node: bad option: --experimental-strip-types`, which says nothing
++about versions; scripts/render-api-test.mjs checks first and says what is
++actually wrong.
++
++Production is unaffected — the Dockerfile pins `node:24-slim` — and so is the
++website, which touches none of this. What cannot be done on Node 20 is running
++or testing this service locally. Either use the image it deploys from:
++
++```bash
++docker run --rm -v "$PWD":/app -w /app node:24-slim \
++  node --experimental-strip-types scripts/render-api-test.mjs
++```
++
++or raise `.devcontainer/devcontainer.json` to `node:22-bookworm` and rebuild.
++That second one changes the environment for everything else in this repository,
++so it belongs to whoever owns the repository rather than to this README.
++
+ NOT `pnpm --filter @ecowoods/render-api test`, which answers "No projects
+ matched the filters" — `services/*` is not in `pnpm-workspace.yaml`, so this
+ package is not a workspace member and pnpm cannot see it.
+diff --git a/services/render-api/package.json b/services/render-api/package.json
+index 3fa2a68..4799aea 100644
+--- a/services/render-api/package.json
++++ b/services/render-api/package.json
+@@ -6,6 +6,9 @@
+   "type": "module",
+   "scripts": {
+     "start": "node --experimental-strip-types --import ./src/register.mjs ./src/server.ts",
+-    "test": "node --experimental-strip-types ./src/keys.test.ts && node --experimental-strip-types --import ./src/register.mjs ./src/plate.test.ts"
++    "test": "node ../../scripts/render-api-test.mjs"
++  },
++  "engines": {
++    "node": ">=22.6.0"
+   }
+ }
+-- 
+2.43.0
+
