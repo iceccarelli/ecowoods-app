@@ -1,0 +1,196 @@
+From 11f92a0ae18433b91470a0350e8479ef3426dedb Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 15 Sep 2026 13:15:24 +0000
+Subject: [PATCH] fix(design): HANDOFF-01 - the homepage asked for a board
+ width and threw it away at the door
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+THE LAST FAILING TEST, AND IT WAS RIGHT TO FAIL
+
+With TEST-01 in, lib/floor-assembly.test.ts finally ran: 64 tests, 63 green.
+The one red was `does not send a width, because nothing reads one`, and the
+temptation is to call it a stale assertion and relax it. It is not stale. It
+is a live guard whose premise was inverted underneath it, and following the
+guard's own reasoning gives the opposite of what it currently asserts.
+
+Its comment, and the matching one in assemblyDesignHref:
+
+    WIDTH IS DELIBERATELY NOT SENT. FloorConfigurator reads exactly four
+    parameters — species, finish, pattern, sqft — and has no board-width
+    control at all, so `width=` would be a parameter nobody reads.
+
+True when written. DESIGN-01 made it false: the configurator grew a
+board-width control as step 04, reads `q.get('width')`, and validates it
+against BOARD_WIDTHS exactly the way it validates finish and pattern.
+
+So the parameter stopped being unread and started being DROPPED, and the
+silent drop this file documents twice began happening in the one direction
+nothing was watching. The homepage has had a board-width picker since VIS-07.
+A visitor chose 3¼″ strip, watched the boards narrow in the picture, pressed
+"Specify this floor", and arrived at /design on 5″ plank with no trace of the
+choice they had just made and just seen.
+
+The principle never moved — do not hand over what nothing reads, and do not
+drop what somebody chose. Only which way it pointed moved.
+
+THE FIX IS THREE ENDS, BECAUSE TWO WOULD HAVE LEFT THE SAME HOLE
+
+  · assemblyDesignHref takes a widthId and sends it, validated against
+    BOARD_WIDTHS — same shape as finish and pattern, so a stale or hand-edited
+    link asking for a board we do not cut is dropped at the source rather than
+    ignored on arrival.
+  · FloorAssembly passes the width the visitor actually selected. It was
+    already computing it for the picture and simply not handing it over.
+  · The test asserts BOTH ENDS. This is the part that matters: the old
+    assertion could only see one file, which is exactly how it went stale
+    without anybody noticing. The replacement checks that the link carries the
+    width AND that the page on the other side reads it AND validates it
+    against the same list. Either half going missing re-opens the drop, and
+    neither half is visible from the other file.
+
+Two assertions were added beside it rather than folded in, so a regression
+says which half broke: a width the catalogue does not contain is still
+dropped, and a call with no width still sends none.
+
+NO GUARD WAS WEAKENED. One assertion was inverted because the fact it asserted
+is gone, and it came back covering strictly more than before — one file became
+two, one claim became three.
+
+AN INCOMPATIBLE COMBINATION IS SAFE TO SEND
+
+Herringbone at 8″ is a real thing a person can select on the homepage and not
+a floor we lay. It is sent anyway, because FloorConfigurator already repairs
+whatever arrives through withAxis and tells the visitor what it moved and why.
+Silently refusing to carry the choice would be the drop again, one level down.
+
+VERIFIED
+
+  All 96 species x pattern x width combinations the homepage can produce were
+  generated and checked: every one yields a link /design honours, and all 24
+  that arrive incompatible self-repair through withAxis to a layable floor.
+  All four board widths round-trip by id (3-25, 5, 7, 8-plus); id 11 is
+  dropped.
+  Every pre-existing assertion in that describe block re-checked by hand:
+  species, finish, pattern, the rejected finish, the rejected pattern.
+  65 of 66 guards pass; verify:css fails only in this sandbox for want of
+  node_modules and passed in the Codespace on the last three runs.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/components/FloorAssembly.tsx |  2 +-
+ apps/web/lib/floor-assembly.test.ts       | 34 +++++++++++++++++++----
+ apps/web/lib/floor-assembly.ts            | 29 ++++++++++++++-----
+ 3 files changed, 52 insertions(+), 13 deletions(-)
+
+diff --git a/apps/web/app/components/FloorAssembly.tsx b/apps/web/app/components/FloorAssembly.tsx
+index 732bf07..978d25b 100644
+--- a/apps/web/app/components/FloorAssembly.tsx
++++ b/apps/web/app/components/FloorAssembly.tsx
+@@ -412,7 +412,7 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
+         <div className="fa-actions">
+           <Link
+             className="btn btn-copper btn-lg"
+-            href={assemblyDesignHref(species, pattern.id, finish.id)}
++            href={assemblyDesignHref(species, pattern.id, finish.id, width.id)}
+           >
+             Specify this floor in {species.name}
+           </Link>
+diff --git a/apps/web/lib/floor-assembly.test.ts b/apps/web/lib/floor-assembly.test.ts
+index ba8d43c..e6b4d90 100644
+--- a/apps/web/lib/floor-assembly.test.ts
++++ b/apps/web/lib/floor-assembly.test.ts
+@@ -533,12 +533,36 @@ describe('the handoff carries what /design reads, and nothing it does not', () =
+     expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'straight', 'lacquered')).not.toContain('finish=');
+   });
+ 
+-  /* THE SILENT DROP, AVOIDED FOR THE THIRD TIME. FloorConfigurator reads four
+-     parameters and has no width control, so `width=` would be read by nobody. */
+-  it('does not send a width, because nothing reads one', () => {
+-    expect(href).not.toContain('width=');
++  /* THE SILENT DROP, IN THE DIRECTION NOTHING WAS WATCHING.
++     This asserted the opposite until DESIGN-01, and the assertion was right
++     when it was written: /design had no width control, so `width=` would have
++     been read by nobody. DESIGN-01 gave the configurator a board-width control
++     as step 04 — and the homepage has had one since VIS-07 — so the parameter
++     stopped being unread and started being dropped. A visitor picked 3¼″
++     strip, watched the boards narrow, followed the link, and arrived on 5″
++     plank.
++
++     So this now asserts BOTH ENDS, which is stronger than what it replaced:
++     the link carries the width, and the page on the other side really does
++     read it and validate it against the same list. Either half going missing
++     re-opens the drop, and neither half can be checked from the other file. */
++  it('sends the width, and the configurator reads it', () => {
++    expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'chevron', 'wire-brushed', '5'))
++      .toContain('width=5');
+     const cfg = read('app/components/FloorConfigurator.tsx');
+-    expect(cfg).not.toContain("q.get('width')");
++    expect(cfg).toContain("q.get('width')");
++    expect(cfg).toContain('BOARD_WIDTHS.some((w) => w.id === qsWidth)');
++  });
++
++  it('still drops a width the catalogue does not have', () => {
++    /* Same rule the finish and the pattern follow: validate here, so a stale
++       or hand-edited link cannot ask for a board we do not cut. */
++    expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'chevron', 'wire-brushed', '11'))
++      .not.toContain('width=');
++  });
++
++  it('sends no width when none is chosen', () => {
++    expect(href).not.toContain('width=');
+   });
+ 
+   it('and FloorConfigurator really does match finishes by id', () => {
+diff --git a/apps/web/lib/floor-assembly.ts b/apps/web/lib/floor-assembly.ts
+index ab0c39f..de5e05f 100644
+--- a/apps/web/lib/floor-assembly.ts
++++ b/apps/web/lib/floor-assembly.ts
+@@ -196,6 +196,7 @@ export function assemblyDesignHref(
+   product: FloorProduct,
+   patternId?: string,
+   finishId?: string,
++  widthId?: string,
+ ): string {
+   const params = new URLSearchParams({ species: product.rateKey, source: 'assembly' });
+   /* Finish is keyed by id and /design matches it against FINISH_OPTIONS by id,
+@@ -211,13 +212,27 @@ export function assemblyDesignHref(
+   if (patternId && PATTERN_OPTIONS.some((p) => p.id === patternId)) {
+     params.set('pattern', patternId);
+   }
+-  /* WIDTH IS DELIBERATELY NOT SENT. FloorConfigurator reads exactly four
+-     parameters — species, finish, pattern, sqft — and has no board-width
+-     control at all, so `width=` would be a parameter nobody reads: the
+-     visitor picks 3¼″ strip, sees it in the picture, and arrives at a
+-     configurator with no trace of it. Showing a width we cannot hand over is
+-     honest; pretending to hand it over is the silent drop this file already
+-     documents twice. floor-assembly.test.ts asserts it stays out. */
++  /* WIDTH IS SENT NOW, AND THE REASON IT WAS NOT IS THE REASON IT MUST BE.
++     What stood here said /design "has no board-width control at all", so
++     `width=` would be a parameter nobody reads. That was true when it was
++     written and DESIGN-01 made it false: the configurator grew a board-width
++     control as step 04, reads `q.get('width')`, and validates it against
++     BOARD_WIDTHS exactly as it does finish and pattern.
++
++     The principle never changed — do not hand over what nothing reads, and do
++     not drop what somebody chose. Only which way it pointed changed. With
++     /design reading width and this link not sending it, the silent drop this
++     file documents twice was happening in the one direction nothing guarded:
++     a visitor picked 3¼″ strip here, watched the boards narrow, followed the
++     link, and landed on 5″ plank with no trace of the choice.
++
++     Validated like the other two, so a width BOARD_WIDTHS does not contain is
++     dropped here rather than silently ignored on arrival. An incompatible but
++     valid combination — herringbone at 8″, say — is safe to send: the
++     configurator repairs it on arrival through withAxis and says so. */
++  if (widthId && BOARD_WIDTHS.some((w) => w.id === widthId)) {
++    params.set('width', widthId);
++  }
+   return `/design?${params.toString()}`;
+ }
+ 
+-- 
+2.43.0
+
