@@ -15,35 +15,62 @@ import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
 import CommandPalette, { openCommandPalette } from './CommandPalette';
 import { EW_MARK, EW_MARK_ALT, EW_MARK_SIZE } from '@/lib/brand';
+import {
+  INITIAL_SCROLL_STATE,
+  nextScrollState,
+  rendersDifferently,
+  type ScrollState,
+} from '@/lib/scroll-state';
 
 /* ---------------------- Hooks ---------------------- */
+/**
+ * The decision lives in lib/scroll-state.ts, as a pure function, because this
+ * hook made the header blink on every page for every customer. The reason it
+ * did is written out in full there; the short version is that the anchor it
+ * compared against was React state, the effect depended on that state, and the
+ * listener was therefore torn down and re-added every 40px — which reset the
+ * rAF throttle, let several callbacks run against different stale anchors, and
+ * ended with a four-pixel nudge satisfying a forty-pixel threshold.
+ *
+ * NOTHING IN THE HOT PATH IS STATE NOW. The anchor is a ref, so this effect
+ * subscribes exactly ONCE and the `ticking` flag it closes over is the only
+ * one that will ever exist. React state is written only when the RENDERED
+ * result actually changes, which is what stops a scroll from re-rendering the
+ * whole header sixty times a second.
+ */
 function useScrollState() {
-  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [lastY, setLastY] = useState(0);
+  const [view, setView] = useState<{ direction: 'up' | 'down' | null; scrolled: boolean }>({
+    direction: null,
+    scrolled: false,
+  });
+  const state = useRef<ScrollState>(INITIAL_SCROLL_STATE);
 
   useEffect(() => {
     let ticking = false;
     const update = () => {
-      const current = window.scrollY;
-      setScrolled(current > 16);
-      if (Math.abs(current - lastY) > 40) {
-        setDirection(current > lastY && current > 220 ? 'down' : 'up');
-        setLastY(current);
-      }
       ticking = false;
+      const prev = state.current;
+      const next = nextScrollState(prev, window.scrollY);
+      state.current = next;
+      /* Only when the bar would LOOK different. The anchor moves on almost
+         every frame and must never cause a render by itself. */
+      if (rendersDifferently(prev, next)) {
+        setView({ direction: next.direction, scrolled: next.scrolled });
+      }
     };
     const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
     };
+    /* Seed from the real position: a reload part-way down a page, or a browser
+       restoring scroll, must not start from an anchor of zero. */
+    update();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [lastY]);
+  }, []);
 
-  return { direction, scrolled };
+  return view;
 }
 
 /* ---------------------- Navigation ---------------------- */
