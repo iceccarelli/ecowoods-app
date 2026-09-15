@@ -138,12 +138,29 @@ describe('the species join is the catalogue, not a copy of it', () => {
 
   /* THE SILENT ONE. grainTextureFor computes a path. If a species is added to
      the catalogue without its crop, every browser requests a 404 and the wear
-     layer silently paints as a flat gradient — which still looks deliberate. */
-  it('every species has a photographed crop on disk', () => {
+     layer silently paints as a flat gradient — which still looks deliberate.
+
+     IT IS THE LANDSCAPE CROP NOW, and this asserted the portrait one until
+     FLOOR-01. The build script turns every tile so the grain runs DOWN it,
+     which is what the renderer wants — it samples in board-local inches and
+     turns the grain itself. This surface is CSS and cannot: a board carries its
+     LENGTH along the div's width, so the portrait tile painted the figure
+     across every plank. The build writes each tile a second time, turned a
+     quarter turn, and this surface asks for that one.
+
+     So the claim is bigger than it was: the along tile must exist, the portrait
+     tile it was cut from must ALSO still exist, and they must be two different
+     files. A build that stopped writing the pair, or started writing the same
+     file twice, now fails here instead of on the homepage. */
+  it('every species has a photographed crop on disk, in both orientations', () => {
     for (const s of ASSEMBLY_SPECIES) {
-      const path = grainTextureFor(s.id);
-      expect(path, s.id).toBe(`/textures/grain-${s.id}.webp`);
-      expect(existsSync(join(WEB, 'public', path)), `missing public${path}`).toBe(true);
+      const along = grainTextureFor(s.id);
+      expect(along, s.id).toBe(`/textures/grain-${s.id}-along.webp`);
+      expect(existsSync(join(WEB, 'public', along)), `missing public${along}`).toBe(true);
+
+      const portrait = `/textures/grain-${s.id}.webp`;
+      expect(existsSync(join(WEB, 'public', portrait)), `missing public${portrait}`).toBe(true);
+      expect(along, `${s.id}: the two orientations are the same file`).not.toBe(portrait);
     }
   });
 
@@ -289,12 +306,31 @@ describe('the boards', () => {
   });
 
   /* Herringbone STEPS; chevron's apexes line up into rows. If both were
-     generated the same way one of the two labels on the page would be a lie. */
+     generated the same way one of the two labels on the page would be a lie.
+     THE ANGLE ON SCREEN, NOT THE ANGLE IN THE DATA. This compared board `rot`
+     alone and expected [-45, 45] from both. That held while both patterns put
+     the whole turn on each board, and FLOOR-01 stopped doing that for
+     herringbone: it is generated axis-aligned and the FIELD is turned 45°,
+     which is how it is actually laid — the pattern is square and the room is at
+     an angle to it — and it is the only way the lattice closes exactly.
+
+     Board rot became [0, 90] and the test failed on a floor that was correct.
+     What a visitor sees is rot PLUS fieldRot, so that is what is asserted now,
+     normalised to a half turn because a board at 135° and a board at −45° are
+     the same board. Both parquet patterns must land on {45, 135}. This is the
+     stronger claim: it is true however the turn is split, and it would still
+     have caught the original defect. */
   it('turn the parquet patterns to 45 degrees and the plank patterns to zero', () => {
+    const onScreen = (id: string) => {
+      const f = boardsFor(id);
+      const norm = (a: number) => (((a + f.fieldRot) % 180) + 180) % 180;
+      return [...new Set(f.boards.map((b) => norm(b.rot)))].sort((a, b) => a - b);
+    };
     for (const id of ['herringbone', 'chevron']) {
-      const rots = new Set(boardsFor(id).boards.map((b) => b.rot));
-      expect([...rots].sort((a, b) => a - b), id).toEqual([-45, 45]);
+      expect(onScreen(id), `${id} on screen`).toEqual([45, 135]);
     }
+    expect(onScreen('straight'), 'straight on screen').toEqual([0]);
+    expect(onScreen('diagonal'), 'diagonal on screen').toEqual([45]);
     expect(boardsFor('straight').boards.every((b) => b.rot === 0)).toBe(true);
     expect(boardsFor('diagonal').fieldRot).toBe(45);
     expect(boardsFor('straight').fieldRot).toBe(0);
