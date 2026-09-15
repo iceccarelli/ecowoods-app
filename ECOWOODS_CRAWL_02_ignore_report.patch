@@ -1,0 +1,74 @@
+From 1b5859c8901f8388146b23b7a664780253d917a9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 15 Sep 2026 18:48:06 +0000
+Subject: [PATCH] chore(hygiene): CRAWL-02 - the crawl report is a measurement,
+ not a source file
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`node scripts/crawl-site.mjs` left three untracked files behind:
+
+    ?? audit/site-crawl.csv
+    ?? audit/site-crawl.json
+    ?? audit/site-crawl.md
+
+The rule for this already existed and this one was simply missed when it was
+written. .gitignore has carried, for a while:
+
+    # audit-rendered writes a report per run, against whatever host it was
+    # pointed at. Committing it means the repo carries one person's measurement
+    # of one deployment as if it were a fact about the code.
+    audit/rendered.json
+    audit/rendered.md
+
+crawl-site.mjs is the same thing exactly: it fetches every route from a LIVE
+host and writes down what came back. Two people crawling on the same afternoon
+would produce different files and neither would be wrong, and a file like that
+sitting in the tree invites somebody to read it as the state of the site rather
+than as the state of one request at one moment. The report that matters is the
+exit code.
+
+So the three join the two, under the same reasoning, written out rather than
+appended silently — the next person to add a script that writes a report should
+be able to see why their output belongs here too.
+
+Not deleted from history: they were never committed. `git check-ignore` confirms
+all three are matched, and `git status` on audit/ is clean with the files
+present on disk.
+
+VERIFIED
+
+  65 of 66 guards pass; verify:css fails only in this sandbox for want of
+  node_modules.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ .gitignore | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index 79175e3..68385c4 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -92,6 +92,16 @@ package-lock.json
+ audit/rendered.json
+ audit/rendered.md
+ 
++# crawl-site.mjs is the same thing and was missed when that rule was written:
++# it fetches every route from a LIVE host and writes what it found, so the file
++# is a snapshot of a deployment at a moment, not a property of this repository.
++# Two people crawling on the same day would commit different files and neither
++# would be wrong. Run it, read it, throw it away — the report that matters is
++# the exit code.
++audit/site-crawl.json
++audit/site-crawl.csv
++audit/site-crawl.md
++
+ # Development-only assessment photographs. lib/floor-graph/photo-storage.ts
+ # writes here when no private Supabase bucket is configured, deliberately
+ # OUTSIDE public/ so a local run cannot serve somebody's living room as a
+-- 
+2.43.0
+
