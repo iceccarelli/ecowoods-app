@@ -196,6 +196,7 @@ export function assemblyDesignHref(
   product: FloorProduct,
   patternId?: string,
   finishId?: string,
+  widthId?: string,
 ): string {
   const params = new URLSearchParams({ species: product.rateKey, source: 'assembly' });
   /* Finish is keyed by id and /design matches it against FINISH_OPTIONS by id,
@@ -211,13 +212,27 @@ export function assemblyDesignHref(
   if (patternId && PATTERN_OPTIONS.some((p) => p.id === patternId)) {
     params.set('pattern', patternId);
   }
-  /* WIDTH IS DELIBERATELY NOT SENT. FloorConfigurator reads exactly four
-     parameters — species, finish, pattern, sqft — and has no board-width
-     control at all, so `width=` would be a parameter nobody reads: the
-     visitor picks 3¼″ strip, sees it in the picture, and arrives at a
-     configurator with no trace of it. Showing a width we cannot hand over is
-     honest; pretending to hand it over is the silent drop this file already
-     documents twice. floor-assembly.test.ts asserts it stays out. */
+  /* WIDTH IS SENT NOW, AND THE REASON IT WAS NOT IS THE REASON IT MUST BE.
+     What stood here said /design "has no board-width control at all", so
+     `width=` would be a parameter nobody reads. That was true when it was
+     written and DESIGN-01 made it false: the configurator grew a board-width
+     control as step 04, reads `q.get('width')`, and validates it against
+     BOARD_WIDTHS exactly as it does finish and pattern.
+
+     The principle never changed — do not hand over what nothing reads, and do
+     not drop what somebody chose. Only which way it pointed changed. With
+     /design reading width and this link not sending it, the silent drop this
+     file documents twice was happening in the one direction nothing guarded:
+     a visitor picked 3¼″ strip here, watched the boards narrow, followed the
+     link, and landed on 5″ plank with no trace of the choice.
+
+     Validated like the other two, so a width BOARD_WIDTHS does not contain is
+     dropped here rather than silently ignored on arrival. An incompatible but
+     valid combination — herringbone at 8″, say — is safe to send: the
+     configurator repairs it on arrival through withAxis and says so. */
+  if (widthId && BOARD_WIDTHS.some((w) => w.id === widthId)) {
+    params.set('width', widthId);
+  }
   return `/design?${params.toString()}`;
 }
 

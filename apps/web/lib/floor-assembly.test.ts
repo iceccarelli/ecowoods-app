@@ -533,12 +533,36 @@ describe('the handoff carries what /design reads, and nothing it does not', () =
     expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'straight', 'lacquered')).not.toContain('finish=');
   });
 
-  /* THE SILENT DROP, AVOIDED FOR THE THIRD TIME. FloorConfigurator reads four
-     parameters and has no width control, so `width=` would be read by nobody. */
-  it('does not send a width, because nothing reads one', () => {
-    expect(href).not.toContain('width=');
+  /* THE SILENT DROP, IN THE DIRECTION NOTHING WAS WATCHING.
+     This asserted the opposite until DESIGN-01, and the assertion was right
+     when it was written: /design had no width control, so `width=` would have
+     been read by nobody. DESIGN-01 gave the configurator a board-width control
+     as step 04 — and the homepage has had one since VIS-07 — so the parameter
+     stopped being unread and started being dropped. A visitor picked 3¼″
+     strip, watched the boards narrow, followed the link, and arrived on 5″
+     plank.
+
+     So this now asserts BOTH ENDS, which is stronger than what it replaced:
+     the link carries the width, and the page on the other side really does
+     read it and validate it against the same list. Either half going missing
+     re-opens the drop, and neither half can be checked from the other file. */
+  it('sends the width, and the configurator reads it', () => {
+    expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'chevron', 'wire-brushed', '5'))
+      .toContain('width=5');
     const cfg = read('app/components/FloorConfigurator.tsx');
-    expect(cfg).not.toContain("q.get('width')");
+    expect(cfg).toContain("q.get('width')");
+    expect(cfg).toContain('BOARD_WIDTHS.some((w) => w.id === qsWidth)');
+  });
+
+  it('still drops a width the catalogue does not have', () => {
+    /* Same rule the finish and the pattern follow: validate here, so a stale
+       or hand-edited link cannot ask for a board we do not cut. */
+    expect(assemblyDesignHref(ASSEMBLY_SPECIES[0]!, 'chevron', 'wire-brushed', '11'))
+      .not.toContain('width=');
+  });
+
+  it('sends no width when none is chosen', () => {
+    expect(href).not.toContain('width=');
   });
 
   it('and FloorConfigurator really does match finishes by id', () => {

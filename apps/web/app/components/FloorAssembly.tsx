@@ -412,7 +412,7 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
         <div className="fa-actions">
           <Link
             className="btn btn-copper btn-lg"
-            href={assemblyDesignHref(species, pattern.id, finish.id)}
+            href={assemblyDesignHref(species, pattern.id, finish.id, width.id)}
           >
             Specify this floor in {species.name}
           </Link>
