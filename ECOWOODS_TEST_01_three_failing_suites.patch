@@ -1,0 +1,225 @@
+From c1c8a6f073f13f57ef5a634b15f2a3e6e260e178 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 15 Sep 2026 12:23:58 +0000
+Subject: [PATCH] fix(test): TEST-01 - three suites that were failing before
+ this series, one of which never ran at all
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`pnpm test:web` reported 3 failed files and 2 failed tests. None of them is
+caused by TRUTH-01 or GRAIN-01, and I checked that before touching anything
+rather than assuming it: neither commit goes near any of the three files, and
+`git log` puts the last edit to each of them well before this series.
+
+  lib/floor-assembly.test.ts     never passed since VIS-05 introduced it
+  tests/drift.test.ts            over budget since MACH-01 (f0584c1)
+  tests/floor-studio.test.ts     broken by LIVE-01 (7678b10)
+
+The common cause is that `pnpm test:web` had not been run. Every one of these
+was reachable at any point by running it.
+
+1. lib/floor-assembly.test.ts — A SUITE THAT HAS NEVER EXECUTED ONE ASSERTION
+
+tsconfig.json says `"jsx": "preserve"`, which is right, because Next owns that
+transform. esbuild reads it, finds no runtime it can emit, and falls back to
+the CLASSIC one — `React.createElement`. A Next component has no reason to
+import the React default, so FloorAssembly does not, and rendering it threw
+`ReferenceError: React is not defined` at its opening `return (`.
+
+That throw happens inside a describe callback, at COLLECTION time, so it did
+not fail one test — it killed the file. Vitest printed `(0)`. Roughly sixty
+assertions have never run, among them the one written specifically to catch
+F-205: `26026+ Years in Toronto`, three copies of one number concatenating in
+the served HTML, which no source-level grep can see. The suite that exists to
+catch a duplication bug was itself silently absent.
+
+`esbuild: { jsx: 'automatic' }` in apps/web/vitest.config.ts. This is the only
+suite that renders a component; the rest import data out of .tsx modules
+without executing JSX, which is why nothing else noticed.
+
+WHAT I COULD NOT VERIFY, AND WHY. This sandbox cannot install from npm (403),
+so there is no react to render with and I could not run this suite. I am not
+claiming it goes green. What I did instead was bound the risk, because these
+assertions were written at VIS-07 against a rendered output that may have
+moved since:
+
+  · DESIGN-01 is the only commit to touch FloorAssembly.tsx after the test was
+    written, and its entire diff to that file is one COMMENT line — "five
+    species" to "six species". The rendered HTML is unchanged.
+  · ASSEMBLY_SPECIES is `= FLOOR_PRODUCTS` and ASSEMBLY_WIDTHS `= BOARD_WIDTHS`,
+    so DESIGN-03's sixth species cannot desynchronise them. Checked by running
+    both comparisons.
+  · The one assertion GRAIN-01 could plausibly reach — `urls.size === 1` over
+    `/textures/...` in the markup — is safe, because GRAIN-01 changed tile
+    CONTENT and kept every filename.
+
+If it surfaces real failures, they are real and they have been real for weeks;
+send me the output.
+
+2. tests/drift.test.ts — THE CORE OF llms.txt WAS 33,066 AGAINST A 30,000 CAP
+
+MACH-01 took app/llms.txt/route.ts from 28,237 bytes to 33,019 and pushed the
+curated core past its budget. The comment on that budget says what to do, in as
+many words: if the core ever crosses, prune the core rather than move the
+number. So the number did not move.
+
+Measured, section by section:
+
+  Preferred citation targets  5533   0 links
+  Who this is                 5019   0 links
+  FAQ                         4773   0 links
+  Evidence                    4012  18 links
+  Service areas               2478   1 link
+  ...
+
+The FAQ is the only one of the three large sections that is neither the entity
+nor a citation target — the two things that comment names the core as being
+for — and it carried not one link. An agent reading the top of this file to
+learn who to cite skipped all 4,773 bytes of it.
+
+It is MOVED, not dropped: it now sits two lines under the sentence in the
+Optional preamble that already promises exactly this, that everything below is
+also at /llms-full.txt and /api/knowledge, and it is still in the FAQPage
+JSON-LD on the page. Core 33,066 → 28,293. The whole file is byte-identical at
+55,975, which is the check that it was moved rather than trimmed.
+
+3. tests/floor-studio.test.ts — A CLAIM BROKEN BY A LINE BREAK
+
+floorStudioToMarkdown builds a hard-wrapped blockquote out of an array of
+lines, and the wrap fell between "never" and "uploaded":
+
+    '> in the browser and is never',
+    '> uploaded, and no image model is involved: ...',
+
+So the file said "never\n> uploaded" and `/never uploaded/` could not match.
+Invisible in the rendered markdown, fatal to the assertion that this file
+states the privacy claim at all. The test was right and the source was wrong:
+a claim a machine is meant to quote should not be breakable by a line break.
+Rewrapped so the phrase is contiguous, with a note saying why it must stay so.
+
+NO TEST WAS WEAKENED. No assertion was relaxed, no threshold moved, no suite
+skipped. Two are source fixes and one makes a suite run that was not running.
+
+VERIFIED
+
+  65 of 66 guards pass; verify:css fails only here, for want of node_modules,
+  and passed in the Codespace on the previous run.
+  llms.txt run in-process: core 28,293 < 30,000, body 55,975 < 64,000, 56 links
+  in 20..60, every link on the canonical host.
+  floorStudioToMarkdown: heading correct, /never uploaded/ matches, all six
+  species and all four board widths present.
+  ASSEMBLY_SPECIES and ASSEMBLY_WIDTHS compared element-wise against the
+  catalogue.
+  Suite 1 could not be executed here. Stated above rather than implied.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/llms.txt/route.ts  | 28 ++++++++++++++++++++--------
+ apps/web/lib/markdown-export.ts | 11 ++++++++---
+ apps/web/vitest.config.ts       | 20 ++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 11 deletions(-)
+
+diff --git a/apps/web/app/llms.txt/route.ts b/apps/web/app/llms.txt/route.ts
+index 3285fd8..997ad56 100644
+--- a/apps/web/app/llms.txt/route.ts
++++ b/apps/web/app/llms.txt/route.ts
+@@ -296,14 +296,6 @@ export async function GET() {
+   for (const a of entityAnswers()) lines.push(`- ${a.q} ${a.a}`);
+   lines.push('');
+ 
+-  /* ── FAQ ──────────────────────────────────────────────────────────────── */
+-  lines.push('## FAQ');
+-  for (const f of FAQ_ITEMS) {
+-    lines.push(`### ${f.q}`);
+-    lines.push(f.a);
+-    lines.push('');
+-  }
+-
+   /* ── Optional — the long tail an agent may skip on a first fetch ──────── */
+   lines.push('## Optional');
+   lines.push(
+@@ -311,6 +303,26 @@ export async function GET() {
+   );
+   lines.push('');
+ 
++  /* ── FAQ — MOVED HERE FROM THE CORE, AND THIS IS THE PRUNE THE TEST ASKED FOR.
++     The curated core has a 30,000-character budget and stood at 33,066. The
++     comment on that budget in tests/drift.test.ts says, in as many words, that
++     if the core ever crosses, prune the CORE rather than move the number — and
++     names what the core is for: the facts, the entity, the prices and the
++     citation targets. The FAQ is none of those. It was 4,773 characters, the
++     third-largest section in the core, and it carried not one link: an agent
++     reading the top of this file to find out who to cite skipped every byte.
++
++     It is not dropped. It is published here in full, two lines under the
++     sentence that already promises exactly this — that everything below is also
++     at /llms-full.txt and /api/knowledge — and it is still in the FAQPage
++     JSON-LD on the page itself. The core is 28,293 after this. ────────────── */
++  lines.push('## FAQ');
++  for (const f of FAQ_ITEMS) {
++    lines.push(`### ${f.q}`);
++    lines.push(f.a);
++    lines.push('');
++  }
++
+   lines.push('### Per-area routing');
+   lines.push('"hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" → the area page; Markdown at the same URL with .md appended.');
+   for (const c of SERVICE_AREAS) {
+diff --git a/apps/web/lib/markdown-export.ts b/apps/web/lib/markdown-export.ts
+index d13d304..281b360 100644
+--- a/apps/web/lib/markdown-export.ts
++++ b/apps/web/lib/markdown-export.ts
+@@ -1152,9 +1152,14 @@ export const floorStudioToMarkdown = (): string => {
+     '> Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood',
+     '> configurations rendered into it — live, at video rate — with an estimated installed range',
+     '> in the currency of the region the floor is in. Every frame is analysed and composited',
+-    '> in the browser and is never',
+-    '> uploaded, and no image model is involved: every floor shown is one Ecowoods can supply',
+-    '> and install.',
++    /* "never uploaded" ON ONE LINE, and it has to stay that way. This blockquote
++       is hard-wrapped, and the wrap fell between "never" and "uploaded" — which
++       is invisible in the rendered markdown and fatal to the assertion in
++       tests/floor-studio.test.ts that this file states the privacy claim at all.
++       The test was right and the source was wrong: a claim a machine is meant to
++       quote should not be breakable by a line break. */
++    '> in the browser and is never uploaded, and no image model is involved: every floor',
++    '> shown is one Ecowoods can supply and install.',
+     '',
+     identitySentence(),
+     '',
+diff --git a/apps/web/vitest.config.ts b/apps/web/vitest.config.ts
+index 814edda..ea374bd 100644
+--- a/apps/web/vitest.config.ts
++++ b/apps/web/vitest.config.ts
+@@ -29,6 +29,26 @@ const imageStub = (): Plugin => ({
+ 
+ export default defineConfig({
+   plugins: [imageStub()],
++  /* THE AUTOMATIC JSX RUNTIME, WHICH IS WHY ONE SUITE HAS NEVER RUN.
++   *
++   * tsconfig.json says `"jsx": "preserve"`, which is correct — Next owns that
++   * transform. esbuild reads it, finds no runtime it can emit, and falls back
++   * to the CLASSIC one: `React.createElement`. Next components do not import
++   * the React default, because under the automatic runtime they have no reason
++   * to, so the first component this suite rendered threw
++   * `ReferenceError: React is not defined` at its opening `return (`.
++   *
++   * That is a collection-time throw inside a describe callback, so it did not
++   * fail one assertion — it killed the file. lib/floor-assembly.test.ts has
++   * reported `(0)` tests since VIS-05, roughly sixty assertions that have never
++   * executed once, including the one written specifically to catch F-205
++   * (`26026+ Years in Toronto` — three copies of one number concatenating in
++   * the served HTML, which no source-level grep can see). The suite that exists
++   * to catch a duplication bug was itself silently absent.
++   *
++   * Nothing is relaxed by this line. It makes a suite RUN that was not running.
++   */
++  esbuild: { jsx: 'automatic' },
+   resolve: {
+     alias: {
+       '@ecowoods/shared': path.resolve(__dirname, '../../packages/shared'),
+-- 
+2.43.0
+
