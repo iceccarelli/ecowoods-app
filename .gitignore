@@ -92,6 +92,16 @@ package-lock.json
 audit/rendered.json
 audit/rendered.md
 
+# crawl-site.mjs is the same thing and was missed when that rule was written:
+# it fetches every route from a LIVE host and writes what it found, so the file
+# is a snapshot of a deployment at a moment, not a property of this repository.
+# Two people crawling on the same day would commit different files and neither
+# would be wrong. Run it, read it, throw it away — the report that matters is
+# the exit code.
+audit/site-crawl.json
+audit/site-crawl.csv
+audit/site-crawl.md
+
 # Development-only assessment photographs. lib/floor-graph/photo-storage.ts
 # writes here when no private Supabase bucket is configured, deliberately
 # OUTSIDE public/ so a local run cannot serve somebody's living room as a
