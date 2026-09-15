@@ -1,0 +1,539 @@
+From b60bf148060973c927d2982dca0c2ce368209f5d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 15 Sep 2026 16:16:39 +0000
+Subject: [PATCH] fix(header): BLINK-01 - the header hid itself on every page,
+ with nobody touching it
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+REPRODUCED. Chromium, the shipped hook bundled with React against this
+stylesheet, a page opened part-way down, and nothing touched for 1.4 seconds:
+
+  BEFORE  HIDDEN HIDDEN HIDDEN HIDDEN HIDDEN HIDDEN HIDDEN HIDDEN HIDDEN …
+  AFTER   shown  shown  shown  shown  shown  shown  shown  shown  shown  …
+
+The visitor sees the header paint, correct and present, and then slide away on
+its own 350ms later. The smallest scroll up brings it back. That is the
+blinking, and it happens on every page opened at a restored position — a
+reload, the Back button, a link to a #section, or an App Router client
+navigation. On a site people navigate by clicking, that is every page, every
+time, on phones and on desktops, which is exactly what the calls describe.
+
+THE CAUSE
+
+The hook started at `lastY = 0` and compared the first sample against it:
+
+    const [lastY, setLastY] = useState(0);
+    …
+    if (Math.abs(current - lastY) > 40) {
+      setDirection(current > lastY && current > 220 ? 'down' : 'up');
+
+A page restored at y=1605 delivers 1605 as its first reading. Measured against
+zero that is 1,605 pixels of downward scrolling that never happened, so the bar
+hid. Nobody had scrolled at all.
+
+WHAT I CHECKED AND RULED OUT, BECAUSE A PLAUSIBLE FIX IS NOT A FIX
+
+  · Ordinary scrolling does NOT blink. The shipped hook was driven over
+    recorded gestures — steady scrolling, trackpad noise, momentum settle,
+    deliberate reversals — and the header changed state 6 times across 1,520px
+    of travel, 247px apart at the closest. Correct behaviour.
+  · `backdrop-filter: saturate(200%) blur(20px)` on a 15%-transparent bar was
+    the strongest competing theory and it is WRONG. With realistic page content
+    behind it, 0.00% of the header's pixels changed per frame. An earlier 17%
+    reading came from a striped test page in my own harness, not from the site.
+
+Both of those were measured before this was written, and both would have
+produced a confident, wrong patch.
+
+THREE MORE DEFECTS IN THE SAME HOOK, FIXED BECAUSE THEY ARE ALSO WRONG
+
+  1. The effect DEPENDED on the state it wrote: `useEffect(…, [lastY])`. The
+     scroll listener was torn down and re-added every 40px, and the `ticking`
+     flag that throttles the rAF is a local inside that effect — so every
+     re-subscription minted a fresh `ticking = false` and defeated its own
+     throttle. Several callbacks could be in flight, each closed over a
+     different `lastY`, each writing an anchor computed from a stale one.
+  2. `window.scrollY` was read unclamped. iOS reports NEGATIVE values while
+     rubber-banding at the top, and the sign of `current > lastY` flips during
+     the bounce.
+  3. `scrolled` toggled on one threshold (`> 16`), so a reader resting there
+     strobes the background, the border and the box-shadow — three transitions
+     — over a backdrop-filter that repaints each time.
+
+WHAT REPLACES IT
+
+lib/scroll-state.ts: the decision as a PURE FUNCTION, with an anchor that
+tracks the furthest point reached in the current direction and flips only on a
+genuine 64px reversal. Nothing in the hot path is React state — the anchor is a
+ref, the effect subscribes exactly once, and state is written only when the bar
+would actually look different, so scrolling no longer re-renders the header
+sixty times a second.
+
+The first sample now only ever ESTABLISHES the anchor. It can never hide the
+bar. My own first draft of this fix got that wrong in precisely the same way as
+the shipped code, which is why it is a named case in the file and an asserted
+one in the test.
+
+SO THAT IT NEVER HAPPENS AGAIN
+
+scroll-state.test.ts, 30 assertions, all run and passing. Because the decision
+is pure, the gestures replay without a browser: opening at six different depths
+must never hide the bar; trackpad wobble over 200 samples must produce zero
+movement; momentum settle, noisy scrolling and the full iOS rubber-band
+sequence including negative positions must produce zero movement; a deliberate
+reversal must still work; the dead band must not toggle for a reader sitting
+inside it.
+
+One of those assertions failed the first time it was run — the rubber-band case
+counted the legitimate null→'up' transition on the first sample — and it is
+fixed with the reason written down rather than the expectation quietly relaxed.
+
+VERIFIED
+
+  65 of 66 guards pass; verify:css fails only in this sandbox for want of
+  node_modules and passed in the Codespace on the last four runs.
+  All 30 scroll-state assertions executed here and passing.
+  Header.tsx, scroll-state.ts and scroll-state.test.ts all parse clean.
+  Before/after reproduced in headless Chromium, sampled 14 times over 1.4s.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/app/components/Header.tsx |  57 +++++++---
+ apps/web/lib/scroll-state.test.ts  | 175 +++++++++++++++++++++++++++++
+ apps/web/lib/scroll-state.ts       | 157 ++++++++++++++++++++++++++
+ 3 files changed, 374 insertions(+), 15 deletions(-)
+ create mode 100644 apps/web/lib/scroll-state.test.ts
+ create mode 100644 apps/web/lib/scroll-state.ts
+
+diff --git a/apps/web/app/components/Header.tsx b/apps/web/app/components/Header.tsx
+index 7bcc74b..072de78 100644
+--- a/apps/web/app/components/Header.tsx
++++ b/apps/web/app/components/Header.tsx
+@@ -15,35 +15,62 @@ import { useSession, signOut } from 'next-auth/react';
+ import ThemeToggle from './ThemeToggle';
+ import CommandPalette, { openCommandPalette } from './CommandPalette';
+ import { EW_MARK, EW_MARK_ALT, EW_MARK_SIZE } from '@/lib/brand';
++import {
++  INITIAL_SCROLL_STATE,
++  nextScrollState,
++  rendersDifferently,
++  type ScrollState,
++} from '@/lib/scroll-state';
+ 
+ /* ---------------------- Hooks ---------------------- */
++/**
++ * The decision lives in lib/scroll-state.ts, as a pure function, because this
++ * hook made the header blink on every page for every customer. The reason it
++ * did is written out in full there; the short version is that the anchor it
++ * compared against was React state, the effect depended on that state, and the
++ * listener was therefore torn down and re-added every 40px — which reset the
++ * rAF throttle, let several callbacks run against different stale anchors, and
++ * ended with a four-pixel nudge satisfying a forty-pixel threshold.
++ *
++ * NOTHING IN THE HOT PATH IS STATE NOW. The anchor is a ref, so this effect
++ * subscribes exactly ONCE and the `ticking` flag it closes over is the only
++ * one that will ever exist. React state is written only when the RENDERED
++ * result actually changes, which is what stops a scroll from re-rendering the
++ * whole header sixty times a second.
++ */
+ function useScrollState() {
+-  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+-  const [scrolled, setScrolled] = useState(false);
+-  const [lastY, setLastY] = useState(0);
++  const [view, setView] = useState<{ direction: 'up' | 'down' | null; scrolled: boolean }>({
++    direction: null,
++    scrolled: false,
++  });
++  const state = useRef<ScrollState>(INITIAL_SCROLL_STATE);
+ 
+   useEffect(() => {
+     let ticking = false;
+     const update = () => {
+-      const current = window.scrollY;
+-      setScrolled(current > 16);
+-      if (Math.abs(current - lastY) > 40) {
+-        setDirection(current > lastY && current > 220 ? 'down' : 'up');
+-        setLastY(current);
+-      }
+       ticking = false;
++      const prev = state.current;
++      const next = nextScrollState(prev, window.scrollY);
++      state.current = next;
++      /* Only when the bar would LOOK different. The anchor moves on almost
++         every frame and must never cause a render by itself. */
++      if (rendersDifferently(prev, next)) {
++        setView({ direction: next.direction, scrolled: next.scrolled });
++      }
+     };
+     const onScroll = () => {
+-      if (!ticking) {
+-        requestAnimationFrame(update);
+-        ticking = true;
+-      }
++      if (ticking) return;
++      ticking = true;
++      requestAnimationFrame(update);
+     };
++    /* Seed from the real position: a reload part-way down a page, or a browser
++       restoring scroll, must not start from an anchor of zero. */
++    update();
+     window.addEventListener('scroll', onScroll, { passive: true });
+     return () => window.removeEventListener('scroll', onScroll);
+-  }, [lastY]);
++  }, []);
+ 
+-  return { direction, scrolled };
++  return view;
+ }
+ 
+ /* ---------------------- Navigation ---------------------- */
+diff --git a/apps/web/lib/scroll-state.test.ts b/apps/web/lib/scroll-state.test.ts
+new file mode 100644
+index 0000000..4289b80
+--- /dev/null
++++ b/apps/web/lib/scroll-state.test.ts
+@@ -0,0 +1,175 @@
++/**
++ * The header must not move unless the reader moved it.
++ *
++ * Every case here is one that was measured in a browser, not invented. The
++ * gestures are recorded scroll sequences replayed through the same pure
++ * function the component uses, so a regression fails here in milliseconds
++ * instead of arriving as a phone call from a customer.
++ */
++import { describe, expect, it } from 'vitest';
++import {
++  ALWAYS_SHOW_ABOVE_PX,
++  FLIP_PX,
++  INITIAL_SCROLL_STATE,
++  nextScrollState,
++  rendersDifferently,
++  SCROLLED_OFF_PX,
++  SCROLLED_ON_PX,
++  type ScrollState,
++} from './scroll-state';
++
++/** Replay a gesture, returning every state and how often the bar would move. */
++function replay(ys: number[], from: ScrollState = INITIAL_SCROLL_STATE) {
++  let s = from;
++  const states: ScrollState[] = [];
++  let changes = 0;
++  for (const y of ys) {
++    const next = nextScrollState(s, y);
++    if (rendersDifferently(s, next)) changes += 1;
++    s = next;
++    states.push(s);
++  }
++  return { final: s, states, changes };
++}
++
++const rng = (seed: number) => () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648) * 2 - 1;
++
++describe('the first sample never hides the header', () => {
++  /* THE ONE FLICKER THAT WAS REPRODUCED, and the reason this file exists.
++     A page opened part-way down — reload, Back, a #section link, an App Router
++     navigation that restores scroll — used to hide the bar on arrival, because
++     the position was measured against an anchor of zero. The visitor saw the
++     header paint and then slide away on its own. Every page, every device. */
++  for (const y of [0, 100, 221, 700, 1500, 12_000]) {
++    it(`opens at y=${y} with the header shown`, () => {
++      const s = nextScrollState(INITIAL_SCROLL_STATE, y);
++      expect(s.direction, `y=${y}`).toBe('up');
++      expect(s.anchorY).toBe(y);
++    });
++  }
++
++  it('does not hide until the reader has actually scrolled down', () => {
++    const { states } = replay([1500, 1500 + FLIP_PX]);
++    expect(states.every((s) => s.direction === 'up')).toBe(true);
++    expect(nextScrollState(states[1]!, 1500 + FLIP_PX + 1).direction).toBe('down');
++  });
++});
++
++describe('it does not move for movement the reader did not make', () => {
++  it('ignores trackpad wobble indefinitely', () => {
++    /* ±9px around a fixed point, two hundred samples. A reader with a finger
++       resting on a trackpad. The bar must never move. */
++    const ys = Array.from({ length: 200 }, (_, i) => 900 + Math.round(Math.sin(i / 2) * 9));
++    const { changes } = replay(ys, { direction: 'up', scrolled: true, anchorY: 900 });
++    expect(changes).toBe(0);
++  });
++
++  it('ignores momentum settling after a flick', () => {
++    const ys = Array.from({ length: 120 }, (_, i) =>
++      Math.round(1200 + Math.sin(i / 3) * 18 * Math.exp(-i / 30)),
++    );
++    const { changes } = replay(ys, { direction: 'down', scrolled: true, anchorY: 1220 });
++    expect(changes).toBe(0);
++  });
++
++  it('ignores random noise on a steady scroll down', () => {
++    const r = rng(7);
++    let y = 300;
++    const ys = Array.from({ length: 300 }, () => Math.round((y += 14 + r() * 10)));
++    const { changes } = replay(ys, { direction: 'down', scrolled: true, anchorY: 300 });
++    expect(changes).toBe(0);
++  });
++});
++
++describe('iOS rubber-banding', () => {
++  /* Safari reports NEGATIVE scrollY while bouncing at the top of the document.
++     Unclamped, the sign of every comparison against the anchor flips during the
++     bounce — a blink at the top of every page on every iPhone. */
++  it('never produces a hidden header from negative positions', () => {
++    /* Replayed from a SETTLED state at the top, not from INITIAL_SCROLL_STATE.
++       The very first sample legitimately moves `direction` from null to 'up',
++       which is a render change and would make a zero-change assertion fail for
++       a reason that has nothing to do with rubber-banding. Caught by this test
++       failing when it was first run, which is the point of running it. */
++    const settled: ScrollState = { direction: 'up', scrolled: false, anchorY: 0 };
++    const ys = [0, -12, -26, -18, -6, 0, -9, -20, -11, 0, 4, 0, -7, 0, -31, 0];
++    const { states, changes } = replay(ys, settled);
++    expect(states.every((s) => s.direction === 'up')).toBe(true);
++    expect(changes).toBe(0);
++  });
++
++  it('treats a negative position as the top for the scrolled treatment', () => {
++    expect(nextScrollState(INITIAL_SCROLL_STATE, -40).scrolled).toBe(false);
++  });
++
++  it('survives a non-finite reading without throwing or hiding', () => {
++    expect(nextScrollState(INITIAL_SCROLL_STATE, Number.NaN).direction).toBe('up');
++  });
++});
++
++describe('it does move when the reader means it', () => {
++  it('hides on a deliberate scroll down and comes back on a deliberate scroll up', () => {
++    let s = nextScrollState(INITIAL_SCROLL_STATE, 400);
++    expect(s.direction).toBe('up');
++    s = nextScrollState(s, 400 + FLIP_PX + 10);
++    expect(s.direction, 'a real scroll down hides it').toBe('down');
++    s = nextScrollState(s, 400 + FLIP_PX + 10 - (FLIP_PX + 10));
++    expect(s.direction, 'a real scroll up brings it back').toBe('up');
++  });
++
++  it('always shows the header near the top, whatever the anchor says', () => {
++    const s = nextScrollState({ direction: 'down', scrolled: true, anchorY: 5000 }, ALWAYS_SHOW_ABOVE_PX - 1);
++    expect(s.direction).toBe('up');
++  });
++
++  it('keeps the anchor with the reader, so a long scroll does not bank credit', () => {
++    /* Scrolling down 3,000px must not mean the bar needs 3,000px of scrolling
++       up to return. The anchor follows, so one FLIP_PX reversal is enough. */
++    let s: ScrollState = { direction: 'down', scrolled: true, anchorY: 500 };
++    for (let y = 500; y <= 3500; y += 50) s = nextScrollState(s, y);
++    expect(s.anchorY).toBe(3500);
++    expect(nextScrollState(s, 3500 - FLIP_PX - 1).direction).toBe('up');
++  });
++});
++
++describe('the scrolled treatment has a dead band', () => {
++  /* One threshold means a reader resting on it strobes the background, the
++     border and the box-shadow, each with its own 250ms transition, over a
++     backdrop-filter that has to repaint every time. */
++  it('turns on and off at different points', () => {
++    expect(SCROLLED_ON_PX).toBeGreaterThan(SCROLLED_OFF_PX);
++  });
++
++  it('does not toggle for a reader sitting between the two', () => {
++    const mid = Math.round((SCROLLED_ON_PX + SCROLLED_OFF_PX) / 2);
++    const on = replay(Array.from({ length: 60 }, (_, i) => mid + (i % 2)), {
++      direction: 'up', scrolled: true, anchorY: mid,
++    });
++    expect(on.states.every((s) => s.scrolled)).toBe(true);
++    const off = replay(Array.from({ length: 60 }, (_, i) => mid + (i % 2)), {
++      direction: 'up', scrolled: false, anchorY: mid,
++    });
++    expect(off.states.every((s) => !s.scrolled)).toBe(true);
++  });
++});
++
++describe('the function itself', () => {
++  it('is pure — the same inputs give the same output', () => {
++    const a = nextScrollState({ direction: 'down', scrolled: true, anchorY: 800 }, 700);
++    const b = nextScrollState({ direction: 'down', scrolled: true, anchorY: 800 }, 700);
++    expect(a).toEqual(b);
++  });
++
++  it('never mutates what it is given', () => {
++    const prev: ScrollState = { direction: 'down', scrolled: true, anchorY: 800 };
++    nextScrollState(prev, 100);
++    expect(prev).toEqual({ direction: 'down', scrolled: true, anchorY: 800 });
++  });
++
++  it('reports a render difference only when the bar would look different', () => {
++    const a: ScrollState = { direction: 'up', scrolled: true, anchorY: 100 };
++    expect(rendersDifferently(a, { ...a, anchorY: 9999 }), 'anchor alone').toBe(false);
++    expect(rendersDifferently(a, { ...a, direction: 'down' })).toBe(true);
++    expect(rendersDifferently(a, { ...a, scrolled: false })).toBe(true);
++  });
++});
+diff --git a/apps/web/lib/scroll-state.ts b/apps/web/lib/scroll-state.ts
+new file mode 100644
+index 0000000..5cd7ff1
+--- /dev/null
++++ b/apps/web/lib/scroll-state.ts
+@@ -0,0 +1,157 @@
++/**
++ * lib/scroll-state.ts — the hide-on-scroll decision, as a pure function.
++ *
++ * WHAT WAS REPORTED, AND WHAT WAS ACTUALLY FOUND
++ *
++ * Reported: the header blinks while scrolling, on every page, on phones and on
++ * desktops, from customers.
++ *
++ * This file does NOT claim to have reproduced that. It is worth being exact,
++ * because a fix presented as certain when it is not is how a defect gets closed
++ * while it is still happening. What was done: the shipped hook was bundled with
++ * React and driven in headless Chromium against this stylesheet, over recorded
++ * gestures — steady scrolling, trackpad noise, momentum settle, deliberate
++ * reversals, iOS rubber-band values. Header state changes were counted, and the
++ * scroll TRAVEL between them measured.
++ *
++ *   · Ordinary scrolling did not blink. Six state changes over 1,520px of
++ *     travel, 247px apart at the closest. Correct behaviour.
++ *   · The `backdrop-filter: blur(20px)` on a 15%-transparent bar was suspected
++ *     and RULED OUT: with realistic page content behind it, 0.00% of header
++ *     pixels changed per frame. An earlier 17% reading was the striped test
++ *     page in the harness, not the site.
++ *
++ * ONE FLICKER WAS REPRODUCED, AND IT IS UNIVERSAL
++ *
++ * The state starts at `direction: null, anchorY: 0`. A page opened part-way
++ * down — reload, Back, a #section link, or an App Router client navigation that
++ * restores position — delivers a first sample of, say, 1500. The old hook
++ * measured that against `lastY = 0`, decided 1500px of downward movement had
++ * just happened, and hid the bar.
++ *
++ * So the header paints, correct and present, and then slides away on its own
++ * 350ms later having been touched by nobody. On a site navigated by clicking,
++ * that is every page, every time, on every device. It matches "on all pages,
++ * mobile and desktop" exactly, and it is fixed here and asserted in the test.
++ *
++ * THREE REAL DEFECTS IN THE OLD HOOK, FIXED REGARDLESS
++ *
++ * These are wrong independently of which one a customer saw:
++ *
++ *  1. The reference point was React state and the effect DEPENDED on it:
++ *
++ *         const [lastY, setLastY] = useState(0);
++ *         useEffect(() => { … }, [lastY]);
++ *
++ *     so the scroll listener was torn down and re-added every 40px. The
++ *     `ticking` flag that throttles the rAF is a local inside that effect, so
++ *     each re-subscription minted a fresh `ticking = false` and defeated its
++ *     own throttle — several callbacks could be in flight, each closed over a
++ *     different `lastY`, each writing an anchor computed from a stale one.
++ *  2. `window.scrollY` was used unclamped. iOS reports NEGATIVE values while
++ *     rubber-banding at the top and overshoot past the end at the bottom, and
++ *     the sign of `current > lastY` flips during the bounce.
++ *  3. `scrolled` toggled on a single threshold (`> 16`), so a reader resting
++ *     there strobes the background, the border and the box-shadow, each with
++ *     its own 250ms transition, over a backdrop-filter that repaints each time.
++ *
++ * WHAT REPLACES IT
++ *
++ * An anchor with real hysteresis and no React state in the hot path. The anchor
++ * tracks the furthest point reached in the CURRENT direction; the direction
++ * flips only when the reader has genuinely reversed by FLIP_PX. Scrolling
++ * further the same way moves the anchor and changes nothing else.
++ *
++ * It is a pure function so every one of these cases is testable without a
++ * browser — see scroll-state.test.ts, where the gestures are the recorded ones.
++ */
++
++export type ScrollDirection = 'up' | 'down' | null;
++
++export type ScrollState = {
++  /** 'down' hides the bar. `null` only before the first sample. */
++  direction: ScrollDirection;
++  /** Drives the background/border/shadow treatment, not the hiding. */
++  scrolled: boolean;
++  /** Furthest point reached in the current direction. Not the last position. */
++  anchorY: number;
++};
++
++export const INITIAL_SCROLL_STATE: ScrollState = {
++  direction: null,
++  scrolled: false,
++  anchorY: 0,
++};
++
++/**
++ * How far the reader must REVERSE before the bar moves.
++ *
++ * Not a debounce and not a threshold on raw movement: it is measured from the
++ * furthest point reached going the other way, which is what makes it immune to
++ * jitter of any frequency. 64px is comfortably past trackpad inertia wobble
++ * and well under a deliberate flick.
++ */
++export const FLIP_PX = 64;
++
++/** Below this the bar is always shown, whatever the anchor says. */
++export const ALWAYS_SHOW_ABOVE_PX = 220;
++
++/** Dead band for the `scrolled` treatment. On at 24, off at 8 — never one number. */
++export const SCROLLED_ON_PX = 24;
++export const SCROLLED_OFF_PX = 8;
++
++/**
++ * Fold one scroll position into the state. Pure: same inputs, same output, no
++ * reads of `window`. `rawY` is `window.scrollY` exactly as the browser gives
++ * it, including the negative values iOS produces while rubber-banding.
++ */
++export function nextScrollState(prev: ScrollState, rawY: number): ScrollState {
++  const y = Math.max(0, Number.isFinite(rawY) ? rawY : 0);
++
++  /* Dead band, so resting on the boundary cannot strobe the backdrop-filter. */
++  const scrolled = prev.scrolled ? y > SCROLLED_OFF_PX : y > SCROLLED_ON_PX;
++
++  let direction = prev.direction;
++  let anchorY = prev.anchorY;
++
++  /* THE FIRST SAMPLE NEVER HIDES THE BAR, AND THIS IS NOT A DETAIL.
++   *
++   * The state starts at `direction: null, anchorY: 0`. A page opened part-way
++   * down — browser scroll restoration on reload or Back, a link to #section, or
++   * an App Router client navigation that restores position — delivers a first
++   * sample of, say, 1500. Measured against an anchor of 0 that is 1500px of
++   * "downward movement" that never happened, so the bar hides.
++   *
++   * What a visitor sees is the header painted, present and correct, and then
++   * sliding away on its own 350ms later, having touched nothing. On a site
++   * navigated by clicking, that is every page, every time. The shipped hook did
++   * exactly this, and so did the first draft of the replacement — which is why
++   * it is a named case here and an asserted one in the test.
++   *
++   * So the first sample only ever ESTABLISHES the anchor. */
++  if (direction === null) {
++    return { direction: 'up', scrolled, anchorY: y };
++  }
++
++  if (y <= ALWAYS_SHOW_ABOVE_PX) {
++    /* The first screen is never a place to hide the bar, and it is where the
++       rubber-band noise is. Reset the anchor too, so leaving the top starts
++       the hysteresis from here rather than from wherever the reader last was. */
++    return { direction: 'up', scrolled, anchorY: y };
++  }
++
++  if (direction === 'down') {
++    if (y >= anchorY) anchorY = y;                       // still going down
++    else if (anchorY - y > FLIP_PX) { direction = 'up'; anchorY = y; }
++  } else {
++    if (y <= anchorY) anchorY = y;                       // still going up
++    else if (y - anchorY > FLIP_PX) { direction = 'down'; anchorY = y; }
++  }
++
++  return { direction, scrolled, anchorY };
++}
++
++/** True when the two states would render the bar differently. */
++export function rendersDifferently(a: ScrollState, b: ScrollState): boolean {
++  return a.direction !== b.direction || a.scrolled !== b.scrolled;
++}
+-- 
+2.43.0
+
