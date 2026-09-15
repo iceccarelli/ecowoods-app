@@ -29,6 +29,26 @@ const imageStub = (): Plugin => ({
 
 export default defineConfig({
   plugins: [imageStub()],
+  /* THE AUTOMATIC JSX RUNTIME, WHICH IS WHY ONE SUITE HAS NEVER RUN.
+   *
+   * tsconfig.json says `"jsx": "preserve"`, which is correct — Next owns that
+   * transform. esbuild reads it, finds no runtime it can emit, and falls back
+   * to the CLASSIC one: `React.createElement`. Next components do not import
+   * the React default, because under the automatic runtime they have no reason
+   * to, so the first component this suite rendered threw
+   * `ReferenceError: React is not defined` at its opening `return (`.
+   *
+   * That is a collection-time throw inside a describe callback, so it did not
+   * fail one assertion — it killed the file. lib/floor-assembly.test.ts has
+   * reported `(0)` tests since VIS-05, roughly sixty assertions that have never
+   * executed once, including the one written specifically to catch F-205
+   * (`26026+ Years in Toronto` — three copies of one number concatenating in
+   * the served HTML, which no source-level grep can see). The suite that exists
+   * to catch a duplication bug was itself silently absent.
+   *
+   * Nothing is relaxed by this line. It makes a suite RUN that was not running.
+   */
+  esbuild: { jsx: 'automatic' },
   resolve: {
     alias: {
       '@ecowoods/shared': path.resolve(__dirname, '../../packages/shared'),

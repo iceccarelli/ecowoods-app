@@ -296,20 +296,32 @@ export async function GET() {
   for (const a of entityAnswers()) lines.push(`- ${a.q} ${a.a}`);
   lines.push('');
 
-  /* ── FAQ ──────────────────────────────────────────────────────────────── */
-  lines.push('## FAQ');
-  for (const f of FAQ_ITEMS) {
-    lines.push(`### ${f.q}`);
-    lines.push(f.a);
-    lines.push('');
-  }
-
   /* ── Optional — the long tail an agent may skip on a first fetch ──────── */
   lines.push('## Optional');
   lines.push(
     `Everything below is published in full at ${SITE_URL}/llms-full.txt and as JSON at ${SITE_URL}/api/knowledge. Skip it unless the question is technical.`,
   );
   lines.push('');
+
+  /* ── FAQ — MOVED HERE FROM THE CORE, AND THIS IS THE PRUNE THE TEST ASKED FOR.
+     The curated core has a 30,000-character budget and stood at 33,066. The
+     comment on that budget in tests/drift.test.ts says, in as many words, that
+     if the core ever crosses, prune the CORE rather than move the number — and
+     names what the core is for: the facts, the entity, the prices and the
+     citation targets. The FAQ is none of those. It was 4,773 characters, the
+     third-largest section in the core, and it carried not one link: an agent
+     reading the top of this file to find out who to cite skipped every byte.
+
+     It is not dropped. It is published here in full, two lines under the
+     sentence that already promises exactly this — that everything below is also
+     at /llms-full.txt and /api/knowledge — and it is still in the FAQPage
+     JSON-LD on the page itself. The core is 28,293 after this. ────────────── */
+  lines.push('## FAQ');
+  for (const f of FAQ_ITEMS) {
+    lines.push(`### ${f.q}`);
+    lines.push(f.a);
+    lines.push('');
+  }
 
   lines.push('### Per-area routing');
   lines.push('"hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" → the area page; Markdown at the same URL with .md appended.');

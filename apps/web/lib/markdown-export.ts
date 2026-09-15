@@ -1152,9 +1152,14 @@ export const floorStudioToMarkdown = (): string => {
     '> Point a camera at a room, or upload a photograph of one, and see real Ecowoods hardwood',
     '> configurations rendered into it — live, at video rate — with an estimated installed range',
     '> in the currency of the region the floor is in. Every frame is analysed and composited',
-    '> in the browser and is never',
-    '> uploaded, and no image model is involved: every floor shown is one Ecowoods can supply',
-    '> and install.',
+    /* "never uploaded" ON ONE LINE, and it has to stay that way. This blockquote
+       is hard-wrapped, and the wrap fell between "never" and "uploaded" — which
+       is invisible in the rendered markdown and fatal to the assertion in
+       tests/floor-studio.test.ts that this file states the privacy claim at all.
+       The test was right and the source was wrong: a claim a machine is meant to
+       quote should not be breakable by a line break. */
+    '> in the browser and is never uploaded, and no image model is involved: every floor',
+    '> shown is one Ecowoods can supply and install.',
     '',
     identitySentence(),
     '',
