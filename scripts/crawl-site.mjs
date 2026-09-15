@@ -51,6 +51,32 @@ const arg = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
 };
 const BASE = (arg('--base', 'https://ecowoods.ca')).replace(/\/$/, '');
+
+/* ROUTES THAT ARE DELIBERATELY NOT SEARCH SURFACES.
+ *
+ * A page that is noindex, or whose canonical points at a different page, is
+ * almost always a mistake — it is a page nobody will ever find, and the crawler
+ * is right to say so. Almost always. /r is the short URL printed on the card
+ * handed to a finished customer, and it is noindex on purpose with its
+ * canonical aimed at /reviews, because /reviews is the page written to be found
+ * and quoted and the two must never compete for it.
+ *
+ * So this is NOT a skip list. Skipping would mean the crawler stops looking at
+ * /r entirely, and the day somebody makes it indexable it would start competing
+ * with /reviews in silence — the exact failure the noindex prevents. A declared
+ * route is checked HARDER instead: it must still be noindex, and its canonical
+ * must still be the page named here, to the character. Drift in either
+ * direction is a failure with its own message.
+ *
+ * Adding a route here is a claim that its exclusion is intentional and that
+ * something else carries the search weight. Write the reason down. */
+const NOT_A_SEARCH_SURFACE = {
+  '/r': {
+    canonical: '/reviews',
+    why: 'the short URL on the card handed to a finished customer; /reviews is the page written to be found',
+  },
+};
+
 const STRICT = argv.includes('--strict');
 const OUT_DIR = join(ROOT, 'audit');
 
@@ -239,10 +265,21 @@ for (const r of rows) {
     if (!r.title) problems.push({ path: r.path, why: 'no <title>' });
     if (r.h1Count === 0) problems.push({ path: r.path, why: 'no <h1>' });
     if (r.h1Count > 1) problems.push({ path: r.path, why: `${r.h1Count} <h1> elements` });
-    if (!r.canonical) problems.push({ path: r.path, why: 'no rel=canonical' });
-    else if (r.canonicalMatchesSelf === false) problems.push({ path: r.path, why: `canonical points elsewhere: ${r.canonical}` });
+    const declared = NOT_A_SEARCH_SURFACE[r.path];
+    if (declared) {
+      const want = `${BASE}${declared.canonical}`;
+      if (!r.metaRobots || !/noindex/i.test(r.metaRobots)) {
+        problems.push({ path: r.path, why: `is declared not-a-search-surface (${declared.why}) but is INDEXABLE — it will compete with ${declared.canonical}` });
+      }
+      if (r.canonical !== want) {
+        problems.push({ path: r.path, why: `declared canonical ${want}, serves ${r.canonical ?? 'none'}` });
+      }
+    } else {
+      if (!r.canonical) problems.push({ path: r.path, why: 'no rel=canonical' });
+      else if (r.canonicalMatchesSelf === false) problems.push({ path: r.path, why: `canonical points elsewhere: ${r.canonical}` });
+      if (r.metaRobots && /noindex/i.test(r.metaRobots)) problems.push({ path: r.path, why: `meta robots says ${r.metaRobots}` });
+    }
     if (!r.jsonLd?.length) problems.push({ path: r.path, why: 'no JSON-LD' });
-    if (r.metaRobots && /noindex/i.test(r.metaRobots)) problems.push({ path: r.path, why: `meta robots says ${r.metaRobots}` });
   }
 }
 
