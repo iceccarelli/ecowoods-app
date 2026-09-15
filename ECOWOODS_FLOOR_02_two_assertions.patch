@@ -1,0 +1,156 @@
+From 772bef8cefd1053591fe323c1ba948b0ce5abfd7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 15 Sep 2026 17:13:25 +0000
+Subject: [PATCH] fix(test): FLOOR-02 - two assertions FLOOR-01 broke, and I
+ should have run them
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`pnpm test:web`: 921 passed, 2 failed, both in floor-assembly.test.ts, both
+caused by FLOOR-01. I ran the new geometry test and the data assertions by hand
+and did not re-run this file after changing the texture path and the way the
+parquet turn is decomposed. That is on me, and it is the second time in this
+series that a file I did not re-run was the file that broke.
+
+Neither failure is a floor that is wrong. Both are assertions that pinned a
+DECOMPOSITION which changed, while the thing they exist to protect is intact —
+and both come back stronger than they were.
+
+1. 'every species has a photographed crop on disk'
+
+    expected '/textures/grain-white-oak-along.webp'
+          to be '/textures/grain-white-oak.webp'
+
+It asserted the portrait crop. FLOOR-01 pointed this surface at the landscape
+one, because the build turns every tile so the grain runs DOWN it — right for
+the renderer, which samples in board-local inches and turns the grain itself,
+and wrong here, where CSS cannot rotate a background and a board carries its
+length along the div's width. The portrait tile painted the figure across every
+plank.
+
+Now: the along tile must exist, the portrait tile it was cut from must ALSO
+still exist, and they must be two different files. A build that stopped writing
+the pair, or wrote the same file twice, fails here instead of on the homepage.
+One claim became three.
+
+2. 'turn the parquet patterns to 45 degrees and the plank patterns to zero'
+
+    herringbone: expected [0, 90] to deeply equal [-45, 45]
+
+It compared board `rot` alone. That held while both parquet patterns put the
+whole turn on each board; FLOOR-01 stopped doing that for herringbone, which is
+now generated axis-aligned with the FIELD turned 45° — how it is actually laid,
+the pattern square and the room at an angle to it, and the only arrangement in
+which the lattice closes exactly.
+
+So the test failed on a floor that is correct, which is the worst kind of
+failing test: it argues for putting the defect back.
+
+What a visitor sees is rot PLUS fieldRot. That is what is asserted now,
+normalised to a half turn because a board at 135° and a board at −45° are the
+same board. Measured:
+
+    straight      rot [0]       field  0  → on screen [0]
+    diagonal      rot [0]       field 45  → on screen [45]
+    herringbone   rot [0, 90]   field 45  → on screen [45, 135]
+    chevron       rot [-45, 45] field  0  → on screen [45, 135]
+
+Both parquet patterns land on the same pair, as they must. The assertion is now
+true however the turn is split between board and field, and it would still have
+caught the original defect — which is the test for whether a rewritten
+assertion is honest or merely convenient.
+
+NO GUARD WAS WEAKENED. Two assertions moved from checking how a value is
+represented to checking what it renders as, and both cover more than before.
+
+VERIFIED
+
+  Both rewritten assertions executed here against the built tiles and the real
+  generator, with the assertions around them — determinism, fieldRot, scale,
+  and straight-plank rotation — re-run alongside.
+  65 of 66 guards pass; verify:css fails only in this sandbox.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Wz3f94TUzSk49wD2izgQYx
+---
+ apps/web/lib/floor-assembly.test.ts | 52 ++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 8 deletions(-)
+
+diff --git a/apps/web/lib/floor-assembly.test.ts b/apps/web/lib/floor-assembly.test.ts
+index e6b4d90..0fdfef4 100644
+--- a/apps/web/lib/floor-assembly.test.ts
++++ b/apps/web/lib/floor-assembly.test.ts
+@@ -138,12 +138,29 @@ describe('the species join is the catalogue, not a copy of it', () => {
+ 
+   /* THE SILENT ONE. grainTextureFor computes a path. If a species is added to
+      the catalogue without its crop, every browser requests a 404 and the wear
+-     layer silently paints as a flat gradient — which still looks deliberate. */
+-  it('every species has a photographed crop on disk', () => {
++     layer silently paints as a flat gradient — which still looks deliberate.
++
++     IT IS THE LANDSCAPE CROP NOW, and this asserted the portrait one until
++     FLOOR-01. The build script turns every tile so the grain runs DOWN it,
++     which is what the renderer wants — it samples in board-local inches and
++     turns the grain itself. This surface is CSS and cannot: a board carries its
++     LENGTH along the div's width, so the portrait tile painted the figure
++     across every plank. The build writes each tile a second time, turned a
++     quarter turn, and this surface asks for that one.
++
++     So the claim is bigger than it was: the along tile must exist, the portrait
++     tile it was cut from must ALSO still exist, and they must be two different
++     files. A build that stopped writing the pair, or started writing the same
++     file twice, now fails here instead of on the homepage. */
++  it('every species has a photographed crop on disk, in both orientations', () => {
+     for (const s of ASSEMBLY_SPECIES) {
+-      const path = grainTextureFor(s.id);
+-      expect(path, s.id).toBe(`/textures/grain-${s.id}.webp`);
+-      expect(existsSync(join(WEB, 'public', path)), `missing public${path}`).toBe(true);
++      const along = grainTextureFor(s.id);
++      expect(along, s.id).toBe(`/textures/grain-${s.id}-along.webp`);
++      expect(existsSync(join(WEB, 'public', along)), `missing public${along}`).toBe(true);
++
++      const portrait = `/textures/grain-${s.id}.webp`;
++      expect(existsSync(join(WEB, 'public', portrait)), `missing public${portrait}`).toBe(true);
++      expect(along, `${s.id}: the two orientations are the same file`).not.toBe(portrait);
+     }
+   });
+ 
+@@ -289,12 +306,31 @@ describe('the boards', () => {
+   });
+ 
+   /* Herringbone STEPS; chevron's apexes line up into rows. If both were
+-     generated the same way one of the two labels on the page would be a lie. */
++     generated the same way one of the two labels on the page would be a lie.
++     THE ANGLE ON SCREEN, NOT THE ANGLE IN THE DATA. This compared board `rot`
++     alone and expected [-45, 45] from both. That held while both patterns put
++     the whole turn on each board, and FLOOR-01 stopped doing that for
++     herringbone: it is generated axis-aligned and the FIELD is turned 45°,
++     which is how it is actually laid — the pattern is square and the room is at
++     an angle to it — and it is the only way the lattice closes exactly.
++
++     Board rot became [0, 90] and the test failed on a floor that was correct.
++     What a visitor sees is rot PLUS fieldRot, so that is what is asserted now,
++     normalised to a half turn because a board at 135° and a board at −45° are
++     the same board. Both parquet patterns must land on {45, 135}. This is the
++     stronger claim: it is true however the turn is split, and it would still
++     have caught the original defect. */
+   it('turn the parquet patterns to 45 degrees and the plank patterns to zero', () => {
++    const onScreen = (id: string) => {
++      const f = boardsFor(id);
++      const norm = (a: number) => (((a + f.fieldRot) % 180) + 180) % 180;
++      return [...new Set(f.boards.map((b) => norm(b.rot)))].sort((a, b) => a - b);
++    };
+     for (const id of ['herringbone', 'chevron']) {
+-      const rots = new Set(boardsFor(id).boards.map((b) => b.rot));
+-      expect([...rots].sort((a, b) => a - b), id).toEqual([-45, 45]);
++      expect(onScreen(id), `${id} on screen`).toEqual([45, 135]);
+     }
++    expect(onScreen('straight'), 'straight on screen').toEqual([0]);
++    expect(onScreen('diagonal'), 'diagonal on screen').toEqual([45]);
+     expect(boardsFor('straight').boards.every((b) => b.rot === 0)).toBe(true);
+     expect(boardsFor('diagonal').fieldRot).toBe(45);
+     expect(boardsFor('straight').fieldRot).toBe(0);
+-- 
+2.43.0
+
