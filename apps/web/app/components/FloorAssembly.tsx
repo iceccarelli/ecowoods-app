@@ -251,6 +251,23 @@ export function FloorAssembly({ variant = 'section' }: FloorAssemblyProps) {
                             width: `${b.w}%`,
                             height: `${b.h}%`,
                             transform: `rotate(${b.rot}deg)`,
+                            /* THE MITRE. A chevron board is a parallelogram,
+                               not a rectangle — two sides along its own axis,
+                               two VERTICAL, which is the cut that lets two
+                               boards meet point-to-point. Shifting one end of
+                               the clip by k = h/w turns the square ends into
+                               45° cuts that land vertical once the board is
+                               rotated. Herringbone boards carry no mitre and
+                               are left as the rectangles they really are. */
+                            clipPath: b.mitre
+                              ? (() => {
+                                  const k = ((b.h / b.w) * 100).toFixed(3);
+                                  const j = (100 - b.h / b.w * 100).toFixed(3);
+                                  return b.mitre === 'left'
+                                    ? `polygon(${k}% 0%, 100% 0%, ${j}% 100%, 0% 100%)`
+                                    : `polygon(0% 0%, ${j}% 0%, 100% 100%, ${k}% 100%)`;
+                                })()
+                              : undefined,
                             /* The warm cast and this board's own darkening,
                                multiplied into the crop ONCE when the board is
                                rasterised. Doing it with mix-blend-mode over the

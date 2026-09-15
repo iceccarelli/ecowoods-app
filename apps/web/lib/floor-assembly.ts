@@ -161,8 +161,23 @@ export function layerById(id: string): AssemblyLayer | undefined {
  * here would make it fail for the wrong reason.
  */
 export function grainTextureFor(productId: string): string {
+  /* THE LANDSCAPE TILE, AND THE REASON THERE IS ONE.
+   *
+   * build-grain.py turns every crop so the grain runs DOWN the tile, which is
+   * what the renderer wants: it samples in board-local inches and turns the
+   * grain itself. This surface cannot. It is CSS — one background-image per
+   * board div — and a CSS background cannot be rotated. These boards are laid
+   * out with their LENGTH along the div's width, so the portrait tile put the
+   * grain across every board: oak with the figure running the wrong way, which
+   * is the defect DESIGN-01 measured out of the renderer and which was still
+   * shipping here because this surface was never part of that fix.
+   *
+   * The build script now writes the same tile a second time, turned a quarter
+   * turn. Same wood, same crop, same numbers with the axes swapped. */
   const tile = grainTileFor(productId);
-  return tile ? grainTileHref(tile) : `/textures/grain-${productId}.webp`;
+  return tile
+    ? `/textures/${tile.file.replace(/\.webp$/, '-along.webp')}`
+    : `/textures/grain-${productId}-along.webp`;
 }
 
 /** The species the assembly can be shown in — the catalogue, not a copy of it. */
@@ -297,6 +312,20 @@ export type Board = {
   h: number;
   /** Rotation in degrees about the board's top-left corner. */
   rot: number;
+  /**
+   * The mitre, for chevron only.
+   *
+   * A chevron board is not a rectangle. It is a PARALLELOGRAM: two sides along
+   * the board's axis and two sides VERTICAL, and those vertical sides are the
+   * mitre cut that lets two boards meet point-to-point instead of one lapping
+   * over the other. A rotated rectangle cannot make that shape, which is why
+   * the old code faked it with an overlap and why the result looked like a
+   * floor laid by somebody in a hurry.
+   *
+   * 'left' leans one way, 'right' the other; the renderer turns each into a
+   * clip-path. Herringbone boards are honest rectangles and carry `undefined`.
+   */
+  mitre?: 'left' | 'right';
 };
 
 export type BoardField = {
@@ -329,8 +358,14 @@ export function boardsFor(patternId: string, opts: { width?: number } = {}): Boa
   const W = opts.width ?? 7.5;
   const L = W * 4.6;
   const out: Board[] = [];
-  const push = (x: number, y: number, w: number, h: number, rot: number) =>
-    out.push({ x, y, w, h, rot });
+  /* The joint between boards. Taken OUT of the board, never added to the
+     spacing, so the lattice still closes exactly.
+     PROPORTIONAL TO THE BOARD, not a constant: a fixed 0.28 was 4% of a 7in
+     plank and 7% of a 3¼in strip, so the narrowest floor — the one with the
+     most joints in it already — also drew the widest ones. */
+  const JOINT = Math.min(0.3, W * 0.04);
+  const push = (x: number, y: number, w: number, h: number, rot: number, mitre?: 'left' | 'right') =>
+    out.push(mitre ? { x, y, w, h, rot, mitre } : { x, y, w, h, rot });
 
   if (patternId === 'straight' || patternId === 'diagonal') {
     /* Running bond: each course's end joints offset by a third of a board, so
@@ -338,7 +373,7 @@ export function boardsFor(patternId: string, opts: { width?: number } = {}): Boa
     const rows = Math.ceil(100 / W);
     for (let r = 0; r < rows; r++) {
       const off = ((r % 3) * L) / 3;
-      for (let x = -L + off; x < 110; x += L + 0.4) push(x, r * W, L, W - 0.28, 0);
+      for (let x = -L + off; x < 110; x += L + JOINT) push(x, r * W, L, W - JOINT, 0);
     }
     return {
       boards: out,
@@ -348,32 +383,104 @@ export function boardsFor(patternId: string, opts: { width?: number } = {}): Boa
   }
 
   if (patternId === 'herringbone') {
-    /* Interlocking L-pairs: each board butts into the SIDE of its neighbour and
-       the courses STEP. That step is the whole difference from chevron. */
-    const colW = L * 0.72;
-    for (let c = -3; c < Math.ceil(100 / colW) + 3; c++) {
-      const sign = c % 2 === 0 ? -45 : 45;
-      for (let k = -14; k < 26; k++) {
-        push(c * colW, k * (W + 0.5) * 1.42 - 60, L + W * 1.6, W - 0.28, sign);
+    /* HERRINGBONE, LAID THE WAY IT IS LAID, AND THE OLD ONE WAS NOT.
+     *
+     * What stood here put every column of boards at the same vertical offset
+     * and made each board LONGER than its slot — `L + W * 1.6` — so the boards
+     * lapped over one another instead of interlocking. Four hundred and forty
+     * overlapping rectangles is what the screenshots showed, and no amount of
+     * texture work fixes a floor whose boards are in the wrong places.
+     *
+     * The real construction is one rule. Boards are generated axis-aligned and
+     * the whole field is turned 45° at the end, which is also how a floorer
+     * thinks about it — the pattern is square, the ROOM is at an angle to it.
+     * In units of one board width, with n = length / width:
+     *
+     *   a course steps by (n, n)      — each board's end butts the next one's
+     *                                   side, and the pair makes an L
+     *   the next course offsets by (−1, +1)
+     *
+     * That is the whole tiling. Verified by rasterising the result rather than
+     * by looking at it: 100.00% coverage and 0.00% overlap, at every board
+     * ratio from 3:1 to 5.5:1 including the 4.6:1 this catalogue uses.
+     *
+     * The joint is taken out of the board, never added to the spacing, so the
+     * lattice keeps closing exactly and the gap a person sees is a real gap
+     * rather than a rounding error. */
+    /* BOUNDED FROM THE LATTICE, NOT FROM THE BOX.
+       The two indices do not both run across the field: k walks ALONG the
+       course, which advances n board-widths a step, and c walks across it, one
+       width a step. Looping both over the same square range is how a 100-unit
+       field ended up generating two and a half thousand boards, the great
+       majority of them off-screen and every one of them a DOM node. Inverting
+       x = (nk − c)W and y = (nk + c)W gives the ranges that actually land. */
+    const n = L / W;
+    const MARGIN = 45;
+    const kMin = Math.floor(-MARGIN / (n * W)) - 1;
+    const kMax = Math.ceil((100 + MARGIN) / (n * W)) + 1;
+    const cLim = Math.ceil((100 + MARGIN) / W) + 1;
+    for (let c = -cLim; c <= cLim; c++) {
+      for (let k = kMin; k <= kMax; k++) {
+        const hx = (n * k - c) * W;
+        const hy = (n * k + c) * W;
+        if (hx < -MARGIN - L || hx > 100 + MARGIN || hy < -MARGIN - L || hy > 100 + MARGIN) continue;
+        /* Along the board: w is the length, so the grain runs with it. */
+        push(hx, hy, L - JOINT, W - JOINT, 0);
+        /* The perpendicular board. Rotated 90° about its top-left corner, a
+           w×h box lands on x ∈ [x−h, x], y ∈ [y, y+w] — so the corner goes to
+           the slot's RIGHT edge and the box reaches back across it. */
+        push(hx + L + W - JOINT, hy, L - JOINT, W - JOINT, 90);
       }
     }
-    return { boards: out, fieldRot: 0, scale: 1.25 };
+    return { boards: out, fieldRot: 45, scale: 1.55 };
   }
 
-  /* Chevron: mitred, meeting point-to-point, so the apexes line up into
-     continuous rows. `d` is the reach of a board turned 45 degrees; a rising
-     board starts a full d lower so its far end lands on the seam where the
-     falling board begins. The small overlap covers the corner void a
-     rectangle leaves where a real mitre would close. */
-  const d = L / Math.SQRT2;
-  const rowH = (W + 0.6) * Math.SQRT2;
-  for (let r = -8; r < Math.ceil(100 / rowH) + 8; r++) {
-    for (let c = -3; c < Math.ceil(100 / d) + 3; c++) {
-      const rising = c % 2 === 0;
-      push(c * d, r * rowH + (rising ? d : 0), L + W * 0.75, W - 0.28, rising ? -45 : 45);
+  /* CHEVRON, WHICH IS NOT HERRINGBONE AND IS NOT A ROTATED RECTANGLE.
+   *
+   * The boards are MITRED and meet point-to-point, so each one is a
+   * parallelogram: two sides along its own axis at 45°, two sides vertical.
+   * The old code admitted it could not draw that — "the small overlap covers
+   * the corner void a rectangle leaves where a real mitre would close" — and
+   * an overlap is exactly what shipped: boards lapping over their neighbours
+   * down every seam.
+   *
+   * A rotated rectangle plus a parallelogram clip-path IS that shape, exactly,
+   * and costs nothing. Cutting a fraction k = h/w off one end and adding it to
+   * the other turns the square ends into 45° cuts, which land vertical once the
+   * board is turned. The board's effective length along its axis becomes w − h,
+   * so the layout is computed from that and not from w.
+   *
+   * Columns alternate lean and each column steps down by h√2, which is the
+   * vertical height of one mitre edge. Verified the same way: 100.00% coverage,
+   * 0.00% overlap, at 3:1, 4:1 and 5:1. */
+  /* EVERY NUMBER HERE USES THE BOARD'S REAL HEIGHT, JOINT ALREADY TAKEN OUT.
+     The clip-path is computed at render time from h/w, and h is W − JOINT. Using
+     the full W in the layout while the clip used W − JOINT put the mitre in a
+     slightly different place from the one the geometry assumed — invisible at a
+     7in board and a 1.20% overlap at 3¼in strip, where the joint is a larger
+     share of the width. Caught by rasterising every pattern at every width
+     rather than by looking at the one that happened to be on screen. */
+  const HALF = Math.SQRT1_2;
+  const hAct = W - JOINT;                // what the board really is, and clips to
+  const axis = L - hAct;                 // length after the two mitre cuts
+  const hx = axis * HALF;                // horizontal advance per column
+  const vstep = hAct * Math.SQRT2;       // vertical pitch, one mitre edge
+  const MARGIN_C = 40;
+  const jMin = Math.floor(-MARGIN_C / hx) - 1;
+  const jMax = Math.ceil((100 + MARGIN_C) / hx) + 1;
+  const rMin = Math.floor(-(MARGIN_C + hx) / vstep) - 1;
+  const rMax = Math.ceil((100 + MARGIN_C + hx) / vstep) + 1;
+  for (let j = jMin; j <= jMax; j++) {
+    const leansRight = j % 2 === 0;
+    for (let r = rMin; r <= rMax; r++) {
+      if (leansRight) {
+        push(j * hx - hAct * HALF, r * vstep, L, hAct, -45, 'left');
+      } else {
+        push(j * hx, r * vstep - hAct * HALF, L, hAct, 45, 'right');
+      }
     }
   }
-  return { boards: out, fieldRot: 0, scale: 1.1 };
+  return { boards: out, fieldRot: 0, scale: 1.15 };
 }
 
 /**

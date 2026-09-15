@@ -505,6 +505,28 @@ def main() -> int:
         api_h = max(16, round(tile.height * api_w / tile.width))
         api_path = f'{API_OUT}/grain-{product}.png'
         tile.resize((api_w, api_h), Image.LANCZOS).save(api_path, 'PNG', optimize=True)
+        # ── A LANDSCAPE COPY, FOR THE ONE CONSUMER THAT CANNOT ROTATE ──────
+        #
+        # The renderer samples these in board-local inches and turns the grain
+        # itself, so it wants the portrait tile. The homepage assembly does not
+        # render — it is CSS, one `background-image` per board div — and CSS
+        # cannot rotate a background. Its boards are laid out with their LENGTH
+        # along the div's width, so a portrait tile put the grain ACROSS every
+        # board: the exact defect DESIGN-01 measured and removed from the
+        # renderer, still shipping on the homepage because that surface never
+        # got the fix.
+        #
+        # So the same tile is written once more, turned a quarter turn. It is
+        # the same wood, the same crop, the same measurements with the two axes
+        # swapped — not a second decision, and nothing here can drift from the
+        # portrait one because both come from this loop.
+        land = tile.transpose(Image.ROTATE_90)
+        land_path = f'{OUT}/grain-{product}-along.webp'
+        land.save(land_path, 'WEBP', quality=92, method=6)
+        entry['alongFile'] = f'grain-{product}-along.webp'
+        entry['alongWidth'] = land.width
+        entry['alongHeight'] = land.height
+
         entry['apiFile'] = f'grain-{product}.png'
         entry['apiWidth'] = api_w
         entry['apiHeight'] = api_h
