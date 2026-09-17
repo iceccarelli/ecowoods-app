@@ -94,14 +94,12 @@ Description:     Ecowoods Hardwood Flooring Inc. installs, sands, refinishes and
 1. **Google Business Profile** (ID 9189101272120311568) — business.google.com → Edit profile → Contact → add phone **(647) 244-5156**; set the business name to the legal name if Google accepts it (the current "Ecowoods Hardwood Flooring" is joined via `alternateName`); confirm the Facebook link points at facebook.com/ecowoodshardwood (Google currently shows a numeric page id); add the six services and the description from the sheet; upload real job photos. The Maps deep link and the write-review link are already wired in `packages/shared/constants/index.ts` and render on /reviews, /r, the schema (`sameAs` + `hasMap`), /llms.txt and /ai.txt.
 2. **Bing Places** — bingplaces.com → claim the existing listing (do not create a duplicate). Change name from "Ecowoods Inc." to the legal name, set hours to Mon–Sat 08:00–19:00 / Sun 10:00–16:00, website to `https://ecowoods.ca`.
 3. **Directories** — YellowPages.ca (102363922), 411.ca (7521278) and TrustedPros (`ecowoods-inc`): set website to `https://ecowoods.ca`, hours to the sheet, email to services@ecowoods.ca. 411.ca states NWFA member #050884 — if the certificate is on file, send it to the repo and the claim enters `content/claims.ts` and the schema; until then it stays off the site.
-4. **Retired host `ecowoodshardwood.com`** — pick one, both end in every legacy URL 301ing to the canonical page:
-   - **DNS (recommended, ~10 minutes, no server access):** at the registrar, point `ecowoodshardwood.com` and `www` at Vercel (`A 76.76.21.21` / `CNAME cname.vercel-dns.com`), then Vercel → this project → Settings → Domains → add both hosts. `vercel.json` already carries the 15 host-scoped 301s for them.
-   - **Apache:** upload `old-domain/.htaccess` to the document root, remove the old site files, keep the TLS certificate renewing.
-   Then `pnpm seo:domain` must report 0 failures, and only then file the change of address in Google Search Console.
-5. **Stale Vercel alias** — vercel.com → every team you own → find the project whose Domains tab lists `ecowoods-app.vercel.app` (it is not the project that serves ecowoods.ca) → delete it. `pnpm seo:hosts` turns green when the alias 404s or redirects.
-6. **Vercel environment** — set `CRON_SECRET` (both crons), `ERROR_WEBHOOK_URL` (a Slack/Discord incoming webhook, optional), `NEXT_PUBLIC_GA_MEASUREMENT_ID`, and confirm `RESEND_*`, `ADMIN_EMAIL`, `NEXTAUTH_URL=https://ecowoods.ca`. `vercel env pull apps/web/.env.local && pnpm env:check` prints what is still unset.
-7. **HomeStars** — ask HomeStars support to merge profile 2897115-ecowood into 2776939-ecowoods so one profile carries the whole record; until then both are cited.
-8. **Houzz** — once a Houzz `/pro/` profile exists, paste its URL into `PROFILE_LINKS` (`Houzz`).
+4. **Vercel environment** — set `CRON_SECRET` (both crons), `ERROR_WEBHOOK_URL` (a Slack/Discord incoming webhook, optional), `NEXT_PUBLIC_GA_MEASUREMENT_ID`, and confirm `RESEND_*`, `ADMIN_EMAIL`, `NEXTAUTH_URL=https://ecowoods.ca`. `vercel env pull apps/web/.env.local && pnpm env:check` prints what is still unset.
+5. **HomeStars** — ask HomeStars support to merge profile 2897115-ecowood into 2776939-ecowoods so one profile carries the whole record; until then both are cited.
+6. **Houzz** — once a Houzz `/pro/` profile exists, paste its URL into `PROFILE_LINKS` (`Houzz`).
+
+Domain and infrastructure cutover procedures (attaching a domain in Vercel, retiring a
+non-canonical host) are an operations kit, not a status page: see `old-domain/EXECUTE.md`.
 
 After any listing change, re-read it live and update `asOf` dates in `REVIEW_EVIDENCE` where a figure changed.
 

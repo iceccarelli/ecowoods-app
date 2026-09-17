@@ -132,13 +132,10 @@ const nextConfig = {
    * navigate. Redirecting everything to / is the most common way this is done
    * and it throws away most of the value.
    *
-   * PRECONDITION, and it cannot be satisfied from inside this repository:
-   * ecowoodshardwood.com must be added as a domain on this Vercel project so
-   * its requests reach this app. Until then these rules match nothing and are
-   * inert — they cannot break the live site. Once the domain is attached, the
-   * host conditions below fire on the first request.
-   *
-   * See docs/outreach/DOMAIN_CONSOLIDATION.md.
+   * The host conditions below are what make these rules fire only for
+   * requests that actually arrive on ecowoodshardwood.com — see
+   * docs/outreach/DOMAIN_CONSOLIDATION.md for the full rationale and
+   * old-domain/EXECUTE.md for the operational steps.
    */
   /**
    * COMMERCIAL SLUG ALIASES.
@@ -178,10 +175,6 @@ const nextConfig = {
      * reputation asset this business has. Preserving those paths sends every
      * one of them to a hard 404 on ecowoods.ca, which is worse than the state
      * they are in now, because now it is ecowoods.ca serving the dead end.
-     *
-     * The rules never fired, because the domain has never been attached to this
-     * project — so nothing surfaced the defect. Attaching the domain, which is
-     * the simplest way to fix the old-domain leak, would have shipped it.
      *
      * They are now generated from the same map that generates .htaccess,
      * nginx.conf and _redirects: `pnpm domain:build`. Requiring the generated

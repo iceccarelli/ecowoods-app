@@ -8,12 +8,16 @@ Last updated: 2026-09-15, after the TRUTH-01 → CRAWL-01 series.
 
 ---
 
-## 0. The one thing that matters most
+## 0. Verify against production, not only the source tree
 
-**NOT DONE UNTIL PRODUCTION AND REPOSITORY AGREE.**
+**Done means production and repository agree — a green guard suite checks the
+repository, and that is a different question.**
 
-Sixty-six guards read the source tree. Every one of them can be green while the
-deployed site is broken, and in this repository that has happened four times:
+Sixty-six guards read the source tree, and that coverage is real: it is also,
+by construction, blind to anything that only shows up once code is deployed.
+Four past defects here are the reason this section exists rather than a
+general warning — each passed every guard while live behaviour disagreed with
+it:
 
 | | what happened | every guard was green |
 |---|---|---|
@@ -22,8 +26,9 @@ deployed site is broken, and in this repository that has happened four times:
 | F-131 | `apps/web/public` has never been served on this host; `/icon-192.png` 404'd for months | yes |
 | — | `/quote-check` returned 404 to every visitor for a **week** while a Git integration re-aliased `main` over each CLI deploy | yes |
 
-A green local tree is not evidence. The only checks that see this class of
-defect are the ones that fetch the live site — see §3.
+A green local tree is not, by itself, evidence the live site matches. The
+checks that see this class of defect are the ones that fetch the live site —
+see §3.
 
 ---
 
