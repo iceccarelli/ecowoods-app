@@ -22,6 +22,8 @@ import { sendEmail, type EmailAttachment } from '@/lib/email';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { checkSubmissionEligibility } from '@/lib/well-installed-review';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
+import { extractTierId } from '@/lib/quote-intelligence/notes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -171,6 +173,12 @@ export async function POST(request: Request) {
   }
 
   await db.order.update({ where: { id: orderId }, data: { status: 'FULFILLED' } });
+
+  recordQuoteReviewEvent('well_installed_review.documents_received', {
+    orderId,
+    tier: extractTierId(order!.notes),
+    documentCount: Math.min(files.length, MAX_FILES),
+  });
 
   return NextResponse.json(
     { success: true, message: 'Received. We will reply in writing by the turnaround for your tier.' },

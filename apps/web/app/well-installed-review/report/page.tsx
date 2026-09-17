@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { extractReportUrl, extractTierId, isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
 import { slaCopy } from '@/content/constants/quote-intelligence';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
 
 export const metadata: Metadata = {
   title: 'Your Quote Intelligence Report — Ecowoods',
@@ -33,6 +34,9 @@ export default async function QuoteIntelligenceReportPage({
     order && order.user.email.trim().toLowerCase() === (email ?? '').trim().toLowerCase();
   const eligible = matches && isWellInstalledReviewOrder(order!.notes);
   const reportUrl = eligible ? extractReportUrl(order!.notes) : null;
+  if (reportUrl) {
+    recordQuoteReviewEvent('well_installed_review.report_viewed', { orderId: order!.id, tier: extractTierId(order!.notes) });
+  }
 
   return (
     <div className="tlx-page">

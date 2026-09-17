@@ -17,7 +17,8 @@ import { storeQuoteIntelligenceReport } from '@/lib/quote-intelligence/store';
 import { appendReportMarker, extractReportUrl, extractTierId, isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
 import { slaCopy } from '@/content/constants/quote-intelligence';
 import { reviewTierConfig } from '@/content/constants/paid-review-product';
-import type { ComposeInput } from '@/lib/quote-intelligence/types';
+import { parseComposeBody } from '@/lib/quote-intelligence/input';
+import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,33 +29,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = (await req.json().catch(() => null)) as Partial<ComposeInput> | null;
-  if (!body?.orderId) {
-    return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
+  const parsed = parseComposeBody(await req.json().catch(() => null));
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  const { orderId, fields } = parsed.body;
 
-  const order = await db.order.findUnique({ where: { id: body.orderId }, include: { user: true } });
+  const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true } });
   if (!order || !isWellInstalledReviewOrder(order.notes)) {
     return NextResponse.json({ error: 'Not a Well-Installed Quote Review order' }, { status: 404 });
   }
 
   const existingUrl = extractReportUrl(order.notes);
   if (existingUrl) {
+    recordQuoteReviewEvent('well_installed_review.report_published', { orderId: order.id, alreadyPublished: true });
     return NextResponse.json({ url: existingUrl, alreadyPublished: true });
   }
 
   const tierId = extractTierId(order.notes);
   const tierName = reviewTierConfig(tierId)?.name ?? 'Standard';
-  const result = compose({
-    orderId: order.id,
-    tier: tierName,
-    answers: body.answers ?? {},
-    presentScopeIds: body.presentScopeIds ?? [],
-    present: body.present ?? '',
-    missing: body.missing ?? '',
-    askInWriting: body.askInWriting,
-    ifSoundSaySo: body.ifSoundSaySo,
-  });
+  const result = compose({ ...fields, orderId: order.id, tier: tierName });
 
   if (!result.ok) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });
@@ -71,6 +65,17 @@ export async function POST(req: Request) {
   await db.order.update({
     where: { id: order.id },
     data: { notes: appendReportMarker(order.notes, url), status: 'FULFILLED' },
+  });
+
+  const { report } = result;
+  recordQuoteReviewEvent('well_installed_review.report_published', {
+    orderId: order.id,
+    tier: tierId,
+    quoteCount: report.quotes.length,
+    highRiskFlags: [...report.generalRiskFlags, ...report.quotes.flatMap((q) => q.riskFlags)].filter((f) => f.level === 'high').length,
+    questions: report.generalQuestions.length + report.quotes.reduce((n, q) => n + q.questionsToAsk.length, 0),
+    comparisonVerdict: report.comparison?.verdict,
+    alreadyPublished: false,
   });
 
   const origin = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';

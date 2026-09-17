@@ -22,6 +22,7 @@ import { stripe } from '@/lib/stripe';
 import { round2 } from '@/lib/shop';
 import { buildReviewOrderItem, resolveReviewTier } from '@/lib/well-installed-review';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -120,6 +121,12 @@ export async function POST(req: Request) {
     await db.order.update({
       where: { id: order.id },
       data: { stripeCheckoutSessionId: checkoutSession.id },
+    });
+
+    recordQuoteReviewEvent('well_installed_review.checkout_created', {
+      orderId: order.id,
+      tier: tier.id,
+      subtotalCad: subtotal,
     });
 
     return NextResponse.json({ url: checkoutSession.url });

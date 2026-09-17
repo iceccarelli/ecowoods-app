@@ -48,7 +48,7 @@ export const WELL_INSTALLED_REVIEW_PRODUCT = {
   slug: 'well-installed-review',
   name: 'Well-Installed Quote Review',
   deliverable:
-    'A written, 1–2 page read of the quote(s) you already have, scored against the Ecowoods Well-Installed Framework and the published scope items: what is present, what is missing, and the exact questions to send back in writing.',
+    'A written read of up to three quotes you already have, scored against the Ecowoods Well-Installed Framework and the published scope items. Every item is marked stated, not specified, unclear, cannot determine, or inspection needed — with the page and wording it was read from — followed by risk flags, the exact questions to send back in writing and, when you hold more than one quote, whether they price the same job.',
   refuses: [
     'not a ranking or comparison of named companies',
     'not a second price for the same job — no dollar figure is put on anything a quote leaves out',

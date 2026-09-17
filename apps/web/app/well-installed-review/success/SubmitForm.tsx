@@ -68,7 +68,7 @@ export function SubmitForm({ orderId, maskedEmail }: { orderId: string; maskedEm
       <p className="tlx-note">Paid by {maskedEmail}. Confirm the same email below to attach your documents.</p>
 
       <label className="ef-field">
-        <span>The quote — a PDF, or up to 3 photos of it</span>
+        <span>Your quote(s) — up to 3 files in total: one PDF per quote, or photos</span>
         <input
           name="documents"
           type="file"
