@@ -55,7 +55,7 @@ function inside(x: number, y: number, q: [number, number][]): boolean {
 }
 
 /** Sample the middle of the field, away from the edges the container clips. */
-function sample(boards: Board[], step = 1.1) {
+function sample(boards: readonly Board[], step = 1.1) {
   const polys = boards.map(corners);
   let cells = 0;
   let covered = 0;
