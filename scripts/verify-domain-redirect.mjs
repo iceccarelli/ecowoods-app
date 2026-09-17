@@ -1,32 +1,18 @@
 #!/usr/bin/env node
 /**
- * scripts/verify-domain-redirect.mjs — prove the old domain actually 301s.
+ * scripts/verify-domain-redirect.mjs — prove the retired domain actually 301s.
  *
- * WHY A DOCUMENT IS NOT ENOUGH
+ * next.config.js declares permanent, host-conditioned redirects for the
+ * retired domain, generated from old-domain/path-map.json. The rules are
+ * inert until that domain is attached to this Vercel project in the
+ * dashboard, so this asks the network rather than the config. For every known
+ * path it checks: status is 301 (not 302 — a 302 keeps the old URL indexed),
+ * the Location lands on ecowoods.ca at the path the map assigns (not a blind
+ * homepage redirect), and it resolves in one hop.
  *
- * next.config.js declares four permanent redirects from ecowoodshardwood.com,
- * and DOMAIN_CONSOLIDATION.md explains them. Neither fact means a single
- * request is being redirected: the rules only fire once that domain is attached
- * to this Vercel project, which happens in a dashboard this repository cannot
- * see. A redirect that is configured and not live looks exactly like a redirect
- * that is working, from in here.
- *
- * So this asks the network. For every representative path it checks three
- * things, and all three have to hold:
- *
- *   1. The status is 301, not 302. A temporary redirect tells a crawler to keep
- *      the OLD url indexed, which is the opposite of consolidating.
- *   2. The Location lands on ecowoods.ca with the SAME path. Redirecting
- *      everything to the homepage is the common implementation and it discards
- *      most of the value — a link earned by /services/floor-refinishing should
- *      pass to that page, not to a homepage the visitor must then navigate.
- *   3. It arrives in ONE hop. www → bare → https → destination costs signal at
- *      every stage.
- *
- * Exit codes are deliberate. If the domain does not resolve at all, that is
- * NOT a failure — it is the expected state before the dashboard step, and the
- * script says so and exits 0. It fails only when the domain answers and answers
- * wrongly, which is the state that silently destroys a migration.
+ * If the domain does not resolve at all, that is the expected pre-attachment
+ * state and the script exits 0. It fails only when the domain answers and
+ * answers wrongly.
  *
  *   node scripts/verify-domain-redirect.mjs
  *   node scripts/verify-domain-redirect.mjs --strict   (unresolved = failure)
@@ -37,22 +23,10 @@ const OLD = ['https://ecowoodshardwood.com', 'https://www.ecowoodshardwood.com']
 const NEW_HOST = 'ecowoods.ca';
 
 /**
- * WHAT TO PROBE, AND WHY THE FIRST VERSION PROBED THE WRONG THING.
- *
- * It probed ecowoods.ca's paths — /framework, /papers, /service-areas/etobicoke
- * — on the old domain. That answers "would an old link to a new-site path
- * survive", which is a question nobody was ever going to ask, because those
- * paths never existed on the old site. Every one came back 404 and the check
- * reported fourteen failures that were all the same non-finding.
- *
- * The URLs that matter are the ones the old site actually publishes, and it
- * publishes a sitemap listing them. They are committed in
- * `old-domain/path-map.json` as `knownUrls`, and each one is checked against
- * the destination the map assigns it — so this does not merely assert "a 301
- * happened", it asserts the 301 went where the migration intends.
- *
- * A handful of new-site paths are kept at the end as a control: they SHOULD
- * still resolve to their equivalent on ecowoods.ca once the catch-all is live.
+ * The probed paths are the ones the retired site actually publishes
+ * (`old-domain/path-map.json` `knownUrls`), each checked against the
+ * destination the map assigns it — asserting the 301 goes where the map
+ * intends, not merely that a 301 happened.
  */
 const map = JSON.parse(
   readFileSync(new URL('../old-domain/path-map.json', import.meta.url), 'utf8'),
@@ -103,23 +77,10 @@ let ok = 0;
 
 console.log(`\nOLD DOMAIN REDIRECT CHECK  →  https://${NEW_HOST}\n`);
 
-/* ── control probe, and the reason it exists ─────────────────────────────────
- *
- * The first version of this script reported 16 redirect failures with HTTP 403
- * on every path. The old domain was fine. The 403s came from the sandbox's
- * egress proxy, which answers every non-allowlisted host that way — so the
- * check confidently reported a broken migration caused entirely by where it was
- * running.
- *
- * That is the failure mode this repository has recorded five times (F-117,
- * F-149, F-166, F-177, F-192): a check that reports a result it did not
- * actually measure. A false FAIL on a migration is worse than no check, because
- * the natural response is to go and "fix" a redirect that was never broken.
- *
- * So: reach the KNOWN-GOOD host first. If the control cannot be reached, or
- * answers with the same status the old domain does, the network is the variable
- * and this script says it cannot tell rather than guessing.
- */
+/* Control probe: reach the known-good host first. If it cannot be reached, or
+   answers with the same status as the old domain, the network is the
+   variable — an egress-blocked sandbox answers every host 403 — and this
+   script says it cannot tell rather than reporting a false failure. */
 const control = await head(`https://${NEW_HOST}/`);
 if (control.status === 0 || control.status === 403 || control.status >= 500) {
   console.log(
@@ -153,9 +114,7 @@ for (const origin of OLD) {
       console.log(`  FAIL  ${from}`);
       let why = '';
       if (r.status === 200) {
-        why =
-          ' — a SECOND LIVE PAGE for this business. It competes with ecowoods.ca\n' +
-          '          for the entity, which is the split this migration exists to end.';
+        why = ' — serving instead of redirecting.';
       } else if (r.status === 404) {
         why =
           ' — every link, listing or citation pointing here reaches a dead page,\n' +
@@ -211,10 +170,9 @@ for (const origin of OLD) {
 console.log('');
 if (unreachable === OLD.length * PATHS.length) {
   console.log(
-    `· ecowoodshardwood.com does not resolve to this app yet — ${unreachable} request(s) unreachable.\n` +
-      `  That is the EXPECTED state until the domain is added in Vercel → Settings → Domains.\n` +
-      `  The rules in next.config.js are inert until then and cannot break anything.\n` +
-      `  Steps: docs/outreach/DOMAIN_CONSOLIDATION.md\n`,
+    `· the retired domain does not resolve to this app yet — ${unreachable} request(s) unreachable.\n` +
+      `  Expected until the domain is added in Vercel → Settings → Domains.\n` +
+      `  Steps: old-domain/EXECUTE.md\n`,
   );
   process.exit(STRICT ? 1 : 0);
 }

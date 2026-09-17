@@ -66,7 +66,7 @@ add({
 add({
   id: 'identity.directories-website-field', area: 'identity',
   title: 'YellowPages, 411.ca and TrustedPros still point their website field at the retired domain',
-  detail: 'README (live 2026-09-04). One DNS change on ecowoodshardwood.com (301 to canonical) corrects all three for crawlers at once.',
+  detail: 'README (live 2026-09-04). One DNS change on the retired domain (301 to canonical) corrects all three for crawlers at once.',
   severity: 3, business_impact: 3, technical_impact: 2, confidence: 4, effort: 2,
   dependency: 'registrar / Vercel domain settings', automation_level: 'assisted',
   status: 'blocked', blocker: 'EXTERNAL AUTHORIZATION — DNS at the registrar, or Apache upload of old-domain/.htaccess. Redirect configs are generated and checked (pnpm domain:check).',
@@ -79,15 +79,6 @@ add({
   dependency: 'HomeStars support', automation_level: 'human',
   status: 'blocked', blocker: 'HUMAN DECISION REQUIRED — owner asks HomeStars support to merge.',
 });
-add({
-  id: 'identity.stale-vercel-alias', area: 'identity',
-  title: 'ecowoods-app.vercel.app serves a superseded copy of the site',
-  detail: 'vercel.json redirects the host, but the alias is served by a project this repository does not deploy (README §5). pnpm seo:hosts watches it.',
-  severity: 4, business_impact: 3, technical_impact: 3, confidence: 4, effort: 1,
-  dependency: 'Vercel dashboard', automation_level: 'human',
-  status: 'blocked', blocker: 'EXTERNAL AUTHORIZATION — delete or re-point the alias in the Vercel team that owns it.',
-});
-
 /* ── technical gaps ─────────────────────────────────────────────────────── */
 add({
   id: 'tech.duplicate-business-entities', area: 'technical',
@@ -276,10 +267,6 @@ async function live() {
   const alias = await probe('/');
   const about = await probe('/about');
   up('tech.markdown-alternates', Boolean(about?.headers.get('link')?.includes('text/markdown')));
-  const stale = await (async () => { try { const r = await fetch('https://ecowoods-app.vercel.app/', { redirect: 'manual' }); return r.status; } catch { return null; } })();
-  const g = gaps.find((x) => x.id === 'identity.stale-vercel-alias');
-  if (g && stale !== null) g.detail += ` Live: ${stale} (301/308/404/410 closes this).`;
-  if (g && (stale === 301 || stale === 308 || stale === 404 || stale === 410)) g.status = 'verified';
   void alias;
 }
 

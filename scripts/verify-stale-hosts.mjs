@@ -3,17 +3,8 @@
  * scripts/verify-stale-hosts.mjs — every non-canonical host must 301/308 to
  * https://ecowoods.ca, and nothing but ecowoods.ca may serve this business.
  *
- * WHY IT EXISTS
- *
- * On 2026-09-04 https://ecowoods-app.vercel.app/ answered 200 with a stale
- * build of this site (an old review figure, an old founding year, an old
- * project count). vercel.json has carried a host-scoped redirect for that
- * alias for weeks — which proves the alias is served by a deployment this
- * repository does not control. A second live copy of the homepage splits the
- * entity in every index that finds it, and no guard was watching.
- *
- * This one watches. It is a LIVE check: it needs egress, so it runs from
- * `pnpm seo:live` (a laptop or a Codespace), never from the build.
+ * This is a LIVE check: it needs egress, so it runs from `pnpm seo:live` (a
+ * laptop or a Codespace), never from the build.
  *
  *   node scripts/verify-stale-hosts.mjs
  */
@@ -59,8 +50,8 @@ for (const origin of HOSTS) {
       console.log(`  FAIL  ${url} → HTTP ${r.status}${r.location ? ` → ${r.location}` : ''}`);
       if (r.status === 200) {
         console.log(
-          `        a SECOND LIVE COPY of this site. Vercel dashboard → find the project whose\n` +
-            `        Domains tab lists ${new URL(origin).host} → delete that project (or point its\n` +
+          `        Vercel dashboard → find the project whose Domains tab lists\n` +
+            `        ${new URL(origin).host} → delete that project (or point its\n` +
             `        production domain at ${CANONICAL}). Nothing in this repository can fix it.`,
         );
       }

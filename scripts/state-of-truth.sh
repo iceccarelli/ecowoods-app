@@ -211,18 +211,18 @@ sect "old domain"
 in_repo old-domain/.htaccess; a=$?
 row "old-domain/.htaccess in repo" $a 2
 if [ "$QUICK" = 1 ]; then
-  printf '  %-46s %sskipped%s\n' "ecowoodshardwood.com 301s" "$DIM" "$OFF"
+  printf '  %-46s %sskipped%s\n' "retired domain 301s" "$DIM" "$OFF"
 elif [ "$NET" = 1 ]; then
   # The control probe failed against the canonical host, so an HTTP 000 here
-  # says nothing about the old domain. Reporting "NOT consolidated" off an
+  # says nothing about the old domain — reporting a failure off an
   # unreachable network is the exact false alarm this probe exists to stop.
-  printf '  %-46s %sunreachable — no conclusion%s\n' "ecowoodshardwood.com deep path" "$YEL" "$OFF"
+  printf '  %-46s %sunreachable — no conclusion%s\n' "retired domain deep path" "$YEL" "$OFF"
 else
   code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://www.ecowoodshardwood.com/services/floor-refinishing" 2>/dev/null)"
   if [ "$code" = "301" ]; then
-    printf '  %-46s %s301 — consolidated%s\n' "ecowoodshardwood.com deep path" "$GRN" "$OFF"
+    printf '  %-46s %s301%s\n' "retired domain deep path" "$GRN" "$OFF"
   else
-    printf '  %-46s %sHTTP %s — NOT consolidated, still splitting authority%s\n' "ecowoodshardwood.com deep path" "$RED" "$code" "$OFF"; BAD=$((BAD+1))
+    printf '  %-46s %sHTTP %s — not redirecting%s\n' "retired domain deep path" "$RED" "$code" "$OFF"; BAD=$((BAD+1))
   fi
 fi
 

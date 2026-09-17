@@ -17,11 +17,9 @@
  *     moment it cries wolf, the next real failure gets waved through".
  *
  *  2. Five places across four files told the operator to "follow
- *     old-domain/EXECUTE.md". That file did not exist. The old domain has been
- *     answering 200 on 35 URLs — a second live site competing with ecowoods.ca
- *     for the same entity, holding 22 customer testimonials — and the runbook
- *     every guard pointed at was not there to follow. An instruction that names
- *     a missing file does not read as an error; it reads as a task somebody
+ *     old-domain/EXECUTE.md". That file did not exist, so the runbook every
+ *     guard pointed at was not there to follow. An instruction that names a
+ *     missing file does not read as an error; it reads as a task somebody
  *     else already documented.
  *
  * Both are unfalsifiable from inside the site: no amount of correct production

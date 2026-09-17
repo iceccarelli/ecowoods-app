@@ -11962,12 +11962,12 @@
         "caveat": "with ?cb: 200, H1 \"The routes, not a list of place names\" (GC-020)"
       },
       {
-        "url": "https://ecowoods-app.vercel.app/service-areas/buffalo",
+        "url": "retired preview host /service-areas/buffalo",
         "observed": "404",
         "caveat": "stale preview host is gone rather than serving a second geography; redirect not observed"
       },
       {
-        "url": "https://ecowoodshardwood.com/",
+        "url": "retired domain /",
         "observed": "fetch failed (robots.txt connect timeout)",
         "caveat": "no verdict; scripts/verify-stale-hosts.mjs owns this check"
       }

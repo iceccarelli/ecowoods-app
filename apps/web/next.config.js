@@ -116,26 +116,12 @@ const nextConfig = {
    * findings, so it was tested instead.
    */
   /**
-   * THE OLD DOMAIN, CONSOLIDATED.
+   * RETIRED DOMAIN — 301, path-preserving, permanent.
    *
-   * ecowoodshardwood.com is the company's earlier domain. Two domains serving
-   * the same business split every signal that matters: links point at one,
-   * citations at the other, and a search engine resolving the entity has to
-   * guess which is canonical. It is the single largest off-page dilution left,
-   * and it costs nothing to fix except the decision.
-   *
-   * Every path maps to the same path on ecowoods.ca with a 301 — permanent,
-   * because a 302 tells a crawler to keep the old URL indexed, which is the
-   * opposite of consolidation. Path-preserving rather than all-to-homepage: a
-   * link to /services/floor-refinishing on the old domain should land on the
-   * page about floor refinishing, not on a homepage the visitor then has to
-   * navigate. Redirecting everything to / is the most common way this is done
-   * and it throws away most of the value.
-   *
-   * The host conditions below are what make these rules fire only for
-   * requests that actually arrive on ecowoodshardwood.com — see
-   * docs/outreach/DOMAIN_CONSOLIDATION.md for the full rationale and
-   * old-domain/EXECUTE.md for the operational steps.
+   * Every old path maps to its equivalent ecowoods.ca path via
+   * old-domain/path-map.json (301, not 302 — a 302 keeps the old URL
+   * indexed). Host-conditioned so these rules only fire for requests that
+   * actually arrive on the retired domain. See old-domain/EXECUTE.md.
    */
   /**
    * COMMERCIAL SLUG ALIASES.
@@ -163,24 +149,10 @@ const nextConfig = {
     const { aliases } = require('./content/search/route-aliases.json');
 
     /**
-     * THE RULES THAT USED TO BE HERE WERE PATH-PRESERVING, AND THAT WAS THE BUG.
-     *
-     * They read `/:path*` → `https://ecowoods.ca/:path*` for both old hosts,
-     * which is the correct default for almost every domain migration and is
-     * exactly wrong for this one. old-domain/path-map.json is the evidence:
-     * the two sites share ZERO paths. The old URLs are
-     * /pages/flooring-services-toronto-etobicoke-hamilton and
-     * /blogs/testimonials/172376--audrey-in-toronto — twenty-two of those
-     * testimonials, with real customer names, being the largest stranded
-     * reputation asset this business has. Preserving those paths sends every
-     * one of them to a hard 404 on ecowoods.ca, which is worse than the state
-     * they are in now, because now it is ecowoods.ca serving the dead end.
-     *
-     * They are now generated from the same map that generates .htaccess,
-     * nginx.conf and _redirects: `pnpm domain:build`. Requiring the generated
-     * file rather than re-deriving it here is the point — the edge layer
-     * (vercel.json) and this layer cannot disagree about where an old URL goes,
-     * and `pnpm domain:check` fails the build if either drifts from the map.
+     * Generated from old-domain/path-map.json by `pnpm domain:build` — the
+     * same map that generates .htaccess, nginx.conf and _redirects, so the
+     * edge layer (vercel.json) and this layer cannot disagree about where an
+     * old URL goes. `pnpm domain:check` fails the build if either drifts.
      */
     const { redirects: oldDomain } = require('../../old-domain/vercel-redirects.json');
 
@@ -190,10 +162,9 @@ const nextConfig = {
       permanent: true,
     }));
 
-    /* Old-domain rules first. They are host-conditioned, so they only ever
-       match requests that arrive on the retired domain — but a request for
-       ecowoodshardwood.com/stairs must be consolidated onto ecowoods.ca before
-       anything else looks at the path, or it takes two hops to arrive. */
+    /* Old-domain rules first: host-conditioned, so they only match requests
+       arriving on the retired domain, and must resolve before anything else
+       looks at the path. */
     return [...oldDomain, ...commercialAliases];
   },
 

@@ -184,9 +184,7 @@ are correct — `currency` says which — and renaming them crosses `packages/sh
 the chat tool, the estimate API and the lead schema, which is a patch of its own.
 
 Open, and none of them a contradiction: GC-021 (job cards keyed by display
-name) and GC-023 (cache windows). Domain consolidation is a repository-side
-solved problem (redirect map, generated configs, live guards); attaching
-`ecowoodshardwood.com` to the Vercel project is a dashboard step, not a commit.
+name) and GC-023 (cache windows).
 
 ---
 

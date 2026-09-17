@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-05T21:46:45.271Z",
+  "generatedAt": "2026-09-17T22:38:49.545Z",
   "base": null,
-  "count": 25,
+  "count": 24,
   "byStatus": {
     "fixed": 11,
     "open": 3,
-    "blocked": 8,
+    "blocked": 7,
     "unknown": 2,
     "wont_fix": 1
   },
@@ -84,22 +84,6 @@
       "automation_level": "human",
       "status": "blocked",
       "blocker": "HUMAN DECISION REQUIRED — owner adds the phone in the GBP dashboard.",
-      "score": 20
-    },
-    {
-      "id": "identity.stale-vercel-alias",
-      "area": "identity",
-      "title": "ecowoods-app.vercel.app serves a superseded copy of the site",
-      "detail": "vercel.json redirects the host, but the alias is served by a project this repository does not deploy (README §5). pnpm seo:hosts watches it.",
-      "severity": 4,
-      "business_impact": 3,
-      "technical_impact": 3,
-      "confidence": 4,
-      "effort": 1,
-      "dependency": "Vercel dashboard",
-      "automation_level": "human",
-      "status": "blocked",
-      "blocker": "EXTERNAL AUTHORIZATION — delete or re-point the alias in the Vercel team that owns it.",
       "score": 20
     },
     {
@@ -198,7 +182,7 @@
       "id": "identity.directories-website-field",
       "area": "identity",
       "title": "YellowPages, 411.ca and TrustedPros still point their website field at the retired domain",
-      "detail": "README (live 2026-09-04). One DNS change on ecowoodshardwood.com (301 to canonical) corrects all three for crawlers at once.",
+      "detail": "README (live 2026-09-04). One DNS change on the retired domain (301 to canonical) corrects all three for crawlers at once.",
       "severity": 3,
       "business_impact": 3,
       "technical_impact": 2,
