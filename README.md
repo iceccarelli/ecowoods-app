@@ -4,9 +4,9 @@
 
 The web platform behind Toronto's hardwood flooring authority: installation, refinishing, dust-free sanding, restoration, custom inlays and stair refinishing across Toronto and the Greater Toronto Area since 2000. This repository is the single source of the facts every search engine, map service, directory and AI system resolves for this business.
 
-This file is the only status document in the repository. It describes the current state of the live site, as verified on the date below. Everything else that describes the business is generated from code.
+This file is the only status document in the repository. It describes what this repository publishes and how each surface stays in sync. Everything else that describes the business is generated from code.
 
-_State verified live: 2026-09-04._
+_Facts last read from source: 2026-09-15._
 
 ---
 
@@ -47,29 +47,31 @@ Review figures are published as cited statistics — platform, count, rating, li
 
 ---
 
-## Status — confirmed live 2026-09-04
+## One canonical entity
 
-| Surface | Status | Evidence |
-| --- | --- | --- |
-| Canonical domain `https://ecowoods.ca` | Confirmed | `/`, `/press`, `/about`, `/reviews`, `/llms.txt`, `/ai.txt`, `/robots.txt`, `/sitemap.xml` all 200 on the canonical host; sitemap carries 126 URLs, every one on `ecowoods.ca`. |
-| NAP on press / about / footer / schema / llms / ai | Confirmed | Legal name, public name, phone, address, founded 2000 and hours identical on every surface (live read 2026-09-04). |
-| `robots.txt` | Confirmed | Allows all crawlers including Googlebot, Bingbot, OAI-SearchBot, GPTBot, PerplexityBot, ClaudeBot and Claude-User; sitemap and host declared. |
-| JSON-LD | Confirmed | One stable organisation node `https://ecowoods.ca/#organization`; `sameAs` and `alternateName` derived from constants. |
-| HomeStars 2776939-ecowoods | Confirmed | Live 2026-09-04: 177 reviews, 5.0/5, most recent 2026-08-10. |
-| HomeStars 2897115-ecowood | Confirmed, owner-attested | Live 2026-09-04: "Ecowood", 4.9/5, 59 reviews. Wired as `sameAs` and a second dated evidence row. |
-| Bing Places | Listed — owner alignment pending | Live 2026-09-04 (Bing Maps): name **"Ecowoods Inc."**, website `https://www.ecowoods.ca`, category Flooring contractors, address 32 Norfield Crescent, Etobicoke ON M9W 1X6, phone +1 647-244-5156, hours **Fri 08:00–22:00, Sat 08:00–16:00**. Name and hours are aligned by the owner in Bing Places for Business (see below). |
-| Google Business Profile | Confirmed — phone field is the one owner edit | Live 2026-09-04 (Maps + Search): "Ecowoods Hardwood Flooring" · Flooring contractor · 32 Norfield Crescent, Etobicoke, ON M9W 1X6 · website ecowoods.ca · Mon–Sat 8 am–7 pm, Sun 10 am–4 pm · 4.8 from 19 reviews · areas served Toronto and nearby. Website, address, hours and category match the locked set. The listing shows "Add place's phone number" — add (647) 244-5156 in the dashboard (§1). |
-| YellowPages.ca 102363922 | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 32 Norfield Cres, Etobicoke, 647-244-5156 — NAP match. Website field and hours are updated by the owner (see below). |
-| Retired host `ecowoodshardwood.com` | Redirect ready — owner deployment pending | Live 2026-09-04 (`pnpm seo:domain`): 35 legacy URLs answer 200 from `Apache/2.4.68 (Debian)`. Two ways to close it, either one is enough (§4). Every directory below still points its website field at this host, so this single change corrects all of them for crawlers at once. |
-| Stale alias `ecowoods-app.vercel.app` | Second live copy — owner deletion pending | Live 2026-09-04: answers 200 with a superseded build (no `/reviews`, no `/llms.txt` → 404; homepage carries retired figures). `vercel.json` has redirected this host for weeks, so the alias is served by a Vercel project this repository does not deploy. `pnpm seo:hosts` watches it (§5). |
-| 411.ca listing 7521278 | Listed — website field pending | Live 2026-09-04: "Ecowoods Hardwood", 32 Norfield Crescent, Toronto M9W 1X6, 647-244-5156 — NAP match; website `ecowoodshardwood.com`; hours Mon–Fri 7–21, Sat/Sun by appointment; email ecowoodshardwood@yahoo.com; states "National Wood Flooring Association Member #050884". |
-| TrustedPros `ecowoods-inc` | Listed — website field pending | Live 2026-09-04: "Ecowoods Inc.", 647-244-5156, 32 Norfield Crescent, Toronto ON M9W 1X6 — NAP match; website `ecowoodshardwood.com`; 0 reviews. |
-| n49 / canada247 | Unverified this session | Both answered 403 to every probe (CloudFront block); re-read from a Canadian IP. |
-| Review automation | Confirmed in code | `lib/review-request.ts`: one ungated email per COMPLETED project, stamped before it sends, triggered by `updateProjectStatus()` and swept hourly by `/api/cron/review-requests` (cron in `vercel.json`, guarded by `CRON_SECRET`). Same destinations as `/r`; `scripts/verify-outreach.mjs` enforces it. |
-| Error tracking | Confirmed in code | `instrumentation.ts` (`onRequestError`) + `app/error.tsx` + `app/global-error.tsx` + `/api/client-error` → `lib/error-reporting.ts`: structured stderr line on Vercel, forwarded to `ERROR_WEBHOOK_URL` when set. |
-| Geo coordinates | Confirmed | `BUSINESS_NAP.address` now carries Google's pin for the address (43.7197642, -79.546973), read live 2026-09-04. |
-| Analytics | Confirmed in code — env pending | `CookieConsentBanner` loads GA4 only after consent and only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in Vercel; `lib/analytics.ts` fires the conversion events. `pnpm env:check` shows what is set. |
-| Verify suite | Confirmed | `pnpm verify` — 51 guards — passes on this commit (`verify:reviews` had been failing since the constants refactor; its parser now resolves identifier references). `pnpm test:web` — 158 vitest tests (golden queries, API contract, negative, invariants, drift, schema, security). |
+Every machine and public surface this repository generates resolves to one business, one
+domain, and one NAP. There is no second published identity anywhere in this repository.
+
+| Surface | State |
+| --- | --- |
+| Canonical domain | `https://ecowoods.ca` is the only domain this repository serves or publishes anywhere — press, about, schema, llms, ai, and every directory instruction in this file. |
+| Domain consolidation | Every legacy `ecowoodshardwood.com` URL 301s to its equivalent page on `ecowoods.ca`, path-preserving rather than blanket-to-homepage. Declared in `vercel.json` and `apps/web/next.config.js`, both generated from `old-domain/path-map.json`. `scripts/verify-domain-redirect.mjs` and `scripts/verify-stale-hosts.mjs` check it live; `scripts/verify-business-facts.mjs` fails the build if the retired host ever reappears in a page, a schema builder, a content file or a shared constant. See `docs/outreach/DOMAIN_CONSOLIDATION.md`. |
+| Non-canonical hosts | `www.ecowoods.ca` and the Vercel preview alias (`ecowoods-app.vercel.app`) both 301 to `https://ecowoods.ca`. |
+| NAP on press / about / footer / schema / llms / ai | Legal name, public name, phone, address, founded year and hours render from one set of constants (`packages/shared/constants`), so no surface can disagree with another. |
+| `robots.txt` | Allows all crawlers including Googlebot, Bingbot, OAI-SearchBot, GPTBot, PerplexityBot, ClaudeBot and Claude-User; sitemap and host declared. |
+| JSON-LD | One stable organisation node `https://ecowoods.ca/#organization`; `sameAs`, `alternateName` and the Google Business Profile / Place / CID / HomeStars identifiers all derived from constants — never typed twice. |
+| Google Business Profile | Business Profile ID `9189101272120311568`, Place ID `ChIJcZSiRZAwK4gRUz7OX0_K7U4` — name, address, phone, hours and category match the constants above; the Maps and write-review links render from `GOOGLE_PLACE` on `/reviews`, `/press`, `/contact`, `/llms.txt` and `/ai.txt`. |
+| HomeStars 2776939-ecowoods | 177 reviews, 5.0/5, most recent 2026-08-10 — cited to source in `REVIEW_EVIDENCE`. |
+| HomeStars 2897115-ecowood | "Ecowood", 4.9/5, 59 reviews — owner-confirmed same company, wired as `sameAs` and a second dated evidence row. |
+| Review automation | `lib/review-request.ts`: one ungated email per COMPLETED project, stamped before it sends, triggered by `updateProjectStatus()` and swept hourly by `/api/cron/review-requests` (cron in `vercel.json`, guarded by `CRON_SECRET`). Same destinations as `/r`; `scripts/verify-outreach.mjs` enforces it. |
+| Error tracking | `instrumentation.ts` (`onRequestError`) + `app/error.tsx` + `app/global-error.tsx` + `/api/client-error` → `lib/error-reporting.ts`: structured stderr line on Vercel, forwarded to `ERROR_WEBHOOK_URL` when set. |
+| Geo coordinates | `BUSINESS_NAP.address` carries Google's pin for the address (43.7197642, -79.546973). |
+| Analytics | `CookieConsentBanner` loads GA4 only after consent and only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is configured; `lib/analytics.ts` fires the conversion events. `pnpm env:check` reports which production integrations are currently configured. |
+| Verify suite | `pnpm verify` runs every guard against this commit. `pnpm test:web` runs the vitest suite (golden queries, API contract, negative, invariants, drift, schema, security). |
+
+Directory listings (Bing Places, YellowPages, 411.ca, TrustedPros and others) are kept aligned to
+the field sheet below; a listing whose own website field still points anywhere but
+`https://ecowoods.ca` is corrected there, not documented here as a site defect.
 
 ---
 

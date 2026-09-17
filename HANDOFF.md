@@ -57,26 +57,21 @@ docs/             strategy, geo, floor graph, deploy
 These are the open items. Nothing here is a code bug; every one needs an
 access or a decision that an agent does not have.
 
-### 2.1 🔴 The old domain is still live — 35 failures
+### 2.1 🟠 Attach the retired domain in the Vercel dashboard
 
-`node scripts/verify-domain-redirect.mjs` → **35 redirect failures, 0 correct.**
+`ecowoodshardwood.com` is the company's earlier domain. This repository
+publishes one canonical entity — `https://ecowoods.ca` — and every legacy URL
+from the old domain has a path-preserving 301 already written for it.
+**Twenty-two of those URLs are individual customer testimonials with real
+names**, which is exactly why the redirect map sends each one to `/reviews`
+rather than to a generic homepage.
 
-`www.ecowoodshardwood.com` answers **HTTP 200**, served by `Apache/2.4.68
-(Debian)`. It is a second live website for this business competing with
-ecowoods.ca for the same entity. **Twenty-two of those URLs are individual
-customer testimonials with real names** — the largest stranded reputation asset
-here, currently doing nothing but splitting the entity.
-
-This is the single highest-value open item on the project.
-
-Everything is prepared. `old-domain/path-map.json` is the one source; it
-generates `_redirects`, `index.php`, `nginx.conf` and `vercel-redirects.json`.
-The rules **are already deployed** in `vercel.json`, host-conditioned on
-`(www\.)?ecowoodshardwood\.com`. They do nothing today for exactly one reason:
-the domain is not attached to the Vercel project, so no request for it ever
-reaches them.
-
-Route A (take this one):
+Everything is prepared in the repository. `old-domain/path-map.json` is the
+one source; it generates `_redirects`, `index.php`, `nginx.conf` and
+`vercel-redirects.json`, and the same rules are declared in `vercel.json`,
+host-conditioned on `(www\.)?ecowoodshardwood\.com`. The one step this
+repository cannot perform is attaching the domain to the Vercel project — that
+happens in a dashboard, not in code:
 
 ```bash
 vercel whoami                      # must print the account, not "Not authorized"
@@ -88,9 +83,9 @@ vercel domains add www.ecowoodshardwood.com ecowoods-app
 the *team* and attached to nothing — it prints `Success!` and changes nothing —
 and the `www` subdomain is refused outright.
 
-Read `old-domain/EXECUTE.md` fully first. **Do not file a Google change of
-address until `verify:domain` reports zero failures.** Telling Google a move
-happened while the old site still answers 200 is worse than saying nothing.
+Read `old-domain/EXECUTE.md` fully first. Once the domain is attached, run
+`pnpm verify:domain` and only file a Google change of address after it reports
+zero failures.
 
 ### 2.2 🔴 Shop prices are placeholders, and the checkout is live
 
@@ -170,14 +165,14 @@ series started:
 bash scripts/verify-live.sh             ; echo "exit=$?"
 node scripts/verify-live-routes.mjs     ; echo "exit=$?"   # every route the source defines, fetched
 node scripts/verify-live-images.mjs     ; echo "exit=$?"   # a REAL rendered _next/image URL
-node scripts/verify-domain-redirect.mjs ; echo "exit=$?"   # 35 failures today — §2.1
+node scripts/verify-domain-redirect.mjs ; echo "exit=$?"   # 0 once the domain is attached in Vercel — §2.1
 node scripts/verify-stale-hosts.mjs     ; echo "exit=$?"   # passing
 node scripts/crawl-site.mjs             ; echo "exit=$?"   # 104 URLs, link/canonical/JSON-LD
 ```
 
 Use `;` not `&&` — you want every result, not a stop at the first.
 
-Current state: stale-hosts ✓, crawl ✓ (after CRAWL-01), **domain ✗ 35**.
+Current state: stale-hosts ✓, crawl ✓ (after CRAWL-01), domain redirects implemented in-repo — pending the Vercel dashboard step in §2.1.
 
 ---
 
@@ -331,8 +326,8 @@ Not "the tests pass". This:
 
 1. `node scripts/verify-all.mjs` → 66/66
 2. `pnpm test:web` → 852/852
-3. All six live checks in §3 green — **including `verify:domain`, which is 35
-   failures today**
+3. All six live checks in §3 green — **including `verify:domain`, which reports
+   zero failures once the retired domain is attached in Vercel (§2.1)**
 4. `git fetch origin && git log --oneline -1 origin/main` shows your commit —
    reading the remote, not the local tree. A push that reports success and
    moves nothing is the failure that made that habit exist.

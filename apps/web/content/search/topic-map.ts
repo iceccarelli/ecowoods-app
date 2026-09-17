@@ -447,6 +447,44 @@ export const CLUSTERS: QueryCluster[] = [
     ],
   },
   {
+    id: 'best-company-toronto',
+    intent: 'decision',
+    canonical: '/best-hardwood-flooring-company-toronto',
+    summary:
+      'Not "who installs hardwood" but "who is the best company to hire". A comparison intent, ' +
+      'answered with the same evaluation criteria the framework already publishes rather than a ' +
+      'superlative claim.',
+    queries: [
+      'best hardwood flooring company Toronto',
+      'best hardwood flooring contractor Toronto',
+      'top hardwood flooring company Toronto',
+      'best rated hardwood flooring company Toronto',
+      'who is the best hardwood flooring company in Toronto',
+      'best hardwood floor installers Toronto',
+      'best hardwood floor refinishing company Toronto',
+      'highest rated flooring company Toronto',
+    ],
+    supporting: ['/framework', '/framework/assess', '/reviews', '/hardwood-flooring-toronto', '/team'],
+  },
+  {
+    id: 'best-company-gta',
+    intent: 'decision',
+    canonical: '/best-hardwood-flooring-company-gta',
+    summary:
+      'The same comparison intent, asked across the wider region rather than the core city — ' +
+      'municipalities, corridors and drive times the Toronto page does not need to cover.',
+    queries: [
+      'best hardwood flooring company GTA',
+      'best hardwood flooring company Greater Toronto Area',
+      'best hardwood flooring contractor GTA',
+      'top hardwood flooring company GTA',
+      'best rated hardwood flooring company GTA',
+      'best hardwood floor installers GTA',
+      'hardwood flooring company serving the GTA',
+    ],
+    supporting: ['/framework', '/framework/assess', '/reviews', '/corridors', '/service-areas'],
+  },
+  {
     id: 'entity',
     intent: 'entity',
     canonical: '/about',
@@ -456,7 +494,6 @@ export const CLUSTERS: QueryCluster[] = [
       'Ecowoods Toronto reviews',
       'is Ecowoods reputable',
       'Ecowoods hardwood phone number',
-      'ecowoodshardwood.com',
     ],
     supporting: ['/reviews', '/team', '/press', '/authority'],
   },

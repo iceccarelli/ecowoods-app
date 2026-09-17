@@ -6,6 +6,7 @@ import {
   yearsInBusiness,
   PRIMARY_REVIEW_EVIDENCE,
   PROFILE_LINKS,
+  GOOGLE_PLACE,
 } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICES, SERVICE_AREAS } from '@/lib/seo-data';
 import { getPapers } from '@/lib/papers';
@@ -198,6 +199,20 @@ export default function PressPage() {
                       /llms-full.txt
                     </Link>
                     , <Link href="/ai.txt">/ai.txt</Link>, <Link href="/authority">citation guide</Link>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Google Business Profile</th>
+                  <td>
+                    Business Profile ID {GOOGLE_PLACE.businessProfileId} · Place ID{' '}
+                    {GOOGLE_PLACE.placeId} ·{' '}
+                    <a href={GOOGLE_PLACE.mapsUrl} target="_blank" rel="noopener noreferrer">
+                      view on Google Maps
+                    </a>{' '}
+                    ·{' '}
+                    <a href={GOOGLE_PLACE.writeReviewUrl} target="_blank" rel="noopener noreferrer">
+                      write a review
+                    </a>
                   </td>
                 </tr>
               </tbody>

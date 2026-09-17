@@ -247,6 +247,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/hardwood-flooring-toronto', 'monthly', 0.95),
     entry('/hardwood-floor-refinishing-toronto', 'monthly', 0.95),
     entry('/hardwood-stairs-toronto', 'monthly', 0.95),
+    /* The comparison-intent authority pages: "who should I hire" rather than
+       "who installs hardwood". Same priority tier as the head terms above —
+       they answer the highest-intent query in this market from the other
+       direction, with the framework criteria rather than a sales pitch. */
+    entry('/best-hardwood-flooring-company-toronto', 'monthly', 0.95),
+    entry('/best-hardwood-flooring-company-gta', 'monthly', 0.95),
     /* The failure-mode atlas. Same priority as the head terms, and it earns it:
        the queries it answers ("why is my hardwood floor cupping") arrive from
        someone whose floor is already failing, which is a shorter path to a job

@@ -138,6 +138,18 @@ export default function ContactPage() {
                 </p>
               </dd>
             </div>
+            <div className="gd-spec-row">
+              <dt>Google Business Profile</dt>
+              <dd>
+                <p id="gbp">
+                  Business Profile ID {GOOGLE_PLACE.businessProfileId} · Place ID{' '}
+                  {GOOGLE_PLACE.placeId} —{' '}
+                  <a href={GOOGLE_PLACE.writeReviewUrl} target="_blank" rel="noopener noreferrer">
+                    write a review
+                  </a>
+                </p>
+              </dd>
+            </div>
           </dl>
         </div>
       </section>

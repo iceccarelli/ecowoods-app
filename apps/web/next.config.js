@@ -44,6 +44,8 @@ const MARKDOWN_TWINS = [
   ['/hardwood-flooring-toronto', '/hardwood-flooring-toronto.md'],
   ['/hardwood-floor-refinishing-toronto', '/hardwood-floor-refinishing-toronto.md'],
   ['/hardwood-stairs-toronto', '/hardwood-stairs-toronto.md'],
+  ['/best-hardwood-flooring-company-toronto', '/best-hardwood-flooring-company-toronto.md'],
+  ['/best-hardwood-flooring-company-gta', '/best-hardwood-flooring-company-gta.md'],
 ];
 
 /** @type {import('next').NextConfig} */
@@ -239,7 +241,8 @@ const nextConfig = {
          Next's own path-to-regexp: matches exactly the three, strips `.md`
          from the captured slug, and matches nothing else. */
       {
-        source: '/:slug(hardwood-flooring-toronto|hardwood-floor-refinishing-toronto|hardwood-stairs-toronto).md',
+        source:
+          '/:slug(hardwood-flooring-toronto|hardwood-floor-refinishing-toronto|hardwood-stairs-toronto|best-hardwood-flooring-company-toronto|best-hardwood-flooring-company-gta).md',
         destination: '/md/commercial/:slug',
       },
     ];

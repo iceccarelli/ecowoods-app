@@ -253,6 +253,13 @@ export default function ReviewsPage() {
               customers who wrote them, and keeping them where they cannot be edited is the property
               that makes them evidence.
             </p>
+            <p>
+              Reviews are one input, not the whole comparison. For the published criteria this
+              business is also judged against, see{' '}
+              <Link href="/best-hardwood-flooring-company-toronto">how to judge any hardwood
+              flooring company in Toronto</Link> or{' '}
+              <Link href="/best-hardwood-flooring-company-gta">anywhere across the GTA</Link>.
+            </p>
           </div>
         </div>
       </section>
