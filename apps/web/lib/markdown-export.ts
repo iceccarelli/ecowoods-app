@@ -1308,6 +1308,27 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
       'No per-tread band is published. The stair number is given per tread and per flight after the same ' +
       'in-home measure and is itemised separately in the written price. The bands below are for the floor.',
   },
+  {
+    slug: 'best-hardwood-flooring-company-toronto',
+    h1: 'The best hardwood flooring company in Toronto — judged, not claimed',
+    lede:
+      `"Best" is not a figure this site can source, so it does not print one. Published instead: the ` +
+      `${criterionCount()} criteria of ${FRAMEWORK_NAME} v${FRAMEWORK_VERSION} for judging any hardwood ` +
+      `flooring company in Toronto, and the facts Ecowoods publishes about itself so it can be checked ` +
+      `the same way.`,
+    services: SERVICES.map((s) => s.slug),
+    faq: (f) => /choose|contractor|warranty|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
+  },
+  {
+    slug: 'best-hardwood-flooring-company-gta',
+    h1: 'The best hardwood flooring company in the GTA — one standard, every municipality',
+    lede:
+      `The same comparison, asked at the scale a GTA-wide search implies: one crew model and one ` +
+      `published price list across every municipality Ecowoods serves, judged against the ` +
+      `${criterionCount()} criteria of ${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}.`,
+    services: SERVICES.map((s) => s.slug),
+    faq: (f) => /choose|contractor|warranty|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
+  },
 ];
 
 export const commercialToMarkdown = (page: CommercialMirror): string => {

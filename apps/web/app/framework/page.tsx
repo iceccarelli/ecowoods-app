@@ -261,7 +261,10 @@ export default function FrameworkPage() {
             <Link href="/hardwood-flooring-toronto">hardwood flooring in Toronto</Link>,{' '}
             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
             <Link href="/hardwood-stairs-toronto">stairs</Link>. Applying the criteria above to our
-            own quote is not only allowed, it is the point.
+            own quote is not only allowed, it is the point — see{' '}
+            <Link href="/best-hardwood-flooring-company-toronto">how to judge any company in Toronto</Link>{' '}
+            or <Link href="/best-hardwood-flooring-company-gta">anywhere across the GTA</Link> against
+            this same standard.
           </p>
           <div className="fw-actions">
             <Link className="fw-cta" href="/#quote">

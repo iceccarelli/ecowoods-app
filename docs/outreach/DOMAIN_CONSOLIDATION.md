@@ -5,14 +5,16 @@ why the obvious version of it would have made things worse.
 
 ## The situation
 
-Two websites exist for one business. `ecowoods.ca` is this repository.
-`ecowoodshardwood.com` is a hosted store platform, still live, answering HTTP
-200 on 35 URLs as measured on 2026-09-09, served by `Apache/2.4.68 (Debian)`.
+`ecowoodshardwood.com` is this company's earlier domain, on a hosted store
+platform. `ecowoods.ca` — this repository — is the one canonical site: the
+single domain published in Google Business Profile, in the schema graph, and
+in every machine surface this repository generates.
 
-Both describe the same company, at the same address, with the same phone number.
-To a search engine that is not one business with two sites; it is an entity
-whose signals are split across two domains, each competing with the other for
-the same queries.
+Two live domains for one business, without a redirect, would be one entity
+whose signals split across two competing hosts. That is what the redirect map
+below exists to prevent, permanently, rather than something documented here as
+open: every URL the old domain ever published has a destination on
+`ecowoods.ca` assigned to it.
 
 ## What is actually stranded there
 

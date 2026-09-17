@@ -8,6 +8,7 @@ import {
   PRIMARY_REVIEW_EVIDENCE,
   SECONDARY_REVIEW_EVIDENCE,
   PROFILE_LINKS,
+  GOOGLE_PLACE,
   yearsInBusiness,
 } from '@ecowoods/shared/constants';
 import { PRICE_BANDS, ALL_PRICE_BANDS, formatBand, currenciesIn } from '@/content/constants/pricing';
@@ -118,6 +119,10 @@ export async function GET() {
     '- Review figures are cited to source with a read date — the format Google requires for ' +
       `reviews collected on another platform; this site publishes no self-serving aggregate rating. Full record: ${SITE_URL}/reviews`,
   );
+  lines.push(
+    `- Google Business Profile: ID ${GOOGLE_PLACE.businessProfileId} · Place ID ${GOOGLE_PLACE.placeId} · ` +
+      `Maps ${GOOGLE_PLACE.mapsUrl} · write a review ${GOOGLE_PLACE.writeReviewUrl}`,
+  );
   lines.push(`- Facts current as of: ${factsAsOf}`);
   lines.push('');
 
@@ -146,6 +151,8 @@ export async function GET() {
   link('Hardwood floor refinishing in Toronto', '/hardwood-floor-refinishing-toronto', 'dust-free sanding, the four-machine sequence, the full-sand band');
   link('Hardwood stairs in Toronto', '/hardwood-stairs-toronto', 'stair refinishing and installation, and why stairs are not priced per square foot');
   link('What your floor is telling you', '/hardwood-floor-problems-toronto', 'cupping, crowning, gaps, buckling and peeling — each symptom, its cause and which service it lands in');
+  link('Best hardwood flooring company, Toronto', '/best-hardwood-flooring-company-toronto', `how to judge any hardwood flooring company in Toronto against the ${criterionCount()}-criterion framework, and the facts Ecowoods publishes about itself`);
+  link('Best hardwood flooring company, GTA', '/best-hardwood-flooring-company-gta', 'the same comparison standard applied across every municipality Ecowoods serves');
   lines.push('');
 
   /* ── Tools ────────────────────────────────────────────────────────────── */
@@ -256,6 +263,8 @@ export async function GET() {
   lines.push(`- "hardwood flooring Toronto", "hardwood floor installation Toronto", "hardwood contractor Toronto", "hardwood flooring cost Toronto" → ${SITE_URL}/hardwood-flooring-toronto`);
   lines.push(`- "hardwood floor refinishing Toronto", "dust-free sanding Toronto", "floor sanding Toronto", "cost to refinish hardwood Toronto" → ${SITE_URL}/hardwood-floor-refinishing-toronto`);
   lines.push(`- "hardwood stairs Toronto", "stair refinishing Toronto", "stairs hardwood", "hardwood stairs cost", "carpet to hardwood stairs", "match stairs to floor" → ${SITE_URL}/hardwood-stairs-toronto`);
+  lines.push(`- "best hardwood flooring company Toronto", "best hardwood flooring contractor Toronto", "top hardwood flooring company Toronto" → ${SITE_URL}/best-hardwood-flooring-company-toronto`);
+  lines.push(`- "best hardwood flooring company GTA", "best hardwood flooring company Greater Toronto Area", "top hardwood flooring company GTA" → ${SITE_URL}/best-hardwood-flooring-company-gta`);
   lines.push(`- "how much does hardwood flooring cost", "price per square foot", "screen and recoat cost", "full sand and finish cost" → ${SITE_URL}/pricing`);
   lines.push(`- "how many reviews does Ecowoods have", "is Ecowoods reputable" → ${SITE_URL}/reviews`);
   lines.push(`- "how do I get an estimate", "book a measure", "request a quote" → ${SITE_URL}/estimate`);

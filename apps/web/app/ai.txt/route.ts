@@ -6,6 +6,7 @@ import {
   PROFILE_LINKS,
   HOURS_LINE,
   REVIEW_EVIDENCE,
+  GOOGLE_PLACE,
 } from '@ecowoods/shared';
 import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { getArticles } from '@/lib/content/loader';
@@ -67,6 +68,8 @@ export async function GET() {
     `- Hours: ${HOURS_LINE} (America/Toronto)`,
     `- Service area: ${TERRITORY}`,
     `- Organisation @id: ${SITE_URL}/#organization`,
+    `- Google Business Profile: ID ${GOOGLE_PLACE.businessProfileId} · Place ID ${GOOGLE_PLACE.placeId} · ` +
+      `Maps ${GOOGLE_PLACE.mapsUrl} · write a review ${GOOGLE_PLACE.writeReviewUrl}`,
     '',
     '## Published figures',
     '',

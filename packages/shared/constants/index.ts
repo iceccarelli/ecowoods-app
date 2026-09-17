@@ -108,6 +108,8 @@ export const GOOGLE_PLACE = {
   placeId: 'ChIJcZSiRZAwK4gRUz7OX0_K7U4',
   cid: '5687424346697383507',
   knowledgeGraphId: '/g/11g02cm1tr',
+  /** Google Business Profile dashboard id — the account, not the public listing. */
+  businessProfileId: '9189101272120311568',
   mapsUrl: 'https://www.google.com/maps/place/?q=place_id:ChIJcZSiRZAwK4gRUz7OX0_K7U4',
   writeReviewUrl:
     'https://search.google.com/local/writereview?placeid=ChIJcZSiRZAwK4gRUz7OX0_K7U4',

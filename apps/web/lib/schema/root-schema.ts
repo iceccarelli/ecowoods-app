@@ -239,6 +239,7 @@ export function placeForMarket(slug: string): AreaServedCity | AreaServedPlace |
 const IDENTIFIERS: PropertyValue[] = [
   { '@type': 'PropertyValue', propertyID: 'google_place_id', value: GOOGLE_PLACE.placeId },
   { '@type': 'PropertyValue', propertyID: 'google_cid', value: GOOGLE_PLACE.cid },
+  { '@type': 'PropertyValue', propertyID: 'google_business_profile_id', value: GOOGLE_PLACE.businessProfileId },
   { '@type': 'PropertyValue', propertyID: 'homestars_profile_id', value: HOMESTARS_CANONICAL.profileId },
 ];
 

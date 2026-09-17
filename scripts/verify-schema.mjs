@@ -160,6 +160,14 @@ const FAQPAGE_ALLOWED = new Set([
   // section above it, and two of the answers say the correct action is to do
   // nothing — which is not a shape anyone writes for a rich result.
   'apps/web/app/hardwood-floor-problems-toronto/page.tsx',
+  // The two comparison-intent authority pages. Same test as the head-term
+  // pages above: every question is rendered visibly in the page's own <dl>,
+  // and every answer interpolates BUSINESS_NAP, PRIMARY_REVIEW_EVIDENCE,
+  // PRICING or the framework's own criteria — including the answer that says
+  // plainly no audited ranking of every company exists, which is not a shape
+  // written for a rich result.
+  'apps/web/app/best-hardwood-flooring-company-toronto/page.tsx',
+  'apps/web/app/best-hardwood-flooring-company-gta/page.tsx',
   // The two P1 commercial surfaces. Both pass F-27 on the same test as the
   // head-term pages: every question is rendered visibly in the page's own <dl>,
   // and every answer is either interpolated from PRICING or states a commitment
