@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   description:
     'Send the hardwood quote you are holding and get a written, priority reply — what is right, what is missing, what to ask before you sign. Not a ranking of any company.',
   alternates: { canonical: '/well-installed-review' },
+  /* Not indexed until the owner confirms the price. The $179/$249 figures are
+     a Class C proposal (content/constants/paid-review-product.ts), and a search
+     result is a public price claim that outlives a revert. It also keeps the
+     sitemap contract honest: tests/reachability.test.ts requires every
+     indexable page to be in app/sitemap.ts, an existing file this build does
+     not edit. Flip to indexable AND add the sitemap entry in the same change. */
+  robots: { index: false, follow: true },
   openGraph: {
     title: 'Well-Installed Quote Review',
     description: 'A paid, priority version of reading your hardwood quote — written, not a phone call, not a ranking.',

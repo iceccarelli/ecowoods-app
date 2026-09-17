@@ -88,5 +88,5 @@ A unitless `lineHeight` on the react-pdf `Page` is inherited by the `fixed` foot
 - Link from `/framework/assess` and `/quote-check` to `/well-installed-review`.
 - Add the four `well_installed_review.*` events to GA4 (`lib/analytics.ts`'s `AnalyticsEvent` union) and/or a funnel-ledger stage if the owner wants them in the same report as contractor jobs.
 - Raise the 3-file upload cap on `/api/well-installed-review/submit` if three quotes photographed page by page turns out to be common.
-- Owner Class C sign-off on `$179`/`$249`.
+- Owner Class C sign-off on `$179`/`$249` — then, in one change, remove `robots: { index: false }` from `app/well-installed-review/page.tsx` and add `/well-installed-review` to `app/sitemap.ts` (`tests/reachability.test.ts` enforces that the two agree).
 - Optional, later: credit the review fee against a signed contract in admin invoicing — that touches existing invoice code and is out of scope here.
