@@ -43,6 +43,7 @@ import { spawn } from 'node:child_process';
 import { cpus } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LIST = process.argv.includes('--list');
@@ -96,6 +97,40 @@ for (const name of candidates.sort()) {
     continue;
   }
   run.push({ name, args });
+}
+
+/**
+ * verify:css is the one guard here with a real dependency: it asks postcss,
+ * a Next devDependency, to parse every stylesheet (see scripts/verify-css.mjs
+ * for why a text-based check cannot replace it). This runner is dependency-free
+ * by design — the CI job that runs it never runs `pnpm install`, on purpose —
+ * so on that job postcss can never resolve, and verify:css would fail every
+ * time for an environment reason rather than a CSS one.
+ *
+ * That is not a reason to weaken verify:css itself, or to add an unconditional
+ * static SKIP entry: a developer running `pnpm verify` locally has node_modules
+ * and must still get the real check. So this is resolved once, here, by asking
+ * the same question verify-css.mjs asks of the same package: if postcss
+ * resolves, verify:css runs normally and a real parse failure still fails the
+ * build. If it does not, this is the dependency-free job, and the real check
+ * already runs — with node_modules installed — as its own step in the
+ * "Typecheck & Build" job in .github/workflows/web.yml, after `pnpm install`.
+ */
+const cssGuard = run.findIndex((g) => g.name === 'verify:css');
+if (cssGuard !== -1) {
+  let postcssResolvable = true;
+  try {
+    createRequire(resolve(ROOT, 'apps/web/package.json'))('postcss');
+  } catch {
+    postcssResolvable = false;
+  }
+  if (!postcssResolvable) {
+    run.splice(cssGuard, 1);
+    skipped.push({
+      name: 'verify:css',
+      why: 'postcss (a Next dependency) is not resolvable in this dependency-free job; the real check runs in the "Typecheck & Build" job after pnpm install',
+    });
+  }
 }
 
 if (LIST) {

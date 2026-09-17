@@ -251,6 +251,13 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
+      # The one guard in scripts/verify-*.mjs that needs an installed
+      # dependency (postcss, which Next already uses to compile globals.css —
+      # see scripts/verify-css.mjs). The Guards job stays dependency-free by
+      # design and skips this one specifically for that reason; this is where
+      # it actually runs, now that node_modules exists.
+      - name: CSS parses (postcss, the same parser that compiles it)
+        run: node scripts/verify-css.mjs
       # Must precede tsc: the client is generated from schema.prisma, and
       # without it every model added since the last generate is a type error.
       - name: Generate Prisma client
