@@ -75,8 +75,9 @@ const FAQS = [
   {
     question: 'Who does the colour matching work?',
     answer:
-      `Francisco Oller, professional contractor and lead craftsman for ${BUSINESS_NAP.name} in Toronto and the ` +
-      `GTA. His scope and the sourcing behind it are published at ${SITE_URL}/team.`,
+      `Francisco Oller, owner of ${BUSINESS_NAP.name} and the ecowoods.ca domain, and the company's ` +
+      `professional contractor and lead craftsman in Toronto and the GTA. His scope and the sourcing ` +
+      `behind it are published at ${SITE_URL}/team.`,
   },
   {
     question: 'Why does my hardwood floor colour look different in different rooms?',
@@ -146,7 +147,7 @@ export default function HardwoodColorMatchingTorontoPage() {
             Matching a stain to an existing floor, patching new hardwood into old, or coordinating stairs,
             railings, doors and trim to the floor they meet — {BUSINESS_NAP.name} identifies the existing
             finish, builds the sample against the real material, and checks it in your own room before a
-            single coat goes on the full area. Led by Francisco Oller, our professional contractor.
+            single coat goes on the full area. Led by Francisco Oller, owner and lead craftsman.
           </p>
           <p className="fw-meta">
             <span>Established {BUSINESS_NAP.foundedYear}</span>

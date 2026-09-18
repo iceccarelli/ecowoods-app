@@ -391,6 +391,8 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     areaServed: GTA,
   })),
   foundingYear: BUSINESS_NAP.foundedYear,
+  // Francisco Oller owns this organisation — content/claims.ts workforce.francisco.
+  founder: { name: 'Francisco Oller', url: `${SITE_URL}/team#francisco-oller` },
   offerCatalog: BAND_OFFER_CATALOG,
   slogan: "Toronto's master hardwood flooring artisans",
   description:
