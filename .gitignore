@@ -48,6 +48,9 @@ next-env.d.ts.bak
 # Turborepo
 .turbo/
 
+# Claude Code session/worktree scratch state
+.claude/
+
 __pycache__/
 *.pyc
 .expo/
