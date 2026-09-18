@@ -177,7 +177,7 @@ describe('compose — evidence and completeness rules', () => {
 
 describe('compose — free-text legal guard (unchanged from EW-0002)', () => {
   it('rejects a dollar figure in free text rather than publishing it', () => {
-    expect(errorsOf(baseInput({ missing: 'They left out subfloor prep, typically $2.50/sq ft extra.' }))).toMatch(/dollar|percentage/i);
+    expect(errorsOf(baseInput({ missing: 'They left out subfloor prep, typically $2.50/sq ft extra.' }))).toMatch(/dollar|percentage/i); // pricing-allow: a fixture the composer must REJECT, never a published band
   });
 
   it('rejects a percentage in free text', () => {

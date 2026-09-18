@@ -6,7 +6,7 @@ import { extractListingReportSku, hasIntakeMarker } from '@/lib/listing-floor-re
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const metadata: Metadata = {
-  title: 'Payment received — Pre-List Floor Condition Report — Ecowoods',
+  title: 'Payment received — Pre-List Floor Condition Report',
   robots: { index: false, follow: false },
 };
 

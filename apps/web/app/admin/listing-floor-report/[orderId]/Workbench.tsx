@@ -109,6 +109,7 @@ export function Workbench({
       <fieldset className="wir-pillar">
         <legend>Recommendation</legend>
         <select
+          aria-label="Recommendation"
           value={form.recommendation}
           onChange={(e) => setForm((f) => ({ ...f, recommendation: e.target.value as Recommendation }))}
         >

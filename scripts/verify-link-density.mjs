@@ -265,8 +265,26 @@ const checked = targets.filter((t) => (seenFile.has(t.file) ? false : seenFile.a
  */
 const deepPages = pageFiles.filter((f) => {
   const r = routeOf(f);
-  return r.split('/').filter(Boolean).length >= 2 &&
-    !['/api', '/admin', '/mypage', '/docs', '/md'].some((p) => r.startsWith(p));
+  if (r.split('/').filter(Boolean).length < 2) return false;
+  if (['/api', '/admin', '/mypage', '/docs', '/md'].some((p) => r.startsWith(p))) return false;
+  /*
+   * A noindex page is exempt, and the rule's own reason is why.
+   *
+   * The requirement exists so Google has a path to display and a parent to
+   * attribute the page to. Google is never going to display a page it has been
+   * told not to index, so a BreadcrumbList on one is markup nothing reads —
+   * and demanding it teaches the habit of adding schema to satisfy a guard
+   * rather than to be consumed, which is how schema stops meaning anything.
+   *
+   * This is the same exemption scripts/verify-navigation.mjs already applies
+   * for the same reason: an order-scoped receipt or report page, reached from
+   * a checkout redirect or an emailed link, is not part of the public graph.
+   */
+  const src = srcOf.get(f) ?? read(f);
+  const layout = join(dirname(f), 'layout.tsx');
+  const meta = src + (existsSync(layout) ? read(layout) : '');
+  if (/robots:\s*\{[^}]*index:\s*false/.test(meta)) return false;
+  return true;
 });
 
 /* ── run ──────────────────────────────────────────────────────────────────── */

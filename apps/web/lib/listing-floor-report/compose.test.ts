@@ -61,7 +61,7 @@ describe('compose', () => {
   });
 
   it('rejects a dollar figure in free text rather than publishing it', () => {
-    const result = compose(baseInput({ missing: 'A recoat here would run about $2,000 before listing.' }));
+    const result = compose(baseInput({ missing: 'A recoat here would run about $2,000 before listing.' })); // pricing-allow: a fixture the composer must REJECT, never a published band
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join(' ')).toMatch(/dollar|percentage/i);
   });

@@ -7,7 +7,7 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
 
 export const metadata: Metadata = {
-  title: 'Your Quote Intelligence Report — Ecowoods',
+  title: 'Your Quote Intelligence Report',
   robots: { index: false, follow: false },
 };
 

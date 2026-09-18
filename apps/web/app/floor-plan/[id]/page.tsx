@@ -6,7 +6,7 @@ import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const metadata: Metadata = {
-  title: 'Your Personal Floor Plan — Ecowoods',
+  title: 'Your Personal Floor Plan',
   robots: { index: false, follow: false },
 };
 

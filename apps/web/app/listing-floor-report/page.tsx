@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   description:
     'A dated read of your hardwood before the listing photos: what the finish shows, what the wood shows, and whether a recoat is realistic on your timeline. Not an appraisal, not a ranking of contractors.',
   alternates: { canonical: '/listing-floor-report' },
+  /* Out of the index and out of the sitemap until the price is confirmed —
+     the same hold /well-installed-review is under. `follow: true` because the
+     links out of this page point at pages that ARE published. */
+  robots: { index: false, follow: true },
   openGraph: {
     title: 'Pre-List Floor Condition Report',
     description: 'A dated written read of the floor before the listing photos go up.',

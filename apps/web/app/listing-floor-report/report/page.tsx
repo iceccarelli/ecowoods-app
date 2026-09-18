@@ -6,7 +6,7 @@ import { listingReportSkuConfig } from '@/content/constants/listing-floor-report
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const metadata: Metadata = {
-  title: 'Your Pre-List Floor Condition Report — Ecowoods',
+  title: 'Your Pre-List Floor Condition Report',
   robots: { index: false, follow: false },
 };
 

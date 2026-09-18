@@ -19,7 +19,7 @@ describe('buildEventLine', () => {
   });
 
   it('drops anything that could carry customer or document content, even if a caller passes it', () => {
-    const smuggled = { orderId: 'o1', email: 'jane@example.com', name: 'Jane', excerpt: 'Acme Flooring Inc. $8,400', filename: 'quote.pdf' };
+    const smuggled = { orderId: 'o1', email: 'jane@example.com', name: 'Jane', excerpt: 'Acme Flooring Inc. $8,400', filename: 'quote.pdf' }; // pricing-allow: a fixture the event line must REDACT, never a published band
     const line = buildEventLine('well_installed_review.documents_received', smuggled as never, AT);
     expect(line).not.toMatch(/jane|Acme|8,400|quote\.pdf/);
     expect(Object.keys(JSON.parse(line)).sort()).toEqual(['at', 'event', 'orderId']);

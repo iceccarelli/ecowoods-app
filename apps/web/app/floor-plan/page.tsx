@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   description:
     'Turn the floor you configured in Floor Studio into a written specification you can email a spouse, a designer, or a condo board. $99 CAD, one time.',
   alternates: { canonical: '/floor-plan' },
+  /* Out of the index and out of the sitemap until the price is confirmed —
+     the same hold /well-installed-review is under. `follow: true` because the
+     links out of this page point at pages that ARE published. */
+  robots: { index: false, follow: true },
   openGraph: {
     title: 'Personal Floor Plan',
     description: 'Your Floor Studio design, written out as a specification.',

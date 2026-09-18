@@ -5,7 +5,7 @@ import { SubmitForm } from './SubmitForm';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 export const metadata: Metadata = {
-  title: 'Payment received — send your quote — Ecowoods',
+  title: 'Payment received — send your quote',
   robots: { index: false, follow: false },
 };
 
