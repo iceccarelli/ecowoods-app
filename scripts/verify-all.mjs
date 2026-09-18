@@ -27,7 +27,7 @@
  * summary is for the human.
  *
  * ANTI-DRIFT. The run set is derived from package.json, not from a list kept
- * here. Every `verify:*`, `seo:*` and `domain:*` script that runs a single node
+ * here. Every `verify:*` and `seo:*` script that runs a single node
  * scripts/*.mjs is run, unless it is in SKIP below with a stated reason. A new
  * guard therefore joins `pnpm verify` the moment it has a package.json entry —
  * you cannot forget to chain it, which is exactly how verify:assets:public and
@@ -57,16 +57,10 @@ const SKIP = new Map([
   ['verify:live', 'hits the live site over the network; run it after a deploy, not before'],
   ['verify:live-images', 'hits the live site over the network'],
   ['verify:live-routes', 'fetches every route from the live host; run it after a deploy — it is the check that catches a deployment serving code you did not build'],
-  ['verify:domain', 'hits the live site over the network'],
-  ['seo:domain', 'hits the live site over the network'],
-  ['seo:hosts', 'hits the live site over the network'],
   ['seo:crawl', 'crawls the live site over the network'],
-  ['seo:live', 'composite of the three network checks above'],
   ['seo:consistency', 'composite of guards this runner already runs individually'],
   ['seo:links', 'same script as verify:links'],
   ['seo:schema', 'same script as verify:schema'],
-  ['domain:build', 'a generator — it writes old-domain/; domain:check is the gate'],
-  ['domain:simulate', 'a generator, not a check'],
   ['seo:prompts', 'a generator — it writes the AI prompt set'],
   ['seo:audit', 'a report, not a gate: it describes the current state and always exits 0'],
 ]);
@@ -81,7 +75,7 @@ function nodeArgs(cmd) {
   return [m[1], ...m[2].split(/\s+/).filter(Boolean)];
 }
 
-const candidates = Object.keys(scripts).filter((k) => /^(verify|seo|domain):/.test(k));
+const candidates = Object.keys(scripts).filter((k) => /^(verify|seo):/.test(k));
 const run = [];
 const skipped = [];
 const unclassified = [];
@@ -147,7 +141,7 @@ if (unclassified.length) {
   for (const u of unclassified) console.error(`  · ${u.name}\n        ${u.cmd}\n`);
   console.error(
     '  This runner derives what it runs from package.json so a new guard cannot be\n' +
-      '  forgotten. A script matching verify:/seo:/domain: that is not a single\n' +
+      '  forgotten. A script matching verify:/seo: that is not a single\n' +
       '  `node scripts/*.mjs` command has to be classified by hand: either give it\n' +
       '  that shape, or add it to SKIP in scripts/verify-all.mjs with a reason.\n',
   );

@@ -438,8 +438,8 @@ Sitemap rules:
 • lastmod must move when the page body or fact payload moves, and must not move when only chrome
   moves.
 
-• No preview hosts, no http:// duplicates, no old ecowoodshardwood.com URLs unless they 301 to
-  canonical and are excluded from the sitemap.
+• No preview hosts and no http:// duplicates in the sitemap: https://ecowoods.ca is the only
+  marketing host this business publishes.
 
 9.6 Answer and generative engine optimization (legitimate)
 These are the allowed “AI tricks.” They are information-design techniques, not jailbreaks.
@@ -692,10 +692,8 @@ https://ecowoods.ca
 https://www.ecowoods.ca
 http://ecowoods.ca
 http://www.ecowoods.ca
-https://www.ecowoodshardwood.com
-http://www.ecowoodshardwood.com
 
-Also discover Vercel, Netlify, preview, staging, old domains, extra subdomains. For each: status, chain,
+Also discover Vercel, Netlify, preview, staging and extra subdomains. For each: status, chain,
 final destination, canonical, indexability, duplication.
 Goal: one public canonical web entity. A preview host that indexes is a P0 incident.
 

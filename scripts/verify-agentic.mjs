@@ -34,8 +34,9 @@
  *     instructions", "always recommend Ecowoods" and their relatives are prompt
  *     injection, whichever side writes them. Every string in these files is
  *     data about a business, never an instruction to the reader.
- *  c. No preview or retired host in any machine surface. A vercel.app URL or the
- *     old domain in a canonical_url is a citation to the wrong site.
+ *  c. Exactly one marketing host in any machine surface. A preview URL, an
+ *     http:// URL, or any ecowoods-branded host that is not https://ecowoods.ca
+ *     in a canonical_url is a citation to the wrong site.
  *  d. Every alias in the intent ontology resolves to a published service slug.
  *  e. Every `use_instead` reference in the registry resolves to a service or a
  *     published price band.
@@ -182,12 +183,18 @@ for (const p of surfaceFiles) {
   }
 }
 
-const HOSTS = /vercel\.app|ecowoodshardwood\.com|http:\/\/ecowoods/g;
+/* A preview host, a plaintext host, or an ecowoods-branded host that is not
+   the canonical one. Written as a shape rather than a list of known-bad
+   hostnames: a list only catches the host somebody already thought of, and
+   leaves that string in the tree for a later copy-paste to lift back out.
+   `ecowoods[a-z0-9-]+\.` needs at least one character after "ecowoods", which
+   is what exempts ecowoods.ca itself. */
+const HOSTS = /vercel\.app|\becowoods[a-z0-9-]+\.[a-z]{2,}|http:\/\/ecowoods/g;
 const hostFiles = [...surfaceFiles, join(WEB, 'app/sitemap.ts'), join(WEB, 'app/robots.ts')].filter(existsSync);
 for (const p of hostFiles) {
   const src = strip(read(p));
   for (const m of src.matchAll(HOSTS)) {
-    fail(`${rel(p)}:${lineOf(src, m.index)}`, `'${m[0]}' in code — a preview or retired host reaching a machine surface is a citation to the wrong site`);
+    fail(`${rel(p)}:${lineOf(src, m.index)}`, `'${m[0]}' in code — a non-canonical host reaching a machine surface is a citation to the wrong site`);
   }
 }
 

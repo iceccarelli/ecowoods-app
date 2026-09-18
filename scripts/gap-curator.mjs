@@ -38,7 +38,6 @@ const exists = (p) => fs.existsSync(path.join(ROOT, p));
 const has = (p, needle) => exists(p) && read(p).includes(needle);
 
 const constants = read('packages/shared/constants/index.ts');
-const readme = read('README.md');
 
 /** @type {{id:string,area:string,title:string,detail:string,severity:number,business_impact:number,technical_impact:number,confidence:number,effort:number,dependency:string,automation_level:'automated'|'assisted'|'human',status:string,blocker?:string}[]} */
 const gaps = [];
@@ -50,7 +49,7 @@ const st = (ok, fixedStatus = 'fixed') => (ok ? fixedStatus : 'open');
 add({
   id: 'identity.bing-places-alignment', area: 'identity',
   title: 'Bing Places lists "Ecowoods Inc." with wrong hours and the www host',
-  detail: 'README (live 2026-09-04): name "Ecowoods Inc.", website https://www.ecowoods.ca, hours Fri 08:00–22:00 / Sat 08:00–16:00. Must match the locked NAP.',
+  detail: 'Observed 2026-09-04: name "Ecowoods Inc.", website https://www.ecowoods.ca, hours Fri 08:00–22:00 / Sat 08:00–16:00. Must match the locked NAP.',
   severity: 3, business_impact: 3, technical_impact: 1, confidence: 4, effort: 1,
   dependency: 'owner login to Bing Places for Business', automation_level: 'human',
   status: 'blocked', blocker: 'HUMAN DECISION REQUIRED — owner edits the listing (Protocol §23: listing changes are business actions).',
@@ -58,18 +57,18 @@ add({
 add({
   id: 'identity.gbp-phone', area: 'identity',
   title: 'Google Business Profile shows no phone number',
-  detail: 'README (live 2026-09-04): "Add place\'s phone number" on the GBP card. The site, JSON-LD, llms.txt and /api/v1/entity all publish the same number; the profile does not.',
+  detail: 'Observed 2026-09-04: "Add place\'s phone number" on the GBP card. The site, JSON-LD, llms.txt and /api/v1/entity all publish the same number; the profile does not.',
   severity: 4, business_impact: 4, technical_impact: 1, confidence: 4, effort: 1,
   dependency: 'owner login to business.google.com', automation_level: 'human',
   status: 'blocked', blocker: 'HUMAN DECISION REQUIRED — owner adds the phone in the GBP dashboard.',
 });
 add({
   id: 'identity.directories-website-field', area: 'identity',
-  title: 'YellowPages, 411.ca and TrustedPros still point their website field at the retired domain',
-  detail: 'README (live 2026-09-04). One DNS change on ecowoodshardwood.com (301 to canonical) corrects all three for crawlers at once.',
-  severity: 3, business_impact: 3, technical_impact: 2, confidence: 4, effort: 2,
-  dependency: 'registrar / Vercel domain settings', automation_level: 'assisted',
-  status: 'blocked', blocker: 'EXTERNAL AUTHORIZATION — DNS at the registrar, or Apache upload of old-domain/.htaccess. Redirect configs are generated and checked (pnpm domain:check).',
+  title: 'YellowPages, 411.ca and TrustedPros do not point their website field at https://ecowoods.ca',
+  detail: 'Each directory publishes its own website field for this business, and a field that does not name the canonical site is a citation the entity does not get credit for. Fixed in each dashboard, not in this repository.',
+  severity: 3, business_impact: 3, technical_impact: 1, confidence: 4, effort: 2,
+  dependency: 'owner login to each directory', automation_level: 'human',
+  status: 'blocked', blocker: 'HUMAN DECISION REQUIRED — owner sets the website field to https://ecowoods.ca in each directory.',
 });
 add({
   id: 'identity.homestars-duplicate-profile', area: 'identity',
@@ -79,15 +78,6 @@ add({
   dependency: 'HomeStars support', automation_level: 'human',
   status: 'blocked', blocker: 'HUMAN DECISION REQUIRED — owner asks HomeStars support to merge.',
 });
-add({
-  id: 'identity.stale-vercel-alias', area: 'identity',
-  title: 'ecowoods-app.vercel.app serves a superseded copy of the site',
-  detail: 'vercel.json redirects the host, but the alias is served by a project this repository does not deploy (README §5). pnpm seo:hosts watches it.',
-  severity: 4, business_impact: 3, technical_impact: 3, confidence: 4, effort: 1,
-  dependency: 'Vercel dashboard', automation_level: 'human',
-  status: 'blocked', blocker: 'EXTERNAL AUTHORIZATION — delete or re-point the alias in the Vercel team that owns it.',
-});
-
 /* ── technical gaps ─────────────────────────────────────────────────────── */
 add({
   id: 'tech.duplicate-business-entities', area: 'technical',
@@ -251,7 +241,7 @@ add({
 add({
   id: 'conv.ga4-env', area: 'conversion',
   title: 'GA4 measurement id set in Vercel',
-  detail: 'README §6: NEXT_PUBLIC_GA_MEASUREMENT_ID pending. Conversion events fire only when set. `pnpm env:check` reports it.',
+  detail: 'NEXT_PUBLIC_GA_MEASUREMENT_ID pending. Conversion events fire only when set. `pnpm env:check` reports it.',
   severity: 2, business_impact: 3, technical_impact: 1, confidence: 3, effort: 1,
   dependency: 'Vercel env', automation_level: 'human',
   status: 'unknown', blocker: 'Cannot read Vercel env from the repository; run `vercel env pull && pnpm env:check`.',
@@ -276,10 +266,6 @@ async function live() {
   const alias = await probe('/');
   const about = await probe('/about');
   up('tech.markdown-alternates', Boolean(about?.headers.get('link')?.includes('text/markdown')));
-  const stale = await (async () => { try { const r = await fetch('https://ecowoods-app.vercel.app/', { redirect: 'manual' }); return r.status; } catch { return null; } })();
-  const g = gaps.find((x) => x.id === 'identity.stale-vercel-alias');
-  if (g && stale !== null) g.detail += ` Live: ${stale} (301/308/404/410 closes this).`;
-  if (g && (stale === 301 || stale === 308 || stale === 404 || stale === 410)) g.status = 'verified';
   void alias;
 }
 

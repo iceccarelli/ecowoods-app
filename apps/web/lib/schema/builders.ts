@@ -216,8 +216,8 @@ export function buildOrganization(config: OrganizationConfig): Organization {
      * to a page that is not yours, which undercuts the local-SEO work.
      *
      * Previously hardcoded, and wrong: 'instagram.com/ecowoods.ca' is not the
-     * handle in use (the real one is @ecowoodshardwood, matching the
-     * ecowoodshardwood.com domain), and the Houzz /pro/ URL was never verified.
+     * handle in use (the real one is @ecowoodshardwood, per PROFILE_LINKS),
+     * and the Houzz /pro/ URL was never verified.
      *
      * Now derived from PROFILE_LINKS, so an entry appears here only once its
      * URL has been opened and confirmed. Adding the verified HomeStars profile

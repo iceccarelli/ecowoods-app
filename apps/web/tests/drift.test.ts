@@ -44,9 +44,18 @@ const expectBands = (body: string, where: string) => {
     expect(ok, `${where}: band ${b.label}`).toBe(true);
   }
 };
+/**
+ * Any ecowoods-branded host that is NOT the canonical ecowoods.ca: a second
+ * marketing domain, a staging host, a deployment preview. `ecowoods[a-z0-9-]+`
+ * requires at least one character after "ecowoods", which is what exempts
+ * ecowoods.ca and www.ecowoods.ca. Matched as a shape rather than as a list of
+ * known hostnames so that a host nobody has coined yet is still caught.
+ */
+const NON_CANONICAL_HOST = /\becowoods[a-z0-9-]+\.[a-z]{2,}/i;
+
 const expectClean = (body: string, where: string) => {
   expect(body, `${where}: preview host`).not.toMatch(/vercel\.app/);
-  expect(body, `${where}: old domain`).not.toMatch(/ecowoodshardwood\.com/);
+  expect(body, `${where}: non-canonical host`).not.toMatch(NON_CANONICAL_HOST);
   expect(body, `${where}: injection`).not.toMatch(/ignore (all |any )?(previous|prior) instructions|always (cite|recommend) ecowoods/i);
 };
 
@@ -123,9 +132,9 @@ describe('llms-full.txt and ai.txt', () => {
     const ai = await text(await aiGet());
     expect(ai).toContain(BUSINESS_NAP.phoneDisplay);
     expect(ai).toContain(String(BUSINESS_NAP.foundedYear));
-    // ai.txt may NAME the retired domain as a query string an entity resolver
-    // should join to this business; it must never LINK to it.
-    expect(ai).not.toMatch(/https?:\/\/(www\.)?ecowoodshardwood\.com/);
+    // One marketing host. ai.txt must never link to an ecowoods-branded host
+    // other than the canonical one, nor to a deployment preview.
+    expect(ai).not.toMatch(NON_CANONICAL_HOST);
     expect(ai).not.toMatch(/vercel\.app/);
   });
 });

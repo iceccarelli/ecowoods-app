@@ -676,8 +676,6 @@ after a real geography deploy rather than assuming.
   (89 = 89 = 89 = 89).
 - Every page self-canonicalises to `/service-areas/{slug}` and advertises its
   `.md` twin.
-- The stale preview host `ecowoods-app.vercel.app` returns 404 (lead) and
-  `vercel.json` 301s the legacy domain.
 
 ---
 
