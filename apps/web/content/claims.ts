@@ -230,6 +230,24 @@ export const CLAIMS: Claim[] = [
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
+  {
+    id: 'workforce.francisco',
+    statement:
+      `Francisco Oller is the professional contractor and lead craftsman for ${BUSINESS_NAP.name} ` +
+      `in Toronto and the GTA, working hardwood installation, sanding, refinishing and restoration, ` +
+      `stairs and railings, and colour matching and finish identification for stairs, trim, doors and ` +
+      `interior woodwork against an existing floor.`,
+    value: 'Francisco Oller',
+    status: 'verified',
+    source: 'Owner-confirmed (Francisco), authorised for publication 2026-09-18. Same attribution already used at claims.ts business.founded.',
+    verifiedAt: '2026-09-18',
+    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
+    note:
+      'Role and trade scope only. No tenure figure, headcount or certification is published for ' +
+      'Francisco because none is sourced — see /team, which states the same rule for the whole crew. ' +
+      'No photograph is published; /team uses an initials mark, never a generated image, because ' +
+      'scripts/verify-images.mjs bans anything typed kind: "photograph" that a camera did not produce.',
+  },
 
   // ── Reviews ───────────────────────────────────────────────────────────
   {

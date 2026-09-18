@@ -134,8 +134,9 @@ export default function PressPage() {
             <dd>{BUSINESS_NAP.legalName}</dd>
             <dt>Name in copy</dt>
             <dd>
-              {BUSINESS_NAP.shortName} — one word, capital E, no space. Not &ldquo;Eco Woods&rdquo;,
-              not &ldquo;EcoWoods&rdquo; with a capital W.
+              {BUSINESS_NAP.shortName} — &ldquo;Ecowoods&rdquo; is one word, capital E, no space. Not
+              &ldquo;Eco Woods&rdquo;, not &ldquo;EcoWoods&rdquo; with a capital W. &ldquo;Ecowoods&rdquo;
+              alone (no &ldquo;Inc.&rdquo;) is also correct and verified as an alternate name.
             </dd>
           </dl>
         </div>

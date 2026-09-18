@@ -122,6 +122,11 @@ export default function AboutPage() {
             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>,{' '}
             <Link href="/hardwood-stairs-toronto">stairs</Link>.
           </p>
+          <p className="tlx-note">
+            <Link href="/team#francisco-oller">Francisco Oller</Link>, our professional contractor, leads the{' '}
+            <Link href="/hardwood-color-matching-toronto">colour matching and finish identification</Link> work
+            on stairs, railings, trim and patches into an existing floor.
+          </p>
         </div>
       </section>
 

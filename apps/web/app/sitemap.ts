@@ -253,6 +253,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        direction, with the framework criteria rather than a sales pitch. */
     entry('/best-hardwood-flooring-company-toronto', 'monthly', 0.95),
     entry('/best-hardwood-flooring-company-gta', 'monthly', 0.95),
+    /* The colour-matching authority hub. Same tier as the comparison pages:
+       a real subniche with eight guides under it, not a variant of an
+       existing page. No date — nothing dated backs the hub itself; the
+       guides beneath it each carry their own publishedAt. */
+    entry('/hardwood-color-matching-toronto', 'monthly', 0.9),
     /* The failure-mode atlas. Same priority as the head terms, and it earns it:
        the queries it answers ("why is my hardwood floor cupping") arrive from
        someone whose floor is already failing, which is a shorter path to a job

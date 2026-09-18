@@ -37,6 +37,24 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'color-matching-guides-v1',
+    date: '2026-09-18',
+    kind: 'guide',
+    title: 'Eight guides on hardwood colour matching, plus a hub',
+    body: 'Colour identification of an existing finish, stain matching, patching new hardwood into old, stair and railing coordination, door and woodwork finish coordination, when a colour match fails, sample boards and sign-off, and a species undertone reference — all now published at /hardwood-color-matching-toronto, led by Francisco Oller, our professional contractor.',
+    href: '/hardwood-color-matching-toronto',
+    covers: [
+      'color-identification-existing-hardwood-finish',
+      'stain-matching-existing-hardwood-floor-toronto',
+      'matching-new-hardwood-to-old-toronto',
+      'stair-railing-trim-color-matching-toronto',
+      'door-woodwork-finish-coordination-toronto',
+      'when-color-match-fails-full-sand-vs-replace',
+      'sample-boards-on-site-trials-sign-off',
+      'species-undertone-guide-color-matching-toronto',
+    ],
+  },
+  {
     id: 'design-photographic-v1',
     date: '2026-09-14',
     kind: 'tool',

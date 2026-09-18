@@ -46,6 +46,7 @@ const MARKDOWN_TWINS = [
   ['/hardwood-stairs-toronto', '/hardwood-stairs-toronto.md'],
   ['/best-hardwood-flooring-company-toronto', '/best-hardwood-flooring-company-toronto.md'],
   ['/best-hardwood-flooring-company-gta', '/best-hardwood-flooring-company-gta.md'],
+  ['/hardwood-color-matching-toronto', '/hardwood-color-matching-toronto.md'],
 ];
 
 /** @type {import('next').NextConfig} */
@@ -180,14 +181,14 @@ const nextConfig = {
       { source: '/reviews.md', destination: '/md/reviews' },
       { source: '/estimate.md', destination: '/md/estimate' },
       { source: '/contact.md', destination: '/md/contact' },
-      /* The three head-term pages share one handler at /md/commercial/[slug].
-         The source names the three slugs explicitly, so no other root-level
-         `.md` request can reach the handler and 404 from it. Checked against
-         Next's own path-to-regexp: matches exactly the three, strips `.md`
-         from the captured slug, and matches nothing else. */
+      /* The commercial head-term and hub pages share one handler at
+         /md/commercial/[slug]. The source names the slugs explicitly, so no
+         other root-level `.md` request can reach the handler and 404 from it.
+         Checked against Next's own path-to-regexp: matches exactly these, strips
+         `.md` from the captured slug, and matches nothing else. */
       {
         source:
-          '/:slug(hardwood-flooring-toronto|hardwood-floor-refinishing-toronto|hardwood-stairs-toronto|best-hardwood-flooring-company-toronto|best-hardwood-flooring-company-gta).md',
+          '/:slug(hardwood-flooring-toronto|hardwood-floor-refinishing-toronto|hardwood-stairs-toronto|best-hardwood-flooring-company-toronto|best-hardwood-flooring-company-gta|hardwood-color-matching-toronto).md',
         destination: '/md/commercial/:slug',
       },
     ];

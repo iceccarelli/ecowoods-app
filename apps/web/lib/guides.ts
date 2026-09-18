@@ -1090,6 +1090,453 @@ export const GUIDES: Guide[] = [
     ],
     pillars: ['specification'],
   },
+
+  /* ── colour matching & finish identification ───────────────────────────── */
+  {
+    slug: 'color-identification-existing-hardwood-finish',
+    kind: 'decision',
+    title: 'Colour identification of an existing finish',
+    seoTitle: 'What finish is on my hardwood floor? Identifying it before any colour match',
+    question: 'What finish is actually on my existing hardwood floor, and why does it matter before matching anything to it?',
+    summary:
+      'Every colour-matching job starts the same way, on site: identifying the species, the stain (if any) and the finish system already on the floor, before a single sample board is mixed. Guessing at this step is the most common reason a "matched" board looks wrong once it is coated.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'Species and grain first',
+        why: 'Colour reads differently on open-grain oak than on closed-grain maple or walnut. Confirming the species is the first check, before any stain or finish is assessed — see the species and undertone guide.',
+      },
+      {
+        name: 'Film finish or penetrating finish',
+        why: 'A surface film (polyurethane, either oil- or water-based) sits on top of the wood and can be screened and recoated. A penetrating oil finish (a hardwax oil or a Swedish-style finish) has no film to abrade the same way, and is refreshed differently.',
+      },
+      {
+        name: 'Age and UV exposure',
+        why: 'Oil-based finishes amber and continue to amber with age and sunlight; water-based finishes stay close to their original clarity. A floor that reads "warm and honey-toned" today may not be the colour it was installed at — see the ambering watchpoint below.',
+      },
+      {
+        name: 'Where the light falls',
+        why: 'The same board reads differently under a south-facing window, under LED pot lights, and in a windowless hallway. Identification happens under the room\'s own lighting, not under a single work light.',
+      },
+    ],
+    decisionTree: [
+      'Is there a visible film that can be scraped with a fingernail at a worn edge (a threshold, a stair nosing)? → Film finish: polyurethane or varnish, oil- or water-based.',
+      'Does the surface feel like it sits in the wood rather than on it, with no flaking film? → Likely a penetrating oil or hardwax-oil finish.',
+      'Is the tone noticeably warmer/more amber than the species\' natural colour, especially compared with an area that has been under a rug? → Oil-based finish, ambered with age and UV.',
+      'Does colour and sheen stay consistent between a covered area and an exposed area? → Water-based finish, or a floor young enough that ambering has not shown yet.',
+    ],
+    faqs: [
+      {
+        q: 'How can I tell if my hardwood floor has an oil-based or water-based finish?',
+        a:
+          'Pull back a rug or a piece of furniture that has sat in place for years and compare that protected patch to the exposed floor around it. An oil-based finish will have ambered — gone warmer and more amber — in the exposed area while the protected patch stays close to the original tone. A water-based finish shows much less of that shift. This is a site observation, not a lab test, and it is the first thing we check before proposing any colour match.',
+      },
+      {
+        q: 'Why does it matter what finish is already on my floor before matching new work to it?',
+        a:
+          'Because the matching stain and finish system have to be compatible with what is there, and because the target colour is not the colour of a fresh sample chip — it is the colour of a floor that has already ambered for years under its finish. Matching to the wrong reference produces a patch that looks correct on day one and wrong within a season, once the new area starts ageing at a different rate than the old one.',
+      },
+    ],
+    recommendation: {
+      text: 'Identify species, finish type and approximate age on site before any stain is proposed. This is the first step on every colour-matching job we run, whether the target is a stair, a patch of new hardwood, or a full sand and recoat.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_CLIMATE, section: 'protocol' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'stain-matching-existing-hardwood-floor-toronto',
+    kind: 'decision',
+    title: 'Stain matching to an existing hardwood floor',
+    seoTitle: 'Matching a new stain to an existing hardwood floor in Toronto',
+    question: 'How do you match a new stain to an existing hardwood floor that has already aged?',
+    summary:
+      'A stain sample and an aged floor are two different colours by the time the job happens. Matching them is a process of building a sample against the actual floor, in the actual room, not choosing a can off a shelf.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'The target is the aged floor, not a factory sample',
+        why: 'A stain chip is mixed once and photographed under studio light. The floor it is being matched to has years of UV exposure and wear behind it. The match is built against the real board, in the room.',
+      },
+      {
+        name: 'Species and grain of the new material',
+        why: 'The same stain reads differently on white oak than on red oak, and differently again on a tighter or more open grain within the same species — see the species and undertone guide.',
+      },
+      {
+        name: 'Number of coats and sheen level',
+        why: 'Sheen changes how a colour is perceived under the same lighting. Matching stain colour without also matching sheen produces two areas that read as different floors even when the pigment is close.',
+      },
+      {
+        name: 'Sign-off in the room, not in the shop',
+        why: 'Toronto condo lighting in particular — mixed daylight and LED colour temperatures — can make two genuinely close stains look mismatched or a true match look off. See sample boards, on-site trials and sign-off.',
+      },
+    ],
+    decisionTree: [
+      'Confirm the existing finish is identified (see colour identification of an existing finish).',
+      'Mix a working sample against a cut-off of the new material, on site.',
+      'Apply the sample to a scrap board and place it directly against the existing floor, under the room\'s actual light.',
+      'Adjust and re-test before committing to the full area — never mix once and commit.',
+      'Sign off in daylight and again under the room\'s evening lighting before finish coats begin.',
+    ],
+    faqs: [
+      {
+        q: 'Can you match a new stain exactly to my existing hardwood floor?',
+        a:
+          'Close enough that the transition reads as one floor, in the light the room actually has — that is the honest target, and it is what a sample-board process is for. An exact chemical match is not realistic, because the existing floor has aged under its finish for years and a fresh stain has not. What we commit to is a match confirmed on your floor, under your lighting, before any coats are applied to the real area.',
+      },
+      {
+        q: 'Why does the same stain look different in different rooms?',
+        a:
+          'Light temperature changes how pigment reads. A stain that looks correct under daylight from a window can look warmer or cooler under LED pot lights, which is common in renovated Toronto condos. That is why sample boards are checked in the actual room and, where practical, at more than one time of day, rather than approved once under a single light source.',
+      },
+    ],
+    recommendation: {
+      text: 'Build the match against the real, aged floor with a sample board tested in the room\'s own lighting, and get sign-off before any finish coat goes on the full area. A shop-mixed sample approved off site is the most common reason a match fails at handover.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_COST, section: 'species' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'matching-new-hardwood-to-old-toronto',
+    kind: 'decision',
+    title: 'Matching new hardwood to old',
+    seoTitle: 'Matching new hardwood to an existing floor — patch, extension or room-to-room',
+    question: 'How do you match new hardwood boards into an existing floor for a patch, an extension, or a room-to-room transition?',
+    summary:
+      'A patch, a room addition and a whole-floor extension are three different problems that all start with the same question: is the existing floor still made, and if not, what is the closest honest substitute.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'Species and board width',
+        why: 'The new material has to match the existing species and dimension — see solid vs engineered and the dimensional definitions in the grading standard (strip, plank, wide plank are defined widths, not marketing terms).',
+      },
+      {
+        name: 'Grain direction and pattern',
+        why: 'A patch laid against the grain, or a herringbone field extended without re-establishing the centreline, reads as wrong even in an identical stain.',
+      },
+      {
+        name: 'How much the existing floor has aged',
+        why: 'New boards are the colour of new wood. The existing floor has ambered under its finish for years. The stain match accounts for that gap — see stain matching to an existing floor — and in some cases a wider blending zone is the only honest way to hide the seam.',
+      },
+      {
+        name: 'Whether a full sand of the transition zone is required',
+        why: 'Feathering new boards into old under a single sanding and finishing pass, across the whole affected area, is what actually hides the seam. Finishing only the new boards and butting them to the old finish is the most common cause of a visible line.',
+      },
+    ],
+    decisionTree: [
+      'Is the existing product (species, width, construction) still available? → Order it and proceed to a stain match.',
+      'Is it discontinued? → Source the closest species/width match and disclose the substitution before ordering — do not silently substitute.',
+      'Is the transition a single room-to-room threshold? → A transition strip is often the honest answer rather than a forced match.',
+      'Is the transition mid-field (a patch, an extension into the same room)? → Feather and blend the sanding and finishing pass across old and new together, not board-by-board.',
+    ],
+    watchpoints: [
+      'Grain direction is checked before boards are cut, not after they are down.',
+      'A patch finished on its own and butted to the existing finish is visible from across the room, even in a perfect stain match.',
+      'A discontinued product is a real constraint. The honest options are a close substitute, disclosed, or a transition detail — not a claim that an unavailable product was matched.',
+    ],
+    faqs: [
+      {
+        q: 'Can you match new hardwood flooring to an existing floor that is no longer made?',
+        a:
+          'Sometimes exactly, if the mill still runs that species, width and construction. When it does not, the honest options are the closest available substitute — disclosed as a substitute, not sold as an exact match — or a deliberate transition detail at the boundary, such as a threshold or a change of direction, rather than forcing a seam that will read as wrong under close light.',
+      },
+      {
+        q: 'Do you have to sand the whole room to blend new hardwood into old?',
+        a:
+          'Usually the transition zone, not necessarily the whole room. New boards feathered and finished separately from the existing floor almost always show a line at the seam, because sanding sequence and finish coats build up slightly differently board to board. Sanding and finishing the old and new material together across the affected zone, in one pass, is what actually removes the seam.',
+      },
+    ],
+    recommendation: {
+      text: 'Confirm the existing product is available before committing to an exact match; disclose any substitution. Feather and finish the transition zone in one pass rather than butting a separately finished patch against the old floor.',
+    },
+    sources: [
+      { paper: P_GRADE, section: 'dimensions' },
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_CLIMATE, section: 'solid-vs-engineered' },
+    ],
+    pillars: ['specification', 'movement'],
+  },
+  {
+    slug: 'stair-railing-trim-color-matching-toronto',
+    kind: 'reference',
+    title: 'Stair, railing and trim colour matching',
+    seoTitle: 'Matching stairs, railings and trim to your hardwood floor in Toronto',
+    question: 'How do stairs, railings and trim get colour-matched to a hardwood floor?',
+    summary:
+      'Stairs, railings and trim are usually a different wood species, a different grain orientation, and a different wear pattern than the floor they sit beside. Matching them is a separate discipline from matching two floor boards, not a smaller version of it.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 5,
+    spec: [
+      { label: 'Scope', value: 'Stair treads, risers, stringers, handrails, newel posts and balusters, matched or coordinated to the adjoining floor' },
+      { label: 'Why it differs from a floor match', value: 'Treads and railings are frequently a harder species (oak, maple) regardless of the field floor species, and railings are often a different wood entirely (e.g. a stained hardwood rail over a painted spindle)' },
+      { label: 'Wear pattern', value: 'A stair tread wears and is touched far more than a floor board; a railing is handled constantly. Both age and colour-shift faster than the surrounding floor' },
+      { label: 'Sequence', value: 'Colour-identify the floor first (see colour identification of an existing finish), then build the stain sample against a cut-off of the actual stair or rail species' },
+    ],
+    sequence: [
+      'Identify the floor\'s existing finish and stain.',
+      'Confirm the species of the stair treads, stringers and railing — often not the same species as the field floor.',
+      'Build a stain sample on a cut-off of the stair/rail material, checked against the floor at the top and bottom of the stair run.',
+      'Refinish stairs and railings using the machine sequence appropriate to their much smaller, more detailed surfaces — hand and detail work carries more of the job than on an open floor.',
+      'Sign off the match at the stair itself, in its own lighting, not against a sample carried from another room.',
+    ],
+    watchpoints: [
+      'A rail and a tread are touched constantly and will show wear and colour change faster than the floor. A match signed off on day one can visibly diverge within a year or two if the finish system is not suited to high-touch surfaces.',
+      'Painted balusters against a stained rail and stringer is a common, legitimate combination — the colour match applies only to the stained wood elements, not to painted trim.',
+      'Stairs are priced and scoped as their own line, not as a square-footage extension of the floor — see how to evaluate a hardwood quote.',
+    ],
+    faqs: [
+      {
+        q: 'Do my stairs have to be the exact same wood as my hardwood floor?',
+        a:
+          'No. Stair treads and railings are very often a different, harder species than the field floor regardless of what the floor is, because stairs take a different kind of wear. What matters is that the finished colour reads as coordinated with the floor at the top and bottom of the run, which is a stain-matching exercise, not a requirement that the wood itself be identical.',
+      },
+      {
+        q: 'Why do my stairs look a different colour than my floor even though they were "matched"?',
+        a:
+          'Stairs and railings are handled constantly and typically wear and colour-shift faster than an open floor under the same finish. A match that was correct at handover can visibly diverge over time for that reason. It is also common for the stair species to differ from the floor species, which changes how the same stain reads even when it is applied correctly.',
+      },
+    ],
+    recommendation: {
+      text: 'Treat stair and railing colour matching as its own step: confirm species, build the sample against the actual stair material, and sign off at the stair. Francisco Oller leads this work on our jobs.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'edger' },
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_COST, section: 'installer-checklist' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'door-woodwork-finish-coordination-toronto',
+    kind: 'reference',
+    title: 'Door and interior woodwork finish coordination',
+    seoTitle: 'Coordinating doors and interior woodwork finish with your hardwood floor',
+    question: 'How do interior doors and woodwork get their finish coordinated with a hardwood floor?',
+    summary:
+      'A door slab, a door frame and interior trim are usually painted or finished separately from the floor, and often in a different material entirely (MDF, poplar, or a painted softwood). Coordinating them with a hardwood floor is about the finish reading as intentional together, not about matching wood to wood.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 4,
+    criteria: [
+      {
+        name: 'Painted trim vs a stained hardwood element',
+        why: 'Most interior doors, frames and baseboards in Toronto homes are painted MDF or softwood, not stained hardwood. Coordination here means choosing an undertone (warm vs cool, the paint\'s own undertone) that sits well against the floor\'s stain — it is a colour-harmony decision, not a wood-species match.',
+      },
+      {
+        name: 'A genuinely stained wood door or trim element',
+        why: 'Where trim or a door is real hardwood and stained rather than painted, the same stain-matching process used for a floor patch applies — build the sample against the actual trim material, in the room.',
+      },
+      {
+        name: 'Where the two meet',
+        why: 'A stair nosing, a threshold, or a baseboard sitting directly on the floor is the point where a mismatch is most visible, because the two surfaces are seen together in the same glance.',
+      },
+    ],
+    decisionTree: [
+      'Is the door/trim painted? → Coordinate paint undertone to the floor\'s stain; this is a colour-harmony choice, not a wood match.',
+      'Is the door/trim stained hardwood? → Build a stain sample against the actual trim material, following the same process as a floor stain match.',
+      'Does the trim sit directly against the floor (baseboard, nosing, threshold)? → Prioritise the match at that contact line above anywhere else in the room.',
+    ],
+    faqs: [
+      {
+        q: 'Do interior doors need to be the same wood as the hardwood floor?',
+        a:
+          'No, and in most Toronto homes they are not — interior doors, frames and trim are commonly painted MDF or softwood rather than the floor\'s hardwood species. Coordination there is about choosing a paint undertone that sits well beside the floor\'s stain, which is a colour-harmony decision rather than a wood-matching one.',
+      },
+      {
+        q: 'What if my trim is real stained wood, not painted?',
+        a:
+          'Then it is matched the same way a floor patch is matched: identify the existing finish, build a stain sample against a cut-off of the actual trim material, and sign off in the room\'s own light before committing to the full run.',
+      },
+    ],
+    recommendation: {
+      text: 'Treat painted trim as a colour-harmony decision against the floor\'s stain, and treat genuinely stained wood trim as its own stain-matching job using the same process as a floor patch. Prioritise the contact line — baseboards, nosings, thresholds — where floor and trim are seen together.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_COST, section: 'species' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'when-color-match-fails-full-sand-vs-replace',
+    kind: 'decision',
+    title: 'When colour match fails: full sand and refinish vs replace',
+    seoTitle: 'When a colour match fails: full sand and refinish, or replace the floor?',
+    question: 'What happens when a hardwood colour match cannot be made to work — do you refinish the whole floor, or replace it?',
+    summary:
+      'A spot match sometimes cannot be made to disappear — the existing finish is too worn, too ambered, or too far gone for a patch to blend. This guide sets out how that decision actually gets made, and what each path costs against the published bands.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 5,
+    criteria: [
+      {
+        name: 'How much wear layer remains',
+        why: 'A full sand and refinish is only possible while there is wood left above the tongue to remove. If the wear layer is spent, refinishing is not an option regardless of how the colour problem is framed — see refinish or replace in the refinishing reference guide.',
+      },
+      {
+        name: 'How large the mismatched area is',
+        why: 'A single board or a small patch is usually still worth a targeted feather-and-blend attempt. A mismatch spanning a large area of a room is usually more honestly solved by a full sand of that room.',
+      },
+      {
+        name: 'Whether the finish is worn as well as mismatched',
+        why: 'If the existing finish is also due for renewal on its own schedule, a full sand and finish addresses both problems in one job rather than solving colour and leaving wear unaddressed.',
+      },
+    ],
+    table: {
+      caption: 'Cost path by scope, published installed ranges',
+      head: ['Path', 'Typical range', 'What it solves'],
+      rows: [
+        ['Spot match / feather-blend', bandBare(SCREEN_RECOAT), 'A small mismatched area, existing finish still sound'],
+        ['Full sand & finish (affected room)', bandBare(FULL_SAND_FINISH), 'Colour mismatch across a larger area, or finish also due for renewal'],
+        ['Replace (new hardwood install)', bandBare(NEW_INSTALL), 'Wear layer spent, boards damaged beyond sanding, or product discontinued with no honest substitute'],
+      ],
+    },
+    decisionTree: [
+      'Is the mismatch small and the existing finish still sound? → Attempt a feathered spot match first.',
+      'Does the spot match fail to blend under the room\'s actual lighting? → Full sand and finish of the affected room.',
+      'Is there wear layer left to remove? → Full sand and finish remains available.',
+      'Is the wear layer spent, or the boards damaged beyond what sanding can correct? → Replacement, priced as new install.',
+    ],
+    faqs: [
+      {
+        q: 'Why did the colour match on my floor patch not work?',
+        a:
+          'The most common reasons are an existing finish that has ambered more than the sample accounted for, a mismatch large enough that even a close stain reads as a distinct patch under the room\'s light, or a species/grain difference that was not caught before the new boards went down. When a spot match does not blend, the honest next step is usually a full sand and finish of the affected room rather than a second attempt at the same patch.',
+      },
+      {
+        q: 'How do I know if I should refinish my whole floor instead of just fixing a patch?',
+        a:
+          'Once a patch has failed to blend, or the existing finish is worn enough that it was due for renewal anyway, a full sand and finish of the room solves both problems in one pass instead of layering a second repair on top of the first. Replacement only enters the conversation when the wear layer is spent or the boards are damaged beyond what sanding corrects — that is a different guide.',
+      },
+    ],
+    recommendation: {
+      text: 'Try a feathered spot match first where the existing finish is sound and the area is small. Move to a full sand and finish of the room once a spot match fails to blend, or once the existing finish is due for renewal regardless. Reserve replacement for a spent wear layer or damage sanding cannot correct.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_COST, section: 'installed-cost' },
+      { paper: P_GRADE, section: 'engineered' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'sample-boards-on-site-trials-sign-off',
+    kind: 'decision',
+    title: 'Sample boards, on-site trials, and sign-off before coats',
+    seoTitle: 'Sample boards and sign-off before staining — the process, and why Toronto condo lighting matters',
+    question: 'Why does a colour match get tested with a sample board on site, and what does sign-off actually involve?',
+    summary:
+      'A stain is approved on the actual floor, in the actual room, before it is committed to the full area — not on a shop sample under a single light. This guide sets out why that step exists and what condo lighting specifically does to a colour decision.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 4,
+    criteria: [
+      {
+        name: 'The sample is built on the real material',
+        why: 'A cut-off of the actual species and board — not a generic species sample — is what gets stained and checked, because grain and porosity vary board to board within a species.',
+      },
+      {
+        name: 'The sample is placed against the target, in the room',
+        why: 'A sample carried from room to room, or approved in a workshop, is being judged under different light than the floor it needs to match.',
+      },
+      {
+        name: 'Toronto condo lighting specifically',
+        why: 'Many renovated GTA condos mix daylight with LED pot lighting at a cooler colour temperature than older incandescent fixtures. A stain that reads correctly under daylight from a window wall can shift under that lighting, and vice versa.',
+      },
+      {
+        name: 'Sign-off happens before finish coats, not after',
+        why: 'The stain colour is confirmed and approved before the finish system is applied on top of it, because finish coats (especially oil-based systems) themselves shift colour and cannot be un-applied.',
+      },
+    ],
+    sequence: [
+      'Identify the existing finish and target colour on site.',
+      'Cut a sample from the actual material being installed or refinished.',
+      'Apply the candidate stain and place the sample against the existing floor, in the room.',
+      'Check under the room\'s daylight and, where the room has both, its evening/artificial lighting.',
+      'Adjust the mix if needed and repeat before any commitment to the full area.',
+      'Sign off in writing before finish coats begin.',
+    ],
+    watchpoints: [
+      'A sample approved under a single work light and not checked against the room\'s own lighting is the most common avoidable cause of a mismatch discovered after the coats are on.',
+      'Oil-based finish coats amber the stain underneath as they are applied and continue to amber afterward — sign-off accounts for that expected shift, it does not chase a colour that will not hold.',
+      'A rushed schedule that skips the on-site trial step is trading a documented sign-off for a guess.',
+    ],
+    faqs: [
+      {
+        q: 'Why do I need to approve a sample board before my floor is stained?',
+        a:
+          'Because the sample confirms the stain against the actual material and the actual room\'s lighting before the decision is irreversible. A colour that looks right on a generic chip, or in a different room, is not confirmation — species, grain and light all change how a stain reads, which is why the check happens on site, on your material, before any coats go on.',
+      },
+      {
+        q: 'Why does my floor colour look different in different rooms of my condo?',
+        a:
+          'Toronto condos frequently mix daylight through large windows with LED pot lighting at a different colour temperature, and the two can make the same stain read warmer or cooler depending on which light dominates in a given room. That is exactly why sign-off happens in the room the work is actually being done in, checked under more than one light where the room has more than one.',
+      },
+    ],
+    recommendation: {
+      text: 'Never approve a stain match off a sample viewed outside the actual room. Check it under the room\'s own daylight and artificial light, sign off in writing, and only then move to finish coats.',
+    },
+    sources: [
+      { paper: P_CRAFT, section: 'sequence' },
+      { paper: P_CLIMATE, section: 'protocol' },
+    ],
+    pillars: ['specification'],
+  },
+  {
+    slug: 'species-undertone-guide-color-matching-toronto',
+    kind: 'reference',
+    title: 'Species and undertone guide for colour matching',
+    seoTitle: 'Hardwood species undertone guide for colour matching in Toronto',
+    question: 'How does hardwood species change what a colour match actually looks like?',
+    summary:
+      'Oak, maple, walnut, hickory and ash do not take the same stain the same way, because grain, porosity and natural colour differ by species. This guide reuses the published species facts from our species dossiers — it does not invent hardness numbers or grading claims beyond what those dossiers already state.',
+    publishedAt: '2026-09-18',
+    readingMinutes: 6,
+    table: {
+      caption: 'Species colour and grain character, as published in the species dossiers',
+      head: ['Species', 'Natural character relevant to colour matching'],
+      rows: [
+        ['White oak', 'Even stain uptake; the default for grey, smoked and modern transparent finishes — see white oak flooring in Toronto'],
+        ['Red oak', 'More pronounced open grain under stain; the common heritage match for existing Toronto floors — see red oak'],
+        ['Hard maple', 'Closed-grain and pale; dense wood that resists penetration and can blotch without conditioning — see hard maple'],
+        ['White ash', 'Open, expressive grain, similar hardness range to the oaks — see white ash'],
+        ['Hickory', 'Wide natural colour range within a single board (pale sapwood against dark heartwood) — its defining character, not a defect — see hickory'],
+        ['Black walnut', 'Naturally deep brown heartwood; the softest of the species commonly sold here — see black walnut'],
+      ],
+    },
+    criteria: [
+      {
+        name: 'Open grain vs closed grain',
+        why: 'Open-grain species (oak, ash, hickory) take stain differently than closed-grain species (maple), which is why the same stain can look correct on one and blotchy on the other.',
+      },
+      {
+        name: 'Natural colour before any stain',
+        why: 'Walnut starts dark; maple starts pale; the two oaks and ash sit in a similar mid-range naturally. Matching new material to old starts from the species\' own colour, not only the stain on top of it.',
+      },
+      {
+        name: 'Whether the existing floor is even still identifiable by species',
+        why: 'Confirm the species of the existing floor before assuming a stain alone explains its colour — see colour identification of an existing finish.',
+      },
+    ],
+    recommendation: {
+      text: 'Start a colour match from the species\' own natural character, not only from a stain chip. If the existing floor\'s species is uncertain, confirm it before proposing a match — a stain cannot make one species behave like another.',
+      conditions: [
+        'Reuse the published dossiers on each species for grain and colour character rather than re-deriving figures.',
+        'No hardness (Janka) figure or grade claim is used here beyond what each species dossier already publishes.',
+      ],
+    },
+    sources: [
+      { paper: P_COST, section: 'species' },
+      { paper: P_GRADE, section: 'nwfa-appearance' },
+      { paper: P_PROV, section: 'growing-stock' },
+    ],
+    pillars: ['specification'],
+  },
 ];
 
 export const getGuides = (kind?: GuideKind): Guide[] =>

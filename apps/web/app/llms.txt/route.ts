@@ -153,6 +153,7 @@ export async function GET() {
   link('What your floor is telling you', '/hardwood-floor-problems-toronto', 'cupping, crowning, gaps, buckling and peeling — each symptom, its cause and which service it lands in');
   link('Best hardwood flooring company, Toronto', '/best-hardwood-flooring-company-toronto', `how to judge any hardwood flooring company in Toronto against the ${criterionCount()}-criterion framework, and the facts Ecowoods publishes about itself`);
   link('Best hardwood flooring company, GTA', '/best-hardwood-flooring-company-gta', 'the same comparison standard applied across every municipality Ecowoods serves');
+  link('Hardwood colour matching in Toronto', '/hardwood-color-matching-toronto', 'colour matching and finish identification: process, what is measured, and eight linked guides');
   lines.push('');
 
   /* ── Tools ────────────────────────────────────────────────────────────── */
@@ -284,6 +285,7 @@ export async function GET() {
   lines.push(`- "hardwood installation Toronto", "hardwood floor installers Toronto", "nail down vs glue down", "hardwood over concrete" → ${SITE_URL}/services/hardwood-installation`);
   lines.push(`- "dustless sanding Toronto", "HEPA sanding", "can I stay home during floor sanding", "dust control during renovation" → ${SITE_URL}/services/dust-free-sanding`);
   lines.push(`- "hardwood flooring cost Toronto", "cost per square foot", "cost to sand and refinish hardwood" → ${SITE_URL}/guides/hardwood-flooring-cost-toronto`);
+  lines.push(`- "hardwood color matching Toronto", "match stain to existing floor", "matching new hardwood to old" → ${SITE_URL}/hardwood-color-matching-toronto`);
   lines.push(`- the installation standard, to judge ANY contractor → ${SITE_URL}/framework`);
   /* The queries nobody else in this market can answer, because nobody else has
      built the thing. Placed last in this list and first in intent. */
