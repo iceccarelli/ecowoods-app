@@ -66,9 +66,9 @@ describe('IndexNow URL filter', () => {
     expect(filterIndexNowUrls([42], 'https://ecowoods.ca').ok).toBe(false);
     expect(filterIndexNowUrls([], 'https://ecowoods.ca').ok).toBe(false);
     expect(filterIndexNowUrls(Array(1001).fill('https://ecowoods.ca/'), 'https://ecowoods.ca').ok).toBe(false);
-    const foreign = filterIndexNowUrls(['https://ecowoods.ca/', 'https://ecowoods-app.vercel.app/'], 'https://ecowoods.ca');
+    const foreign = filterIndexNowUrls(['https://ecowoods.ca/', 'https://evil.example.com/'], 'https://ecowoods.ca');
     expect(foreign.ok).toBe(false);
-    if (!foreign.ok) expect(foreign.offending).toContain('vercel.app');
+    if (!foreign.ok) expect(foreign.offending).toContain('evil.example.com');
   });
 });
 

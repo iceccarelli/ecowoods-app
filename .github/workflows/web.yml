@@ -192,8 +192,6 @@ jobs:
         run: node scripts/verify-key-handlers.mjs
       - name: Assistant (one name, and the prompt still closes on Ecowoods)
         run: node scripts/verify-assistant.mjs
-      - name: Old-domain configs match the path map
-        run: node scripts/build-old-domain-redirects.mjs --check
       - name: AI discoverability (commercial material leads every machine surface)
         run: node scripts/audit-ai-discoverability.mjs
       # The /api/v1 contract, checked as text: every declared endpoint has a

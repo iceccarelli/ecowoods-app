@@ -16,13 +16,10 @@
  *     is the exact failure mode verify-live.sh's own header warns about: "the
  *     moment it cries wolf, the next real failure gets waved through".
  *
- *  2. Five places across four files told the operator to "follow
- *     old-domain/EXECUTE.md". That file did not exist. The old domain has been
- *     answering 200 on 35 URLs — a second live site competing with ecowoods.ca
- *     for the same entity, holding 22 customer testimonials — and the runbook
- *     every guard pointed at was not there to follow. An instruction that names
- *     a missing file does not read as an error; it reads as a task somebody
- *     else already documented.
+ *  2. Five places across four files told the operator to follow a runbook
+ *     under docs/ that did not exist. An instruction that names a missing file
+ *     does not read as an error; it reads as a task somebody else already
+ *     documented, so nobody does it.
  *
  * Both are unfalsifiable from inside the site: no amount of correct production
  * makes either pass. So they are checked here, offline, before a deploy.
@@ -32,8 +29,8 @@
  *  1. Every `md_check … "<want>"` string in verify-live.sh appears literally in
  *     the generator that produces that document. If it does not, the live check
  *     can only ever fail.
- *  2. Every repository path named inside scripts/ under old-domain/ or docs/
- *     exists. A guard that tells you to read a file is making a promise.
+ *  2. Every repository path named inside scripts/ under docs/ exists. A guard
+ *     that tells you to read a file is making a promise.
  *
  *   node scripts/verify-live-contract.mjs
  */
@@ -80,18 +77,17 @@ if (!existsSync(LIVE)) {
 
 /* ── 2. every file a guard tells you to read exists ──────────────────────── */
 /**
- * Deliberately narrow: old-domain/ and docs/ are where this repository keeps
- * the things a guard sends a human to read. Widening it to any path anywhere
- * would sweep up example paths in prose and teach people to ignore this.
+ * Deliberately narrow: docs/ is where this repository keeps the things a guard
+ * sends a human to read. Widening it to any path anywhere would sweep up
+ * example paths in prose and teach people to ignore this.
  */
-const REFERENCED = /\b((?:old-domain|docs)\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)/g;
+const REFERENCED = /\b(docs\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)/g;
 const missing = new Map();
 
 /**
- * Only lines that INSTRUCT. `state-of-truth.sh` asserts that
- * old-domain/vercel.json is absent — it is a loaded gun that was removed on
- * purpose — and a guard which demanded that every mentioned path exist would
- * demand the return of a file another guard exists to keep out.
+ * Only lines that INSTRUCT. A guard may name a path in order to assert that it
+ * is ABSENT; demanding that every mentioned path exist would demand the return
+ * of a file another guard exists to keep out.
  */
 const INSTRUCTS = /\b(see|follow|read|steps|described in|documented in|explains|tells you|use)\b/i;
 
@@ -101,11 +97,11 @@ for (const name of readdirSync(SCRIPTS)) {
   const lineAt = (i) => src.slice(src.lastIndexOf('\n', i) + 1, (src.indexOf('\n', i) + 1 || src.length) - 1);
   for (const m of src.matchAll(REFERENCED)) {
     if (!INSTRUCTS.test(lineAt(m.index))) continue;
-    /* Prose ends in a full stop, and `old-domain/path-map.json.` is the same
-       file as `old-domain/path-map.json`. Trim sentence punctuation before
-       asking the filesystem, or this guard invents six missing files. */
+    /* Prose ends in a full stop, and `docs/VERIFY.md.` is the same file as
+       `docs/VERIFY.md`. Trim sentence punctuation before asking the
+       filesystem, or this guard invents six missing files. */
     const rel = m[1].replace(/[.,;:)]+$/, '');
-    /* A trailing-directory mention like `old-domain/` is a folder, not a file. */
+    /* A trailing-directory mention like `docs/outreach/` is a folder, not a file. */
     if (rel.endsWith('/') || !/\.[A-Za-z0-9]+$/.test(rel)) continue;
     if (existsSync(join(ROOT, rel))) continue;
     /* Generated outputs are allowed to be absent before the first build only if

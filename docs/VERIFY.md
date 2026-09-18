@@ -6,7 +6,7 @@ On 2026-09-09, on branch `floor-graph`:
 
 | | guards |
 |---|---|
-| defined in `package.json` (`verify:*`, `seo:*`, `domain:*`, excluding network and generators) | **54** |
+| defined in `package.json` (`verify:*`, `seo:*`, excluding network and generators) | **54** |
 | run by `pnpm verify` before reaching a failure and stopping | **3** |
 | run by the `Guards` job in `.github/workflows/web.yml` | **17** |
 | **never run by CI, ever** | **37** |
@@ -39,8 +39,8 @@ visible said ✓.
 
 `pnpm verify` is now `node scripts/verify-all.mjs`, which:
 
-1. **Derives the run set from `package.json`.** Every `verify:*`, `seo:*` and
-   `domain:*` script whose command is a single `node scripts/*.mjs` is run.
+1. **Derives the run set from `package.json`.** Every `verify:*` and `seo:*`
+   script whose command is a single `node scripts/*.mjs` is run.
    Nothing lists the guards a second time, so nothing can fall out of the list.
 2. **Refuses to run if a script is neither run nor skipped.** A guard that does
    not fit the shape must be added to `SKIP` with a stated reason. An
@@ -79,8 +79,8 @@ node scripts/verify-all.mjs --serial
 node scripts/verify-thing.mjs      # one guard, full output, as always
 ```
 
-The 14 skipped scripts are the ones that reach the network (`verify:live`,
-`seo:crawl`, `seo:domain`, `seo:hosts`), the generators (`domain:build`,
-`seo:prompts`), the composites, and `seo:audit`, which is a report and always
-exits 0. The network half runs after a deploy, from a machine with open egress:
-`pnpm seo:live`.
+The skipped scripts are the ones that reach the network (`verify:live`,
+`verify:live-routes`, `verify:live-images`, `seo:crawl`), the generators
+(`seo:prompts`), the composites, and `seo:audit`, which is a report and always
+exits 0. The network half runs after a deploy, from a machine with open
+egress.

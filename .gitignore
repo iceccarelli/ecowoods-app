@@ -48,6 +48,9 @@ next-env.d.ts.bak
 # Turborepo
 .turbo/
 
+# Claude Code session/worktree scratch state
+.claude/
+
 __pycache__/
 *.pyc
 .expo/
@@ -119,3 +122,13 @@ audit/site-crawl.md
 !/public/brand/
 !/public/qr-app.jpg
 !/public/review-card.svg
+
+# README.md — deliberately not carried in this repository.
+#
+# It had become a status dump: a second, hand-maintained copy of facts that
+# already live in the code, the guards and the generated audit artifacts, and
+# it drifted from every one of them. The written record lives in docs/, the
+# facts live in packages/shared/constants and apps/web/content, and what is
+# actually true of a deploy is whatever `pnpm verify` says. Ignored rather
+# than merely deleted so it cannot quietly come back.
+README.md

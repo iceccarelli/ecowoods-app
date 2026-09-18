@@ -97,13 +97,12 @@ fi
 # identically to a curl that reached a deploy missing the artefact — and this
 # script rendered both as a red NO, then printed "it shipped but the deploy
 # does not serve it". Run from a sandbox behind an egress proxy it reported
-# twelve discrepancies against a site that was serving all twelve, and told the
-# reader the old domain was "NOT consolidated" on the strength of an HTTP 000.
+# twelve discrepancies against a site that was serving all twelve, on the
+# strength of an HTTP 000.
 #
 # So before a single deliverable is probed, fetch the site root. If that cannot
 # be reached, the network is the finding, and every live check is reported as
-# UNREACHABLE rather than as a failure. The same reasoning, and the same fix,
-# as the control probe in scripts/verify-domain-redirect.mjs. A check that
+# UNREACHABLE rather than as a failure. A check that
 # reports a verdict it did not establish is worse than no check: it spends the
 # reader's trust on noise, and the one time it is right they will not believe
 # it. Seventh instance in this repository — F-117, F-149, F-166, F-177, F-192,
@@ -201,31 +200,6 @@ fi
 row "host-scoped redirects + CORS on machine surfaces" $a $b
 in_repo scripts/verify-vercel-config.mjs; a=$?
 row "guard 27 — verify-vercel-config" $a 2
-if in_repo old-domain/vercel.json; then
-  printf '  %-46s %sold-domain/vercel.json still present — the loop paste%s\n' "loaded gun" "$RED" "$OFF"; BAD=$((BAD+1))
-else
-  printf '  %-46s %sremoved%s\n' "loaded gun (old-domain/vercel.json)" "$GRN" "$OFF"
-fi
-
-sect "old domain"
-in_repo old-domain/.htaccess; a=$?
-row "old-domain/.htaccess in repo" $a 2
-if [ "$QUICK" = 1 ]; then
-  printf '  %-46s %sskipped%s\n' "ecowoodshardwood.com 301s" "$DIM" "$OFF"
-elif [ "$NET" = 1 ]; then
-  # The control probe failed against the canonical host, so an HTTP 000 here
-  # says nothing about the old domain. Reporting "NOT consolidated" off an
-  # unreachable network is the exact false alarm this probe exists to stop.
-  printf '  %-46s %sunreachable — no conclusion%s\n' "ecowoodshardwood.com deep path" "$YEL" "$OFF"
-else
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://www.ecowoodshardwood.com/services/floor-refinishing" 2>/dev/null)"
-  if [ "$code" = "301" ]; then
-    printf '  %-46s %s301 — consolidated%s\n' "ecowoodshardwood.com deep path" "$GRN" "$OFF"
-  else
-    printf '  %-46s %sHTTP %s — NOT consolidated, still splitting authority%s\n' "ecowoodshardwood.com deep path" "$RED" "$code" "$OFF"; BAD=$((BAD+1))
-  fi
-fi
-
 sect "images"
 n_repo="$(git ls-tree -r --name-only origin/main apps/web/public/illustrations | grep -c '\.webp$')"
 printf '  %-46s repo %s%s files%s\n' "illustration files" "$GRN" "$n_repo" "$OFF"

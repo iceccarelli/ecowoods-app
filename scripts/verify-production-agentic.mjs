@@ -46,6 +46,19 @@ const STRICT = args.includes('--strict');
 const JSON_OUT = args.includes('--json');
 const UA = 'EcowoodsProductionProbe/1.0 (+https://ecowoods.ca/authority; Stage 45 verification)';
 
+/**
+ * A host that a public payload must never cite: a deployment-preview URL, or
+ * any ecowoods-branded host that is not the canonical ecowoods.ca.
+ *
+ * `ecowoods[a-z0-9-]+\.` requires at least one character between "ecowoods"
+ * and the dot, which is what exempts ecowoods.ca and www.ecowoods.ca while
+ * still catching a second brand domain or a staging host. Written as a shape
+ * rather than a list of known-bad hostnames on purpose: a list only catches
+ * the host somebody already thought of, and leaves that string in the tree for
+ * a later copy-paste to lift back out.
+ */
+const NON_CANONICAL_HOST = /vercel\.app|\becowoods[a-z0-9-]+\.[a-z]{2,}/i;
+
 /* ── constants, parsed from the repository as text (no TS import) ───────── */
 const constantsSrc = fs.readFileSync(path.join(ROOT, 'packages/shared/constants/index.ts'), 'utf8');
 const pricingSrc = fs.readFileSync(path.join(ROOT, 'apps/web/content/constants/pricing.ts'), 'utf8');
@@ -168,7 +181,7 @@ async function main() {
   if (locs.length < 50) fail('/sitemap.xml', `only ${locs.length} <loc>`);
   for (const u of locs) if (!u.startsWith(BASE.replace('http://127.0.0.1', 'http://127.0.0.1')) && !u.startsWith('https://ecowoods.ca')) fail('/sitemap.xml', `off-canonical loc ${u}`);
   for (const p of ['/pricing', '/estimate', '/contact', '/services/floor-refinishing', '/service-areas/etobicoke']) if (!locs.some((u) => u.endsWith(p))) fail('/sitemap.xml', `missing ${p}`);
-  if (/vercel\.app|ecowoodshardwood\.com/.test(sitemap.body)) fail('/sitemap.xml', 'preview or old host present');
+  if (NON_CANONICAL_HOST.test(sitemap.body)) fail('/sitemap.xml', 'non-canonical host present');
 
   const llms = await get('/llms.txt');
   if (!llms.body.startsWith(`# ${FACTS.legalName}`)) fail('/llms.txt', 'H1 is not the legal name');
@@ -176,7 +189,7 @@ async function main() {
   for (const [k, v] of [['phone', FACTS.phoneDisplay], ['street', FACTS.street], ['postal', FACTS.postal], ['founded', String(FACTS.founded)], ['email', FACTS.email]]) if (!llms.body.includes(v)) fail('/llms.txt', `missing ${k} ${v}`);
   for (const b of bands) if (!llms.body.includes(b.text)) fail('/llms.txt', `missing band ${b.label} ${b.text}`);
   if (!llms.body.includes('## Optional')) fail('/llms.txt', 'no ## Optional section');
-  if (/vercel\.app|https?:\/\/(www\.)?ecowoodshardwood\.com/.test(llms.body)) fail('/llms.txt', 'preview or old host linked');
+  if (NON_CANONICAL_HOST.test(llms.body)) fail('/llms.txt', 'non-canonical host linked');
   // Every linked URL must resolve (sample up to 40 distinct).
   const linked = [...new Set([...llms.body.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map((m) => m[1]))].slice(0, 40);
   for (const u of linked) {
@@ -201,7 +214,7 @@ async function main() {
     if (rec.status !== 200) { fail(p, `status ${rec.status}`); continue; }
     if (!/text\/markdown/.test(rec.contentType)) fail(p, `content-type ${rec.contentType}`);
     if (!body.trim().startsWith('#')) fail(p, 'does not start with a heading');
-    if (/vercel\.app|https?:\/\/(www\.)?ecowoodshardwood\.com/.test(body)) fail(p, 'preview or old host');
+    if (NON_CANONICAL_HOST.test(body)) fail(p, 'non-canonical host');
   }
   const homeMd = await get('/index.md');
   for (const b of bands) if (!homeMd.body.includes(b.text)) fail('/index.md', `missing band ${b.text}`);
@@ -278,7 +291,7 @@ async function main() {
       if (json.pricing_context?.is_quote !== false) fail(p, 'pricing context is not flagged is_quote:false');
     }
     if (p === '/api/v1/openapi.json' && json.openapi !== '3.1.0') fail(p, `openapi ${json.openapi}`);
-    if (/vercel\.app|ecowoodshardwood\.com/.test(body)) fail(p, 'preview or old host in payload');
+    if (NON_CANONICAL_HOST.test(body)) fail(p, 'non-canonical host in payload');
   }
 
   // Negative: unknown id → 404 JSON, never 500.

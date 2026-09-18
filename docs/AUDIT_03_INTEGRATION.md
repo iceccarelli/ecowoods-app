@@ -140,7 +140,7 @@ Recorded because an audit that only lists faults is not an audit.
 |---|---|---|
 | Every public route reachable? | **Yes, within 3 clicks** | `verify:navigation` — 56 routes, chrome 44, depth-3 count 0 |
 | Orphans? | **3, all correct** | `/design/spec` in-flow, `/r` a short link, `/verify-email` an email flow |
-| Every link lands where it claims? | **Yes** | `verify:destinations` — 643 links, 0 404s, 0 redirect hops, 0 retired domains |
+| Every link lands where it claims? | **Yes** | `verify:destinations` — 643 links, 0 404s, 0 redirect hops, one marketing host |
 | Every declared image on its page and serving? | **Yes** | `verify:images` 162/162 · live check 162 delivering |
 | Two pages doing one job? | **No** | AUDIT-02: highest prose overlap between any two pages 12.6%, and that is shared chrome |
 | Every API endpoint real? | **Yes** | `verify:agentic` — 36 endpoints ↔ 34 route files, 50 machine surfaces clean |
@@ -184,9 +184,7 @@ are correct — `currency` says which — and renaming them crosses `packages/sh
 the chat tool, the estimate API and the lead schema, which is a patch of its own.
 
 Open, and none of them a contradiction: GC-021 (job cards keyed by display
-name) and GC-023 (cache windows). Domain consolidation is a repository-side
-solved problem (redirect map, generated configs, live guards); attaching
-`ecowoodshardwood.com` to the Vercel project is a dashboard step, not a commit.
+name) and GC-023 (cache windows).
 
 ---
 

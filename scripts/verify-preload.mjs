@@ -72,6 +72,27 @@ const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
    a comment quoting a forbidden declaration read as a violation (F-58). */
 const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
+/*
+ * STRING CONTENT IS COPY, NOT JSX — the same reasoning as stripping comments
+ * one line above, and it was missing.
+ *
+ * PRIORITY_ON's bare-attribute branch matches `priority` followed by
+ * whitespace, which is what a valueless JSX attribute looks like. It is also
+ * what the ordinary English word looks like inside a sentence, and this
+ * product sells a "priority reply" — so a page whose marketing copy used the
+ * word three times was reported as preloading three images while rendering no
+ * <Image> at all. A guard that fails on prose gets waived, and the next real
+ * double-preload goes with it.
+ *
+ * Quotes are kept and only their contents emptied, so offsets stay sane and a
+ * real `priority={true}` — which is braces, never a string — is untouched.
+ */
+const stripStrings = (t) =>
+  t
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+    .replace(/`(?:[^`\\]|\\.)*`/g, '``');
+
 /** A JSX attribute that turns preloading ON: `priority` or `priority={true}`. */
 const PRIORITY_ON = /(?:^|\s)priority(?:=\{true\}|=\{[^}]*&&[^}]*\}|(?=[\s/>]))/g;
 /** The same attribute, but sourced from a prop — the safe form. */
@@ -83,8 +104,24 @@ const rows = [];
 for (const f of files) {
   const r = rel(f);
   const raw = fs.readFileSync(f, 'utf8');
-  const text = strip(raw);
-  const hits = [...text.matchAll(PRIORITY_ON)];
+  const text = stripStrings(strip(raw));
+  /*
+   * ...and it must be INSIDE A TAG.
+   *
+   * Emptying string literals above fixes copy held in a prop or a constant. It
+   * does not fix copy written as JSX text — `<p>Paid, priority review</p>` is
+   * not quoted, so it survives, and it looks exactly like a valueless
+   * attribute to a regex. Scanning back to the nearest angle bracket settles
+   * it: inside a tag the nearest one is the opening `<`, and in body text it
+   * is the `>` that closed the tag the text sits in.
+   */
+  const inTag = (i) => {
+    const before = text.lastIndexOf('<', i);
+    const after = text.lastIndexOf('>', i);
+    return before > after;
+  };
+  const hits = [...text.matchAll(PRIORITY_ON)].filter((m) => inTag(m.index));
+
   if (hits.length === 0) continue;
 
   const isComponent = r.includes('/components/');

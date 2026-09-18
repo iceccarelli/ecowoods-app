@@ -74,14 +74,22 @@ const BANNED = [
   { pattern: /9[05]%\+?\s*(customer\s*)?satisfaction/i,
     why: 'Unmeasured satisfaction percentage. Cite a platform with a read date, as /reviews does.' },
 
-  // ── The retired domain, in a public payload ────────────────────────────
-  // Two websites for one business split the entity's signals. The redirect
-  // infrastructure (vercel.json, next.config.js, old-domain/) consolidates it;
-  // this rule keeps the retired host from re-entering a page, a schema
-  // builder, a content file or a shared constant as citable text — the one
-  // way a fixed migration quietly reopens itself.
-  { pattern: /ecowoodshardwood\.com/i,
-    why: 'The retired domain. This business publishes one canonical site, https://ecowoods.ca — do not cite or reference the old host in a public payload.' },
+  // ── ONE MARKETING HOST ─────────────────────────────────────────────────
+  // This business publishes exactly one canonical marketing site,
+  // https://ecowoods.ca. Any OTHER ecowoods-branded host in a public payload —
+  // a second domain, a preview alias, a staging host — splits the entity's
+  // signals: links point at one, citations at the other, and a retrieval
+  // system resolving the business has to guess which is canonical.
+  //
+  // The pattern is written generically rather than as a list of specific
+  // hostnames on purpose. A named list only ever catches the host somebody
+  // already thought of, and the string itself then lives in the tree forever
+  // as something a later copy-paste can lift back out. Matching the SHAPE
+  // ("ecowoods" plus anything, on any TLD that is not the canonical
+  // ecowoods.ca) catches hosts nobody has coined yet and keeps this file from
+  // being the place a retired host survives.
+  { pattern: /\becowoods[a-z0-9-]+(\.[a-z0-9-]+)*\.(com|ca|net|org|app|io|dev|co)\b/i,
+    why: 'A non-canonical ecowoods host. This business publishes one marketing site, https://ecowoods.ca — do not cite or reference any other ecowoods-branded host in a public payload.' },
 ];
 
 // Where the retired values are still legitimately allowed to appear.

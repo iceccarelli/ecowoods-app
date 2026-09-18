@@ -220,7 +220,6 @@ as in §2. "Guard" means a script under `scripts/`; "test" a vitest file under
 | job cards on area pages | `content/job-cards.ts` `jobCardsForArea(city.name)` (172) | `JOB_CARDS` | F8 | matched by **display name**; "Distillery District" matches no page | verify-job-cards | — |
 | service-match / recommendation-context | `lib/registry/match.ts` (151) | `publishedWithin`, `ancestorsOf` | F5 | "in the GTA" / "in Ontario" answers include New York (GC-004) | — | golden-queries, negative |
 | estimate form area select | `app/components/EstimateForm.tsx` (316) | C | F3 | option per area | verify-conversion | — |
-| legacy hosts | `vercel.json` redirects; `old-domain/` | — | — | `ecowoodshardwood.com/*` and `ecowoods-app.vercel.app/*` → 301 to ecowoods.ca | verify-stale-hosts, verify-domain-redirect (network) | — |
 
 Markdown twins exist for `/service-areas` and every `/service-areas/{slug}`.
 `/corridors`, `/corridors/{id}` and `/where-we-work` have **no** twin, and

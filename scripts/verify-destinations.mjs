@@ -45,10 +45,12 @@
  *                     elsewhere. Linking to one from our own pages spends a
  *                     round trip and dilutes the internal link graph for no
  *                     reason: link to the canonical.
- *  5. RETIRED DOMAIN  no link anywhere points at ecowoodshardwood.com. That
- *                     host is being killed as a content host; a link from the
- *                     new site to the old one re-teaches Google the thing the
- *                     301s are trying to un-teach it.
+ *  5. ONE MARKETING HOST
+ *                     no link anywhere points at an ecowoods-branded host
+ *                     other than the canonical ecowoods.ca. A link from the
+ *                     site to a second host carrying the same brand teaches a
+ *                     search engine that the business has two homes, which is
+ *                     the one thing a canonical host cannot survive.
  *  6. EXTERNAL HOSTS  every external host is in ALLOWED_EXTERNAL below. An
  *                     outbound link is an endorsement and a PageRank leak;
  *                     adding one is a deliberate act, not a side effect.
@@ -118,8 +120,18 @@ const ALLOWED_EXTERNAL = new Set(INFRASTRUCTURE);
   }
 }
 
-/** Hosts that must never appear. */
-const FORBIDDEN_HOST = /(^|\.)ecowoodshardwood\.com$/i;
+/**
+ * Hosts that must never appear: any ecowoods-branded host that is not the
+ * canonical ecowoods.ca. Tested against a parsed hostname, so the trailing `$`
+ * is the whole host.
+ *
+ * `[a-z0-9-]+` requires at least one character between "ecowoods" and the dot,
+ * which is what exempts `ecowoods.ca` and `www.ecowoods.ca` while catching a
+ * second brand domain or a deployment-preview alias. Written as a shape rather
+ * than a list of known bad hostnames: a list only catches the host somebody
+ * already thought of, and leaves that string in the tree to be copied back out.
+ */
+const FORBIDDEN_HOST = /(^|\.)ecowoods[a-z0-9-]+\.[a-z.]+$/i;
 
 /* ── 1. the route table ──────────────────────────────────────────────────── */
 const staticRoutes = new Set();
@@ -498,8 +510,8 @@ const redirectSources = new Set();
     process.exit(2);
   }
   for (const r of list) {
-    // Host-conditioned rules only fire on the retired domain; they are not a
-    // hop for anyone arriving on ecowoods.ca.
+    // Host-conditioned rules only fire on an alias host (www → apex); they are
+    // not a hop for anyone already arriving on ecowoods.ca.
     if (Array.isArray(r.has) && r.has.some((h) => h.type === 'host')) continue;
     if (typeof r.source === 'string' && !r.source.includes(':') && !r.source.includes('(')) {
       redirectSources.add(r.source.replace(/\/+$/, '') || '/');
@@ -549,8 +561,8 @@ for (const [rel, src] of sources) {
         try { host = new URL(raw).hostname; } catch { continue; }
         checked++;
         if (FORBIDDEN_HOST.test(host)) {
-          failures.push([rel, raw, 'links to the retired domain — that host is being removed as a content host']);
-          rows.push(['RETIRED', raw, rel]);
+          failures.push([rel, raw, 'links to a non-canonical ecowoods host — this business publishes one marketing site, ecowoods.ca']);
+          rows.push(['NON-CANON', raw, rel]);
         } else if (!ALLOWED_EXTERNAL.has(host)) {
           failures.push([rel, raw, `external host "${host}" is not in ALLOWED_EXTERNAL`]);
           rows.push(['UNLISTED', raw, rel]);
@@ -672,5 +684,5 @@ console.log(
     `${staticRoutes.size} static route(s), ` +
     `${Object.values(MANIFESTS).length} manifest(s), ` +
     `${counts['frag ok'] ?? 0} same-page anchor(s), ` +
-    `${counts['ext ok'] ?? 0} external link(s); no 404, no redirect hop, no retired domain`,
+    `${counts['ext ok'] ?? 0} external link(s); no 404, no redirect hop, one marketing host`,
 );

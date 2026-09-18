@@ -24,14 +24,14 @@
  * binary that git cannot delta-compress, permanent in the object store even
  * after deletion.
  *
- * UNVALIDATED DUPLICATE CONFIGS. This is the dangerous one. `nginx.conf`,
- * `htaccess.txt` and `netlify_redirects.txt` sat at the root as older,
- * superseded copies of what `pnpm domain:build` now generates into old-domain/.
- * `domain:check` validates old-domain/ and has never looked at the root. So the
- * repository was carrying redirect rules that no guard has ever checked, under
- * names that read exactly like the ones that are checked, one confident `scp`
- * away from serving a live domain. `vercel (3).json` was the same shape of
- * problem: a second, smaller, unread Vercel config beside the real one.
+ * UNVALIDATED SERVER CONFIGS. This is the dangerous one. `nginx.conf`,
+ * `htaccess.txt`, `.htaccess`, `netlify_redirects.txt` and `index.php` describe
+ * how some web server routes requests. This product deploys to Vercel and its
+ * routing lives in vercel.json and apps/web/next.config.js, both of which are
+ * read by guards. A stray server config at the root is routing rules that no
+ * guard has ever checked, sitting one confident `scp` away from serving a live
+ * domain. `vercel (3).json` was the same shape of problem: a second, smaller,
+ * unread Vercel config beside the real one.
  *
  * WHAT IS DELIBERATELY NOT FLAGGED
  *
@@ -58,15 +58,16 @@ const TRANSPORT = [
 ];
 
 /**
- * Config filenames that have a validated home elsewhere. A copy at the root is
- * an unchecked config wearing the name of a checked one.
+ * Server-config filenames with no home in this repository. Routing for this
+ * product is vercel.json plus apps/web/next.config.js; anything else is an
+ * unchecked config that can still be deployed by hand.
  */
 const SHADOW_CONFIG = new Map([
-  ['nginx.conf', 'old-domain/nginx.conf, generated and checked by `pnpm domain:check`'],
-  ['htaccess.txt', 'old-domain/.htaccess, generated and checked by `pnpm domain:check`'],
-  ['.htaccess', 'old-domain/.htaccess, generated and checked by `pnpm domain:check`'],
-  ['netlify_redirects.txt', 'old-domain/_redirects, generated and checked by `pnpm domain:check`'],
-  ['index.php', 'old-domain/index.php, which is the copy old-domain/EXECUTE.md tells you to deploy'],
+  ['nginx.conf', 'vercel.json and apps/web/next.config.js, which are the routing this product actually deploys'],
+  ['htaccess.txt', 'vercel.json and apps/web/next.config.js, which are the routing this product actually deploys'],
+  ['.htaccess', 'vercel.json and apps/web/next.config.js, which are the routing this product actually deploys'],
+  ['netlify_redirects.txt', 'vercel.json and apps/web/next.config.js, which are the routing this product actually deploys'],
+  ['index.php', 'nothing — this is a Next.js app on Vercel and there is no PHP in it'],
 ]);
 
 /**

@@ -4,17 +4,14 @@
  *
  * THE ACCIDENT THIS PREVENTS
  *
- * Two vercel.json files are in circulation for this business: the real one for
- * the ecowoods.ca project, and a standalone one written for a separate project
- * that would host only the old domain. The second contains:
+ * An unconditional catch-all redirect in this file is the accident:
  *
  *     { "source": "/:path*", "destination": "https://ecowoods.ca/:path*" }
  *
- * Correct in a project that serves ONLY ecowoodshardwood.com. Catastrophic here.
- * Pasted into this file it matches every request on ecowoods.ca and redirects
- * the site to itself — a permanent loop, 301-cached in every visitor's browser
- * and every CDN that saw it. That is not a bad deploy you roll back cleanly; a
- * cached 301 outlives the fix.
+ * With no host condition that matches every request already on ecowoods.ca and
+ * redirects the site to itself — a permanent loop, 301-cached in every
+ * visitor's browser and every CDN that saw it. That is not a bad deploy you
+ * roll back cleanly; a cached 301 outlives the fix.
  *
  * So: every redirect here MUST carry a host condition, and no host condition may
  * name the canonical host. A rule without `has` IS the loop.
@@ -35,14 +32,6 @@ const ROOT = process.cwd();
 const FILE = 'vercel.json';
 const CANONICAL = 'ecowoods.ca';
 
-/* The host patterns the old-domain map owns. Rules carrying one of these are
- * generated from old-domain/path-map.json and are exempt from the
- * path-preservation rule below — see the note there. Read from the map so this
- * file cannot disagree with it about which hosts are the retired ones. */
-const OLD_HOST_PATTERNS = new Set(
-  JSON.parse(fs.readFileSync(path.join(ROOT, 'old-domain', 'vercel-redirects.json'), 'utf8'))
-    .redirects.flatMap((r) => (r.has ?? []).filter((h) => h.type === 'host').map((h) => h.value)),
-);
 const problems = [];
 
 let cfg;
@@ -78,31 +67,19 @@ for (const [i, r] of (cfg.redirects ?? []).entries()) {
   }
   if (!r.permanent && r.statusCode !== 301) {
     problems.push(
-      `${where}\n      is not permanent. A 302 tells crawlers to keep the OLD url indexed,\n` +
-        `      which is the opposite of consolidating a domain.`,
+      `${where}\n      is not permanent. A 302 tells crawlers to keep the source url indexed,\n` +
+        `      so the signal never settles on the canonical host.`,
     );
   }
-  /* PATH PRESERVATION IS THE RULE, AND THE OLD DOMAIN IS THE EXCEPTION.
+  /* PATH PRESERVATION IS THE RULE.
    *
-   * This check used to be unconditional: a `:path*` source whose destination
-   * drops the path was always a defect. That is right for a host serving the
-   * same site under a different name — www.ecowoods.ca must preserve the path,
-   * because /services/floor-refinishing exists on both sides.
-   *
-   * It is wrong for ecowoodshardwood.com, and old-domain/path-map.json is the
-   * proof: the two sites share ZERO paths. The old URLs are
-   * /pages/flooring-services-toronto-etobicoke-hamilton and
-   * /blogs/testimonials/172376--audrey-in-toronto. Preserving those produces a
-   * guaranteed hard 404 for every one of them. The map routes each old URL to
-   * the page that answers the same question and sends the remainder to the
-   * front door — a soft landing on the right business rather than a dead end.
-   *
-   * So the exemption is not "the old host may do anything". It is: the old
-   * host's rules must come from the map, and the map decides. The drift check
-   * that enforces that lives in scripts/build-old-domain-redirects.mjs.
+   * Every host condition left in this file names an alias serving the SAME
+   * site under a different name — www.ecowoods.ca must preserve the path,
+   * because /services/floor-refinishing exists on both sides. A `:path*`
+   * source whose destination drops the path throws away the link that earned
+   * the visit and lands the visitor on a homepage they then have to navigate.
    */
-  const isMappedOldHost = hosts.some((h) => OLD_HOST_PATTERNS.has(h));
-  if (!isMappedOldHost && /:path\*/.test(r.source) && !/:path\*/.test(r.destination)) {
+  if (/:path\*/.test(r.source) && !/:path\*/.test(r.destination)) {
     problems.push(
       `${where}\n      drops the path. A link earned by /services/floor-refinishing must land on\n` +
         `      that page, not on the homepage.`,
