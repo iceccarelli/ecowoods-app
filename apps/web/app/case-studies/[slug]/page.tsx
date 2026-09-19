@@ -19,6 +19,17 @@ import { OG_IMAGE_URL } from '@/lib/brand-assets';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
+/**
+ * Case study slug → hero frame from the 2026 colour-matching pack
+ * (scripts/fixtures/color-matching-manifest.csv). Only these two case
+ * studies were photographed for that pack; every other case study is
+ * unaffected.
+ */
+const CASE_STUDY_COLOR_MATCH_HERO: Record<string, string> = {
+  'forest-hill-walnut-wide-plank-color-stability': 'case-forest-hill-walnut-uv',
+  'midtown-townhouse-three-level-transition': 'case-midtown-species-transition',
+};
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -144,7 +155,11 @@ export default async function CaseStudyPage({ params }: Props) {
       <SchemaScript schema={caseStudySchema} />
 
       {/* Render case study with layout and related content */}
-      <CaseStudyLayout metadata={caseStudy} relatedContent={relatedContent}>
+      <CaseStudyLayout
+        metadata={caseStudy}
+        relatedContent={relatedContent}
+        heroImageId={CASE_STUDY_COLOR_MATCH_HERO[slug]}
+      >
         <div className="tlx-body" dangerouslySetInnerHTML={{ __html: caseStudy.content }} />
       </CaseStudyLayout>
     </>

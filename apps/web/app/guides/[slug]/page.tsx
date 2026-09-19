@@ -15,6 +15,69 @@ import { IllustrationPair } from '../../components/Illustration';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
 import { NextStep } from '@/app/components/NextStep';
 import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
+import { ColorMatchFigure } from '@/app/components/ColorMatchFigure';
+import { FigureRotator } from '@/app/components/FigureRotator';
+import { RotatingTile } from '@/app/components/RotatingTile';
+import { colorMatchingSlide, colorMatchingImage, COLOR_MATCHING_META } from '@/app/data/color-matching-images';
+
+/**
+ * Colour-matching guide slug → hero frame + in-body frames from the 2026
+ * colour-matching illustration pack (scripts/fixtures/color-matching-manifest.csv).
+ * Kept here, same as GUIDE_IMAGE and GUIDE_PAIRS above, so the content
+ * manifest (lib/guides.ts) stays free of presentation concerns.
+ *
+ * The species/undertone guide is deliberately absent from both maps below —
+ * it has no single hero or body sequence in the manifest, only six board
+ * portraits and a lineup frame, and is rendered by its own section further
+ * down this file instead.
+ */
+const COLOR_MATCH_HERO: Record<string, string> = {
+  'color-identification-existing-hardwood-finish': 'guide-id-hero-rug-reveal',
+  'stain-matching-existing-hardwood-floor-toronto': 'guide-stain-hero-chip-vs-aged',
+  'matching-new-hardwood-to-old-toronto': 'guide-newold-hero-invisible-weave',
+  'stair-railing-trim-color-matching-toronto': 'guide-stair-hero-one-flight',
+  'door-woodwork-finish-coordination-toronto': 'guide-door-hero-baseboard-meet',
+  'when-color-match-fails-full-sand-vs-replace': 'guide-fail-hero-visible-patch',
+  'sample-boards-on-site-trials-sign-off': 'guide-signoff-hero-condo-light',
+};
+
+/** Every body frame for a guide goes in the rotator — none are dropped. */
+const COLOR_MATCH_BODY: Record<string, string[]> = {
+  'color-identification-existing-hardwood-finish': [
+    'guide-id-film-vs-penetrating',
+    'guide-id-ambering-oil',
+    'guide-id-three-lights',
+  ],
+  'stain-matching-existing-hardwood-floor-toronto': [
+    'guide-stain-same-formula-two-species',
+    'guide-stain-sheen-matte-vs-satin',
+    'guide-stain-sample-on-floor',
+  ],
+  'matching-new-hardwood-to-old-toronto': [
+    'guide-newold-bad-butt-joint',
+    'guide-newold-feather-zone',
+    'guide-newold-threshold-strip',
+  ],
+  'stair-railing-trim-color-matching-toronto': [
+    'guide-stair-sample-at-nosing',
+    'guide-stair-painted-vs-stained',
+    'guide-stair-wear-shift',
+  ],
+  'door-woodwork-finish-coordination-toronto': ['guide-door-painted-undertone', 'guide-door-threshold-contact'],
+  'when-color-match-fails-full-sand-vs-replace': ['guide-fail-three-paths', 'guide-fail-wear-layer-measure'],
+  'sample-boards-on-site-trials-sign-off': ['guide-signoff-day-vs-night', 'guide-signoff-written'],
+};
+
+/** The six species-undertone board portraits, in table order. */
+const SPECIES_PORTRAITS = [
+  'species-white-oak-undertone',
+  'species-red-oak-undertone',
+  'species-hard-maple-undertone',
+  'species-black-walnut-undertone',
+  'species-hickory-undertone',
+  'species-white-ash-undertone',
+];
+const SPECIES_LINEUP = 'species-same-stain-six-species';
 
 /**
  * Guide slug → the floor the guide is about.
@@ -178,10 +241,16 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <h1 className="tlx-title">{headline}</h1>
           <p className="gd-question">{guide.question}</p>
           <p className="tlx-lede">{guide.summary}</p>
-          <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority />
+          {/* Never both: COLOR_MATCH_HERO and GUIDE_IMAGE do not share a slug, so
+              exactly one of these two figures ever renders for a given guide — but
+              verify-preload.mjs counts literal `priority` attributes per file, not
+              per render path, so Illustration's is gated on the same condition
+              rather than left as a second unconditional preload. */}
+          <Illustration id={GUIDE_IMAGE[guide.slug] ?? ''} priority={!COLOR_MATCH_HERO[guide.slug]} />
           {(GUIDE_PAIRS[guide.slug] ?? []).map((p) => (
             <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
           ))}
+          {COLOR_MATCH_HERO[guide.slug] && <ColorMatchFigure id={COLOR_MATCH_HERO[guide.slug]!} priority />}
           <p className="fw-meta">
             <span>{guide.readingMinutes} min read</span>
             <span aria-hidden="true">·</span>
@@ -189,6 +258,44 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </p>
         </div>
       </header>
+
+      {COLOR_MATCH_BODY[guide.slug] && COLOR_MATCH_BODY[guide.slug]!.length > 0 && (
+        <section className="tlx-section" aria-label="What this looks like on site">
+          <div className="shell">
+            <p className="tlx-kicker">On site</p>
+            <h2 className="tlx-h2">What this looks like on site</h2>
+            <FigureRotator
+              label={`${guide.title} — on site`}
+              slides={COLOR_MATCH_BODY[guide.slug]!.map((id) => colorMatchingSlide(id)).filter(
+                (s): s is NonNullable<typeof s> => Boolean(s),
+              )}
+            />
+          </div>
+        </section>
+      )}
+
+      {guide.slug === 'species-undertone-guide-color-matching-toronto' && (
+        <section className="tlx-section" aria-label="Species and undertone, in board portraits">
+          <div className="shell">
+            <p className="tlx-kicker">In board portraits</p>
+            <h2 className="tlx-h2">The same stain, six species</h2>
+            <div className="tlx-grid">
+              {SPECIES_PORTRAITS.map((id, i) => {
+                const asset = colorMatchingImage(id);
+                const meta = COLOR_MATCHING_META[id];
+                if (!asset || !meta) return null;
+                return (
+                  <figure key={id}>
+                    <RotatingTile shots={[asset]} alt={meta.alt} index={i} />
+                    <figcaption className="ill-caption">{meta.caption}</figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+            <ColorMatchFigure id={SPECIES_LINEUP} />
+          </div>
+        </section>
+      )}
 
       {guide.criteria && guide.criteria.length > 0 && (
         <section className="tlx-section" aria-label="What decides this">
