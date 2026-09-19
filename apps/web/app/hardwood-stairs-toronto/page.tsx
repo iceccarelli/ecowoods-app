@@ -17,11 +17,20 @@ import { ColorMatchFigure } from '../components/ColorMatchFigure';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { FigureRotator } from '../components/FigureRotator';
+import { TRILOGIES } from '@/lib/trilogies';
+import { trilogySlides } from '@/lib/trilogy-slides';
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
 
 const URL = `${SITE_URL}/hardwood-stairs-toronto`;
+
+/** The four stair-kind trilogies, in the order they read as a set. */
+const STAIR_SLUGS = ['curved-oak-iron-balustrade', 'sculptural-handrail-curve', 'foyer-oak-treads-iron', 'spiral-looking-down'];
+const STAIR_TRILOGIES = STAIR_SLUGS.map((slug) => TRILOGIES.find((t) => t.slug === slug)).filter(
+  (t): t is NonNullable<typeof t> => Boolean(t),
+);
 
 export const metadata: Metadata = {
   title: 'Hardwood Stairs Toronto — Refinishing, Installation & How They Are Priced',
@@ -226,6 +235,22 @@ export default function HardwoodStairsTorontoPage() {
           <EstimateForm source="hardwood-stairs-toronto" service="stairs" heading="Get a fixed written price for your stairs" intro="Stairs are quoted per tread and per flight, because the work is geometry rather than area. Tell us the flight and we come and count it." />
         </div>
       </section>
+
+      {/* Four real stair jobs, each in three frames: the flight, the approach,
+          the fingertip. Stacked editorial blocks, not a single mixed rotator —
+          a curved stair, a steam-bent rail, a foyer transition and a spiral
+          are four different problems and stay four different sections. */}
+      {STAIR_TRILOGIES.map((t) => (
+        <section key={t.slug} className="tlx-section" aria-label={t.headline}>
+          <div className="shell">
+            <p className="tlx-kicker">{t.kicker}</p>
+            <h2 className="tlx-h2">{t.headline}</h2>
+            <p className="tlx-lede">{t.lede}</p>
+            <FigureRotator label={t.headline} slides={trilogySlides(t, `/projects/${t.slug}`)} />
+            <p className="tlx-note">{t.body}</p>
+          </div>
+        </section>
+      ))}
 
       <section className="tlx-section" aria-label="How stairs are priced">
         <div className="shell">

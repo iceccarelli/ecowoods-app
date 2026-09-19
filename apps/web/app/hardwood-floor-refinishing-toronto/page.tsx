@@ -16,6 +16,11 @@ import { ProcessVideo } from '../components/ProcessVideo';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { FigureRotator } from '../components/FigureRotator';
+import { getTrilogy } from '@/lib/trilogies';
+import { trilogySlides } from '@/lib/trilogy-slides';
+
+const REFINISH_TRILOGY = getTrilogy('dark-oak-plank-living');
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -181,6 +186,24 @@ export default function RefinishingTorontoPage() {
           <EstimateForm source="hardwood-floor-refinishing-toronto" service="refinishing" heading="Get a fixed written price for your refinish" intro="Whether a screen and recoat will do, or the floor needs a full sand, is decided by looking at it. The measurement is free and the written price does not move afterwards." />
         </div>
       </section>
+
+      {/* The one trilogy honestly placeable here. Its own copy never claims
+          "refinish" — it describes a finished floor, not a job type — so
+          neither does this page. Never label a new install as a refinish. */}
+      {REFINISH_TRILOGY && (
+        <section className="tlx-section" aria-label={REFINISH_TRILOGY.headline}>
+          <div className="shell">
+            <p className="tlx-kicker">{REFINISH_TRILOGY.kicker}</p>
+            <h2 className="tlx-h2">{REFINISH_TRILOGY.headline}</h2>
+            <p className="tlx-lede">{REFINISH_TRILOGY.lede}</p>
+            <FigureRotator
+              label={REFINISH_TRILOGY.headline}
+              slides={trilogySlides(REFINISH_TRILOGY, `/projects/${REFINISH_TRILOGY.slug}`)}
+            />
+            <p className="tlx-note">{REFINISH_TRILOGY.body}</p>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section" aria-label="The four machines">
         <div className="shell">

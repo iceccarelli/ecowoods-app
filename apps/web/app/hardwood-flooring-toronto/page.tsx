@@ -21,6 +21,22 @@ import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { FigureRotator } from '../components/FigureRotator';
+import { TRILOGIES } from '@/lib/trilogies';
+import { trilogySlides } from '@/lib/trilogy-slides';
+
+/** Residential + inlay trilogies whose own routes name this page. */
+const FLOORING_SLUGS = [
+  'dark-oak-plank-living',
+  'oak-hallway-closet-transition',
+  'herringbone-dormer-room',
+  'loft-kitchen-light-strip',
+  'floral-medallion-inlay',
+  'library-chevron-wide-band-parquet',
+];
+const FLOORING_TRILOGIES = FLOORING_SLUGS.map((slug) => TRILOGIES.find((t) => t.slug === slug)).filter(
+  (t): t is NonNullable<typeof t> => Boolean(t),
+);
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -234,6 +250,28 @@ export default function HardwoodFlooringTorontoPage() {
       <section className="tlx-section" aria-label="Request an estimate">
         <div className="shell">
           <EstimateForm source="hardwood-flooring-toronto" service="installation" heading="Get a fixed written price for your install" intro="The bands above are real ranges, not a starting-from number. Tell us the rooms and we measure, then write one price that does not move." />
+        </div>
+      </section>
+
+      {/* FLOORS WE ACTUALLY BUILT — residential and custom-inlay trilogies,
+          not stock species art. Each rotator is a real job, three frames:
+          the room, the approach, the fingertip. */}
+      {FLOORING_TRILOGIES.map((t) => (
+        <section key={t.slug} className="tlx-section" aria-label={t.headline}>
+          <div className="shell">
+            <p className="tlx-kicker">{t.kicker}</p>
+            <h2 className="tlx-h2">{t.headline}</h2>
+            <p className="tlx-lede">{t.lede}</p>
+            <FigureRotator label={t.headline} slides={trilogySlides(t, `/projects/${t.slug}`)} />
+            <p className="tlx-note">{t.body}</p>
+          </div>
+        </section>
+      ))}
+      <section className="tlx-section" aria-label="More floors">
+        <div className="shell">
+          <p className="tlx-note">
+            The full 20-job set, filterable by kind, is at <Link href="/library">the library</Link>.
+          </p>
         </div>
       </section>
 

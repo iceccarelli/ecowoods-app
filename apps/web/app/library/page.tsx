@@ -6,6 +6,8 @@ import { illustrationImage } from '../data/illustration-images';
 import { floors, floorImages } from '../data/floors';
 import { machines, machineImages } from '../data/machines';
 import { RotatingTile } from '../components/RotatingTile';
+import { TrilogyLibraryGrid } from '../components/TrilogyLibraryGrid';
+import { TRILOGIES } from '@/lib/trilogies';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -58,7 +60,8 @@ const GROUPS = [
 
 export default function LibraryPage() {
   const diagrams = getImages().filter((i) => !i.id.startsWith('og-'));
-  const photos = floors.length * 3 + machines.length * 6;
+  const trilogyFrameCount = TRILOGIES.length * 3;
+  const photos = floors.length * 3 + machines.length * 6 + trilogyFrameCount;
 
   return (
     <div className="tlx-page">
@@ -78,18 +81,34 @@ export default function LibraryPage() {
           isPartOf: { '@id': `${SITE_URL}/#website` },
           publisher: { '@id': `${SITE_URL}/#organization` },
           license: 'https://creativecommons.org/licenses/by/4.0/',
-          hasPart: diagrams.map((d) => ({
-            '@type': 'ImageObject',
-            '@id': `${SITE_URL}${IMAGE_DIR}/${d.file}`,
-            contentUrl: `${SITE_URL}${IMAGE_DIR}/${d.file}`,
-            name: d.caption ?? d.alt,
-            caption: d.alt,
-            width: d.width,
-            height: d.height,
-            encodingFormat: 'image/webp',
-            isAccessibleForFree: true,
-            ...(d.href ? { mainEntityOfPage: `${SITE_URL}${d.href}` } : {}),
-          })),
+          hasPart: [
+            ...diagrams.map((d) => ({
+              '@type': 'ImageObject',
+              '@id': `${SITE_URL}${IMAGE_DIR}/${d.file}`,
+              contentUrl: `${SITE_URL}${IMAGE_DIR}/${d.file}`,
+              name: d.caption ?? d.alt,
+              caption: d.alt,
+              width: d.width,
+              height: d.height,
+              encodingFormat: 'image/webp',
+              isAccessibleForFree: true,
+              ...(d.href ? { mainEntityOfPage: `${SITE_URL}${d.href}` } : {}),
+            })),
+            ...TRILOGIES.flatMap((t) =>
+              t.frames.map((f) => ({
+                '@type': 'ImageObject',
+                '@id': `${SITE_URL}${f.src.src}`,
+                contentUrl: `${SITE_URL}${f.src.src}`,
+                name: f.caption,
+                caption: f.alt,
+                width: f.src.width,
+                height: f.src.height,
+                encodingFormat: 'image/webp',
+                isAccessibleForFree: true,
+                mainEntityOfPage: `${SITE_URL}/projects/${t.slug}`,
+              })),
+            ),
+          ],
         }}
       />
       <SchemaScript
@@ -107,8 +126,8 @@ export default function LibraryPage() {
           <h1 className="tlx-title">Visual library</h1>
           <p className="tlx-lede">
             Every image on this site, indexed. {diagrams.length} technical cross-sections — each one
-            a link to the page that explains it — then the floor collection and the machines that
-            produce it.
+            a link to the page that explains it — then {TRILOGIES.length} real jobs in three frames
+            each, the floor collection, and the machines that produce it.
           </p>
           <p className="fw-meta">
             <span>{diagrams.length + photos} images</span>
@@ -116,6 +135,8 @@ export default function LibraryPage() {
             <span>{diagrams.length} diagrams</span>
             <span aria-hidden="true">·</span>
             <span>{photos} photographs</span>
+            <span aria-hidden="true">·</span>
+            <span>{TRILOGIES.length} jobs, three frames each</span>
           </p>
         </div>
       </header>
@@ -152,6 +173,19 @@ export default function LibraryPage() {
           </section>
         );
       })}
+
+      <section className="tlx-section" aria-label="Real work, twenty jobs">
+        <div className="shell">
+          <p className="tlx-kicker">Photographs</p>
+          <h2 className="tlx-h2">Real work, twenty jobs</h2>
+          <p className="tlx-note">
+            Every trilogy is a real Ecowoods job in three frames — the room, the approach, the
+            fingertip. Filter by kind, or tap a card for the full story and every frame&apos;s own
+            caption.
+          </p>
+          <TrilogyLibraryGrid trilogies={TRILOGIES} />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="The floor collection">
         <div className="shell">
