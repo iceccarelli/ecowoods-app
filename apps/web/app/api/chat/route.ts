@@ -173,7 +173,7 @@ export async function POST(req: Request) {
           return {
             found: hits.length,
             pages: hits.map((h) => ({ path: h.href, title: h.label, what: h.note ?? null, section: h.group })),
-            note: 'Give at most ONE of these, written plainly as ecowoods.ca<path>. The chat window turns it into a link.',
+            note: 'Give at most ONE of these, written as the full URL https://ecowoods.ca<path>. The chat window turns it into a link.',
           };
         },
       }),

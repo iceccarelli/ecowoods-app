@@ -108,6 +108,9 @@ const REQUIRED = [
   { needle: 'ALWAYS CLOSE ON WHAT WE WOULD DO', what: 'the always-close rule' },
   { needle: 'WHAT WE OFFER', what: 'the service list the assistant may name' },
   { needle: 'make that step something WE do', what: 'the closing instruction' },
+  { needle: 'HARD SCOPE', what: 'the Ecowoods-only scope rule' },
+  { needle: 'NEVER recommend', what: 'the never-recommend-a-competitor rule' },
+  { needle: 'ALWAYS INCLUDE A LINK', what: 'the mandatory-link rule' },
 ];
 for (const r of REQUIRED) {
   if (!prompt.includes(r.needle)) {
@@ -141,6 +144,24 @@ for (const r of REQUIRED) {
       what: `${bareEcowoods.length} bare "Ecowoods" reference(s) in the prompt body`,
       why: 'The assistant speaks AS the company in first person (we/our) — a third-person "Ecowoods" in the body is the narrator voice this file was rewritten to remove.',
       text: 'expected the body to use we/our/us, or "Ecowoods Inc." by full name',
+    });
+  }
+}
+
+/* The mandatory-link rule is only real if the prompt actually hands the
+   model a menu of real pages to cite — "always include a link" with no
+   examples is an instruction the model has nothing to satisfy it with.
+   Require several distinct https://ecowoods.ca/... URLs in the prompt body,
+   not just the bare word "link". */
+{
+  const literal = (prompt.match(/ECOWOODS_GUIDE_SYSTEM_PROMPT = `([\s\S]*?)`;/) || [, ''])[1];
+  const urls = new Set((literal.match(/https:\/\/ecowoods\.ca\/[A-Za-z0-9\-._~/#]*/g) || []));
+  if (urls.size < 5) {
+    problems.push({
+      rel: PROMPT, line: 0,
+      what: `only ${urls.size} distinct https://ecowoods.ca/... URL(s) in the prompt`,
+      why: 'The mandatory-link rule needs a real menu of pages to point at, not just the instruction to link something. Give at least five concrete destinations.',
+      text: 'expected 5+ distinct https://ecowoods.ca/... URLs in the system prompt',
     });
   }
 }
