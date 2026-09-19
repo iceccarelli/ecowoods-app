@@ -12,8 +12,10 @@ import {
 } from '@ecowoods/shared/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import Image from 'next/image';
 import { RotatingBackground } from './components/RotatingBackground';
-import { HeroBackdrop } from './components/HeroBackdrop';
+import { TrilogyHero } from './components/TrilogyHero';
+import { TRILOGIES } from '@/lib/trilogies';
 import { ProcessVideo } from './components/ProcessVideo';
 import PricingSection from './components/PricingSection';
 import { FloorAssembly } from './components/FloorAssembly';
@@ -429,6 +431,36 @@ function useReveal() {
 }
 
 
+/* ---------------------- Trilogy photo set ---------------------- */
+
+/**
+ * The homepage hero backdrop: slugs 1–3 only (the "hero" kind trilogies),
+ * all three frames each, in slug order — nine frames total, cycling
+ * room → approach → fingertip, three times over. See TrilogyHero's own doc
+ * comment for why this replaces the old single-image HeroBackdrop safely.
+ */
+const HOME_HERO_SLUGS = ['salon-dark-oak-chandelier', 'salon-fireplace-continuous-floor', 'geometric-parquet-french-doors'];
+const HOME_HERO_FRAMES = HOME_HERO_SLUGS.flatMap((slug) => TRILOGIES.find((t) => t.slug === slug)?.frames ?? []);
+
+/**
+ * The below-fold "Work" rail — six real jobs, Frame 1 only (no rotation; the
+ * full trilogy lives one click away on each job's own page). Picked for
+ * variety across the set's kinds (stairs, inlay, commercial, residential,
+ * grand) rather than showing all twenty, which is the "dump the library on
+ * the homepage" mistake the brief explicitly rules out.
+ */
+const WORK_RAIL_SLUGS = [
+  'curved-oak-iron-balustrade',
+  'floral-medallion-inlay',
+  'rickis-storefront',
+  'loft-kitchen-light-strip',
+  'paneled-oval-room-herringbone',
+  'foyer-oak-treads-iron',
+];
+const WORK_RAIL_TRILOGIES = WORK_RAIL_SLUGS.map((slug) => TRILOGIES.find((t) => t.slug === slug)).filter(
+  (t): t is NonNullable<typeof t> => Boolean(t),
+);
+
 /* ---------------------- Page ---------------------- */
 export default function HomePage({ contentPromo }: { contentPromo?: ReactNode }) {
   const root = useReveal();
@@ -467,7 +499,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           exposed text in the accessibility tree. */}
       <section className="hero" id="hero">
         <div className="hero-bg" aria-hidden="true" />
-        <HeroBackdrop />
+        <TrilogyHero frames={HOME_HERO_FRAMES} />
         <div className="shell hero-content">
           <HeroRotator
             variants={[HERO_VARIANTS[0]!]}
@@ -502,6 +534,41 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
         <div className="hero-scroll" aria-hidden="true">
           <span>Scroll</span>
           <span className="line" />
+        </div>
+      </section>
+
+      {/* 1b · WORK RAIL — six real jobs, Frame 1 only. Every card links to
+             that job's own three-frame story; this row does not rotate and
+             does not claim to be the whole set — /library is. */}
+      <section className="section-tight" aria-label="Recent work">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">Recent work</span>
+            <h2>
+              Six jobs, <span className="serif-italic">not stock.</span>
+            </h2>
+          </div>
+          <div className="work-rail reveal">
+            {WORK_RAIL_TRILOGIES.map((t) => {
+              const first = t.frames[0];
+              return (
+                <Link key={t.slug} href={`/projects/${t.slug}`} className="work-rail-card">
+                  <span className="work-rail-media">
+                    <Image
+                      src={first.src}
+                      alt={first.alt}
+                      sizes="(max-width: 767px) 90vw, (max-width: 1100px) 45vw, 30vw"
+                      loading="lazy"
+                      style={{ objectFit: 'cover' }}
+                      fill
+                    />
+                  </span>
+                  <span className="work-rail-kicker">{t.kicker}</span>
+                  <span className="work-rail-title">{t.headline}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 

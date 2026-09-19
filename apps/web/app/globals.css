@@ -9560,6 +9560,18 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
 
 /* Photographs: cropped to fill, and moving. */
 .lib-card--photo { cursor: default; }
+/* The trilogy cards ARE links (a.lib-card), unlike the floor/machine tiles
+   which are plain divs — restore the pointer cursor for that one case. */
+a.lib-card--photo { cursor: pointer; }
+
+/* /library trilogy filter chips. */
+.lib-trilogy-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.1rem 0 0; }
+.lib-trilogy-chip { padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface-1); color: var(--ink-soft); font-size: 0.82rem; font-family: var(--font-mono);
+  letter-spacing: 0.02em; cursor: pointer; transition: border-color 160ms ease, color 160ms ease, background 160ms ease; }
+.lib-trilogy-chip:hover { border-color: var(--copper); color: var(--ink); }
+.lib-trilogy-chip.is-active { background: var(--copper); border-color: var(--copper); color: var(--on-copper, #fff); }
+.lib-trilogy-chip:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
 .rt { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 9px;
   overflow: hidden; background: var(--surface-2); }
 .rt-layer { position: absolute; inset: 0; opacity: 0;
@@ -10024,6 +10036,20 @@ a.lib-card:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px
   .pfd-card:hover { transform: none; }
 }
 /* === EW:HOVER-GLOW END === */
+
+/* Homepage "Recent work" rail — six real jobs, Frame 1 only, linking to a
+   trilogy's own three-frame story page. Same card shape as .tlx-card, kept
+   local rather than shared: this rail's media box is a fixed-ratio photo,
+   where .tlx-card's is a decorative thumbnail. */
+.work-rail { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.work-rail-card { display: block; text-decoration: none; color: inherit; border-radius: 12px; overflow: hidden; background: var(--surface-1); border: 1px solid var(--line); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.work-rail-card:hover, .work-rail-card:focus-visible { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+.work-rail-media { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--surface-2); }
+.work-rail-kicker { display: block; margin: 0.9rem 1rem 0.2rem; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--copper); }
+.work-rail-title { display: block; margin: 0 1rem 1rem; font-family: var(--font-display); font-size: 1.02rem; line-height: 1.4; }
+@media (prefers-reduced-motion: reduce) {
+  .work-rail-card { transition: none; }
+}
 
 /* === EW:P0-CONVERSION START ===============================================
    P0.4/P0.5 — dual-CTA strip, trust rail, two-track estimate form, design

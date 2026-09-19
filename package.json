@@ -61,6 +61,7 @@
     "verify:knowledge": "node scripts/verify-knowledge-parity.mjs",
     "verify:preload": "node scripts/verify-preload.mjs",
     "verify:color-matching": "node scripts/verify-color-matching-images.mjs",
+    "verify:trilogy": "node scripts/verify-trilogy-images.mjs",
     "verify:outreach": "node scripts/verify-outreach.mjs",
     "verify:live-routes": "node scripts/verify-live-routes.mjs",
     "verify:live-images": "node scripts/verify-live-images.mjs",

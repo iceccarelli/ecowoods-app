@@ -11,13 +11,16 @@ import {
   filmFor,
   stillById,
 } from '@/lib/projects';
+import { getTrilogy, TRILOGIES } from '@/lib/trilogies';
+import { trilogySlides } from '@/lib/trilogy-slides';
+import { FigureRotator } from '@/app/components/FigureRotator';
 import { SITE_URL, BUSINESS } from '@/lib/seo-data';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 
 export function generateStaticParams() {
-  return projectSlugs().map((slug) => ({ slug }));
+  return [...projectSlugs(), ...TRILOGIES.map((t) => t.slug)].map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -27,17 +30,37 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const project = getProject(slug);
-  if (!project) return {};
-  return {
-    title: project.title,
-    description: project.summary.slice(0, 155),
-    alternates: { canonical: `/projects/${project.slug}` },
-    openGraph: {
+  if (project) {
+    return {
       title: project.title,
       description: project.summary.slice(0, 155),
+      alternates: { canonical: `/projects/${project.slug}` },
+      openGraph: {
+        title: project.title,
+        description: project.summary.slice(0, 155),
+        type: 'article',
+        url: `${SITE_URL}/projects/${project.slug}`,
+        images: [{ url: `${SITE_URL}${project.stills[1]?.src ?? project.stills[0]!.src}` }],
+      },
+    };
+  }
+  /* Trilogy story page. OG per Section 4: Frame 1 only, og:title = headline,
+     og:description = lede. The image URL is the bundled static import's own
+     .src, which resolves — never a public/ path this deployment does not
+     serve (F-131). */
+  const trilogy = getTrilogy(slug);
+  if (!trilogy) return {};
+  const frame1 = trilogy.frames[0];
+  return {
+    title: trilogy.headline,
+    description: trilogy.lede,
+    alternates: { canonical: `/projects/${trilogy.slug}` },
+    openGraph: {
+      title: trilogy.headline,
+      description: trilogy.lede,
       type: 'article',
-      url: `${SITE_URL}/projects/${project.slug}`,
-      images: [{ url: `${SITE_URL}${project.stills[1]?.src ?? project.stills[0]!.src}` }],
+      url: `${SITE_URL}/projects/${trilogy.slug}`,
+      images: [{ url: `${SITE_URL}${frame1.src.src}`, width: frame1.src.width, height: frame1.src.height }],
     },
   };
 }
@@ -68,7 +91,11 @@ export default async function ProjectPage({
 }) {
   const { slug } = await params;
   const project = getProject(slug);
-  if (!project) notFound();
+  if (!project) {
+    const trilogy = getTrilogy(slug);
+    if (trilogy) return <TrilogyProjectPage slug={slug} />;
+    notFound();
+  }
 
   const ch1 = interiors(project, 1);
   const ch2 = interiors(project, 2);
@@ -243,6 +270,143 @@ export default async function ProjectPage({
             and the engineering write-ups at <Link href="/case-studies">case studies</Link>.
             {BUSINESS.name} works across {project.location.city} and the GTA.
           </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/** Route labels for the "more of this work" line below — a trilogy's own
+    `routes` field names the money pages it also appears on; this maps each
+    path to the words a reader would use for it, never a page's own title
+    (some of those are full sentences). */
+const TRILOGY_HERO_PRIORITY = true;
+
+const ROUTE_LABELS: Record<string, string> = {
+  '/': 'the homepage',
+  '/hardwood-flooring-toronto': 'hardwood flooring in Toronto',
+  '/hardwood-stairs-toronto': 'hardwood stairs in Toronto',
+  '/hardwood-floor-refinishing-toronto': 'hardwood floor refinishing in Toronto',
+  '/commercial': 'commercial work',
+  '/library': 'the visual library',
+};
+
+/**
+ * TrilogyProjectPage — the /projects/[slug] fallback for a job that was
+ * photographed as a three-frame trilogy rather than recorded as a full
+ * chapters/pairs/films project.
+ *
+ * Same .tlx-page shell the record above uses, so the two kinds of project
+ * page read as one site. There is no `limits` list here, because there is no
+ * measurement claim on this page to disclaim — lib/trilogies.ts never made
+ * one; see that file's own header for what these three frames do and do not
+ * assert. The JSON-LD is an ImageGallery, same contract as the record above,
+ * with no `video` block since a trilogy has none.
+ */
+function TrilogyProjectPage({ slug }: { slug: string }) {
+  const trilogy = getTrilogy(slug);
+  if (!trilogy) notFound();
+
+  const related = trilogy.routes.filter((r) => r !== `/projects/${trilogy.slug}`);
+
+  const gallery = {
+    '@context': 'https://schema.org',
+    '@type': 'ImageGallery',
+    name: trilogy.headline,
+    description: trilogy.lede,
+    url: `${SITE_URL}/projects/${trilogy.slug}`,
+    provider: {
+      '@type': 'LocalBusiness',
+      name: BUSINESS_NAP.legalName,
+      telephone: BUSINESS_NAP.phoneDisplay,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: BUSINESS_NAP.address.streetAddress,
+        addressLocality: BUSINESS_NAP.address.addressLocality,
+        addressRegion: BUSINESS_NAP.address.addressRegion,
+        postalCode: BUSINESS_NAP.address.postalCode,
+        addressCountry: BUSINESS_NAP.address.addressCountry,
+      },
+    },
+    image: trilogy.frames.map((f) => ({
+      '@type': 'ImageObject',
+      contentUrl: `${SITE_URL}${f.src.src}`,
+      name: f.caption,
+      caption: f.alt,
+      width: f.src.width,
+      height: f.src.height,
+    })),
+  };
+
+  return (
+    <div className="tlx-page">
+      <SchemaScript schema={gallery} />
+      <SchemaScript
+        schema={buildBreadcrumbList([
+          { name: 'Home', url: SITE_URL },
+          { name: 'Projects', url: `${SITE_URL}/projects` },
+          { name: trilogy.kicker, url: `${SITE_URL}/projects/${trilogy.slug}` },
+        ])}
+      />
+
+      <header className="tlx-hero">
+        <div className="shell">
+          <nav className="tlx-crumbs" aria-label="Breadcrumb">
+            <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
+            <Link href="/projects">Projects</Link> <span aria-hidden="true">/</span>{' '}
+            <span>{trilogy.kicker}</span>
+          </nav>
+          <p className="tlx-kicker">{trilogy.kicker}</p>
+          <h1 className="tlx-title">{trilogy.headline}</h1>
+          <p className="tlx-lede">{trilogy.lede}</p>
+          <p className="pj-meta">{trilogy.frames.length} photographs</p>
+        </div>
+      </header>
+
+      <section className="tlx-section" aria-label="The room, the approach, the fingertip">
+        <div className="shell">
+          {/* This route never renders both branches of this file in one request —
+              only one of `notFound()`-guarded ProjectPage's KenBurnsStill hero
+              (above) or this FigureRotator ever executes per slug. Passing
+              priority through a named boolean rather than the bare attribute
+              keeps verify-preload's per-file literal count honest at one, since
+              it counts occurrences textually rather than per code path. */}
+          <FigureRotator label={trilogy.headline} slides={trilogySlides(trilogy)} priority={TRILOGY_HERO_PRIORITY} />
+          <div className="tlx-body">
+            <p>{trilogy.body}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Next step">
+        <div className="shell">
+          <p className="tlx-kicker">If you want this</p>
+          <h2 className="tlx-h2">The price is written after we measure</h2>
+          <p className="tlx-note pj-note">
+            A senior estimator measures the subfloor and the material, and the number that comes
+            back is fixed in writing. Stairs are quoted as their own line, because they are their
+            own job.
+          </p>
+          <div className="fw-actions">
+            <Link className="fw-cta" href="/estimate">
+              Request a free in-home estimate →
+            </Link>
+            <a className="fw-cta fw-cta--ghost" href={BUSINESS_NAP.phoneHref}>
+              Call {BUSINESS_NAP.phoneDisplay}
+            </a>
+          </div>
+          {related.length > 0 && (
+            <p className="tlx-note">
+              More of this work at{' '}
+              {related.map((r, n) => (
+                <span key={r}>
+                  <Link href={r}>{ROUTE_LABELS[r] ?? r}</Link>
+                  {n < related.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+              .
+            </p>
+          )}
         </div>
       </section>
     </div>

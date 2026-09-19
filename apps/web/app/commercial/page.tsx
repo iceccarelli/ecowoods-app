@@ -14,6 +14,11 @@ import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '@/app/components/Illustration';
 import { illustrationImage } from '@/app/data/illustration-images';
 import { TrackedCta } from '@/app/components/TrackedCta';
+import { FigureRotator } from '@/app/components/FigureRotator';
+import { getTrilogies } from '@/lib/trilogies';
+import { trilogySlides } from '@/lib/trilogy-slides';
+
+const COMMERCIAL_TRILOGIES = getTrilogies('commercial');
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -150,6 +155,22 @@ export default function CommercialPage() {
           </div>
         </div>
       </header>
+
+      {/* LEAD EVIDENCE — both commercial trilogies, real site work, before
+          any explanatory copy. A commercial buyer's first question is
+          whether this shop has actually done retail-grade work; the answer
+          leads the page rather than waiting for it. */}
+      {COMMERCIAL_TRILOGIES.map((t) => (
+        <section key={t.slug} className="tlx-section" aria-label={t.headline}>
+          <div className="shell">
+            <p className="tlx-kicker">{t.kicker}</p>
+            <h2 className="tlx-h2">{t.headline}</h2>
+            <p className="tlx-lede">{t.lede}</p>
+            <FigureRotator label={t.headline} slides={trilogySlides(t, `/projects/${t.slug}`)} />
+            <p className="tlx-note">{t.body}</p>
+          </div>
+        </section>
+      ))}
 
       <section className="tlx-section" aria-label="After-hours protocol">
         <div className="shell">
