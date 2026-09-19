@@ -158,7 +158,33 @@ export const SERVICES_MENU: MegaColumn[] = [
       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
       { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
-      { label: 'Colour matching', href: '/hardwood-color-matching-toronto', note: 'Match new to old, and stairs to the floor' },
+    ],
+  },
+  {
+    /* The hub used to be one bullet at the foot of "Before you decide" — a
+       single link into a page that itself indexes eight guides nobody in the
+       chrome named. That made the guides reachable only by opening the hub
+       first and reading its own grid, or by finding a bare /guides listing
+       with no thumbnail and no indication eight of its sixteen entries were
+       even related. This column names all eight, the same way "Species
+       dossiers" names its five rather than making a visitor open /guides to
+       find them. The hub keeps the featured slot — both the column heading
+       and its first row point at it, same pattern as "Where we work" /
+       "Find your city" below, which is what makes it resolve in one click
+       for verify-navigation.mjs (whose chrome scan reads `label:`/`href:`
+       pairs, not a column's own `href:`). */
+    title: 'Colour matching',
+    href: '/hardwood-color-matching-toronto',
+    items: [
+      { label: 'The full process', href: '/hardwood-color-matching-toronto', note: 'Identify, sample, sign off, or say when it fails' },
+      { label: 'Colour identification', href: '/guides/color-identification-existing-hardwood-finish' },
+      { label: 'Stain matching', href: '/guides/stain-matching-existing-hardwood-floor-toronto' },
+      { label: 'Matching new to old', href: '/guides/matching-new-hardwood-to-old-toronto' },
+      { label: 'Sample boards & sign-off', href: '/guides/sample-boards-on-site-trials-sign-off' },
+      { label: 'Species & undertone', href: '/guides/species-undertone-guide-color-matching-toronto' },
+      { label: 'Stairs, railings & trim', href: '/guides/stair-railing-trim-color-matching-toronto' },
+      { label: 'Doors & woodwork', href: '/guides/door-woodwork-finish-coordination-toronto' },
+      { label: 'When match fails', href: '/guides/when-color-match-fails-full-sand-vs-replace' },
     ],
   },
 ];
@@ -170,6 +196,7 @@ export const SERVICES_LAYOUT: string[][] = [
   ['By the job', 'By the problem'],
   ['Where we work'],
   ['Before you decide'],
+  ['Colour matching'],
 ];
 
 export const LIBRARY_MENU: MegaColumn[] = [

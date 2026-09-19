@@ -17,30 +17,21 @@ import { NextStep } from '@/app/components/NextStep';
 import { SeeInMyRoom } from '@/app/components/floor-studio/SeeInMyRoom';
 import { ColorMatchFigure } from '@/app/components/ColorMatchFigure';
 import { FigureRotator } from '@/app/components/FigureRotator';
-import { RotatingTile } from '@/app/components/RotatingTile';
-import { colorMatchingSlide, colorMatchingImage, COLOR_MATCHING_META } from '@/app/data/color-matching-images';
+import { colorMatchingSlide } from '@/app/data/color-matching-images';
+import { COLOR_MATCH_HERO, COLOR_MATCH_HERO_SKIP_ON_DETAIL } from '../color-match-hero';
 
 /**
- * Colour-matching guide slug → hero frame + in-body frames from the 2026
- * colour-matching illustration pack (scripts/fixtures/color-matching-manifest.csv).
- * Kept here, same as GUIDE_IMAGE and GUIDE_PAIRS above, so the content
- * manifest (lib/guides.ts) stays free of presentation concerns.
+ * Colour-matching guide slug → in-body frames from the 2026 colour-matching
+ * illustration pack (scripts/fixtures/color-matching-manifest.csv). Kept
+ * here, same as GUIDE_IMAGE and GUIDE_PAIRS above, so the content manifest
+ * (lib/guides.ts) stays free of presentation concerns. The hero map
+ * (COLOR_MATCH_HERO) is shared with the /guides index thumbnail — see
+ * ../color-match-hero.ts.
  *
- * The species/undertone guide is deliberately absent from both maps below —
- * it has no single hero or body sequence in the manifest, only six board
- * portraits and a lineup frame, and is rendered by its own section further
- * down this file instead.
+ * The species/undertone guide is deliberately absent below — it has no
+ * body sequence in the manifest, only six board portraits and a lineup
+ * frame, and is rendered by its own section further down this file instead.
  */
-const COLOR_MATCH_HERO: Record<string, string> = {
-  'color-identification-existing-hardwood-finish': 'guide-id-hero-rug-reveal',
-  'stain-matching-existing-hardwood-floor-toronto': 'guide-stain-hero-chip-vs-aged',
-  'matching-new-hardwood-to-old-toronto': 'guide-newold-hero-invisible-weave',
-  'stair-railing-trim-color-matching-toronto': 'guide-stair-hero-one-flight',
-  'door-woodwork-finish-coordination-toronto': 'guide-door-hero-baseboard-meet',
-  'when-color-match-fails-full-sand-vs-replace': 'guide-fail-hero-visible-patch',
-  'sample-boards-on-site-trials-sign-off': 'guide-signoff-hero-condo-light',
-};
-
 /** Every body frame for a guide goes in the rotator — none are dropped. */
 const COLOR_MATCH_BODY: Record<string, string[]> = {
   'color-identification-existing-hardwood-finish': [
@@ -250,7 +241,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           {(GUIDE_PAIRS[guide.slug] ?? []).map((p) => (
             <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
           ))}
-          {COLOR_MATCH_HERO[guide.slug] && <ColorMatchFigure id={COLOR_MATCH_HERO[guide.slug]!} priority />}
+          {COLOR_MATCH_HERO[guide.slug] && guide.slug !== COLOR_MATCH_HERO_SKIP_ON_DETAIL && (
+            <ColorMatchFigure id={COLOR_MATCH_HERO[guide.slug]!} priority />
+          )}
           <p className="fw-meta">
             <span>{guide.readingMinutes} min read</span>
             <span aria-hidden="true">·</span>
@@ -274,24 +267,26 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         </section>
       )}
 
-      {guide.slug === 'species-undertone-guide-color-matching-toronto' && (
+      {guide.slug === COLOR_MATCH_HERO_SKIP_ON_DETAIL && (
         <section className="tlx-section" aria-label="Species and undertone, in board portraits">
           <div className="shell">
             <p className="tlx-kicker">In board portraits</p>
             <h2 className="tlx-h2">The same stain, six species</h2>
-            <div className="tlx-grid">
-              {SPECIES_PORTRAITS.map((id, i) => {
-                const asset = colorMatchingImage(id);
-                const meta = COLOR_MATCHING_META[id];
-                if (!asset || !meta) return null;
-                return (
-                  <figure key={id}>
-                    <RotatingTile shots={[asset]} alt={meta.alt} index={i} />
-                    <figcaption className="ill-caption">{meta.caption}</figcaption>
-                  </figure>
-                );
-              })}
-            </div>
+            {/* A grid of six RotatingTiles each holding a single shot never
+                advances — RotatingTile's rotation is between the shots IN one
+                tile, and there was only ever one per tile. A FigureRotator
+                genuinely cycles between all six, each with its own
+                MANIFEST alt and caption — the per-species facts a shared
+                RotatingTile alt would otherwise lose. */}
+            <FigureRotator
+              label="Species and undertone — six board portraits"
+              slides={SPECIES_PORTRAITS.map((id) => colorMatchingSlide(id)).filter(
+                (s): s is NonNullable<typeof s> => Boolean(s),
+              )}
+            />
+            {/* The lineup gets its own full-width figure, never folded into the
+                portrait rotator above — it is a different fact (one stain
+                across all six species at once), not a seventh portrait. */}
             <ColorMatchFigure id={SPECIES_LINEUP} />
           </div>
         </section>
