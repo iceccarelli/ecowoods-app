@@ -38,6 +38,13 @@ import type { Film } from '@/lib/films';
  * prefers-reduced-motion; this ships the click-to-play behaviour everywhere
  * instead, uniformly, which makes "does this page autoplay" a question this
  * component never has to answer per-route.
+ *
+ * `preload="none"` on the mounted <video>, not "metadata" — belt and braces
+ * over the not-in-the-DOM-until-clicked design above. It costs nothing: by
+ * the time this element exists at all, `playing` is already true and
+ * `autoPlay` is about to request the file regardless of what `preload` says,
+ * same as a `<button onclick>` firing a fetch — the attribute governs idle
+ * behaviour this component never reaches.
  */
 export function FilmStage({
   film,
@@ -65,7 +72,7 @@ export function FilmStage({
             controls
             autoPlay
             playsInline
-            preload="metadata"
+            preload="none"
             aria-label={active.title}
           />
         ) : (
