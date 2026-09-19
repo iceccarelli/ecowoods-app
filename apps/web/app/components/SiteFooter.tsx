@@ -291,6 +291,12 @@ export default function SiteFooter() {
               <a href="/whats-new">What&rsquo;s New</a>
               <a href="/market">What Moves a Quote</a>
               <a href="/guides">Decision Guides</a>
+              {/* The hub, not all eight guides — a footer list that grows one
+                  row per guide is the twenty-eight-link column NAV-04 already
+                  fixed once. The mega-menu's "Colour matching" column is
+                  where all eight are named; this is the direct route into it
+                  for anyone who scrolled past the header instead of opening it. */}
+              <a href="/hardwood-color-matching-toronto">Hardwood Colour Matching</a>
               <a href="/catalogues">Field Catalogues</a>
               <a href="/blog">Articles</a>
               <a href="/case-studies">Case Studies</a>

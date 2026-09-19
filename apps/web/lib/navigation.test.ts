@@ -74,6 +74,28 @@ describe('DESTINATIONS — what ⌘K searches', () => {
     expect(hrefs.length).toBe(new Set(hrefs).size);
   });
 
+  it('names all eight colour-matching guides, plus the hub, in the chrome', () => {
+    /* The hub used to be the only colour-matching entry in the menus — a
+       visitor had to open it and read its own grid to find any of the eight
+       guides it indexes. Named individually, not counted, for the same
+       reason as the NAV-03 list below: a count passes while the list
+       silently changes underneath it. */
+    const hrefs = new Set(DESTINATIONS.map((d) => d.href));
+    for (const href of [
+      '/hardwood-color-matching-toronto',
+      '/guides/color-identification-existing-hardwood-finish',
+      '/guides/stain-matching-existing-hardwood-floor-toronto',
+      '/guides/matching-new-hardwood-to-old-toronto',
+      '/guides/sample-boards-on-site-trials-sign-off',
+      '/guides/species-undertone-guide-color-matching-toronto',
+      '/guides/stair-railing-trim-color-matching-toronto',
+      '/guides/door-woodwork-finish-coordination-toronto',
+      '/guides/when-color-match-fails-full-sand-vs-replace',
+    ]) {
+      expect(hrefs.has(href), `${href} must be reachable from the chrome`).toBe(true);
+    }
+  });
+
   it('carries the pages the palette could not reach before NAV-03', () => {
     /* The ten a visitor is most likely hunting when they press ⌘K. Named
        individually rather than counted, because a count passes while the list

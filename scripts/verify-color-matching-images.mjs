@@ -75,10 +75,17 @@ for (const m of dataSrc.matchAll(/^  '([a-z0-9-]+)': \{$/gm)) {
 }
 
 /* Every basename must actually be drawn by some page — bundled and imported
-   is not the same fact as rendered. Read every .tsx under apps/web/app for a
-   literal id, same technique verify-images.mjs uses for the illustration
+   is not the same fact as rendered. Read every .ts/.tsx under apps/web/app for
+   a literal id, same technique verify-images.mjs uses for the illustration
    corpus (JSX writes id="foo" with double quotes, a map writes 'foo' with
-   single — both are read). */
+   single — both are read).
+   .ts (not just .tsx) matters: a hand-curated placement map such as
+   guides/color-match-hero.ts is not itself a component, but it is where a
+   page's `COLOR_MATCH_HERO[guide.slug]` lookup gets the id it renders —
+   exactly the same indirection GUIDE_IMAGE uses from inside a .tsx file. Only
+   DATA_MODULE is excluded: it mechanically lists all 47 ids as object keys,
+   so scanning it would mark everything "drawn" whether or not any page
+   actually renders it, defeating the point of this check. */
 const drawn = new Set();
 (function walk(dir) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -87,7 +94,7 @@ const drawn = new Set();
       if (ent.name !== 'node_modules') walk(full);
       continue;
     }
-    if (!/\.tsx$/.test(ent.name)) continue;
+    if (!/\.tsx?$/.test(ent.name)) continue;
     if (full === DATA_MODULE) continue;
     const body = fs.readFileSync(full, 'utf8');
     for (const m of body.matchAll(/['"]([a-z0-9]+(?:-[a-z0-9]+)+)['"]/g)) drawn.add(m[1]);

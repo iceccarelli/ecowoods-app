@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
 import { IllustrationThumb } from '../components/IllustrationThumb';
+import { ColorMatchThumb } from '../components/ColorMatchThumb';
 import { getGuides } from '@/lib/guides';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList, buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { COLOR_MATCH_HERO } from './color-match-hero';
 
 export const metadata: Metadata = {
   title: 'Decision Guides & Reference Installations',
@@ -21,7 +23,16 @@ export const metadata: Metadata = {
   },
 };
 
-/** Every guide already owns an image; the index simply never showed it. */
+/**
+ * Every guide already owns an image; the index simply never showed it.
+ *
+ * The eight colour-matching guides are not here — they carry no entry in
+ * lib/images.ts at all, so IllustrationThumb (which reads that manifest) has
+ * nothing to render for them. COLOR_MATCH_HERO, imported above from
+ * ./color-match-hero, is their equivalent, read by <ColorMatchThumb>
+ * instead — a second lookup rendered alongside IllustrationThumb on every
+ * card below, since a given guide only ever has an entry in one of the two.
+ */
 const GUIDE_THUMB: Record<string, string> = {
   'solid-vs-engineered-hardwood-toronto': 'guide-solid-vs-engineered',
   'nail-down-glue-down-or-floating': 'guide-method',
@@ -93,6 +104,7 @@ export default function GuidesPage() {
             {decisions.map((g) => (
               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
                 <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
+                <ColorMatchThumb id={COLOR_MATCH_HERO[g.slug]} className="tlx-card-thumb" />
                 <span className="tlx-card-tag">Decision guide</span>
                 <h3>{g.title}</h3>
                 <p>{g.question}</p>
@@ -118,6 +130,7 @@ export default function GuidesPage() {
             {references.map((g) => (
               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
                 <IllustrationThumb id={GUIDE_THUMB[g.slug]} className="tlx-card-thumb" />
+                <ColorMatchThumb id={COLOR_MATCH_HERO[g.slug]} className="tlx-card-thumb" />
                 <span className="tlx-card-tag">Reference installation</span>
                 <h3>{g.title}</h3>
                 <p>{g.question}</p>
