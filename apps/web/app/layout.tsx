@@ -6,6 +6,7 @@ import { UtilityBar } from './components/UtilityBar';
 import './globals.css';
 import Providers from './providers';
 import { THEME_NO_FLASH_SCRIPT } from '@/lib/theme';
+import { SCROLL_RESTORE_INSTANT_SCRIPT } from '@/lib/scroll-state';
 import { ROOT_ORGANIZATION_SCHEMA, ROOT_WEBSITE_SCHEMA } from '@/lib/schema';
 import ConversionRail from './components/ConversionRail';
 import ReadingProgress from './components/ReadingProgress';
@@ -129,6 +130,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         {/* Runs before first paint. Must stay the first thing in <head>. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_NO_FLASH_SCRIPT }} />
+        {/* Also before first paint — makes the browser's own scroll restoration
+            on reload instant instead of letting `scroll-behavior: smooth`
+            animate it. See the note on SCROLL_RESTORE_INSTANT_SCRIPT. */}
+        <script dangerouslySetInnerHTML={{ __html: SCROLL_RESTORE_INSTANT_SCRIPT }} />
 
         {/*
           Root entity graph: Organization → Services + Website + FAQ.

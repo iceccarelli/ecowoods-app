@@ -37,6 +37,33 @@ import {
  * one that will ever exist. React state is written only when the RENDERED
  * result actually changes, which is what stops a scroll from re-rendering the
  * whole header sixty times a second.
+ *
+ * THIS USED TO BE ONE OF TWO 'scroll' LISTENERS ON window, AND THAT WAS PART
+ * OF THE BLINK TOO.
+ *
+ * A second effect further down — "Track active section on scroll" — ran on
+ * every native scroll event with no rAF throttle at all, calling
+ * `document.getElementById` for each entry in `navigation` (TOP_LINKS) on
+ * every tick. It has been removed rather than fixed, because it was dead:
+ * TOP_LINKS is now six full page routes (`/hardwood-flooring-toronto`, …),
+ * none of them a `#section` anchor, so `item.href.startsWith('#')` was false
+ * for every entry, `sections` was always `[]`, and `activeSection` could never
+ * become anything but the empty string it started as. It is a leftover from
+ * when this was a single scrolling page with in-page anchors; the nav below
+ * moved to real routes and nobody removed the listener that used to track
+ * which one you were over.
+ *
+ * It is worth being honest about what removing it did and did not fix.
+ * Deleting a listener that runs unbounded on every scroll tick is a real
+ * main-thread saving regardless — one fewer thing between a frame budget and
+ * the transition on `.topbar` mid-flight — and it is good hygiene on its own
+ * terms. But scripts/measure-scroll-scratch.mjs, run before and after this
+ * change against a production build, shows the actual reproduced flicker
+ * persisting with this listener gone. It was not the cause; it was a second,
+ * independently real defect found on the way to the one that was. The
+ * mechanism that was actually measured, and the fix for it, are in
+ * lib/scroll-state.ts's own follow-up note — the flip-needs-a-second-vote
+ * change there is what closes this.
  */
 function useScrollState() {
   const [view, setView] = useState<{ direction: 'up' | 'down' | null; scrolled: boolean }>({
@@ -116,7 +143,6 @@ export default function Header() {
      the same way: the footer and drawer become accordions. */
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [portalMenuOpen, setPortalMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('');
   const [baseUrl, setBaseUrl] = useState('/');
   const { data: session, status } = useSession();
   const portalMenuRef = useRef<HTMLDivElement>(null);
@@ -147,26 +173,6 @@ export default function Header() {
       setOpenGroup(null);
     }
   }, [mobileOpen]);
-
-  // Track active section on scroll
-  useEffect(() => {
-    const onScroll = () => {
-      const sections = navigation
-        .map((n) => n.href.replace('#', ''))
-        .map((id) => document.getElementById(id))
-        .filter(Boolean) as HTMLElement[];
-      const offset = 140;
-      let current = '';
-      for (const section of sections) {
-        const top = section.getBoundingClientRect().top;
-        if (top <= offset) current = section.id;
-      }
-      setActiveSection(current);
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Close on escape
   useEffect(() => {
@@ -205,7 +211,7 @@ export default function Header() {
       >
         <div className="topbar-inner">
           {/* Brand Lockup */}
-          <a className="brand-lockup" href={baseUrl} aria-label="Ecowoods home">
+          <a className="brand-lockup" href={baseUrl} aria-label={`${BUSINESS_NAP.name} home`}>
             {/* F-167. This was aria-hidden with alt="", wrapping a 14.5 KB base64
                 data URI. A data URI has no URL: it cannot be crawled, indexed,
                 linked or shared, which is why Google Images could not find this
@@ -227,7 +233,7 @@ export default function Header() {
               />
             </span>
             <span className="brand-copy">
-              <strong>Ecowoods</strong>
+              <strong>{BUSINESS_NAP.name}</strong>
               <small>Toronto · Est. {BUSINESS_NAP.foundedYear}</small>
             </span>
           </a>
@@ -237,18 +243,15 @@ export default function Header() {
             <MegaMenu label="Services" id="services" columns={SERVICES_MENU} layout={SERVICES_LAYOUT} footer={{ label: 'All six services', href: '/services' }} />
             <MegaMenu label="Library" id="library" columns={LIBRARY_MENU} footer={{ label: 'Everything published here', href: '/resources' }} />
             {navigation.map((item) => {
-              // Check if this is an anchor link or a page link
+              // Anchor links resolve against the current origin; page links
+              // (what every current TOP_LINKS entry is) pass through as-is.
+              // There is no active-section tracking here any more — see the
+              // note on useScrollState above for why it was removed rather
+              // than fixed.
               const isAnchor = item.href.startsWith('#');
-              const id = isAnchor ? item.href.replace('#', '') : '';
-              const isActive = isAnchor && activeSection === id;
               const href = isAnchor ? `${baseUrl}${item.href}` : item.href;
               return (
-                <a
-                  key={item.href}
-                  href={href}
-                  className={isActive ? 'active' : ''}
-                  aria-current={isActive ? 'page' : undefined}
-                >
+                <a key={item.href} href={href}>
                   {item.label}
                 </a>
               );

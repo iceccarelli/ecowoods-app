@@ -100,6 +100,7 @@
     "verify": "node scripts/verify-all.mjs",
     "audit": "bash scripts/audit-all.sh",
     "audit:rendered": "node scripts/audit-rendered.mjs",
+    "audit:header-scroll": "node scripts/audit-header-scroll.mjs",
     "audit:full": "bash scripts/audit-all.sh --full",
     "audit:quick": "bash scripts/audit-all.sh --quick",
     "hooks:install": "git config core.hooksPath scripts/hooks",

@@ -704,9 +704,35 @@ p {
               background-color 250ms ease,
               box-shadow 250ms ease;
   background: var(--chrome);
+  border-bottom: 1px solid transparent;
+}
+
+/*
+ * BLINK-01 FOLLOW-UP — backdrop-filter WAS LIVE THE WHOLE TIME, NOT JUST ON
+ * THE .scrolled TRANSITION.
+ *
+ * It was declared once on the base .topbar rule, unconditionally, so both
+ * states paid for it — including the vast majority of actual scrolling time,
+ * which is spent past the 24px threshold where .scrolled is already true.
+ * A backdrop-filter on a sticky element has to resample the pixels behind it
+ * on every frame the content underneath moves, whether or not any class ever
+ * changes; it was never toggled and it never needed to be blamed on
+ * toggling to be a real, constant per-frame cost during the one activity
+ * — scrolling — this bar exists to survive cleanly.
+ *
+ * `--chrome-scrolled` is already 97–98% opaque (see :root below), so once
+ * `.scrolled` is true a solid fill is visually indistinguishable from a
+ * blurred one and costs nothing to paint. The blur now runs only at rest,
+ * over the hero, where the bar is static and the cost is paid once instead
+ * of every scroll frame. Not transitioned in either direction — see the
+ * scroll-state.ts note on why backdrop-filter is never an animated property
+ * here — so this is a single, hysteresis-gated snap at the same dead-banded
+ * boundary SCROLLED_ON_PX/SCROLLED_OFF_PX already debounces, not a
+ * per-frame toggle.
+ */
+.topbar:not(.scrolled) {
   backdrop-filter: saturate(200%) blur(20px);
   -webkit-backdrop-filter: saturate(200%) blur(20px);
-  border-bottom: 1px solid transparent;
 }
 
 .topbar.scrolled {
