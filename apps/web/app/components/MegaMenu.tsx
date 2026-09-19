@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, FocusEvent as ReactFocusEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 /**
  * MegaMenu — the AWS "Products ▾" pattern, and the single biggest structural
@@ -75,6 +76,22 @@ const CLOSE_DELAY = 350;
 const OPEN_EVENT = 'ecw:mega-open';
 let activeMenu: string | null = null;
 
+/**
+ * The four routes with a real conversion path behind them get prefetched the
+ * instant a pointer enters their link, not after Next's default viewport
+ * IntersectionObserver notices they became visible (which, for a link inside
+ * a menu panel, only fires once the panel has already finished opening —
+ * later than a hover has already committed). Every other link in this menu
+ * keeps the default: forty-plus routes prefetching on pointer-enter would be
+ * bandwidth spent on destinations nobody asked for.
+ */
+const EAGER_PREFETCH_TARGETS = new Set([
+  '/library',
+  '/hardwood-color-matching-toronto',
+  '/hardwood-stairs-toronto',
+  '/hardwood-flooring-toronto',
+]);
+
 export function MegaMenu({
   label,
   id,
@@ -94,6 +111,10 @@ export function MegaMenu({
    */
   layout?: string[][];
 }) {
+  const router = useRouter();
+  const prefetchOnEnter = (href: string) => {
+    if (EAGER_PREFETCH_TARGETS.has(href)) router.prefetch(href);
+  };
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -226,12 +247,18 @@ export function MegaMenu({
                 {stack.map((col) => (
                   <div className="mm-col" key={col.title}>
                     <p className="mm-col-title">
-                      {col.href ? <Link href={col.href} onClick={hide}>{col.title}</Link> : col.title}
+                      {col.href ? (
+                        <Link href={col.href} onClick={hide} onPointerEnter={() => prefetchOnEnter(col.href!)}>
+                          {col.title}
+                        </Link>
+                      ) : (
+                        col.title
+                      )}
                     </p>
                     <ul>
                       {col.items.map((it) => (
                         <li key={`${it.href}|${it.label}`}>
-                          <Link href={it.href} onClick={hide}>
+                          <Link href={it.href} onClick={hide} onPointerEnter={() => prefetchOnEnter(it.href)}>
                             <span className="mm-label">{it.label}</span>
                             {it.note && <span className="mm-note">{it.note}</span>}
                           </Link>
