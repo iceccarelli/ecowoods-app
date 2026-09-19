@@ -105,9 +105,9 @@ for (const file of files) {
 /* ── 3 ────────────────────────────────────────────────────────────────── */
 const prompt = read(PROMPT);
 const REQUIRED = [
-  { needle: 'ALWAYS CLOSE ON WHAT ECOWOODS WOULD DO', what: 'the always-close rule' },
-  { needle: 'WHAT ECOWOODS ACTUALLY OFFERS', what: 'the service list the assistant may name' },
-  { needle: 'make that step something Ecowoods does', what: 'the closing instruction' },
+  { needle: 'ALWAYS CLOSE ON WHAT WE WOULD DO', what: 'the always-close rule' },
+  { needle: 'WHAT WE OFFER', what: 'the service list the assistant may name' },
+  { needle: 'make that step something WE do', what: 'the closing instruction' },
 ];
 for (const r of REQUIRED) {
   if (!prompt.includes(r.needle)) {
@@ -116,9 +116,31 @@ for (const r of REQUIRED) {
       what: `${r.what} is gone from the system prompt`,
       why:
         'An assistant that answers the question and stops has spent the visit and produced ' +
-        'nothing. Every reply must end on a specific thing Ecowoods would do about what was ' +
-        'just described.',
+        'nothing. Every reply must end on a specific thing we would do about what was ' +
+        'just described, spoken in first person as the company.',
       text: `expected to find: ${r.needle}`,
+    });
+  }
+}
+/* The prompt now speaks AS the company (we/our), not ABOUT it in the third
+   person — see packages/shared/ai/index.ts's identity line. A stray bare
+   "Ecowoods" in the actual prompt STRING (not the surrounding file comments)
+   is exactly the narrator voice this rewrite removed. Only the template
+   literal itself is checked — a comment explaining the history, like the one
+   a few lines below quoting a retired figure, is documentation, not voice. */
+{
+  const literal = (prompt.match(/ECOWOODS_GUIDE_SYSTEM_PROMPT = `([\s\S]*?)`;/) || [, ''])[1];
+  const bodyStart = literal.indexOf('VOICE:');
+  const body = bodyStart === -1 ? literal : literal.slice(bodyStart);
+  const bareEcowoods = [...body.matchAll(/\bEcowoods\b(?! Inc\.)/g)].filter(
+    (m) => !/["'“”]Ecowoods["'“”]/.test(body.slice(Math.max(0, m.index - 1), m.index + 11)),
+  );
+  if (bareEcowoods.length) {
+    problems.push({
+      rel: PROMPT, line: 0,
+      what: `${bareEcowoods.length} bare "Ecowoods" reference(s) in the prompt body`,
+      why: 'The assistant speaks AS the company in first person (we/our) — a third-person "Ecowoods" in the body is the narrator voice this file was rewritten to remove.',
+      text: 'expected the body to use we/our/us, or "Ecowoods Inc." by full name',
     });
   }
 }
@@ -137,5 +159,5 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`✓ assistant verified — one name, sourced from the constant, and the prompt still closes on Ecowoods\n`);
+console.log(`✓ assistant verified — one name, sourced from the constant, speaking as the company, and the prompt still closes on what we would do\n`);
 process.exit(0);

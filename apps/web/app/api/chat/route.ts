@@ -18,6 +18,7 @@ import { chatRequestSchema, CHAT_MAX_BODY_BYTES } from '@ecowoods/shared/schemas
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { bandForWork } from '@/content/constants/pricing';
 import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
+import { SITE_URL } from '@/lib/seo-data';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
 
@@ -178,11 +179,19 @@ export async function POST(req: Request) {
       }),
 
       get_company_context: tool({
-        description: 'Get real Ecowoods contact facts (phone, email) before sharing them.',
+        description: 'Get real Ecowoods Inc. identity and contact facts (name, legal name, website, owner, phone, email) before sharing them.',
         inputSchema: z.object({}),
         execute: async () => {
           const s = await db.settings.findFirst().catch(() => null);
-          return { company: 'Ecowoods', phone: BUSINESS_NAP.phoneDisplay, email: s?.companyEmail ?? BUSINESS_NAP.email, note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.` };
+          return {
+            company: BUSINESS_NAP.shortName,
+            legalName: BUSINESS_NAP.legalName,
+            website: SITE_URL.replace(/^https?:\/\//, ''),
+            owner: 'Francisco Oller — owns the company and the domain, and leads the crew as professional contractor and lead craftsman',
+            phone: BUSINESS_NAP.phoneDisplay,
+            email: s?.companyEmail ?? BUSINESS_NAP.email,
+            note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.`,
+          };
         },
       }),
 

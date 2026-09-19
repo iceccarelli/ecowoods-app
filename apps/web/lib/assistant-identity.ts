@@ -43,9 +43,9 @@ export const ASSISTANT = {
  * This one says what Ecowoods does, then asks one open question.
  */
 export const ASSISTANT_GREETING =
-  `Hi — I'm ${ASSISTANT.name}, from ${BUSINESS_NAP.shortName}. We install, refinish and repair ` +
-  `hardwood across ${BUSINESS_NAP.region}, with our prices published before you call and fixed ` +
-  `in writing after a free in-home measure. Tell me what's going on with your floor and I'll ` +
+  `Hi — I'm ${ASSISTANT.name}, from ${BUSINESS_NAP.shortName} at ecowoods.ca. We install, refinish ` +
+  `and repair hardwood across ${BUSINESS_NAP.region}, with our prices published before you call and ` +
+  `fixed in writing after a free in-home measure. Tell me what's going on with your floor and I'll ` +
   `tell you what we'd do about it.`;
 
 /**

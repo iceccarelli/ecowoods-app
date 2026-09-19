@@ -1305,7 +1305,7 @@ export const GUIDES: Guide[] = [
       },
     ],
     recommendation: {
-      text: 'Treat stair and railing colour matching as its own step: confirm species, build the sample against the actual stair material, and sign off at the stair. Francisco Oller leads this work on our jobs.',
+      text: 'Treat stair and railing colour matching as its own step: confirm species, build the sample against the actual stair material, and sign off at the stair. Francisco Oller, owner of Ecowoods Inc. and its lead craftsman, leads this work on our jobs.',
     },
     sources: [
       { paper: P_CRAFT, section: 'edger' },

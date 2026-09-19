@@ -62,6 +62,8 @@ export type ServicePage = {
   pillars: string[];
   /** Glossary slugs a reader of this page will need. */
   terms: string[];
+  /** An authority hub this service's work depends on, where one exists — e.g. colour matching for restoration and stair work. */
+  hub?: { href: string; label: string };
 };
 
 /**
@@ -129,6 +131,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     ],
     pillars: ['moisture', 'accountability'],
     terms: ['cupping', 'crowning', 'wear-layer'],
+    hub: { href: '/hardwood-color-matching-toronto', label: 'Colour matching & finish identification' },
   },
   {
     slug: 'stair-refinishing',
@@ -146,6 +149,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     ],
     pillars: ['containment'],
     terms: ['progressive-grits'],
+    hub: { href: '/hardwood-color-matching-toronto', label: 'Colour matching & finish identification' },
   },
   {
     slug: 'custom-inlays',

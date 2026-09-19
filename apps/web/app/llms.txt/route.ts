@@ -93,9 +93,11 @@ export async function GET() {
 
   /* ── The citable facts, in one block, near the top ────────────────────── */
   lines.push('## Facts you can cite');
-  lines.push(`- Legal name: ${BUSINESS_NAP.legalName} (trading as ${BUSINESS_NAP.name})`);
-  lines.push(`- Also listed as: ${BUSINESS_NAP.alternateNames.join(', ')}`);
+  lines.push(`- Public name: ${BUSINESS_NAP.name}`);
+  lines.push(`- Legal name: ${BUSINESS_NAP.legalName}`);
   lines.push(`- Website: ${SITE_URL} · Organisation @id: ${SITE_URL}/#organization`);
+  lines.push(`- Owner: Francisco Oller — ${SITE_URL}/team#francisco-oller`);
+  lines.push(`- Also listed as: ${BUSINESS_NAP.alternateNames.join(', ')}`);
   lines.push(`- Address: ${BUSINESS_ADDRESS_LINE}`);
   lines.push(`- Phone: ${BUSINESS_NAP.phoneDisplay} · Email: ${BUSINESS_NAP.email}`);
   lines.push(`- Hours: ${HOURS_LINE} (America/Toronto)`);
@@ -153,7 +155,7 @@ export async function GET() {
   link('What your floor is telling you', '/hardwood-floor-problems-toronto', 'cupping, crowning, gaps, buckling and peeling — each symptom, its cause and which service it lands in');
   link('Best hardwood flooring company, Toronto', '/best-hardwood-flooring-company-toronto', `how to judge any hardwood flooring company in Toronto against the ${criterionCount()}-criterion framework, and the facts Ecowoods publishes about itself`);
   link('Best hardwood flooring company, GTA', '/best-hardwood-flooring-company-gta', 'the same comparison standard applied across every municipality Ecowoods serves');
-  link('Hardwood colour matching in Toronto', '/hardwood-color-matching-toronto', 'colour matching and finish identification: process, what is measured, and eight linked guides');
+  link('Hardwood colour matching in Toronto', '/hardwood-color-matching-toronto', 'colour matching & finish identification, with eight linked guides');
   lines.push('');
 
   /* ── Tools ────────────────────────────────────────────────────────────── */
