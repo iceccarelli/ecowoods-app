@@ -18,6 +18,8 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
+import { FilmStage } from '../components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
@@ -164,6 +166,9 @@ export default function HardwoodFlooringTorontoPage() {
           description: 'Hardwood flooring installation and refinishing across Toronto and the GTA',
         })}
       />
+      {videoObjectsFor(getFilm('the-brief')!).map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
       <SchemaScript
         schema={{
           '@context': 'https://schema.org',
@@ -272,6 +277,15 @@ export default function HardwoodFlooringTorontoPage() {
           <p className="tlx-note">
             The full 20-job set, filterable by kind, is at <Link href="/library">the library</Link>.
           </p>
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="The floor, on film">
+        <div className="shell">
+          <p className="tlx-kicker">What the shop does</p>
+          <h2 className="tlx-h2">The floor, at three distances.</h2>
+          <p className="tlx-lede">Species, pattern, inlay, finish — the material, the ascent, the brief.</p>
+          <FilmStage film={getFilm('the-brief')!} defaultChapter={2} />
         </div>
       </section>
 

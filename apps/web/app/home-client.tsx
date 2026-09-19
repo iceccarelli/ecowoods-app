@@ -16,7 +16,8 @@ import Image from 'next/image';
 import { RotatingBackground } from './components/RotatingBackground';
 import { TrilogyHero } from './components/TrilogyHero';
 import { TRILOGIES } from '@/lib/trilogies';
-import { ProcessVideo } from './components/ProcessVideo';
+import { FilmStage } from './components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import PricingSection from './components/PricingSection';
 import { FloorAssembly } from './components/FloorAssembly';
 import { HOME_ROTATION } from './data/rotator-slides';
@@ -461,6 +462,9 @@ const WORK_RAIL_TRILOGIES = WORK_RAIL_SLUGS.map((slug) => TRILOGIES.find((t) => 
   (t): t is NonNullable<typeof t> => Boolean(t),
 );
 
+/** Series II, chapter 1 — the homepage gets exactly one film, per the brief. */
+const THE_BRIEF = getFilm('the-brief')!;
+
 /* ---------------------- Page ---------------------- */
 export default function HomePage({ contentPromo }: { contentPromo?: ReactNode }) {
   const root = useReveal();
@@ -492,6 +496,14 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           }),
         }}
       />
+      {/* VideoObject per chapter of the one film this page mounts. */}
+      {videoObjectsFor(THE_BRIEF).map((v) => (
+        <script
+          key={v.contentUrl}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(v) }}
+        />
+      ))}
       {/* 1 · HERO — minimalist authority.
           P0.4: NO AUTOPLAY. The background is one static image with
           fetchpriority="high" and a responsive srcset; the copy is the single
@@ -843,7 +855,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
             </p>
           </div>
 
-          <ProcessVideo />
+          <FilmStage film={THE_BRIEF} defaultChapter={1} />
 
           <MachineCatalog />
         </div>

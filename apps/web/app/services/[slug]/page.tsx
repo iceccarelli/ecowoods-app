@@ -9,6 +9,8 @@ import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../../components/Illustration';
 import { ColorMatchFigure } from '../../components/ColorMatchFigure';
+import { FilmStage } from '../../components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
@@ -191,6 +193,8 @@ export default async function ServiceDetailPage({
       {faqs.length > 0 && (
         <SchemaScript schema={buildFAQPage(faqs.map((f) => ({ question: f.q, answer: f.a })))} />
       )}
+      {slug === 'dust-free-sanding' &&
+        videoObjectsFor(getFilm('the-brief')!).map((v) => <SchemaScript key={v.contentUrl} schema={v} />)}
 
       <header className="tlx-hero" id="what">
         <div className="shell">
@@ -238,6 +242,20 @@ export default async function ServiceDetailPage({
             <p className="tlx-note">
               Read the full process at{' '}
               <Link href="/hardwood-color-matching-toronto">hardwood colour matching in Toronto</Link>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {slug === 'dust-free-sanding' && (
+        <section className="tlx-section" aria-label="Watch the containment">
+          <div className="shell">
+            <p className="tlx-kicker">What the shop does</p>
+            <h2 className="tlx-h2">Dust-free, on film</h2>
+            <FilmStage film={getFilm('the-brief')!} defaultChapter={3} />
+            <p className="tlx-note">
+              Extraction runs at each machine and a sealed barrier is built at the room, which is
+              what makes it possible to sand a floor in a house nobody has moved out of.
             </p>
           </div>
         </section>
