@@ -16,7 +16,6 @@ import Image from 'next/image';
 import { RotatingBackground } from './components/RotatingBackground';
 import { TrilogyHero } from './components/TrilogyHero';
 import { TRILOGIES } from '@/lib/trilogies';
-import { FilmStage } from './components/FilmStage';
 import { getFilm, videoObjectsFor } from '@/lib/films';
 import PricingSection from './components/PricingSection';
 import { FloorAssembly } from './components/FloorAssembly';
@@ -38,10 +37,39 @@ import {
   formatBandBare as bandBare,
 } from '@/content/constants/pricing';
 
+/**
+ * idleImport — defers a dynamic() chunk's fetch/parse/hydrate to browser
+ * idle time, client-side only.
+ *
+ * On the SERVER this resolves the import immediately — `window` does not
+ * exist during SSR, so the SSR HTML this produces is byte-identical to what
+ * a plain `import()` would have produced. That is the whole safety argument:
+ * nothing about WHAT gets server-rendered changes, only WHEN the browser
+ * fetches the client chunk that hydrates it. The already-painted HTML (from
+ * SSR, before any JS runs) sits there unchanged until that chunk arrives —
+ * no flash, no re-render, no risk of a hydration mismatch, because the DOM
+ * this hydrates onto was never different from what React expects.
+ *
+ * `requestIdleCallback` is not in Safari; `setTimeout` is the documented
+ * fallback MDN itself recommends, so a Safari visitor gets "after one paint
+ * cycle" instead of "after the main thread is actually free," not "never."
+ */
+function idleImport<T>(loader: () => Promise<T>): Promise<T> {
+  if (typeof window === 'undefined') return loader();
+  return new Promise((resolve) => {
+    const run = () => loader().then(resolve);
+    if ('requestIdleCallback' in window) {
+      (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(run);
+    } else {
+      setTimeout(run, 200);
+    }
+  });
+}
+
 // Heavy, below-the-fold, interactive tools with no indexable text: load them in
 // their own client chunks (ssr:false) so they never block first paint. The
 // fallbacks reserve height so nothing shifts when they hydrate in (CLS = 0).
-const BookingPanel = dynamic(() => import('./components/BookingPanel'), {
+const BookingPanel = dynamic(() => idleImport(() => import('./components/BookingPanel')), {
   ssr: false,
   loading: () => <div aria-hidden="true" style={{ minHeight: 420 }} />,
 });
@@ -73,6 +101,28 @@ const FigureRotator = dynamic(
   () => import('./components/FigureRotator').then((m) => m.FigureRotator),
   { ssr: true },
 );
+/* FilmStage joins the same split for the same reason: below the fold, real
+   content SSR must keep (a chapter's caption and title are indexable text,
+   same as a diagram's alt text), and its own JS — the chapter-switching
+   state, the click-to-play handler — has no reason to be in the bundle a
+   phone parses before the hero is interactive.
+
+   NOT wrapped in idleImport, unlike BookingPanel above — measured, not
+   assumed. Gating all four of FloorCatalog/MachineCatalog/FigureRotator/
+   FilmStage behind requestIdleCallback clustered their hydration into one
+   burst instead of the natural, spread-out fetch timing plain dynamic()
+   chunks already get: a mobile Lighthouse trace showed the shared React
+   chunk's script-evaluation time jump from ~1.4s to ~8s once all four
+   waited on the same idle callback, which cost more than it saved and left
+   LCP unmoved. content-visibility: auto (globals.css EW:P3-PERF) is the
+   fix that measured clean — it removes the Style & Layout cost for
+   off-screen sections without touching when hydration happens — so these
+   three keep their original, already-working ssr:true split, and only
+   BookingPanel (ssr:false, a modal nothing else on the page depends on)
+   keeps the idle gate. */
+const FilmStage = dynamic(() => import('./components/FilmStage').then((m) => m.FilmStage), {
+  ssr: true,
+});
 /* ============================================================
    ECOWOODS — Toronto Hardwood Flooring
    Marketing landing page · single conversion funnel

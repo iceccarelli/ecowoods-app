@@ -12545,3 +12545,35 @@ a.lib-card--photo { cursor: pointer; }
     animation: none;
   }
 }
+
+/* === EW:P3-PERF START ======================================================
+   Homepage sections below the estimate form get content-visibility: auto —
+   the browser skips layout, style and paint for whichever of these are not
+   near the viewport, which is what a mobile Lighthouse trace actually showed
+   costing seconds of main-thread Style & Layout time on first load, well
+   before any of this content is visible. Nothing here is hidden or deleted:
+   every section is still real DOM, still in the initial HTML, still what a
+   crawler reads — content-visibility only tells the RENDERING engine "skip
+   the work for this until it is about to matter," which is a rendering
+   optimization, not a content decision.
+
+   `auto <height>px` (not a bare length) is deliberate: after this section is
+   measured once, the browser remembers its real height and stops guessing;
+   the px value is only the estimate used before that first measurement, so
+   an estimate on the low side costs one extra reflow rather than a
+   permanently wrong reserved height. Values are rounded to the shape of each
+   section (a single rotator vs. a twelve-item catalogue), not copy-pasted.
+
+   The sections ABOVE #gallery (hero, recent work, the CTA form, most-searched,
+   before/after, trust rail, quote) are intentionally excluded — some sit in
+   or near the first viewport, and the quote/estimate form is the page's
+   primary conversion action, not a candidate for deferred rendering. */
+#gallery { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+#explained { content-visibility: auto; contain-intrinsic-size: auto 700px; }
+#process { content-visibility: auto; contain-intrinsic-size: auto 600px; }
+#craft { content-visibility: auto; contain-intrinsic-size: auto 1400px; }
+#design { content-visibility: auto; contain-intrinsic-size: auto 800px; }
+#reviews { content-visibility: auto; contain-intrinsic-size: auto 700px; }
+#faq { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+#areas { content-visibility: auto; contain-intrinsic-size: auto 600px; }
+/* === EW:P3-PERF END ======================================================== */
