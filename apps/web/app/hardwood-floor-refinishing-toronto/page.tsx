@@ -12,7 +12,8 @@ import { buildCommercialLandingSchema } from '@/lib/schema/commercial';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../components/Illustration';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
-import { ProcessVideo } from '../components/ProcessVideo';
+import { FilmStage } from '../components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
@@ -131,6 +132,9 @@ export default function RefinishingTorontoPage() {
           description: 'Hardwood floor refinishing and dust-free sanding across Toronto and the GTA',
         })}
       />
+      {videoObjectsFor(getFilm('the-brief')!).map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
       <SchemaScript
         schema={{
           '@context': 'https://schema.org',
@@ -247,12 +251,10 @@ export default function RefinishingTorontoPage() {
             addresses what settled, not what was breathed. Containment is a system, not a vacuum.
           </p>
           <Illustration id="term-hepa-containment" />
-          {/* The film slot. Renders the poster and the two-sentence
-              explanation until NEXT_PUBLIC_YOUTUBE_PROCESS_ID is set — see
-              ProcessVideo. This is the page where "will my house be full of
-              dust" is the whole objection, so it is the page the film belongs
-              on. */}
-          <ProcessVideo />
+          {/* The film. This is the page where "will my house be full of dust"
+              is the whole objection, so it opens on The Brief — the number
+              that does not move — rather than skipping straight to Ascent. */}
+          <FilmStage film={getFilm('the-brief')!} defaultChapter={1} />
         </div>
       </section>
 

@@ -17,6 +17,8 @@ import { TrackedCta } from '@/app/components/TrackedCta';
 import { FigureRotator } from '@/app/components/FigureRotator';
 import { getTrilogies } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
+import { FilmStage } from '@/app/components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 
 const COMMERCIAL_TRILOGIES = getTrilogies('commercial');
 
@@ -129,6 +131,9 @@ export default function CommercialPage() {
             'Hardwood flooring for condominium corporations, property managers and commercial spaces in Toronto and the GTA.',
         })}
       />
+      {videoObjectsFor(getFilm('the-brief')!).map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
 
       <header className="tlx-hero">
         <div className="shell">
@@ -171,6 +176,17 @@ export default function CommercialPage() {
           </div>
         </section>
       ))}
+
+      <section className="tlx-section" aria-label="The ascent, on film">
+        <div className="shell">
+          <p className="tlx-kicker">What the shop does</p>
+          <h2 className="tlx-h2">The ascent</h2>
+          <p className="tlx-lede">
+            Treads, risers, nosings. Quoted per tread. Matched to the floor they meet.
+          </p>
+          <FilmStage film={getFilm('the-brief')!} defaultChapter={3} />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="After-hours protocol">
         <div className="shell">

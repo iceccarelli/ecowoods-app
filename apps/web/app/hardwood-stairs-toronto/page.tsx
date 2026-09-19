@@ -18,6 +18,8 @@ import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
 import { FigureRotator } from '../components/FigureRotator';
+import { FilmStage } from '../components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import { TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
 
@@ -177,6 +179,9 @@ export default function HardwoodStairsTorontoPage() {
           description: 'Hardwood stair refinishing and installation across Toronto and the GTA',
         })}
       />
+      {[...videoObjectsFor(getFilm('the-work')!), ...videoObjectsFor(getFilm('the-brief')!)].map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
       <SchemaScript
         schema={{
           '@context': 'https://schema.org',
@@ -236,6 +241,17 @@ export default function HardwoodStairsTorontoPage() {
         </div>
       </section>
 
+      <section className="tlx-section" aria-label="Three distances, on film">
+        <div className="shell">
+          <p className="tlx-kicker">Three distances.</p>
+          <h2 className="tlx-h2">The room. The approach. The touch.</h2>
+          <p className="tlx-lede">
+            The same floors and stairs, seen standing, then closer, then at the joint.
+          </p>
+          <FilmStage film={getFilm('the-work')!} defaultChapter={1} priority />
+        </div>
+      </section>
+
       {/* Four real stair jobs, each in three frames: the flight, the approach,
           the fingertip. Stacked editorial blocks, not a single mixed rotator —
           a curved stair, a steam-bent rail, a foyer transition and a spiral
@@ -251,6 +267,17 @@ export default function HardwoodStairsTorontoPage() {
           </div>
         </section>
       ))}
+
+      <section className="tlx-section" aria-label="Treads, risers, nosings">
+        <div className="shell">
+          <p className="tlx-kicker">What the shop does</p>
+          <h2 className="tlx-h2">The ascent</h2>
+          <p className="tlx-lede">
+            Treads, risers, nosings. Quoted per tread. Matched to the floor they meet.
+          </p>
+          <FilmStage film={getFilm('the-brief')!} defaultChapter={3} />
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="How stairs are priced">
         <div className="shell">

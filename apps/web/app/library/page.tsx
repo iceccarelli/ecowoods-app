@@ -8,6 +8,8 @@ import { machines, machineImages } from '../data/machines';
 import { RotatingTile } from '../components/RotatingTile';
 import { TrilogyLibraryGrid } from '../components/TrilogyLibraryGrid';
 import { TRILOGIES } from '@/lib/trilogies';
+import { FilmStage } from '../components/FilmStage';
+import { FILMS, videoObjectsFor } from '@/lib/films';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -117,6 +119,9 @@ export default function LibraryPage() {
           { name: 'Visual Library', url: `${SITE_URL}/library` },
         ])}
       />
+      {FILMS.flatMap((f) => videoObjectsFor(f)).map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
 
       <header className="tlx-hero">
         <div className="shell">
@@ -184,6 +189,27 @@ export default function LibraryPage() {
             caption.
           </p>
           <TrilogyLibraryGrid trilogies={TRILOGIES} />
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Films">
+        <div className="shell">
+          <p className="tlx-kicker">Motion</p>
+          <h2 className="tlx-h2">Two films, six chapters</h2>
+          <p className="tlx-note">
+            The same evidence, moving. Tap a poster to play; the 01 / 02 / 03 strip switches
+            chapters without opening a second player.
+          </p>
+          <div className="lib-films">
+            {FILMS.map((f) => (
+              <div key={f.slug} className="lib-films-item">
+                <p className="tlx-kicker">{f.kicker}</p>
+                <h3 className="tlx-h2">{f.headline}</h3>
+                <p className="tlx-note">{f.lede}</p>
+                <FilmStage film={f} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

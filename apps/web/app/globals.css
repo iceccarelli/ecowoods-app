@@ -10395,6 +10395,85 @@ a.lib-card--photo { cursor: pointer; }
 .pv-fallback { color: var(--muted); line-height: 1.6; }
 /* === EW:P2-VIDEO END ====================================================== */
 
+/* === EW:FILMSTAGE START ====================================================
+   The first-party film player — six mp4s, two series, one <video> element
+   per stage. Shares .pv's frame proportions and .figrot's numbered-tab
+   grammar rather than inventing a third visual language for motion. */
+.filmstage { margin: 1.75rem 0 0; }
+.filmstage-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-deep);
+  border: 1px solid var(--line);
+}
+.filmstage-video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.filmstage-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: rgba(26, 15, 8, 0.28);
+  cursor: pointer;
+}
+.filmstage-play:hover { background: rgba(26, 15, 8, 0.4); }
+.filmstage-play:focus-visible { outline: 3px solid var(--copper-bright); outline-offset: -3px; }
+.filmstage-play-glyph {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--copper);
+  color: #fff;
+  font-size: 22px;
+  padding-left: 4px;
+}
+.filmstage-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.filmstage-tab {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+.filmstage-tab:hover { border-color: var(--copper-surface); color: var(--copper-text); }
+.filmstage-tab:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 2px; }
+.filmstage-tab.is-active {
+  border-color: var(--copper);
+  background: var(--copper-surface);
+  color: var(--copper-text);
+}
+.filmstage-tab-num { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; opacity: 0.75; }
+.filmstage-tab-dur { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.6; margin-left: 0.15rem; }
+.filmstage-caption {
+  margin-top: 0.6rem;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+/* Two cards, /library's films index — one FilmStage each, not a grid of tiles
+   that navigate elsewhere (see that page's own note: not a showreel page). */
+.lib-films {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2.5rem;
+  margin-top: 1.5rem;
+}
+/* === EW:FILMSTAGE END ====================================================== */
+
 /* === EW:P2-SPEC START =====================================================
    P2.2 — the /design/spec sheet. Screen styling first, then the print rules
    that make the browser's own "Save as PDF" produce the document. */
