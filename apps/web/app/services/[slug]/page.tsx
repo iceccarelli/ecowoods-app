@@ -8,6 +8,7 @@ import { placeForArea } from '@/lib/schema/root-schema';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { Illustration, IllustrationPair } from '../../components/Illustration';
+import { ColorMatchFigure } from '../../components/ColorMatchFigure';
 import { getPaper } from '@/lib/papers';
 import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
@@ -82,6 +83,21 @@ const SERVICE_IMAGE: Record<string, string> = {
   'floor-restoration': 'service-restoration',
   'custom-inlays': 'service-inlays',
   'stair-refinishing': 'service-stairs',
+};
+
+/**
+ * Colour-matching hero for the three services the 2026 pack actually photographed
+ * (scripts/fixtures/color-matching-manifest.csv) — additive to SERVICE_IMAGE's
+ * flat-vector diagram above, not a replacement for it.
+ */
+const SERVICE_COLOR_MATCH_HERO: Record<string, string> = {
+  'floor-refinishing': 'service-refinish-bare-to-stained',
+  'floor-restoration': 'service-restoration-hero-feather',
+  'stair-refinishing': 'service-stairs-matched-flight',
+};
+/** floor-restoration is the one service with a second, distinct frame — the method. */
+const SERVICE_COLOR_MATCH_SECOND: Record<string, string> = {
+  'floor-restoration': 'service-restoration-before-after',
 };
 
 export default async function ServiceDetailPage({
@@ -208,6 +224,21 @@ export default async function ServiceDetailPage({
           {(SERVICE_PAIRS[slug] ?? []).map((p) => (
             <IllustrationPair key={p[0]} a={p[0]} b={p[1]} />
           ))}
+          </div>
+        </section>
+      )}
+
+      {SERVICE_COLOR_MATCH_HERO[slug] && (
+        <section className="tlx-section" aria-label="Colour matching on this job type">
+          <div className="shell">
+            <p className="tlx-kicker">Colour matching</p>
+            <h2 className="tlx-h2">What colour matching looks like on this work</h2>
+            <ColorMatchFigure id={SERVICE_COLOR_MATCH_HERO[slug]} />
+            {SERVICE_COLOR_MATCH_SECOND[slug] && <ColorMatchFigure id={SERVICE_COLOR_MATCH_SECOND[slug]} />}
+            <p className="tlx-note">
+              Read the full process at{' '}
+              <Link href="/hardwood-color-matching-toronto">hardwood colour matching in Toronto</Link>.
+            </p>
           </div>
         </section>
       )}

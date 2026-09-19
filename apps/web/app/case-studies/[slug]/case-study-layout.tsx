@@ -9,14 +9,23 @@ import Link from 'next/link';
 import type { CaseStudyMetadata } from '@/lib/content/case-study-types';
 import type { RelatedContent } from '@/lib/graph/contentLinks';
 import { formatDate } from '@/lib/content/utils';
+import { ColorMatchFigure } from '@/app/components/ColorMatchFigure';
 
 interface CaseStudyLayoutProps {
   metadata: CaseStudyMetadata;
   children: ReactNode;
   relatedContent?: RelatedContent[];
+  /**
+   * A frame from the 2026 colour-matching illustration pack
+   * (scripts/fixtures/color-matching-manifest.csv), keyed by slug in
+   * case-studies/[slug]/page.tsx. Case studies otherwise have no hero image
+   * slot — `metadata.images` is used only as an OG-image fallback — so this is
+   * additive, not a replacement for anything already here.
+   */
+  heroImageId?: string;
 }
 
-export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStudyLayoutProps) {
+export function CaseStudyLayout({ metadata, children, relatedContent, heroImageId }: CaseStudyLayoutProps) {
   const woodSpecies = Array.isArray(metadata.woodSpecies)
     ? metadata.woodSpecies.join(' · ')
     : metadata.woodSpecies;
@@ -77,6 +86,14 @@ export function CaseStudyLayout({ metadata, children, relatedContent }: CaseStud
           </dl>
         </div>
       </header>
+
+      {heroImageId && (
+        <section className="tlx-section tlx-section--flush" aria-label={`${metadata.title} illustrated`}>
+          <div className="shell">
+            <ColorMatchFigure id={heroImageId} priority />
+          </div>
+        </section>
+      )}
 
       <div className="tlx-section">
         <div className="shell">

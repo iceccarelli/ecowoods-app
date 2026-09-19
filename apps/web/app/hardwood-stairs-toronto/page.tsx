@@ -13,6 +13,7 @@ import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { EvidenceRail, CASES } from '../components/EvidenceRail';
 import { IllustrationPair } from '../components/Illustration';
+import { ColorMatchFigure } from '../components/ColorMatchFigure';
 import { CatalogueRail } from '../components/CatalogueRail';
 import { TERRITORY_SHORT } from '@/lib/geo/territory';
 import { illustrationImage } from '@/app/data/illustration-images';
@@ -338,6 +339,7 @@ export default function HardwoodStairsTorontoPage() {
               </dd>
             </div>
           </dl>
+          <ColorMatchFigure id="service-stairs-matched-flight" />
         </div>
       </section>
 

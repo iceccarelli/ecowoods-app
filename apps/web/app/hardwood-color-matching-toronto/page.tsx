@@ -11,6 +11,30 @@ import { CatalogueRail } from '../components/CatalogueRail';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { ColorMatchFigure } from '../components/ColorMatchFigure';
+import { FigureRotator } from '../components/FigureRotator';
+import { colorMatchingSlide } from '@/app/data/color-matching-images';
+
+/**
+ * Guide slug → the thumbnail this hub's grid card shows.
+ *
+ * Two of the eight (identification, stairs) got a dedicated hub-card frame in
+ * the manifest (cm-hub-guide-grid-*); the other six reuse their own guide's
+ * hero so every card in the grid is illustrated, per the brief. The species
+ * guide has no single "hero" in the manifest — six portraits and a lineup
+ * instead — so its card uses the lineup frame, the one image that represents
+ * the whole guide at a glance.
+ */
+const GUIDE_THUMB: Record<string, string> = {
+  'color-identification-existing-hardwood-finish': 'cm-hub-guide-grid-identification',
+  'stain-matching-existing-hardwood-floor-toronto': 'guide-stain-hero-chip-vs-aged',
+  'matching-new-hardwood-to-old-toronto': 'guide-newold-hero-invisible-weave',
+  'stair-railing-trim-color-matching-toronto': 'cm-hub-guide-grid-stairs',
+  'door-woodwork-finish-coordination-toronto': 'guide-door-hero-baseboard-meet',
+  'when-color-match-fails-full-sand-vs-replace': 'guide-fail-hero-visible-patch',
+  'sample-boards-on-site-trials-sign-off': 'guide-signoff-hero-condo-light',
+  'species-undertone-guide-color-matching-toronto': 'species-same-stain-six-species',
+};
 
 const CANONICAL = '/hardwood-color-matching-toronto';
 
@@ -164,6 +188,7 @@ export default function HardwoodColorMatchingTorontoPage() {
               Meet Francisco Oller
             </Link>
           </div>
+          <ColorMatchFigure id="cm-hub-hero-toronto-living-room" priority />
         </div>
       </header>
 
@@ -193,6 +218,7 @@ export default function HardwoodColorMatchingTorontoPage() {
                 oil — before anything is proposed.{' '}
                 <Link href="/guides/color-identification-existing-hardwood-finish">Read the full process</Link>.
               </p>
+              <ColorMatchFigure id="cm-hub-process-01-identify" />
             </li>
             <li className="fw-criterion">
               <div className="fw-criterion-head">
@@ -203,6 +229,7 @@ export default function HardwoodColorMatchingTorontoPage() {
                 A cut-off of the actual board, species or trim — never a generic chip —
                 stained and checked against the target.
               </p>
+              <ColorMatchFigure id="cm-hub-process-02-sample-board" />
             </li>
             <li className="fw-criterion">
               <div className="fw-criterion-head">
@@ -214,6 +241,7 @@ export default function HardwoodColorMatchingTorontoPage() {
                 reads. Approval happens in the room, not in a workshop.{' '}
                 <Link href="/guides/sample-boards-on-site-trials-sign-off">How sign-off works</Link>.
               </p>
+              <ColorMatchFigure id="cm-hub-process-03-room-light" />
             </li>
             <li className="fw-criterion">
               <div className="fw-criterion-head">
@@ -227,6 +255,7 @@ export default function HardwoodColorMatchingTorontoPage() {
                 </Link>
                 .
               </p>
+              <ColorMatchFigure id="cm-hub-process-04-honest-fail" />
             </li>
           </ol>
         </div>
@@ -253,6 +282,7 @@ export default function HardwoodColorMatchingTorontoPage() {
           <div className="tlx-grid">
             {childGuides.map((g) => (
               <Link key={g.slug} className="tlx-card" href={`/guides/${g.slug}`}>
+                {GUIDE_THUMB[g.slug] && <ColorMatchFigure id={GUIDE_THUMB[g.slug]!} caption={false} />}
                 <span className="tlx-card-tag">{g.kind === 'decision' ? 'Decision guide' : 'Reference'}</span>
                 <h3>{g.title}</h3>
                 <p>{g.summary}</p>
@@ -275,6 +305,22 @@ export default function HardwoodColorMatchingTorontoPage() {
             instead? <Link href="/floor-studio">See it in your own room, free</Link>, or read{' '}
             <Link href="/framework">the standard the work is judged against</Link>.
           </p>
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Proof, two jobs">
+        <div className="shell">
+          <p className="tlx-kicker">Proof, with the numbers</p>
+          <h2 className="tlx-h2">Colour matching on real jobs</h2>
+          <FigureRotator
+            label="Colour matching on real jobs"
+            slides={
+              [
+                colorMatchingSlide('cm-hub-proof-forest-hill-walnut', `/case-studies/${CASES.forestHill.slug}`),
+                colorMatchingSlide('cm-hub-proof-midtown-three-levels', `/case-studies/${CASES.midtown.slug}`),
+              ].filter((s): s is NonNullable<typeof s> => Boolean(s))
+            }
+          />
         </div>
       </section>
 
