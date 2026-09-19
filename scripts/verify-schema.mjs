@@ -178,6 +178,11 @@ const FAQPAGE_ALLOWED = new Set([
   // writes for a rich result.
   'apps/web/app/commercial/page.tsx',
   'apps/web/app/realtors/page.tsx',
+  // The colour-matching hub. Same test as the head-term pages above: every
+  // question is rendered visibly in the page's own <dl>, and every answer
+  // interpolates BUSINESS_NAP or names the child guides at /guides where the
+  // full process is published, rather than being written for the schema block.
+  'apps/web/app/hardwood-color-matching-toronto/page.tsx',
   // The guides. Qualifies under F-27 on the same test: the first pair is the
   // guide's own question and its published recommendation — the two strings
   // the page has always led with — and the rest are rendered visibly in the

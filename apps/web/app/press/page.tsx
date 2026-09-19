@@ -55,11 +55,14 @@ export const metadata: Metadata = {
  * the shared constants, so a new paper cannot make this page wrong and nobody
  * can type a number into it. That is the same rule as /about and /reviews.
  *
- * WHAT IS DELIBERATELY MISSING: a named spokesperson. Nothing on this site names
- * an individual — articles are bylined "The Ecowoods Team" — and inventing one
- * here would be the fabrication this whole corpus exists to avoid. It is also
- * the single thing most likely to lose a story, so it is called out below as an
- * open item rather than quietly filled in.
+ * A NAMED OWNER, NOW THAT ONE IS SOURCED. This page used to state that nothing
+ * on the site named an individual — articles are still bylined "The Ecowoods
+ * Team" — because inventing a spokesperson would be exactly the fabrication
+ * this corpus exists to avoid. That changed when Francisco Oller's ownership
+ * was confirmed and recorded at content/claims.ts workforce.francisco: he owns
+ * Ecowoods Inc. and the ecowoods.ca domain, and is named below and at /team on
+ * that basis. Nothing further about him is stated here because nothing further
+ * is sourced.
  */
 export default function PressPage() {
   const papers = getPapers();
@@ -134,8 +137,9 @@ export default function PressPage() {
             <dd>{BUSINESS_NAP.legalName}</dd>
             <dt>Name in copy</dt>
             <dd>
-              {BUSINESS_NAP.shortName} — one word, capital E, no space. Not &ldquo;Eco Woods&rdquo;,
-              not &ldquo;EcoWoods&rdquo; with a capital W.
+              {BUSINESS_NAP.shortName} — &ldquo;Ecowoods&rdquo; is one word, capital E, no space. Not
+              &ldquo;Eco Woods&rdquo;, not &ldquo;EcoWoods&rdquo; with a capital W. &ldquo;Ecowoods&rdquo;
+              alone (no &ldquo;Inc.&rdquo;) is also correct and verified as an alternate name.
             </dd>
           </dl>
         </div>
@@ -151,6 +155,18 @@ export default function PressPage() {
                 <tr>
                   <th scope="row">Founded</th>
                   <td>{BUSINESS_NAP.foundedYear}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Website</th>
+                  <td>{SITE_URL} — the one marketing host; no second domain</td>
+                </tr>
+                <tr>
+                  <th scope="row">Owner</th>
+                  <td>
+                    <Link href="/team#francisco-oller">Francisco Oller</Link> — owns{' '}
+                    {BUSINESS_NAP.shortName} and the ecowoods.ca domain, and leads the crew as
+                    professional contractor and lead craftsman
+                  </td>
                 </tr>
                 <tr>
                   <th scope="row">Address</th>

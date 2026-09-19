@@ -194,6 +194,8 @@ export interface Organization extends SchemaBase {
    * estimate URL, or call. §17. Both targets come from config/constants.
    */
   potentialAction?: PotentialAction[];
+  /** The person who founded and owns this organisation, where sourced. */
+  founder?: { '@type': 'Person'; name: string; url?: string };
 }
 
 export interface ContactPoint {

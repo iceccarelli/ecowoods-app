@@ -10,17 +10,22 @@ export const BUSINESS_NAP = {
   legalName: 'Ecowoods Hardwood Flooring Inc.',
   /**
    * Public name for schema.org `name`, headings, GBP, and Bing Places.
-   * One word. Capital E.
+   *
+   * Changed 2026-09-18 from 'Ecowoods' to 'Ecowoods Inc.' — an owner decision,
+   * not a rebrand of the wordmark: the shorter 'Ecowoods' stays valid and
+   * verified as an alternateName below, and the legal name is unchanged.
+   * Every surface that names the business reads this field rather than a
+   * literal, so the change is one line here.
    */
-  name: 'Ecowoods',
-  shortName: 'Ecowoods',
+  name: 'Ecowoods Inc.',
+  shortName: 'Ecowoods Inc.',
   /**
    * Name variants that already appear on listings this business operates or
    * has verified. Emitted as schema.org `alternateName` so resolvers join
    * those strings to this organization.
    */
   alternateNames: [
-    'Ecowoods Inc.',
+    'Ecowoods',
     'Ecowoods Hardwood Flooring',
     'Ecowoods Hardwood',
     'Ecowood',

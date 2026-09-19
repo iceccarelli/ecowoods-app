@@ -376,6 +376,7 @@ export const CATALOGUE_RAILS: Record<string, string[]> = {
   '/equipment': ['10'],
   '/guides/white-oak-flooring-toronto': ['11', '09'],
   '/guides/red-oak-flooring-toronto': ['11'],
+  '/hardwood-color-matching-toronto': ['11'],
   '/tools/floor-movement': ['11'],
 };
 

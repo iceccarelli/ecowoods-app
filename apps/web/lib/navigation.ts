@@ -158,6 +158,7 @@ export const SERVICES_MENU: MegaColumn[] = [
       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
       { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
+      { label: 'Colour matching', href: '/hardwood-color-matching-toronto', note: 'Match new to old, and stairs to the floor' },
     ],
   },
 ];

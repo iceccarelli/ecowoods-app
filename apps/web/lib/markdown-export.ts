@@ -1329,6 +1329,16 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
     services: SERVICES.map((s) => s.slug),
     faq: (f) => /choose|contractor|warranty|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
   },
+  {
+    slug: 'hardwood-color-matching-toronto',
+    h1: 'Hardwood colour matching in Toronto',
+    lede:
+      'Matching a stain, a patch of new hardwood, or a stair and railing to an existing floor — the process, ' +
+      'what is checked on site before any colour is mixed, and what gets said honestly when a match cannot ' +
+      'be made to disappear.',
+    services: ['floor-refinishing', 'stair-refinishing', 'hardwood-installation'],
+    faq: (f) => /match|colour|color|tannin|oak|stain/i.test(`${f.q} ${f.a}`),
+  },
 ];
 
 export const commercialToMarkdown = (page: CommercialMirror): string => {

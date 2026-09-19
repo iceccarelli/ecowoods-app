@@ -91,6 +91,8 @@ export interface OrganizationConfig {
    * price — and passed in whole. This builder never constructs a price.
    */
   offerCatalog?: OfferCatalog;
+  /** The person who founded and owns this organisation, where sourced. */
+  founder?: { name: string; url?: string };
 }
 
 export interface ServiceConfig {
@@ -170,6 +172,9 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     description: config.description,
     foundingDate: String(config.foundingYear),
     priceRange: '$$',
+    ...(config.founder
+      ? { founder: { '@type': 'Person' as const, name: config.founder.name, url: config.founder.url } }
+      : {}),
 
     // Location
     address: config.address,

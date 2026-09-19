@@ -418,6 +418,12 @@ export default async function ServiceDetailPage({
               apply to any contractor&rsquo;s quote — see also{' '}
               <Link href="/guides">all decision guides</Link> and{' '}
               <Link href="/framework">the standard they are judged against</Link>.
+              {page.hub && (
+                <>
+                  {' '}This service leans on{' '}
+                  <Link href={page.hub.href}>{page.hub.label}</Link>, published in full.
+                </>
+              )}
             </p>
           </div>
         </section>

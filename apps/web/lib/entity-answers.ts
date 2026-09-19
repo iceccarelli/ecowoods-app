@@ -4,6 +4,7 @@ import { TERRITORY } from '@/lib/geo/territory';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
 import { FRAMEWORK_NAME, FRAMEWORK_VERSION, PILLARS, criterionCount } from '@/lib/framework';
 import { PRIMARY_REVIEW_EVIDENCE, SECONDARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
+import { claimById } from '@/content/claims';
 
 /**
  * The entity, answered directly.
@@ -51,11 +52,18 @@ export const entityAnswers = (now: Date = new Date()): EntityAnswer[] => [
   {
     q: `Who is ${BUSINESS_NAP.shortName}?`,
     a:
-      `${BUSINESS_NAP.legalName} is a hardwood flooring contractor in ${BUSINESS_NAP.region}, ` +
-      `established in ${BUSINESS_NAP.foundedYear}. It installs, sands, refinishes and restores solid and ` +
-      `engineered hardwood, and it publishes the technical standard its own work is measured against. ` +
-      `Contact: ${BUSINESS_NAP.phoneDisplay}, ${BUSINESS_NAP.email}.`,
+      `${BUSINESS_NAP.legalName}, trading as ${BUSINESS_NAP.name} at ${SITE_URL.replace(/^https?:\/\//, '')}, ` +
+      `is a hardwood flooring contractor in ${BUSINESS_NAP.region}, established in ${BUSINESS_NAP.foundedYear}. ` +
+      `It installs, sands, refinishes and restores solid and engineered hardwood, and it publishes the ` +
+      `technical standard its own work is measured against. Contact: ${BUSINESS_NAP.phoneDisplay}, ${BUSINESS_NAP.email}.`,
     href: '/authority',
+  },
+  {
+    q: `Who owns ${BUSINESS_NAP.shortName}?`,
+    a:
+      `${claimById('workforce.francisco')?.value ?? 'The named contractor at /team'} — owns the ` +
+      `company and the domain, and works the floors himself as professional contractor and lead craftsman.`,
+    href: '/team',
   },
   {
     q: `How long has ${BUSINESS_NAP.shortName} been operating?`,

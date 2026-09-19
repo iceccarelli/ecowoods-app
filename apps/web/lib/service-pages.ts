@@ -62,6 +62,8 @@ export type ServicePage = {
   pillars: string[];
   /** Glossary slugs a reader of this page will need. */
   terms: string[];
+  /** An authority hub this service's work depends on, where one exists — e.g. colour matching for restoration and stair work. */
+  hub?: { href: string; label: string };
 };
 
 /**
@@ -116,25 +118,38 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Heritage and water-damaged floors: what can be saved, what has to be replaced, and how the join is made invisible.',
     pricing: 'fullSandAndFinish',
-    guides: ['reference-refinishing-existing-hardwood', 'how-to-evaluate-a-hardwood-quote', 'how-to-choose-hardwood-contractor-toronto', 'hardwood-flooring-cost-toronto'],
+    guides: [
+      'reference-refinishing-existing-hardwood',
+      'how-to-evaluate-a-hardwood-quote',
+      'how-to-choose-hardwood-contractor-toronto',
+      'hardwood-flooring-cost-toronto',
+      'matching-new-hardwood-to-old-toronto',
+      'when-color-match-fails-full-sand-vs-replace',
+    ],
     papers: [
       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'failure-modes', label: 'The failure modes, and which are recoverable' },
     ],
     pillars: ['moisture', 'accountability'],
     terms: ['cupping', 'crowning', 'wear-layer'],
+    hub: { href: '/hardwood-color-matching-toronto', label: 'Colour matching & finish identification' },
   },
   {
     slug: 'stair-refinishing',
     h1: 'Stair refinishing in Toronto and the GTA',
     standfirst:
-      'Treads, risers and nosings, matched to the floor they meet — the detail that gives a refinish away.',
+      'Treads, risers, nosings and railings, matched to the floor they meet — the detail that gives a refinish away.',
     pricing: 'fullSandAndFinish',
-    guides: ['reference-refinishing-existing-hardwood', 'hardwood-flooring-cost-toronto'],
+    guides: [
+      'reference-refinishing-existing-hardwood',
+      'hardwood-flooring-cost-toronto',
+      'stair-railing-trim-color-matching-toronto',
+    ],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'edger', label: 'The edger — stairs, and everywhere the big machine cannot reach' },
     ],
     pillars: ['containment'],
     terms: ['progressive-grits'],
+    hub: { href: '/hardwood-color-matching-toronto', label: 'Colour matching & finish identification' },
   },
   {
     slug: 'custom-inlays',

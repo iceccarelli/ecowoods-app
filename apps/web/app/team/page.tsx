@@ -9,7 +9,7 @@ import { CommercialHeadTermRail } from '../components/CommercialHeadTermRail';
 import { TERRITORY } from '@/lib/geo/territory';
 
 /**
- * /team — who actually does the work, answered without inventing anyone.
+ * /team — who actually does the work.
  *
  * THE QUERY THIS ANSWERS
  *
@@ -21,22 +21,27 @@ import { TERRITORY } from '@/lib/geo/territory';
  * depends on it: a published warranty, an enforceable protocol and a
  * versioned standard all require that the same employer controls the crew.
  *
- * WHAT IS DELIBERATELY NOT HERE
+ * ONE NAMED PERSON, AND ONLY WHAT IS SOURCED
  *
- * No names, no photographs, no tenure figures, no headcount. Not because they
- * would not help — they would help a great deal — but because none of them is
- * published anywhere on this site or in the contract, and this page will not
- * be the first place a number appears without a source. The brief that asked
- * for this page proposed naming an individual and asserting that crew members
- * have "been with the company for more than a decade". Neither is verifiable
- * from anything published, so neither is here. When the company supplies real
- * names, real tenure and real photographs, they belong on this page and it is
- * built to take them.
+ * This page used to name no one, because nothing published here could source a
+ * name, a tenure figure or a photograph. Francisco Oller is named now because
+ * the sourcing changed, not the standard: `content/claims.ts` records him as
+ * the owner-confirmed source for this company's founding year — literally so,
+ * since he owns it — and the same claim registry now records his ownership of
+ * Ecowoods Inc. and the ecowoods.ca domain, alongside his hands-on role as
+ * professional contractor and lead craftsman, confirmed directly on
+ * 2026-09-18. What is still not here is everything that is not sourced: no
+ * tenure figure, no headcount, no certification. No photograph either — the
+ * crew mark below is initials, not a generated image, because a synthetic
+ * headshot presented as a photograph is exactly the defect
+ * scripts/verify-images.mjs exists to catch. When a real photograph exists
+ * with real provenance, it belongs on this page.
  *
  * EVERY CLAIM BELOW HAS A SOURCE IN THIS REPOSITORY:
  *   · salaried employees, never subcontractors → lib/entity-answers.ts
  *   · lifetime workmanship warranty + exclusions → lib/pdf/contract-document.tsx §4.1
  *   · founded year, years in business → shared/constants BUSINESS_NAP
+ *   · Francisco Oller, ownership, role and scope → content/claims.ts workforce.francisco
  *   · the standard, its pillars and criteria → lib/framework.ts
  *   · coverage → lib/seo-data.ts SERVICE_AREAS
  */
@@ -78,6 +83,16 @@ const FAQS = [
     answer:
       `Since ${BUSINESS_NAP.foundedYear} — ${yearsInBusiness()} years — across ` +
       `${SERVICE_AREAS.length} municipalities and neighbourhoods across ${TERRITORY}.`,
+  },
+  {
+    question: 'Who is Francisco Oller?',
+    answer:
+      `The owner of ${BUSINESS_NAP.name} and the ecowoods.ca domain. He also works the floors ` +
+      `himself as the company's professional contractor and lead craftsman in Toronto and the GTA — ` +
+      `hardwood installation, sanding, refinishing and restoration, stairs and railings, and the ` +
+      `colour matching and finish identification work set out at ` +
+      `${SITE_URL}/hardwood-color-matching-toronto. No tenure figure or certification is published ` +
+      `for him beyond ownership and the role itself, because nothing further is sourced.`,
   },
 ];
 
@@ -121,6 +136,25 @@ export default function TeamPage() {
           mainEntity: { '@id': `${SITE_URL}/#organization` },
         }}
       />
+      <SchemaScript
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          '@id': `${SITE_URL}/team#francisco-oller`,
+          name: 'Francisco Oller',
+          jobTitle: 'Owner & professional contractor',
+          worksFor: { '@id': `${SITE_URL}/#organization` },
+          owns: { '@id': `${SITE_URL}/#organization` },
+          knowsAbout: [
+            'Hardwood installation',
+            'Hardwood sanding and refinishing',
+            'Hardwood restoration',
+            'Stair and railing refinishing',
+            'Colour matching and finish identification',
+          ],
+          url: `${SITE_URL}/team#francisco-oller`,
+        }}
+      />
 
       <header className="tlx-hero">
         <div className="shell">
@@ -153,6 +187,36 @@ export default function TeamPage() {
           </div>
         </div>
       </header>
+
+      <section className="tlx-section" aria-label="Francisco Oller, owner" id="francisco-oller">
+        <div className="shell">
+          <p className="tlx-kicker">Named, sourced, on the tools</p>
+          <h2 className="tlx-h2">Francisco Oller — owner, professional contractor &amp; lead craftsman</h2>
+          <div className="testimonial-author">
+            <div className="testimonial-avatar" aria-hidden="true">
+              FO
+            </div>
+            <div className="testimonial-meta">
+              <div className="name">Francisco Oller</div>
+              <div className="place">Owner of {BUSINESS_NAP.name} and ecowoods.ca</div>
+            </div>
+          </div>
+          <p className="tlx-note">
+            Francisco Oller owns {BUSINESS_NAP.name} and the ecowoods.ca domain, and works the
+            floors himself as the company&rsquo;s professional contractor and lead craftsman in
+            Toronto and the GTA: hardwood installation, sanding, refinishing and restoration,
+            stair and railing refinishing, and the colour matching and finish identification work
+            described at <Link href="/hardwood-color-matching-toronto">colour matching</Link>. He
+            is also who our chatbot points you to for those questions.
+          </p>
+          <p className="tlx-note">
+            No tenure figure, headcount or certification is published for him beyond ownership and
+            the role itself, because nothing further is sourced — the same rule this whole page
+            states above. No photograph is published either; the mark above is initials, not a
+            generated image.
+          </p>
+        </div>
+      </section>
 
       <section className="tlx-section" aria-label="Why the employment structure decides the floor">
         <div className="shell">

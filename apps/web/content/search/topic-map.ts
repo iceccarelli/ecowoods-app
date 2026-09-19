@@ -515,6 +515,34 @@ export const CLUSTERS: QueryCluster[] = [
     ],
     supporting: ['/hardwood-flooring-toronto', '/case-studies'],
   },
+  {
+    id: 'color-matching',
+    intent: 'decision',
+    canonical: '/hardwood-color-matching-toronto',
+    summary:
+      'Matching a stain, a patch, or a stair and railing to an existing hardwood floor — a distinct ' +
+      'craft problem from installing or refinishing a floor on its own, and the reason a spot repair ' +
+      'looks wrong even when the species and the stain can are both correct.',
+    queries: [
+      'hardwood color matching Toronto',
+      'match stain to existing hardwood floor Toronto',
+      'matching new hardwood to old floor',
+      'stair railing color match hardwood',
+      'hardwood floor color identification',
+      'colour match hardwood floor Toronto',
+    ],
+    supporting: [
+      '/guides/color-identification-existing-hardwood-finish',
+      '/guides/stain-matching-existing-hardwood-floor-toronto',
+      '/guides/matching-new-hardwood-to-old-toronto',
+      '/guides/stair-railing-trim-color-matching-toronto',
+      '/guides/door-woodwork-finish-coordination-toronto',
+      '/guides/when-color-match-fails-full-sand-vs-replace',
+      '/guides/sample-boards-on-site-trials-sign-off',
+      '/guides/species-undertone-guide-color-matching-toronto',
+      '/team',
+    ],
+  },
 ];
 
 /* ────────────────────────────────────────────────────────────────────────────
