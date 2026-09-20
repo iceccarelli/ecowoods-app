@@ -80,6 +80,23 @@ export type ProjectPair = {
   anchor: string;
 };
 
+/**
+ * A close plate — one delight per frame, shot tighter than any chapter
+ * still. Optional on Project: the maple-vaughan record has none of these,
+ * so this stays a separate, additive field rather than folding details into
+ * `stills` with a third role (which would force every consumer of `stills`
+ * to filter a role it never asked about).
+ */
+export type ProjectDetail = {
+  id: string;
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  /** Id of the wide chapter still this detail is the close-up of, if any. */
+  pairsWithStillId?: string;
+};
+
 export type Project = {
   slug: string;
   title: string;
@@ -92,6 +109,8 @@ export type Project = {
   stills: ProjectStill[];
   films: ProjectFilm[];
   pairs: ProjectPair[];
+  /** Close plates shown as a strip beneath the chapters. Optional. */
+  details?: ProjectDetail[];
 };
 
 const P = '/proof/maple-vaughan-curved-stair';

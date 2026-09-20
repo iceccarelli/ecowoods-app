@@ -22,6 +22,17 @@ import { FilmStage } from '../components/FilmStage';
 import { getFilm, videoObjectsFor } from '@/lib/films';
 import { TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
+import KenBurnsStill from '../components/project/KenBurnsStill';
+import DetailPlate from '../components/project/DetailPlate';
+import { getProject, stillById } from '@/lib/projects';
+
+const STONE_COTTAGE_STAIRS = getProject('stone-cottage-strip-refinish');
+const STONE_COTTAGE_STAIR_STILL = STONE_COTTAGE_STAIRS ? stillById(STONE_COTTAGE_STAIRS, 'ch2-12') : undefined;
+const STONE_COTTAGE_STAIR_DETAILS = STONE_COTTAGE_STAIRS
+  ? (STONE_COTTAGE_STAIRS.details ?? []).filter((d) =>
+      ['07-02-detail-curved-tread-paint-vs-finished-hall', '07-03-detail-stripped-stair-nosing', '08-04-detail-stair-peeling-paint-layers'].includes(d.id),
+    )
+  : [];
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -432,6 +443,25 @@ export default function HardwoodStairsTorontoPage() {
             — the same flight and the same open well, sanded to bare in one chapter and stained in
             the next.
           </p>
+          {STONE_COTTAGE_STAIRS && (
+            <>
+              {STONE_COTTAGE_STAIR_STILL && (
+                <KenBurnsStill still={STONE_COTTAGE_STAIR_STILL} sizes="(max-width: 767px) 100vw, 1100px" />
+              )}
+              {STONE_COTTAGE_STAIR_DETAILS.length > 0 && (
+                <div className="pj-details">
+                  {STONE_COTTAGE_STAIR_DETAILS.map((d) => (
+                    <DetailPlate key={d.id} detail={d} />
+                  ))}
+                </div>
+              )}
+              <p className="tlx-note">
+                A second stair, part of the same kind of job: a hall finished while the flight beside
+                it was still mid-strip, on{' '}
+                <Link href={`/projects/${STONE_COTTAGE_STAIRS.slug}`}>the stone cottage photo record</Link>.
+              </p>
+            </>
+          )}
         </div>
       </section>
 

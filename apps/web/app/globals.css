@@ -11293,6 +11293,17 @@ a.lib-card--photo { cursor: pointer; }
   max-width: min(46rem, 100%);
 }
 
+.pj-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pj-plate--detail {
+  margin: 0;
+}
+
 .pj-index {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));

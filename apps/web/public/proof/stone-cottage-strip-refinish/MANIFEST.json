@@ -1,0 +1,323 @@
+{
+  "_comment": "Written by a one-off ingest script for stone-cottage-strip-refinish. Source zips at repo root (removed after ingest); this file exists so the promotion is auditable and a missing plate is obvious.",
+  "generatedFrom": [
+    "01-hero-after.zip",
+    "02-before.zip",
+    "03-process-craft.zip",
+    "04-stairs.zip",
+    "05-details-house.zip",
+    "06-details-finish.zip",
+    "07-details-craft.zip",
+    "08-details-before.zip"
+  ],
+  "stills": [
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/00_chapter_open_ecowoods.webp",
+      "order": 0,
+      "stem": "chapter_open_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/01_sunlit_yellow_hallway.webp",
+      "order": 1,
+      "stem": "sunlit_yellow_hallway",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/02_sage_room_worn.webp",
+      "order": 2,
+      "stem": "sage_room_worn",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/03_sage_room_through_door.webp",
+      "order": 3,
+      "stem": "sage_room_through_door",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/04_kitchen_dusty.webp",
+      "order": 4,
+      "stem": "kitchen_dusty",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/05_kitchen_cabinets_raw_floor.webp",
+      "order": 5,
+      "stem": "kitchen_cabinets_raw_floor",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/06_stair_hall_dust.webp",
+      "order": 6,
+      "stem": "stair_hall_dust",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/07_stair_run_peeling_treads.webp",
+      "order": 7,
+      "stem": "stair_run_peeling_treads",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/08_stair_looking_down.webp",
+      "order": 8,
+      "stem": "stair_looking_down",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/stone-cottage-strip-refinish/ch1/99_chapter_close_ecowoods.webp",
+      "order": 99,
+      "stem": "chapter_close_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/00_chapter_open_ecowoods.webp",
+      "order": 0,
+      "stem": "chapter_open_ecowoods",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/01_exterior_stone_cottage_red_door.webp",
+      "order": 1,
+      "stem": "exterior_stone_cottage_red_door",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/02_after_sunlit_yellow_hallway.webp",
+      "order": 2,
+      "stem": "after_sunlit_yellow_hallway",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/03_after_sage_room_french_door_sheen.webp",
+      "order": 3,
+      "stem": "after_sage_room_french_door_sheen",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/04_after_sage_room_window_light.webp",
+      "order": 4,
+      "stem": "after_sage_room_window_light",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/05_after_sage_room_open_plan.webp",
+      "order": 5,
+      "stem": "after_sage_room_open_plan",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/06_after_window_alcove_closets.webp",
+      "order": 6,
+      "stem": "after_window_alcove_closets",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/07_after_grey_room_chair_rail.webp",
+      "order": 7,
+      "stem": "after_grey_room_chair_rail",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/08_after_louvered_closets_grey_room.webp",
+      "order": 8,
+      "stem": "after_louvered_closets_grey_room",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/09_after_enfilade_through_doorway.webp",
+      "order": 9,
+      "stem": "after_enfilade_through_doorway",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/10_after_kitchen_threshold_new.webp",
+      "order": 10,
+      "stem": "after_kitchen_threshold_new",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/11_process_kitchen_cabinets_on_finished.webp",
+      "order": 11,
+      "stem": "process_kitchen_cabinets_on_finished",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/12_stairs_treads_stripped_floor_finished.webp",
+      "order": 12,
+      "stem": "stairs_treads_stripped_floor_finished",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "chapter": 2,
+      "file": "/proof/stone-cottage-strip-refinish/ch2/99_chapter_close_ecowoods.webp",
+      "order": 99,
+      "stem": "chapter_close_ecowoods",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "details": [
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/05-01-detail-stone-arch-red-door.webp",
+      "source": "05-details-house/01-detail-stone-arch-red-door.jpg",
+      "width": 1264,
+      "height": 1568
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-01-detail-sunshaft-on-sheen.webp",
+      "source": "06-details-finish/01-detail-sunshaft-on-sheen.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-02-detail-door-grid-in-sheen.webp",
+      "source": "06-details-finish/02-detail-door-grid-in-sheen.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-03-detail-strip-end-joint-grain.webp",
+      "source": "06-details-finish/03-detail-strip-end-joint-grain.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-04-detail-baseboard-reveal-line.webp",
+      "source": "06-details-finish/04-detail-baseboard-reveal-line.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-05-detail-floor-through-doorway.webp",
+      "source": "06-details-finish/05-detail-floor-through-doorway.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-06-detail-window-bars-on-boards.webp",
+      "source": "06-details-finish/06-detail-window-bars-on-boards.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-07-detail-floor-at-louvered-closets.webp",
+      "source": "06-details-finish/07-detail-floor-at-louvered-closets.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-08-detail-floor-at-baseboard-heater.webp",
+      "source": "06-details-finish/08-detail-floor-at-baseboard-heater.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-09-detail-register-reflected-in-finish.webp",
+      "source": "06-details-finish/09-detail-register-reflected-in-finish.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/06-10-detail-finished-floor-raw-drywall.webp",
+      "source": "06-details-finish/10-detail-finished-floor-raw-drywall.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/07-01-detail-cabinet-box-over-finished-floor.webp",
+      "source": "07-details-craft/01-detail-cabinet-box-over-finished-floor.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/07-02-detail-curved-tread-paint-vs-finished-hall.webp",
+      "source": "07-details-craft/02-detail-curved-tread-paint-vs-finished-hall.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/07-03-detail-stripped-stair-nosing.webp",
+      "source": "07-details-craft/03-detail-stripped-stair-nosing.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/08-01-detail-hallway-oval-patch-wear.webp",
+      "source": "08-details-before/01-detail-hallway-oval-patch-wear.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/08-02-detail-tired-finish-haze-scratches.webp",
+      "source": "08-details-before/02-detail-tired-finish-haze-scratches.jpg",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/08-03-detail-kitchen-dust-under-cabinet-feet.webp",
+      "source": "08-details-before/03-detail-kitchen-dust-under-cabinet-feet.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/08-04-detail-stair-peeling-paint-layers.webp",
+      "source": "08-details-before/04-detail-stair-peeling-paint-layers.jpg",
+      "width": 1200,
+      "height": 1600
+    },
+    {
+      "file": "/proof/stone-cottage-strip-refinish/details/08-05-detail-worn-tread-traffic-grain.webp",
+      "source": "08-details-before/05-detail-worn-tread-traffic-grain.jpg",
+      "width": 1200,
+      "height": 1600
+    }
+  ]
+}
