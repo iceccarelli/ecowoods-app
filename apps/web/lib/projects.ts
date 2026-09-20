@@ -7,11 +7,12 @@
  * fields it deliberately does not have.
  */
 import { MAPLE_VAUGHAN_CURVED_STAIR } from '@/content/projects/maple-vaughan-curved-stair';
-import type { Project, ProjectFilm, ProjectStill, ProjectPair } from '@/content/projects/maple-vaughan-curved-stair';
+import type { Project, ProjectFilm, ProjectStill, ProjectPair, ProjectDetail } from '@/content/projects/maple-vaughan-curved-stair';
+import { STONE_COTTAGE_STRIP_REFINISH } from '@/content/projects/stone-cottage-strip-refinish';
 
-export type { Project, ProjectFilm, ProjectStill, ProjectPair };
+export type { Project, ProjectFilm, ProjectStill, ProjectPair, ProjectDetail };
 
-export const PROJECTS: Project[] = [MAPLE_VAUGHAN_CURVED_STAIR];
+export const PROJECTS: Project[] = [MAPLE_VAUGHAN_CURVED_STAIR, STONE_COTTAGE_STRIP_REFINISH];
 
 export const getProject = (slug: string): Project | undefined =>
   PROJECTS.find((p) => p.slug === slug);

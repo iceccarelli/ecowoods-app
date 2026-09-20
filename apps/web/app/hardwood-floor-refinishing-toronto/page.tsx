@@ -20,6 +20,8 @@ import { illustrationImage } from '@/app/data/illustration-images';
 import { FigureRotator } from '../components/FigureRotator';
 import { getTrilogy } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
+import KenBurnsStill from '../components/project/KenBurnsStill';
+import { getProject, stillById } from '@/lib/projects';
 
 const REFINISH_TRILOGY = getTrilogy('dark-oak-plank-living');
 
@@ -104,6 +106,10 @@ const FAQS = [
       `profile on ${PRIMARY_REVIEW_EVIDENCE.asOf}.`,
   },
 ];
+
+const STONE_COTTAGE = getProject('stone-cottage-strip-refinish');
+const STONE_COTTAGE_CRAFT_STILL = STONE_COTTAGE ? stillById(STONE_COTTAGE, 'ch2-11') : undefined;
+const STONE_COTTAGE_HALLWAY_STILL = STONE_COTTAGE ? stillById(STONE_COTTAGE, 'ch2-02') : undefined;
 
 export default function RefinishingTorontoPage() {
   const paper = getPaper(CRAFT);
@@ -288,6 +294,28 @@ export default function RefinishingTorontoPage() {
           </p>
         </div>
       </section>
+
+      {STONE_COTTAGE && (STONE_COTTAGE_CRAFT_STILL || STONE_COTTAGE_HALLWAY_STILL) && (
+        <section className="tlx-section" aria-label="A refinish photographed">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">A whole-home refinish, worn film to finished floor</h2>
+            <div className="pj-strip">
+              {STONE_COTTAGE_HALLWAY_STILL && (
+                <KenBurnsStill still={STONE_COTTAGE_HALLWAY_STILL} sizes="(max-width: 767px) 90vw, 46vw" />
+              )}
+              {STONE_COTTAGE_CRAFT_STILL && (
+                <KenBurnsStill still={STONE_COTTAGE_CRAFT_STILL} sizes="(max-width: 767px) 90vw, 46vw" />
+              )}
+            </div>
+            <p className="tlx-note pj-note">
+              A full sand and finish, photographed room by room — the kitchen boxes arrived on a
+              floor already done. The full chapters and the honest before/after pairs are on{' '}
+              <Link href={`/projects/${STONE_COTTAGE.slug}`}>the photo record</Link>.
+            </p>
+          </div>
+        </section>
+      )}
 
       <EvidenceRail
         heading="Where this protocol has been run"

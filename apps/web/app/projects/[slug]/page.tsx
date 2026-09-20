@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import KenBurnsStill from '@/app/components/project/KenBurnsStill';
 import ChapterFilm from '@/app/components/project/ChapterFilm';
 import BeforeAfterPair from '@/app/components/project/BeforeAfterPair';
+import DetailPlate from '@/app/components/project/DetailPlate';
 import {
   getProject,
   projectSlugs,
@@ -226,6 +227,24 @@ export default async function ProjectPage({
           </div>
         </div>
       </section>
+
+      {project.details && project.details.length > 0 && (
+        <section className="tlx-section" aria-label="Close plates">
+          <div className="shell">
+            <p className="tlx-kicker">Close plates</p>
+            <h2 className="tlx-h2">The same job, closer</h2>
+            <p className="tlx-note pj-note">
+              Tighter frames from the same visits — joints, edges and finish, shown as their own
+              plates rather than folded into the wide chapters above.
+            </p>
+            <div className="pj-details">
+              {project.details.map((d) => (
+                <DetailPlate key={d.id} detail={d} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section" aria-label="What this record does not establish">
         <div className="shell">

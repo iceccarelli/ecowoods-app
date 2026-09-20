@@ -87,11 +87,15 @@ for (const name of files) {
   }
 
   /* The helper-built stills use a template; count them by their factory call
-     and check the promoted directory exists at all. */
+     and check the promoted directory exists at all. Each registry names its
+     own base path in a `const P = '/proof/<slug>'` — read from that rather
+     than assuming every project lives under maple-vaughan's, which broke the
+     moment a second project registry existed. */
+  const base = consts.P ?? '/proof/maple-vaughan-curved-stair';
   const helperCalls = [...body.matchAll(/\bstill\(\s*([12])\s*,\s*(\d+)\s*,\s*'([^']+)'/g)];
   for (const m of helperCalls) {
     const [, chapter, order, stem] = m;
-    const file = `/proof/maple-vaughan-curved-stair/ch${chapter}/${String(order).padStart(2, '0')}_${stem}.webp`;
+    const file = `${base}/ch${chapter}/${String(order).padStart(2, '0')}_${stem}.webp`;
     if (!existsSync(join(PUBLIC, file))) {
       promoted = false;
       const line = body.slice(0, m.index).split('\n').length;
