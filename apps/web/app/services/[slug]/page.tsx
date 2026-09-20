@@ -17,6 +17,9 @@ import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { JobCardRail } from '@/app/components/JobCard';
 import { jobCardsForService } from '@/content/job-cards';
 import { getRegistry } from '@/lib/registry/registry';
+import { getProject, stillById } from '@/lib/projects';
+import KenBurnsStill from '../../components/project/KenBurnsStill';
+import DetailPlate from '../../components/project/DetailPlate';
 import {
   getServicePages,
   getServicePage,
@@ -41,6 +44,17 @@ const SERVICE_PAIRS: Record<string, [string, string][]> = {
      conceptual; neither is a photograph of a named job. */
   'dust-free-sanding': [['occupancy-containment-section', 'occupancy-containment-scene']],
 };
+
+/**
+ * The one Project with a documented before/after dust story: the worn/dusty
+ * kitchen frames, the finished floor the cabinets landed on, and the two
+ * detail plates that argue containment and refinish timing specifically.
+ * Referenced by still/detail id rather than re-describing them, so this page
+ * cannot drift from the registry's own alt text and dimensions.
+ */
+const DUST_FREE_PROJECT = getProject('stone-cottage-strip-refinish');
+const DUST_FREE_STILL_IDS = ['ch1-04', 'ch1-05', 'ch2-11'] as const;
+const DUST_FREE_DETAIL_IDS = ['08-03-detail-kitchen-dust-under-cabinet-feet', '07-01-detail-cabinet-box-over-finished-floor'];
 
 export function generateStaticParams() {
   return getServicePages().map((p) => ({ slug: p.slug }));
@@ -256,6 +270,34 @@ export default async function ServiceDetailPage({
             <p className="tlx-note">
               Extraction runs at each machine and a sealed barrier is built at the room, which is
               what makes it possible to sand a floor in a house nobody has moved out of.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {slug === 'dust-free-sanding' && DUST_FREE_PROJECT && (
+        <section className="tlx-section" aria-label="A dust-free job, photographed">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">The dust, and the finished floor it came from</h2>
+            <div className="pj-strip">
+              {DUST_FREE_STILL_IDS.map((id) => {
+                const still = stillById(DUST_FREE_PROJECT, id);
+                return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+              })}
+            </div>
+            <div className="pj-details">
+              {(DUST_FREE_PROJECT.details ?? [])
+                .filter((d) => DUST_FREE_DETAIL_IDS.includes(d.id))
+                .map((d) => (
+                  <DetailPlate key={d.id} detail={d} />
+                ))}
+            </div>
+            <p className="tlx-note pj-note">
+              The kitchen floor sat dusty under the old finish, the cabinets arrived once it was
+              refinished, and the boxes went in on a floor that was already done — the sequencing
+              containment makes possible. Full chapters and the honest before/after pairs are on{' '}
+              <Link href={`/projects/${DUST_FREE_PROJECT.slug}`}>the photo record</Link>.
             </p>
           </div>
         </section>

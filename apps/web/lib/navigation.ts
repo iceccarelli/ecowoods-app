@@ -155,6 +155,8 @@ export const SERVICES_MENU: MegaColumn[] = [
       { label: 'Compare the quotes you have', href: '/quote-check', note: 'Are they even the same job?' },
       { label: 'How much your floor will move', href: '/tools/floor-movement', note: 'Nine species, computed' },
       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
+      { label: 'Maple, Vaughan — curved stair', href: '/projects/maple-vaughan-curved-stair', note: 'Bare, then stained, same flight' },
+      { label: 'A stone cottage, refinished', href: '/projects/stone-cottage-strip-refinish', note: 'Worn to finished, room by room' },
       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
       { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },
