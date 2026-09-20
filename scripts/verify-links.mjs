@@ -301,6 +301,16 @@ const ALL_ROUTES = new Set(
 const PROMISE_SURFACES =
   /components[/\\](Header|SiteFooter|CookieConsentBanner|ConversionRail)\.tsx$|\(auth\)[/\\].*Form\.tsx$/;
 
+/* A literal href in the chrome to a concrete instance of a dynamic route
+   (e.g. "/projects/stone-cottage-strip-refinish" against page.tsx's own
+   "/projects/[slug]") is a real page, not a 404 — match it the same way
+   verify-navigation.mjs already does for the reachability graph. Without
+   this, ALL_ROUTES only ever contains the literal "[slug]" segment and every
+   hand-written deep link into a dynamic route reads as broken. */
+const DYNAMIC_ROUTES = [...ALL_ROUTES].filter((r) => r.includes('['));
+const matchesDynamicRoute = (target) =>
+  DYNAMIC_ROUTES.some((r) => new RegExp(`^${r.replace(/\[[^\]]+\]/g, '[^/]+').replace(/\//g, '\\/')}$`).test(target));
+
 /* Paths that are handled outside the App Router or by a rewrite, and so will
    never appear as a page.tsx. Each needs a reason, like every other waiver
    here. */
@@ -324,6 +334,7 @@ for (const [file, text] of sources) {
     seen.add(target);
     if (target === '/' || NON_ROUTE_PATHS.has(target)) continue;
     if (ALL_ROUTES.has(target)) continue;
+    if (matchesDynamicRoute(target)) continue;
     anchorProblems.push(
       `${path.relative(ROOT, file)}: href="${m[1]}" — no route serves it. This is not a weak ` +
         `link, it is a 404 on a surface that promises the page exists.`,

@@ -289,6 +289,11 @@ export default async function ProjectPage({
             and the engineering write-ups at <Link href="/case-studies">case studies</Link>.
             {BUSINESS.name} works across {project.location.city} and the GTA.
           </p>
+          <p className="tlx-note">
+            Related services: <Link href="/hardwood-floor-refinishing-toronto">hardwood floor refinishing</Link>,{' '}
+            <Link href="/services/dust-free-sanding">dust-free sanding</Link>, and{' '}
+            <Link href="/hardwood-stairs-toronto">stair refinishing</Link>.
+          </p>
         </div>
       </section>
     </div>

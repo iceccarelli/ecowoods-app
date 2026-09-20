@@ -28,6 +28,8 @@ import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
 import { JobCardRail } from './components/JobCard';
+import { PROJECTS, interiors, stillById } from '@/lib/projects';
+import KenBurnsStill from './components/project/KenBurnsStill';
 import { jobCardsBySlug } from '@/content/job-cards';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import {
@@ -512,6 +514,19 @@ const WORK_RAIL_TRILOGIES = WORK_RAIL_SLUGS.map((slug) => TRILOGIES.find((t) => 
   (t): t is NonNullable<typeof t> => Boolean(t),
 );
 
+/**
+ * Photographed jobs strip — every entry in PROJECTS, not the twenty
+ * trilogies. Deliberately separate rail: a Project (this repo's chapters +
+ * honest pairs record) is a different kind of proof than a three-frame
+ * trilogy, and mixing them would blur the distinction /projects/[slug]
+ * itself exists to keep. A cover-still override is only for cases where the
+ * default (the second chapter's first interior) is not the strongest frame —
+ * the stone cottage's own exterior reads better as a cover than an interior.
+ */
+const HOME_PROJECT_COVER_OVERRIDE: Record<string, string> = {
+  'stone-cottage-strip-refinish': 'ch2-01',
+};
+
 /** Series II, chapter 1 — the homepage gets exactly one film, per the brief. */
 const THE_BRIEF = getFilm('the-brief')!;
 
@@ -631,6 +646,42 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* 1c · JOBS, PHOTOGRAPHED — the Project records (chapters + honest
+             before/after pairs), separate from the trilogy work rail above.
+             Two cards today; PROJECTS.map means a third registered project
+             appears here with no further edit. */}
+      <section className="section-tight" aria-label="Jobs, photographed">
+        <div className="shell">
+          <div className="section-head reveal">
+            <span className="eyebrow">Jobs, photographed</span>
+            <h2>
+              Full chapters, <span className="serif-italic">not one frame.</span>
+            </h2>
+          </div>
+          <div className="pj-index reveal">
+            {PROJECTS.map((p) => {
+              const overrideId = HOME_PROJECT_COVER_OVERRIDE[p.slug];
+              const cover = (overrideId && stillById(p, overrideId)) || interiors(p, 2)[0] || interiors(p)[0]!;
+              return (
+                <article key={p.slug} className="pj-card">
+                  <Link href={`/projects/${p.slug}`} className="pj-card-link">
+                    <KenBurnsStill still={cover} sizes="(max-width: 767px) 92vw, 46vw" />
+                    <h3 className="pj-card-title">{p.title}</h3>
+                  </Link>
+                  <p className="tlx-note pj-note">
+                    {p.location.neighbourhood}, {p.location.city} ·{' '}
+                    {p.stills.filter((s) => s.role === 'interior').length} photographs
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+          <p className="tlx-note">
+            <Link href="/projects">All photographed jobs →</Link>
+          </p>
         </div>
       </section>
 
