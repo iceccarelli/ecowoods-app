@@ -34,6 +34,12 @@ const STONE_COTTAGE_STAIR_DETAILS = STONE_COTTAGE_STAIRS
     )
   : [];
 
+const MAPLE_GLASS_STAIRS = getProject('maple-glass-residence');
+const MAPLE_GLASS_STAIR_STILL = MAPLE_GLASS_STAIRS ? stillById(MAPLE_GLASS_STAIRS, 'ch1-02') : undefined;
+const MAPLE_GLASS_STAIR_DETAILS = MAPLE_GLASS_STAIRS
+  ? (MAPLE_GLASS_STAIRS.details ?? []).filter((d) => ['detail-01', 'detail-02', 'detail-06', 'detail-08'].includes(d.id))
+  : [];
+
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
 
@@ -459,6 +465,25 @@ export default function HardwoodStairsTorontoPage() {
                 A second stair, part of the same kind of job: a hall finished while the flight beside
                 it was still mid-strip, on{' '}
                 <Link href={`/projects/${STONE_COTTAGE_STAIRS.slug}`}>the stone cottage photo record</Link>.
+              </p>
+            </>
+          )}
+          {MAPLE_GLASS_STAIRS && (
+            <>
+              {MAPLE_GLASS_STAIR_STILL && (
+                <KenBurnsStill still={MAPLE_GLASS_STAIR_STILL} sizes="(max-width: 767px) 100vw, 1100px" />
+              )}
+              {MAPLE_GLASS_STAIR_DETAILS.length > 0 && (
+                <div className="pj-details">
+                  {MAPLE_GLASS_STAIR_DETAILS.map((d) => (
+                    <DetailPlate key={d.id} detail={d} />
+                  ))}
+                </div>
+              )}
+              <p className="tlx-note">
+                An open-riser hard-maple stair, treads thickness-matched to the field and set against
+                a black steel stringer behind frameless glass, on{' '}
+                <Link href={`/projects/${MAPLE_GLASS_STAIRS.slug}`}>the maple &amp; glass residence photo record</Link>.
               </p>
             </>
           )}

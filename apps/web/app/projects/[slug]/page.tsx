@@ -186,7 +186,7 @@ export default async function ProjectPage({
 
       <section className="tlx-section" aria-label="Chapter one">
         <div className="shell">
-          <p className="tlx-kicker">Chapter one</p>
+          <p className="tlx-kicker">{project.chapters[1] ? 'Chapter one' : 'The walkthrough'}</p>
           <h2 className="tlx-h2">{project.chapters[0]!.label}</h2>
           <p className="tlx-note pj-note">{project.chapters[0]!.note}</p>
           <KenBurnsStill still={hero} priority sizes="(max-width: 1279px) 100vw, 1100px" />
@@ -199,34 +199,38 @@ export default async function ProjectPage({
         </div>
       </section>
 
-      <section className="tlx-section" aria-label="Before and after">
-        <div className="shell">
-          <p className="tlx-kicker">The same places, twice</p>
-          <h2 className="tlx-h2">What changed is the wood</h2>
-          {project.pairs.map((pair) => {
-            const before = stillById(project, pair.beforeStillId);
-            const after = stillById(project, pair.afterStillId);
-            if (!before || !after) return null;
-            return <BeforeAfterPair key={pair.id} before={before} after={after} anchor={pair.anchor} />;
-          })}
-        </div>
-      </section>
-
-      <section className="tlx-section" aria-label="Chapter two">
-        <div className="shell">
-          <p className="tlx-kicker">Chapter two</p>
-          <h2 className="tlx-h2">{project.chapters[1]!.label}</h2>
-          <p className="tlx-note pj-note">{project.chapters[1]!.note}</p>
-          {film2 && (
-            <ChapterFilm film={film2} poster={stillById(project, film2.posterStillId) ?? ch2[0]!} />
-          )}
-          <div className="pj-strip">
-            {ch2.map((s) => (
-              <KenBurnsStill key={s.id} still={s} sizes="(max-width: 767px) 90vw, 46vw" />
-            ))}
+      {project.pairs.length > 0 && (
+        <section className="tlx-section" aria-label="Before and after">
+          <div className="shell">
+            <p className="tlx-kicker">The same places, twice</p>
+            <h2 className="tlx-h2">What changed is the wood</h2>
+            {project.pairs.map((pair) => {
+              const before = stillById(project, pair.beforeStillId);
+              const after = stillById(project, pair.afterStillId);
+              if (!before || !after) return null;
+              return <BeforeAfterPair key={pair.id} before={before} after={after} anchor={pair.anchor} />;
+            })}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {project.chapters[1] && (
+        <section className="tlx-section" aria-label="Chapter two">
+          <div className="shell">
+            <p className="tlx-kicker">Chapter two</p>
+            <h2 className="tlx-h2">{project.chapters[1].label}</h2>
+            <p className="tlx-note pj-note">{project.chapters[1].note}</p>
+            {film2 && (
+              <ChapterFilm film={film2} poster={stillById(project, film2.posterStillId) ?? ch2[0]!} />
+            )}
+            <div className="pj-strip">
+              {ch2.map((s) => (
+                <KenBurnsStill key={s.id} still={s} sizes="(max-width: 767px) 90vw, 46vw" />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {project.details && project.details.length > 0 && (
         <section className="tlx-section" aria-label="Close plates">

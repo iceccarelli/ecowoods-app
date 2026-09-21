@@ -1,0 +1,337 @@
+{
+  "_comment": "Written by scripts/promote-maple-glass-media.mjs. The typed registry that the site actually renders from is apps/web/content/projects/maple-glass-residence.ts; this file exists so the promotion is auditable and so a missing plate is obvious.",
+  "generatedFrom": [
+    "03-ecowoods-maple-glass-web-1920.zip",
+    "03-ecowoods-maple-glass-DETAILS-web-1920.zip",
+    "ecowoods-maple-glass-residence.mp4"
+  ],
+  "stills": [
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/01_void-looking-down-dual-flight.webp",
+      "order": 1,
+      "stem": "void-looking-down-dual-flight",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/02_void-open-riser-glass.webp",
+      "order": 2,
+      "stem": "void-open-riser-glass",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/03_void-centerline-alignment.webp",
+      "order": 3,
+      "stem": "void-centerline-alignment",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/04_primary-suite-plank-field.webp",
+      "order": 4,
+      "stem": "primary-suite-plank-field",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/05_upper-landing-glass-guard.webp",
+      "order": 5,
+      "stem": "upper-landing-glass-guard",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/06_upper-floor-stair-mouth.webp",
+      "order": 6,
+      "stem": "upper-floor-stair-mouth",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/07_upper-floor-glass-return.webp",
+      "order": 7,
+      "stem": "upper-floor-glass-return",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/08_underside-treads-glass.webp",
+      "order": 8,
+      "stem": "underside-treads-glass",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/09_suite-to-void-enfilade.webp",
+      "order": 9,
+      "stem": "suite-to-void-enfilade",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/10_suite-threshold-to-hall.webp",
+      "order": 10,
+      "stem": "suite-threshold-to-hall",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/11_glass-wardrobe-run.webp",
+      "order": 11,
+      "stem": "glass-wardrobe-run",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/12_dressing-gallery-axis.webp",
+      "order": 12,
+      "stem": "dressing-gallery-axis",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/13_maple-grain-close-field.webp",
+      "order": 13,
+      "stem": "maple-grain-close-field",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/14_primary-toward-bath.webp",
+      "order": 14,
+      "stem": "primary-toward-bath",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/15_primary-window-wash.webp",
+      "order": 15,
+      "stem": "primary-window-wash",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/16_primary-centered-bed-wall.webp",
+      "order": 16,
+      "stem": "primary-centered-bed-wall",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/17_primary-entry-diagonal.webp",
+      "order": 17,
+      "stem": "primary-entry-diagonal",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/18_living-media-wall-field.webp",
+      "order": 18,
+      "stem": "living-media-wall-field",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/19_living-ceiling-light-wash.webp",
+      "order": 19,
+      "stem": "living-ceiling-light-wash",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "chapter": 1,
+      "file": "/proof/maple-glass-residence/ch1/20_hall-stone-to-maple-reducer.webp",
+      "order": 20,
+      "stem": "hall-stone-to-maple-reducer",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "details": [
+    {
+      "file": "/proof/maple-glass-residence/details/01-tread-to-landing-grain-match.webp",
+      "order": 1,
+      "stem": "tread-to-landing-grain-match",
+      "pairsWithStillId": "ch1-01",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/02-open-riser-profile-black-stringer.webp",
+      "order": 2,
+      "stem": "open-riser-profile-black-stringer",
+      "pairsWithStillId": "ch1-02",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/03-landing-field-joint-stagger.webp",
+      "order": 3,
+      "stem": "landing-field-joint-stagger",
+      "pairsWithStillId": "ch1-03",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/04-satin-sheen-window-wash.webp",
+      "order": 4,
+      "stem": "satin-sheen-window-wash",
+      "pairsWithStillId": "ch1-04",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/05-landing-edge-at-glass-void.webp",
+      "order": 5,
+      "stem": "landing-edge-at-glass-void",
+      "pairsWithStillId": "ch1-05",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/06-first-tread-floor-plane.webp",
+      "order": 6,
+      "stem": "first-tread-floor-plane",
+      "pairsWithStillId": "ch1-06",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/07-glass-corner-maple-return.webp",
+      "order": 7,
+      "stem": "glass-corner-maple-return",
+      "pairsWithStillId": "ch1-07",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/08-underside-fastener-rhythm.webp",
+      "order": 8,
+      "stem": "underside-fastener-rhythm",
+      "pairsWithStillId": "ch1-08",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/09-doorway-run-unbroken.webp",
+      "order": 9,
+      "stem": "doorway-run-unbroken",
+      "pairsWithStillId": "ch1-09",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/10-plank-direction-through-hall.webp",
+      "order": 10,
+      "stem": "plank-direction-through-hall",
+      "pairsWithStillId": "ch1-10",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/11-narrow-run-joint-discipline.webp",
+      "order": 11,
+      "stem": "narrow-run-joint-discipline",
+      "pairsWithStillId": "ch1-11",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/12-long-axis-end-match.webp",
+      "order": 12,
+      "stem": "long-axis-end-match",
+      "pairsWithStillId": "ch1-12",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/13-select-maple-cathedral-grain.webp",
+      "order": 13,
+      "stem": "select-maple-cathedral-grain",
+      "pairsWithStillId": "ch1-13",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/14-field-beside-platform-bed.webp",
+      "order": 14,
+      "stem": "field-beside-platform-bed",
+      "pairsWithStillId": "ch1-14",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/15-light-break-across-boards.webp",
+      "order": 15,
+      "stem": "light-break-across-boards",
+      "pairsWithStillId": "ch1-15",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/16-staggered-ends-in-the-suite.webp",
+      "order": 16,
+      "stem": "staggered-ends-in-the-suite",
+      "pairsWithStillId": "ch1-16",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/17-colour-hold-across-the-room.webp",
+      "order": 17,
+      "stem": "colour-hold-across-the-room",
+      "pairsWithStillId": "ch1-17",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/18-stone-to-maple-flush-reducer.webp",
+      "order": 18,
+      "stem": "stone-to-maple-flush-reducer",
+      "pairsWithStillId": "ch1-18",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/19-board-run-to-media-wall.webp",
+      "order": 19,
+      "stem": "board-run-to-media-wall",
+      "pairsWithStillId": "ch1-19",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "/proof/maple-glass-residence/details/20-hall-reducer-and-vent-cut.webp",
+      "order": 20,
+      "stem": "hall-reducer-and-vent-cut",
+      "pairsWithStillId": "ch1-20",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "films": [
+    {
+      "file": "/films/maple-glass-residence/01-residence-walkthrough.mp4"
+    }
+  ]
+}

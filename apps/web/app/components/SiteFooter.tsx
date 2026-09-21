@@ -316,6 +316,7 @@ export default function SiteFooter() {
                   file follows the same literal convention. */}
               <a href="/projects/maple-vaughan-curved-stair">Maple, Vaughan — curved stair</a>
               <a href="/projects/stone-cottage-strip-refinish">A stone cottage, refinished</a>
+              <a href="/projects/maple-glass-residence">A hard-maple residence, field and stair</a>
               {/* The map has to be reachable from the chrome or verify-links.mjs
                   is right to call it an orphan: a page in the sitemap with no way
                   in reads as unimportant no matter what the sitemap says. */}
