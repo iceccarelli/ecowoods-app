@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * /assistant — AI Home Advisor. ASSISTANT-01: shell only.
+ * /assistant — AI Home Advisor. ASSISTANT-02: Project Decision State.
  *
  * A separate product from the corner Quick Assistant (EcowoodsGuide). The
  * corner widget is a chat transcript mounted on every page; this is a
@@ -28,10 +28,17 @@ export const metadata: Metadata = {
  * the services, the cost range, the evidence — with conversation as one way
  * to work on that state, not the whole of it.
  *
- * This phase ships the shell only: layout, identity, reachability. No
- * economics, no value scenario, no Floor Studio bridge, no booking, no live
- * model calls. See docs/assistant-workspace/PHASE_PLAN.md for what comes
- * after and why it isn't here yet.
+ * The shell (ASSISTANT-01) is now stateful: a canonical, typed
+ * WorkspaceState (lib/assistant-workspace) drives all three zones and the
+ * mobile bar, minted a designId and persists anonymously in localStorage.
+ * Still no economics engine, no value scenario, no Floor Studio bridge, no
+ * booking, no live model call — see docs/assistant-workspace/PHASE_PLAN.md.
+ *
+ * No ?design= / ?project= URL param yet. A share link is ASSISTANT-08's to
+ * build, and building one now — before there's a designCode worth sharing
+ * (that arrives with the Floor Studio bridge, ASSISTANT-06) — would be a URL
+ * carrying nothing, or a second, premature share-link format this workspace
+ * would then have to keep compatible with the real one later.
  */
 export default function AssistantPage() {
   return (

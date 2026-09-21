@@ -142,11 +142,21 @@ export type AnalyticsEvent =
      that widget is mounted on every page, this is a dedicated route. `source`
      is always 'workspace' here, never a value the corner widget's events use,
      so the two are never mistaken for one funnel in a report. No message, no
-     project detail — same discipline as assistant_open. Later phases add
-     workspace_project_started, workspace_product_selected, etc. per
-     docs/assistant-workspace/PHASE_PLAN.md (ASSISTANT-09); none of those
-     exist yet, so this is the only workspace_* event today. */
-  | 'workspace_open';
+     project detail — same discipline as assistant_open. */
+  | 'workspace_open'
+  /* ASSISTANT-02 — Project Decision State exists now (lib/assistant-workspace).
+     workspace_project_created fires once per workspace, the first time an
+     objective (install/refinish/repair/not-sure) is set — carries only the
+     objective and country, both closed enums, never free text.
+     workspace_objective_selected fires on every objective change after that,
+     same two params, so a report can tell "someone started a project" from
+     "someone changed their mind." Neither carries square footage, a species,
+     a name, or anything the visitor typed — the closed-enum fields only.
+     ASSISTANT-09 (PHASE_PLAN.md) is where the rest of the funnel — product
+     selected, studio bridge opened, estimate viewed — gets wired; this pair
+     is the minimum this phase needs to prove a project actually started. */
+  | 'workspace_project_created'
+  | 'workspace_objective_selected';
 
 export function track(
   event: AnalyticsEvent,

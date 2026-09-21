@@ -12632,6 +12632,7 @@ a.lib-card--photo { cursor: pointer; }
   color: var(--muted);
   margin: 0 0 var(--space-md);
 }
+.aha-rail-sqft { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); margin: calc(-1 * var(--space-sm)) 0 var(--space-md); }
 .aha-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
 .aha-rail-item {
   display: flex;
@@ -12664,8 +12665,9 @@ a.lib-card--photo { cursor: pointer; }
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
-.aha-conversation-scroll { flex: 1; padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); }
+.aha-conversation-scroll { flex: 1; padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); overflow-y: auto; }
 .aha-message--assistant { max-width: 640px; }
+.aha-message--user { max-width: 640px; align-self: flex-end; text-align: right; }
 .aha-message-author {
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -12674,7 +12676,17 @@ a.lib-card--photo { cursor: pointer; }
   color: var(--copper-text);
   margin: 0 0 var(--space-xs);
 }
+.aha-message--user .aha-message-author { color: var(--muted); }
 .aha-message-text { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.55; color: var(--ink); margin: 0; }
+.aha-message--user .aha-message-text {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  display: inline-block;
+  background: var(--surface-warm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
 
 .aha-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 .aha-chip {
@@ -12684,9 +12696,10 @@ a.lib-card--photo { cursor: pointer; }
   border-radius: var(--radius-full);
   border: 1px solid var(--line-strong);
   background: var(--surface-warm);
-  color: var(--muted);
-  cursor: not-allowed;
+  color: var(--copper-text);
+  cursor: pointer;
 }
+.aha-chip:hover, .aha-chip:focus-visible { background: var(--surface); border-color: var(--copper-surface); }
 
 .aha-coming-online {
   margin-top: auto;
@@ -12716,16 +12729,18 @@ a.lib-card--photo { cursor: pointer; }
   color: var(--ink);
 }
 .aha-composer-input:disabled { color: var(--muted-soft); cursor: not-allowed; }
+.aha-composer-input:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 1px; }
 .aha-composer-send {
   font-family: var(--font-body);
   font-weight: 600;
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);
   border: none;
-  background: var(--line-strong);
-  color: var(--muted);
-  cursor: not-allowed;
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  cursor: pointer;
 }
+.aha-composer-send:disabled { background: var(--line-strong); color: var(--muted); cursor: not-allowed; }
 
 /* Economics rail (right) */
 .aha-econ {
