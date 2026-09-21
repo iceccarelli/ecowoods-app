@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useMemo, useRef } from 'react';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { computedNeedsMeasure, describeFloorPreference, totalSquareFeet } from '@/lib/assistant-workspace/state';
+import { projectRangeForState, calculateExplicitSavings, formatMoneyRange } from '@/lib/assistant-workspace/economics';
 import { SERVICES } from '@/lib/seo-data';
+import { track } from '@/lib/analytics';
 
 const COUNTRY_LABEL: Record<string, string> = { CA: 'Ontario (CAD)', US: 'New York (USD)' };
 const OBJECTIVE_LABEL: Record<string, string> = {
@@ -15,14 +18,19 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 /**
  * EconomicsRail — the right zone of the workspace shell.
  *
- * No economics engine exists yet (ASSISTANT-04, pure functions over
- * content/constants/pricing.ts). Every money field stays an explicit
- * placeholder here — that is a law, not a gap this phase quietly works
- * around. What CAN be shown honestly is read straight from Project Decision
- * State: the objective, the region, the floor and services picked so far
- * (ASSISTANT-03 — same recommendation engine the conversation pane's cards
- * use, so a product/service added there appears here immediately), and the
- * square footage typed in. None of it is a dollar figure.
+ * ASSISTANT-04: the cost range is real now — `projectRangeForState`
+ * (lib/assistant-workspace/economics.ts) composes `calculateProjectRange`
+ * over every DISTINCT published band among the services added in
+ * ASSISTANT-03, at the square footage typed into state. Every dollar traces
+ * to a `PriceBand`; nothing here is estimated by the assistant itself.
+ *
+ * Two honest empty states, not one generic placeholder: "Needs sq ft" when
+ * no room has an area yet, "Needs a service" when the area is known but
+ * nothing's been added to price against. "Savings" always runs through
+ * `calculateExplicitSavings` — with no overlap-rule evidence published in
+ * this codebase yet, that deterministically returns "Potential efficiency:
+ * not quantified," never a guessed percentage. "Value scenario" is still
+ * ASSISTANT-05's, not built.
  */
 export function EconomicsRail() {
   const { state } = useWorkspaceState();
@@ -31,6 +39,35 @@ export function EconomicsRail() {
     .map((slug) => SERVICES.find((s) => s.slug === slug)?.name)
     .filter((n): n is string => !!n);
   const needsMeasure = computedNeedsMeasure(state);
+  const projectRange = useMemo(() => projectRangeForState(state), [state]);
+
+  const costRangeText =
+    projectRange.status === 'ready'
+      ? formatMoneyRange(projectRange.total)
+      : projectRange.status === 'needs-sqft'
+        ? 'Needs sq ft'
+        : 'Needs a service — add one from the cards above';
+
+  const savingsText = useMemo(() => {
+    if (projectRange.status !== 'ready') return 'Needs pricing engine';
+    if (projectRange.scopes.length < 2) return 'One scope — nothing to bundle yet';
+    /* Two-or-more distinct scopes at one square footage IS the situation a bundle-overlap
+       rule would apply to. `total` already sums them without double-counting (see
+       projectRangeForState); this call asks whether Ecowoods has a PUBLISHED rule that
+       would discount that sum further. Baseline and bundled are the same total because no
+       such rule exists in content/constants/pricing.ts today — the function correctly
+       reports notQuantified rather than inventing a discount. */
+    const result = calculateExplicitSavings({ baseline: projectRange.total, bundled: projectRange.total, overlapEvidence: [] });
+    return 'notQuantified' in result ? 'Potential efficiency: not quantified' : formatMoneyRange(result);
+  }, [projectRange]);
+
+  const savingsViewedFired = useRef(false);
+  useEffect(() => {
+    if (savingsViewedFired.current) return;
+    if (projectRange.status !== 'ready' || projectRange.scopes.length < 2) return;
+    savingsViewedFired.current = true;
+    track('workspace_savings_viewed', { scopeCount: projectRange.scopes.length });
+  }, [projectRange]);
 
   const rows: { label: string; value: string }[] = [
     { label: 'Objective', value: state.objective ? (OBJECTIVE_LABEL[state.objective] ?? '—') : 'Not set' },
@@ -38,9 +75,9 @@ export function EconomicsRail() {
     { label: 'Selected floor', value: describeFloorPreference(state.targetFloor) },
     { label: 'Services', value: services.length ? services.join(', ') : 'None yet' },
     { label: 'Square footage', value: sqft !== undefined ? `${sqft.toLocaleString()} sq ft` : 'Not set' },
-    { label: 'Cost range', value: 'Needs pricing engine' },
-    { label: 'Savings', value: 'Needs pricing engine' },
-    { label: 'Value scenario', value: 'Needs pricing engine' },
+    { label: 'Cost range', value: costRangeText },
+    { label: 'Savings', value: savingsText },
+    { label: 'Value scenario', value: 'Not available yet (ASSISTANT-05)' },
     { label: 'Confidence', value: '—' },
   ];
 
@@ -50,12 +87,25 @@ export function EconomicsRail() {
 
       <dl className="aha-econ-rows">
         {rows.map((row) => (
-          <div key={row.label} className="aha-econ-row">
+          <div key={row.label} className="aha-econ-row" data-highlight={row.label === 'Cost range' && projectRange.status === 'ready'}>
             <dt>{row.label}</dt>
             <dd>{row.value}</dd>
           </div>
         ))}
       </dl>
+
+      {projectRange.status === 'ready' && projectRange.scopes.length > 1 && (
+        <div className="aha-econ-scopes">
+          <p className="aha-econ-status-label">By scope</p>
+          <ul>
+            {projectRange.scopes.map((scope) => (
+              <li key={scope.pricingKey}>
+                {scope.label}: {formatMoneyRange(scope.range)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="aha-econ-status">
         <div className="aha-econ-status-group">
@@ -89,8 +139,9 @@ export function EconomicsRail() {
       </button>
 
       <p className="aha-econ-footnote">
-        Every dollar shown here will trace to a published price band. Nothing is ever estimated by the assistant
-        itself.
+        {projectRange.status === 'ready'
+          ? 'This is the published band applied to your square footage — not a quote. Species, finish, pattern, substrate, stairs and transitions move the number inside the range. The fixed price is written after a free in-home measure.'
+          : 'Every dollar shown here will trace to a published price band. Nothing is ever estimated by the assistant itself.'}
       </p>
     </aside>
   );

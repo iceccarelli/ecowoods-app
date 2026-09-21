@@ -4,9 +4,11 @@ import { useMemo, useState } from 'react';
 import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
 import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
+import { totalSquareFeet } from '@/lib/assistant-workspace/state';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
+import { ScenarioCompare } from './ScenarioCompare';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -19,12 +21,13 @@ const RECOMMENDED_PRODUCT_LIMIT = 4;
  * ConversationPane — the center zone of the workspace shell.
  *
  * ASSISTANT-02 gave the composer a deterministic keyword matcher
- * (interpretMessage) with no model call. ASSISTANT-03 adds what it feeds:
- * once state carries an objective, real ProductCard/ServiceCard
- * recommendations (lib/assistant-workspace/recommendations.ts) render below
- * the conversation, filtered and reasoned from Project Decision State and
- * the real catalog/service registries only. "Add to project" on either
- * patches the SAME store every other zone reads.
+ * (interpretMessage) with no model call. ASSISTANT-03 added real
+ * ProductCard/ServiceCard recommendations once state carries an objective.
+ * ASSISTANT-04 adds a thin, real ScenarioCompare once square footage is
+ * known — two published bands, priced at the visitor's own area, via
+ * lib/assistant-workspace/economics.ts. "Add to project" on a card patches
+ * the SAME store every other zone reads; ScenarioCompare is read-only
+ * (comparing scopes, not choosing one).
  *
  * Still no model call, still not /api/chat — that route and its tools
  * belong to the corner Quick Assistant and stay untouched.
@@ -37,6 +40,7 @@ export function ConversationPane() {
   const products = useMemo(() => recommendProducts(state, RECOMMENDED_PRODUCT_LIMIT), [state]);
   const services = useMemo(() => recommendServices(state), [state]);
   const incompatibilities = useMemo(() => selectionIncompatibilities(state), [state]);
+  const sqft = totalSquareFeet(state);
 
   const respond = (text: string) => {
     const trimmed = text.trim();
@@ -127,6 +131,8 @@ export function ConversationPane() {
                 <ServiceCard key={rec.service.slug} recommendation={rec} onAdd={onAddService} />
               ))}
             </div>
+
+            {sqft !== undefined && <ScenarioCompare squareFeet={sqft} country={state.country} />}
           </div>
         )}
       </div>
