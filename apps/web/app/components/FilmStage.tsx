@@ -45,6 +45,12 @@ import type { Film } from '@/lib/films';
  * `autoPlay` is about to request the file regardless of what `preload` says,
  * same as a `<button onclick>` firing a fetch — the attribute governs idle
  * behaviour this component never reaches.
+ *
+ * PORTRAIT VS LANDSCAPE. `.filmstage-frame` stays a fixed 16:9 box for every
+ * film — the-how ships portrait (9:16) source, so `film.frame === 'portrait'`
+ * adds `.filmstage--portrait`, which lets the video's own black background
+ * letterbox it via `object-fit:contain` instead of stretching it. the-work
+ * and the-brief carry `frame: 'landscape'` and render exactly as before.
  */
 export function FilmStage({
   film,
@@ -62,7 +68,15 @@ export function FilmStage({
   const active = film.chapters.find((c) => c.id === activeId) ?? film.chapters[0];
 
   return (
-    <figure className={`filmstage ${className}`.trim()}>
+    <figure
+      className={[
+        'filmstage',
+        film.frame === 'portrait' ? 'filmstage--portrait' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="filmstage-frame">
         {playing ? (
           <video

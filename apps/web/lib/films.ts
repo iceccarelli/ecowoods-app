@@ -22,6 +22,17 @@
  * which is also why that is a per-film field and not the single shared
  * constant this file used to export.
  *
+ * KNOWN OPEN DEFECT — HUMAN BLOCKER, NOT FIXABLE FROM HERE
+ *
+ * The three the-how source mp4s under apps/web/public/films/the-how/ carry a
+ * "Gemini Notebook" watermark baked into every frame, plus burned-in caption
+ * cards — both are pixels in the delivered video files, not something a page
+ * component or this registry can crop or hide. Only the poster still was
+ * cropped clean. Fix: replace the three files in that directory with clean
+ * re-exports at the same paths — verify-films.mjs will keep passing as long
+ * as the replacements are non-empty and correctly named; it cannot detect
+ * the watermark itself.
+ *
  * WHY THE SRC IS A PLAIN STRING, NOT A STATIC IMPORT
  *
  * `next/image`'s static-import trick (`StaticImageData`) is for `<Image>`.
@@ -84,6 +95,12 @@ export type Film = {
   /** The date this series actually went up — per film, not shared, because
    *  the-how did not ship the same day as the-work and the-brief. */
   uploadDate: string;
+  /** Video frame shape: 'landscape' (16:9 camera footage) or 'portrait'
+   *  (9:16 AI-animated). FilmStage uses this — not the poster's own aspect
+   *  ratio, which is a separate authored crop — to decide whether the
+   *  mounted <video> needs object-fit:contain letterboxing instead of the
+   *  default stretch-to-fill 16:9 box. */
+  frame: 'landscape' | 'portrait';
 };
 
 /** the-how went up separately from the-work/the-brief — see the file header. */
@@ -98,6 +115,7 @@ export const FILMS: Film[] = [
     poster: theWorkPoster,
     defaultChapter: 1,
     uploadDate: '2026-09-19',
+    frame: 'landscape',
     chapters: [
       {
         id: 1,
@@ -131,6 +149,7 @@ export const FILMS: Film[] = [
     poster: theBriefPoster,
     defaultChapter: 1,
     uploadDate: '2026-09-19',
+    frame: 'landscape',
     chapters: [
       {
         id: 1,
@@ -163,6 +182,7 @@ export const FILMS: Film[] = [
     poster: theHowPoster,
     defaultChapter: 1,
     uploadDate: FILM_HOW_UPLOAD_DATE,
+    frame: 'portrait',
     chapters: [
       {
         id: 1,
