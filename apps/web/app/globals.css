@@ -10396,7 +10396,7 @@ a.lib-card--photo { cursor: pointer; }
 /* === EW:P2-VIDEO END ====================================================== */
 
 /* === EW:FILMSTAGE START ====================================================
-   The first-party film player — six mp4s, two series, one <video> element
+   The first-party film player — nine mp4s, three series, one <video> element
    per stage. Shares .pv's frame proportions and .figrot's numbered-tab
    grammar rather than inventing a third visual language for motion. */
 .filmstage { margin: 1.75rem 0 0; }
