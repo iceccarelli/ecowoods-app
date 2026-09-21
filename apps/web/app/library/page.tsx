@@ -195,7 +195,7 @@ export default function LibraryPage() {
       <section className="tlx-section" aria-label="Films">
         <div className="shell">
           <p className="tlx-kicker">Motion</p>
-          <h2 className="tlx-h2">Two films, six chapters</h2>
+          <h2 className="tlx-h2">Three films, nine chapters</h2>
           <p className="tlx-note">
             The same evidence, moving. Tap a poster to play; the 01 / 02 / 03 strip switches
             chapters without opening a second player.

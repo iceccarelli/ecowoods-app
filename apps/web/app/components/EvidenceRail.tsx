@@ -33,12 +33,15 @@ import Link from 'next/link';
  */
 
 export type EvidenceItem = {
-  /** Case-study slug under /case-studies. */
+  /** Case-study slug under /case-studies, unless `href` overrides the destination. */
   slug: string;
   /** The short name a reader recognises — the place, not the full title. */
   name: string;
   /** What this job proves, in one line, in the words of the page linking to it. */
   why: string;
+  /** Overrides the default `/case-studies/${slug}` destination — for a photographed
+   *  project record (`/projects/${slug}`) rather than a measured case study. */
+  href?: string;
 };
 
 export function EvidenceRail({
@@ -60,12 +63,19 @@ export function EvidenceRail({
         <h2 className="tlx-h2">{heading}</h2>
         {intro && <p className="tlx-note">{intro}</p>}
         <div className="tlx-grid">
-          {items.map((c) => (
-            <Link key={c.slug} className="tlx-card" href={`/case-studies/${c.slug}`}>
-              <h3>{c.name}</h3>
-              <p>{c.why}</p>
-            </Link>
-          ))}
+          {items.map((c) =>
+            c.href ? (
+              <Link key={c.slug} className="tlx-card" href={c.href}>
+                <h3>{c.name}</h3>
+                <p>{c.why}</p>
+              </Link>
+            ) : (
+              <Link key={c.slug} className="tlx-card" href={`/case-studies/${c.slug}`}>
+                <h3>{c.name}</h3>
+                <p>{c.why}</p>
+              </Link>
+            ),
+          )}
         </div>
         <p className="tlx-note">
           Every case study publishes what was measured, not only what was achieved —{' '}

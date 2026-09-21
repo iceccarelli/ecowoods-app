@@ -51,6 +51,8 @@ import { getPapers, getPaper, type Paper, type PaperSection } from '@/lib/papers
 import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
+import { PROJECTS, type Project } from '@/lib/projects';
+import { FILMS, type Film } from '@/lib/films';
 import {
   SITE_URL,
   BUSINESS,
@@ -266,6 +268,53 @@ export const guideToMarkdown = (guide: Guide): string => {
       `- Sources: ${guide.sources.map((s) => `${SITE_URL}/papers/${s.paper}#${s.section}`).join(', ')}`,
     ]),
   );
+  return out.join('\n');
+};
+
+/* ── projects ─────────────────────────────────────────────────────────────── */
+
+export const projectToMarkdown = (project: Project): string => {
+  const canonical = `${SITE_URL}/projects/${project.slug}`;
+  const out: string[] = [
+    `# ${project.title}`,
+    '',
+    project.summary,
+    '',
+    ...table(
+      ['Field', 'Value'],
+      [
+        ['Location', `${project.location.neighbourhood}, ${project.location.city}, ${project.location.province}`],
+        ['Chapters', String(project.chapters.length)],
+        ['Photographs', String(project.stills.length)],
+        ['Film', project.films.length ? 'Yes' : 'No'],
+      ],
+    ),
+  ];
+  if (project.limits.length) {
+    out.push('## What this record does not establish', '');
+    for (const l of project.limits) out.push(`- ${l}`);
+    out.push('');
+  }
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
+/* ── films ────────────────────────────────────────────────────────────────── */
+
+export const filmToMarkdown = (film: Film): string => {
+  const canonical = `${SITE_URL}/films#${film.slug}`;
+  const out: string[] = [
+    `# ${film.headline}`,
+    '',
+    film.lede,
+    '',
+    ...table(
+      ['Chapter', 'Title', 'Duration'],
+      film.chapters.map((c) => [String(c.id), c.title, c.durationLabel]),
+    ),
+  ];
+  for (const c of film.chapters) out.push(`## ${c.id}. ${c.title}`, '', c.caption, '');
+  out.push(...provenance(canonical, [`- Published: ${film.uploadDate}`]));
   return out.join('\n');
 };
 
@@ -1468,6 +1517,8 @@ export const corpusToMarkdown = (): string => {
   const guides = getGuides();
   const terms = getTerms();
   const services = getServicePages();
+  const projects = PROJECTS;
+  const films = FILMS;
   const areas = SERVICE_AREAS.map((c) => ({ c, cc: cityContent(c.slug) })).filter(
     (x): x is { c: (typeof SERVICE_AREAS)[number]; cc: CityContent } => Boolean(x.cc),
   );
@@ -1477,8 +1528,8 @@ export const corpusToMarkdown = (): string => {
   const out: string[] = [
     ...identityHeader(),
     `This is the complete published corpus of ${BUSINESS.name} — the company, its prices, every technical`,
-    `paper, decision guide, glossary entry, service and service area published at ${SITE_URL} — in full,`,
-    'in one file. Generated from the same source as the site itself.',
+    `paper, decision guide, glossary entry, service, service area, photographed project and film published`,
+    `at ${SITE_URL} — in full, in one file. Generated from the same source as the site itself.`,
     '',
     `- Index: ${SITE_URL}/llms.txt`,
     `- Citation guide: ${SITE_URL}/ai.txt`,
@@ -1496,6 +1547,8 @@ export const corpusToMarkdown = (): string => {
     `- ${terms.length} glossary term(s)`,
     `- ${services.length} service(s), each with its published price band`,
     `- ${areas.length} service area(s) across ${TERRITORY}`,
+    `- ${projects.length} photographed project(s)`,
+    `- ${films.length} film series (${films.reduce((n, f) => n + f.chapters.length, 0)} chapters total)`,
     '',
     '---',
     '',
@@ -1536,6 +1589,14 @@ export const corpusToMarkdown = (): string => {
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
   for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');
   for (const { c, cc } of areas) out.push(areaToMarkdown(c.slug, c.name, cc), '', '---', '');
+  if (projects.length) {
+    out.push('# Photographed projects', '');
+    for (const p of projects) out.push(projectToMarkdown(p), '', '---', '');
+  }
+  if (films.length) {
+    out.push('# Films', '');
+    for (const f of films) out.push(filmToMarkdown(f), '', '---', '');
+  }
   return out.join('\n');
 };
 
