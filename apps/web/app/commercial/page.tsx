@@ -134,6 +134,9 @@ export default function CommercialPage() {
       {videoObjectsFor(getFilm('the-brief')!).map((v) => (
         <SchemaScript key={v.contentUrl} schema={v} />
       ))}
+      {videoObjectsFor(getFilm('the-how')!).map((v) => (
+        <SchemaScript key={v.contentUrl} schema={v} />
+      ))}
 
       <header className="tlx-hero">
         <div className="shell">
@@ -330,6 +333,8 @@ export default function CommercialPage() {
               Read a job with its readings
             </Link>
           </div>
+          {/* Why a specified process beats a commodity quote, on film. */}
+          <FilmStage film={getFilm('the-how')!} defaultChapter={3} />
         </div>
       </section>
 

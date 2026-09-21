@@ -18,6 +18,14 @@ import { SchemaScript } from '@/lib/schema/components';
  */
 
 const MONEY_LINKS: Record<string, { href: string; label: string }[]> = {
+  'the-work': [
+    { href: '/hardwood-stairs-toronto', label: 'Stairs in Toronto' },
+    { href: '/case-studies', label: 'Case studies' },
+  ],
+  'the-brief': [
+    { href: '/services', label: 'All six services' },
+    { href: '/hardwood-flooring-toronto', label: 'Hardwood flooring in Toronto' },
+  ],
   'the-how': [
     { href: '/services/dust-free-sanding', label: 'Dust-free sanding' },
     { href: '/hardwood-floor-refinishing-toronto', label: 'Refinishing in Toronto' },
@@ -28,11 +36,11 @@ const MONEY_LINKS: Record<string, { href: string; label: string }[]> = {
 export const metadata: Metadata = {
   title: 'Films',
   description:
-    'Every film Ecowoods has published: real camera footage of real jobs, and the three-part answer to dust, living at home during the work, and why a specified process beats a commodity quote.',
+    'Every film Ecowoods has published: real camera footage of real jobs, plus a three-part animated explainer answering dust, staying home during the work, and why a specified process beats a commodity quote.',
   alternates: { canonical: '/films' },
   openGraph: {
     title: 'Films — Ecowoods',
-    description: 'Real job footage, and the three questions that actually stall a booking, answered.',
+    description: 'Real job footage, and an animated explainer for the three questions that actually stall a booking.',
     type: 'website',
     url: `${SITE_URL}/films`,
   },
@@ -70,9 +78,9 @@ export default function FilmsPage() {
           </nav>
           <h1 className="tlx-title">Films</h1>
           <p className="tlx-lede">
-            {FILMS.length} series, {FILMS.length * 3} chapters. Real camera footage of real jobs, and
-            the three-part answer to dust, living at home during the work, and why a specified
-            process beats a commodity quote.
+            {FILMS.length} series, {FILMS.length * 3} chapters. Real camera footage of real jobs,
+            plus a three-part animated explainer answering dust, living at home during the work,
+            and why a specified process beats a commodity quote.
           </p>
         </div>
       </header>
