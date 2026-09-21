@@ -136,7 +136,17 @@ export type AnalyticsEvent =
      exists so a design can be handed to a spouse, a designer or a contractor,
      and this is the only way to find out whether anybody does that. Carries a
      configuration id and the design id, same as every other studio event. */
-  | 'studio_spec_opened';
+  | 'studio_spec_opened'
+  /* ASSISTANT-01 — /assistant (AI Home Advisor) opened. A separate product
+     from the corner chat widget's assistant_open/assistant_message above:
+     that widget is mounted on every page, this is a dedicated route. `source`
+     is always 'workspace' here, never a value the corner widget's events use,
+     so the two are never mistaken for one funnel in a report. No message, no
+     project detail — same discipline as assistant_open. Later phases add
+     workspace_project_started, workspace_product_selected, etc. per
+     docs/assistant-workspace/PHASE_PLAN.md (ASSISTANT-09); none of those
+     exist yet, so this is the only workspace_* event today. */
+  | 'workspace_open';
 
 export function track(
   event: AnalyticsEvent,
