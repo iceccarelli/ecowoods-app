@@ -165,6 +165,7 @@ export const SERVICES_MENU: MegaColumn[] = [
       { label: 'Jobs, photographed', href: '/projects', note: 'Before and after, in chapters' },
       { label: 'Maple, Vaughan — curved stair', href: '/projects/maple-vaughan-curved-stair', note: 'Bare, then stained, same flight' },
       { label: 'A stone cottage, refinished', href: '/projects/stone-cottage-strip-refinish', note: 'Worn to finished, room by room' },
+      { label: 'A hard-maple residence, field and stair', href: '/projects/maple-glass-residence', note: 'One walkthrough, open-riser glass stair' },
       { label: 'Sanding equipment', href: '/equipment', note: 'What runs on which circuit' },
       { label: 'Solid or engineered', href: '/guides/solid-vs-engineered-hardwood-toronto' },
       { label: 'How to choose a contractor', href: '/guides/how-to-choose-hardwood-contractor-toronto' },

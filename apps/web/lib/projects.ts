@@ -9,10 +9,18 @@
 import { MAPLE_VAUGHAN_CURVED_STAIR } from '@/content/projects/maple-vaughan-curved-stair';
 import type { Project, ProjectFilm, ProjectStill, ProjectPair, ProjectDetail } from '@/content/projects/maple-vaughan-curved-stair';
 import { STONE_COTTAGE_STRIP_REFINISH } from '@/content/projects/stone-cottage-strip-refinish';
+import { MAPLE_GLASS_RESIDENCE } from '@/content/projects/maple-glass-residence';
 
 export type { Project, ProjectFilm, ProjectStill, ProjectPair, ProjectDetail };
 
-export const PROJECTS: Project[] = [MAPLE_VAUGHAN_CURVED_STAIR, STONE_COTTAGE_STRIP_REFINISH];
+/* Newest first — a third registered project appears here with no further
+   edit anywhere that maps over PROJECTS (the homepage strip, /projects,
+   sitemap.ts, llms.txt). */
+export const PROJECTS: Project[] = [
+  MAPLE_GLASS_RESIDENCE,
+  MAPLE_VAUGHAN_CURVED_STAIR,
+  STONE_COTTAGE_STRIP_REFINISH,
+];
 
 export const getProject = (slug: string): Project | undefined =>
   PROJECTS.find((p) => p.slug === slug);

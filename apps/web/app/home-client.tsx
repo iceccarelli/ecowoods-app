@@ -525,6 +525,7 @@ const WORK_RAIL_TRILOGIES = WORK_RAIL_SLUGS.map((slug) => TRILOGIES.find((t) => 
  */
 const HOME_PROJECT_COVER_OVERRIDE: Record<string, string> = {
   'stone-cottage-strip-refinish': 'ch2-01',
+  'maple-glass-residence': 'ch1-15',
 };
 
 /** Series II, chapter 1 — the homepage gets exactly one film, per the brief. */
