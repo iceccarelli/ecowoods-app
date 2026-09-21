@@ -23,6 +23,7 @@ import {
 } from '@/lib/floor-studio/catalog';
 import { SERVICES, type Service } from '@/lib/seo-data';
 import { getServicePage } from '@/lib/service-pages';
+import type { PricingService } from '@/lib/pricing';
 import { bandForCountry, formatBand, type PriceBand } from '@/content/constants/pricing';
 import type { WorkspaceState } from './types';
 
@@ -100,9 +101,18 @@ export function recommendProducts(state: WorkspaceState, limit = FLOOR_PRODUCTS.
     .slice(0, limit);
 }
 
+/**
+ * The `PricingService` key a service is billed against, if it has one — from
+ * the real per-service registry (service-pages.ts), never guessed or
+ * hand-mapped a second time. Shared by `priceBandForService` here and by
+ * economics.ts's `calculateProjectRange`, so the two can never disagree
+ * about which band prices a given service.
+ */
+export const pricingKeyForService = (slug: string): PricingService | undefined => getServicePage(slug)?.pricing;
+
 /** The one published band that applies to a service, if it has one — via the real per-service registry, never guessed. */
 export function priceBandForService(slug: string, country: WorkspaceState['country']): { band: PriceBand; text: string } | undefined {
-  const key = getServicePage(slug)?.pricing;
+  const key = pricingKeyForService(slug);
   if (!key) return undefined;
   const band = bandForCountry(key, country);
   return { band, text: formatBand(band) };

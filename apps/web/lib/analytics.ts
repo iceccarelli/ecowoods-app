@@ -166,7 +166,16 @@ export type AnalyticsEvent =
      alongside it. */
   | 'workspace_product_viewed'
   | 'workspace_product_added'
-  | 'workspace_service_added';
+  | 'workspace_service_added'
+  /* ASSISTANT-04 — the economics engine (lib/assistant-workspace/economics.ts).
+     workspace_scenario_compared fires once per ScenarioCompare mount — no
+     dollar figure in the params, just that a comparison was seen.
+     workspace_savings_viewed fires once when the economics rail first shows
+     a real cost range with 2+ scopes (the only situation the Savings row
+     computes anything at all) — carries only the scope count, never an
+     amount. */
+  | 'workspace_scenario_compared'
+  | 'workspace_savings_viewed';
 
 export function track(
   event: AnalyticsEvent,
