@@ -102,7 +102,7 @@ export const SERVICES_MENU: MegaColumn[] = [
     title: 'By the job',
     href: '/services',
     items: [
-      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand' },
+      { label: 'Refinishing', href: '/hardwood-floor-refinishing-toronto', note: 'Screen and recoat, or full sand — no need to move out' },
       { label: 'New installation', href: '/hardwood-flooring-toronto', note: 'Solid and engineered' },
       { label: 'Dust-free sanding', href: '/services/dust-free-sanding', note: 'HEPA-sealed, stay in the house' },
       { label: 'Stairs', href: '/hardwood-stairs-toronto', note: 'Four different jobs, one word' },
@@ -261,6 +261,12 @@ export const LIBRARY_MENU: MegaColumn[] = [
     title: 'Evidence',
     href: '/case-studies',
     items: [
+      /* FILMS-03. Real camera footage plus the-how, the three-part answer to
+         dust, staying home during the work, and the tech trends behind a
+         specified process — the hub every one of those chapters links back
+         to, so the menu, footer and ⌘K have one durable destination rather
+         than an anchor inside /library that a layout change could move. */
+      { label: 'Films', href: '/films', note: 'Dust-free sanding, staying home during the work, and the tech trends rewriting the rules' },
       { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
       /* Footer-only until NAV-03. It is the first-party proof page — every
          published job, each linked to what was measured — and it is neither

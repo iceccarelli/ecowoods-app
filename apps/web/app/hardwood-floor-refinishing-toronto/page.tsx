@@ -138,7 +138,7 @@ export default function RefinishingTorontoPage() {
           description: 'Hardwood floor refinishing and dust-free sanding across Toronto and the GTA',
         })}
       />
-      {videoObjectsFor(getFilm('the-brief')!).map((v) => (
+      {videoObjectsFor(getFilm('the-how')!).map((v) => (
         <SchemaScript key={v.contentUrl} schema={v} />
       ))}
       <SchemaScript
@@ -257,10 +257,10 @@ export default function RefinishingTorontoPage() {
             addresses what settled, not what was breathed. Containment is a system, not a vacuum.
           </p>
           <Illustration id="term-hepa-containment" />
-          {/* The film. This is the page where "will my house be full of dust"
-              is the whole objection, so it opens on The Brief — the number
-              that does not move — rather than skipping straight to Ascent. */}
-          <FilmStage film={getFilm('the-brief')!} defaultChapter={1} />
+          {/* The film. This is the page where "can I stay in the house" is
+              the whole objection, so it opens on the-how's stay-home chapter
+              rather than the shop's general numbers reel. */}
+          <FilmStage film={getFilm('the-how')!} defaultChapter={2} />
         </div>
       </section>
 

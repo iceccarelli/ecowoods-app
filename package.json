@@ -20,6 +20,7 @@
     "verify:a11y": "node scripts/verify-a11y.mjs",
     "verify:navigation": "node scripts/verify-navigation.mjs",
     "verify:media": "node scripts/verify-media.mjs",
+    "verify:films": "node scripts/verify-films.mjs",
     "verify:assets:public": "node scripts/verify-public-assets.mjs",
     "verify:equipment": "node scripts/verify-equipment.mjs",
     "media:promote": "node scripts/promote-giorgia-media.mjs",

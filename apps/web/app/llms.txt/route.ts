@@ -253,6 +253,7 @@ export async function GET() {
   link('Everything published here', '/resources', 'the index of indexes, organised by what you are trying to do rather than by what it is called');
   link('Technical library', '/technical-library', 'the engineering reference every article sits under: moisture protocols, wood science, finishing chemistry');
   link('Visual library', '/library', 'every diagram and photograph published here, indexed');
+  link('Films', '/films', 'every film published here — real camera footage of real jobs, plus a three-part animated explainer answering dust, staying home during the work, and why a specified process beats a commodity quote');
   link('All six services', '/services', 'the services hub: installation, refinishing, dust-free sanding, restoration, stairs, inlays');
   link('Field catalogues', '/catalogues', 'the same published facts as landscape PDF documents, indexed by series; the HTML page each one names is the canonical answer — the file URLs are listed under Optional');
   link(`Well-Installed Framework v${FRAMEWORK_VERSION}`, '/framework', `${PILLARS.length} pillars, ${criterionCount()} binary criteria for judging any hardwood installation; free to cite`);

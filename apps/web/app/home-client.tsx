@@ -957,6 +957,9 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           </div>
 
           <FilmStage film={THE_BRIEF} defaultChapter={1} />
+          <p className="tlx-note">
+            <Link href="/services/dust-free-sanding">How dust-free sanding works →</Link>
+          </p>
 
           <MachineCatalog />
         </div>
