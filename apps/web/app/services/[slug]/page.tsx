@@ -208,7 +208,7 @@ export default async function ServiceDetailPage({
         <SchemaScript schema={buildFAQPage(faqs.map((f) => ({ question: f.q, answer: f.a })))} />
       )}
       {slug === 'dust-free-sanding' &&
-        videoObjectsFor(getFilm('the-brief')!).map((v) => <SchemaScript key={v.contentUrl} schema={v} />)}
+        videoObjectsFor(getFilm('the-how')!).map((v) => <SchemaScript key={v.contentUrl} schema={v} />)}
 
       <header className="tlx-hero" id="what">
         <div className="shell">
@@ -266,7 +266,7 @@ export default async function ServiceDetailPage({
           <div className="shell">
             <p className="tlx-kicker">What the shop does</p>
             <h2 className="tlx-h2">Dust-free, on film</h2>
-            <FilmStage film={getFilm('the-brief')!} defaultChapter={3} />
+            <FilmStage film={getFilm('the-how')!} defaultChapter={1} />
             <p className="tlx-note">
               Extraction runs at each machine and a sealed barrier is built at the room, which is
               what makes it possible to sand a floor in a house nobody has moved out of.

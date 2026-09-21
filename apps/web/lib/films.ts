@@ -1,12 +1,26 @@
 /**
- * lib/films.ts — the two delivered film series. Single source of truth.
+ * lib/films.ts — the three delivered film series. Single source of truth.
  *
  * WHAT THIS IS
  *
- * Six first-party mp4s, in two series of three chapters each — the same
- * camera-distance grammar the trilogy stills already use (room, approach,
- * fingertip), shot as motion instead of stills. Every page that mounts a
- * player pulls from here. No one-off `<source src="...">` in a page component.
+ * Nine first-party mp4s, in three series of three chapters each. The first
+ * two (the-work, the-brief) use the same camera-distance grammar the
+ * trilogy stills already use (room, approach, fingertip), shot as motion
+ * instead of stills. Every page that mounts a player pulls from here. No
+ * one-off `<source src="...">` in a page component.
+ *
+ * THE THIRD SERIES IS NOT CAMERA FOOTAGE — SAY SO
+ *
+ * the-work and the-brief are real camera footage of real Ecowoods jobs.
+ * the-how is not: it is a first-party animated explainer trilogy (illustrated,
+ * narrated, captioned) answering the objections that stall a booking — dust,
+ * living in the house during work, and what separates a spec-led process from
+ * a commodity quote. Nothing about it claims to document a real job, and
+ * nothing in this file or the pages that mount it is allowed to imply it
+ * does: no `kind:photograph`, no "on site" framing borrowed from the other
+ * two series. Each film's own `uploadDate` records when it actually went up,
+ * which is also why that is a per-film field and not the single shared
+ * constant this file used to export.
  *
  * WHY THE SRC IS A PLAIN STRING, NOT A STATIC IMPORT
  *
@@ -14,7 +28,7 @@
  * There is no equivalent for `<video src>` — Next does not run mp4s through
  * an asset pipeline — so a film chapter's `src` is the raw public path,
  * exactly the convention `content/projects/maple-vaughan-curved-stair.ts`
- * already established for this site's other two films. What IS statically
+ * already established for this site's other films. What IS statically
  * imported is each series' `poster`: a real `<Image>`, optimized, blurred
  * placeholder, and the thing FilmStage actually shows before anyone presses
  * play — the same trick ProcessVideo.tsx already uses for its own poster.
@@ -26,25 +40,28 @@
  * other at build time, specifically so raw-path assets like these keep
  * working locally (`next start` resolves apps/web/public correctly and
  * always did) and in production. This is the exact mechanism the site's other
- * two films (maple-vaughan-curved-stair) already ship on. Nothing here
- * invents a third serving path.
+ * films (maple-vaughan-curved-stair) already ship on. Root is not a valid
+ * film home — the-how's three source files arrived at the repo root and were
+ * moved here for exactly that reason. Nothing here invents a third serving
+ * path.
  *
- * ONE ZIP DID NOT BECOME A THIRD SERIES
+ * ONE ZIP DID NOT BECOME A FOURTH SERIES
  *
  * ECOWOODS_FILM_I_THE_ROOM.zip carried its own finished 65-second cut plus a
  * dedicated poster still. Its own shipped notes describe it as "Film I of
  * III" in a *separate*, not-yet-delivered Room/Approach/Fingertip montage
- * built from the trilogy stills — a different project from the six chapters
- * this file registers, despite the name overlap. Only its poster still is
- * reused here (as the-work's poster, per the brief's own explicit fallback
- * list); its own cut was left uncommitted rather than wired into a route
- * nothing asked for.
+ * built from the trilogy stills — a different project from the chapters this
+ * file registers, despite the name overlap. Only its poster still is reused
+ * here (as the-work's poster, per the brief's own explicit fallback list);
+ * its own cut was left uncommitted rather than wired into a route nothing
+ * asked for.
  */
 import type { StaticImageData } from 'next/image';
 import { SITE_URL } from './seo-data';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import theWorkPoster from '../public/films/the-work/poster.webp';
 import theBriefPoster from '../public/films/the-brief/poster.webp';
+import theHowPoster from '../public/films/the-how/poster.webp';
 
 export type FilmChapter = {
   id: 1 | 2 | 3;
@@ -54,7 +71,7 @@ export type FilmChapter = {
   durationLabel: string;
 };
 
-export type FilmSlug = 'the-work' | 'the-brief';
+export type FilmSlug = 'the-work' | 'the-brief' | 'the-how';
 
 export type Film = {
   slug: FilmSlug;
@@ -64,10 +81,13 @@ export type Film = {
   poster: StaticImageData;
   chapters: [FilmChapter, FilmChapter, FilmChapter];
   defaultChapter: 1 | 2 | 3;
+  /** The date this series actually went up — per film, not shared, because
+   *  the-how did not ship the same day as the-work and the-brief. */
+  uploadDate: string;
 };
 
-/** Real camera footage of real Ecowoods jobs — see the file header for provenance notes. */
-export const FILM_UPLOAD_DATE = '2026-09-19';
+/** the-how went up separately from the-work/the-brief — see the file header. */
+const FILM_HOW_UPLOAD_DATE = '2026-09-21';
 
 export const FILMS: Film[] = [
   {
@@ -77,6 +97,7 @@ export const FILMS: Film[] = [
     lede: 'The same floors and stairs, seen standing, then closer, then at the joint.',
     poster: theWorkPoster,
     defaultChapter: 1,
+    uploadDate: '2026-09-19',
     chapters: [
       {
         id: 1,
@@ -109,6 +130,7 @@ export const FILMS: Film[] = [
       'Installation, refinishing, dust-free sanding, stairs, inlays, commercial floors. Fixed written price. Salaried crews.',
     poster: theBriefPoster,
     defaultChapter: 1,
+    uploadDate: '2026-09-19',
     chapters: [
       {
         id: 1,
@@ -133,6 +155,38 @@ export const FILMS: Film[] = [
       },
     ],
   },
+  {
+    slug: 'the-how',
+    kicker: 'The objections, answered.',
+    headline: 'Dust. Living at home. The quote.',
+    lede: 'Three short answers to the three questions that actually stall a booking.',
+    poster: theHowPoster,
+    defaultChapter: 1,
+    uploadDate: FILM_HOW_UPLOAD_DATE,
+    chapters: [
+      {
+        id: 1,
+        src: '/films/the-how/01-how-dust-free-floor-sanding-works.mp4',
+        title: 'How dust-free sanding works',
+        caption: 'HEPA extraction at the tool, a sealed barrier at the room.',
+        durationLabel: '1:05',
+      },
+      {
+        id: 2,
+        src: '/films/the-how/02-how-to-refinish-floors-without-moving-out.mp4',
+        title: 'Refinish without moving out',
+        caption: 'What has to be true on site for the house to stay livable during the work.',
+        durationLabel: '1:18',
+      },
+      {
+        id: 3,
+        src: '/films/the-how/03-four-tech-trends-rewriting-hardwood-flooring.mp4',
+        title: 'Four tech trends rewriting the rules',
+        caption: 'Why a specified process beats a commodity quote.',
+        durationLabel: '1:12',
+      },
+    ],
+  },
 ];
 
 export const getFilm = (slug: FilmSlug): Film | undefined => FILMS.find((f) => f.slug === slug);
@@ -154,7 +208,7 @@ export const videoObjectsFor = (film: Film) =>
     description: c.caption,
     contentUrl: `${SITE_URL}${c.src}`,
     thumbnailUrl: `${SITE_URL}${film.poster.src}`,
-    uploadDate: FILM_UPLOAD_DATE,
+    uploadDate: film.uploadDate,
     publisher: {
       '@type': 'Organization',
       name: BUSINESS_NAP.legalName,

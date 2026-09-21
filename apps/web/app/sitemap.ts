@@ -210,6 +210,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...illustrationUrls(),
       ...brandUrls(),
     ]),
+    entry('/films', 'monthly', 0.8),
     entry('/data', 'monthly', 0.85, changelogDate('/data')),
     entry('/glossary', 'weekly', 0.9, changelogDate('/glossary')),
     entry('/guides', 'weekly', 0.9, newestGuide),

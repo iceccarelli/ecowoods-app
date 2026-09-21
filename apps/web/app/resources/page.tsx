@@ -370,6 +370,9 @@ export default async function ResourcesPage() {
               linked to what explains it
             </li>
             <li>
+              <Link href="/films">/films</Link> — every film published here, indexed
+            </li>
+            <li>
               <Link href="/data">/data</Link> — numbered, captioned, citable figures with their
               source tables
             </li>

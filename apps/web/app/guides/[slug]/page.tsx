@@ -11,6 +11,8 @@ import { SchemaScript } from '@/lib/schema/components';
 import { CommercialHeadTermRail } from '../../components/CommercialHeadTermRail';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { SERVICES } from '@/lib/seo-data';
+import { FilmStage } from '@/app/components/FilmStage';
+import { getFilm, videoObjectsFor } from '@/lib/films';
 import { IllustrationPair } from '../../components/Illustration';
 import { CatalogueRail } from '@/app/components/CatalogueRail';
 import { NextStep } from '@/app/components/NextStep';
@@ -220,6 +222,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           { name: guide.title, url: `${SITE_URL}/guides/${guide.slug}` },
         ])}
       />
+      {guide.slug === 'dustless-hardwood-refinishing-toronto' &&
+        videoObjectsFor(getFilm('the-how')!).map((v) => <SchemaScript key={v.contentUrl} schema={v} />)}
 
       <header className="tlx-hero">
         <div className="shell">
@@ -439,6 +443,16 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           )}
         </div>
       </section>
+
+      {guide.slug === 'dustless-hardwood-refinishing-toronto' && (
+        <section className="tlx-section" aria-label="Dustless sanding, on film">
+          <div className="shell">
+            <p className="tlx-kicker">What the shop does</p>
+            <h2 className="tlx-h2">Dustless, on film</h2>
+            <FilmStage film={getFilm('the-how')!} defaultChapter={1} />
+          </div>
+        </section>
+      )}
 
       {guide.faqs && guide.faqs.length > 0 && (
         <section className="tlx-section" aria-label="Related questions">

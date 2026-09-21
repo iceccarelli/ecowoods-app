@@ -321,6 +321,7 @@ export default function SiteFooter() {
                   in reads as unimportant no matter what the sitemap says. */}
               <a href="/where-we-work">Where We Work</a>
               <a href="/library">Visual Library</a>
+              <a href="/films">Films</a>
               <a href="/equipment">Sanding equipment</a>
             </FooterGroup>
           </FooterCol>
