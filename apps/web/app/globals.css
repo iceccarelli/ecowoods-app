@@ -12850,4 +12850,77 @@ a.lib-card--photo { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .aha-mobile-bar-chevron { transition: none; }
 }
+
+/* === ASSISTANT-03: product + service cards ================================ */
+.aha-recommended { margin-top: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); }
+.aha-recommended-heading {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: var(--space-md) 0 0;
+}
+
+.aha-incompatibility {
+  padding: var(--space-md);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.86rem;
+}
+.aha-incompatibility p { margin: 0 0 var(--space-2xs); }
+.aha-incompatibility p:last-child { margin-bottom: 0; }
+
+.aha-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.aha-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.aha-card[data-selected='true'] { border-color: var(--copper-surface); box-shadow: 0 0 0 1px var(--copper-surface); }
+
+.aha-card-swatch { height: 64px; border-bottom: 3px solid; }
+
+.aha-card-body { padding: var(--space-md); display: flex; flex-direction: column; gap: var(--space-2xs); flex: 1; }
+.aha-card-title { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); margin: 0; }
+.aha-card-note { font-size: 0.86rem; line-height: 1.5; color: var(--muted-soft); margin: 0; }
+.aha-card-meta { font-size: 0.78rem; color: var(--muted); margin: var(--space-2xs) 0 0; }
+.aha-card-meta a { color: var(--copper-text); }
+
+.aha-card-why { margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--line); }
+.aha-card-why ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
+.aha-card-why li { font-size: 0.82rem; color: var(--ink-soft); padding-left: var(--space-sm); position: relative; }
+.aha-card-why li::before { content: '\2022'; position: absolute; left: 0; color: var(--copper-text); }
+.aha-card-why-empty { font-size: 0.82rem; color: var(--muted-soft); margin: 0; line-height: 1.5; }
+
+.aha-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2xs); padding: var(--space-sm) var(--space-md); border-top: 1px solid var(--line); background: var(--surface-warm); }
+.aha-card-action {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.aha-card-action:hover:not(:disabled), .aha-card-action:focus-visible:not(:disabled) { border-color: var(--copper-surface); color: var(--copper-text); }
+.aha-card-action:disabled { cursor: not-allowed; opacity: 0.55; }
+.aha-card-action--primary { background: var(--copper-surface); color: var(--on-copper); border-color: var(--copper-surface); }
+.aha-card-action--primary:hover:not(:disabled), .aha-card-action--primary:focus-visible:not(:disabled) { color: var(--on-copper); opacity: 0.92; }
+.aha-card[data-selected='true'] .aha-card-action--primary { background: var(--surface-deep); border-color: var(--surface-deep); }
+
+@media (max-width: 600px) {
+  .aha-card-grid { grid-template-columns: 1fr; }
+}
 /* === ASSISTANT-01: AI HOME ADVISOR WORKSPACE END =========================== */
