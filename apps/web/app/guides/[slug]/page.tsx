@@ -585,6 +585,16 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           { ...CASES.distillery, why: 'Over a concrete slab: the moisture test decided the assembly before a species was chosen.' },
           { ...CASES.rosedale, why: 'Radiant heat under a main floor and a staircase, with the thermal range designed for.' },
           { ...CASES.forestHill, why: 'Wide-plank walnut, and keeping the colour uniform across boards that age photochemically.' },
+          ...(guide.slug === 'hard-maple-flooring-toronto'
+            ? [
+                {
+                  slug: 'maple-glass-residence',
+                  name: 'A hard-maple residence, field and stair',
+                  why: 'The species itself, photographed through a full field and a matching open-riser stair.',
+                  href: '/projects/maple-glass-residence',
+                },
+              ]
+            : []),
         ]}
       />
 
