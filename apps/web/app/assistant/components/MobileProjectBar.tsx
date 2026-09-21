@@ -1,19 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { useWorkspaceState } from './WorkspaceStateProvider';
+import { describeFloorPreference, totalSquareFeet } from '@/lib/assistant-workspace/state';
+import { SERVICES } from '@/lib/seo-data';
+
+const OBJECTIVE_LABEL: Record<string, string> = {
+  install: 'New floor',
+  refinish: 'Refinishing',
+  repair: 'Repair',
+  'not-sure': 'Still deciding',
+};
 
 /**
  * MobileProjectBar — sticky summary bar for narrow viewports.
  *
- * Collapses the left (project nav) and right (economics) zones into one tap
- * target above the conversation, which dominates the viewport on mobile per
- * docs/assistant-workspace/NEW_ASSISTANT_ARCHITECTURE.md. Tapping it opens a
- * bottom sheet with the same "—" placeholders EconomicsRail shows on desktop
- * — ASSISTANT-01 ships no live data, only the honest empty state and the
- * interaction shell it will run in.
+ * ASSISTANT-02: reads the same Project Decision State as EconomicsRail and
+ * shows the same non-money facts, in a bottom sheet instead of a fixed rail.
+ * Still no money field — that stays "Needs project state" until ASSISTANT-04.
  */
 export function MobileProjectBar() {
+  const { state } = useWorkspaceState();
   const [open, setOpen] = useState(false);
+  const sqft = totalSquareFeet(state);
+  const services = state.selectedServiceSlugs
+    .map((slug) => SERVICES.find((s) => s.slug === slug)?.name)
+    .filter((n): n is string => !!n);
+
+  const summary = state.objective
+    ? `${OBJECTIVE_LABEL[state.objective] ?? state.objective}${sqft !== undefined ? ` · ${sqft.toLocaleString()} sq ft` : ''}`
+    : 'Not started';
 
   return (
     <div className="aha-mobile-bar-wrap">
@@ -25,7 +41,7 @@ export function MobileProjectBar() {
         aria-controls="aha-mobile-sheet"
       >
         <span className="aha-mobile-bar-label">Project</span>
-        <span className="aha-mobile-bar-value">Cost range — not started</span>
+        <span className="aha-mobile-bar-value">{summary}</span>
         <span className="aha-mobile-bar-chevron" aria-hidden="true" data-open={open} />
       </button>
 
@@ -33,12 +49,20 @@ export function MobileProjectBar() {
         <div id="aha-mobile-sheet" className="aha-mobile-sheet" role="dialog" aria-label="Project economics">
           <dl className="aha-mobile-sheet-rows">
             <div className="aha-mobile-sheet-row">
+              <dt>Objective</dt>
+              <dd>{state.objective ? (OBJECTIVE_LABEL[state.objective] ?? state.objective) : 'Not set'}</dd>
+            </div>
+            <div className="aha-mobile-sheet-row">
               <dt>Selected floor</dt>
-              <dd>Not started</dd>
+              <dd>{describeFloorPreference(state.targetFloor)}</dd>
             </div>
             <div className="aha-mobile-sheet-row">
               <dt>Services</dt>
-              <dd>Not started</dd>
+              <dd>{services.length ? services.join(', ') : 'None yet'}</dd>
+            </div>
+            <div className="aha-mobile-sheet-row">
+              <dt>Square footage</dt>
+              <dd>{sqft !== undefined ? `${sqft.toLocaleString()} sq ft` : 'Not set'}</dd>
             </div>
             <div className="aha-mobile-sheet-row">
               <dt>Cost range</dt>
