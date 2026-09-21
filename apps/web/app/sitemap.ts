@@ -147,6 +147,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        build date wearing a disguise is what this file exists to refuse. */
     entry('/floor-studio', 'monthly', 0.95),                       // no date
     entry('/design', 'monthly', 0.85),                             // no date
+    /* ASSISTANT-01. No date — nothing dated backs the shell yet; it starts
+       carrying one the day a phase here actually changes on a schedule. */
+    entry('/assistant', 'monthly', 0.85),                          // no date
     entry('/technical-library', 'weekly', 0.95, newest([
       ...articles.map((x) => x.modifiedAt || x.publishedAt),
       ...caseStudies.map((x) => x.modifiedAt || x.publishedAt),

@@ -88,6 +88,14 @@ export const SERVICES_MENU: MegaColumn[] = [
          estimateHref). The menus now name it, which also stops /estimate being
          a page reachable only from the footer. NAV-03. */
       { label: 'Get a free estimate', href: '/estimate', note: 'Fixed price, in writing, after we measure' },
+      /* ASSISTANT-01. A different door from the corner chat widget (mounted
+         on every page, a transcript) and from Floor Studio/design (a single
+         configurator): a project workspace — products, services, a cost
+         range, evidence — that a conversation is one way to work on, not the
+         whole of it. The note says so, because "AI Home Advisor" next to
+         "Point your camera at the room" otherwise reads as a fourth
+         configurator rather than a different kind of tool. */
+      { label: 'AI Home Advisor', href: '/assistant', note: 'A project workspace — not the corner chat' },
     ],
   },
   {

@@ -268,6 +268,10 @@ export default function SiteFooter() {
               <a href="/tools/floor-movement">Movement calculator</a>
               <a href="/floor-studio">Floor Studio</a>
               <a href="/design">Floor Designer</a>
+              {/* ASSISTANT-01 — a project workspace, not the corner chat
+                  widget (which has no page or footer link of its own; it is
+                  mounted on every page instead). */}
+              <a href="/assistant">AI Home Advisor</a>
               {/* F-163 moved FloorForge out of the primary nav, where it spent a
                   tenth of the header on a product name a homeowner comparing
                   three quotes has never heard. It is a real page and it keeps a

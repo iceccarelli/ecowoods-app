@@ -12588,3 +12588,251 @@ a.lib-card--photo { cursor: pointer; }
 #faq { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 #areas { content-visibility: auto; contain-intrinsic-size: auto 600px; }
 /* === EW:P3-PERF END ======================================================== */
+
+/* === ASSISTANT-01: AI HOME ADVISOR WORKSPACE (/assistant) =================
+   `aha-` prefix (AI Home Advisor) — deliberately not `rg-` (the corner
+   Quick Assistant's prefix, ChatWidget.tsx) or `fs-`/`studio-` (Floor
+   Studio). Two different products, two different class namespaces, so a
+   future edit to one can never accidentally reach into the other. Semantic
+   tokens only — see scripts/verify-tokens.mjs.
+
+   Quiet-luxury / architectural-studio, not a SaaS dashboard: warm paper
+   surfaces, the display serif for the assistant's own lines, generous
+   spacing, no colour-coded status chips, no gradient rush. Three zones on
+   desktop; below --aha-bp the side rails hide and the sticky mobile bar
+   takes over — CSS only, ONE ConversationPane in the DOM either way. */
+
+.aha-page .tlx-hero.aha-hero { padding-bottom: var(--space-lg); }
+
+.aha-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  gap: var(--space-lg);
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg) var(--space-2xl);
+  align-items: start;
+}
+
+/* Project rail (left) */
+.aha-rail {
+  position: sticky;
+  top: calc(var(--header-h, 72px) + var(--space-lg));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+.aha-rail-heading {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--space-md);
+}
+.aha-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
+.aha-rail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) var(--space-sm);
+  border-radius: var(--radius-sm);
+  /* Not yet interactive — ASSISTANT-02 gives these real state to navigate to. */
+  cursor: default;
+}
+.aha-rail-item-label { font-family: var(--font-display); font-size: 0.95rem; color: var(--ink); }
+.aha-rail-item-hint { font-size: 0.78rem; color: var(--muted-soft); }
+.aha-rail-note {
+  margin: var(--space-md) 0 0;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Conversation (center) */
+.aha-conversation {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.aha-conversation-scroll { flex: 1; padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); }
+.aha-message--assistant { max-width: 640px; }
+.aha-message-author {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--copper-text);
+  margin: 0 0 var(--space-xs);
+}
+.aha-message-text { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.55; color: var(--ink); margin: 0; }
+
+.aha-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.aha-chip {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-warm);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.aha-coming-online {
+  margin-top: auto;
+  padding: var(--space-lg);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-warm);
+}
+.aha-coming-online-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 var(--space-xs); }
+.aha-coming-online-text { font-size: 0.9rem; line-height: 1.6; color: var(--muted-soft); margin: 0; }
+
+.aha-composer {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--line);
+  background: var(--surface-warm);
+}
+.aha-composer-input {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+.aha-composer-input:disabled { color: var(--muted-soft); cursor: not-allowed; }
+.aha-composer-send {
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--line-strong);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Economics rail (right) */
+.aha-econ {
+  position: sticky;
+  top: calc(var(--header-h, 72px) + var(--space-lg));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.aha-econ-heading { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.aha-econ-rows { display: flex; flex-direction: column; gap: var(--space-sm); margin: 0; }
+.aha-econ-row { display: flex; justify-content: space-between; gap: var(--space-md); font-size: 0.88rem; }
+.aha-econ-row dt { color: var(--muted); }
+.aha-econ-row dd { margin: 0; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+
+.aha-econ-status { display: flex; flex-direction: column; gap: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--line); }
+.aha-econ-status-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin: 0 0 var(--space-2xs); }
+.aha-econ-status-group ul { list-style: none; margin: 0; padding: 0; font-size: 0.82rem; color: var(--ink-soft); }
+.aha-econ-status-empty { font-size: 0.82rem; color: var(--muted-soft); margin: 0; }
+
+.aha-econ-next {
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--line-strong);
+  color: var(--muted);
+  cursor: not-allowed;
+  width: 100%;
+}
+.aha-econ-footnote { font-size: 0.76rem; line-height: 1.5; color: var(--muted-soft); margin: 0; }
+
+/* Mobile sticky project bar — hidden on desktop */
+.aha-mobile-bar-wrap { display: none; }
+
+/* === Breakpoint: below this, the side rails collapse into the sticky bar */
+@media (max-width: 900px) {
+  .aha-shell { grid-template-columns: 1fr; padding: 0 var(--space-md) var(--space-xl); gap: var(--space-md); }
+  .aha-rail, .aha-econ { display: none; }
+  .aha-conversation { min-height: calc(100dvh - var(--header-h, 72px) - 220px); }
+  .aha-conversation-scroll { padding: var(--space-lg) var(--space-md); }
+
+  .aha-mobile-bar-wrap {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+  }
+  .aha-mobile-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    min-height: 48px; /* touch target */
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    font-family: var(--font-body);
+  }
+  .aha-mobile-bar-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .aha-mobile-bar-value { flex: 1; text-align: left; font-size: 0.88rem; color: var(--ink-soft); }
+  .aha-mobile-bar-chevron {
+    width: 10px; height: 10px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+  }
+  .aha-mobile-bar-chevron[data-open='true'] { transform: rotate(135deg); }
+
+  .aha-mobile-sheet {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 6;
+    background: var(--surface);
+    border-top: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-lg) var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+  }
+  .aha-mobile-sheet-rows { display: flex; flex-direction: column; gap: var(--space-sm); margin: 0 0 var(--space-md); }
+  .aha-mobile-sheet-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
+  .aha-mobile-sheet-row dt { color: var(--muted); }
+  .aha-mobile-sheet-row dd { margin: 0; color: var(--ink-soft); }
+  .aha-mobile-sheet-footnote { font-size: 0.78rem; color: var(--muted-soft); margin: 0 0 var(--space-md); }
+  .aha-mobile-sheet-close {
+    width: 100%;
+    min-height: 44px; /* touch target */
+    font-family: var(--font-body);
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line-strong);
+    background: var(--surface-warm);
+    color: var(--ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aha-mobile-bar-chevron { transition: none; }
+}
+/* === ASSISTANT-01: AI HOME ADVISOR WORKSPACE END =========================== */

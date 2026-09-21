@@ -187,6 +187,19 @@ export async function GET() {
     '/design',
     `the specification path for somebody who already knows what they want: every axis at once, no photograph needed, the same catalogue and the same pricing function as Floor Studio. Markdown: ${SITE_URL}/design.md`,
   );
+  /* ASSISTANT-01 — shell only. The conversation, the cost range and the
+     product/service recommendations it will assemble are not live yet; the
+     copy here says so rather than describing a capability that does not
+     exist. Update this line as later phases ship, not before. Distinct from
+     the corner chat widget, which has no page of its own and is not
+     described here. No Markdown twin yet — unlike the other tools in this
+     section, /assistant has no /md/assistant route to link to; add one
+     alongside a real capability, not before. */
+  link(
+    'AI Home Advisor — a project workspace (early rollout)',
+    '/assistant',
+    'a dedicated workspace for planning a hardwood project, separate from the corner chat widget on every page. It is in early rollout: the page exists with its layout in place, but the conversation, the product/service recommendations and the cost range it will assemble are not live yet.',
+  );
   link(
     'Seasonal movement calculator',
     '/tools/floor-movement',
