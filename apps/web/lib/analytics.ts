@@ -156,7 +156,17 @@ export type AnalyticsEvent =
      selected, studio bridge opened, estimate viewed — gets wired; this pair
      is the minimum this phase needs to prove a project actually started. */
   | 'workspace_project_created'
-  | 'workspace_objective_selected';
+  | 'workspace_objective_selected'
+  /* ASSISTANT-03 — product/service orchestration. workspace_product_viewed
+     fires once per card mount (a product OR a service card — both use it,
+     distinguished by which of `productId`/`serviceSlug` is present); _added
+     fires on "Add to project." Every id is a real catalog id or SERVICES
+     slug (lib/assistant-workspace/recommendations.ts only ever returns
+     those), never free text, never a price, never which cards were shown
+     alongside it. */
+  | 'workspace_product_viewed'
+  | 'workspace_product_added'
+  | 'workspace_service_added';
 
 export function track(
   event: AnalyticsEvent,

@@ -15,9 +15,9 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 /**
  * MobileProjectBar — sticky summary bar for narrow viewports.
  *
- * ASSISTANT-02: reads the same Project Decision State as EconomicsRail and
- * shows the same non-money facts, in a bottom sheet instead of a fixed rail.
- * Still no money field — that stays "Needs project state" until ASSISTANT-04.
+ * Reads the same Project Decision State as EconomicsRail and shows the same
+ * non-money facts, in a bottom sheet instead of a fixed rail. Still no money
+ * field — that stays "Needs pricing engine" until ASSISTANT-04.
  */
 export function MobileProjectBar() {
   const { state } = useWorkspaceState();
@@ -66,11 +66,11 @@ export function MobileProjectBar() {
             </div>
             <div className="aha-mobile-sheet-row">
               <dt>Cost range</dt>
-              <dd>Needs project state</dd>
+              <dd>Needs pricing engine</dd>
             </div>
             <div className="aha-mobile-sheet-row">
               <dt>Value scenario</dt>
-              <dd>Needs project state</dd>
+              <dd>Needs pricing engine</dd>
             </div>
           </dl>
           <p className="aha-mobile-sheet-footnote">

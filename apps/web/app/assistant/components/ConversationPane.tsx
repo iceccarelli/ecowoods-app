@@ -1,39 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
+import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
 import { useWorkspaceState } from './WorkspaceStateProvider';
+import { ProductCard } from './ProductCard';
+import { ServiceCard } from './ServiceCard';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
   text: string;
 }
 
+const RECOMMENDED_PRODUCT_LIMIT = 4;
+
 /**
  * ConversationPane — the center zone of the workspace shell.
  *
- * ASSISTANT-02: the composer is live, but there is still no model call. Free
- * text goes through interpretMessage() — a deterministic, catalog-backed
- * keyword matcher (lib/assistant-workspace/interpret.ts) — and only what it
- * actually recognizes is written into Project Decision State. Nothing here
- * invents a product, a price, or a next step; a message that matches
- * nothing gets an honest "didn't catch anything" reply, not a guess.
+ * ASSISTANT-02 gave the composer a deterministic keyword matcher
+ * (interpretMessage) with no model call. ASSISTANT-03 adds what it feeds:
+ * once state carries an objective, real ProductCard/ServiceCard
+ * recommendations (lib/assistant-workspace/recommendations.ts) render below
+ * the conversation, filtered and reasoned from Project Decision State and
+ * the real catalog/service registries only. "Add to project" on either
+ * patches the SAME store every other zone reads.
  *
- * This intentionally does not stream against /api/chat: that route and its
- * tools belong to the corner Quick Assistant and stay untouched. A real
- * model call for this workspace is a later phase, per
- * docs/assistant-workspace/NEW_ASSISTANT_ARCHITECTURE.md, and it will return
- * structured cards, not a re-parsed transcript like this one.
- *
- * The conversation transcript itself is local UI state, not part of Project
- * Decision State — the architecture doc is explicit that state is the
- * central object and conversation is one interface onto it, not the record.
+ * Still no model call, still not /api/chat — that route and its tools
+ * belong to the corner Quick Assistant and stay untouched.
  */
 export function ConversationPane() {
   const { state, patch } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
+
+  const products = useMemo(() => recommendProducts(state, RECOMMENDED_PRODUCT_LIMIT), [state]);
+  const services = useMemo(() => recommendServices(state), [state]);
+  const incompatibilities = useMemo(() => selectionIncompatibilities(state), [state]);
 
   const respond = (text: string) => {
     const trimmed = text.trim();
@@ -54,6 +57,15 @@ export function ConversationPane() {
   };
 
   const onChip = (chip: string) => respond(chip);
+
+  const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
+
+  const onAddService = (slug: string) => {
+    if (state.selectedServiceSlugs.includes(slug)) return;
+    patch({ selectedServiceSlugs: [...state.selectedServiceSlugs, slug] });
+  };
+
+  const showRecommendations = Boolean(state.objective);
 
   return (
     <section className="aha-conversation" aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}>
@@ -80,14 +92,41 @@ export function ConversationPane() {
           </div>
         )}
 
-        {!state.objective && !messages.length && (
+        {!showRecommendations && (
           <div className="aha-coming-online">
             <p className="aha-coming-online-title">How this works right now</p>
             <p className="aha-coming-online-text">
               Tell us the species, finish, pattern or service you have in mind and it lands on the right, under
-              this project. A full conversation with product and cost cards is coming in a later phase — this one
-              recognizes what you name against our real catalogue, and nothing else.
+              this project. Once you say what you're here to do, real products and services from our catalogue
+              show up below, matched to what you've told us.
             </p>
+          </div>
+        )}
+
+        {showRecommendations && (
+          <div className="aha-recommended">
+            <p className="aha-recommended-heading">Recommended for your project</p>
+
+            {incompatibilities.length > 0 && (
+              <div className="aha-incompatibility" role="alert">
+                {incompatibilities.map((i) => (
+                  <p key={i.axis}>{i.reason}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="aha-card-grid">
+              {products.map((rec) => (
+                <ProductCard key={rec.product.id} recommendation={rec} onAdd={onAddProduct} />
+              ))}
+            </div>
+
+            <p className="aha-recommended-heading">Services</p>
+            <div className="aha-card-grid">
+              {services.map((rec) => (
+                <ServiceCard key={rec.service.slug} recommendation={rec} onAdd={onAddService} />
+              ))}
+            </div>
           </div>
         )}
       </div>

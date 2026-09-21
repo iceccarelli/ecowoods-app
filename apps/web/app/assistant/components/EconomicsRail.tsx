@@ -15,12 +15,14 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 /**
  * EconomicsRail — the right zone of the workspace shell.
  *
- * ASSISTANT-02: no economics engine exists yet (ASSISTANT-04, pure functions
- * over content/constants/pricing.ts). Every money field stays an explicit
+ * No economics engine exists yet (ASSISTANT-04, pure functions over
+ * content/constants/pricing.ts). Every money field stays an explicit
  * placeholder here — that is a law, not a gap this phase quietly works
  * around. What CAN be shown honestly is read straight from Project Decision
- * State: the objective, the region, the floor picked so far, the services
- * named, and the square footage typed in. None of it is a dollar figure.
+ * State: the objective, the region, the floor and services picked so far
+ * (ASSISTANT-03 — same recommendation engine the conversation pane's cards
+ * use, so a product/service added there appears here immediately), and the
+ * square footage typed in. None of it is a dollar figure.
  */
 export function EconomicsRail() {
   const { state } = useWorkspaceState();
@@ -36,9 +38,9 @@ export function EconomicsRail() {
     { label: 'Selected floor', value: describeFloorPreference(state.targetFloor) },
     { label: 'Services', value: services.length ? services.join(', ') : 'None yet' },
     { label: 'Square footage', value: sqft !== undefined ? `${sqft.toLocaleString()} sq ft` : 'Not set' },
-    { label: 'Cost range', value: 'Needs project state' },
-    { label: 'Savings', value: 'Needs project state' },
-    { label: 'Value scenario', value: 'Needs project state' },
+    { label: 'Cost range', value: 'Needs pricing engine' },
+    { label: 'Savings', value: 'Needs pricing engine' },
+    { label: 'Value scenario', value: 'Needs pricing engine' },
     { label: 'Confidence', value: '—' },
   ];
 

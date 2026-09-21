@@ -14,9 +14,12 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 /**
  * ProjectRail — the left zone of the workspace shell.
  *
- * ASSISTANT-02: every row reads Project Decision State. Sections without
- * anything to show yet keep the empty-state hint from ASSISTANT-01 — this
- * phase does not add navigation to sub-pages that don't exist (ASSISTANT-03+).
+ * Every row reads Project Decision State — "Products"/"Services" reflect
+ * the same real catalog/service selections the conversation pane's
+ * ProductCard/ServiceCard "Add to project" actions write (ASSISTANT-03).
+ * Sections with nothing to show yet keep the empty-state hint from
+ * ASSISTANT-01 — this phase does not add navigation to sub-pages that don't
+ * exist (Scenarios, Savings, Potential value, Evidence, Compare, Documents).
  */
 export function ProjectRail() {
   const { state } = useWorkspaceState();
