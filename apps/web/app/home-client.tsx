@@ -28,8 +28,8 @@ import TestimonialDeck from './components/TestimonialDeck';
 import ProcessDeck from './components/ProcessDeck';
 import ServiceTicker, { type TickerItem } from './components/ServiceTicker';
 import { JobCardRail } from './components/JobCard';
-import { PROJECTS, interiors, stillById } from '@/lib/projects';
-import KenBurnsStill from './components/project/KenBurnsStill';
+import { PROJECTS, interiors, stillById, storyboardFramesFor } from '@/lib/projects';
+import { StoryboardHover } from './components/motion';
 import { jobCardsBySlug } from '@/content/job-cards';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import {
@@ -615,9 +615,10 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
         </div>
       </section>
 
-      {/* 1b · WORK RAIL — six real jobs, Frame 1 only. Every card links to
-             that job's own three-frame story; this row does not rotate and
-             does not claim to be the whole set — /library is. */}
+      {/* 1b · WORK RAIL — six real jobs, all three frames. Hover scrubs
+             room → approach → fingertip on desktop; leave restores frame
+             01. Every card still links to that job's own story — this row
+             does not claim to be the whole set, /library is. */}
       <section className="section-tight" aria-label="Recent work">
         <div className="shell">
           <div className="section-head reveal">
@@ -627,25 +628,18 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
             </h2>
           </div>
           <div className="work-rail reveal">
-            {WORK_RAIL_TRILOGIES.map((t) => {
-              const first = t.frames[0];
-              return (
-                <Link key={t.slug} href={`/projects/${t.slug}`} className="work-rail-card">
-                  <span className="work-rail-media">
-                    <Image
-                      src={first.src}
-                      alt={first.alt}
-                      sizes="(max-width: 767px) 90vw, (max-width: 1100px) 45vw, 30vw"
-                      loading="lazy"
-                      style={{ objectFit: 'cover' }}
-                      fill
-                    />
-                  </span>
-                  <span className="work-rail-kicker">{t.kicker}</span>
-                  <span className="work-rail-title">{t.headline}</span>
-                </Link>
-              );
-            })}
+            {WORK_RAIL_TRILOGIES.map((t) => (
+              <Link key={t.slug} href={`/projects/${t.slug}`} className="work-rail-card">
+                <span className="work-rail-media">
+                  <StoryboardHover
+                    frames={t.frames}
+                    sizes="(max-width: 767px) 90vw, (max-width: 1100px) 45vw, 30vw"
+                  />
+                </span>
+                <span className="work-rail-kicker">{t.kicker}</span>
+                <span className="work-rail-title">{t.headline}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -666,10 +660,13 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
             {PROJECTS.map((p) => {
               const overrideId = HOME_PROJECT_COVER_OVERRIDE[p.slug];
               const cover = (overrideId && stillById(p, overrideId)) || interiors(p, 2)[0] || interiors(p)[0]!;
+              const frames = storyboardFramesFor(p, cover);
               return (
                 <article key={p.slug} className="pj-card">
                   <Link href={`/projects/${p.slug}`} className="pj-card-link">
-                    <KenBurnsStill still={cover} sizes="(max-width: 767px) 92vw, 46vw" />
+                    <div className="pj-plate" style={{ aspectRatio: `${cover.width} / ${cover.height}` }}>
+                      <StoryboardHover frames={frames} sizes="(max-width: 767px) 92vw, 46vw" />
+                    </div>
                     <h3 className="pj-card-title">{p.title}</h3>
                   </Link>
                   <p className="tlx-note pj-note">

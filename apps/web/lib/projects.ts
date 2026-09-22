@@ -36,6 +36,23 @@ export const interiors = (project: Project, chapter?: 1 | 2): ProjectStill[] =>
     .filter((s) => s.role === 'interior' && (chapter === undefined || s.chapter === chapter))
     .sort((a, b) => a.chapter - b.chapter || a.order - b.order);
 
+/**
+ * Interior stills for a StoryboardHover cover, cover-still first (the same
+ * still the site already picks as the KenBurns cover), then the rest of the
+ * project's interiors in story order, capped at 8 — motion/tokens.ts'
+ * STORYBOARD.maxFrames. A project's photo count label stays the full
+ * interior count regardless; this cap is for the hover scrub only.
+ */
+export const storyboardFramesFor = (
+  project: Project,
+  cover: ProjectStill,
+): { src: string; alt: string }[] => {
+  const all = interiors(project);
+  const coverIdx = all.findIndex((s) => s.id === cover.id);
+  const ordered = coverIdx > 0 ? [all[coverIdx]!, ...all.filter((_, i) => i !== coverIdx)] : all;
+  return ordered.slice(0, 8).map((s) => ({ src: s.src, alt: s.alt }));
+};
+
 export const chapterCard = (project: Project, chapter: 1 | 2): ProjectStill | undefined =>
   project.stills.find((s) => s.chapter === chapter && s.role === 'card' && s.order === 0);
 

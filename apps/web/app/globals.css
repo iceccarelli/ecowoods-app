@@ -7785,11 +7785,13 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
   opacity: 0.5; filter: brightness(0.8); transition: opacity 320ms var(--ease-out-quart), filter 320ms, transform 320ms;
 }
-.gc-peek-prev { margin-right: -34px; transform: perspective(1200px) rotateY(7deg) scale(0.96); }
-.gc-peek-next { margin-left: -34px; transform: perspective(1200px) rotateY(-7deg) scale(0.96); }
+/* DeluxeStage squash — matches motion/tokens.ts DELUXE.inactiveScaleY (0.9);
+   the active gc-stage sits at its natural scaleY(1) next to these. */
+.gc-peek-prev { margin-right: -34px; transform: scaleY(0.9); }
+.gc-peek-next { margin-left: -34px; transform: scaleY(0.9); }
 .gc-peek:hover { opacity: 0.9; filter: brightness(0.96); }
-.gc-peek-prev:hover { transform: perspective(1200px) rotateY(7deg) scale(0.99); }
-.gc-peek-next:hover { transform: perspective(1200px) rotateY(-7deg) scale(0.99); }
+.gc-peek-prev:hover { transform: scaleY(0.94); }
+.gc-peek-next:hover { transform: scaleY(0.94); }
 
 /* ---- card overlays ---- */
 .gc-card-scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(26,15,8,0.82) 0%, rgba(26,15,8,0.15) 46%, rgba(26,15,8,0) 70%); }
@@ -7844,6 +7846,7 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 @media (prefers-reduced-motion: reduce) {
   .gc-kb img { animation: none !important; transform: scale(1.05) !important; }
   .gc-stage, .gc-nav-btn, .gc-dot, .gc-peek { transition-duration: 1ms !important; }
+  .gc-peek-prev, .gc-peek-next { transform: none !important; }
 }
 
 /* ---- lightbox ---- */
@@ -9577,6 +9580,12 @@ a.lib-card--photo { cursor: pointer; }
 .rt-layer { position: absolute; inset: 0; opacity: 0;
   transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: opacity; }
 .rt-layer.is-on { opacity: 1; }
+
+/* StoryboardHover scrub — a mouse-X hover cut, not the idle timer's crossfade.
+   The wrapper gets this class only while a mouse/pen pointer is actively
+   inside it (RotatingTile.tsx), so a tap or the passive auto-cycle keep the
+   1.4s fade above untouched. */
+.rt.is-scrubbing .rt-layer { transition: none; }
 
 .rt-dots { position: absolute; bottom: 0.55rem; left: 50%; transform: translateX(-50%);
   display: flex; gap: 0.3rem; z-index: 2; }
@@ -12948,3 +12957,49 @@ a.lib-card--photo { cursor: pointer; }
 .aha-scenario-range { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); margin: 0; }
 .aha-scenario-delta { font-size: 0.85rem; color: var(--ink-soft); margin: var(--space-xs) 0 0; }
 /* === ASSISTANT-01: AI HOME ADVISOR WORKSPACE END =========================== */
+
+/* === MOTION-01: DELUXESTAGE + STORYBOARDHOVER START =======================
+ * Shared chrome for the two motion primitives in
+ * app/components/motion/{DeluxeStage,StoryboardHover}.tsx. Numbers here
+ * mirror motion/tokens.ts (DELUXE.peekPx=72, DELUXE.gapPx=16) — if either
+ * changes, change both. Frame stacks are hard cuts (display swap), never an
+ * opacity crossfade; the 3px tick is the only thing that visibly moves
+ * while scrubbing.
+ * ========================================================================= */
+.sb-frame-stack { position: relative; width: 100%; height: 100%; }
+.sb-frame { position: absolute; inset: 0; }
+.sb-tick {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  transition: none;
+}
+
+.deluxe-stage { position: relative; }
+.deluxe-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  border: 0;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  width: 2.25rem;
+  height: 2.25rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.deluxe-nav:disabled { opacity: 0.35; cursor: default; }
+.deluxe-nav-prev { left: 0.5rem; }
+.deluxe-nav-next { right: 0.5rem; }
+.deluxe-item { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-frame, .deluxe-track, .deluxe-item { transition-duration: 1ms !important; }
+  .sb-tick { display: none; }
+}
+/* === MOTION-01: DELUXESTAGE + STORYBOARDHOVER END =========================== */

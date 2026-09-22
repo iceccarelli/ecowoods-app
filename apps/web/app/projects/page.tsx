@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import KenBurnsStill from '@/app/components/project/KenBurnsStill';
-import { PROJECTS, interiors } from '@/lib/projects';
+import { StoryboardHover } from '@/app/components/motion';
+import { PROJECTS, interiors, storyboardFramesFor } from '@/lib/projects';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -63,10 +63,13 @@ export default function ProjectsIndex() {
           <div className="pj-index">
             {PROJECTS.map((p) => {
               const cover = interiors(p, 2)[0] ?? interiors(p)[0]!;
+              const frames = storyboardFramesFor(p, cover);
               return (
                 <article key={p.slug} className="pj-card">
                   <Link href={`/projects/${p.slug}`} className="pj-card-link">
-                    <KenBurnsStill still={cover} sizes="(max-width: 767px) 92vw, 46vw" />
+                    <div className="pj-plate" style={{ aspectRatio: `${cover.width} / ${cover.height}` }}>
+                      <StoryboardHover frames={frames} sizes="(max-width: 767px) 92vw, 46vw" />
+                    </div>
                     <h2 className="pj-card-title">{p.title}</h2>
                   </Link>
                   <p className="tlx-note pj-note">

@@ -29,6 +29,11 @@ import { BLUR_WARM } from '@/lib/image';
  * Reduced motion is handled globally (globals.css:1833 zeroes every animation
  * and transition), and the rotation itself also stops: a viewer who asked for
  * less motion should not get content swapping under them either.
+ *
+ * StoryboardHover scrub (mouse-X → shot, hard cut) is layered on top for
+ * desktop hover — it pauses the idle timer above and takes over `i` while a
+ * mouse or pen pointer is inside, restoring frame 0 and the timer on leave.
+ * Touch never triggers it (pointerType is checked, not guessed).
  */
 
 export function RotatingTile({
@@ -46,6 +51,7 @@ export function RotatingTile({
 }) {
   const [i, setI] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [scrubbing, setScrubbing] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -62,7 +68,7 @@ export function RotatingTile({
   }, []);
 
   useEffect(() => {
-    if (!visible || shots.length < 2) return;
+    if (!visible || scrubbing || shots.length < 2) return;
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
@@ -79,13 +85,39 @@ export function RotatingTile({
       window.clearTimeout(start);
       window.clearInterval(t);
     };
-  }, [visible, shots.length, interval, index]);
+  }, [visible, scrubbing, shots.length, interval, index]);
 
   if (!shots.length) return null;
   const kb = index % 4;
 
+  const isHoverPointer = (e: React.PointerEvent) => e.pointerType === 'mouse' || e.pointerType === 'pen';
+  const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+  const onPointerEnter = (e: React.PointerEvent) => {
+    if (!isHoverPointer(e) || shots.length < 2 || reduced()) return;
+    setScrubbing(true);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!isHoverPointer(e) || shots.length < 2 || reduced()) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    setI(Math.min(shots.length - 1, Math.floor(frac * shots.length)));
+  };
+  const onPointerLeave = (e: React.PointerEvent) => {
+    if (!isHoverPointer(e)) return;
+    setScrubbing(false);
+    setI(0);
+  };
+
   return (
-    <div className="rt" ref={ref}>
+    <div
+      className={`rt${scrubbing ? ' is-scrubbing' : ''}`}
+      ref={ref}
+      onPointerEnter={onPointerEnter}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
       {shots.map((s, n) => (
         <div
           key={n}
