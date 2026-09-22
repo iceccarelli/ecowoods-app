@@ -496,11 +496,12 @@ const HOME_HERO_SLUGS = ['salon-dark-oak-chandelier', 'salon-fireplace-continuou
 const HOME_HERO_FRAMES = HOME_HERO_SLUGS.flatMap((slug) => TRILOGIES.find((t) => t.slug === slug)?.frames ?? []);
 
 /**
- * The below-fold "Work" rail — six real jobs, Frame 1 only (no rotation; the
- * full trilogy lives one click away on each job's own page). Picked for
- * variety across the set's kinds (stairs, inlay, commercial, residential,
- * grand) rather than showing all twenty, which is the "dump the library on
- * the homepage" mistake the brief explicitly rules out.
+ * The below-fold "Work" rail — six real jobs, all three frames (hover
+ * scrubs room → approach → fingertip; the full trilogy still lives one
+ * click away on each job's own page). Picked for variety across the set's
+ * kinds (stairs, inlay, commercial, residential, grand) rather than
+ * showing all twenty, which is the "dump the library on the homepage"
+ * mistake the brief explicitly rules out.
  */
 const WORK_RAIL_SLUGS = [
   'curved-oak-iron-balustrade',
