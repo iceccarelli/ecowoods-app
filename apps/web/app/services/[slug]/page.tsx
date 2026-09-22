@@ -67,6 +67,19 @@ const DUST_FREE_DETAIL_IDS = ['08-03-detail-kitchen-dust-under-cabinet-feet', '0
 const STAIR_PROJECT = getProject('maple-vaughan-curved-stair');
 const STAIR_STILL_IDS = ['ch1-04', 'ch1-05', 'ch2-03', 'ch2-04'] as const;
 
+/**
+ * The same Project as DUST_FREE_PROJECT — Stone Cottage is the one record
+ * with a full worn-to-refinished arc, not just the kitchen chapter — but a
+ * SEPARATE still/detail selection, so this section tells the refinish
+ * story rather than repeating the dust-containment one. Both pairs below
+ * are registered in the project's own `pairs` array (hallway, sage), same
+ * rooms /hardwood-floor-refinishing-toronto already uses ch2-02 from —
+ * this adds the "before" half that commercial page doesn't show.
+ */
+const REFINISH_PROJECT = getProject('stone-cottage-strip-refinish');
+const REFINISH_STILL_IDS = ['ch1-01', 'ch2-02', 'ch1-02', 'ch2-05'] as const;
+const REFINISH_DETAIL_IDS = ['08-01-detail-hallway-oval-patch-wear', '06-01-detail-sunshaft-on-sheen'];
+
 export function generateStaticParams() {
   return getServicePages().map((p) => ({ slug: p.slug }));
 }
@@ -331,6 +344,36 @@ export default async function ServiceDetailPage({
               were recorded with the photographs. Full chapters and the honest before/after pairs
               are on{' '}
               <Link href={`/projects/${STAIR_PROJECT.slug}`}>the photo record</Link>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {slug === 'floor-refinishing' && REFINISH_PROJECT && (
+        <section className="tlx-section" aria-label="A hallway and a sage room, refinished">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">A sunlit hallway and a sage-walled room — worn, then refinished</h2>
+            <div className="pj-strip">
+              {REFINISH_STILL_IDS.map((id) => {
+                const still = stillById(REFINISH_PROJECT, id);
+                return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+              })}
+            </div>
+            <div className="pj-details">
+              {(REFINISH_PROJECT.details ?? [])
+                .filter((d) => REFINISH_DETAIL_IDS.includes(d.id))
+                .map((d) => (
+                  <DetailPlate key={d.id} detail={d} />
+                ))}
+            </div>
+            <p className="tlx-note pj-note">
+              Same window, same length of floor, in both the hallway and the room beside it — worn
+              and hazed in one frame, refinished to one even surface in the next. These are
+              editorial reconstructions of the original job-site frames, not a locked-tripod
+              measurement record, and no species, square footage or price is published with them.
+              Full chapters and the honest before/after pairs are on{' '}
+              <Link href={`/projects/${REFINISH_PROJECT.slug}`}>the photo record</Link>.
             </p>
           </div>
         </section>
