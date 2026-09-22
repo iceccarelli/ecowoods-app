@@ -7,12 +7,16 @@ import { BLUR_WARM } from '@/lib/image';
 import { machines, machineImages, type Machine } from '../data/machines';
 import { SHOT_TYPE, type ShotType } from '../data/machine-images';
 import { whenNotTyping } from '@/lib/keyboard';
+import { DELUXE } from './motion';
 
 const N = machines.length;
 const SHOTS = 6; // 6 photos per machine (set 1 = 01-03, set 2 = 04-06)
 const IMAGE_MS = 3500;
 const FLOOR_MS = 6000;
-const THROW_MS = 340;
+// DeluxeStage settle — see FloorCatalog.tsx for the same constant/curve;
+// FloorCatalog and MachineCatalog are twins and share this physics.
+const THROW_MS = DELUXE.durationMs;
+const SETTLE_EASE = 'cubic-bezier(0.22, 1.06, 0.36, 1)';
 const THRESHOLD = 90;
 const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
 const PEEK_SIZES = '260px';
@@ -30,7 +34,18 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
   const m = machines[index];
   const imgs = machineImages(m.slug);
   const [shot, setShot] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => setShot(0), [index]);
+  useEffect(() => {
+    setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  }, []);
+  const onStageMove = (e: React.PointerEvent) => {
+    if (reducedMotion || (e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    setShot(Math.min(imgs.length - 1, Math.floor(frac * imgs.length)));
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -47,7 +62,7 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
       <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
         <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
         <div className="gc-modal-media">
-          <div className="gc-modal-stage">
+          <div className="gc-modal-stage" onPointerMove={onStageMove}>
             <div className="gc-kb" key={shot}>
               <Image src={imgs[shot]} alt={`${m.name} — ${SHOT_LABEL[SHOT_TYPE[shot]]}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
             </div>
@@ -84,16 +99,17 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
 }
 
 /* ─────────────────── Stage (shared desktop + mobile) ───────────── */
-function Stage({ machine, shotIdx, kbIndex, dx, transition, onOpen, drag }: {
-  machine: Machine; shotIdx: number; kbIndex: number; dx: number; transition: boolean;
+function Stage({ machine, shotIdx, kbIndex, dx, transition, reducedMotion, onOpen, drag }: {
+  machine: Machine; shotIdx: number; kbIndex: number; dx: number; transition: boolean; reducedMotion: boolean;
   onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
 }) {
   const imgs = machineImages(machine.slug);
   const type = SHOT_TYPE[shotIdx];
-  const rot = dx * 0.04;
+  const rot = reducedMotion ? 0 : dx * 0.04;
+  const settleMs = reducedMotion ? 1 : THROW_MS;
   return (
     <div className="gc-stage"
-      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${settleMs}ms ${SETTLE_EASE}` : 'none' }}
       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
       <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
         <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
@@ -124,6 +140,11 @@ export default function MachineCatalog() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  }, []);
+
   const [dx, setDx] = useState(0);
   const [throwing, setThrowing] = useState(false);
   const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -151,12 +172,31 @@ export default function MachineCatalog() {
   }, [lightbox, go]);
 
   const fling = useCallback((step: 1 | -1) => {
-    if (throwing) return; setThrowing(true); setDx(step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
-    window.setTimeout(() => { go(step); setDx(0); setThrowing(false); }, THROW_MS);
-  }, [throwing, go]);
+    if (throwing) return;
+    setThrowing(true);
+    const settleMs = reducedMotion ? 1 : THROW_MS;
+    setDx(reducedMotion ? 0 : step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
+    window.setTimeout(() => { go(step); setDx(0); setThrowing(false); }, settleMs);
+  }, [throwing, go, reducedMotion]);
 
   const onDown = (e: React.PointerEvent) => { if (throwing) return; startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }; movedRef.current = false; setDragging(true); (e.currentTarget as Element).setPointerCapture?.(e.pointerId); };
-  const onMove = (e: React.PointerEvent) => { const s = startRef.current; if (!s) return; const d = e.clientX - s.x; if (Math.abs(d) > 6) movedRef.current = true; setDx(d); };
+  const onMove = (e: React.PointerEvent) => {
+    const s = startRef.current;
+    if (!s) {
+      // Not dragging — desktop hover scrub across this machine's shots.
+      if (!reducedMotion && (e.pointerType === 'mouse' || e.pointerType === 'pen')) {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        if (rect.width > 0) {
+          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+          setShotIdx(Math.min(SHOTS - 1, Math.floor(frac * SHOTS)));
+        }
+      }
+      return;
+    }
+    const d = e.clientX - s.x;
+    if (Math.abs(d) > 6) movedRef.current = true;
+    setDx(d);
+  };
   const onUp = (e: React.PointerEvent) => {
     const s = startRef.current; startRef.current = null; setDragging(false); if (!s) return;
     const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
@@ -176,7 +216,7 @@ export default function MachineCatalog() {
           <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
             <div className="gc-kb gc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
-          <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(idx)} drag={drag} />
+          <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} reducedMotion={reducedMotion} onOpen={() => setLightbox(idx)} drag={drag} />
           <button className="gc-peek gc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
             <div className="gc-kb gc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>

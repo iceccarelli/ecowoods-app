@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
 import { floors, floorImages, type Floor } from '../data/floors';
 import { whenNotTyping } from '@/lib/keyboard';
+import { DELUXE } from './motion';
 
 const N = floors.length;
 const SHOT_KEYS = ['room', 'detail', 'lifestyle'] as const;
@@ -13,7 +14,11 @@ type ShotKey = (typeof SHOT_KEYS)[number];
 
 const IMAGE_MS = 4000;   // rotate the 3 photos within a floor
 const FLOOR_MS = 6000;   // auto-advance to the next floor
-const THROW_MS = 340;
+// DeluxeStage settle — same 800ms/ease-out as motion/tokens.ts DELUXE, with the
+// second control point nudged past 1 to buy the ~3% overshoot at ~70% of the
+// move that the plain ease-out-expo curve this replaced didn't have.
+const THROW_MS = DELUXE.durationMs;
+const SETTLE_EASE = 'cubic-bezier(0.22, 1.06, 0.36, 1)';
 const THRESHOLD = 90;
 
 const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
@@ -33,7 +38,18 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
   const floor = floors[index];
   const imgs = floorImages(floor.slug);
   const [shot, setShot] = useState<ShotKey>('room');
+  const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => setShot('room'), [index]);
+  useEffect(() => {
+    setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  }, []);
+  const onStageMove = (e: React.PointerEvent) => {
+    if (reducedMotion || (e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    setShot(SHOT_KEYS[Math.min(SHOT_KEYS.length - 1, Math.floor(frac * SHOT_KEYS.length))]!);
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -51,7 +67,7 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
       <div className="gc-modal" onClick={(e) => e.stopPropagation()}>
         <button className="gc-close" onClick={onClose} aria-label="Close">×</button>
         <div className="gc-modal-media">
-          <div className="gc-modal-stage">
+          <div className="gc-modal-stage" onPointerMove={onStageMove}>
             <div className="gc-kb" key={shot}>
               <Image src={imgs[shot]} alt={`${floor.name} — ${shot}`} fill sizes={LIGHTBOX_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
             </div>
@@ -90,16 +106,17 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
 }
 
 /* ─────────────────── Stage (shared desktop + mobile) ───────────── */
-function Stage({ floor, shot, kbIndex, dx, transition, onOpen, drag }: {
-  floor: Floor; shot: ShotKey; kbIndex: number; dx: number; transition: boolean;
+function Stage({ floor, shot, kbIndex, dx, transition, reducedMotion, onOpen, drag }: {
+  floor: Floor; shot: ShotKey; kbIndex: number; dx: number; transition: boolean; reducedMotion: boolean;
   onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
 }) {
   const imgs = floorImages(floor.slug);
-  const rot = dx * 0.04;
+  const rot = reducedMotion ? 0 : dx * 0.04;
+  const settleMs = reducedMotion ? 1 : THROW_MS;
   return (
     <div
       className="gc-stage"
-      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${THROW_MS}ms cubic-bezier(0.22,1,0.36,1)` : 'none' }}
+      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${settleMs}ms ${SETTLE_EASE}` : 'none' }}
       role="group" aria-label={`${floor.name}. Tap for photos and specs.`}
       onClick={onOpen} {...drag}
     >
@@ -132,6 +149,11 @@ export default function FloorCatalog() {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  }, []);
 
   // drag / throw
   const [dx, setDx] = useState(0);
@@ -178,9 +200,10 @@ export default function FloorCatalog() {
   const fling = useCallback((step: 1 | -1) => {
     if (throwing) return;
     setThrowing(true);
-    setDx(step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
-    window.setTimeout(() => { goFloor(step); setDx(0); setThrowing(false); }, THROW_MS);
-  }, [throwing, goFloor]);
+    const settleMs = reducedMotion ? 1 : THROW_MS;
+    setDx(reducedMotion ? 0 : step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
+    window.setTimeout(() => { goFloor(step); setDx(0); setThrowing(false); }, settleMs);
+  }, [throwing, goFloor, reducedMotion]);
 
   const onDown = (e: React.PointerEvent) => {
     if (throwing) return;
@@ -189,7 +212,19 @@ export default function FloorCatalog() {
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
-    const s = startRef.current; if (!s) return;
+    const s = startRef.current;
+    if (!s) {
+      // Not dragging — desktop hover scrub across room/detail/lifestyle.
+      // Touch never reaches here: onDown already set startRef on touchstart.
+      if (!reducedMotion && (e.pointerType === 'mouse' || e.pointerType === 'pen')) {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        if (rect.width > 0) {
+          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+          setShotIdx(Math.min(SHOT_KEYS.length - 1, Math.floor(frac * SHOT_KEYS.length)));
+        }
+      }
+      return;
+    }
     const d = e.clientX - s.x;
     if (Math.abs(d) > 6) movedRef.current = true;
     setDx(d);
@@ -221,7 +256,7 @@ export default function FloorCatalog() {
             <div className="gc-kb gc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
           </button>
 
-          <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} onOpen={() => setLightbox(floor)} drag={drag} />
+          <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} reducedMotion={reducedMotion} onOpen={() => setLightbox(floor)} drag={drag} />
 
           {/* desktop peek — next */}
           <button className="gc-peek gc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
