@@ -80,6 +80,21 @@ const REFINISH_PROJECT = getProject('stone-cottage-strip-refinish');
 const REFINISH_STILL_IDS = ['ch1-01', 'ch2-02', 'ch1-02', 'ch2-05'] as const;
 const REFINISH_DETAIL_IDS = ['08-01-detail-hallway-oval-patch-wear', '06-01-detail-sunshaft-on-sheen'];
 
+/**
+ * The last photographed Project with no /services strip: a hard-maple
+ * field and open-riser stair, one continuous walkthrough. Biased to the
+ * FLOOR here on purpose — the project also has plenty of stair-void frames
+ * (ch1-01/02/03/05/06/07/08), but this is the install service page, not
+ * stairs, so every still below is a plank field, a grain close-up or a
+ * threshold, never the stair well. Detail ids pair 1:1 with their still by
+ * the project's own numbering convention (detail-NN pairs with ch1-NN —
+ * see the `detail()` factory's comment in
+ * content/projects/maple-glass-residence.ts).
+ */
+const INSTALL_PROJECT = getProject('maple-glass-residence');
+const INSTALL_STILL_IDS = ['ch1-04', 'ch1-13', 'ch1-18', 'ch1-20'] as const;
+const INSTALL_DETAIL_IDS = ['detail-13', 'detail-20'];
+
 export function generateStaticParams() {
   return getServicePages().map((p) => ({ slug: p.slug }));
 }
@@ -374,6 +389,36 @@ export default async function ServiceDetailPage({
               measurement record, and no species, square footage or price is published with them.
               Full chapters and the honest before/after pairs are on{' '}
               <Link href={`/projects/${REFINISH_PROJECT.slug}`}>the photo record</Link>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {slug === 'hardwood-installation' && INSTALL_PROJECT && (
+        <section className="tlx-section" aria-label="A hard-maple field, photographed">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">A continuous hard-maple floor, from suite to living room</h2>
+            <div className="pj-strip">
+              {INSTALL_STILL_IDS.map((id) => {
+                const still = stillById(INSTALL_PROJECT, id);
+                return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+              })}
+            </div>
+            <div className="pj-details">
+              {(INSTALL_PROJECT.details ?? [])
+                .filter((d) => INSTALL_DETAIL_IDS.includes(d.id))
+                .map((d) => (
+                  <DetailPlate key={d.id} detail={d} />
+                ))}
+            </div>
+            <p className="tlx-note pj-note">
+              One species and one satin finish, carried from a primary suite through a living room
+              on the same select hard-maple field. This page does not publish a square footage or a
+              schedule for it — the source pack's own figures are context for the crew, not a
+              measured takeoff. Full chapters, including the open-riser glass stair the same floor
+              runs into, are on{' '}
+              <Link href={`/projects/${INSTALL_PROJECT.slug}`}>the photo record</Link>.
             </p>
           </div>
         </section>

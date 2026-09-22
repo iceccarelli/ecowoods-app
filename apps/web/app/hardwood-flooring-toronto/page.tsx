@@ -26,6 +26,19 @@ import { illustrationImage } from '@/app/data/illustration-images';
 import { FigureRotator } from '../components/FigureRotator';
 import { TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
+import { getProject, stillById } from '@/lib/projects';
+import KenBurnsStill from '../components/project/KenBurnsStill';
+import DetailPlate from '../components/project/DetailPlate';
+
+/**
+ * Same Project, same still/detail selection as /services/hardwood-
+ * installation (MONEY-01e) — a buyer who lands on either page sees the
+ * same floor. Biased to the field, never the stair void; see that page's
+ * own comment for why.
+ */
+const INSTALL_PROJECT = getProject('maple-glass-residence');
+const INSTALL_STILL_IDS = ['ch1-04', 'ch1-13', 'ch1-18', 'ch1-20'] as const;
+const INSTALL_DETAIL_IDS = ['detail-13', 'detail-20'];
 
 /** Residential + inlay trilogies whose own routes name this page. */
 const FLOORING_SLUGS = [
@@ -279,6 +292,38 @@ export default function HardwoodFlooringTorontoPage() {
           </p>
         </div>
       </section>
+
+      {INSTALL_PROJECT && (
+        <section className="tlx-section" aria-label="A hard-maple field, photographed">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">A continuous hard-maple floor, from suite to living room</h2>
+            <div className="pj-strip">
+              {INSTALL_STILL_IDS.map((id) => {
+                const still = stillById(INSTALL_PROJECT, id);
+                return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+              })}
+            </div>
+            <div className="pj-details">
+              {(INSTALL_PROJECT.details ?? [])
+                .filter((d) => INSTALL_DETAIL_IDS.includes(d.id))
+                .map((d) => (
+                  <DetailPlate key={d.id} detail={d} />
+                ))}
+            </div>
+            <p className="tlx-note pj-note">
+              One species and one satin finish, carried from a primary suite through a living room
+              on the same select hard-maple field. This page does not publish a square footage or a
+              schedule for it — the source pack's own figures are context for the crew, not a
+              measured takeoff. Full chapters, including the open-riser glass stair the same floor
+              runs into, are on{' '}
+              <Link href={`/projects/${INSTALL_PROJECT.slug}`}>the photo record</Link>, and the same
+              floor is on{' '}
+              <Link href="/services/hardwood-installation">the installation service page</Link>.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section" aria-label="The floor, on film">
         <div className="shell">
