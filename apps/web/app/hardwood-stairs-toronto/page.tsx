@@ -23,22 +23,23 @@ import { getFilm, videoObjectsFor } from '@/lib/films';
 import { TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
 import KenBurnsStill from '../components/project/KenBurnsStill';
-import DetailPlate from '../components/project/DetailPlate';
 import { getProject, stillById } from '@/lib/projects';
 
-const STONE_COTTAGE_STAIRS = getProject('stone-cottage-strip-refinish');
-const STONE_COTTAGE_STAIR_STILL = STONE_COTTAGE_STAIRS ? stillById(STONE_COTTAGE_STAIRS, 'ch2-12') : undefined;
-const STONE_COTTAGE_STAIR_DETAILS = STONE_COTTAGE_STAIRS
-  ? (STONE_COTTAGE_STAIRS.details ?? []).filter((d) =>
-      ['07-02-detail-curved-tread-paint-vs-finished-hall', '07-03-detail-stripped-stair-nosing', '08-04-detail-stair-peeling-paint-layers'].includes(d.id),
-    )
-  : [];
-
-const MAPLE_GLASS_STAIRS = getProject('maple-glass-residence');
-const MAPLE_GLASS_STAIR_STILL = MAPLE_GLASS_STAIRS ? stillById(MAPLE_GLASS_STAIRS, 'ch1-02') : undefined;
-const MAPLE_GLASS_STAIR_DETAILS = MAPLE_GLASS_STAIRS
-  ? (MAPLE_GLASS_STAIRS.details ?? []).filter((d) => ['detail-01', 'detail-02', 'detail-06', 'detail-08'].includes(d.id))
-  : [];
+/**
+ * The one Project that is actually a stair — same flight, same open well,
+ * bare in chapter one and stained in chapter two. Stone Cottage and Maple &
+ * Glass Residence used to carry the photo proof on this page instead, with
+ * Maple Vaughan reduced to a text link beside them: the wrong jobs' photos
+ * were the ones a "hardwood stairs Toronto" search actually saw. Same
+ * still ids as /services/stair-refinishing (MONEY-01b), so a buyer who
+ * lands on either page sees the same stair. No `details` array exists on
+ * this record (see the type's own comment in
+ * content/projects/maple-vaughan-curved-stair.ts), so no DetailPlate here —
+ * inventing one would be exactly the drift stillById/DetailPlate exist to
+ * prevent.
+ */
+const STAIR_PROJECT = getProject('maple-vaughan-curved-stair');
+const STAIR_STILL_IDS = ['ch1-04', 'ch1-05', 'ch2-03', 'ch2-04'] as const;
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const band = (k: keyof typeof PRICING) => `${money(PRICING[k].min)}–${money(PRICING[k].max)}`;
@@ -442,48 +443,21 @@ export default function HardwoodStairsTorontoPage() {
             — the edger section is the one that covers stairs.
           </p>
           <p className="tlx-note">
-            What a curved stair actually looks like at each stage is on{' '}
-            <Link href="/projects/maple-vaughan-curved-stair">
-              the Maple, Vaughan photo record
-            </Link>{' '}
-            — the same flight and the same open well, sanded to bare in one chapter and stained in
-            the next.
+            What a curved stair actually looks like at each stage — sanded to bare, then
+            stained — is the same flight and the same open well, in Maple, Vaughan:
           </p>
-          {STONE_COTTAGE_STAIRS && (
+          {STAIR_PROJECT && (
             <>
-              {STONE_COTTAGE_STAIR_STILL && (
-                <KenBurnsStill still={STONE_COTTAGE_STAIR_STILL} sizes="(max-width: 767px) 100vw, 1100px" />
-              )}
-              {STONE_COTTAGE_STAIR_DETAILS.length > 0 && (
-                <div className="pj-details">
-                  {STONE_COTTAGE_STAIR_DETAILS.map((d) => (
-                    <DetailPlate key={d.id} detail={d} />
-                  ))}
-                </div>
-              )}
+              <div className="pj-strip">
+                {STAIR_STILL_IDS.map((id) => {
+                  const still = stillById(STAIR_PROJECT, id);
+                  return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+                })}
+              </div>
               <p className="tlx-note">
-                A second stair, part of the same kind of job: a hall finished while the flight beside
-                it was still mid-strip, on{' '}
-                <Link href={`/projects/${STONE_COTTAGE_STAIRS.slug}`}>the stone cottage photo record</Link>.
-              </p>
-            </>
-          )}
-          {MAPLE_GLASS_STAIRS && (
-            <>
-              {MAPLE_GLASS_STAIR_STILL && (
-                <KenBurnsStill still={MAPLE_GLASS_STAIR_STILL} sizes="(max-width: 767px) 100vw, 1100px" />
-              )}
-              {MAPLE_GLASS_STAIR_DETAILS.length > 0 && (
-                <div className="pj-details">
-                  {MAPLE_GLASS_STAIR_DETAILS.map((d) => (
-                    <DetailPlate key={d.id} detail={d} />
-                  ))}
-                </div>
-              )}
-              <p className="tlx-note">
-                An open-riser hard-maple stair, treads thickness-matched to the field and set against
-                a black steel stringer behind frameless glass, on{' '}
-                <Link href={`/projects/${MAPLE_GLASS_STAIRS.slug}`}>the maple &amp; glass residence photo record</Link>.
+                No species, square footage, price or schedule is published with it — none were
+                recorded with the photographs. Full chapters and the honest before/after pairs are
+                on <Link href={`/projects/${STAIR_PROJECT.slug}`}>the photo record</Link>.
               </p>
             </>
           )}
