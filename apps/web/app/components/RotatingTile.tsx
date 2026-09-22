@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image, { type StaticImageData } from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
+import { frameIndexFromMouseX, isHoverPointer } from './motion/scrub';
 
 /**
  * RotatingTile — one photograph slot that cycles its shots with a Ken Burns push.
@@ -90,22 +91,19 @@ export function RotatingTile({
   if (!shots.length) return null;
   const kb = index % 4;
 
-  const isHoverPointer = (e: React.PointerEvent) => e.pointerType === 'mouse' || e.pointerType === 'pen';
   const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   const onPointerEnter = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e) || shots.length < 2 || reduced()) return;
+    if (!isHoverPointer(e.pointerType) || shots.length < 2 || reduced()) return;
     setScrubbing(true);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e) || shots.length < 2 || reduced()) return;
+    if (!isHoverPointer(e.pointerType) || shots.length < 2 || reduced()) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    setI(Math.min(shots.length - 1, Math.floor(frac * shots.length)));
+    setI(frameIndexFromMouseX(e.clientX, rect.left, rect.width, shots.length));
   };
   const onPointerLeave = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e)) return;
+    if (!isHoverPointer(e.pointerType)) return;
     setScrubbing(false);
     setI(0);
   };

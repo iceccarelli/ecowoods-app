@@ -22,6 +22,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { BLUR_WARM } from '@/lib/image';
 import { STORYBOARD } from './tokens';
+import { isHoverPointer, frameIndexFromMouseX, tickLeftPercent } from './scrub';
 
 export type StoryboardFrame = { src: StaticImageData | string; alt: string };
 
@@ -34,7 +35,7 @@ export type StoryboardHoverProps = {
   paused?: boolean;
 };
 
-const isHoverPointer = (e: React.PointerEvent) => e.pointerType === 'mouse' || e.pointerType === 'pen';
+const resolveSrc = (src: StaticImageData | string): string => (typeof src === 'string' ? src : src.src);
 
 export function StoryboardHover({
   frames,
@@ -50,6 +51,7 @@ export function StoryboardHover({
   const [index, setIndex] = useState(posterIndex);
   const idleTimeout = useRef<number | null>(null);
   const idleInterval = useRef<number | null>(null);
+  const prefetched = useRef(false);
 
   const shown = frames.slice(0, STORYBOARD.maxFrames);
   const interactive = shown.length >= 2 && visible && !reduced && !paused;
@@ -119,24 +121,28 @@ export function StoryboardHover({
   }
 
   const onPointerEnter = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e)) return;
+    if (!isHoverPointer(e.pointerType)) return;
+    if (!prefetched.current) {
+      prefetched.current = true;
+      for (const frame of shown) {
+        const img = new window.Image();
+        img.src = resolveSrc(frame.src);
+      }
+    }
     armIdle();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e)) return;
+    if (!isHoverPointer(e.pointerType)) return;
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    const next = Math.min(shown.length - 1, Math.floor(frac * shown.length));
-    setIndex(next);
+    setIndex(frameIndexFromMouseX(e.clientX, rect.left, rect.width, shown.length));
     armIdle();
   };
 
   const onPointerLeave = (e: React.PointerEvent) => {
-    if (!isHoverPointer(e)) return;
+    if (!isHoverPointer(e.pointerType)) return;
     clearIdle();
     setIndex(posterIndex);
   };
@@ -164,7 +170,7 @@ export function StoryboardHover({
           />
         </div>
       ))}
-      <span className="sb-tick" style={{ left: `${(index / Math.max(1, shown.length - 1)) * 100}%` }} aria-hidden="true" />
+      <span className="sb-tick" style={{ left: `${tickLeftPercent(index, shown.length)}%` }} aria-hidden="true" />
     </div>
   );
 }

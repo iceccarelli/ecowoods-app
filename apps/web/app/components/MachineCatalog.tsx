@@ -7,17 +7,16 @@ import { BLUR_WARM } from '@/lib/image';
 import { machines, machineImages, type Machine } from '../data/machines';
 import { SHOT_TYPE, type ShotType } from '../data/machine-images';
 import { whenNotTyping } from '@/lib/keyboard';
-import { DELUXE } from './motion';
+import { DeluxeStage } from './motion/DeluxeStage';
+import { DELUXE } from './motion/tokens';
+import { frameIndexFromMouseX, isHoverPointer, tickLeftPercent } from './motion/scrub';
 
 const N = machines.length;
 const SHOTS = 6; // 6 photos per machine (set 1 = 01-03, set 2 = 04-06)
 const IMAGE_MS = 3500;
 const FLOOR_MS = 6000;
-// DeluxeStage settle — see FloorCatalog.tsx for the same constant/curve;
-// FloorCatalog and MachineCatalog are twins and share this physics.
-const THROW_MS = DELUXE.durationMs;
-const SETTLE_EASE = 'cubic-bezier(0.22, 1.06, 0.36, 1)';
-const THRESHOLD = 90;
+const THRESHOLD = 90; // px of drag before a release commits to the next/prev tool
+
 const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
 const PEEK_SIZES = '260px';
 const LIGHTBOX_SIZES = '(max-width: 900px) 92vw, 640px';
@@ -40,11 +39,9 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
     setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   }, []);
   const onStageMove = (e: React.PointerEvent) => {
-    if (reducedMotion || (e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    if (reducedMotion || !isHoverPointer(e.pointerType)) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    setShot(Math.min(imgs.length - 1, Math.floor(frac * imgs.length)));
+    setShot(frameIndexFromMouseX(e.clientX, rect.left, rect.width, imgs.length));
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -98,18 +95,15 @@ function MachineLightbox({ index, onClose, onNav }: { index: number; onClose: ()
   );
 }
 
-/* ─────────────────── Stage (shared desktop + mobile) ───────────── */
-function Stage({ machine, shotIdx, kbIndex, dx, transition, reducedMotion, onOpen, drag }: {
-  machine: Machine; shotIdx: number; kbIndex: number; dx: number; transition: boolean; reducedMotion: boolean;
+/* ───────────────── Active card (rendered inside DeluxeStage) ───────────── */
+function Stage({ machine, shotIdx, kbIndex, scrubbing, onOpen, drag }: {
+  machine: Machine; shotIdx: number; kbIndex: number; scrubbing: boolean;
   onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
 }) {
   const imgs = machineImages(machine.slug);
   const type = SHOT_TYPE[shotIdx];
-  const rot = reducedMotion ? 0 : dx * 0.04;
-  const settleMs = reducedMotion ? 1 : THROW_MS;
   return (
     <div className="gc-stage"
-      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${settleMs}ms ${SETTLE_EASE}` : 'none' }}
       role="group" aria-label={`${machine.name}. Tap for photos and details.`} onClick={onOpen} {...drag}>
       <div className={`gc-kb gc-kb-${kbIndex % 4}`} key={`${machine.slug}-${shotIdx}`}>
         <Image src={imgs[shotIdx]} alt={`${machine.name} — ${SHOT_LABEL[type]}`} fill sizes={CARD_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} draggable={false} />
@@ -126,7 +120,23 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, reducedMotion, onOpe
       <span className="gc-shot-dots">
         {Array.from({ length: SHOTS }).map((_, i) => <span key={i} className={`gc-shot-dot ${i === shotIdx ? 'is-active' : ''}`} />)}
       </span>
+      {scrubbing && <span className="sb-tick" style={{ left: `${tickLeftPercent(shotIdx, SHOTS)}%` }} aria-hidden="true" />}
     </div>
+  );
+}
+
+/* ─────────────────── Peek card (neighbouring machines) ─────────────────── */
+function PeekCard({ machine, peek, onOpen }: { machine: Machine; peek: 'prev' | 'next'; onOpen: () => void }) {
+  return (
+    <button
+      className="gc-peek-item"
+      aria-label={peek === 'prev' ? `Previous: ${machine.name}` : `Next: ${machine.name}`}
+      onClick={onOpen}
+    >
+      <div className="gc-kb gc-kb-1">
+        <Image src={machineImages(machine.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+      </div>
+    </button>
   );
 }
 
@@ -134,6 +144,7 @@ function Stage({ machine, shotIdx, kbIndex, dx, transition, reducedMotion, onOpe
 export default function MachineCatalog() {
   const [idx, setIdx] = useState(0);
   const [shotIdx, setShotIdx] = useState(0);
+  const [scrubbing, setScrubbing] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [hovering, setHovering] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -145,16 +156,28 @@ export default function MachineCatalog() {
     setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   }, []);
 
+  // drag — DeluxeStage owns the settle animation; this component only
+  // tracks the pointer and decides, on release, which tool to land on.
   const [dx, setDx] = useState(0);
-  const [throwing, setThrowing] = useState(false);
   const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const movedRef = useRef(false);
   const [dragging, setDragging] = useState(false);
 
-  const active = playing && !hovering && !dragging && lightbox === null && mounted;
+  const active = playing && !hovering && !dragging && !scrubbing && lightbox === null && mounted;
 
   const go = useCallback((step: 1 | -1) => { setIdx((i) => (i + step + N) % N); setShotIdx(0); }, []);
   const jump = useCallback((i: number) => { setIdx(i); setShotIdx(0); }, []);
+
+  // Freeze the shot scrub for the length of DeluxeStage's settle whenever
+  // the tool changes — see FloorCatalog.tsx for the same reasoning.
+  const [settling, setSettling] = useState(false);
+  const isFirstIdxRender = useRef(true);
+  useEffect(() => {
+    if (isFirstIdxRender.current) { isFirstIdxRender.current = false; return; }
+    setSettling(true);
+    const t = window.setTimeout(() => setSettling(false), reducedMotion ? 1 : DELUXE.durationMs);
+    return () => window.clearTimeout(t);
+  }, [idx, reducedMotion]);
 
   useEffect(() => { if (!active) return; const t = window.setInterval(() => setShotIdx((s) => (s + 1) % SHOTS), IMAGE_MS); return () => window.clearInterval(t); }, [active, idx]);
   useEffect(() => { if (!active) return; const t = window.setInterval(() => { setIdx((i) => (i + 1) % N); setShotIdx(0); }, FLOOR_MS); return () => window.clearInterval(t); }, [active]);
@@ -171,25 +194,17 @@ export default function MachineCatalog() {
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   }, [lightbox, go]);
 
-  const fling = useCallback((step: 1 | -1) => {
-    if (throwing) return;
-    setThrowing(true);
-    const settleMs = reducedMotion ? 1 : THROW_MS;
-    setDx(reducedMotion ? 0 : step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
-    window.setTimeout(() => { go(step); setDx(0); setThrowing(false); }, settleMs);
-  }, [throwing, go, reducedMotion]);
-
-  const onDown = (e: React.PointerEvent) => { if (throwing) return; startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }; movedRef.current = false; setDragging(true); (e.currentTarget as Element).setPointerCapture?.(e.pointerId); };
+  const onDown = (e: React.PointerEvent) => { startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() }; movedRef.current = false; setDragging(true); (e.currentTarget as Element).setPointerCapture?.(e.pointerId); };
   const onMove = (e: React.PointerEvent) => {
     const s = startRef.current;
     if (!s) {
       // Not dragging — desktop hover scrub across this machine's shots.
-      if (!reducedMotion && (e.pointerType === 'mouse' || e.pointerType === 'pen')) {
+      // Frozen while the card is still settling into place after a tool
+      // change — see FloorCatalog.tsx for the same reasoning.
+      if (!reducedMotion && !settling && isHoverPointer(e.pointerType)) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        if (rect.width > 0) {
-          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          setShotIdx(Math.min(SHOTS - 1, Math.floor(frac * SHOTS)));
-        }
+        setShotIdx(frameIndexFromMouseX(e.clientX, rect.left, rect.width, SHOTS));
+        setScrubbing(true);
       }
       return;
     }
@@ -197,29 +212,48 @@ export default function MachineCatalog() {
     if (Math.abs(d) > 6) movedRef.current = true;
     setDx(d);
   };
-  const onUp = (e: React.PointerEvent) => {
-    const s = startRef.current; startRef.current = null; setDragging(false); if (!s) return;
-    const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
-    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setDx(0); setLightbox(idx); return; }
-    if (d <= -THRESHOLD) fling(1); else if (d >= THRESHOLD) fling(-1); else setDx(0);
+  const onLeaveStage = (e: React.PointerEvent) => {
+    if (!isHoverPointer(e.pointerType)) return;
+    setScrubbing(false);
   };
-  const drag = { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: () => { startRef.current = null; setDragging(false); setDx(0); } };
-
-  const prev = machines[(idx - 1 + N) % N];
-  const next = machines[(idx + 1) % N];
-  const transition = throwing || (!dragging && dx === 0);
+  const onUp = (e: React.PointerEvent) => {
+    const s = startRef.current; startRef.current = null;
+    setDragging(false);
+    setDx(0);
+    if (!s) return;
+    const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
+    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setLightbox(idx); return; }
+    if (d <= -THRESHOLD) go(1); else if (d >= THRESHOLD) go(-1);
+  };
+  const drag = {
+    onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerLeave: onLeaveStage,
+    onPointerCancel: () => { startRef.current = null; setDragging(false); setDx(0); },
+  };
 
   return (
     <>
       <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
         <div className="gc-viewport">
-          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prev.name}`} onClick={() => go(-1)}>
-            <div className="gc-kb gc-kb-1"><Image src={machineImages(prev.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
-          </button>
-          <Stage machine={machines[idx]} shotIdx={shotIdx} kbIndex={idx + shotIdx} dx={dx} transition={transition} reducedMotion={reducedMotion} onOpen={() => setLightbox(idx)} drag={drag} />
-          <button className="gc-peek gc-peek-next" aria-label={`Next: ${next.name}`} onClick={() => go(1)}>
-            <div className="gc-kb gc-kb-2"><Image src={machineImages(next.slug)[0]} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
-          </button>
+          <DeluxeStage
+            items={machines}
+            index={idx}
+            onIndex={jump}
+            getKey={(m) => m.slug}
+            ariaLabel="Tools"
+            loop
+            dragging={dragging}
+            dragOffsetPx={dx}
+            reducedMotion={reducedMotion}
+            renderItem={(m, { active: isActive, peek }) =>
+              isActive ? (
+                <Stage machine={m} shotIdx={shotIdx} kbIndex={idx + shotIdx} scrubbing={scrubbing} onOpen={() => setLightbox(idx)} drag={drag} />
+              ) : peek ? (
+                <PeekCard machine={m} peek={peek} onOpen={() => jump(machines.indexOf(m))} />
+              ) : (
+                <div aria-hidden="true" />
+              )
+            }
+          />
         </div>
 
         <div className="gc-controls">
@@ -253,5 +287,3 @@ export default function MachineCatalog() {
     </>
   );
 }
-
-function window_w(): number { if (typeof window === 'undefined') return 800; return window.innerWidth || 800; }

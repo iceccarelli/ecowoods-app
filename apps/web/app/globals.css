@@ -7771,27 +7771,29 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 @keyframes kb3 { from { transform: scale(1.12) translate(-1.5%,0); } to { transform: scale(1.03) translate(1%,-1%); } }
 @keyframes fcFade { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---- AWS-style viewport: hero centered, neighbours peeking ---- */
-.gc-viewport { position: relative; width: 100%; height: clamp(300px, 42vw, 440px); display: flex; align-items: center; justify-content: center; }
+/* ---- AWS-style viewport: DeluxeStage owns the track, this owns the box.
+   .gc-viewport is the only thing with a fixed height; .deluxe-stage and
+   .deluxe-track fill it (stretch), and .gc-stage / .gc-peek-item fill their
+   own .deluxe-item slot in turn. The active card's width is now whatever
+   DeluxeStage computes (container width minus the peekPx+gap margins), not
+   a fixed 16:10 — that width IS the peek physics the original MOTION-01
+   brief asked for (~72–96px of neighbour showing on each side), not a
+   restyle of the card itself. ---- */
+.gc-viewport { position: relative; width: 100%; height: clamp(300px, 42vw, 440px); }
+.gc-viewport .deluxe-stage { height: 100%; }
 .gc-stage {
-  position: relative; height: 100%; aspect-ratio: 16 / 10; flex: 0 0 auto; z-index: 2;
+  position: relative; width: 100%; height: 100%; z-index: 2;
   border-radius: var(--radius-xl); overflow: hidden; background: var(--cream-100);
-  box-shadow: var(--shadow-xl); cursor: pointer; will-change: transform; touch-action: pan-y;
+  box-shadow: var(--shadow-xl); cursor: pointer; touch-action: pan-y;
 }
 .gc-stage:focus-visible { outline: 3px solid var(--copper-deep); outline-offset: 3px; }
-.gc-peek {
-  position: relative; height: 82%; flex: 0 0 auto; width: clamp(64px, 13vw, 210px); z-index: 1;
+.gc-peek-item {
+  position: relative; width: 100%; height: 100%; z-index: 1;
   border: 0; padding: 0; cursor: pointer; background: var(--cream-100);
   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
-  opacity: 0.5; filter: brightness(0.8); transition: opacity 320ms var(--ease-out-quart), filter 320ms, transform 320ms;
+  opacity: 0.5; filter: brightness(0.8); transition: opacity 320ms var(--ease-out-quart), filter 320ms;
 }
-/* DeluxeStage squash — matches motion/tokens.ts DELUXE.inactiveScaleY (0.9);
-   the active gc-stage sits at its natural scaleY(1) next to these. */
-.gc-peek-prev { margin-right: -34px; transform: scaleY(0.9); }
-.gc-peek-next { margin-left: -34px; transform: scaleY(0.9); }
-.gc-peek:hover { opacity: 0.9; filter: brightness(0.96); }
-.gc-peek-prev:hover { transform: scaleY(0.94); }
-.gc-peek-next:hover { transform: scaleY(0.94); }
+.gc-peek-item:hover { opacity: 0.9; filter: brightness(0.96); }
 
 /* ---- card overlays ---- */
 .gc-card-scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(26,15,8,0.82) 0%, rgba(26,15,8,0.15) 46%, rgba(26,15,8,0) 70%); }
@@ -7836,17 +7838,13 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 .gc-cta-row .btn { min-width: 300px; }
 
 @media (max-width: 767px) {
-  .gc-viewport { height: auto; }
-  .gc-peek { display: none; }
-  .gc-stage { width: 90vw; height: auto; aspect-ratio: 4 / 5; }
   .gc-card-title { font-size: 1.35rem; }
   .gc-dots { display: none; }
   .gc-cta-row .btn { width: 100%; min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gc-kb img { animation: none !important; transform: scale(1.05) !important; }
-  .gc-stage, .gc-nav-btn, .gc-dot, .gc-peek { transition-duration: 1ms !important; }
-  .gc-peek-prev, .gc-peek-next { transform: none !important; }
+  .gc-stage, .gc-nav-btn, .gc-dot, .gc-peek-item { transition-duration: 1ms !important; }
 }
 
 /* ---- lightbox ---- */
@@ -12978,7 +12976,16 @@ a.lib-card--photo { cursor: pointer; }
   transition: none;
 }
 
-.deluxe-stage { position: relative; }
+/* .deluxe-stage IS the clip boundary — overflow:hidden at the full call-site
+   width, not a narrower inner "viewport" div. .deluxe-track's items are each
+   sized to (stage width - 2 * (peekPx + gapPx)) by DeluxeStage.tsx and the
+   track itself carries an extra (peekPx + gapPx) left offset at rest, so the
+   active item sits centred with a slice of its neighbours showing on both
+   sides — the peek. DeluxeStage.tsx writes the track's transform directly
+   (imperative WAAPI settle + live drag), never through a CSS transition. */
+.deluxe-stage { position: relative; overflow: hidden; }
+.deluxe-track { display: flex; align-items: stretch; height: 100%; }
+.deluxe-item { will-change: transform; }
 .deluxe-nav {
   position: absolute;
   top: 50%;
@@ -12996,10 +13003,9 @@ a.lib-card--photo { cursor: pointer; }
 .deluxe-nav:disabled { opacity: 0.35; cursor: default; }
 .deluxe-nav-prev { left: 0.5rem; }
 .deluxe-nav-next { right: 0.5rem; }
-.deluxe-item { will-change: transform; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sb-frame, .deluxe-track, .deluxe-item { transition-duration: 1ms !important; }
+  .sb-frame, .deluxe-item { transition-duration: 1ms !important; }
   .sb-tick { display: none; }
 }
 /* === MOTION-01: DELUXESTAGE + STORYBOARDHOVER END =========================== */

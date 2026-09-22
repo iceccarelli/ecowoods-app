@@ -6,7 +6,9 @@ import Image from 'next/image';
 import { BLUR_WARM } from '@/lib/image';
 import { floors, floorImages, type Floor } from '../data/floors';
 import { whenNotTyping } from '@/lib/keyboard';
-import { DELUXE } from './motion';
+import { DeluxeStage } from './motion/DeluxeStage';
+import { DELUXE } from './motion/tokens';
+import { frameIndexFromMouseX, isHoverPointer, tickLeftPercent } from './motion/scrub';
 
 const N = floors.length;
 const SHOT_KEYS = ['room', 'detail', 'lifestyle'] as const;
@@ -14,12 +16,7 @@ type ShotKey = (typeof SHOT_KEYS)[number];
 
 const IMAGE_MS = 4000;   // rotate the 3 photos within a floor
 const FLOOR_MS = 6000;   // auto-advance to the next floor
-// DeluxeStage settle — same 800ms/ease-out as motion/tokens.ts DELUXE, with the
-// second control point nudged past 1 to buy the ~3% overshoot at ~70% of the
-// move that the plain ease-out-expo curve this replaced didn't have.
-const THROW_MS = DELUXE.durationMs;
-const SETTLE_EASE = 'cubic-bezier(0.22, 1.06, 0.36, 1)';
-const THRESHOLD = 90;
+const THRESHOLD = 90;    // px of drag before a release commits to the next/prev floor
 
 const CARD_SIZES = '(max-width: 767px) 90vw, 640px';
 const PEEK_SIZES = '260px';
@@ -44,11 +41,9 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
     setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   }, []);
   const onStageMove = (e: React.PointerEvent) => {
-    if (reducedMotion || (e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    if (reducedMotion || !isHoverPointer(e.pointerType)) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    setShot(SHOT_KEYS[Math.min(SHOT_KEYS.length - 1, Math.floor(frac * SHOT_KEYS.length))]!);
+    setShot(SHOT_KEYS[frameIndexFromMouseX(e.clientX, rect.left, rect.width, SHOT_KEYS.length)]!);
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,18 +100,16 @@ function FloorLightbox({ index, onClose, onNav }: { index: number; onClose: () =
   );
 }
 
-/* ─────────────────── Stage (shared desktop + mobile) ───────────── */
-function Stage({ floor, shot, kbIndex, dx, transition, reducedMotion, onOpen, drag }: {
-  floor: Floor; shot: ShotKey; kbIndex: number; dx: number; transition: boolean; reducedMotion: boolean;
+/* ───────────────── Active card (rendered inside DeluxeStage) ───────────── */
+function Stage({ floor, shot, kbIndex, scrubbing, onOpen, drag }: {
+  floor: Floor; shot: ShotKey; kbIndex: number; scrubbing: boolean;
   onOpen: () => void; drag: React.DOMAttributes<HTMLDivElement>;
 }) {
   const imgs = floorImages(floor.slug);
-  const rot = reducedMotion ? 0 : dx * 0.04;
-  const settleMs = reducedMotion ? 1 : THROW_MS;
+  const shotIdx = SHOT_KEYS.indexOf(shot);
   return (
     <div
       className="gc-stage"
-      style={{ transform: `translateX(${dx}px) rotate(${rot}deg)`, transition: transition ? `transform ${settleMs}ms ${SETTLE_EASE}` : 'none' }}
       role="group" aria-label={`${floor.name}. Tap for photos and specs.`}
       onClick={onOpen} {...drag}
     >
@@ -136,7 +129,23 @@ function Stage({ floor, shot, kbIndex, dx, transition, reducedMotion, onOpen, dr
       <span className="gc-shot-dots">
         {SHOT_KEYS.map((k) => <span key={k} className={`gc-shot-dot ${k === shot ? 'is-active' : ''}`} />)}
       </span>
+      {scrubbing && <span className="sb-tick" style={{ left: `${tickLeftPercent(shotIdx, SHOT_KEYS.length)}%` }} aria-hidden="true" />}
     </div>
+  );
+}
+
+/* ─────────────────── Peek card (neighbouring floors) ───────────────────── */
+function PeekCard({ floor, peek, onOpen }: { floor: Floor; peek: 'prev' | 'next'; onOpen: () => void }) {
+  return (
+    <button
+      className="gc-peek-item"
+      aria-label={peek === 'prev' ? `Previous: ${floor.name}` : `Next: ${floor.name}`}
+      onClick={onOpen}
+    >
+      <div className="gc-kb gc-kb-1">
+        <Image src={floorImages(floor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} />
+      </div>
+    </button>
   );
 }
 
@@ -144,6 +153,7 @@ function Stage({ floor, shot, kbIndex, dx, transition, reducedMotion, onOpen, dr
 export default function FloorCatalog() {
   const [floor, setFloor] = useState(0);
   const [shotIdx, setShotIdx] = useState(0);
+  const [scrubbing, setScrubbing] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [hovering, setHovering] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -155,18 +165,30 @@ export default function FloorCatalog() {
     setReducedMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   }, []);
 
-  // drag / throw
+  // drag — DeluxeStage owns the settle animation; this component only
+  // tracks the pointer and decides, on release, which floor to land on.
   const [dx, setDx] = useState(0);
-  const [throwing, setThrowing] = useState(false);
   const startRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const movedRef = useRef(false);
   const [dragging, setDragging] = useState(false);
 
   const shot = SHOT_KEYS[shotIdx];
-  const active = playing && !hovering && !dragging && lightbox === null && mounted;
+  const active = playing && !hovering && !dragging && !scrubbing && lightbox === null && mounted;
 
   const goFloor = useCallback((step: 1 | -1) => { setFloor((f) => (f + step + N) % N); setShotIdx(0); }, []);
   const jumpFloor = useCallback((i: number) => { setFloor(i); setShotIdx(0); }, []);
+
+  // Freeze the shot scrub for the length of DeluxeStage's settle whenever
+  // the floor changes — mid-transition mouse-X shouldn't also be cutting
+  // shots on the card that's still sliding into place.
+  const [settling, setSettling] = useState(false);
+  const isFirstFloorRender = useRef(true);
+  useEffect(() => {
+    if (isFirstFloorRender.current) { isFirstFloorRender.current = false; return; }
+    setSettling(true);
+    const t = window.setTimeout(() => setSettling(false), reducedMotion ? 1 : DELUXE.durationMs);
+    return () => window.clearTimeout(t);
+  }, [floor, reducedMotion]);
 
   // autoplay — photos every 4s, floors every 6s (independent, both pausable)
   useEffect(() => {
@@ -197,16 +219,7 @@ export default function FloorCatalog() {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightbox, goFloor]);
 
-  const fling = useCallback((step: 1 | -1) => {
-    if (throwing) return;
-    setThrowing(true);
-    const settleMs = reducedMotion ? 1 : THROW_MS;
-    setDx(reducedMotion ? 0 : step === 1 ? -window_w() * 1.2 : window_w() * 1.2);
-    window.setTimeout(() => { goFloor(step); setDx(0); setThrowing(false); }, settleMs);
-  }, [throwing, goFloor, reducedMotion]);
-
   const onDown = (e: React.PointerEvent) => {
-    if (throwing) return;
     startRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
     movedRef.current = false; setDragging(true);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
@@ -216,12 +229,13 @@ export default function FloorCatalog() {
     if (!s) {
       // Not dragging — desktop hover scrub across room/detail/lifestyle.
       // Touch never reaches here: onDown already set startRef on touchstart.
-      if (!reducedMotion && (e.pointerType === 'mouse' || e.pointerType === 'pen')) {
+      // Frozen while the card is still settling into place after a floor
+      // change (`settling`) so a mid-transition mouse-X doesn't also cut
+      // the shot on a card that's mid-slide.
+      if (!reducedMotion && !settling && isHoverPointer(e.pointerType)) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        if (rect.width > 0) {
-          const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          setShotIdx(Math.min(SHOT_KEYS.length - 1, Math.floor(frac * SHOT_KEYS.length)));
-        }
+        setShotIdx(frameIndexFromMouseX(e.clientX, rect.left, rect.width, SHOT_KEYS.length));
+        setScrubbing(true);
       }
       return;
     }
@@ -229,39 +243,49 @@ export default function FloorCatalog() {
     if (Math.abs(d) > 6) movedRef.current = true;
     setDx(d);
   };
+  const onLeaveStage = (e: React.PointerEvent) => {
+    if (!isHoverPointer(e.pointerType)) return;
+    setScrubbing(false);
+  };
   const onUp = (e: React.PointerEvent) => {
-    const s = startRef.current; startRef.current = null; setDragging(false);
+    const s = startRef.current; startRef.current = null;
+    setDragging(false);
+    setDx(0);
     if (!s) return;
     const d = e.clientX - s.x, dy = e.clientY - s.y, dt = Date.now() - s.t;
-    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setDx(0); setLightbox(floor); return; }
-    if (d <= -THRESHOLD) fling(1);
-    else if (d >= THRESHOLD) fling(-1);
-    else setDx(0);
+    if (!movedRef.current && Math.abs(d) < 8 && Math.abs(dy) < 8 && dt < 400) { setLightbox(floor); return; }
+    if (d <= -THRESHOLD) goFloor(1);
+    else if (d >= THRESHOLD) goFloor(-1);
   };
   const drag = {
-    onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp,
+    onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerLeave: onLeaveStage,
     onPointerCancel: () => { startRef.current = null; setDragging(false); setDx(0); },
   };
-
-  const prevFloor = floors[(floor - 1 + N) % N];
-  const nextFloor = floors[(floor + 1) % N];
-  const transition = throwing || (!dragging && dx === 0);
 
   return (
     <>
       <div className="gc-show" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
         <div className="gc-viewport">
-          {/* desktop peek — previous */}
-          <button className="gc-peek gc-peek-prev" aria-label={`Previous: ${prevFloor.name}`} onClick={() => goFloor(-1)}>
-            <div className="gc-kb gc-kb-1"><Image src={floorImages(prevFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
-          </button>
-
-          <Stage floor={floors[floor]} shot={shot} kbIndex={floor + shotIdx} dx={dx} transition={transition} reducedMotion={reducedMotion} onOpen={() => setLightbox(floor)} drag={drag} />
-
-          {/* desktop peek — next */}
-          <button className="gc-peek gc-peek-next" aria-label={`Next: ${nextFloor.name}`} onClick={() => goFloor(1)}>
-            <div className="gc-kb gc-kb-2"><Image src={floorImages(nextFloor.slug).room} alt="" fill sizes={PEEK_SIZES} placeholder="blur" blurDataURL={BLUR_WARM} style={{ objectFit: 'cover' }} /></div>
-          </button>
+          <DeluxeStage
+            items={floors}
+            index={floor}
+            onIndex={jumpFloor}
+            getKey={(f) => f.slug}
+            ariaLabel="Floors"
+            loop
+            dragging={dragging}
+            dragOffsetPx={dx}
+            reducedMotion={reducedMotion}
+            renderItem={(f, { active: isActive, peek }) =>
+              isActive ? (
+                <Stage floor={f} shot={shot} kbIndex={floor + shotIdx} scrubbing={scrubbing} onOpen={() => setLightbox(floor)} drag={drag} />
+              ) : peek ? (
+                <PeekCard floor={f} peek={peek} onOpen={() => jumpFloor(floors.indexOf(f))} />
+              ) : (
+                <div aria-hidden="true" />
+              )
+            }
+          />
         </div>
 
         {/* AWS-style control pill */}
@@ -295,9 +319,4 @@ export default function FloorCatalog() {
       )}
     </>
   );
-}
-
-function window_w(): number {
-  if (typeof window === 'undefined') return 800;
-  return window.innerWidth || 800;
 }
