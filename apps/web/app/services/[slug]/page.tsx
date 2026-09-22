@@ -56,6 +56,17 @@ const DUST_FREE_PROJECT = getProject('stone-cottage-strip-refinish');
 const DUST_FREE_STILL_IDS = ['ch1-04', 'ch1-05', 'ch2-11'] as const;
 const DUST_FREE_DETAIL_IDS = ['08-03-detail-kitchen-dust-under-cabinet-feet', '07-01-detail-cabinet-box-over-finished-floor'];
 
+/**
+ * The one Project that is a stair, chaptered bare-to-stained — the same
+ * curved flight and open well, sanded in chapter one and finished in
+ * chapter two. No `details` array exists on this record (see the type's own
+ * comment in content/projects/maple-vaughan-curved-stair.ts), so unlike
+ * DUST_FREE_PROJECT this page shows no DetailPlate for it — inventing one
+ * would be exactly the kind of drift stillById/DetailPlate exist to prevent.
+ */
+const STAIR_PROJECT = getProject('maple-vaughan-curved-stair');
+const STAIR_STILL_IDS = ['ch1-04', 'ch1-05', 'ch2-03', 'ch2-04'] as const;
+
 export function generateStaticParams() {
   return getServicePages().map((p) => ({ slug: p.slug }));
 }
@@ -298,6 +309,28 @@ export default async function ServiceDetailPage({
               refinished, and the boxes went in on a floor that was already done — the sequencing
               containment makes possible. Full chapters and the honest before/after pairs are on{' '}
               <Link href={`/projects/${DUST_FREE_PROJECT.slug}`}>the photo record</Link>.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {slug === 'stair-refinishing' && STAIR_PROJECT && (
+        <section className="tlx-section" aria-label="A curved stair, photographed">
+          <div className="shell">
+            <p className="tlx-kicker">Photographed, not modelled</p>
+            <h2 className="tlx-h2">A curved stair in Maple, Vaughan — sanded, then stained</h2>
+            <div className="pj-strip">
+              {STAIR_STILL_IDS.map((id) => {
+                const still = stillById(STAIR_PROJECT, id);
+                return still ? <KenBurnsStill key={id} still={still} sizes="(max-width: 767px) 90vw, 46vw" /> : null;
+              })}
+            </div>
+            <p className="tlx-note pj-note">
+              Same stair, same open well, shot twice: once sanded back to bare wood, once after
+              stain and finish. No species, square footage or price is published with it — none
+              were recorded with the photographs. Full chapters and the honest before/after pairs
+              are on{' '}
+              <Link href={`/projects/${STAIR_PROJECT.slug}`}>the photo record</Link>.
             </p>
           </div>
         </section>
