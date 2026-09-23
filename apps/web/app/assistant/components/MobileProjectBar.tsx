@@ -15,7 +15,9 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 };
 
 /**
- * MobileProjectBar — sticky summary bar for narrow viewports.
+ * MobileProjectBar — legacy sticky summary (pre-v8).
+ * WorkspaceShell v8 uses the Project capsule + WorkspaceContextDrawer instead;
+ * this file remains for reference / possible reuse, not mounted by default.
  *
  * Reads the same Project Decision State (and the same
  * `projectRangeForState` economics, ASSISTANT-04) as EconomicsRail, in a

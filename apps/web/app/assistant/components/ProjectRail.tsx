@@ -15,7 +15,8 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 };
 
 /**
- * ProjectRail — the left zone of the workspace shell.
+ * ProjectRail — project summary. Shown inside WorkspaceContextDrawer (v8);
+ * not a permanent left rail.
  *
  * Every row reads Project Decision State — "Products"/"Services" reflect
  * the same real catalog/service selections the conversation pane's
@@ -32,7 +33,7 @@ const OBJECTIVE_LABEL: Record<string, string> = {
  * points at where the real content lives (the conversation pane), same as
  * "Compare" already did for ScenarioCompare before this phase.
  */
-export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
+export function ProjectRail({ evidencePool, embedded = false }: { evidencePool: CaseStudyEvidence[]; embedded?: boolean }) {
   const { state } = useWorkspaceState();
   const sqft = totalSquareFeet(state);
   const services = state.selectedServiceSlugs
@@ -92,7 +93,7 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
   ];
 
   return (
-    <nav className="aha-rail aha-rail--project" aria-label="Project sections">
+    <nav className={`aha-rail aha-rail--project${embedded ? ' aha-rail--embedded' : ''}`} aria-label="Project sections">
       <p className="aha-rail-heading">This project</p>
       {sqft !== undefined && (
         <p className="aha-rail-sqft">{sqft.toLocaleString()} sq ft</p>

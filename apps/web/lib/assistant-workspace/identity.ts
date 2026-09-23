@@ -52,12 +52,9 @@ export const WORKSPACE_ASSISTANT = {
  * is published, so none is claimed here). Whole-home renovation advising is
  * in scope; Ecowoods commercial bids stay floors/stairs once measured.
  */
+/** One-sentence start lede (AGENT_DIRECTIVE v8) — whole-home, not floor-only. */
 export const WORKSPACE_GREETING =
-  `I'm Francisco Oller. I own ${BUSINESS_NAP.shortName} and I still work the floors. ` +
-  `Tell me the neighbourhood and what you want done. I'll put what you want next to ` +
-  `what appraisers, lenders and buyers actually pay for, with numbers and whose numbers they are. ` +
-  `If the next right job is hardwood, that's a bid we can write after we measure. ` +
-  `If it isn't, I'll still tell you the market range and why it belongs in the sequence.`;
+  `I'm Francisco. Tell me about this house — what you want done, and what actually moves value.`;
 
 /**
  * Starter prompts under the greeting — renovation decision first, then
@@ -96,4 +93,4 @@ export const WORKSPACE_CHIPS = [
 
 /** Composer placeholder — whole-house, not floor-only. */
 export const WORKSPACE_COMPOSER_PLACEHOLDER =
-  'Ask anything about renovating this house';
+  'Ask anything about this house…';
