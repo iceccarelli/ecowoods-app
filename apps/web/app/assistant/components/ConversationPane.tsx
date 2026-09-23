@@ -10,9 +10,10 @@ import {
   WORKSPACE_COMPOSER_PLACEHOLDER,
 } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
-import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
+import { selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
 import { projectRangeForState } from '@/lib/assistant-workspace/economics';
 import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
+import { computeEarnedCatalog, type EarnedCatalog } from '@/lib/assistant-workspace/earned-catalog';
 import type { AssistantChatCard, AssistantChatResponse } from '@/lib/assistant-workspace/chat-schema';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 import { useWorkspaceState } from './WorkspaceStateProvider';
@@ -24,18 +25,24 @@ interface DisplayMessage {
   role: 'assistant' | 'user';
   text: string;
   cards?: AssistantChatCard[];
+  /**
+   * Contextual "Worth considering" / "Services" cards, computed ONLY for the
+   * turn that actually changed floor-relevant state (objective, targetFloor,
+   * selectedServiceSlugs, stairs) — never a standing catalogue that survives
+   * into an unrelated later turn (e.g. "roof vs kitchen vs floors"). Tied to
+   * this specific message so it renders once, with the answer that earned
+   * it, and never resurfaces on a later, unrelated reply.
+   */
+  earnedCatalog?: EarnedCatalog;
   /** True only for a genuine send failure (network/5xx) — renders the retry affordance, never for a degraded-but-understood reply. */
   failed?: boolean;
 }
 
 /** Presentation-only: mobile keeps the composer placeholder short, per spec. */
-const COMPOSER_PLACEHOLDER_MOBILE = 'Ask Francisco…';
+const COMPOSER_PLACEHOLDER_MOBILE = `${WORKSPACE_ASSISTANT.name}…`;
 
 /** Start screen: 3–4 starters only (v8). */
 const START_CHIPS = WORKSPACE_RENOVATION_CHIPS.slice(0, 4);
-
-/** Progressive disclosure — few cards when earned, not a catalogue dump. */
-const EARNED_PRODUCT_LIMIT = 2;
 
 function snapshotFromState(state: WorkspaceState) {
   return {
@@ -159,8 +166,6 @@ export function ConversationPane({
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, busy]);
 
-  const products = useMemo(() => recommendProducts(state, EARNED_PRODUCT_LIMIT), [state]);
-  const services = useMemo(() => recommendServices(state).slice(0, 2), [state]);
   const incompatibilities = useMemo(() => selectionIncompatibilities(state), [state]);
   const projectRange = useMemo(() => projectRangeForState(state), [state]);
   const valueScenario = useMemo(
@@ -168,8 +173,8 @@ export function ConversationPane({
     [state, projectRange, evidencePool],
   );
 
-  /** Earned: visitor has talked AND we know an objective — then limited catalog cards. */
-  const showEarnedCatalog = Boolean(state.objective && messages.length > 0);
+  /** A real, unresolved incompatibility in the full selection — a safety warning, not a sales card. */
+  const showIncompatibilities = Boolean(state.objective && messages.length > 0 && incompatibilities.length > 0);
   /** Primary next action: conversion when scope is ready or already proposed. */
   const showPrimaryNext = projectRange.status === 'ready' || Boolean(state.nextAction);
 
@@ -226,12 +231,23 @@ export function ConversationPane({
       const { patch: keywordPatch } = interpretMessage(trimmed);
       if (Object.keys(keywordPatch).length) patch(keywordPatch);
 
+      /*
+       * Earned catalogue — computed ONLY when THIS turn's patch actually
+       * touched a floor-relevant field. A question this turn didn't answer
+       * ("roof vs kitchen vs floors?") never resurfaces last turn's floor
+       * products just because `state.objective` happens to be set from
+       * earlier in the conversation. See earned-catalog.ts.
+       */
+      const combinedPatch: WorkspacePatch = { ...nextPatch, ...keywordPatch };
+      const earnedCatalog = computeEarnedCatalog(state, combinedPatch);
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
           text: typeof data.reply === 'string' && data.reply.trim() ? data.reply.trim() : keywordFallback(trimmed).text,
           cards: Array.isArray(data.cards) ? data.cards.slice(0, 2) : undefined,
+          earnedCatalog,
         },
       ]);
     } catch (err) {
@@ -316,6 +332,30 @@ export function ConversationPane({
                       ))}
                     </ul>
                   )}
+                  {m.earnedCatalog && (m.earnedCatalog.products.length > 0 || m.earnedCatalog.services.length > 0) && (
+                    <div className="aha-earned">
+                      {m.earnedCatalog.products.length > 0 && (
+                        <>
+                          <p className="aha-recommended-heading">Worth considering</p>
+                          <div className="aha-card-grid aha-card-grid--compact">
+                            {m.earnedCatalog.products.map((rec) => (
+                              <ProductCard key={rec.product.id} recommendation={rec} onAdd={onAddProduct} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {m.earnedCatalog.services.length > 0 && (
+                        <>
+                          <p className="aha-recommended-heading">Services</p>
+                          <div className="aha-card-grid aha-card-grid--compact">
+                            {m.earnedCatalog.services.map((rec) => (
+                              <ServiceCard key={rec.service.slug} recommendation={rec} onAdd={onAddService} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -357,35 +397,11 @@ export function ConversationPane({
               </div>
             )}
 
-            {showEarnedCatalog && (
-              <div className="aha-earned">
-                {incompatibilities.length > 0 && (
-                  <div className="aha-incompatibility" role="alert">
-                    {incompatibilities.map((i) => (
-                      <p key={i.axis}>{i.reason}</p>
-                    ))}
-                  </div>
-                )}
-                {products.length > 0 && (
-                  <>
-                    <p className="aha-recommended-heading">Worth considering</p>
-                    <div className="aha-card-grid aha-card-grid--compact">
-                      {products.map((rec) => (
-                        <ProductCard key={rec.product.id} recommendation={rec} onAdd={onAddProduct} />
-                      ))}
-                    </div>
-                  </>
-                )}
-                {services.length > 0 && (
-                  <>
-                    <p className="aha-recommended-heading">Services</p>
-                    <div className="aha-card-grid aha-card-grid--compact">
-                      {services.map((rec) => (
-                        <ServiceCard key={rec.service.slug} recommendation={rec} onAdd={onAddService} />
-                      ))}
-                    </div>
-                  </>
-                )}
+            {showIncompatibilities && (
+              <div className="aha-incompatibility" role="alert">
+                {incompatibilities.map((i) => (
+                  <p key={i.axis}>{i.reason}</p>
+                ))}
               </div>
             )}
 
