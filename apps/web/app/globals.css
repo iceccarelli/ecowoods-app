@@ -12621,6 +12621,36 @@ a.lib-card--photo { cursor: pointer; }
 
 .aha-page .tlx-hero.aha-hero { padding-bottom: var(--space-lg); }
 
+/*
+ * .aha-page IS THE APPLICATION SHELL, NOT A SCROLLING MARKETING PAGE.
+ *
+ * The bug this fixes: everything below used to lay out with `min-height`
+ * calc()s against `100dvh`, inside a page that otherwise flows normally
+ * (site header → hero → workspace bar → conversation → global footer). A
+ * `min-height` is a floor, not a ceiling — the moment the conversation grew
+ * past a couple of turns, the flex column's *content* height exceeded that
+ * floor, so the whole page grew with it and the composer (and the full
+ * site footer sitting right underneath it in document flow) drifted below
+ * the fold. No amount of margin/position nudging fixes a box that has no
+ * height ceiling; the box needs one.
+ *
+ * The fix: `.aha-page` itself is sized to exactly the viewport space left
+ * after the sticky site chrome (`--header-h` + `--ub-h`, see .site-chrome),
+ * laid out as a column flexbox, and clipped. Every child below the compact
+ * breadcrumb bar is `flex: 1; min-height: 0` — the CSS flexbox idiom that
+ * actually bounds a flex child's height to its share of a *definite* parent
+ * size, which only exists because the ancestor chain now has one. Only the
+ * innermost `.aha-conversation-scroll` scrolls; the composer never does.
+ */
+.aha-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--header-h, 72px) - var(--ub-h, 39px));
+  min-height: 0;
+  overflow: hidden;
+}
+.aha-page .aha-hero--compact { flex: none; }
+
 .aha-shell {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 320px;
@@ -12631,14 +12661,20 @@ a.lib-card--photo { cursor: pointer; }
   align-items: start;
 }
 
-/* v8 conversation-first — single column canvas */
+/* v8 conversation-first — single column canvas, now a flex child of the
+   `.aha-page` shell above: it fills whatever vertical space the compact
+   breadcrumb bar didn't take, and hands that same bounded height down to
+   the workspace bar + ConversationPane. */
 .aha-shell--conversation-first {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   gap: var(--space-md);
   max-width: 820px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 var(--space-lg) var(--space-2xl);
+  padding: 0 var(--space-lg) var(--space-md);
   align-items: stretch;
 }
 
@@ -12673,10 +12709,18 @@ a.lib-card--photo { cursor: pointer; }
    text). WorkspaceShell toggles `body.aha-active` for the lifetime of the
    mount; see its effect for the exact timing. */
 body.aha-active .topbar { box-shadow: none; }
-body.aha-active .site-footer { padding-top: var(--space-xl); }
-@media (min-width: 900px) {
-  body.aha-active .site-footer { font-size: 0.95em; }
-}
+/*
+ * The global site footer must never compete with the active chat viewport
+ * for space — a homeowner mid-conversation should never have to scroll past
+ * a full marketing footer to find the composer. `.aha-page` is already
+ * clipped to exactly the viewport height left after the sticky site chrome
+ * (see `.aha-page` above), so the footer is unreachable by scroll for as
+ * long as the workspace is mounted regardless of this rule — this just
+ * keeps it out of the DOM's painted flow too, and only for `body.aha-active`
+ * (toggled by WorkspaceShell's mount effect), so every other route keeps
+ * its footer untouched.
+ */
+body.aha-active .site-footer { display: none; }
 
 .aha-workspace-bar {
   display: flex;
@@ -12684,6 +12728,7 @@ body.aha-active .site-footer { padding-top: var(--space-xl); }
   justify-content: space-between;
   gap: var(--space-md);
   padding: var(--space-sm) 0;
+  flex: none;
 }
 .aha-workspace-bar-kicker {
   font-family: var(--font-mono);
@@ -12968,8 +13013,15 @@ body.aha-active .site-footer { padding-top: var(--space-xl); }
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
+/* The application-shell instance (ConversationPane, always this variant on
+   /assistant): a bounded flex child, not a min-height guess. `.aha-page`
+   above gives every ancestor a definite height, so `flex: 1; min-height: 0`
+   here means this box's height is exactly "what's left after the workspace
+   bar" — never more, never less, whatever the conversation length. Only
+   `.aha-conversation-scroll` below scrolls; the composer bar is a fixed-size
+   flex sibling that never moves. */
 .aha-conversation--canvas {
-  min-height: calc(100dvh - var(--header-h, 72px) - 140px);
+  min-height: 0;
   flex: 1;
 }
 .aha-composer-bar {
@@ -13094,12 +13146,36 @@ body.aha-active .site-footer { padding-top: var(--space-xl); }
   display: grid;
   gap: var(--space-xs);
 }
+/*
+ * Card visual language — actions must not all read as the same bordered
+ * rectangle (directive: an estimate is not a service is not an honest gap is
+ * not a booking CTA). Each `AssistantChatCard.type` gets its own left-accent
+ * colour and kicker so the shape carries the distinction even before the
+ * copy is read; no image, no extra chrome, still compact supporting UI —
+ * the reply text stays primary.
+ */
 .aha-inline-card {
   border: 1px solid var(--line);
+  border-left-width: 3px;
   border-radius: 8px;
   padding: var(--space-sm) var(--space-md);
   background: var(--surface);
   text-align: left;
+}
+/* estimate — a real published-band number, so it earns the brand accent. */
+.aha-inline-card[data-card-type='ecowoods_band'] { border-left-color: var(--copper-surface); }
+/* honest gap — no adapter live yet; deliberately quiet, not an error. */
+.aha-inline-card[data-card-type='pending_provider'] {
+  border-left-color: var(--line-strong);
+  border-style: dashed;
+  background: var(--surface-warm);
+}
+/* a real page on this site — a resource link, not a sales card. */
+.aha-inline-card[data-card-type='site_link'] { border-left-color: var(--muted-soft); }
+/* the commerce moment — measure/estimate/quote proposed this turn. */
+.aha-inline-card[data-card-type='conversion_proposed'] {
+  border-left-color: var(--copper);
+  background: color-mix(in srgb, var(--copper-surface) 6%, var(--surface));
 }
 .aha-inline-card-title {
   font-family: var(--font-mono);
@@ -13119,6 +13195,7 @@ body.aha-active .site-footer { padding-top: var(--space-xl); }
   display: inline-block;
   margin-top: 0.35rem;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--copper);
 }
 .aha-composer-send:disabled,
@@ -13250,10 +13327,10 @@ a.aha-econ-next:hover, a.aha-econ-next:focus-visible {
 /* === Breakpoint: below this, the side rails collapse into the sticky bar */
 @media (max-width: 900px) {
   .aha-shell { grid-template-columns: 1fr; padding: 0 var(--space-md) var(--space-xl); gap: var(--space-md); }
-  .aha-shell--conversation-first { padding: 0 var(--space-md) var(--space-xl); max-width: none; }
+  .aha-shell--conversation-first { padding: 0 var(--space-md) var(--space-sm); max-width: none; }
   .aha-rail:not(.aha-rail--embedded), .aha-econ:not(.aha-econ--embedded) { display: none; }
-  .aha-conversation { min-height: calc(100dvh - var(--header-h, 72px) - 220px); }
-  .aha-conversation--canvas { min-height: calc(100dvh - var(--header-h, 72px) - 120px); }
+  /* Bounded by the shell (see .aha-page / .aha-conversation--canvas above) on
+     mobile too — no separate min-height guess for the phone breakpoint. */
   .aha-conversation-scroll { padding: var(--space-lg) var(--space-md); }
   .aha-workspace-bar-title { font-size: 1.2rem; }
   .aha-composer-bar { padding-left: var(--space-md); padding-right: var(--space-md); }

@@ -128,6 +128,43 @@ finish, not a structural device (per spec's "prefer borders/whitespace").
   `document.documentElement.scrollWidth - clientWidth === 0` in a headless
   Chromium pass).
 
+## Application shell (2026-09-23 — composer/viewport fix)
+
+`/assistant` is a fixed-height application shell, not a scrolling marketing
+page, from `.aha-page` down to the composer. See
+`ASSISTANT_RUTHLESS_PRODUCT_AUDIT.md` for the root-cause writeup; this is the
+token-level summary:
+
+```
+.aha-page                    height: calc(100dvh - --header-h - --ub-h); overflow: hidden
+  .aha-hero--compact          flex: none (breadcrumb bar)
+  .aha-shell--conversation-first   flex: 1; min-height: 0
+    .aha-workspace-bar        flex: none ("Ask Francisco" + Project capsule)
+    .aha-conversation--canvas flex: 1; min-height: 0
+      .aha-conversation-scroll  flex: 1; overflow-y: auto   ← the ONLY scroll region
+      .aha-composer-bar         flex: none (natural height) ← never moves
+```
+
+No `min-height` calc anywhere in this chain — every box below `.aha-page` is
+`flex: 1; min-height: 0`, which is what actually bounds a flex child's height
+to "what's left," rather than the previous `min-height: calc(100dvh - ...)`
+guess that only held for a short conversation. `body.aha-active .site-footer`
+is `display: none` (was a spacing nudge) — scoped to the same
+`WorkspaceShell`-toggled class as the existing topbar de-emphasis, so no
+other route's footer is affected.
+
+## Card visual language (2026-09-23)
+
+`.aha-inline-card[data-card-type]` gives each `AssistantChatCard.type` its
+own left-accent (3px border) so an honest "no adapter yet" gap
+(`pending_provider`, dashed, quiet) doesn't read identically to a published
+Ecowoods price band (`ecowoods_band`, copper accent) or a proposed
+measure/estimate/quote (`conversion_proposed`, commerce accent). Link CTAs
+are per-type via `cardLinkLabel()` in `ConversationPane.tsx` — "See the
+published band" / "Review in Next step" / "See this page" instead of a
+generic "Open" (directive rule 22: the CTA is the homeowner's goal, not the
+implementation).
+
 ## Motion
 
 - **Typing indicator**: three 5px dots, `1.1s` ease-in-out pulse, staggered
