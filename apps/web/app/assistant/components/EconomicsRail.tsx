@@ -17,7 +17,8 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 };
 
 /**
- * EconomicsRail — the right zone of the workspace shell.
+ * EconomicsRail — live economics. Shown inside WorkspaceContextDrawer (v8);
+ * not a permanent right rail.
  *
  * ASSISTANT-04: the cost range is real now — `projectRangeForState`
  * (lib/assistant-workspace/economics.ts) composes `calculateProjectRange`
@@ -44,7 +45,7 @@ const OBJECTIVE_LABEL: Record<string, string> = {
  * flow lives. This rail never duplicates that logic; it only points at it,
  * same as "Value scenario"'s own "see conversation" text.
  */
-export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
+export function EconomicsRail({ evidencePool, embedded = false }: { evidencePool: CaseStudyEvidence[]; embedded?: boolean }) {
   const { state } = useWorkspaceState();
   const sqft = totalSquareFeet(state);
   const services = state.selectedServiceSlugs
@@ -109,7 +110,7 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
   ];
 
   return (
-    <aside className="aha-econ" aria-label="Live project economics">
+    <aside className={`aha-econ${embedded ? ' aha-econ--embedded' : ''}`} aria-label="Live project economics">
       <p className="aha-econ-heading">Live project economics</p>
 
       <dl className="aha-econ-rows">
