@@ -88,9 +88,9 @@ export const SERVICE_PAGES: ServicePage[] = [
   },
   {
     slug: 'floor-refinishing',
-    h1: 'Dust-free hardwood floor refinishing in Toronto and the GTA',
+    h1: 'Hardwood floor refinishing in Toronto and the GTA',
     standfirst:
-      'Four machines, one sequence, containment at the source — and the difference between a floor that was sanded and a floor that was refinished.',
+      'Sand to bare wood, stain, and finish — full sand and finish, not a screen and recoat. Four machines in one sequence, with containment at the source so the house stays livable while it happens.',
     pricing: 'fullSandAndFinish',
     guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto', 'hardwood-flooring-cost-toronto'],
     papers: [
