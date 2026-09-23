@@ -105,6 +105,32 @@ already-established `/* === ASSISTANT-0N ... === */`-style `aha-*` section
   with the outer bar's padding) / `.aha-composer-input` / `.aha-composer-send`
   — the full composer rebuild.
 
+## 2026-09-23 — composer/viewport root-cause fix + card taxonomy styling
+
+See `ASSISTANT_RUTHLESS_PRODUCT_AUDIT.md` for the full root-cause writeup.
+Changed files, both already in the map above (no new components):
+
+- `apps/web/app/globals.css` — `.aha-page` is now a real fixed-height flex
+  shell (`height: calc(100dvh - --header-h - --ub-h); overflow: hidden`)
+  instead of inheriting `.tlx-page`'s ordinary document-flow sizing.
+  `.aha-shell--conversation-first`, `.aha-conversation--canvas` changed from
+  `min-height` calcs to `flex: 1; min-height: 0`. `body.aha-active
+  .site-footer` changed from a padding nudge to `display: none`. New
+  `.aha-inline-card[data-card-type='...']` rules give each card type its own
+  left-accent instead of one shared style.
+- `apps/web/app/assistant/components/ConversationPane.tsx` — inline cards now
+  render `data-card-type={c.type}`; new `cardLinkLabel()` module function
+  maps `AssistantChatCard['type']` to a goal-phrased CTA instead of the
+  hardcoded "Open". No change to the fetch target, request/response shape,
+  or any business logic.
+
+Not touched, and why (scope note, not an oversight — see the audit doc's
+"what was NOT attempted" section): `chat-schema.ts`'s `AssistantChatCard.type`
+union, `chat-tools.ts`'s tool executors, `system-prompt.ts`, and
+`ProductCard.tsx`/`ServiceCard.tsx` — the directive's extended action
+taxonomy and action-selection-layer work is scoped separately in
+`ASSISTANT_CONTEXTUAL_ACTIONS_SPEC.md`.
+
 ## What "extend, don't duplicate" meant in practice here
 
 - No `ChatV2`, `AssistantV2`, `MessageV2`, or `ComposerV2` files were created.

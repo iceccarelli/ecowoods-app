@@ -38,6 +38,25 @@ interface DisplayMessage {
   failed?: boolean;
 }
 
+/**
+ * The link CTA reads as the homeowner's goal, not the implementation
+ * ("Open"). Directive rule 22 — "Add to project" (and a generic "Open") are
+ * implementation actions; a person thinks in terms of see/understand/book.
+ */
+function cardLinkLabel(type: AssistantChatCard['type']): string {
+  switch (type) {
+    case 'site_link':
+      return 'See this page';
+    case 'conversion_proposed':
+      return 'Review in Next step';
+    case 'pending_provider':
+      return 'Learn what is available now';
+    case 'ecowoods_band':
+    default:
+      return 'See the published band';
+  }
+}
+
 /** Presentation-only: mobile keeps the composer placeholder short, per spec. */
 const COMPOSER_PLACEHOLDER_MOBILE = `${WORKSPACE_ASSISTANT.name}…`;
 
@@ -320,12 +339,12 @@ export function ConversationPane({
                   {m.cards && m.cards.length > 0 && (
                     <ul className="aha-inline-cards">
                       {m.cards.map((c, j) => (
-                        <li key={j} className="aha-inline-card">
+                        <li key={j} className="aha-inline-card" data-card-type={c.type}>
                           <p className="aha-inline-card-title">{c.title}</p>
                           <p className="aha-inline-card-body">{c.body}</p>
                           {c.href ? (
                             <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                              Open
+                              {cardLinkLabel(c.type)}
                             </a>
                           ) : null}
                         </li>
