@@ -5,6 +5,7 @@ import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
 import { loadCaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario-evidence';
+import { NextStep } from '@/app/components/NextStep';
 import { WorkspaceShell } from './components/WorkspaceShell';
 
 export const metadata: Metadata = {
@@ -58,6 +59,14 @@ export const metadata: Metadata = {
  * below this point is all client components, so this Server Component is
  * where that one piece of I/O happens — loaded once, passed down as a plain
  * prop, never re-fetched per render.
+ *
+ * ASSISTANT-09 adds `<NextStep route="/assistant" />` — required by
+ * scripts/verify-strategy.mjs for any route in `lib/funnels`'s
+ * `ROUTE_FUNNEL` map, but a deliberate no-op here: the `assistant` funnel's
+ * own `nextStep.href` is `/assistant` itself (this workspace already IS the
+ * next step for as long as a visitor is in it), so `NextStep` renders
+ * nothing — see lib/funnels/index.ts's comment on that entry. The real next
+ * step is `ConversionPanel`, rendered inline by `WorkspaceShell` below.
  */
 export default async function AssistantPage() {
   const evidencePool = await loadCaseStudyEvidence();
@@ -85,6 +94,8 @@ export default async function AssistantPage() {
       </header>
 
       <WorkspaceShell evidencePool={evidencePool} />
+
+      <NextStep route="/assistant" />
     </div>
   );
 }

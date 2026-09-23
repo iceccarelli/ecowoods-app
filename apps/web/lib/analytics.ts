@@ -187,9 +187,8 @@ export type AnalyticsEvent =
   | 'workspace_value_scenario_viewed'
   /* ASSISTANT-07 — conversion (lib/assistant-workspace/conversion.ts,
      ConversionPanel.tsx). Fires once, from inside the `onConfirm` handler,
-     ONLY after `POST /api/appointments` or `POST /api/leads` returns success
-     — never on choosing an action, never on reaching the review step. Named
-     after DATA_FLOW_MAP.md's `workspace_measure_requested`/
+     ONLY after `POST /api/appointments` or `POST /api/leads` returns success.
+     Named after DATA_FLOW_MAP.md's `workspace_measure_requested`/
      `workspace_quote_requested`; `workspace_estimate_requested` extends that
      same naming for the third next-action this phase ships.
      `hasDesign` is a boolean (whether Project Decision State carried a
@@ -197,7 +196,23 @@ export type AnalyticsEvent =
      email, phone, postal code or square footage. */
   | 'workspace_measure_requested'
   | 'workspace_estimate_requested'
-  | 'workspace_quote_requested';
+  | 'workspace_quote_requested'
+  /* ASSISTANT-09 — the rest of the conversion funnel's drop-off, not just its
+     completion. workspace_conversion_started fires once when a next-action
+     button (measure/estimate/quote) is chosen from ConversionPanel's
+     `choose` step — the PLAN step opens. workspace_conversion_reviewed fires
+     once contact validation passes and the REVIEW step renders — a visitor
+     who never gets here abandoned at the contact form, not the confirm
+     button, and the funnel can now tell the two apart. workspace_conversion_
+     cancelled fires only from the PLAN step's own Cancel button (an
+     in-progress request being abandoned) — never from the RECEIPT step's
+     "Start another request," which resets a COMPLETED request and is not a
+     cancellation. All three carry only the closed `action` enum
+     ('measure'|'estimate'|'quote') — never a name, email, phone, postal
+     code, square footage, or anything typed into the form. */
+  | 'workspace_conversion_started'
+  | 'workspace_conversion_reviewed'
+  | 'workspace_conversion_cancelled';
 
 export function track(
   event: AnalyticsEvent,
