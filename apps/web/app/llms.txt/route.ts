@@ -188,18 +188,16 @@ export async function GET() {
     '/design',
     `the specification path for somebody who already knows what they want: every axis at once, no photograph needed, the same catalogue and the same pricing function as Floor Studio. Markdown: ${SITE_URL}/design.md`,
   );
-  /* ASSISTANT-01 — shell only, renamed to "Ask Francisco" (was "AI Home
-     Advisor" — see lib/assistant-workspace/identity.ts). A live model call
-     is not wired up yet; the copy here says so rather than describing a
-     capability that does not exist. Update this line as later phases ship,
-     not before. Distinct from the corner chat widget, which has no page of
-     its own and is not described here. No Markdown twin yet — unlike the
-     other tools in this section, /assistant has no /md/assistant route to
-     link to; add one alongside a real capability, not before. */
+  /* ASSISTANT-01 — Ask Francisco whole-home renovation decision workspace
+     (see lib/assistant-workspace/identity.ts). Advises on entire-home
+     sequencing; Ecowoods commercial execution remains floors/stairs.
+     Licensed economics adapters may still be pending_key — copy stays
+     honest about that. Distinct from the corner chat widget. No Markdown
+     twin yet. */
   link(
-    `${WORKSPACE_ASSISTANT.name} — a project workspace (early rollout)`,
+    `${WORKSPACE_ASSISTANT.name} — home renovation costs and value`,
     '/assistant',
-    'a dedicated workspace for planning a hardwood project with Francisco Oller (owner, professional contractor and lead craftsman), separate from the corner chat widget on every page. It is in early rollout: the workspace assembles real product/service recommendations and a cost range from published bands, but there is no live conversational model call yet.',
+    'whole-home renovation decision workspace with Francisco Oller: which work moves value near your house, what it costs, and when hardwood is next Ecowoods can measure and bid. Other trades: sourced ranges only — we do not install them. Separate from the corner chat widget.',
   );
   link(
     'Seasonal movement calculator',

@@ -9,14 +9,14 @@ import { NextStep } from '@/app/components/NextStep';
 import { WorkspaceShell } from './components/WorkspaceShell';
 
 export const metadata: Metadata = {
-  title: `${WORKSPACE_ASSISTANT.name} — plan your hardwood project`,
+  title: `${WORKSPACE_ASSISTANT.name} — home renovation costs and value · Ecowoods`,
   description:
-    'A project workspace, not a chatbot: talk through your hardwood project with Francisco Oller and get the products and services that fit, a cost range from our published bands, and a clear next step. Nothing invented — every number traces to a published price.',
+    'A renovation decision workspace: talk through whole-home work with Francisco Oller — which renovations move value, which ones only feel good, and what the work actually costs near your house. When hardwood is the next right job, Ecowoods can measure and bid; for other trades, you get sourced market ranges without anyone pretending we install them.',
   alternates: { canonical: '/assistant' },
   openGraph: {
     title: WORKSPACE_ASSISTANT.name,
     description:
-      'Plan a hardwood project with Ecowoods: products, services, a real cost range, and a next step — never an invented number.',
+      'Home renovation costs and value near your house — with Francisco Oller. Whole-home advising; Ecowoods executes floors and stairs.',
     type: 'website',
     url: `${SITE_URL}/assistant`,
   },
@@ -29,22 +29,28 @@ export const metadata: Metadata = {
  * voiced as Francisco Oller (owner, professional contractor and lead
  * craftsman — content/claims.ts workforce.francisco) instead of a generic
  * product label. See lib/assistant-workspace/identity.ts for the rename
- * history.
+ * history and the whole-home renovation narrative restore.
  *
  * A separate product from the corner Quick Assistant (EcowoodsGuide). The
  * corner widget is a chat transcript mounted on every page; this is a
- * dedicated workspace built around a project's decision state — the floor,
- * the services, the cost range, the evidence — with conversation as one way
+ * dedicated workspace built around a project's decision state — the house,
+ * the sequence, the cost ranges, the evidence — with conversation as one way
  * to work on that state, not the whole of it.
+ *
+ * Narrative: Ask Francisco advises on entire home renovations / construction
+ * sequencing. Ecowoods commercially performs hardwood installation,
+ * refinishing, dust-free sanding, floor restoration, custom inlays/borders,
+ * and stair refinishing only — other trades may be discussed with sourced
+ * market data; never claimed as Ecowoods installs. Economics adapters for
+ * licensed property / market feeds may still be pending_key; public copy
+ * stays open to whole-house questions.
  *
  * The shell (ASSISTANT-01) is now stateful: a canonical, typed
  * WorkspaceState (lib/assistant-workspace) drives all three zones and the
  * mobile bar, minted a designId and persists anonymously in localStorage.
- * Still no economics engine beyond published-band pricing, no value
- * scenario, no Floor Studio bridge, no booking, no live model call — see
- * docs/assistant-workspace/PHASE_PLAN.md. This rename is chrome/identity
- * only; it does not claim capability (renovation-economics, market/appraisal
- * analysis, other trades) that does not exist yet.
+ * Still no licensed renovation-economics feeds, no fake AVMs, no Floor
+ * Studio bridge inventing tenure or GC status — see
+ * docs/assistant-workspace/PHASE_PLAN.md.
  *
  * No ?design= / ?project= URL param yet. A share link is ASSISTANT-08's to
  * build, and building one now — before there's a designCode worth sharing
@@ -87,8 +93,17 @@ export default async function AssistantPage() {
           <p className="tlx-kicker">Project workspace · Ecowoods Inc.</p>
           <h1 className="tlx-title">{WORKSPACE_ASSISTANT.name}</h1>
           <p className="tlx-lede">
-            Plan a hardwood project with me: the floor, the services, a cost range from our published bands, and
-            a next step — not a chat window that forgets what you told it.
+            Day job — install, sand and refinish hardwood across Toronto and the GTA.
+            Side job — tell homeowners the truth about which renovations move value, which ones only feel good,
+            and what the work actually costs near their house.
+          </p>
+          <p className="tlx-note aha-hero-links">
+            Also:{' '}
+            <Link href="/estimate">free in-home measure</Link>
+            {' · '}
+            <Link href="/guides">decision guides</Link>
+            {' · '}
+            <Link href="/pricing">published price bands</Link>
           </p>
         </div>
       </header>

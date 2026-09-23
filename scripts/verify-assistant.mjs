@@ -78,6 +78,30 @@ for (const s of SURFACES) {
   }
 }
 
+/* Destination /assistant must remain Ask Francisco — never the corner
+   widget name (EcowoodsGuide), never a retired product label. */
+{
+  const dest = SURFACES.find((s) => s.identity.includes('assistant-workspace/identity'));
+  if (!dest || dest.name !== 'Ask Francisco') {
+    console.error(`\n✗ /assistant destination must be named "Ask Francisco" (got ${dest ? JSON.stringify(dest.name) : 'missing surface'}).\n`);
+    process.exit(1);
+  }
+  const destSrc = read(dest.identity);
+  for (const banned of ['EcowoodsGuide', 'Reno' + 'Guide', 'AI Home Advisor']) {
+    // name: '...' line only — comments may mention retired names when documenting the rename
+    const nameLine = destSrc.split('\n').find((l) => /^\s*name:\s*'/.test(l)) || '';
+    if (nameLine.includes(banned)) {
+      console.error(`\n✗ /assistant identity name must not be "${banned}".\n`);
+      process.exit(1);
+    }
+  }
+  // Public greeting must not close the door to whole-house questions.
+  if (/WORKSPACE_GREETING[\s\S]*?floor you're planning/.test(destSrc)) {
+    console.error('\n✗ WORKSPACE_GREETING still frames the workspace as floor-only. Restore whole-home renovation narrative.\n');
+    process.exit(1);
+  }
+}
+
 const SKIP = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
 const EXT = new Set(['.ts', '.tsx', '.md', '.mdx', '.json']);
 function walk(dir, out = []) {

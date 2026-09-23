@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS } from '@/lib/assistant-workspace/identity';
+import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS, WORKSPACE_COMPOSER_PLACEHOLDER } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
 import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
 import { totalSquareFeet } from '@/lib/assistant-workspace/state';
@@ -124,9 +124,10 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
           <div className="aha-coming-online">
             <p className="aha-coming-online-title">How this works right now</p>
             <p className="aha-coming-online-text">
-              Tell us the species, finish, pattern or service you have in mind and it lands on the right, under
-              this project. Once you say what you're here to do, real products and services from our catalogue
-              show up below, matched to what you've told us.
+              Tell me the neighbourhood and what you want done on this house — kitchen, roof, floors, or the
+              sequence. When hardwood is in scope, products and services from our catalogue land on the right
+              under this project. For other trades I still give a sourced market range; Ecowoods only bids the
+              floors and stairs we install.
             </p>
           </div>
         )}
@@ -181,15 +182,15 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
           event.preventDefault();
           respond(draft);
         }}
-        aria-label="Message Ask Francisco"
+        aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
       >
         <input
           type="text"
           className="aha-composer-input"
-          placeholder="Tell us about your floor — species, finish, sq ft…"
+          placeholder={WORKSPACE_COMPOSER_PLACEHOLDER}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          aria-label="Ask about your floor"
+          aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
         />
         <button type="submit" className="aha-composer-send" disabled={!draft.trim()}>
           Send

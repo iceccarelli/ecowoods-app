@@ -420,9 +420,11 @@ describe('the motion is off by default and cannot be made expensive', () => {
   });
 
   it('is removed outright, not merely paused, under reduced motion', () => {
-    const rm = css.slice(css.lastIndexOf('@media (prefers-reduced-motion: reduce)'));
-    expect(rm).toContain('animation: none');
-    expect(rm).toContain('.fa-stack');
+    /* Match the assembly's own reduced-motion rule — do not use lastIndexOf on
+       the full stylesheet (MOTION-01 and other trailing blocks steal it). */
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.fa-stack[\s\S]*?animation:\s*none/,
+    );
   });
 });
 
