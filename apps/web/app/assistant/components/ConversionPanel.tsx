@@ -63,6 +63,12 @@ const ACTIONS: ConversionAction[] = ['measure', 'estimate', 'quote'];
  * availability (`GET /api/availability`) is not a write and is fetched
  * eagerly once `plan` opens for a measure booking, same as the corner
  * assistant calling `get_availability` before offering a time.
+ *
+ * ASSISTANT-09 adds the drop-off events either side of that write: `started`
+ * (choose → plan), `reviewed` (plan → review, contact validated) and
+ * `cancelled` (plan's own Cancel — never the receipt's "Start another
+ * request," which resets a completed request, not an abandoned one). See
+ * lib/analytics.ts's own comment for exactly what each carries.
  */
 export function ConversionPanel({ projectRange }: { projectRange: ProjectRangeResult }) {
   const { state, patch } = useWorkspaceState();
@@ -119,6 +125,7 @@ export function ConversionPanel({ projectRange }: { projectRange: ProjectRangeRe
   const onChooseAction = (next: ConversionAction) => {
     patch({ nextAction: next });
     setStep('plan');
+    track('workspace_conversion_started', { action: next });
   };
 
   const onContinueToReview = () => {
@@ -130,6 +137,7 @@ export function ConversionPanel({ projectRange }: { projectRange: ProjectRangeRe
     if (action === 'measure' && !selectedSlot) return;
     setFieldErrors({});
     setStep('review');
+    if (action) track('workspace_conversion_reviewed', { action });
   };
 
   const onConfirm = async () => {
@@ -174,13 +182,20 @@ export function ConversionPanel({ projectRange }: { projectRange: ProjectRangeRe
     }
   };
 
-  const onCancel = () => {
+  /** Full reset with no event — used by RECEIPT's "Start another request," which resets a COMPLETED request. */
+  const resetToChoose = () => {
     patch({ nextAction: null });
     setStep('choose');
     setSelectedSlot(null);
     setSlots([]);
     setSlotsError(null);
     setSubmitError(null);
+  };
+
+  /** PLAN step's own Cancel — an in-progress request abandoned, tracked once, then the same reset. */
+  const onCancel = () => {
+    if (action) track('workspace_conversion_cancelled', { action });
+    resetToChoose();
   };
 
   const services = plan?.serviceSlugs
@@ -201,7 +216,7 @@ export function ConversionPanel({ projectRange }: { projectRange: ProjectRangeRe
             Sent. A specialist will reach out within 1 business day at {contact.email || 'the email you gave us'}.
           </p>
         )}
-        <button type="button" className="aha-card-action" onClick={onCancel}>
+        <button type="button" className="aha-card-action" onClick={resetToChoose}>
           Start another request
         </button>
       </div>

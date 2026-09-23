@@ -15,7 +15,7 @@ describe('funnels', () => {
   it('has one funnel per distinct intent, with no duplicate ids', () => {
     const ids = FUNNELS.map((f) => f.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(FUNNELS.length).toBe(7);
+    expect(FUNNELS.length).toBe(8);
   });
 
   it('completes on the last declared step, never a middle one', () => {
@@ -55,6 +55,29 @@ describe('funnels', () => {
   it('serves every funnel from at least one route', () => {
     const served = new Set(Object.values(ROUTE_FUNNEL));
     for (const f of FUNNELS) expect(served.has(f.id), f.id).toBe(true);
+  });
+
+  describe('the assistant funnel — ASSISTANT-09', () => {
+    const assistant = funnelById('assistant')!;
+
+    it('exists, maps from /assistant, and completes on a real workspace event', () => {
+      expect(assistant).toBeDefined();
+      expect(ROUTE_FUNNEL['/assistant']).toBe('assistant');
+      expect(completionOf(assistant)).toBe('workspace_measure_requested');
+    });
+
+    it('declares no studio_* step — the Floor Studio bridge (ASSISTANT-06) is not built yet', () => {
+      expect(assistant.steps.some((s) => s.startsWith('studio_'))).toBe(false);
+    });
+
+    it('opens on workspace_open, the same event WorkspaceShell fires on mount', () => {
+      expect(assistant.steps[0]).toBe('workspace_open');
+    });
+
+    it('is self-referential (tool === nextStep.href), same pattern as purchase/estimate', () => {
+      expect(assistant.nextStep.href).toBe(assistant.tool);
+      expect(assistant.tool).toBe('/assistant');
+    });
   });
 });
 

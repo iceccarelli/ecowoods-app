@@ -16,8 +16,8 @@
  * WHAT A FUNNEL IS HERE
  *
  * An intent, the tool that serves it, the events that mark progress through it,
- * and the one action that completes it. Nothing more. Six funnels, six numbers,
- * each answerable from events that already fire.
+ * and the one action that completes it. Nothing more. Seven funnels, seven
+ * numbers, each answerable from events that already fire.
  *
  * THE RULE THAT MAKES THIS HONEST
  *
@@ -28,6 +28,13 @@
  * fails the build on either.
  */
 import type { AnalyticsEvent } from '@/lib/analytics';
+/**
+ * ASSISTANT-09 — the `assistant` funnel's own name comes from the identity
+ * constant, same as every other surface: verify-assistant.mjs's
+ * literal-name guard covers .ts files too, not just .tsx, so this module
+ * imports the constant rather than typing the workspace's name here.
+ */
+import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
 
 export type FunnelId =
   | 'problem'
@@ -36,7 +43,8 @@ export type FunnelId =
   | 'evaluation'
   | 'design'
   | 'studio'
-  | 'purchase';
+  | 'purchase'
+  | 'assistant';
 
 export interface Funnel {
   id: FunnelId;
@@ -129,6 +137,33 @@ export const FUNNELS: Funnel[] = [
     nextStep: { href: '/estimate', label: 'Book the free in-home measure' },
     notYet: 'Nothing. This is the end of the road; get out of the way.',
   },
+  {
+    id: 'assistant',
+    /* ASSISTANT-09. Distinct from `purchase`: that intent already knows it
+       wants Ecowoods and needs the calendar. This one wants the whole
+       project worked out first — floor, services, cost range, evidence —
+       with a booking as the LAST step of a conversation, not the first
+       thing asked. */
+    intent: `I want to work out this whole hardwood project with ${WORKSPACE_ASSISTANT.name} before I book anything.`,
+    tool: '/assistant',
+    /* No studio_* step: the Floor Studio bridge (ASSISTANT-06) does not
+       exist yet, and this funnel does not assert a step nothing can emit —
+       see verify-strategy.mjs's own rule against exactly that. Completion is
+       workspace_measure_requested (ConversionPanel.tsx) — the same
+       "quote_submit"-equivalent weight `purchase` gives its own completion,
+       reused here rather than declaring a competing one. */
+    steps: ['workspace_open', 'workspace_project_created', 'workspace_product_added', 'workspace_measure_requested'],
+    /* Self-referential on purpose, same pattern as `purchase`'s `/estimate`:
+       the workspace IS the next step for as long as a visitor is in it.
+       <NextStep route="/assistant" /> renders nothing here (target ===
+       route), which is correct — ConversionPanel is already the real next
+       step, rendered inline, not a second banner pointing at itself. */
+    nextStep: { href: '/assistant', label: `Keep building the plan in ${WORKSPACE_ASSISTANT.name}` },
+    notYet:
+      'A price without the rest of the project attached. The workspace exists so the floor, the services and the ' +
+      'cost range are worked out together before anything is booked — skipping to a number is the corner ' +
+      'assistant’s job, not this one’s.',
+  },
 ];
 
 export const funnelById = (id: string): Funnel | undefined =>
@@ -157,6 +192,7 @@ export const ROUTE_FUNNEL: Record<string, FunnelId> = {
   '/design': 'design',
   '/floor-studio': 'studio',
   '/estimate': 'purchase',
+  '/assistant': 'assistant',
 };
 
 export const funnelForRoute = (route: string): Funnel | undefined => {
