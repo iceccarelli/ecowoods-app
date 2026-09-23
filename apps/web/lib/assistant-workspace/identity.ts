@@ -91,6 +91,7 @@ export const WORKSPACE_CHIPS = [
   ...WORKSPACE_FLOOR_CHIPS,
 ] as const;
 
-/** Composer placeholder — whole-house, not floor-only. */
+/** Composer placeholder — whole-house, not floor-only. Mobile uses a shorter
+ *  variant (ConversationPane's COMPOSER_PLACEHOLDER_MOBILE) at narrow widths. */
 export const WORKSPACE_COMPOSER_PLACEHOLDER =
-  'Ask anything about this house…';
+  'Ask Francisco about this house…';

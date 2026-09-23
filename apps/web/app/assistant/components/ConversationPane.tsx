@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
+import { EW_MARK, EW_MARK_ALT } from '@/lib/brand';
 import {
   WORKSPACE_ASSISTANT,
   WORKSPACE_GREETING,
@@ -22,7 +24,12 @@ interface DisplayMessage {
   role: 'assistant' | 'user';
   text: string;
   cards?: AssistantChatCard[];
+  /** True only for a genuine send failure (network/5xx) — renders the retry affordance, never for a degraded-but-understood reply. */
+  failed?: boolean;
 }
+
+/** Presentation-only: mobile keeps the composer placeholder short, per spec. */
+const COMPOSER_PLACEHOLDER_MOBILE = 'Ask Francisco…';
 
 /** Start screen: 3–4 starters only (v8). */
 const START_CHIPS = WORKSPACE_RENOVATION_CHIPS.slice(0, 4);
@@ -120,6 +127,37 @@ export function ConversationPane({
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  /* Presentation-only viewport check for the shorter mobile placeholder —
+     never affects layout logic, just which string the input shows. */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 480px)');
+    const update = () => setIsNarrow(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  /* Auto-grow the composer textarea up to a capped height instead of a
+     fixed-height single-line input, and keep the caret's row visible. */
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  }, [draft]);
+
+  /* Follow the conversation as new turns arrive — a world-class assistant
+     never makes the visitor scroll to see their own message land. */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages, busy]);
 
   const products = useMemo(() => recommendProducts(state, EARNED_PRODUCT_LIMIT), [state]);
   const services = useMemo(() => recommendServices(state).slice(0, 2), [state]);
@@ -157,6 +195,9 @@ export function ConversationPane({
     setDraft('');
     setBusy(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch('/api/assistant/chat', {
         method: 'POST',
@@ -165,10 +206,16 @@ export function ConversationPane({
           messages: history.map((m) => ({ role: m.role, content: m.text })),
           workspace: snapshotFromState(state),
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
-        setMessages((prev) => [...prev, keywordFallback(trimmed)]);
+        /* A real server-side failure, not a degraded reply — the honest,
+           billing-safe error state, not a silent keyword guess. */
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: "I couldn't complete that analysis. Nothing was charged.", failed: true },
+        ]);
         return;
       }
 
@@ -187,11 +234,30 @@ export function ConversationPane({
           cards: Array.isArray(data.cards) ? data.cards.slice(0, 2) : undefined,
         },
       ]);
-    } catch {
-      setMessages((prev) => [...prev, keywordFallback(trimmed)]);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        /* Visitor pressed Stop — not an error, no retry affordance. */
+        setMessages((prev) => [...prev, { role: 'assistant', text: 'Stopped.' }]);
+        return;
+      }
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: "I couldn't complete that analysis. Nothing was charged.", failed: true },
+      ]);
     } finally {
+      abortRef.current = null;
       setBusy(false);
     }
+  };
+
+  const stopGenerating = () => abortRef.current?.abort();
+
+  /** Retry: drop the failed placeholder and the user turn that failed no longer exists in `messages`'s copy — resend the same text as a fresh turn. */
+  const retry = (failedIndex: number) => {
+    const priorUser = [...messages].slice(0, failedIndex).reverse().find((m) => m.role === 'user');
+    if (!priorUser) return;
+    setMessages((prev) => prev.slice(0, failedIndex));
+    void respond(priorUser.text);
   };
 
   const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
@@ -202,9 +268,12 @@ export function ConversationPane({
 
   return (
     <section className="aha-conversation aha-conversation--canvas" aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}>
-      <div className="aha-conversation-scroll">
+      <div className="aha-conversation-scroll" ref={scrollRef}>
         {!messages.length ? (
           <div className="aha-start">
+            <span className="aha-avatar aha-avatar--start" aria-hidden="true">
+              <Image src={EW_MARK} alt="" width={40} height={40} />
+            </span>
             <p className="aha-start-name">{WORKSPACE_ASSISTANT.name}</p>
             <p className="aha-start-lede">{WORKSPACE_GREETING}</p>
             <div className="aha-chips" role="group" aria-label="Starter prompts">
@@ -218,31 +287,58 @@ export function ConversationPane({
         ) : (
           <>
             {messages.map((m, i) => (
-              <div key={i} className={`aha-message aha-message--${m.role}`}>
-                <p className="aha-message-author">{m.role === 'assistant' ? WORKSPACE_ASSISTANT.name : 'You'}</p>
-                <p className="aha-message-text">{m.text}</p>
-                {m.cards && m.cards.length > 0 && (
-                  <ul className="aha-inline-cards">
-                    {m.cards.map((c, j) => (
-                      <li key={j} className="aha-inline-card">
-                        <p className="aha-inline-card-title">{c.title}</p>
-                        <p className="aha-inline-card-body">{c.body}</p>
-                        {c.href ? (
-                          <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                            Open
-                          </a>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
+              <div key={i} className={`aha-message aha-message--${m.role}${m.failed ? ' aha-message--failed' : ''}`}>
+                {m.role === 'assistant' && (
+                  <span className="aha-avatar" aria-hidden="true">
+                    <Image src={EW_MARK} alt={EW_MARK_ALT} width={24} height={24} />
+                  </span>
                 )}
+                <div className="aha-message-body">
+                  <p className="aha-message-author">{m.role === 'assistant' ? WORKSPACE_ASSISTANT.name : 'You'}</p>
+                  <p className="aha-message-text">{m.text}</p>
+                  {m.failed && (
+                    <button type="button" className="aha-message-retry" onClick={() => retry(i)}>
+                      Try again
+                    </button>
+                  )}
+                  {m.cards && m.cards.length > 0 && (
+                    <ul className="aha-inline-cards">
+                      {m.cards.map((c, j) => (
+                        <li key={j} className="aha-inline-card">
+                          <p className="aha-inline-card-title">{c.title}</p>
+                          <p className="aha-inline-card-body">{c.body}</p>
+                          {c.href ? (
+                            <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
+                              Open
+                            </a>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             ))}
 
             {busy && (
               <div className="aha-message aha-message--assistant" aria-live="polite">
-                <p className="aha-message-author">{WORKSPACE_ASSISTANT.name}</p>
-                <p className="aha-message-text">Thinking…</p>
+                <span className="aha-avatar" aria-hidden="true">
+                  <Image src={EW_MARK} alt="" width={24} height={24} />
+                </span>
+                <div className="aha-message-body">
+                  <p className="aha-message-author">{WORKSPACE_ASSISTANT.name}</p>
+                  <p className="aha-message-text aha-typing">
+                    <span className="aha-typing-label">Francisco is working through that</span>
+                    <span className="aha-typing-dots" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                  </p>
+                  <button type="button" className="aha-message-retry aha-message-stop" onClick={stopGenerating}>
+                    Stop
+                  </button>
+                </div>
               </div>
             )}
 
@@ -303,28 +399,45 @@ export function ConversationPane({
         )}
       </div>
 
+      <div className="aha-composer-bar">
       <form
-        className="aha-composer aha-composer--premium"
+        className="aha-composer"
         onSubmit={(event) => {
           event.preventDefault();
           void respond(draft);
         }}
         aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
       >
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           className="aha-composer-input"
-          placeholder={WORKSPACE_COMPOSER_PLACEHOLDER}
+          placeholder={isNarrow ? COMPOSER_PLACEHOLDER_MOBILE : WORKSPACE_COMPOSER_PLACEHOLDER}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            /* Enter sends; Shift+Enter (or any IME composition) inserts a newline. */
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              void respond(draft);
+            }
+          }}
           aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
           disabled={busy}
+          rows={1}
           autoFocus
         />
-        <button type="submit" className="aha-composer-send" disabled={!draft.trim() || busy}>
-          Send
+        <button
+          type="submit"
+          className="aha-composer-send"
+          disabled={!draft.trim() || busy}
+          aria-label={`Send message to ${WORKSPACE_ASSISTANT.name}`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 19V5M12 5l-6 6M12 5l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </form>
+      </div>
     </section>
   );
 }
