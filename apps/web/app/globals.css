@@ -12725,6 +12725,47 @@ a.lib-card--photo { cursor: pointer; }
 .aha-coming-online-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 var(--space-xs); }
 .aha-coming-online-text { font-size: 0.9rem; line-height: 1.6; color: var(--muted-soft); margin: 0; }
 
+.aha-inline-cards {
+  list-style: none;
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+.aha-inline-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface);
+  text-align: left;
+}
+.aha-inline-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.25rem;
+}
+.aha-inline-card-body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0;
+}
+.aha-inline-card-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--copper);
+}
+.aha-composer-send:disabled,
+.aha-chip:disabled,
+.aha-composer-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .aha-composer {
   display: flex;
   gap: var(--space-sm);

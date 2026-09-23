@@ -1,18 +1,16 @@
 /**
  * lib/assistant-workspace/interpret.ts — free text to a structured patch.
  *
- * ASSISTANT-02 has no live model call (that's a later phase, and per
- * docs/assistant-workspace/NEW_ASSISTANT_ARCHITECTURE.md it returns
- * structured cards through its own tool set, never plain text re-parsed like
- * this). Until then, the composer still needs to do SOMETHING with what a
- * visitor types, so this is a deterministic keyword matcher: it never
- * invents a product, finish, pattern, service or price — every match comes
- * from the live catalog/service list itself (FLOOR_PRODUCTS, FINISH_OPTIONS,
- * PATTERN_OPTIONS, SERVICES), so a catalog change can't silently drift out of
- * sync with a second, hand-written synonym table.
+ * Keyword fallback / supplement for the workspace composer. The live path is
+ * POST /api/assistant/chat (structured model + tools). This matcher still
+ * runs when the model is unavailable (503 / network) and as a safety net
+ * after a model turn so obvious catalog hits land even if attach_to_project
+ * was skipped. It never invents a product, finish, pattern, service or
+ * price — every match comes from FLOOR_PRODUCTS, FINISH_OPTIONS,
+ * PATTERN_OPTIONS, SERVICES.
  *
- * A message that matches nothing returns an empty patch and a plain
- * acknowledgement — never a guess dressed up as an understood answer.
+ * A message that matches nothing returns an empty patch — never a guess
+ * dressed up as an understood answer.
  */
 import { FLOOR_PRODUCTS, FINISH_OPTIONS, PATTERN_OPTIONS, BOARD_WIDTHS, SERVICES } from './state';
 import type { WorkspacePatch } from './types';
