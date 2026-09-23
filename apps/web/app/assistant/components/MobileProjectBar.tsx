@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { describeFloorPreference, totalSquareFeet } from '@/lib/assistant-workspace/state';
 import { projectRangeForState, formatMoneyRange } from '@/lib/assistant-workspace/economics';
+import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { SERVICES } from '@/lib/seo-data';
 
 const OBJECTIVE_LABEL: Record<string, string> = {
@@ -21,8 +22,12 @@ const OBJECTIVE_LABEL: Record<string, string> = {
  * bottom sheet instead of a fixed rail. The collapsed bar itself shows the
  * cost range once one exists — that is the number a visitor on a phone
  * came here for.
+ *
+ * ASSISTANT-05: the "Value scenario" row reads the same `buildValueScenario`
+ * output EconomicsRail's does — never a fabricated "Not available yet" once
+ * the feature exists on the same state.
  */
-export function MobileProjectBar() {
+export function MobileProjectBar({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state } = useWorkspaceState();
   const [open, setOpen] = useState(false);
   const sqft = totalSquareFeet(state);
@@ -30,6 +35,10 @@ export function MobileProjectBar() {
     .map((slug) => SERVICES.find((s) => s.slug === slug)?.name)
     .filter((n): n is string => !!n);
   const projectRange = useMemo(() => projectRangeForState(state), [state]);
+  const valueScenario = useMemo(
+    () => buildValueScenario(state, projectRange, evidencePool),
+    [state, projectRange, evidencePool],
+  );
 
   const costRangeText =
     projectRange.status === 'ready'
@@ -84,7 +93,13 @@ export function MobileProjectBar() {
             </div>
             <div className="aha-mobile-sheet-row">
               <dt>Value scenario</dt>
-              <dd>Not available yet</dd>
+              <dd>
+                {valueScenario.status === 'ready'
+                  ? `Not quantified — ${valueScenario.scenario.effect.confidence} confidence`
+                  : valueScenario.status === 'needs-sqft'
+                    ? 'Needs sq ft'
+                    : 'Needs a service'}
+              </dd>
             </div>
           </dl>
           <p className="aha-mobile-sheet-footnote">

@@ -147,6 +147,22 @@ export type ProjectRangeResult =
   | { status: 'needs-service' };
 
 /**
+ * The distinct `PricingService` keys implied by `state.selectedServiceSlugs`
+ * — the same set `projectRangeForState` prices, computed once so a caller
+ * that needs to know WHICH bands are in scope (not just their summed total,
+ * e.g. ASSISTANT-05's value-scenario evidence matching — see
+ * value-scenario.ts) reads it here rather than recomputing it a second way.
+ */
+export function distinctPricingKeys(state: WorkspaceState): Set<PricingService> {
+  const keys = new Set<PricingService>();
+  for (const slug of state.selectedServiceSlugs) {
+    const key = pricingKeyForService(slug);
+    if (key) keys.add(key);
+  }
+  return keys;
+}
+
+/**
  * The workspace's own composition of `calculateProjectRange` over Project
  * Decision State: one scope per DISTINCT `PricingService` key among
  * `state.selectedServiceSlugs` (deduplicated — two selected services billed
@@ -164,11 +180,7 @@ export function projectRangeForState(state: WorkspaceState): ProjectRangeResult 
   const sqft = totalSquareFeet(state);
   if (sqft === undefined) return { status: 'needs-sqft' };
 
-  const keys = new Set<PricingService>();
-  for (const slug of state.selectedServiceSlugs) {
-    const key = pricingKeyForService(slug);
-    if (key) keys.add(key);
-  }
+  const keys = distinctPricingKeys(state);
   if (!keys.size) return { status: 'needs-service' };
 
   const scopes: ScopeRange[] = [...keys].map((pricingKey) => {

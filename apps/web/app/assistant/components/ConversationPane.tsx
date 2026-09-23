@@ -5,10 +5,13 @@ import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS } from '@/lib/
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
 import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
 import { totalSquareFeet } from '@/lib/assistant-workspace/state';
+import { projectRangeForState } from '@/lib/assistant-workspace/economics';
+import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
 import { ScenarioCompare } from './ScenarioCompare';
+import { ValueScenarioCard } from './ValueScenarioCard';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -31,8 +34,16 @@ const RECOMMENDED_PRODUCT_LIMIT = 4;
  *
  * Still no model call, still not /api/chat — that route and its tools
  * belong to the corner Quick Assistant and stay untouched.
+ *
+ * ASSISTANT-05 adds a `ValueScenarioCard` alongside the recommendations,
+ * built by the pure `buildValueScenario` (lib/assistant-workspace/
+ * value-scenario.ts) over the same `projectRangeForState` cost basis
+ * ASSISTANT-04 already computes and the real case-study evidence pool
+ * `page.tsx` loaded server-side. When the scope isn't ready yet
+ * (needs-sqft/needs-service), the honest empty state says so — never a
+ * dead card.
  */
-export function ConversationPane() {
+export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state, patch } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -41,6 +52,11 @@ export function ConversationPane() {
   const services = useMemo(() => recommendServices(state), [state]);
   const incompatibilities = useMemo(() => selectionIncompatibilities(state), [state]);
   const sqft = totalSquareFeet(state);
+  const projectRange = useMemo(() => projectRangeForState(state), [state]);
+  const valueScenario = useMemo(
+    () => buildValueScenario(state, projectRange, evidencePool),
+    [state, projectRange, evidencePool],
+  );
 
   const respond = (text: string) => {
     const trimmed = text.trim();
@@ -133,6 +149,17 @@ export function ConversationPane() {
             </div>
 
             {sqft !== undefined && <ScenarioCompare squareFeet={sqft} country={state.country} />}
+
+            <p className="aha-recommended-heading">Value scenario</p>
+            {valueScenario.status === 'ready' ? (
+              <ValueScenarioCard scenario={valueScenario.scenario} />
+            ) : (
+              <p className="aha-card-why-empty">
+                {valueScenario.status === 'needs-sqft'
+                  ? 'Add a square footage above to see a value scenario for this project.'
+                  : 'Add a service above to see a value scenario for this project.'}
+              </p>
+            )}
           </div>
         )}
       </div>

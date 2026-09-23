@@ -4,6 +4,7 @@ import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
+import { loadCaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario-evidence';
 import { WorkspaceShell } from './components/WorkspaceShell';
 
 export const metadata: Metadata = {
@@ -49,8 +50,18 @@ export const metadata: Metadata = {
  * (that arrives with the Floor Studio bridge, ASSISTANT-06) — would be a URL
  * carrying nothing, or a second, premature share-link format this workspace
  * would then have to keep compatible with the real one later.
+ *
+ * ASSISTANT-05 adds value SCENARIOS (never appraisals) — see
+ * docs/assistant-workspace/VALUE_SCENARIO_SPEC.md and
+ * lib/assistant-workspace/value-scenario.ts. Case-study evidence is
+ * filesystem-backed (`case-study-loader.ts` uses `fs`) and the workspace
+ * below this point is all client components, so this Server Component is
+ * where that one piece of I/O happens — loaded once, passed down as a plain
+ * prop, never re-fetched per render.
  */
-export default function AssistantPage() {
+export default async function AssistantPage() {
+  const evidencePool = await loadCaseStudyEvidence();
+
   return (
     <div className="tlx-page aha-page">
       <SchemaScript
@@ -73,7 +84,7 @@ export default function AssistantPage() {
         </div>
       </header>
 
-      <WorkspaceShell />
+      <WorkspaceShell evidencePool={evidencePool} />
     </div>
   );
 }
