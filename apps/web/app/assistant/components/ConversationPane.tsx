@@ -16,10 +16,13 @@ import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-work
 import { computeEarnedCatalog, type EarnedCatalog } from '@/lib/assistant-workspace/earned-catalog';
 import type { AssistantChatCard, AssistantChatResponse } from '@/lib/assistant-workspace/chat-schema';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
+import type { DetailedRenovationAnalysis } from '@/lib/assistant-workspace/renovation-analysis';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
 import { ConversionPanel } from './ConversionPanel';
+import { PaidAnalysisAction } from './PaidAnalysisAction';
+import { AnalysisResultCard } from './AnalysisResultCard';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -36,6 +39,8 @@ interface DisplayMessage {
   earnedCatalog?: EarnedCatalog;
   /** True only for a genuine send failure (network/5xx) — renders the retry affordance, never for a degraded-but-understood reply. */
   failed?: boolean;
+  /** Set once the Renovation Decision Analysis proposed by one of `cards` has actually run — renders AnalysisResultCard instead of the paywall for THIS message going forward. */
+  analysisResult?: DetailedRenovationAnalysis;
 }
 
 /**
@@ -55,7 +60,9 @@ function cardLinkLabel(card: AssistantChatCard): string {
     case 'analysis_available':
       return 'See the sequence';
     case 'paid_analysis_proposed':
-      return 'Not available for purchase yet';
+      // Unused in practice — PaidAnalysisAction (a real checkout+run flow,
+      // not a link) renders for this type instead. Kept for type completeness.
+      return 'Analyze my house';
     case 'ecowoods_band':
     default:
       return 'See the published band';
@@ -164,6 +171,34 @@ export function ConversationPane({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /*
+   * Post-checkout return (directive rule 20 — "return to the exact
+   * project," not a search for the feature). The conversation TRANSCRIPT is
+   * React state, not persisted (same architectural choice
+   * NEW_ASSISTANT_ARCHITECTURE.md documents for the corner widget's chat —
+   * this workspace's durable object is Project Decision State, which DOES
+   * survive the round trip through Stripe Checkout via localStorage). So a
+   * visitor returning from `success_url=/assistant?credits=purchased` sees
+   * an empty transcript but an intact project — this seeds one message so
+   * the return doesn't feel like starting over, using only data that
+   * genuinely persisted (never fabricating what was "said" before).
+   * Full transcript persistence is a real gap, not solved here — see
+   * ASSISTANT_CONVERSION_FUNNEL.md's "known limitation" note.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || messages.length > 0) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('credits') !== 'purchased') return;
+    window.history.replaceState(null, '', window.location.pathname);
+    setMessages([
+      {
+        role: 'assistant',
+        text: "Payment complete — your Renovation Credits are ready. Picking up where we left off on this house.",
+      },
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Presentation-only viewport check for the shorter mobile placeholder —
      never affects layout logic, just which string the input shows. */
@@ -357,24 +392,38 @@ export function ConversationPane({
                           <p className="aha-inline-card-title">{c.title}</p>
                           <p className="aha-inline-card-body">{c.body}</p>
                           {c.reason && <p className="aha-inline-card-reason">{c.reason}</p>}
-                          <div className="aha-inline-card-actions">
-                            {c.href ? (
-                              <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                                {cardLinkLabel(c)}
-                              </a>
-                            ) : c.type === 'paid_analysis_proposed' ? (
-                              <span className="aha-inline-card-link aha-inline-card-link--disabled">{cardLinkLabel(c)}</span>
-                            ) : null}
-                            {c.id && (
-                              <button
-                                type="button"
-                                className="aha-inline-card-dismiss"
-                                onClick={() => onDismissCard(i, c.id!)}
-                              >
-                                Not now
-                              </button>
-                            )}
-                          </div>
+                          {c.type === 'paid_analysis_proposed' ? (
+                            m.analysisResult ? (
+                              <AnalysisResultCard result={m.analysisResult} />
+                            ) : (
+                              <PaidAnalysisAction
+                                designId={state.designId}
+                                workspaceState={state}
+                                onResult={(result) =>
+                                  setMessages((prev) =>
+                                    prev.map((msg, idx) => (idx === i ? { ...msg, analysisResult: result } : msg)),
+                                  )
+                                }
+                              />
+                            )
+                          ) : (
+                            <div className="aha-inline-card-actions">
+                              {c.href ? (
+                                <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
+                                  {cardLinkLabel(c)}
+                                </a>
+                              ) : null}
+                              {c.id && (
+                                <button
+                                  type="button"
+                                  className="aha-inline-card-dismiss"
+                                  onClick={() => onDismissCard(i, c.id!)}
+                                >
+                                  Not now
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>

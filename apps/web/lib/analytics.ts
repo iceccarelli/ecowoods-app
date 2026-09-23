@@ -212,7 +212,24 @@ export type AnalyticsEvent =
      code, square footage, or anything typed into the form. */
   | 'workspace_conversion_started'
   | 'workspace_conversion_reviewed'
-  | 'workspace_conversion_cancelled';
+  | 'workspace_conversion_cancelled'
+  /* Phase 3 — the paid Renovation Decision Analysis funnel
+     (lib/assistant-workspace/credit-ledger.ts, analysis-execution.ts,
+     ConversionPanel.tsx's paid-analysis card). Every event here carries only
+     closed enums, counts, and ids that are already-public catalog/product
+     ids (`creditPackId`, `analysisStatus`) — never a balance, a price, an
+     address, an email, or any project detail the visitor typed. Balances and
+     prices are exactly what directive rule 33 forbids sending to analytics;
+     the server-authoritative numbers stay server-side, read back from
+     /api/assistant/credits or the analysis result itself, never logged here. */
+  | 'workspace_paid_action_shown'
+  | 'workspace_account_prompt_shown'
+  | 'workspace_checkout_started'
+  | 'workspace_payment_succeeded'
+  | 'workspace_analysis_started'
+  | 'workspace_analysis_completed'
+  | 'workspace_analysis_failed'
+  | 'workspace_analysis_report_viewed';
 
 export function track(
   event: AnalyticsEvent,

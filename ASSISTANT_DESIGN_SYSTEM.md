@@ -128,6 +128,16 @@ finish, not a structural device (per spec's "prefer borders/whitespace").
   `document.documentElement.scrollWidth - clientWidth === 0` in a headless
   Chromium pass).
 
+## Paid analysis — checkout + result (2026-09-23, Phase 3)
+
+`.aha-paid-action-run` reuses the composer send button's copper-fill
+treatment — the one clearly-actionable primary button, distinct from the
+quiet `.aha-inline-card-dismiss` text link beside it. `.aha-analysis-result`
+is deliberately its OWN visual register, not another `.aha-inline-card`: a
+bordered panel with a numbered list (`.aha-analysis-result-rank`, a filled
+copper circle) so a delivered result reads as "you received something,"
+not "here's one more suggestion" — see `ASSISTANT_PAID_PRODUCT_SPEC.md`.
+
 ## Card actions row + dismiss (2026-09-23, Phase 2)
 
 Every inline card now has an `.aha-inline-card-actions` row (flex,

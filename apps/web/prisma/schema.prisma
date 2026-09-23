@@ -125,6 +125,31 @@ enum OrderStatus {
   @@schema("ecowoods")
 }
 
+/// Ask Francisco Phase 3 — renovation-credits ledger. PURCHASE/PROMOTIONAL_GRANT
+/// and RELEASE/REFUND increase CreditWallet.balance; RESERVE moves balance ->
+/// reserved; SETTLE consumes reserved (the credits are spent, gone). See
+/// ASSISTANT_CREDIT_LEDGER_SPEC.md for the full state machine.
+enum CreditTransactionType {
+  PURCHASE
+  PROMOTIONAL_GRANT
+  RESERVE
+  SETTLE
+  RELEASE
+  REFUND
+
+  @@schema("ecowoods")
+}
+
+enum RenovationAnalysisStatus {
+  RESERVED
+  RUNNING
+  COMPLETED
+  FAILED
+  RELEASED
+
+  @@schema("ecowoods")
+}
+
 // ─────────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────────
@@ -148,6 +173,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   orders        Order[]
+  creditWallet  CreditWallet?
+  renovationAnalyses RenovationAnalysis[]
 
   @@index([email])
   @@schema("ecowoods")
@@ -681,6 +708,111 @@ model OrderItem {
   lineTotal Decimal @db.Decimal(12, 2)
 
   @@index([orderId])
+  @@schema("ecowoods")
+}
+
+// ─────────────────────────────────────────────
+// RENOVATION CREDITS — Ask Francisco Phase 3 paid intelligence
+// ─────────────────────────────────────────────
+//
+// The purchase-money side reuses Order/OrderItem/Payment/Stripe unchanged
+// (a credit pack is just a Product-less OrderItem, same pattern
+// well-installed-review already uses) — this section is ONLY the ledger:
+// what a wallet's balance actually is, and the RESERVE -> SETTLE|RELEASE
+// state machine that stands between "credits exist" and "credits were
+// actually spent on a completed analysis." See
+// ASSISTANT_CREDIT_LEDGER_SPEC.md for the full design and why a wallet
+// balance genuinely needs a ledger where a one-shot Order does not.
+
+model CreditWallet {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  /// Spendable now. Never written directly outside creditLedger.ts's
+  /// functions — every change is one row in CreditTransaction, in the same
+  /// DB transaction, so balance is always the sum its own ledger agrees with.
+  balance Int @default(0)
+  /// Held against an in-flight RESERVE, not yet settled or released.
+  reserved Int @default(0)
+
+  transactions CreditTransaction[]
+  analyses     RenovationAnalysis[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@schema("ecowoods")
+}
+
+model CreditTransaction {
+  id       String       @id @default(uuid()) @db.Uuid
+  walletId String       @db.Uuid
+  wallet   CreditWallet @relation(fields: [walletId], references: [id])
+
+  type   CreditTransactionType
+  /// Always positive — `type` says whether it added or held credits, never sign.
+  amount Int
+  /// Short machine reason, e.g. "renovation_decision_analysis" | "credit_pack_purchase".
+  reason String
+
+  /// PURCHASE only — the Order (existing model) whose Stripe payment funded this grant.
+  orderId String? @db.Uuid
+  /// RESERVE/SETTLE/RELEASE only — the analysis this transaction is for.
+  analysisId String? @db.Uuid
+
+  /// The ONE mechanism that makes a purchase/grant/settle exactly-once under
+  /// retries, duplicate webhooks, and double-clicks — a DB-enforced unique
+  /// constraint, not an application-level check. See ASSISTANT_CREDIT_LEDGER_SPEC.md.
+  idempotencyKey String @unique
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([walletId])
+  @@index([analysisId])
+  @@index([orderId])
+  @@schema("ecowoods")
+}
+
+model RenovationAnalysis {
+  id       String       @id @default(uuid()) @db.Uuid
+  userId   String       @db.Uuid
+  user     User         @relation(fields: [userId], references: [id])
+  walletId String       @db.Uuid
+  wallet   CreditWallet @relation(fields: [walletId], references: [id])
+
+  /// Ask Francisco's WorkspaceState.designId (VARCHAR(16), same as
+  /// Project.designId elsewhere in this schema) — NOT Project.id. A homeowner
+  /// running a paid analysis has not necessarily converted to a commercial
+  /// Project yet.
+  designId String @db.VarChar(16)
+
+  status RenovationAnalysisStatus @default(RESERVED)
+
+  /// Credits reserved for this run — the exact amount settled or released,
+  /// never re-read from a pricing config after the fact (rule: price/cost is
+  /// resolved once, server-side, at reservation time).
+  creditCost Int
+
+  reservationTxId String? @db.Uuid
+  settlementTxId  String? @db.Uuid
+
+  /// renovation-analysis.ts's exported version string — see ASSISTANT_ANALYSIS_SPEC.md.
+  engineVersion String
+
+  /// The engine's structured output (RenovationSequenceResult + the paid
+  /// expansion) — never raw conversation text, never a document upload.
+  resultJson Json? @db.JsonB
+
+  failureReason String?
+  generatedAt   DateTime? @db.Timestamptz
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([userId])
+  @@index([designId])
+  @@index([status])
   @@schema("ecowoods")
 }
 

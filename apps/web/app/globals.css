@@ -13309,6 +13309,104 @@ body.aha-active .site-footer { display: none; }
   .aha-composer-send { transition: none; }
 }
 
+/* Paid Renovation Decision Analysis — checkout + run (Phase 3). A real
+   commerce moment, not a disabled placeholder: the primary button is the
+   same copper-filled treatment as the composer's send button, so it reads
+   as the one clearly actionable thing on the card. */
+.aha-paid-action {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+.aha-paid-action-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+.aha-paid-action-error {
+  font-size: 0.85rem;
+  color: var(--danger, #a4342a);
+  margin: 0;
+}
+.aha-paid-action-run {
+  align-self: flex-start;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: var(--space-xs) var(--space-lg);
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  cursor: pointer;
+}
+.aha-paid-action-run:hover:not(:disabled) { opacity: 0.92; }
+.aha-paid-action-run:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* The paid result — a distinct, numbered deliverable, not another inline
+   card. Deliberately its own visual register (a real ordered list, not the
+   card grid) so it reads as "you received something," not "here's one more
+   suggestion." */
+.aha-analysis-result {
+  margin-top: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.aha-analysis-result-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--copper-text);
+  margin: 0 0 var(--space-md);
+}
+.aha-analysis-result-items {
+  list-style: none;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.aha-analysis-result-item {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+.aha-analysis-result-rank {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.aha-analysis-result-label { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); margin: 0 0 2px; }
+.aha-analysis-result-reason,
+.aha-analysis-result-cost,
+.aha-analysis-result-next { font-size: 0.88rem; line-height: 1.55; color: var(--ink-soft); margin: 2px 0 0; }
+.aha-analysis-result-next { color: var(--copper-text); font-weight: 600; }
+.aha-analysis-result-section { padding-top: var(--space-md); border-top: 1px solid var(--line); margin-top: var(--space-md); }
+.aha-analysis-result-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--space-xs);
+}
+.aha-analysis-result-section ul { margin: 0; padding-left: 1.1rem; }
+.aha-analysis-result-section li { font-size: 0.88rem; line-height: 1.6; color: var(--ink-soft); }
+
 /* Economics rail (right) */
 .aha-econ {
   position: sticky;

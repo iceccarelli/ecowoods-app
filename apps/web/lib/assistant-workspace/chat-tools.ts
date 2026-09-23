@@ -13,6 +13,7 @@ import { FLOOR_PRODUCTS, BOARD_WIDTHS } from '@/lib/floor-studio/catalog';
 import { SERVICES } from '@/lib/seo-data';
 import { isTradeMentionStatus, isWorkspaceNextAction, isWorkspaceObjective, isWorkspaceSellHorizon } from './state';
 import { computeRenovationSequence, tradeLabel as tradeLabelFor } from './renovation-analysis';
+import { RENOVATION_DECISION_ANALYSIS } from '@/content/constants/renovation-analysis-product';
 import type { TradeMentionStatus, WorkspacePatch, WorkspaceState } from './types';
 import type { AssistantChatCard, ProviderOutcome } from './chat-schema';
 
@@ -391,11 +392,9 @@ export function executeAnalyzeRenovationPriorities(state: WorkspaceState) {
     cards.push({
       type: 'paid_analysis_proposed',
       id: 'paid_analysis:renovation_decision_analysis',
-      title: 'Detailed renovation analysis',
-      body:
-        "You'll receive priority order, sequencing rationale, what's still unknown, and next actions for each project — written up so you can share it.",
-      reason: 'Pricing for this is not configured yet — this offer is not chargeable.',
-      cta: 'Not available for purchase yet',
+      title: RENOVATION_DECISION_ANALYSIS.name,
+      body: `You'll receive: priority order, sequencing rationale, cost context, assumptions, and what's still uncertain. ${RENOVATION_DECISION_ANALYSIS.creditCost} Renovation Credits.`,
+      reason: 'Based on everything you’ve told me about this house so far.',
     });
   }
   return {

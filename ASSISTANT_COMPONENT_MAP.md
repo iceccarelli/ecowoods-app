@@ -105,6 +105,19 @@ already-established `/* === ASSISTANT-0N ... === */`-style `aha-*` section
   with the outer bar's padding) / `.aha-composer-input` / `.aha-composer-send`
   — the full composer rebuild.
 
+## 2026-09-23 (Phase 3) — real paid product: credits, checkout, paid analysis
+
+New: `lib/assistant-workspace/credit-ledger.ts`, `analysis-execution.ts` (+
+integration tests, real Postgres), `content/constants/renovation-analysis-product.ts`,
+`app/api/assistant/credits/{route.ts,checkout/route.ts}`,
+`app/api/assistant/analysis/{run/route.ts,[id]/route.ts}`,
+`app/assistant/components/{PaidAnalysisAction.tsx,AnalysisResultCard.tsx}`,
+three Prisma models + one migration. `app/api/webhooks/stripe/route.ts`
+extended (not forked) to grant credits. Full detail: `ASSISTANT_PHASE3_COMMERCIAL_AUDIT.md`
+and the four Phase 3 specs (`ASSISTANT_PAID_PRODUCT_SPEC.md`,
+`ASSISTANT_CREDIT_LEDGER_SPEC.md`, `ASSISTANT_PAYMENT_SPEC.md`,
+`ASSISTANT_ANALYSIS_SPEC.md`, `ASSISTANT_CONVERSION_FUNNEL.md`).
+
 ## 2026-09-23 (Phase 2) — personalization memory + action engine + action memory
 
 New files:

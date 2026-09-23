@@ -137,7 +137,7 @@ describe('executeAnalyzeRenovationPriorities', () => {
     expect(out.cards[0]?.id).toBeTruthy();
   });
 
-  it('proposes the paid deep analysis only once the state is rich enough, and never with a real price', () => {
+  it('proposes the paid deep analysis only once the state is rich enough, with the real server-configured credit cost — never a dollar figure', () => {
     const thin = applyPatch(defaultWorkspaceState(), {
       objective: 'refinish',
       personalization: { otherTrades: { roof: 'mentioned' } },
@@ -154,8 +154,11 @@ describe('executeAnalyzeRenovationPriorities', () => {
     expect(richOut.cards).toHaveLength(2);
     const paidCard = richOut.cards.find((c) => c.type === 'paid_analysis_proposed');
     expect(paidCard).toBeTruthy();
+    // The credit cost IS shown — it's a real, server-resolved number (rule
+    // 18/19) — but never a raw CAD figure; "Renovation Credits" is the only
+    // customer-facing unit (rule 28).
     expect(paidCard!.body).not.toMatch(/\$\d/);
-    expect(paidCard!.body.toLowerCase()).not.toContain('credit');
+    expect(paidCard!.body).toContain('Renovation Credits');
   });
 });
 
