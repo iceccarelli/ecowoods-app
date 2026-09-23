@@ -15,24 +15,16 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 };
 
 /**
- * ProjectRail — the left zone of the workspace shell.
+ * ProjectDrawer — content for the "Project" pill's `ContextDrawer`.
  *
- * Every row reads Project Decision State — "Products"/"Services" reflect
- * the same real catalog/service selections the conversation pane's
- * ProductCard/ServiceCard "Add to project" actions write (ASSISTANT-03).
- * Sections with nothing to show yet keep the empty-state hint from
- * ASSISTANT-01 — this phase does not add navigation to sub-pages that don't
- * exist (Compare, Documents).
- *
- * ASSISTANT-05: "Scenarios," "Savings," "Potential value" and "Evidence" now
- * read the same `projectRangeForState`/`calculateExplicitSavings`/
- * `buildValueScenario` outputs EconomicsRail and ConversationPane already
- * compute — never a second, independently-worded computation of the same
- * facts. Still no navigation to a sub-page for any of them; a hint here
- * points at where the real content lives (the conversation pane), same as
- * "Compare" already did for ScenarioCompare before this phase.
+ * Was ProjectRail, a permanently-visible left column; same fields, same
+ * `projectRangeForState`/`calculateExplicitSavings`/`buildValueScenario`
+ * reads EconomicsDrawer and ConversationPane already compute — never a
+ * second, independently-worded computation of the same facts — now shown
+ * only while the drawer is open instead of taking up a column on every
+ * screen size at all times.
  */
-export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
+export function ProjectDrawer({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state } = useWorkspaceState();
   const sqft = totalSquareFeet(state);
   const services = state.selectedServiceSlugs
@@ -45,7 +37,7 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
     [state, projectRange, evidencePool],
   );
 
-  const scenariosHint = sqft !== undefined ? 'Compare in the conversation below' : 'Needs sq ft';
+  const scenariosHint = sqft !== undefined ? 'Open the Compare panel from the conversation' : 'Needs sq ft';
 
   const savingsHint =
     projectRange.status !== 'ready'
@@ -56,7 +48,7 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
         ? 'One scope — nothing to bundle yet'
         : 'notQuantified' in calculateExplicitSavings({ baseline: projectRange.total, bundled: projectRange.total, overlapEvidence: [] })
           ? 'Not quantified'
-          : 'See conversation below';
+          : 'See Economics';
 
   const potentialValueHint =
     valueScenario.status === 'needs-sqft'
@@ -73,8 +65,8 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
       : valueScenario.status === 'needs-service'
         ? 'Needs a service'
         : evidenceCount
-          ? `${evidenceCount} documented project${evidenceCount === 1 ? '' : 's'}`
-          : 'General assumptions only — see conversation below';
+          ? `${evidenceCount} documented project${evidenceCount === 1 ? '' : 's'} — see Sources`
+          : 'General assumptions only';
 
   const sections: { label: string; value: string }[] = [
     { label: 'Overview', value: state.objective ? (OBJECTIVE_LABEL[state.objective] ?? 'Not started') : 'Not started' },
@@ -85,18 +77,15 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
     { label: 'Savings', value: savingsHint },
     { label: 'Potential value', value: potentialValueHint },
     { label: 'Evidence', value: evidenceHint },
-    { label: 'Compare', value: 'Not yet available' },
+    { label: 'Compare', value: 'Open from the conversation' },
     { label: 'Saved', value: 'This project' },
     { label: 'Documents', value: 'None yet' },
     { label: 'Next step', value: state.nextAction ? state.nextAction[0]!.toUpperCase() + state.nextAction.slice(1) : 'Not chosen yet' },
   ];
 
   return (
-    <nav className="aha-rail aha-rail--project" aria-label="Project sections">
-      <p className="aha-rail-heading">This project</p>
-      {sqft !== undefined && (
-        <p className="aha-rail-sqft">{sqft.toLocaleString()} sq ft</p>
-      )}
+    <div className="aha-drawer-project">
+      {sqft !== undefined && <p className="aha-rail-sqft">{sqft.toLocaleString()} sq ft</p>}
       <ul className="aha-rail-list">
         {sections.map((section) => (
           <li key={section.label} className="aha-rail-item" aria-disabled="true">
@@ -110,6 +99,6 @@ export function ProjectRail({ evidencePool }: { evidencePool: CaseStudyEvidence[
           ? 'This is saved on this device — reload and it’s still here.'
           : 'Nothing is started yet — tell the assistant what you’re planning and this fills in.'}
       </p>
-    </nav>
+    </div>
   );
 }

@@ -17,34 +17,23 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 };
 
 /**
- * EconomicsRail — the right zone of the workspace shell.
+ * EconomicsDrawer — content for the "Economics" pill's `ContextDrawer`.
  *
- * ASSISTANT-04: the cost range is real now — `projectRangeForState`
- * (lib/assistant-workspace/economics.ts) composes `calculateProjectRange`
- * over every DISTINCT published band among the services added in
- * ASSISTANT-03, at the square footage typed into state. Every dollar traces
- * to a `PriceBand`; nothing here is estimated by the assistant itself.
- *
- * Two honest empty states, not one generic placeholder: "Needs sq ft" when
- * no room has an area yet, "Needs a service" when the area is known but
- * nothing's been added to price against. "Savings" always runs through
- * `calculateExplicitSavings` — with no overlap-rule evidence published in
- * this codebase yet, that deterministically returns "Potential efficiency:
- * not quantified," never a guessed percentage.
- *
- * ASSISTANT-05: "Value scenario"/"Confidence" now read the same
- * `buildValueScenario` output ConversationPane's `ValueScenarioCard` shows in
- * full — `effect.range` is always `null` today (no evidence in this system
- * quantifies a value effect; see value-scenario.ts's module comment), so
- * this row says "Not quantified" rather than a number, same as the card.
- *
- * ASSISTANT-07: "Next step" is a real link now, not a permanently-disabled
- * button — it jumps to ConversationPane's `ConversionPanel`
- * (`#aha-next-step`), the one place that PLAN → REVIEW → CONFIRM → EXECUTE
- * flow lives. This rail never duplicates that logic; it only points at it,
- * same as "Value scenario"'s own "see conversation" text.
+ * Was EconomicsRail (a permanently-visible right column on desktop) and
+ * MobileProjectBar (a sticky bottom bar below ~900px) — the same rows, the
+ * same `projectRangeForState`/`calculateExplicitSavings`/`buildValueScenario`
+ * reads, now ONE component behind ONE drawer at every breakpoint rather than
+ * two components each hard-coding a different width. "Next step" opens the
+ * conversion drawer via `onOpenConversion` instead of anchor-scrolling to a
+ * ConversionPanel that no longer sits permanently inline.
  */
-export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
+export function EconomicsDrawer({
+  evidencePool,
+  onOpenConversion,
+}: {
+  evidencePool: CaseStudyEvidence[];
+  onOpenConversion: () => void;
+}) {
   const { state } = useWorkspaceState();
   const sqft = totalSquareFeet(state);
   const services = state.selectedServiceSlugs
@@ -62,7 +51,7 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
       ? formatMoneyRange(projectRange.total)
       : projectRange.status === 'needs-sqft'
         ? 'Needs sq ft'
-        : 'Needs a service — add one from the cards above';
+        : 'Needs a service — add one from the conversation';
 
   const savingsText = useMemo(() => {
     if (projectRange.status !== 'ready') return 'Needs pricing engine';
@@ -97,7 +86,7 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
       label: 'Value scenario',
       value:
         valueScenario.status === 'ready'
-          ? 'Not quantified — see conversation'
+          ? 'Not quantified — see Sources'
           : valueScenario.status === 'needs-sqft'
             ? 'Needs sq ft'
             : 'Needs a service',
@@ -109,9 +98,7 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
   ];
 
   return (
-    <aside className="aha-econ" aria-label="Live project economics">
-      <p className="aha-econ-heading">Live project economics</p>
-
+    <div className="aha-drawer-econ">
       <dl className="aha-econ-rows">
         {rows.map((row) => (
           <div key={row.label} className="aha-econ-row" data-highlight={row.label === 'Cost range' && projectRange.status === 'ready'}>
@@ -162,9 +149,9 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
       </div>
 
       {projectRange.status === 'ready' ? (
-        <a href="#aha-next-step" className="aha-econ-next">
+        <button type="button" className="aha-econ-next" onClick={onOpenConversion}>
           Next step — book a measure, estimate or quote
-        </a>
+        </button>
       ) : (
         <button type="button" className="aha-econ-next" disabled aria-disabled="true">
           Next step — needs sq ft and a service first
@@ -176,6 +163,6 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
           ? 'This is the published band applied to your square footage — not a quote. Species, finish, pattern, substrate, stairs and transitions move the number inside the range. The fixed price is written after a free in-home measure.'
           : 'Every dollar shown here will trace to a published price band. Nothing is ever estimated by the assistant itself.'}
       </p>
-    </aside>
+    </div>
   );
 }

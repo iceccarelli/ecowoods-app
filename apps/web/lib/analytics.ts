@@ -212,7 +212,16 @@ export type AnalyticsEvent =
      code, square footage, or anything typed into the form. */
   | 'workspace_conversion_started'
   | 'workspace_conversion_reviewed'
-  | 'workspace_conversion_cancelled';
+  | 'workspace_conversion_cancelled'
+  /* Conversation-first redesign (ASSISTANT-10) — the header's Project /
+     Economics / Sources pills each open the same shared ContextDrawer over
+     the conversation instead of a permanently-visible rail. These fire once
+     per open (not per render) so the funnel can tell how often a visitor
+     leaves the conversation to check project state versus economics versus
+     evidence. No project detail carried — same discipline as workspace_open. */
+  | 'workspace_project_opened'
+  | 'workspace_economics_opened'
+  | 'workspace_source_opened';
 
 export function track(
   event: AnalyticsEvent,

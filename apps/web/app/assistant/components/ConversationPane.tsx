@@ -1,20 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING, WORKSPACE_CHIPS, WORKSPACE_COMPOSER_PLACEHOLDER } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
-import { recommendProducts, recommendServices, selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
+import { recommendProducts, recommendServices } from '@/lib/assistant-workspace/recommendations';
 import { totalSquareFeet } from '@/lib/assistant-workspace/state';
-import { projectRangeForState } from '@/lib/assistant-workspace/economics';
-import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
+import { projectRangeForState, formatMoneyRange } from '@/lib/assistant-workspace/economics';
 import type { AssistantChatCard, AssistantChatResponse } from '@/lib/assistant-workspace/chat-schema';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 import { useWorkspaceState } from './WorkspaceStateProvider';
-import { ProductCard } from './ProductCard';
-import { ServiceCard } from './ServiceCard';
-import { ScenarioCompare } from './ScenarioCompare';
-import { ValueScenarioCard } from './ValueScenarioCard';
-import { ConversionPanel } from './ConversionPanel';
+import type { PanelKind } from './WorkspaceShell';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -22,7 +17,7 @@ interface DisplayMessage {
   cards?: AssistantChatCard[];
 }
 
-const RECOMMENDED_PRODUCT_LIMIT = 4;
+const STARTER_CHIPS = WORKSPACE_CHIPS.slice(0, 4);
 
 function snapshotFromState(state: WorkspaceState) {
   return {
@@ -94,28 +89,37 @@ function coercePatch(raw: unknown): WorkspacePatch {
 }
 
 /**
- * ConversationPane — center zone of the Ask Francisco workspace.
+ * ConversationPane — the whole workspace surface between `AssistantHeader`
+ * and the composer.
  *
- * PR-2 wires the composer to POST /api/assistant/chat (workspace-owned
- * structured model path). Corner /api/chat + ChatWidget stay untouched.
- * On 503 / network failure, falls back to interpretMessage so the rails
- * still update from keywords. Conversion writes stay in ConversionPanel.
+ * Chat is primary: the assistant's natural-language reply is the thing
+ * every turn renders. What used to sit permanently below every reply — the
+ * full ProductCard/ServiceCard grid, ScenarioCompare, ValueScenarioCard and
+ * ConversionPanel, all four every time an objective was set — is now ONE
+ * compact contextual card with up to three action buttons that open the
+ * shared `ContextDrawer` (via `onOpenPanel`, owned by `WorkspaceShell`) for
+ * the full detail: "See recommendations," "Compare alternatives," "Get
+ * estimate." No dashboard crammed into the transcript.
+ *
+ * POSTs to /api/assistant/chat (workspace-owned structured model path,
+ * untouched by this redesign). On 503 / network failure, falls back to
+ * interpretMessage so the compact card still updates from keywords.
  */
-export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
+export function ConversationPane({
+  onOpenPanel,
+}: {
+  onOpenPanel: (panel: Exclude<PanelKind, null>) => void;
+}) {
   const { state, patch } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const products = useMemo(() => recommendProducts(state, RECOMMENDED_PRODUCT_LIMIT), [state]);
+  const products = useMemo(() => recommendProducts(state, 4), [state]);
   const services = useMemo(() => recommendServices(state), [state]);
-  const incompatibilities = useMemo(() => selectionIncompatibilities(state), [state]);
   const sqft = totalSquareFeet(state);
   const projectRange = useMemo(() => projectRangeForState(state), [state]);
-  const valueScenario = useMemo(
-    () => buildValueScenario(state, projectRange, evidencePool),
-    [state, projectRange, evidencePool],
-  );
 
   const keywordFallback = (trimmed: string): DisplayMessage => {
     const { patch: next, understood } = interpretMessage(trimmed);
@@ -180,6 +184,7 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
       setMessages((prev) => [...prev, keywordFallback(trimmed)]);
     } finally {
       setBusy(false);
+      textareaRef.current?.focus();
     }
   };
 
@@ -187,22 +192,32 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
     void respond(chip);
   };
 
-  const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
-
-  const onAddService = (slug: string) => {
-    if (state.selectedServiceSlugs.includes(slug)) return;
-    patch({ selectedServiceSlugs: [...state.selectedServiceSlugs, slug] });
+  const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void respond(draft);
+    }
   };
 
-  const showRecommendations = Boolean(state.objective);
+  const showContextCard = Boolean(state.objective);
+  const started = messages.length > 0;
 
   return (
     <section className="aha-conversation" aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}>
-      <div className="aha-conversation-scroll">
-        <div className="aha-message aha-message--assistant">
-          <p className="aha-message-author">{WORKSPACE_ASSISTANT.name}</p>
-          <p className="aha-message-text">{WORKSPACE_GREETING}</p>
-        </div>
+      <div className="aha-conversation-scroll" data-empty={!started}>
+        {!started && (
+          <div className="aha-empty-state">
+            <p className="aha-empty-title">{WORKSPACE_ASSISTANT.name}</p>
+            <p className="aha-empty-lede">{WORKSPACE_GREETING}</p>
+          </div>
+        )}
+
+        {started && (
+          <div className="aha-message aha-message--assistant">
+            <p className="aha-message-author">{WORKSPACE_ASSISTANT.name}</p>
+            <p className="aha-message-text">{WORKSPACE_GREETING}</p>
+          </div>
+        )}
 
         {messages.map((m, i) => (
           <div key={i} className={`aha-message aha-message--${m.role}`}>
@@ -233,72 +248,43 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
           </div>
         )}
 
-        {!messages.length && (
-          <div className="aha-chips" role="group" aria-label="Starter prompts">
-            {WORKSPACE_CHIPS.map((chip) => (
-              <button key={chip} type="button" className="aha-chip" onClick={() => onChip(chip)} disabled={busy}>
-                {chip}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {!showRecommendations && (
-          <div className="aha-coming-online">
-            <p className="aha-coming-online-title">How this works right now</p>
-            <p className="aha-coming-online-text">
-              Tell me the neighbourhood and what you want done on this house — kitchen, roof, floors, or the
-              sequence. When hardwood is in scope, products and services from our catalogue land on the right
-              under this project. For other trades I still give a sourced market range when the adapter is live;
-              until then I say pending / not available rather than invent dollars. Ecowoods only bids the floors
-              and stairs we install — confirm a measure or quote in Next step below when you are ready.
+        {showContextCard && (
+          <div className="aha-context-card">
+            <p className="aha-context-card-title">This project</p>
+            <p className="aha-context-card-body">
+              {products.length ? `${products.length} floor option${products.length === 1 ? '' : 's'}` : 'A floor option'}
+              {services.length ? ` and ${services.length} service${services.length === 1 ? '' : 's'}` : ''} match what you told me
+              {sqft !== undefined ? ` at ${sqft.toLocaleString()} sq ft` : ''}
+              {projectRange.status === 'ready' ? ` — estimated ${formatMoneyRange(projectRange.total)}.` : '.'}
             </p>
-          </div>
-        )}
-
-        {showRecommendations && (
-          <div className="aha-recommended">
-            <p className="aha-recommended-heading">Recommended for your project</p>
-
-            {incompatibilities.length > 0 && (
-              <div className="aha-incompatibility" role="alert">
-                {incompatibilities.map((i) => (
-                  <p key={i.axis}>{i.reason}</p>
-                ))}
-              </div>
-            )}
-
-            <div className="aha-card-grid">
-              {products.map((rec) => (
-                <ProductCard key={rec.product.id} recommendation={rec} onAdd={onAddProduct} />
-              ))}
+            <div className="aha-context-card-actions">
+              <button type="button" className="aha-card-action aha-card-action--primary" onClick={() => onOpenPanel('recommendations')}>
+                See recommendations
+              </button>
+              {sqft !== undefined && (
+                <button type="button" className="aha-card-action" onClick={() => onOpenPanel('compare')}>
+                  Compare alternatives
+                </button>
+              )}
+              {projectRange.status === 'ready' && (
+                <button type="button" className="aha-card-action" onClick={() => onOpenPanel('conversion')}>
+                  Book / get estimate
+                </button>
+              )}
             </div>
-
-            <p className="aha-recommended-heading">Services</p>
-            <div className="aha-card-grid">
-              {services.map((rec) => (
-                <ServiceCard key={rec.service.slug} recommendation={rec} onAdd={onAddService} />
-              ))}
-            </div>
-
-            {sqft !== undefined && <ScenarioCompare squareFeet={sqft} country={state.country} />}
-
-            <p className="aha-recommended-heading">Value scenario</p>
-            {valueScenario.status === 'ready' ? (
-              <ValueScenarioCard scenario={valueScenario.scenario} />
-            ) : (
-              <p className="aha-card-why-empty">
-                {valueScenario.status === 'needs-sqft'
-                  ? 'Add a square footage above to see a value scenario for this project.'
-                  : 'Add a service above to see a value scenario for this project.'}
-              </p>
-            )}
-
-            <p className="aha-recommended-heading" id="aha-next-step">Next step</p>
-            <ConversionPanel projectRange={projectRange} />
           </div>
         )}
       </div>
+
+      {!started && (
+        <div className="aha-chips aha-chips--start" role="group" aria-label="Starter prompts">
+          {STARTER_CHIPS.map((chip) => (
+            <button key={chip} type="button" className="aha-chip" onClick={() => onChip(chip)} disabled={busy}>
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
 
       <form
         className="aha-composer"
@@ -308,17 +294,19 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
         }}
         aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
       >
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           className="aha-composer-input"
           placeholder={WORKSPACE_COMPOSER_PLACEHOLDER}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={onComposerKeyDown}
           aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
           disabled={busy}
+          rows={1}
         />
-        <button type="submit" className="aha-composer-send" disabled={!draft.trim() || busy}>
-          Send
+        <button type="submit" className="aha-composer-send" disabled={!draft.trim() || busy} aria-label={busy ? 'Sending' : 'Send'}>
+          {busy ? '…' : 'Send'}
         </button>
       </form>
     </section>

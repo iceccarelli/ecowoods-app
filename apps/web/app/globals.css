@@ -12612,32 +12612,79 @@ a.lib-card--photo { cursor: pointer; }
 
    Quiet-luxury / architectural-studio, not a SaaS dashboard: warm paper
    surfaces, the display serif for the assistant's own lines, generous
-   spacing, no colour-coded status chips, no gradient rush. Three zones on
-   desktop; below --aha-bp the side rails hide and the sticky mobile bar
-   takes over — CSS only, ONE ConversationPane in the DOM either way. */
+   spacing, no colour-coded status chips, no gradient rush.
+
+   ASSISTANT-10 (conversation-first redesign): the permanent three-column
+   grid (project rail | conversation | economics rail) plus the sticky
+   mobile bar are gone. `.aha-shell` is now a single column — an app bar
+   (`.aha-appbar`) above a full-width `.aha-conversation` — at every
+   breakpoint; project/economics/evidence/recommendation detail lives in the
+   shared `.aha-drawer` (ContextDrawer.tsx), a right-side slide-over at
+   >=768px and a bottom sheet under it. `.aha-rail-*` class names are kept
+   (ProjectDrawer.tsx reuses them) but no longer name a permanently-visible
+   sticky column — they style rows inside the drawer's body now. */
 
 .aha-page .tlx-hero.aha-hero { padding-bottom: var(--space-lg); }
 
 .aha-shell {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-lg);
-  max-width: 1320px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 var(--space-lg) var(--space-2xl);
-  align-items: start;
 }
 
-/* Project rail (left) */
-.aha-rail {
+/* App bar — brand, project capsule, Project/Economics/Sources pills */
+.aha-appbar {
   position: sticky;
-  top: calc(var(--header-h, 72px) + var(--space-lg));
+  top: var(--header-h, 72px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
   box-shadow: var(--shadow-sm);
 }
+.aha-appbar-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-sm); }
+.aha-appbar-brand {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+  white-space: nowrap;
+}
+.aha-appbar-project {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60vw;
+}
+.aha-appbar-pills { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.aha-pill {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-warm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.aha-pill:hover, .aha-pill:focus-visible { border-color: var(--copper-surface); color: var(--copper-text); }
+.aha-pill-value { color: var(--muted-soft); }
+
+/* Project rail rows — reused inside ProjectDrawer.tsx */
 .aha-rail-heading {
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -12646,7 +12693,7 @@ a.lib-card--photo { cursor: pointer; }
   color: var(--muted);
   margin: 0 0 var(--space-md);
 }
-.aha-rail-sqft { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); margin: calc(-1 * var(--space-sm)) 0 var(--space-md); }
+.aha-rail-sqft { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); margin: 0 0 var(--space-md); }
 .aha-rail-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
 .aha-rail-item {
   display: flex;
@@ -12668,11 +12715,11 @@ a.lib-card--photo { cursor: pointer; }
   line-height: 1.5;
 }
 
-/* Conversation (center) */
+/* Conversation — the whole workspace surface */
 .aha-conversation {
   display: flex;
   flex-direction: column;
-  min-height: 520px;
+  min-height: calc(100dvh - var(--header-h, 72px) - 260px);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -12680,6 +12727,12 @@ a.lib-card--photo { cursor: pointer; }
   overflow: hidden;
 }
 .aha-conversation-scroll { flex: 1; padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); overflow-y: auto; }
+.aha-conversation-scroll[data-empty='true'] { justify-content: center; align-items: center; text-align: center; }
+
+.aha-empty-state { max-width: 480px; display: flex; flex-direction: column; gap: var(--space-sm); align-items: center; }
+.aha-empty-title { font-family: var(--font-display); font-size: 2rem; color: var(--ink); margin: 0; }
+.aha-empty-lede { font-size: 1rem; line-height: 1.6; color: var(--muted-soft); margin: 0; }
+
 .aha-message--assistant { max-width: 640px; }
 .aha-message--user { max-width: 640px; align-self: flex-end; text-align: right; }
 .aha-message-author {
@@ -12714,16 +12767,29 @@ a.lib-card--photo { cursor: pointer; }
   cursor: pointer;
 }
 .aha-chip:hover, .aha-chip:focus-visible { background: var(--surface); border-color: var(--copper-surface); }
+.aha-chips--start { justify-content: center; max-width: 480px; margin: 0 auto var(--space-md); }
 
-.aha-coming-online {
+/* Compact contextual card — replaces the permanent product/service grid,
+   ScenarioCompare, ValueScenarioCard and ConversionPanel that used to render
+   inline below every reply. One card, up to three actions, opening the
+   shared drawer for full detail. */
+.aha-context-card {
   margin-top: auto;
   padding: var(--space-lg);
-  border: 1px dashed var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface-warm);
 }
-.aha-coming-online-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 var(--space-xs); }
-.aha-coming-online-text { font-size: 0.9rem; line-height: 1.6; color: var(--muted-soft); margin: 0; }
+.aha-context-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--space-xs);
+}
+.aha-context-card-body { font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.aha-context-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-md); }
 
 .aha-inline-cards {
   list-style: none;
@@ -12768,6 +12834,7 @@ a.lib-card--photo { cursor: pointer; }
 
 .aha-composer {
   display: flex;
+  align-items: flex-end;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--line);
@@ -12776,36 +12843,35 @@ a.lib-card--photo { cursor: pointer; }
 .aha-composer-input {
   flex: 1;
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink);
+  resize: none;
+  max-height: 40vh;
+  min-height: 2.75rem;
+  field-sizing: content;
 }
 .aha-composer-input:disabled { color: var(--muted-soft); cursor: not-allowed; }
 .aha-composer-input:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 1px; }
 .aha-composer-send {
   font-family: var(--font-body);
   font-weight: 600;
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-full);
   border: none;
   background: var(--copper-surface);
   color: var(--on-copper);
   cursor: pointer;
+  min-height: 2.75rem;
 }
 .aha-composer-send:disabled { background: var(--line-strong); color: var(--muted); cursor: not-allowed; }
 
-/* Economics rail (right) */
-.aha-econ {
-  position: sticky;
-  top: calc(var(--header-h, 72px) + var(--space-lg));
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  box-shadow: var(--shadow-sm);
+/* Economics — drawer content (EconomicsDrawer.tsx) */
+.aha-drawer-econ {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -12836,90 +12902,97 @@ a.lib-card--photo { cursor: pointer; }
   text-decoration: none;
   box-sizing: border-box;
 }
-/* ASSISTANT-07 — the enabled state, an <a href> to ConversationPane's
-   ConversionPanel (#aha-next-step), not a disabled placeholder. */
-a.aha-econ-next {
+/* ASSISTANT-07 — the enabled state opens the conversion drawer
+   (EconomicsDrawer's `onOpenConversion`), a real <button> now that
+   ConversionPanel no longer sits inline for an <a href="#..."> to scroll to. */
+button.aha-econ-next:not(:disabled) {
   background: var(--copper-surface);
   color: var(--on-copper);
   cursor: pointer;
 }
-a.aha-econ-next:hover, a.aha-econ-next:focus-visible {
+button.aha-econ-next:not(:disabled):hover, button.aha-econ-next:not(:disabled):focus-visible {
   opacity: 0.92;
   outline: 2px solid var(--copper-surface);
   outline-offset: 2px;
 }
 .aha-econ-footnote { font-size: 0.76rem; line-height: 1.5; color: var(--muted-soft); margin: 0; }
 
-/* Mobile sticky project bar — hidden on desktop */
-.aha-mobile-bar-wrap { display: none; }
-
-/* === Breakpoint: below this, the side rails collapse into the sticky bar */
-@media (max-width: 900px) {
-  .aha-shell { grid-template-columns: 1fr; padding: 0 var(--space-md) var(--space-xl); gap: var(--space-md); }
-  .aha-rail, .aha-econ { display: none; }
-  .aha-conversation { min-height: calc(100dvh - var(--header-h, 72px) - 220px); }
-  .aha-conversation-scroll { padding: var(--space-lg) var(--space-md); }
-
-  .aha-mobile-bar-wrap {
-    display: block;
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-  }
-  .aha-mobile-bar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) var(--space-md);
-    min-height: 48px; /* touch target */
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-top: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: var(--shadow-lg);
-    font-family: var(--font-body);
-  }
-  .aha-mobile-bar-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .aha-mobile-bar-value { flex: 1; text-align: left; font-size: 0.88rem; color: var(--ink-soft); }
-  .aha-mobile-bar-chevron {
-    width: 10px; height: 10px;
-    border-right: 2px solid var(--muted);
-    border-bottom: 2px solid var(--muted);
-    transform: rotate(-45deg);
-    transition: transform 0.15s ease;
-  }
-  .aha-mobile-bar-chevron[data-open='true'] { transform: rotate(135deg); }
-
-  .aha-mobile-sheet {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    z-index: 6;
-    background: var(--surface);
-    border-top: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: var(--shadow-xl);
-    padding: var(--space-lg) var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
-  }
-  .aha-mobile-sheet-rows { display: flex; flex-direction: column; gap: var(--space-sm); margin: 0 0 var(--space-md); }
-  .aha-mobile-sheet-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
-  .aha-mobile-sheet-row dt { color: var(--muted); }
-  .aha-mobile-sheet-row dd { margin: 0; color: var(--ink-soft); }
-  .aha-mobile-sheet-footnote { font-size: 0.78rem; color: var(--muted-soft); margin: 0 0 var(--space-md); }
-  .aha-mobile-sheet-close {
-    width: 100%;
-    min-height: 44px; /* touch target */
-    font-family: var(--font-body);
-    font-weight: 600;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--line-strong);
-    background: var(--surface-warm);
-    color: var(--ink);
-  }
+/* === ASSISTANT-10: ContextDrawer — the ONE overlay Project/Economics/
+   Sources/Recommendations/Compare/Next step all open through. Right-side
+   slide-over at >=768px, bottom sheet under it. === */
+.aha-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+}
+.aha-drawer-scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(20, 16, 12, 0.45);
+  cursor: pointer;
+}
+.aha-drawer-panel {
+  position: relative;
+  width: min(420px, 100%);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.aha-drawer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--line);
+}
+.aha-drawer-title { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+.aha-drawer-close {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-warm);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.aha-drawer-close:hover, .aha-drawer-close:focus-visible { border-color: var(--copper-surface); color: var(--copper-text); }
+.aha-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .aha-mobile-bar-chevron { transition: none; }
+/* === Breakpoint: below this, the conversation gets a tighter gutter and
+   the drawer becomes a bottom sheet instead of a right-side slide-over. */
+@media (max-width: 768px) {
+  .aha-shell { padding: 0 var(--space-md) var(--space-xl); gap: var(--space-md); }
+  .aha-appbar-project { max-width: 100%; }
+  .aha-conversation { min-height: calc(100dvh - var(--header-h, 72px) - 260px); }
+  .aha-conversation-scroll { padding: var(--space-lg) var(--space-md); }
+
+  .aha-drawer { align-items: flex-end; }
+  .aha-drawer-panel {
+    width: 100%;
+    height: auto;
+    max-height: 85dvh;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
 }
 
 /* === ASSISTANT-03: product + service cards ================================ */
@@ -12932,6 +13005,8 @@ a.aha-econ-next:hover, a.aha-econ-next:focus-visible {
   color: var(--muted);
   margin: var(--space-md) 0 0;
 }
+.aha-recommended-heading:first-child { margin-top: 0; }
+.aha-drawer-recommendations { display: flex; flex-direction: column; gap: var(--space-md); }
 
 .aha-incompatibility {
   padding: var(--space-md);
