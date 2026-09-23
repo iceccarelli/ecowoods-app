@@ -1,31 +1,34 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { track } from '@/lib/analytics';
+import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
+import { totalSquareFeet } from '@/lib/assistant-workspace/state';
+import { projectRangeForState, formatMoneyRange } from '@/lib/assistant-workspace/economics';
 import type { CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { WorkspaceStateProvider, useWorkspaceState } from './WorkspaceStateProvider';
-import { ProjectRail } from './ProjectRail';
 import { ConversationPane } from './ConversationPane';
-import { EconomicsRail } from './EconomicsRail';
-import { MobileProjectBar } from './MobileProjectBar';
+import {
+  WorkspaceContextDrawer,
+  type WorkspaceDrawerTab,
+} from './WorkspaceContextDrawer';
+
+const OBJECTIVE_LABEL: Record<string, string> = {
+  install: 'New floor',
+  refinish: 'Refinishing',
+  repair: 'Repair',
+  'not-sure': 'Still deciding',
+};
 
 /**
- * WorkspaceShell — the three-zone layout for /assistant (project nav |
- * conversation | live economics), collapsing to a sticky mobile bar under
- * 900px. All four zones read Project Decision State from the one provider
- * below — see docs/assistant-workspace/NEW_ASSISTANT_ARCHITECTURE.md.
+ * WorkspaceShell — AGENT_DIRECTIVE v8 conversation-first layout.
  *
- * Independent of the corner Quick Assistant (ChatWidget.tsx) in every
- * direction: no shared component, no shared route, no shared client state.
- * Deleting either one leaves the other working.
+ * Desktop default: NO permanent ProjectRail / EconomicsRail. Header with
+ * Ask Francisco + compact Project capsule → conversation canvas → premium
+ * composer. Project / Economics / Sources / Documents open as ONE contextual
+ * slide-over (WorkspaceContextDrawer). Backend engines unchanged.
  *
- * `evidencePool` (ASSISTANT-05) is server-loaded once in `page.tsx` — the
- * one place in this client-component tree that touches the filesystem-backed
- * case-study loader — and threaded down as a plain prop, not folded into
- * `WorkspaceStateProvider`'s context: it is read-only reference data, not
- * part of Project Decision State, and NO_DUPLICATION_GUARANTEE.md's "one
- * canonical shape" is about that state, not about every prop this tree
- * passes around.
+ * Independent of the corner Quick Assistant (ChatWidget.tsx).
  */
 export function WorkspaceShell({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   return (
@@ -39,13 +42,12 @@ function WorkspaceShellBody({ evidencePool }: { evidencePool: CaseStudyEvidence[
   const { state, ready } = useWorkspaceState();
   const openFired = useRef(false);
   const previousObjective = useRef<typeof state.objective | undefined>(undefined);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<WorkspaceDrawerTab>('project');
 
   useEffect(() => {
     if (openFired.current) return;
     openFired.current = true;
-    /* `source: 'workspace'` keeps this distinguishable from the corner
-       widget's assistant_open events, which never carry this value. No
-       message, name, or project detail — same discipline as assistant_open. */
     track('workspace_open', { source: 'workspace' });
   }, []);
 
@@ -53,8 +55,6 @@ function WorkspaceShellBody({ evidencePool }: { evidencePool: CaseStudyEvidence[
     if (!ready) return;
     const prev = previousObjective.current;
     if (prev === undefined) {
-      /* First observation after hydration — a reload of an existing project
-         is not a new one, so this establishes the baseline without firing. */
       previousObjective.current = state.objective;
       return;
     }
@@ -67,15 +67,55 @@ function WorkspaceShellBody({ evidencePool }: { evidencePool: CaseStudyEvidence[
     previousObjective.current = state.objective;
   }, [ready, state.objective, state.country]);
 
+  const projectRange = useMemo(() => projectRangeForState(state), [state]);
+  const sqft = totalSquareFeet(state);
+
+  const capsuleSummary = useMemo(() => {
+    if (projectRange.status === 'ready') return formatMoneyRange(projectRange.total);
+    if (state.objective) {
+      const label = OBJECTIVE_LABEL[state.objective] ?? state.objective;
+      return sqft !== undefined ? `${label} · ${sqft.toLocaleString()} sq ft` : label;
+    }
+    return 'Not started';
+  }, [projectRange, state.objective, sqft]);
+
+  const openDrawer = (tab: WorkspaceDrawerTab = 'project') => {
+    setDrawerTab(tab);
+    setDrawerOpen(true);
+  };
+
   return (
-    <div className="aha-shell">
-      {/* ProjectRail and EconomicsRail hide below the mobile breakpoint (CSS
-          only — one ConversationPane instance, not a duplicated subtree).
-          MobileProjectBar is the reverse: hidden on desktop, shown below it. */}
-      <ProjectRail evidencePool={evidencePool} />
-      <ConversationPane evidencePool={evidencePool} />
-      <EconomicsRail evidencePool={evidencePool} />
-      <MobileProjectBar evidencePool={evidencePool} />
+    <div className="aha-shell aha-shell--conversation-first">
+      <header className="aha-workspace-bar">
+        <div className="aha-workspace-bar-identity">
+          <p className="aha-workspace-bar-kicker">Ecowoods Inc.</p>
+          <h2 className="aha-workspace-bar-title">{WORKSPACE_ASSISTANT.name}</h2>
+        </div>
+        <button
+          type="button"
+          className="aha-project-capsule"
+          onClick={() => openDrawer(projectRange.status === 'ready' ? 'economics' : 'project')}
+          aria-haspopup="dialog"
+          aria-expanded={drawerOpen}
+        >
+          <span className="aha-project-capsule-label">Project</span>
+          <span className="aha-project-capsule-value">{capsuleSummary}</span>
+        </button>
+      </header>
+
+      <ConversationPane
+        evidencePool={evidencePool}
+        onOpenProject={() => openDrawer('project')}
+        onOpenEconomics={() => openDrawer('economics')}
+      />
+
+      <WorkspaceContextDrawer
+        open={drawerOpen}
+        tab={drawerTab}
+        onTabChange={setDrawerTab}
+        onClose={() => setDrawerOpen(false)}
+        evidencePool={evidencePool}
+      />
     </div>
   );
 }

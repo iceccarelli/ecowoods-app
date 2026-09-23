@@ -85,26 +85,12 @@ export default async function AssistantPage() {
           { name: WORKSPACE_ASSISTANT.name, url: `${SITE_URL}/assistant` },
         ])}
       />
-      <header className="tlx-hero aha-hero">
+      <header className="tlx-hero aha-hero aha-hero--compact">
         <div className="shell">
           <nav className="tlx-crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>{WORKSPACE_ASSISTANT.name}</span>
           </nav>
-          <p className="tlx-kicker">Project workspace · Ecowoods Inc.</p>
-          <h1 className="tlx-title">{WORKSPACE_ASSISTANT.name}</h1>
-          <p className="tlx-lede">
-            Day job — install, sand and refinish hardwood across Toronto and the GTA.
-            Side job — tell homeowners the truth about which renovations move value, which ones only feel good,
-            and what the work actually costs near their house.
-          </p>
-          <p className="tlx-note aha-hero-links">
-            Also:{' '}
-            <Link href="/estimate">free in-home measure</Link>
-            {' · '}
-            <Link href="/guides">decision guides</Link>
-            {' · '}
-            <Link href="/pricing">published price bands</Link>
-          </p>
+          <h1 className="sr-only">{WORKSPACE_ASSISTANT.name}</h1>
         </div>
       </header>
 
