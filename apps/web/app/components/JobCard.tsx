@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import type { JobCard as JobCardData } from '@/content/job-cards';
 import { track } from '@/lib/analytics';
@@ -24,13 +25,10 @@ import { track } from '@/lib/analytics';
  *   rest. "MVTR 9.8 lbs/1000 sqft/24h" is not a marketing sentence; nobody
  *   writes it who did not take the reading.
  *
- * NO PHOTOGRAPH, NO CUSTOMER NAME. See the header of content/job-cards.ts:
- * none of the case studies publishes an image, and the testimonial
- * attributions they carry have no consent record in this repository. A card
- * whose every element is checkable is worth more than a card with a face on
- * it, and it is the only kind this site is entitled to publish today. When
- * real job photography exists, `imageSlot` renders it and nothing else here
- * changes.
+ * NO CUSTOMER NAME. See the header of content/job-cards.ts: the testimonial
+ * attributions the case studies carry have no consent record in this
+ * repository. `imageSlot`, where set, is the job's own AFTER frame reused
+ * from its ProofSlider plate — never a face, never someone else's floor.
  */
 
 export function JobCard({ job, from }: { job: JobCardData; from: string }) {
@@ -49,8 +47,14 @@ export function JobCard({ job, from }: { job: JobCardData; from: string }) {
       </header>
 
       {job.imageSlot && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="jc-img" src={job.imageSlot} alt="" loading="lazy" decoding="async" />
+        <Image
+          className="jc-img"
+          src={job.imageSlot}
+          alt={job.imageAlt ?? ''}
+          sizes="(max-width: 640px) 100vw, 380px"
+          style={{ width: '100%', height: 'auto' }}
+          loading="lazy"
+        />
       )}
 
       <dl className="jc-spec">
