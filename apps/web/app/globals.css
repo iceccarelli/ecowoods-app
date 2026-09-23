@@ -13177,6 +13177,15 @@ body.aha-active .site-footer { display: none; }
   border-left-color: var(--copper);
   background: color-mix(in srgb, var(--copper-surface) 6%, var(--surface));
 }
+/* a real, deterministic result (analyze_renovation_priorities) — intelligence, not a sale. */
+.aha-inline-card[data-card-type='analysis_available'] {
+  border-left-color: var(--ink-soft, var(--ink));
+}
+/* the paid-intelligence upsell moment — architecture-only until pricing is configured (see ASSISTANT_MONETIZATION_SPEC.md), so it reads as "coming," not clickable. */
+.aha-inline-card[data-card-type='paid_analysis_proposed'] {
+  border-left-color: var(--copper-surface);
+  border-style: dashed;
+}
 .aha-inline-card-title {
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -13191,13 +13200,45 @@ body.aha-active .site-footer { display: none; }
   color: var(--ink);
   margin: 0;
 }
+/* Why THIS card — grounded in what the visitor actually said (directive rule 19), never a generic marketing line. Visually a notch quieter than the body so the answer stays primary. */
+.aha-inline-card-reason {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+.aha-inline-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: 0.5rem;
+}
 .aha-inline-card-link {
   display: inline-block;
-  margin-top: 0.35rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--copper);
 }
+.aha-inline-card-link--disabled {
+  color: var(--muted-soft);
+  font-weight: 500;
+  cursor: default;
+}
+/* "Not now" — the visible half of action memory (rule 20-21, 31-32): the same
+   proposal is never resurfaced after this, enforced server-side too (see
+   filterDismissedCards in chat-tools.ts), not just hidden client-side. */
+.aha-inline-card-dismiss {
+  font-size: 0.78rem;
+  color: var(--muted-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.aha-inline-card-dismiss:hover, .aha-inline-card-dismiss:focus-visible { color: var(--muted); }
 .aha-composer-send:disabled,
 .aha-chip:disabled,
 .aha-composer-input:disabled {

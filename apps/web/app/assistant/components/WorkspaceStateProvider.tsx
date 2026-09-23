@@ -2,13 +2,19 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ensureDesignId } from '@/lib/floor-studio/design-id';
-import { applyPatch, defaultWorkspaceState } from '@/lib/assistant-workspace/state';
+import { applyPatch, defaultWorkspaceState, recordActionDismissed } from '@/lib/assistant-workspace/state';
 import { loadWorkspaceState, saveWorkspaceState } from '@/lib/assistant-workspace/persistence';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 
 interface WorkspaceContextValue {
   state: WorkspaceState;
   patch: (p: WorkspacePatch) => void;
+  /**
+   * Record that the visitor dismissed a proposed action ("not now") — see
+   * WorkspaceActionMemory. Goes through recordActionDismissed rather than
+   * `patch` because it's append-only, not a mergeable field.
+   */
+  dismissAction: (actionId: string) => void;
   /** True once the client has hydrated from localStorage or minted a fresh id. */
   ready: boolean;
 }
@@ -51,7 +57,14 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     setState((prev) => applyPatch(prev, p));
   }, []);
 
-  const value = useMemo<WorkspaceContextValue>(() => ({ state, patch, ready }), [state, patch, ready]);
+  const dismissAction = useCallback((actionId: string) => {
+    setState((prev) => recordActionDismissed(prev, actionId));
+  }, []);
+
+  const value = useMemo<WorkspaceContextValue>(
+    () => ({ state, patch, dismissAction, ready }),
+    [state, patch, dismissAction, ready],
+  );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

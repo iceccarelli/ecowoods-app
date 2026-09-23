@@ -50,6 +50,41 @@ export interface WorkspaceRoom {
 export type WorkspaceNextAction = 'measure' | 'estimate' | 'quote';
 
 /**
+ * A trade Ecowoods does NOT install (see chat-tools.ts's NON_FLOOR_TRADES —
+ * imported, not re-listed, so there is one list of trade names). What the
+ * homeowner has actually said about it — never inferred, never a guess at
+ * urgency or cost.
+ */
+export type TradeMentionStatus = 'mentioned' | 'planned' | 'in-progress' | 'done';
+
+/**
+ * Personalization memory (Phase 2 / rule 4-5 of the directive): facts the
+ * homeowner stated once, so the conversation never re-asks for them.
+ * Every field here is either typed by the visitor or copied verbatim from
+ * something they said — never inferred, never geocoded, never enriched.
+ */
+export interface WorkspacePersonalization {
+  /** Neighbourhood/area as the visitor typed it (e.g. "Rexdale") — never resolved to an address or geocoded. */
+  neighbourhood?: string;
+  /** Free-text description of the CURRENT floor's condition as the visitor described it (e.g. "scratched and dull"). Never a diagnosis Francisco invented. */
+  floorCondition?: string;
+  /** Non-floor trades the visitor has mentioned wanting/needing done, and what they said about each — never a price, never an Ecowoods commitment. */
+  otherTrades: Partial<Record<string, TradeMentionStatus>>;
+}
+
+/**
+ * Which proposed actions (AssistantChatCard.id) this visitor has already
+ * dismissed or completed — so the same card is never resurfaced after a
+ * "no thanks," and a completed one doesn't linger as if untouched (rule
+ * 20-21, 31-32). Ids are stable per action instance (see chat-tools.ts's
+ * `actionId`), not per render.
+ */
+export interface WorkspaceActionMemory {
+  dismissed: string[];
+  completed: string[];
+}
+
+/**
  * Project Decision State — the central object. Everything else in the
  * workspace (conversation, cards, the economics rail) reads and patches
  * this, never a parallel copy of it.
@@ -84,13 +119,18 @@ export interface WorkspaceState {
   /** Things this workspace still needs to know, in plain language. */
   pendingQuestions: string[];
   nextAction: WorkspaceNextAction | null;
+  personalization: WorkspacePersonalization;
+  actionMemory: WorkspaceActionMemory;
   /** ISO timestamp of the last change. */
   updatedAt: string;
 }
 
 /** A partial update applied against the current state — see state.ts's `applyPatch`. */
 export type WorkspacePatch = Partial<
-  Omit<WorkspaceState, 'currentFloor' | 'targetFloor' | 'rooms' | 'selectedServiceSlugs' | 'pendingQuestions'>
+  Omit<
+    WorkspaceState,
+    'currentFloor' | 'targetFloor' | 'rooms' | 'selectedServiceSlugs' | 'pendingQuestions' | 'personalization' | 'actionMemory'
+  >
 > & {
   currentFloor?: Partial<WorkspaceFloorPreference>;
   targetFloor?: Partial<WorkspaceFloorPreference>;
@@ -98,4 +138,8 @@ export type WorkspacePatch = Partial<
   rooms?: WorkspaceRoom[];
   selectedServiceSlugs?: string[];
   pendingQuestions?: string[];
+  /** Merges field-by-field, same discipline as currentFloor/targetFloor — a patch naming only `neighbourhood` doesn't erase `floorCondition`. */
+  personalization?: Partial<Omit<WorkspacePersonalization, 'otherTrades'>> & {
+    otherTrades?: Partial<Record<string, TradeMentionStatus>>;
+  };
 };

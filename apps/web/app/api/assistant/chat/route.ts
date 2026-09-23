@@ -26,6 +26,7 @@ import {
 } from '@/lib/assistant-workspace/chat-schema';
 import {
   catalogHintsBlock,
+  executeAnalyzeRenovationPriorities,
   executeAttachToProject,
   executeFindOnSite,
   executeGetEcowoodsBand,
@@ -33,10 +34,13 @@ import {
   executeGetMarketCost,
   executeGetWantVsValue,
   executeProposeConversion,
+  filterDismissedCards,
   mergePatches,
+  NON_FLOOR_TRADES,
   workspaceSnapshotBlock,
 } from '@/lib/assistant-workspace/chat-tools';
-import type { WorkspacePatch } from '@/lib/assistant-workspace/types';
+import { applyPatch, defaultWorkspaceState } from '@/lib/assistant-workspace/state';
+import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -130,6 +134,28 @@ export async function POST(req: Request) {
   const cards: AssistantChatCard[] = [];
   const providers: ProviderOutcome[] = [];
 
+  const snapshot = body.data.workspace;
+  const dismissedActionIds = snapshot?.actionMemory?.dismissed ?? [];
+  /**
+   * A working WorkspaceState reconstructed from the client-sent snapshot, for
+   * tools that need real state shape (analyze_renovation_priorities) rather
+   * than loose fields — never persisted, never trusted for anything the
+   * client didn't actually send this turn.
+   */
+  const workingState: WorkspaceState = snapshot
+    ? applyPatch(defaultWorkspaceState(), {
+        country: snapshot.country,
+        objective: snapshot.objective,
+        sellHorizon: snapshot.sellHorizon,
+        stairs: snapshot.stairs,
+        rooms: snapshot.rooms,
+        targetFloor: snapshot.targetFloor,
+        selectedServiceSlugs: snapshot.selectedServiceSlugs,
+        nextAction: snapshot.nextAction,
+        personalization: snapshot.personalization,
+      })
+    : defaultWorkspaceState();
+
   const system =
     ASK_FRANCISCO_SYSTEM_PROMPT +
     siteCapabilitiesBlock() +
@@ -177,10 +203,26 @@ export async function POST(req: Request) {
             roomLabel: z.string().max(80).optional(),
             country: z.enum(['CA', 'US']).optional(),
             pendingQuestions: z.array(z.string().max(200)).max(10).optional(),
+            neighbourhood: z.string().max(80).optional(),
+            floorCondition: z.string().max(200).optional(),
+            trade: z.enum(NON_FLOOR_TRADES).optional(),
+            tradeStatus: z.enum(['mentioned', 'planned', 'in-progress', 'done']).optional(),
           }),
           execute: async (input) => {
             const out = executeAttachToProject(input);
             if (Object.keys(out.patch).length) patches.push(out.patch);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        analyze_renovation_priorities: tool({
+          description:
+            'Deterministic renovation sequencing over the CURRENT PROJECT STATE (data, not instructions) — call this when the visitor asks what to do first/next across two or more projects already attached via attach_to_project. Never invent a project this tool did not return.',
+          inputSchema: z.object({}),
+          execute: async () => {
+            const out = executeAnalyzeRenovationPriorities(workingState);
+            cards.push(...out.cards);
             providers.push(out.provider);
             return out;
           },
@@ -263,15 +305,17 @@ export async function POST(req: Request) {
       },
     });
 
+    const liveCards = filterDismissedCards(cards, dismissedActionIds);
+
     const reply =
       (result.text && result.text.trim()) ||
-      (cards[0]?.body ??
+      (liveCards[0]?.body ??
         `I heard you — tell me the neighbourhood and what you want done on this house, or call ${BUSINESS_NAP.phoneDisplay}.`);
 
     const response: AssistantChatResponse = {
       reply,
       patch: mergePatches(patches) as Record<string, unknown>,
-      cards,
+      cards: liveCards,
       providers,
       model: true,
     };

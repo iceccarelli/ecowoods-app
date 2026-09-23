@@ -10,10 +10,13 @@ import { countryOf } from '@/lib/floor-studio/studio-config';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { SERVICES } from '@/lib/seo-data';
 import type {
+  TradeMentionStatus,
+  WorkspaceActionMemory,
   WorkspaceFloorPreference,
   WorkspaceNextAction,
   WorkspaceObjective,
   WorkspacePatch,
+  WorkspacePersonalization,
   WorkspaceRoom,
   WorkspaceSellHorizon,
   WorkspaceState,
@@ -22,6 +25,7 @@ import type {
 const OBJECTIVES: WorkspaceObjective[] = ['install', 'refinish', 'repair', 'not-sure'];
 const SELL_HORIZONS: WorkspaceSellHorizon[] = ['staying', 'selling-soon', 'not-sure'];
 const NEXT_ACTIONS: WorkspaceNextAction[] = ['measure', 'estimate', 'quote'];
+const TRADE_MENTION_STATUSES: TradeMentionStatus[] = ['mentioned', 'planned', 'in-progress', 'done'];
 
 export const isWorkspaceObjective = (v: unknown): v is WorkspaceObjective =>
   typeof v === 'string' && (OBJECTIVES as string[]).includes(v);
@@ -31,6 +35,9 @@ export const isWorkspaceSellHorizon = (v: unknown): v is WorkspaceSellHorizon =>
 
 export const isWorkspaceNextAction = (v: unknown): v is WorkspaceNextAction =>
   typeof v === 'string' && (NEXT_ACTIONS as string[]).includes(v);
+
+export const isTradeMentionStatus = (v: unknown): v is TradeMentionStatus =>
+  typeof v === 'string' && (TRADE_MENTION_STATUSES as string[]).includes(v);
 
 /**
  * A default, unminted state. `designId` is empty — minting happens client-side
@@ -52,6 +59,8 @@ export function defaultWorkspaceState(now: () => string = () => new Date().toISO
     selectedServiceSlugs: [],
     pendingQuestions: [],
     nextAction: null,
+    personalization: { otherTrades: {} },
+    actionMemory: { dismissed: [], completed: [] },
     updatedAt: now(),
   };
 }
@@ -94,6 +103,48 @@ function sanitizeQuestions(questions: unknown): string[] {
   return questions.filter((q): q is string => typeof q === 'string').slice(0, 20).map((q) => q.slice(0, 200));
 }
 
+/** Caps size/length only — trade names are labels rendered as text, not executed, so no catalog whitelist here (chat-tools.ts's isNonFloorTrade already gates what gets written). */
+function sanitizeOtherTrades(raw: unknown): WorkspacePersonalization['otherTrades'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: WorkspacePersonalization['otherTrades'] = {};
+  let count = 0;
+  for (const [trade, status] of Object.entries(raw as Record<string, unknown>)) {
+    if (count >= 12) break;
+    if (typeof trade !== 'string' || !trade.trim() || !isTradeMentionStatus(status)) continue;
+    out[trade.trim().slice(0, 40).toLowerCase()] = status;
+    count += 1;
+  }
+  return out;
+}
+
+function sanitizePersonalization(raw: Partial<WorkspacePersonalization> | undefined): WorkspacePersonalization {
+  const out: WorkspacePersonalization = { otherTrades: sanitizeOtherTrades(raw?.otherTrades) };
+  if (typeof raw?.neighbourhood === 'string' && raw.neighbourhood.trim()) {
+    out.neighbourhood = raw.neighbourhood.trim().slice(0, 80);
+  }
+  if (typeof raw?.floorCondition === 'string' && raw.floorCondition.trim()) {
+    out.floorCondition = raw.floorCondition.trim().slice(0, 200);
+  }
+  return out;
+}
+
+function sanitizeActionIds(ids: unknown): string[] {
+  if (!Array.isArray(ids)) return [];
+  const seen = new Set<string>();
+  for (const id of ids) {
+    if (typeof id === 'string' && id.trim()) seen.add(id.trim().slice(0, 120));
+    if (seen.size >= 200) break;
+  }
+  return [...seen];
+}
+
+function sanitizeActionMemory(raw: Partial<WorkspaceActionMemory> | undefined): WorkspaceActionMemory {
+  return {
+    dismissed: sanitizeActionIds(raw?.dismissed),
+    completed: sanitizeActionIds(raw?.completed),
+  };
+}
+
 /**
  * Apply a patch and return a NEW state — never mutates. `currentFloor` and
  * `targetFloor` merge field-by-field (a patch naming only `productId`
@@ -120,9 +171,42 @@ export function applyPatch(
       : state.selectedServiceSlugs,
     pendingQuestions: patch.pendingQuestions ? sanitizeQuestions(patch.pendingQuestions) : state.pendingQuestions,
     nextAction: patch.nextAction !== undefined ? patch.nextAction : state.nextAction,
+    personalization: patch.personalization
+      ? sanitizePersonalization({
+          ...state.personalization,
+          ...patch.personalization,
+          otherTrades: { ...state.personalization.otherTrades, ...patch.personalization.otherTrades },
+        })
+      : state.personalization,
+    actionMemory: state.actionMemory,
     updatedAt: now(),
   };
   return next;
+}
+
+/**
+ * Record that the visitor dismissed a proposed action ("not now") — the
+ * action-selection layer (chat-tools.ts) and earned-catalog.ts both filter
+ * against this before a card can be shown again. Append-only by design, so
+ * it goes through its own function rather than the generic patch (which
+ * would let a stale client snapshot silently erase dismissals — see rule 20
+ * of the Phase 2 directive: no action should be repeatedly resurfaced).
+ */
+export function recordActionDismissed(state: WorkspaceState, actionId: string): WorkspaceState {
+  if (!actionId || state.actionMemory.dismissed.includes(actionId)) return state;
+  return {
+    ...state,
+    actionMemory: { ...state.actionMemory, dismissed: [...state.actionMemory.dismissed, actionId].slice(-200) },
+  };
+}
+
+/** Record that a proposed action actually completed — moves it out of "still pending," never re-offered as if untouched. */
+export function recordActionCompleted(state: WorkspaceState, actionId: string): WorkspaceState {
+  if (!actionId || state.actionMemory.completed.includes(actionId)) return state;
+  return {
+    ...state,
+    actionMemory: { ...state.actionMemory, completed: [...state.actionMemory.completed, actionId].slice(-200) },
+  };
 }
 
 /** Total square footage across every room that has one — undefined if none do. */
@@ -183,6 +267,8 @@ export function hydrateWorkspaceState(
     selectedServiceSlugs: sanitizeServiceSlugs(raw.selectedServiceSlugs),
     pendingQuestions: sanitizeQuestions(raw.pendingQuestions),
     nextAction: isWorkspaceNextAction(raw.nextAction) ? raw.nextAction : null,
+    personalization: sanitizePersonalization(raw.personalization),
+    actionMemory: sanitizeActionMemory(raw.actionMemory),
     updatedAt,
   };
 }

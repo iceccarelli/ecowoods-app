@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  executeAnalyzeRenovationPriorities,
   executeAttachToProject,
   executeGetEcowoodsBand,
   executeGetHouseProfile,
   executeGetMarketCost,
   executeGetWantVsValue,
   executeProposeConversion,
+  filterDismissedCards,
   isFloorOrStairsTrade,
   isNonFloorTrade,
   mergePatches,
 } from './chat-tools';
+import { applyPatch, defaultWorkspaceState } from './state';
 import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { SERVICES } from '@/lib/seo-data';
 
@@ -60,6 +63,24 @@ describe('executeAttachToProject', () => {
     const out = executeAttachToProject({ productId: 'totally-fake-sku' });
     expect(out.patch.targetFloor).toBeUndefined();
   });
+
+  it('stores neighbourhood and floor condition verbatim, so the workspace never has to ask again', () => {
+    const out = executeAttachToProject({ neighbourhood: 'Rexdale', floorCondition: 'scratched and dull' });
+    expect(out.patch.personalization?.neighbourhood).toBe('Rexdale');
+    expect(out.patch.personalization?.floorCondition).toBe('scratched and dull');
+    expect(out.understood.some((u) => u.includes('Rexdale'))).toBe(true);
+  });
+
+  it('records a mentioned non-floor trade, and drops one Ecowoods does not track', () => {
+    const known = executeAttachToProject({ trade: 'roof', tradeStatus: 'mentioned' });
+    expect(known.patch.personalization?.otherTrades).toEqual({ roof: 'mentioned' });
+
+    const unknownTrade = executeAttachToProject({ trade: 'hardwood refinish', tradeStatus: 'mentioned' });
+    expect(unknownTrade.patch.personalization?.otherTrades ?? {}).toEqual({});
+
+    const unknownStatus = executeAttachToProject({ trade: 'roof', tradeStatus: 'urgent' });
+    expect(unknownStatus.patch.personalization?.otherTrades ?? {}).toEqual({});
+  });
 });
 
 describe('pending providers', () => {
@@ -67,7 +88,19 @@ describe('pending providers', () => {
     const out = executeGetHouseProfile({ neighbourhood: 'Leslieville' });
     expect(out.status).toBe('pending_key');
     expect(out.profile).toBeNull();
+    // internal note is allowed to say pending_key — it's tool output for the model, not homeowner-facing text.
     expect(out.note.toLowerCase()).toContain('pending_key');
+  });
+
+  it('never leaks the internal pending_key status word, or "adapter", into the homeowner-facing card body', () => {
+    for (const out of [
+      executeGetHouseProfile({}),
+      executeGetMarketCost({ trade: 'kitchen' }),
+      executeGetWantVsValue({}),
+    ]) {
+      expect(out.card?.body.toLowerCase()).not.toContain('pending_key');
+      expect(out.card?.body.toLowerCase()).not.toContain('adapter');
+    }
   });
 
   it('get_market_cost is pending for kitchen and redirects floors', () => {
@@ -83,6 +116,61 @@ describe('pending providers', () => {
     const out = executeGetWantVsValue({ wants: ['new kitchen'] });
     expect(out.status).toBe('pending_key');
     expect(out.quantified).toBe(false);
+  });
+});
+
+describe('executeAnalyzeRenovationPriorities', () => {
+  it('returns no cards when fewer than two projects are known', () => {
+    const out = executeAnalyzeRenovationPriorities(defaultWorkspaceState());
+    expect(out.status).toBe('not_enough_context');
+    expect(out.cards).toEqual([]);
+  });
+
+  it('returns a real, id-bearing analysis card once two projects are known', () => {
+    const state = applyPatch(defaultWorkspaceState(), {
+      objective: 'refinish',
+      personalization: { otherTrades: { roof: 'mentioned' } },
+    });
+    const out = executeAnalyzeRenovationPriorities(state);
+    expect(out.status).toBe('ok');
+    expect(out.cards[0]?.type).toBe('analysis_available');
+    expect(out.cards[0]?.id).toBeTruthy();
+  });
+
+  it('proposes the paid deep analysis only once the state is rich enough, and never with a real price', () => {
+    const thin = applyPatch(defaultWorkspaceState(), {
+      objective: 'refinish',
+      personalization: { otherTrades: { roof: 'mentioned' } },
+    });
+    expect(executeAnalyzeRenovationPriorities(thin).cards).toHaveLength(1);
+
+    const rich = applyPatch(defaultWorkspaceState(), {
+      objective: 'refinish',
+      sellHorizon: 'selling-soon',
+      rooms: [{ label: 'Whole project', squareFeet: 900 }],
+      personalization: { otherTrades: { roof: 'mentioned', kitchen: 'mentioned' }, floorCondition: 'scratched' },
+    });
+    const richOut = executeAnalyzeRenovationPriorities(rich);
+    expect(richOut.cards).toHaveLength(2);
+    const paidCard = richOut.cards.find((c) => c.type === 'paid_analysis_proposed');
+    expect(paidCard).toBeTruthy();
+    expect(paidCard!.body).not.toMatch(/\$\d/);
+    expect(paidCard!.body.toLowerCase()).not.toContain('credit');
+  });
+});
+
+describe('filterDismissedCards', () => {
+  it('drops a card whose id was dismissed, and keeps everything else', () => {
+    const cards = [
+      { type: 'site_link' as const, id: 'site:/a', title: 'A', body: 'a' },
+      { type: 'site_link' as const, id: 'site:/b', title: 'B', body: 'b' },
+    ];
+    expect(filterDismissedCards(cards, ['site:/a']).map((c) => c.id)).toEqual(['site:/b']);
+  });
+
+  it('never filters a card with no id — nothing to match against', () => {
+    const cards = [{ type: 'site_link' as const, title: 'A', body: 'a' }];
+    expect(filterDismissedCards(cards, ['site:/a'])).toEqual(cards);
   });
 });
 

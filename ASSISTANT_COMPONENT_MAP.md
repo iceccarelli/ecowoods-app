@@ -105,6 +105,86 @@ already-established `/* === ASSISTANT-0N ... === */`-style `aha-*` section
   with the outer bar's padding) / `.aha-composer-input` / `.aha-composer-send`
   — the full composer rebuild.
 
+## 2026-09-23 (Phase 2) — personalization memory + action engine + action memory
+
+New files:
+
+```
+apps/web/lib/assistant-workspace/renovation-analysis.ts   (+ .test.ts)
+  Pure, deterministic renovation-sequencing engine — the real capability
+  behind analyze_renovation_priorities. See ASSISTANT_ACTION_ENGINE_SPEC.md.
+```
+
+Changed files (all extensions of existing structures, no parallel state
+object, no second card system — per NO_DUPLICATION_GUARANTEE.md discipline):
+
+```
+lib/assistant-workspace/types.ts
+  + WorkspacePersonalization (neighbourhood, floorCondition, otherTrades)
+  + WorkspaceActionMemory (dismissed, completed) on WorkspaceState.
+
+lib/assistant-workspace/state.ts
+  + sanitizePersonalization / sanitizeActionMemory, wired into
+    defaultWorkspaceState / applyPatch / hydrateWorkspaceState.
+  + recordActionDismissed / recordActionCompleted — append-only mutators,
+    not part of the generic patch (dismissal must never be silently erased
+    by a stale client patch).
+
+lib/assistant-workspace/chat-schema.ts
+  + personalization / actionMemory on workspaceSnapshotSchema.
+  + AssistantChatCard: id / reason / cta (optional, additive).
+  + AssistantChatCardType: + 'analysis_available', 'paid_analysis_proposed'.
+
+lib/assistant-workspace/chat-tools.ts
+  + executeAnalyzeRenovationPriorities, filterDismissedCards.
+  + executeAttachToProject: neighbourhood / floorCondition / trade /
+    tradeStatus inputs.
+  + every card builder now sets a stable `id`.
+  + pending_provider card BODIES rewritten to plain homeowner language
+    (no more literal "pending_key" / "adapter" rendered to a visitor) —
+    the internal `note`/`provider.note` fields keep the precise engineering
+    language, since those are tool output for the model, never rendered.
+  + catalogHintsBlock: + non-floor trade list.
+  + workspaceSnapshotBlock: + "already known, don't ask again" framing +
+    dismissed-ids callout.
+
+lib/assistant-workspace/system-prompt.ts
+  Answer-length rule tightened (20-80 words typical, ~150 max), minimum-
+  question principle, never-re-ask rule, never-say-pending_key rule,
+  analyze_renovation_priorities documented in TOOLS/FLOW.
+
+app/api/assistant/chat/route.ts
+  + analyze_renovation_priorities tool registration (reconstructs a working
+    WorkspaceState from the client snapshot via applyPatch, for the pure
+    engine to read).
+  + attach_to_project schema: neighbourhood / floorCondition / trade /
+    tradeStatus.
+  + filterDismissedCards applied to every turn's cards before the response
+    is built — the server-enforced half of action memory.
+
+app/assistant/components/WorkspaceStateProvider.tsx
+  + dismissAction(actionId) on the context value (-> recordActionDismissed).
+
+app/assistant/components/ConversationPane.tsx
+  + snapshotFromState sends personalization + actionMemory.
+  + cardLinkLabel now type AssistantChatCardType | uses card.cta.
+  + card render: shows card.reason as a secondary line, a "Not now" dismiss
+    button per card (removes it locally + records the dismissal), a disabled
+    (non-clickable) CTA span for paid_analysis_proposed instead of a link.
+
+app/globals.css
+  + .aha-inline-card[data-card-type='analysis_available' | 'paid_analysis_proposed']
+    accents, .aha-inline-card-reason, .aha-inline-card-actions,
+    .aha-inline-card-dismiss, .aha-inline-card-link--disabled.
+```
+
+Not touched, and why (see ASSISTANT_ACTION_ENGINE_SPEC.md's "what's still
+open" and ASSISTANT_MONETIZATION_SPEC.md): `earned-catalog.ts` /
+`ProductCard.tsx` / `ServiceCard.tsx` (no dismiss affordance there yet),
+`prisma/schema.prisma` (no credit-ledger migration this pass), `lib/stripe.ts`
+/ any checkout route (no payment wiring this pass), `lib/analytics.ts` (no
+new tracked events this pass — see ASSISTANT_UNIT_ECONOMICS.md).
+
 ## 2026-09-23 — composer/viewport root-cause fix + card taxonomy styling
 
 See `ASSISTANT_RUTHLESS_PRODUCT_AUDIT.md` for the full root-cause writeup.

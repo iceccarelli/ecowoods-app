@@ -10,7 +10,16 @@ import { describe, expect, it } from 'vitest';
 import { newDesignId } from '@/lib/floor-studio/design-id';
 import { FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
-import { applyPatch, defaultWorkspaceState, hydrateWorkspaceState, totalSquareFeet, describeFloorPreference, computedNeedsMeasure } from './state';
+import {
+  applyPatch,
+  defaultWorkspaceState,
+  hydrateWorkspaceState,
+  totalSquareFeet,
+  describeFloorPreference,
+  computedNeedsMeasure,
+  recordActionDismissed,
+  recordActionCompleted,
+} from './state';
 import { parseWorkspaceState, serializeWorkspaceState } from './persistence';
 import type { WorkspaceState } from './types';
 
@@ -110,5 +119,49 @@ describe('derived selectors', () => {
 
   it('computedNeedsMeasure asks for square footage before anything else is known', () => {
     expect(computedNeedsMeasure(defaultWorkspaceState())).toContain('Square footage');
+  });
+});
+
+describe('personalization', () => {
+  it('merges field-by-field — naming only neighbourhood does not erase floorCondition already set', () => {
+    let state = applyPatch(defaultWorkspaceState(), { personalization: { floorCondition: 'scratched and dull' } });
+    state = applyPatch(state, { personalization: { neighbourhood: 'Rexdale' } });
+    expect(state.personalization.floorCondition).toBe('scratched and dull');
+    expect(state.personalization.neighbourhood).toBe('Rexdale');
+  });
+
+  it('merges otherTrades field-by-field rather than replacing the whole map', () => {
+    let state = applyPatch(defaultWorkspaceState(), { personalization: { otherTrades: { roof: 'mentioned' } } });
+    state = applyPatch(state, { personalization: { otherTrades: { kitchen: 'planned' } } });
+    expect(state.personalization.otherTrades).toEqual({ roof: 'mentioned', kitchen: 'planned' });
+  });
+
+  it('drops an invalid trade-mention status rather than accepting a guess', () => {
+    const hydrated = hydrateWorkspaceState(
+      { personalization: { otherTrades: { roof: 'urgent' } } } as never,
+      newDesignId(),
+      '2026-01-01T00:00:00.000Z',
+    );
+    expect(hydrated.personalization.otherTrades).toEqual({});
+  });
+});
+
+describe('action memory', () => {
+  it('dismissing an action is idempotent — calling it twice does not duplicate the id', () => {
+    let state = recordActionDismissed(defaultWorkspaceState(), 'band:oak:500');
+    state = recordActionDismissed(state, 'band:oak:500');
+    expect(state.actionMemory.dismissed).toEqual(['band:oak:500']);
+  });
+
+  it('dismissed and completed are tracked independently', () => {
+    let state = recordActionDismissed(defaultWorkspaceState(), 'gap:house_profile');
+    state = recordActionCompleted(state, 'conversion:measure');
+    expect(state.actionMemory.dismissed).toEqual(['gap:house_profile']);
+    expect(state.actionMemory.completed).toEqual(['conversion:measure']);
+  });
+
+  it('an empty action id is a no-op', () => {
+    const state = recordActionDismissed(defaultWorkspaceState(), '');
+    expect(state.actionMemory.dismissed).toEqual([]);
   });
 });

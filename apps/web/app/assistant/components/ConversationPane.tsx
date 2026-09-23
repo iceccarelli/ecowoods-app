@@ -43,14 +43,19 @@ interface DisplayMessage {
  * ("Open"). Directive rule 22 — "Add to project" (and a generic "Open") are
  * implementation actions; a person thinks in terms of see/understand/book.
  */
-function cardLinkLabel(type: AssistantChatCard['type']): string {
-  switch (type) {
+function cardLinkLabel(card: AssistantChatCard): string {
+  if (card.cta) return card.cta;
+  switch (card.type) {
     case 'site_link':
       return 'See this page';
     case 'conversion_proposed':
       return 'Review in Next step';
     case 'pending_provider':
       return 'Learn what is available now';
+    case 'analysis_available':
+      return 'See the sequence';
+    case 'paid_analysis_proposed':
+      return 'Not available for purchase yet';
     case 'ecowoods_band':
     default:
       return 'See the published band';
@@ -74,6 +79,8 @@ function snapshotFromState(state: WorkspaceState) {
     targetFloor: state.targetFloor,
     selectedServiceSlugs: state.selectedServiceSlugs,
     nextAction: state.nextAction,
+    personalization: state.personalization,
+    actionMemory: state.actionMemory,
   };
 }
 
@@ -149,7 +156,7 @@ export function ConversationPane({
   onOpenProject?: () => void;
   onOpenEconomics?: () => void;
 }) {
-  const { state, patch } = useWorkspaceState();
+  const { state, patch, dismissAction } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -295,6 +302,13 @@ export function ConversationPane({
     void respond(priorUser.text);
   };
 
+  const onDismissCard = (messageIndex: number, cardId: string) => {
+    dismissAction(cardId);
+    setMessages((prev) =>
+      prev.map((m, i) => (i === messageIndex && m.cards ? { ...m, cards: m.cards.filter((c) => c.id !== cardId) } : m)),
+    );
+  };
+
   const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
   const onAddService = (slug: string) => {
     if (state.selectedServiceSlugs.includes(slug)) return;
@@ -339,14 +353,28 @@ export function ConversationPane({
                   {m.cards && m.cards.length > 0 && (
                     <ul className="aha-inline-cards">
                       {m.cards.map((c, j) => (
-                        <li key={j} className="aha-inline-card" data-card-type={c.type}>
+                        <li key={c.id ?? j} className="aha-inline-card" data-card-type={c.type}>
                           <p className="aha-inline-card-title">{c.title}</p>
                           <p className="aha-inline-card-body">{c.body}</p>
-                          {c.href ? (
-                            <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                              {cardLinkLabel(c.type)}
-                            </a>
-                          ) : null}
+                          {c.reason && <p className="aha-inline-card-reason">{c.reason}</p>}
+                          <div className="aha-inline-card-actions">
+                            {c.href ? (
+                              <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
+                                {cardLinkLabel(c)}
+                              </a>
+                            ) : c.type === 'paid_analysis_proposed' ? (
+                              <span className="aha-inline-card-link aha-inline-card-link--disabled">{cardLinkLabel(c)}</span>
+                            ) : null}
+                            {c.id && (
+                              <button
+                                type="button"
+                                className="aha-inline-card-dismiss"
+                                onClick={() => onDismissCard(i, c.id!)}
+                              >
+                                Not now
+                              </button>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>

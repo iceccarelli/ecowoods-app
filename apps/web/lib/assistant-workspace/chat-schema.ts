@@ -30,6 +30,21 @@ const roomSchema = z
   })
   .strict();
 
+const personalizationSchema = z
+  .object({
+    neighbourhood: z.string().max(80).optional(),
+    floorCondition: z.string().max(200).optional(),
+    otherTrades: z.record(z.string().max(40), z.enum(['mentioned', 'planned', 'in-progress', 'done'])).optional(),
+  })
+  .strict();
+
+const actionMemorySchema = z
+  .object({
+    dismissed: z.array(z.string().max(120)).max(200).optional(),
+    completed: z.array(z.string().max(120)).max(200).optional(),
+  })
+  .strict();
+
 /** Client-sent snapshot of Project Decision State — data for the model, not a write. */
 export const workspaceSnapshotSchema = z
   .object({
@@ -42,6 +57,8 @@ export const workspaceSnapshotSchema = z
     targetFloor: floorPrefSchema.optional(),
     selectedServiceSlugs: z.array(z.string().max(80)).max(12).optional(),
     nextAction: z.enum(['measure', 'estimate', 'quote']).nullable().optional(),
+    personalization: personalizationSchema.optional(),
+    actionMemory: actionMemorySchema.optional(),
   })
   .strict();
 
@@ -69,10 +86,39 @@ export interface ProviderOutcome {
   note?: string;
 }
 
+/**
+ * `analysis_available` — the one new type this pass adds a real capability
+ * for: `analyze_renovation_priorities` (renovation-analysis.ts), a
+ * deterministic, rule-based sequencing pass over Project Decision State.
+ * Free every time it runs — see ASSISTANT_MONETIZATION_SPEC.md for why the
+ * deeper paid version is architecture-only in this pass, not wired to a
+ * real price yet.
+ */
+export type AssistantChatCardType =
+  | 'ecowoods_band'
+  | 'pending_provider'
+  | 'site_link'
+  | 'conversion_proposed'
+  | 'analysis_available'
+  | 'paid_analysis_proposed';
+
 export interface AssistantChatCard {
-  type: 'ecowoods_band' | 'pending_provider' | 'site_link' | 'conversion_proposed';
+  type: AssistantChatCardType;
+  /**
+   * Stable per action INSTANCE (e.g. `analysis:roof,kitchen,floor` or
+   * `band:refinish`), not per render — see WorkspaceActionMemory. Used to
+   * filter a dismissed card out of every later turn and to record
+   * completion. Optional only for backward compatibility with any card a
+   * future tool forgets to id; the server filters by id when present and
+   * never resurfaces an unidentified card differently.
+   */
+  id?: string;
   title: string;
   body: string;
+  /** Why THIS card, in terms of what the visitor actually said — never a generic marketing line (directive rule 19). */
+  reason?: string;
+  /** The homeowner's-goal CTA label ("Calculate my project"), not the implementation ("Add to project"). Falls back to a per-type default in the UI when absent. */
+  cta?: string;
   href?: string;
 }
 

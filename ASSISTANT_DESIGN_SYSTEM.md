@@ -128,6 +128,21 @@ finish, not a structural device (per spec's "prefer borders/whitespace").
   `document.documentElement.scrollWidth - clientWidth === 0` in a headless
   Chromium pass).
 
+## Card actions row + dismiss (2026-09-23, Phase 2)
+
+Every inline card now has an `.aha-inline-card-actions` row (flex,
+`justify-content: space-between`) holding, left-to-right: the CTA link (or
+a `.aha-inline-card-link--disabled` span for a not-yet-purchasable action,
+same visual family, quieter color, no underline-on-hover) and, right-aligned,
+a `.aha-inline-card-dismiss` "Not now" text button (`0.78rem`, muted,
+underlined, no border/background — deliberately the quietest interactive
+element on the card, since dismissing is a valid but secondary action, never
+competing visually with the primary CTA). A card's `reason` (why this card,
+grounded in project facts) renders as `.aha-inline-card-reason` between the
+body and the actions row — `0.82rem`, `var(--muted)`, one notch quieter than
+`.aha-inline-card-body` so the answer and the primary card copy stay louder
+than the justification.
+
 ## Application shell (2026-09-23 — composer/viewport fix)
 
 `/assistant` is a fixed-height application shell, not a scrolling marketing
