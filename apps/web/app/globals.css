@@ -7789,7 +7789,7 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 .gc-stage:focus-visible { outline: 3px solid var(--copper-deep); outline-offset: 3px; }
 .gc-peek-item {
   position: relative; width: 100%; height: 100%; z-index: 1;
-  border: 0; padding: 0; cursor: pointer; background: var(--cream-100);
+  border: 0; padding: 0; cursor: pointer; background: var(--surface-2);
   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
   opacity: 0.5; filter: brightness(0.8); transition: opacity 320ms var(--ease-out-quart), filter 320ms;
 }
