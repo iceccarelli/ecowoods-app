@@ -44,6 +44,7 @@
  */
 import { CORRIDORS } from '@/content/geo/corridors';
 import { SERVICE_AREAS } from '@/lib/seo-data';
+import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
 
 export type MegaItem = { label: string; href: string; note?: string };
 
@@ -92,10 +93,11 @@ export const SERVICES_MENU: MegaColumn[] = [
          on every page, a transcript) and from Floor Studio/design (a single
          configurator): a project workspace — products, services, a cost
          range, evidence — that a conversation is one way to work on, not the
-         whole of it. The note says so, because "AI Home Advisor" next to
-         "Point your camera at the room" otherwise reads as a fourth
-         configurator rather than a different kind of tool. */
-      { label: 'AI Home Advisor', href: '/assistant', note: 'A project workspace — not the corner chat' },
+         whole of it. The note says so, because this label next to "Point
+         your camera at the room" otherwise reads as a fourth configurator
+         rather than a different kind of tool. See
+         lib/assistant-workspace/identity.ts for the rename history. */
+      { label: WORKSPACE_ASSISTANT.name, href: '/assistant', note: 'A project workspace — not the corner chat' },
     ],
   },
   {

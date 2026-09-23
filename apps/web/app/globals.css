@@ -12601,12 +12601,14 @@ a.lib-card--photo { cursor: pointer; }
 #areas { content-visibility: auto; contain-intrinsic-size: auto 600px; }
 /* === EW:P3-PERF END ======================================================== */
 
-/* === ASSISTANT-01: AI HOME ADVISOR WORKSPACE (/assistant) =================
-   `aha-` prefix (AI Home Advisor) — deliberately not `rg-` (the corner
-   Quick Assistant's prefix, ChatWidget.tsx) or `fs-`/`studio-` (Floor
-   Studio). Two different products, two different class namespaces, so a
-   future edit to one can never accidentally reach into the other. Semantic
-   tokens only — see scripts/verify-tokens.mjs.
+/* === ASSISTANT-01: ASK FRANCISCO WORKSPACE (/assistant) ===================
+   `aha-` prefix — kept from the workspace's original name ("AI Home
+   Advisor," now "Ask Francisco" — see lib/assistant-workspace/identity.ts)
+   rather than renamed, deliberately not `rg-` (the corner Quick Assistant's
+   prefix, ChatWidget.tsx) or `fs-`/`studio-` (Floor Studio). Two different
+   products, two different class namespaces, so a future edit to one can
+   never accidentally reach into the other. Semantic tokens only — see
+   scripts/verify-tokens.mjs.
 
    Quiet-luxury / architectural-studio, not a SaaS dashboard: warm paper
    surfaces, the display serif for the assistant's own lines, generous

@@ -20,7 +20,7 @@ CONVERSATION + CARDS mutate Project Decision State
         ┌────────────────────────────┐
         │  Floor Studio bridge (06)  │◄──── visitor may instead start in
         │  opens/embeds Floor Studio │      /floor-studio and arrive here
-        │  same designId round-trips│      via "Ask AI Home Advisor"-style handoff
+        │  same designId round-trips│      via "Ask Francisco"-style handoff
         └────────────────────────────┘
   │  design (share code) + designId flow back into workspace state,
   │  never retyped, never re-rendered as a second description of the floor
