@@ -137,7 +137,8 @@ export type AnalyticsEvent =
      and this is the only way to find out whether anybody does that. Carries a
      configuration id and the design id, same as every other studio event. */
   | 'studio_spec_opened'
-  /* ASSISTANT-01 — /assistant (AI Home Advisor) opened. A separate product
+  /* ASSISTANT-01 — /assistant (Ask Francisco — see assistant-workspace/
+     identity.ts for the rename history) opened. A separate product
      from the corner chat widget's assistant_open/assistant_message above:
      that widget is mounted on every page, this is a dedicated route. `source`
      is always 'workspace' here, never a value the corner widget's events use,

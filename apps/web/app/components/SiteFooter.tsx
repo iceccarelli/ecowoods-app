@@ -22,6 +22,7 @@
 import { EW_MARK } from '@/lib/brand';
 import { PRIMARY_AREAS, SERVICES } from '@/lib/seo-data';
 import { BUSINESS_NAP, PROFILE_LINKS, REVIEW_PROFILES, HOURS_LINE } from '@ecowoods/shared/constants';
+import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
 import type { ReactNode } from 'react';
 import CookiePreferencesButton from './CookiePreferencesButton';
 import { useIsMobile } from './SwipeDeck';
@@ -270,8 +271,9 @@ export default function SiteFooter() {
               <a href="/design">Floor Designer</a>
               {/* ASSISTANT-01 — a project workspace, not the corner chat
                   widget (which has no page or footer link of its own; it is
-                  mounted on every page instead). */}
-              <a href="/assistant">AI Home Advisor</a>
+                  mounted on every page instead). See
+                  lib/assistant-workspace/identity.ts for the rename history. */}
+              <a href="/assistant">{WORKSPACE_ASSISTANT.name}</a>
               {/* F-163 moved FloorForge out of the primary nav, where it spent a
                   tenth of the header on a product name a homeowner comparing
                   three quotes has never heard. It is a real page and it keeps a

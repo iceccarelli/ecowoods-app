@@ -1,5 +1,10 @@
 # EXISTING CAPABILITY MATRIX — AI Home Advisor (/assistant)
 
+> Renamed since this doc was written: the workspace is now "Ask Francisco," not
+> "AI Home Advisor" — see `lib/assistant-workspace/identity.ts`. Left as-is below
+> because this is a forensic, dated snapshot of a specific commit; the name in the
+> title/body reflects what was true when it was captured, not current copy.
+
 Phase 0, forensic. No product code in this PR. Every row is a file-verified claim,
 not an assumption from the transformation brief. Method: read `docs/audit/PG0_*.md`
 (prior forensic audit, still the base truth for the commercial pipeline) plus a fresh

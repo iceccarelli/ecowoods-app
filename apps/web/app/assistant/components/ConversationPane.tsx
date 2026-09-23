@@ -143,7 +143,7 @@ export function ConversationPane() {
           event.preventDefault();
           respond(draft);
         }}
-        aria-label="Message the AI Home Advisor"
+        aria-label="Message Ask Francisco"
       >
         <input
           type="text"

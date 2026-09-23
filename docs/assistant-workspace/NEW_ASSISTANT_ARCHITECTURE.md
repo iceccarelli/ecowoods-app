@@ -1,5 +1,10 @@
 # NEW ASSISTANT ARCHITECTURE — /assistant (AI Home Advisor)
 
+> Renamed since this doc was written: the workspace is now "Ask Francisco," not
+> "AI Home Advisor" — see `lib/assistant-workspace/identity.ts`. The architecture,
+> reuse boundary and naming-discipline note below are otherwise still current;
+> only the product name changed.
+
 ## What this is not
 
 Not a rebuild of the site. Not a replacement for the corner Quick Assistant

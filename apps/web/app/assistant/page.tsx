@@ -3,15 +3,16 @@ import Link from 'next/link';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { WORKSPACE_ASSISTANT } from '@/lib/assistant-workspace/identity';
 import { WorkspaceShell } from './components/WorkspaceShell';
 
 export const metadata: Metadata = {
-  title: 'AI Home Advisor — plan your hardwood project',
+  title: `${WORKSPACE_ASSISTANT.name} — plan your hardwood project`,
   description:
-    'A project workspace, not a chatbot: talk through your hardwood project and get the products and services that fit, a cost range from our published bands, and a clear next step. Nothing invented — every number traces to a published price.',
+    'A project workspace, not a chatbot: talk through your hardwood project with Francisco Oller and get the products and services that fit, a cost range from our published bands, and a clear next step. Nothing invented — every number traces to a published price.',
   alternates: { canonical: '/assistant' },
   openGraph: {
-    title: 'AI Home Advisor',
+    title: WORKSPACE_ASSISTANT.name,
     description:
       'Plan a hardwood project with Ecowoods: products, services, a real cost range, and a next step — never an invented number.',
     type: 'website',
@@ -20,7 +21,13 @@ export const metadata: Metadata = {
 };
 
 /**
- * /assistant — AI Home Advisor. ASSISTANT-02: Project Decision State.
+ * /assistant — Ask Francisco. ASSISTANT-02: Project Decision State.
+ *
+ * Same workspace shipped at ASSISTANT-01, renamed to "Ask Francisco" — now
+ * voiced as Francisco Oller (owner, professional contractor and lead
+ * craftsman — content/claims.ts workforce.francisco) instead of a generic
+ * product label. See lib/assistant-workspace/identity.ts for the rename
+ * history.
  *
  * A separate product from the corner Quick Assistant (EcowoodsGuide). The
  * corner widget is a chat transcript mounted on every page; this is a
@@ -31,8 +38,11 @@ export const metadata: Metadata = {
  * The shell (ASSISTANT-01) is now stateful: a canonical, typed
  * WorkspaceState (lib/assistant-workspace) drives all three zones and the
  * mobile bar, minted a designId and persists anonymously in localStorage.
- * Still no economics engine, no value scenario, no Floor Studio bridge, no
- * booking, no live model call — see docs/assistant-workspace/PHASE_PLAN.md.
+ * Still no economics engine beyond published-band pricing, no value
+ * scenario, no Floor Studio bridge, no booking, no live model call — see
+ * docs/assistant-workspace/PHASE_PLAN.md. This rename is chrome/identity
+ * only; it does not claim capability (renovation-economics, market/appraisal
+ * analysis, other trades) that does not exist yet.
  *
  * No ?design= / ?project= URL param yet. A share link is ASSISTANT-08's to
  * build, and building one now — before there's a designCode worth sharing
@@ -46,19 +56,19 @@ export default function AssistantPage() {
       <SchemaScript
         schema={buildBreadcrumbList([
           { name: 'Home', url: SITE_URL },
-          { name: 'AI Home Advisor', url: `${SITE_URL}/assistant` },
+          { name: WORKSPACE_ASSISTANT.name, url: `${SITE_URL}/assistant` },
         ])}
       />
       <header className="tlx-hero aha-hero">
         <div className="shell">
           <nav className="tlx-crumbs" aria-label="Breadcrumb">
-            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>AI Home Advisor</span>
+            <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>{WORKSPACE_ASSISTANT.name}</span>
           </nav>
-          <p className="tlx-kicker">Project workspace</p>
-          <h1 className="tlx-title">AI Home Advisor</h1>
+          <p className="tlx-kicker">Project workspace · Ecowoods Inc.</p>
+          <h1 className="tlx-title">{WORKSPACE_ASSISTANT.name}</h1>
           <p className="tlx-lede">
-            Plan a hardwood project here: the floor, the services, a cost range from our published bands, and a
-            next step — not a chat window that forgets what you told it.
+            Plan a hardwood project with me: the floor, the services, a cost range from our published bands, and
+            a next step — not a chat window that forgets what you told it.
           </p>
         </div>
       </header>

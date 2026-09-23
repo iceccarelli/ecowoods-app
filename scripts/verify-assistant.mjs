@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * scripts/verify-assistant.mjs — one assistant, one name, one closing rule.
+ * scripts/verify-assistant.mjs — one name per assistant, one closing rule.
  *
  *   pnpm seo:assistant
  *
@@ -16,39 +16,67 @@
  * window a person opened because they were ready to ask a question. It is the
  * same class of leak as two live domains, at a smaller scale.
  *
- * THREE CHECKS
+ * TWO PRODUCTS, TWO GUARDED SURFACES
  *
- *   1. The retired name appears nowhere.
+ * The corner Quick Assistant (`assistant-identity.ts`, "EcowoodsGuide") and the
+ * `/assistant` project workspace (`assistant-workspace/identity.ts`, "Ask
+ * Francisco" — renamed from "AI Home Advisor" at ASSISTANT-01) are deliberately
+ * two products with two names (`NO_DUPLICATION_GUARANTEE.md`). Each gets the
+ * same three checks below, independently, against its own identity file and its
+ * own retired name(s) — a leak on one surface is still a leak even if the other
+ * surface's name is correct.
+ *
+ * THREE CHECKS (per surface)
+ *
+ *   1. The retired name(s) appear nowhere.
  *   2. No customer-facing surface types the assistant's name as a literal —
- *      it comes from lib/assistant-identity.ts, so the next rename is one edit.
- *   3. The system prompt still carries the always-close rule. That rule is the
- *      difference between an assistant that answers questions and one that
- *      produces work, and it is exactly the kind of instruction that gets
- *      quietly trimmed when someone shortens a prompt.
+ *      it comes from the surface's identity file, so the next rename is one edit.
+ *   3. (Corner widget only) The system prompt still carries the always-close
+ *      rule. That rule is the difference between an assistant that answers
+ *      questions and one that produces work, and it is exactly the kind of
+ *      instruction that gets quietly trimmed when someone shortens a prompt.
+ *      The workspace has no system prompt yet (no live model call) — nothing to
+ *      check here until one exists.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const IDENTITY = 'apps/web/lib/assistant-identity.ts';
 const PROMPT = 'packages/shared/ai/index.ts';
 const OPT_OUT = 'assistant-allow';
 
 const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch { return ''; } };
 
-const identity = read(IDENTITY);
-if (!identity) {
-  console.error(`\n✗ ${IDENTITY} is missing. Every surface renders the name from it.\n`);
-  process.exit(1);
-}
-const NAME = (identity.match(/name:\s*'([^']+)'/) || [, null])[1];
-if (!NAME) {
-  console.error(`\n✗ could not read the assistant's name out of ${IDENTITY}.\n`);
-  process.exit(1);
-}
+/**
+ * Every guarded assistant surface. `retired` names are kept here, and only
+ * here, so the guard can name them — add a surface's retired name the moment
+ * it is renamed, never leave the old name to be found only by grep.
+ */
+const SURFACES = [
+  {
+    label: 'corner Quick Assistant',
+    identity: 'apps/web/lib/assistant-identity.ts',
+    retired: ['Reno' + 'Guide', 'reno' + 'guide', 'RENO' + 'GUIDE'],
+  },
+  {
+    label: '/assistant project workspace',
+    identity: 'apps/web/lib/assistant-workspace/identity.ts',
+    retired: ['AI Home Advisor', 'ai home advisor'],
+  },
+];
 
-/** The retired name. Kept here, and only here, so the guard can name it. */
-const RETIRED = ['Reno' + 'Guide', 'reno' + 'guide', 'RENO' + 'GUIDE'];
+for (const s of SURFACES) {
+  const identity = read(s.identity);
+  if (!identity) {
+    console.error(`\n✗ ${s.identity} is missing. Every surface renders the name from it.\n`);
+    process.exit(1);
+  }
+  s.name = (identity.match(/name:\s*'([^']+)'/) || [, null])[1];
+  if (!s.name) {
+    console.error(`\n✗ could not read the ${s.label}'s name out of ${s.identity}.\n`);
+    process.exit(1);
+  }
+}
 
 const SKIP = new Set(['node_modules', '.next', 'dist', 'build', '.turbo', '.git']);
 const EXT = new Set(['.ts', '.tsx', '.md', '.mdx', '.json']);
@@ -67,39 +95,42 @@ function walk(dir, out = []) {
 const files = ['apps/web', 'packages'].flatMap((d) => walk(join(ROOT, d)));
 const problems = [];
 
-/* ── 1 + 2 ────────────────────────────────────────────────────────────── */
+/* ── 1 + 2, per surface ───────────────────────────────────────────────── */
 for (const file of files) {
   const rel = relative(ROOT, file);
-  if (rel === IDENTITY) continue;               // documents the rename
   const src = readFileSync(file, 'utf8');
   if (src.includes(OPT_OUT)) continue;
 
-  src.split('\n').forEach((line, i) => {
-    for (const r of RETIRED) {
-      if (line.includes(r)) {
+  for (const s of SURFACES) {
+    if (rel === s.identity) continue;            // documents the rename
+
+    src.split('\n').forEach((line, i) => {
+      for (const r of s.retired) {
+        if (line.includes(r)) {
+          problems.push({
+            rel, line: i + 1,
+            what: `the retired name "${r}" (${s.label}) is still here`,
+            why: 'Two names for one assistant is a second brand in the one window a buyer opens deliberately.',
+            text: line.trim().slice(0, 110),
+          });
+        }
+      }
+      /* The current name typed as a literal in a component. Comments are fine —
+         explaining the rename requires naming it. */
+      if (!/\.tsx?$/.test(file)) return;
+      const t = line.trim();
+      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
+      if (rel === PROMPT) return;                 // the prompt states its own name to the model
+      if (new RegExp(`['"\`>]${s.name}`).test(line)) {
         problems.push({
           rel, line: i + 1,
-          what: `the retired name "${r}" is still here`,
-          why: 'Two names for one assistant is a second brand in the one window a buyer opens deliberately.',
-          text: line.trim().slice(0, 110),
+          what: `"${s.name}" (${s.label}) typed as a literal`,
+          why: `Import from ${s.identity}. That is the whole reason the constant exists.`,
+          text: t.slice(0, 110),
         });
       }
-    }
-    /* The current name typed as a literal in a component. Comments are fine —
-       explaining the rename requires naming it. */
-    if (!/\.tsx?$/.test(file)) return;
-    const t = line.trim();
-    if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
-    if (rel === PROMPT) return;                 // the prompt states its own name to the model
-    if (new RegExp(`['"\`>]${NAME}`).test(line)) {
-      problems.push({
-        rel, line: i + 1,
-        what: `"${NAME}" typed as a literal`,
-        why: `Import ASSISTANT from ${IDENTITY}. That is the whole reason the constant exists.`,
-        text: t.slice(0, 110),
-      });
-    }
-  });
+    });
+  }
 }
 
 /* ── 3 ────────────────────────────────────────────────────────────────── */
@@ -167,7 +198,7 @@ for (const r of REQUIRED) {
 }
 
 console.log('');
-console.log(`ASSISTANT — "${NAME}", ${files.length} file(s) scanned`);
+console.log(`ASSISTANT — ${SURFACES.map((s) => `"${s.name}" (${s.label})`).join(', ')}, ${files.length} file(s) scanned`);
 console.log('');
 
 if (problems.length) {
@@ -180,5 +211,5 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`✓ assistant verified — one name, sourced from the constant, speaking as the company, and the prompt still closes on what we would do\n`);
+console.log(`✓ assistant verified — one name per surface, each sourced from its own constant, and the corner assistant's prompt still speaks as the company and closes on what we would do\n`);
 process.exit(0);
