@@ -78,7 +78,9 @@ describe('llms.txt', () => {
     const core = body.slice(0, body.indexOf('## Optional'));
     const links = core.match(/\]\(https:\/\/[^)]+\)/g) ?? [];
     expect(links.length).toBeGreaterThanOrEqual(20);
-    expect(links.length).toBeLessThanOrEqual(60);
+    /* Raised 60 → 65 when /assistant (Ask Francisco) joined the curated core.
+       One destination link; core stayed the citation surface, not Optional dump. */
+    expect(links.length).toBeLessThanOrEqual(65);
     /**
      * TWO BUDGETS, BECAUSE THEY GUARD DIFFERENT THINGS.
      *

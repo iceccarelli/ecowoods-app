@@ -97,6 +97,14 @@ export default async function AssistantPage() {
             Side job — tell homeowners the truth about which renovations move value, which ones only feel good,
             and what the work actually costs near their house.
           </p>
+          <p className="tlx-note aha-hero-links">
+            Also:{' '}
+            <Link href="/estimate">free in-home measure</Link>
+            {' · '}
+            <Link href="/guides">decision guides</Link>
+            {' · '}
+            <Link href="/pricing">published price bands</Link>
+          </p>
         </div>
       </header>
 
