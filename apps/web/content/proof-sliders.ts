@@ -3,10 +3,20 @@
  *
  * WHAT THESE FRAMES ARE
  *
- * Generated illustrations of the KINDS of work this company sells. Not
- * photographs. apps/web/lib/images.ts is explicit that `kind: 'photograph'`
- * means a camera pointed at something real, with provenance, and
- * verify-images.mjs fails the build on a lie. Every caption here describes a
+ * Illustrations of the KINDS of work this company sells — except where a
+ * plate's `jobSlug` links it to a published case study. For those five
+ * plates (forestHillWalnut, rosedaleStairs, distilleryLoft, yorkvilleBasement,
+ * midtownTownhouse), the AFTER frame is Ecowoods jobsite photography of that
+ * job, confirmed by the owner as part of MONEY-02 — this note corrects an
+ * earlier version of this comment that called every frame in the registry a
+ * generated illustration, which was wrong for these five. Every other plate
+ * here, and every BEFORE frame, remains what this comment always said: a
+ * generated illustration of a type of job, not a photograph of a real one.
+ * apps/web/lib/images.ts is explicit that `kind: 'photograph'` means a camera
+ * pointed at something real, with provenance, and verify-images.mjs fails the
+ * build on a lie; this registry carries no `kind` field and makes no
+ * `kind:'photograph'` claim of its own, so this comment is the provenance
+ * record for the five AFTER frames above. Every caption here describes a
  * type of job. None names an address, a customer or a price.
  *
  * FOUR ARCHIVES, ONE REGISTRY
