@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useWorkspaceState } from './WorkspaceStateProvider';
 import { computedNeedsMeasure, describeFloorPreference, totalSquareFeet } from '@/lib/assistant-workspace/state';
 import { projectRangeForState, calculateExplicitSavings, formatMoneyRange } from '@/lib/assistant-workspace/economics';
+import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { SERVICES } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
 
@@ -29,10 +30,15 @@ const OBJECTIVE_LABEL: Record<string, string> = {
  * nothing's been added to price against. "Savings" always runs through
  * `calculateExplicitSavings` — with no overlap-rule evidence published in
  * this codebase yet, that deterministically returns "Potential efficiency:
- * not quantified," never a guessed percentage. "Value scenario" is still
- * ASSISTANT-05's, not built.
+ * not quantified," never a guessed percentage.
+ *
+ * ASSISTANT-05: "Value scenario"/"Confidence" now read the same
+ * `buildValueScenario` output ConversationPane's `ValueScenarioCard` shows in
+ * full — `effect.range` is always `null` today (no evidence in this system
+ * quantifies a value effect; see value-scenario.ts's module comment), so
+ * this row says "Not quantified" rather than a number, same as the card.
  */
-export function EconomicsRail() {
+export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state } = useWorkspaceState();
   const sqft = totalSquareFeet(state);
   const services = state.selectedServiceSlugs
@@ -40,6 +46,10 @@ export function EconomicsRail() {
     .filter((n): n is string => !!n);
   const needsMeasure = computedNeedsMeasure(state);
   const projectRange = useMemo(() => projectRangeForState(state), [state]);
+  const valueScenario = useMemo(
+    () => buildValueScenario(state, projectRange, evidencePool),
+    [state, projectRange, evidencePool],
+  );
 
   const costRangeText =
     projectRange.status === 'ready'
@@ -77,8 +87,19 @@ export function EconomicsRail() {
     { label: 'Square footage', value: sqft !== undefined ? `${sqft.toLocaleString()} sq ft` : 'Not set' },
     { label: 'Cost range', value: costRangeText },
     { label: 'Savings', value: savingsText },
-    { label: 'Value scenario', value: 'Not available yet (ASSISTANT-05)' },
-    { label: 'Confidence', value: '—' },
+    {
+      label: 'Value scenario',
+      value:
+        valueScenario.status === 'ready'
+          ? 'Not quantified — see conversation'
+          : valueScenario.status === 'needs-sqft'
+            ? 'Needs sq ft'
+            : 'Needs a service',
+    },
+    {
+      label: 'Confidence',
+      value: valueScenario.status === 'ready' ? valueScenario.scenario.effect.confidence : '—',
+    },
   ];
 
   return (

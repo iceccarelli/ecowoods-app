@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { track } from '@/lib/analytics';
+import type { CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { WorkspaceStateProvider, useWorkspaceState } from './WorkspaceStateProvider';
 import { ProjectRail } from './ProjectRail';
 import { ConversationPane } from './ConversationPane';
@@ -17,16 +18,24 @@ import { MobileProjectBar } from './MobileProjectBar';
  * Independent of the corner Quick Assistant (ChatWidget.tsx) in every
  * direction: no shared component, no shared route, no shared client state.
  * Deleting either one leaves the other working.
+ *
+ * `evidencePool` (ASSISTANT-05) is server-loaded once in `page.tsx` — the
+ * one place in this client-component tree that touches the filesystem-backed
+ * case-study loader — and threaded down as a plain prop, not folded into
+ * `WorkspaceStateProvider`'s context: it is read-only reference data, not
+ * part of Project Decision State, and NO_DUPLICATION_GUARANTEE.md's "one
+ * canonical shape" is about that state, not about every prop this tree
+ * passes around.
  */
-export function WorkspaceShell() {
+export function WorkspaceShell({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   return (
     <WorkspaceStateProvider>
-      <WorkspaceShellBody />
+      <WorkspaceShellBody evidencePool={evidencePool} />
     </WorkspaceStateProvider>
   );
 }
 
-function WorkspaceShellBody() {
+function WorkspaceShellBody({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state, ready } = useWorkspaceState();
   const openFired = useRef(false);
   const previousObjective = useRef<typeof state.objective | undefined>(undefined);
@@ -63,10 +72,10 @@ function WorkspaceShellBody() {
       {/* ProjectRail and EconomicsRail hide below the mobile breakpoint (CSS
           only — one ConversationPane instance, not a duplicated subtree).
           MobileProjectBar is the reverse: hidden on desktop, shown below it. */}
-      <ProjectRail />
-      <ConversationPane />
-      <EconomicsRail />
-      <MobileProjectBar />
+      <ProjectRail evidencePool={evidencePool} />
+      <ConversationPane evidencePool={evidencePool} />
+      <EconomicsRail evidencePool={evidencePool} />
+      <MobileProjectBar evidencePool={evidencePool} />
     </div>
   );
 }

@@ -176,7 +176,15 @@ export type AnalyticsEvent =
      computes anything at all) — carries only the scope count, never an
      amount. */
   | 'workspace_scenario_compared'
-  | 'workspace_savings_viewed';
+  | 'workspace_savings_viewed'
+  /* ASSISTANT-05 — value scenarios (lib/assistant-workspace/value-scenario.ts).
+     workspace_value_scenario_viewed fires once per ValueScenarioCard mount —
+     carries `confidence` (the closed 'low'|'medium' enum — 'high' cannot
+     occur, see that module) and `quantified` (whether effect.range was
+     non-null, which today is never true — see the module's own comment).
+     Never a dollar figure, never the evidence text, never which case
+     studies matched. */
+  | 'workspace_value_scenario_viewed';
 
 export function track(
   event: AnalyticsEvent,
