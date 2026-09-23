@@ -51,6 +51,15 @@ function WorkspaceShellBody({ evidencePool }: { evidencePool: CaseStudyEvidence[
     track('workspace_open', { source: 'workspace' });
   }, []);
 
+  /* De-emphasize the site's global topbar/footer chrome for as long as the
+     workspace is mounted — presentation only (see globals.css's
+     `body.aha-active` rules), never a route guard or a visibility change to
+     navigation itself. Always cleaned up on unmount. */
+  useEffect(() => {
+    document.body.classList.add('aha-active');
+    return () => document.body.classList.remove('aha-active');
+  }, []);
+
   useEffect(() => {
     if (!ready) return;
     const prev = previousObjective.current;

@@ -85,12 +85,29 @@ export default async function AssistantPage() {
           { name: WORKSPACE_ASSISTANT.name, url: `${SITE_URL}/assistant` },
         ])}
       />
+      {/*
+        Minimal app-shell header (spec: ~64px, not a marketing hero). The
+        visible identity — name, project capsule — lives in WorkspaceShell's
+        own aha-workspace-bar right below; this bar carries only the
+        breadcrumb trail, an sr-only <h1> (one real heading, kept for SEO and
+        screen readers without painting a second competing title on screen),
+        and a couple of secondary site links a visitor still occasionally
+        needs without leaving the workspace to find them.
+      */}
       <header className="tlx-hero aha-hero aha-hero--compact">
-        <div className="shell">
+        <div className="shell aha-hero-compact-row">
           <nav className="tlx-crumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>{WORKSPACE_ASSISTANT.name}</span>
           </nav>
-          <h1 className="sr-only">{WORKSPACE_ASSISTANT.name}</h1>
+          <p className="aha-hero-compact-links">
+            <Link href="/estimate">Free in-home measure</Link>
+            <span aria-hidden="true"> · </span>
+            <Link href="/pricing">Price bands</Link>
+          </p>
+          <h1 className="sr-only">
+            {WORKSPACE_ASSISTANT.name} — home renovation costs and value, advised by Francisco Oller for Ecowoods
+            Inc.
+          </h1>
         </div>
       </header>
 
