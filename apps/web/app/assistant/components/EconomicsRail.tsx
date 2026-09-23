@@ -37,6 +37,12 @@ const OBJECTIVE_LABEL: Record<string, string> = {
  * full — `effect.range` is always `null` today (no evidence in this system
  * quantifies a value effect; see value-scenario.ts's module comment), so
  * this row says "Not quantified" rather than a number, same as the card.
+ *
+ * ASSISTANT-07: "Next step" is a real link now, not a permanently-disabled
+ * button — it jumps to ConversationPane's `ConversionPanel`
+ * (`#aha-next-step`), the one place that PLAN → REVIEW → CONFIRM → EXECUTE
+ * flow lives. This rail never duplicates that logic; it only points at it,
+ * same as "Value scenario"'s own "see conversation" text.
  */
 export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state } = useWorkspaceState();
@@ -155,9 +161,15 @@ export function EconomicsRail({ evidencePool }: { evidencePool: CaseStudyEvidenc
         </div>
       </div>
 
-      <button type="button" className="aha-econ-next" disabled aria-disabled="true">
-        Next step — not available yet
-      </button>
+      {projectRange.status === 'ready' ? (
+        <a href="#aha-next-step" className="aha-econ-next">
+          Next step — book a measure, estimate or quote
+        </a>
+      ) : (
+        <button type="button" className="aha-econ-next" disabled aria-disabled="true">
+          Next step — needs sq ft and a service first
+        </button>
+      )}
 
       <p className="aha-econ-footnote">
         {projectRange.status === 'ready'

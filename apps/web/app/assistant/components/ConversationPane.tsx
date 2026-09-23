@@ -12,6 +12,7 @@ import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
 import { ScenarioCompare } from './ScenarioCompare';
 import { ValueScenarioCard } from './ValueScenarioCard';
+import { ConversionPanel } from './ConversionPanel';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -42,6 +43,13 @@ const RECOMMENDED_PRODUCT_LIMIT = 4;
  * `page.tsx` loaded server-side. When the scope isn't ready yet
  * (needs-sqft/needs-service), the honest empty state says so — never a
  * dead card.
+ *
+ * ASSISTANT-07 adds `ConversionPanel` — the PLAN → REVIEW → USER CONFIRMS →
+ * EXECUTE → RESULT → RECEIPT next step (measure / estimate / quote), wired
+ * to the same `projectRangeForState` output and the existing
+ * `/api/appointments`/`/api/leads` backends. See conversion.ts and
+ * ConversionPanel.tsx — this pane only renders it with `id="aha-next-step"`
+ * so EconomicsRail's "Next step" link has something real to point at.
  */
 export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvidence[] }) {
   const { state, patch } = useWorkspaceState();
@@ -160,6 +168,9 @@ export function ConversationPane({ evidencePool }: { evidencePool: CaseStudyEvid
                   : 'Add a service above to see a value scenario for this project.'}
               </p>
             )}
+
+            <p className="aha-recommended-heading" id="aha-next-step">Next step</p>
+            <ConversionPanel projectRange={projectRange} />
           </div>
         )}
       </div>

@@ -174,6 +174,18 @@ export const appointmentSchema = z
     ),
     notes: z.string().max(2000).optional(),
     source: z.string().optional(),
+    /**
+     * ASSISTANT-07 — same field, same rule as `leadSchema.designId` above:
+     * minted by `ensureDesignId()`, 12 Crockford base32 characters, and
+     * rejected rather than stored if it is not something we minted. Optional
+     * — a booking from a phone call or the estimate form has no design.
+     */
+    designId: z
+      .string()
+      .regex(/^[0-9abcdefghjkmnpqrstvwxyz]{12}$/, 'not a design id')
+      .optional(),
+    /** The Floor Studio share code, as structured data — see `QuoteRequest.designCode`'s own comment in schema.prisma. */
+    designCode: z.string().max(400).optional(),
     // Honeypot — bots fill it, humans never see it. Must be empty.
     company: z.string().max(0).optional().or(z.literal('')),
   })

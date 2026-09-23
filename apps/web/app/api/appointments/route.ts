@@ -8,8 +8,9 @@ import {
 } from '@/lib/booking/availability';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
-import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
+import { designIdOf } from '@/lib/floor-studio/design-id';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,6 +95,16 @@ export async function POST(request: Request) {
       );
     }
 
+    /* ASSISTANT-07 — designId/designCode, same fields and same
+       designIdOf() validation /api/leads already applies, so a booking that
+       started in Ask Francisco (or any future caller that has a design)
+       joins to the same design instead of leaving the row unattributed.
+       See docs/assistant-workspace/DATA_FLOW_MAP.md's "where this diverges"
+       section: this route (not api/chat/route.ts, which is untouched) was
+       the gap. */
+    const designId = designIdOf(data.designId);
+    const designCode = typeof data.designCode === 'string' ? data.designCode.slice(0, 400) : null;
+
     // One transaction: create the lead (QuoteRequest) + the Appointment on it.
     const { quote, appt } = await db.$transaction(async (tx) => {
       const quote = await tx.quoteRequest.create({
@@ -106,6 +117,8 @@ export async function POST(request: Request) {
           squareFeet: typeof data.sqft === 'number' ? data.sqft : null,
           notes: data.notes ?? null,
           userId: session?.user?.id ?? null,
+          designId: designId ?? null,
+          designCode,
         },
       });
       const appt = await tx.appointment.create({
@@ -135,12 +148,12 @@ export async function POST(request: Request) {
       phone: data.phone ?? null,
       where: data.postal ?? null,
       service: data.service,
-      source: 'booking',
+      source: sanitiseSource(data.source) ?? 'booking',
     });
     void recordFunnelEvent({
       stage: 'APPOINTMENT_BOOKED',
-      designId: (data as { designId?: string }).designId,
-      source: 'booking',
+      designId,
+      source: sanitiseSource(data.source) ?? 'booking',
       quoteId: quote.id,
     });
 
