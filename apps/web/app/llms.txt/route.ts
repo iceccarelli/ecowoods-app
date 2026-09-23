@@ -197,7 +197,7 @@ export async function GET() {
   link(
     `${WORKSPACE_ASSISTANT.name} — home renovation costs and value`,
     '/assistant',
-    'a dedicated renovation decision workspace with Francisco Oller (owner, professional contractor and lead craftsman): which renovations move value near your house, what the work costs, and when hardwood is the next right job Ecowoods can measure and bid. Separate from the corner chat widget. Other trades may be discussed with sourced market ranges — Ecowoods does not install them. Licensed property/market feeds are not claimed until wired.',
+    'whole-home renovation decision workspace with Francisco Oller: which work moves value near your house, what it costs, and when hardwood is next Ecowoods can measure and bid. Other trades: sourced ranges only — we do not install them. Separate from the corner chat widget.',
   );
   link(
     'Seasonal movement calculator',
