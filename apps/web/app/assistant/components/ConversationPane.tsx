@@ -151,6 +151,7 @@ export function ConversationPane() {
           placeholder="Tell us about your floor — species, finish, sq ft…"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          aria-label="Ask about your floor"
         />
         <button type="submit" className="aha-composer-send" disabled={!draft.trim()}>
           Send
