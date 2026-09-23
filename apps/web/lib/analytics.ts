@@ -184,7 +184,20 @@ export type AnalyticsEvent =
      non-null, which today is never true — see the module's own comment).
      Never a dollar figure, never the evidence text, never which case
      studies matched. */
-  | 'workspace_value_scenario_viewed';
+  | 'workspace_value_scenario_viewed'
+  /* ASSISTANT-07 — conversion (lib/assistant-workspace/conversion.ts,
+     ConversionPanel.tsx). Fires once, from inside the `onConfirm` handler,
+     ONLY after `POST /api/appointments` or `POST /api/leads` returns success
+     — never on choosing an action, never on reaching the review step. Named
+     after DATA_FLOW_MAP.md's `workspace_measure_requested`/
+     `workspace_quote_requested`; `workspace_estimate_requested` extends that
+     same naming for the third next-action this phase ships.
+     `hasDesign` is a boolean (whether Project Decision State carried a
+     designId at submit time) — never the designId itself, never a name,
+     email, phone, postal code or square footage. */
+  | 'workspace_measure_requested'
+  | 'workspace_estimate_requested'
+  | 'workspace_quote_requested';
 
 export function track(
   event: AnalyticsEvent,

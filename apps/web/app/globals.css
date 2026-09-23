@@ -12781,6 +12781,7 @@ a.lib-card--photo { cursor: pointer; }
 .aha-econ-status-empty { font-size: 0.82rem; color: var(--muted-soft); margin: 0; }
 
 .aha-econ-next {
+  display: block;
   font-family: var(--font-body);
   font-weight: 600;
   padding: var(--space-sm) var(--space-lg);
@@ -12790,6 +12791,21 @@ a.lib-card--photo { cursor: pointer; }
   color: var(--muted);
   cursor: not-allowed;
   width: 100%;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+/* ASSISTANT-07 — the enabled state, an <a href> to ConversationPane's
+   ConversionPanel (#aha-next-step), not a disabled placeholder. */
+a.aha-econ-next {
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  cursor: pointer;
+}
+a.aha-econ-next:hover, a.aha-econ-next:focus-visible {
+  opacity: 0.92;
+  outline: 2px solid var(--copper-surface);
+  outline-offset: 2px;
 }
 .aha-econ-footnote { font-size: 0.76rem; line-height: 1.5; color: var(--muted-soft); margin: 0; }
 
@@ -12979,6 +12995,49 @@ a.lib-card--photo { cursor: pointer; }
 .aha-value-scenario-drawer-body li::before { content: '\2022'; position: absolute; left: 0; color: var(--copper-text); }
 .aha-value-scenario-evidence-tier { font-family: var(--font-mono); font-size: 0.72rem; color: var(--copper-text); }
 .aha-value-scenario-evidence-note { color: var(--muted-soft); }
+
+/* === ASSISTANT-07: conversion (PLAN -> REVIEW -> CONFIRM -> EXECUTE -> RECEIPT) === */
+.aha-conversion {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-warm);
+}
+.aha-conversion--receipt { border-color: var(--copper-surface); }
+.aha-conversion-heading { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); margin: 0 0 var(--space-sm); }
+.aha-conversion-text { font-size: 0.92rem; line-height: 1.5; color: var(--ink-soft); margin: 0 0 var(--space-md); }
+
+.aha-conversion-choices { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+
+.aha-conversion-form { display: flex; flex-direction: column; gap: var(--space-sm); }
+.aha-conversion-field { display: flex; flex-direction: column; gap: var(--space-2xs); font-size: 0.82rem; color: var(--muted); }
+.aha-conversion-field input {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+.aha-conversion-field input:focus-visible { outline: 2px solid var(--copper-surface); outline-offset: 1px; }
+.aha-conversion-field input[aria-invalid='true'] { border-color: var(--danger); }
+.aha-conversion-field-error { font-size: 0.78rem; color: var(--danger); }
+
+.aha-conversion-slots { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
+.aha-conversion-slots legend { font-size: 0.82rem; color: var(--muted); padding: 0; margin: 0 0 var(--space-2xs); }
+.aha-conversion-slots .aha-card-action { justify-self: start; }
+.aha-conversion-slots .aha-card-action[data-selected='true'] { background: var(--copper-surface); color: var(--on-copper); border-color: var(--copper-surface); }
+
+.aha-conversion-actions { display: flex; justify-content: flex-end; gap: var(--space-xs); margin-top: var(--space-xs); }
+
+.aha-conversion-review-title { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 var(--space-sm); }
+.aha-conversion-review-rows { display: flex; flex-direction: column; gap: var(--space-xs); margin: 0 0 var(--space-md); }
+.aha-conversion-review-rows > div { display: flex; justify-content: space-between; gap: var(--space-md); font-size: 0.88rem; }
+.aha-conversion-review-rows dt { color: var(--muted); }
+.aha-conversion-review-rows dd { margin: 0; color: var(--ink-soft); text-align: right; }
+.aha-conversion-review-footnote { font-size: 0.78rem; line-height: 1.5; color: var(--muted-soft); margin: 0 0 var(--space-sm); }
 /* === ASSISTANT-01: ASK FRANCISCO WORKSPACE END ============================== */
 
 /* === MOTION-01: DELUXESTAGE + STORYBOARDHOVER START =======================
