@@ -188,18 +188,16 @@ export async function GET() {
     '/design',
     `the specification path for somebody who already knows what they want: every axis at once, no photograph needed, the same catalogue and the same pricing function as Floor Studio. Markdown: ${SITE_URL}/design.md`,
   );
-  /* ASSISTANT-01 — shell only, renamed to "Ask Francisco" (was "AI Home
-     Advisor" — see lib/assistant-workspace/identity.ts). A live model call
-     is not wired up yet; the copy here says so rather than describing a
-     capability that does not exist. Update this line as later phases ship,
-     not before. Distinct from the corner chat widget, which has no page of
-     its own and is not described here. No Markdown twin yet — unlike the
-     other tools in this section, /assistant has no /md/assistant route to
-     link to; add one alongside a real capability, not before. */
+  /* ASSISTANT-01 — Ask Francisco whole-home renovation decision workspace
+     (see lib/assistant-workspace/identity.ts). Advises on entire-home
+     sequencing; Ecowoods commercial execution remains floors/stairs.
+     Licensed economics adapters may still be pending_key — copy stays
+     honest about that. Distinct from the corner chat widget. No Markdown
+     twin yet. */
   link(
-    `${WORKSPACE_ASSISTANT.name} — a project workspace (early rollout)`,
+    `${WORKSPACE_ASSISTANT.name} — home renovation costs and value`,
     '/assistant',
-    'a dedicated workspace for planning a hardwood project with Francisco Oller (owner, professional contractor and lead craftsman), separate from the corner chat widget on every page. It is in early rollout: the workspace assembles real product/service recommendations and a cost range from published bands, but there is no live conversational model call yet.',
+    'a dedicated renovation decision workspace with Francisco Oller (owner, professional contractor and lead craftsman): which renovations move value near your house, what the work costs, and when hardwood is the next right job Ecowoods can measure and bid. Separate from the corner chat widget. Other trades may be discussed with sourced market ranges — Ecowoods does not install them. Licensed property/market feeds are not claimed until wired.',
   );
   link(
     'Seasonal movement calculator',
