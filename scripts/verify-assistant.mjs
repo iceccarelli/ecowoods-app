@@ -35,8 +35,9 @@
  *      rule. That rule is the difference between an assistant that answers
  *      questions and one that produces work, and it is exactly the kind of
  *      instruction that gets quietly trimmed when someone shortens a prompt.
- *      The workspace has no system prompt yet (no live model call) — nothing to
- *      check here until one exists.
+ *      The workspace has its own prompt at
+ *      apps/web/lib/assistant-workspace/system-prompt.ts (Ask Francisco),
+ *      checked separately for whole-home voice and honest pending_key language.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
@@ -145,6 +146,8 @@ for (const file of files) {
       const t = line.trim();
       if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
       if (rel === PROMPT) return;                 // the prompt states its own name to the model
+      if (rel === 'apps/web/lib/assistant-workspace/system-prompt.ts') return;
+      if (rel === 'apps/web/app/api/assistant/chat/route.ts') return;
       if (new RegExp(`['"\`>]${s.name}`).test(line)) {
         problems.push({
           rel, line: i + 1,
@@ -221,6 +224,67 @@ for (const r of REQUIRED) {
   }
 }
 
+/* ── 4 workspace Ask Francisco prompt ─────────────────────────────────── */
+const WORKSPACE_PROMPT = 'apps/web/lib/assistant-workspace/system-prompt.ts';
+const WORKSPACE_CHAT_ROUTE = 'apps/web/app/api/assistant/chat/route.ts';
+{
+  const wp = read(WORKSPACE_PROMPT);
+  if (!wp) {
+    problems.push({
+      rel: WORKSPACE_PROMPT, line: 0,
+      what: 'Ask Francisco system prompt is missing',
+      why: 'The workspace conversation wire needs its own prompt — never reuse ECOWOODS_GUIDE_SYSTEM_PROMPT.',
+      text: 'expected apps/web/lib/assistant-workspace/system-prompt.ts',
+    });
+  } else {
+    const REQUIRED_WS = [
+      { needle: 'ENTIRE home renovations', what: 'whole-home renovation scope' },
+      { needle: 'pending_key', what: 'honest pending_key language for missing adapters' },
+      { needle: 'NEVER claim Ecowoods installs kitchens', what: 'never-claim-other-trades rule' },
+      { needle: 'propose_conversion', what: 'conversion propose (not direct book) rule' },
+      { needle: 'NEVER invent', what: 'never-invent prices/AVMs rule' },
+    ];
+    for (const r of REQUIRED_WS) {
+      if (!wp.includes(r.needle)) {
+        problems.push({
+          rel: WORKSPACE_PROMPT, line: 0,
+          what: `${r.what} is gone from the workspace system prompt`,
+          why: 'Ask Francisco advises whole-home with honesty; Ecowoods executes floors/stairs only.',
+          text: `expected to find: ${r.needle}`,
+        });
+      }
+    }
+  }
+  const route = read(WORKSPACE_CHAT_ROUTE);
+  if (!route) {
+    problems.push({
+      rel: WORKSPACE_CHAT_ROUTE, line: 0,
+      what: 'workspace chat route is missing',
+      why: 'Conversation must use a workspace-owned path, not /api/chat.',
+      text: 'expected apps/web/app/api/assistant/chat/route.ts',
+    });
+  } else {
+    for (const banned of ['quoteRequest.create', 'appointment.create', 'db.quoteRequest', 'db.appointment']) {
+      if (route.includes(banned)) {
+        problems.push({
+          rel: WORKSPACE_CHAT_ROUTE, line: 0,
+          what: `workspace chat route writes via ${banned}`,
+          why: 'Conversion must go through ConversionPanel confirm → /api/appointments|/api/leads, never a second writer.',
+          text: banned,
+        });
+      }
+    }
+    if (!route.includes('propose_conversion') || !route.includes('get_ecowoods_band')) {
+      problems.push({
+        rel: WORKSPACE_CHAT_ROUTE, line: 0,
+        what: 'workspace chat tools are incomplete',
+        why: 'Need get_ecowoods_band + propose_conversion at minimum.',
+        text: 'expected get_ecowoods_band and propose_conversion tools',
+      });
+    }
+  }
+}
+
 console.log('');
 console.log(`ASSISTANT — ${SURFACES.map((s) => `"${s.name}" (${s.label})`).join(', ')}, ${files.length} file(s) scanned`);
 console.log('');
@@ -235,5 +299,5 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`✓ assistant verified — one name per surface, each sourced from its own constant, and the corner assistant's prompt still speaks as the company and closes on what we would do\n`);
+console.log(`✓ assistant verified — one name per surface, corner + workspace prompts present, workspace chat does not write appointments/leads\n`);
 process.exit(0);
