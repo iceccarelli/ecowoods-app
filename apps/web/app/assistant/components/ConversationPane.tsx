@@ -20,6 +20,8 @@ import { useWorkspaceState } from './WorkspaceStateProvider';
 import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
 import { ConversionPanel } from './ConversionPanel';
+import { RenovationAnalysisOffer } from './RenovationAnalysisOffer';
+import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
@@ -157,6 +159,50 @@ export function ConversationPane({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /*
+   * Returning from Stripe Checkout. The redirect itself proves nothing — the
+   * webhook is the authority on whether credits were granted (directive:
+   * "payment success is not success"). This polls the wallet a few times
+   * (the webhook can lag the redirect by a second or two) rather than
+   * trusting `credits_purchase=success` on its own, then narrates the real
+   * balance and cleans the URL so a refresh doesn't re-trigger it.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const purchase = params.get('credits_purchase');
+    if (!purchase) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    if (purchase === 'cancelled') {
+      setMessages((prev) => [...prev, { role: 'assistant', text: "No problem — checkout was cancelled. Nothing was charged." }]);
+      return;
+    }
+    let attempts = 0;
+    const poll = () => {
+      attempts += 1;
+      fetch('/api/assistant/credits/wallet')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { balance: number } | null) => {
+          if (data && data.balance > 0) {
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', text: `Your Renovation Credits are ready — you have ${data.balance}. Ask me for the analysis whenever you're ready.` },
+            ]);
+          } else if (attempts < 5) {
+            setTimeout(poll, 1500);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', text: "Payment is processing — this can take a moment. Refresh in a bit and your credits will be there." },
+            ]);
+          }
+        })
+        .catch(() => undefined);
+    };
+    poll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Presentation-only viewport check for the shorter mobile placeholder —
      never affects layout logic, just which string the input shows. */
@@ -338,17 +384,25 @@ export function ConversationPane({
                   )}
                   {m.cards && m.cards.length > 0 && (
                     <ul className="aha-inline-cards">
-                      {m.cards.map((c, j) => (
-                        <li key={j} className="aha-inline-card" data-card-type={c.type}>
-                          <p className="aha-inline-card-title">{c.title}</p>
-                          <p className="aha-inline-card-body">{c.body}</p>
-                          {c.href ? (
-                            <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                              {cardLinkLabel(c.type)}
-                            </a>
-                          ) : null}
-                        </li>
-                      ))}
+                      {m.cards.map((c, j) =>
+                        c.type === 'renovation_analysis_offer' ? (
+                          <RenovationAnalysisOffer
+                            key={j}
+                            creditsCost={c.creditsCost ?? ANALYSIS_CREDIT_COST}
+                            workspaceSnapshot={snapshotFromState(state)}
+                          />
+                        ) : (
+                          <li key={j} className="aha-inline-card" data-card-type={c.type}>
+                            <p className="aha-inline-card-title">{c.title}</p>
+                            <p className="aha-inline-card-body">{c.body}</p>
+                            {c.href ? (
+                              <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
+                                {cardLinkLabel(c.type)}
+                              </a>
+                            ) : null}
+                          </li>
+                        ),
+                      )}
                     </ul>
                   )}
                   {m.earnedCatalog && (m.earnedCatalog.products.length > 0 || m.earnedCatalog.services.length > 0) && (

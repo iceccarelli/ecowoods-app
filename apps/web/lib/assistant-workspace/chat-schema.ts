@@ -70,10 +70,12 @@ export interface ProviderOutcome {
 }
 
 export interface AssistantChatCard {
-  type: 'ecowoods_band' | 'pending_provider' | 'site_link' | 'conversion_proposed';
+  type: 'ecowoods_band' | 'pending_provider' | 'site_link' | 'conversion_proposed' | 'renovation_analysis_offer';
   title: string;
   body: string;
   href?: string;
+  /** renovation_analysis_offer only — the exact credit cost, never omitted so the UI never has to guess a price. */
+  creditsCost?: number;
 }
 
 export interface AssistantChatResponse {

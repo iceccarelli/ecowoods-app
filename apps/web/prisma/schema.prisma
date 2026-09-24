@@ -149,6 +149,9 @@ model User {
   sessions      Session[]
   orders        Order[]
 
+  creditWallet         CreditWallet?
+  renovationAnalyses   RenovationAnalysis[]
+
   @@index([email])
   @@schema("ecowoods")
 }
@@ -1181,5 +1184,153 @@ model FunnelEvent {
   @@index([designId])
   @@index([projectId])
   @@index([quoteId])
+  @@schema("ecowoods")
+}
+
+// ─────────────────────────────────────────────
+// RENOVATION CREDITS — Ask Francisco's paid analysis
+// ─────────────────────────────────────────────
+//
+// The commercial loop this schema exists for: a homeowner buys Renovation
+// Credits through Stripe Checkout (an `Order` — same model and same webhook
+// as every other one-time purchase on this site, see the `renovation-credits`
+// `metadata.kind` branch in app/api/webhooks/stripe/route.ts), spends them on
+// a Renovation Decision Analysis, and the result is saved so it survives a
+// refresh and can never be read by anyone but the homeowner who paid for it.
+//
+// Two invariants this design exists to make impossible to violate by
+// accident:
+//   1. The same Stripe webhook delivery must never grant credits twice.
+//      Guaranteed by `CreditTransaction.idempotencyKey` being `@unique` —
+//      not by the caller remembering to check first.
+//   2. An analysis must never be charged for twice, and never charged for a
+//      run that failed. The charge and the analysis row are written in the
+//      same database transaction (see lib/credit-ledger.ts) — if the
+//      (synchronous, deterministic) analysis engine throws, the whole
+//      transaction rolls back and no credits move. That transaction IS the
+//      reservation mechanism; a separate RESERVE step is not needed for a
+//      synchronous engine, which is why RESERVE exists in the enum below
+//      (for a future async engine) but no code path writes one today.
+
+enum CreditTransactionType {
+  /// Credits purchased through Stripe Checkout and confirmed by the webhook.
+  GRANT
+  /// Reserved for a future asynchronous analysis engine. No code writes this yet.
+  RESERVE
+  /// Credits spent on a completed Renovation Decision Analysis.
+  SETTLE
+  /// Credits returned — e.g. a manual admin refund. Not reachable by the
+  /// synchronous engine today (see block comment above): a failed analysis
+  /// never reaches SETTLE in the first place, because the DB transaction
+  /// that would have written it rolls back instead.
+  RELEASE
+  /// A manual correction, always made by an admin, never by product code.
+  ADJUST
+
+  @@schema("ecowoods")
+}
+
+enum RenovationAnalysisStatus {
+  PENDING
+  COMPLETED
+  FAILED
+
+  @@schema("ecowoods")
+}
+
+/// One wallet per user. Balance is denormalised (kept in sync with the
+/// CreditTransaction ledger inside the same DB transaction as every write to
+/// it) so a balance check never needs to SUM the whole ledger on a hot path.
+/// The ledger, not this row, is the audit trail.
+model CreditWallet {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  transactions CreditTransaction[]
+  analyses     RenovationAnalysis[]
+
+  @@schema("ecowoods")
+}
+
+/// Append-only. Never updated, never deleted — a correction is a new ADJUST
+/// row, the same discipline ConsentRecord already uses in this schema.
+model CreditTransaction {
+  id       String                @id @default(uuid()) @db.Uuid
+  walletId String                @db.Uuid
+  wallet   CreditWallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId   String                @db.Uuid
+  type     CreditTransactionType
+
+  /// Signed: positive for GRANT/RELEASE/a positive ADJUST, negative for SETTLE.
+  credits Int
+
+  reason String @db.VarChar(200)
+
+  /// The Stripe-paid Order this grant came from, when type = GRANT. No
+  /// `@relation` — same reasoning as FunnelEvent's bare UUID columns: this
+  /// ledger must never be affected by an Order's own lifecycle.
+  orderId String? @db.Uuid
+
+  /// The RenovationAnalysis this charge paid for, when type = SETTLE.
+  analysisId String? @db.Uuid
+
+  /// The idempotency guarantee. `order-grant:<orderId>` for a purchase,
+  /// `analysis-settle:<analysisId>` for a charge — a retried Stripe webhook
+  /// or a resubmitted analysis request hits this unique constraint instead
+  /// of minting credits or charging twice.
+  idempotencyKey String @unique @db.VarChar(200)
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([analysisId])
+  @@schema("ecowoods")
+}
+
+/// A saved Renovation Decision Analysis. Owned by exactly one user; the API
+/// layer (never a public id space) is what keeps it from being enumerable —
+/// see app/api/assistant/analysis/[id]/route.ts.
+model RenovationAnalysis {
+  id       String       @id @default(uuid()) @db.Uuid
+  userId   String       @db.Uuid
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId String       @db.Uuid
+  wallet   CreditWallet @relation(fields: [walletId], references: [id])
+
+  status         RenovationAnalysisStatus @default(PENDING)
+  creditsCharged Int
+
+  /// The Project Decision State snapshot the analysis was actually run
+  /// against — the same shape /api/assistant/chat already validates
+  /// (workspaceSnapshotSchema), frozen at the moment of purchase so a later
+  /// edit to the live workspace can never quietly change what a saved,
+  /// already-paid-for analysis says it used.
+  contextSnapshot Json @db.JsonB
+
+  /// The structured RenovationAnalysisResult (lib/assistant-workspace/
+  /// renovation-analysis.ts). Null until COMPLETED.
+  result Json? @db.JsonB
+
+  failureReason String? @db.Text
+
+  /// One row per distinct request. A resubmission of the exact same
+  /// idempotency key (e.g. a double-click, or a retried fetch after a
+  /// dropped response) returns the existing row instead of running — and
+  /// charging — again.
+  requestIdempotencyKey String @unique @db.VarChar(200)
+
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+
+  @@index([userId])
+  @@index([status])
   @@schema("ecowoods")
 }

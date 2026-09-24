@@ -13205,6 +13205,43 @@ body.aha-active .site-footer { display: none; }
   cursor: not-allowed;
 }
 
+/*
+ * Renovation Decision Analysis — the one paid action. Same left-accent
+ * language as every other card, given the brand accent because it is the
+ * highest-commitment moment in the workspace, not a special "premium" chrome
+ * treatment layered on top.
+ */
+.aha-analysis-offer { border-left-color: var(--copper); background: color-mix(in srgb, var(--copper-surface) 8%, var(--surface)); display: grid; gap: var(--space-xs); }
+.aha-analysis-cost { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--copper); margin: 0; }
+.aha-analysis-balance { font-size: 0.82rem; color: var(--muted); margin: 0; }
+.aha-analysis-cta {
+  justify-self: start;
+  margin-top: 0.25rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--copper);
+  color: var(--surface);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.aha-analysis-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.aha-analysis-result { border: 1px solid var(--line); border-left: 3px solid var(--copper); border-radius: 8px; padding: var(--space-md); background: var(--surface); display: grid; gap: var(--space-xs); text-align: left; }
+.aha-analysis-section-heading { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: var(--space-sm) 0 0.15rem; }
+.aha-analysis-sequence { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.aha-analysis-step-title { font-weight: 600; margin: 0; color: var(--ink); }
+.aha-analysis-step-why { font-size: 0.85rem; color: var(--muted); margin: 0.1rem 0 0; }
+.aha-analysis-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.aha-analysis-fact { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem; font-size: 0.88rem; border-bottom: 1px dashed var(--line); padding-bottom: 0.35rem; }
+.aha-analysis-fact[data-tag='inspection-needed'],
+.aha-analysis-fact[data-tag='external-data-unavailable'] { color: var(--muted); }
+.aha-analysis-tag { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.aha-analysis-note { flex-basis: 100%; font-size: 0.78rem; color: var(--muted); }
+
 /* Composer — a floating pill, not a form bar. 58-68px min-height, 24-30px
    radius, an auto-growing textarea (capped, see ConversationPane's effect
    that sets its inline height) and a circular send button rather than a

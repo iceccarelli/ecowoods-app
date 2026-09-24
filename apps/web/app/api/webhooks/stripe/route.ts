@@ -18,6 +18,7 @@ import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import Stripe from 'stripe';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { grantCreditsForOrder } from '@/lib/credit-ledger';
 
 export const runtime = 'nodejs';
 
@@ -78,6 +79,51 @@ export async function POST(req: Request) {
           });
 
           console.log(`[stripe webhook] order ${orderId} marked PAID`);
+
+          /* Renovation Credits — the one addition this webhook makes for
+             Ask Francisco's paid analysis. Everything above this point is
+             the pre-existing, unmodified Order-paid path; this branch only
+             ADDS a credit grant on top of it, guarded independently by
+             grantCreditsForOrder's own idempotencyKey unique constraint —
+             so even if this handler is ever invoked twice for the same
+             order (the `already paid` guard above is the first line of
+             defence, this is the second), credits are still minted exactly
+             once. See lib/credit-ledger.ts. */
+          if (session.metadata?.kind === 'renovation-credits') {
+            const grantUserId = session.metadata?.userId ?? order.userId;
+            const credits = Number(session.metadata?.credits ?? 0);
+            if (grantUserId && Number.isInteger(credits) && credits > 0) {
+              try {
+                const grant = await grantCreditsForOrder({
+                  userId: grantUserId,
+                  orderId: order.id,
+                  credits,
+                  reason: `Renovation Credits purchase (${session.metadata?.pack ?? 'unknown pack'})`,
+                });
+                console.log(
+                  JSON.stringify({
+                    event: 'renovation_credits.grant',
+                    orderId: order.id,
+                    userId: grantUserId,
+                    credits,
+                    outcome: grant.reason,
+                  }),
+                );
+              } catch (grantErr) {
+                console.error('[stripe webhook] renovation-credits grant failed:', grantErr);
+                // Order is already PAID and Stripe has been charged — this is
+                // NOT a reason to return non-2xx and trigger a Stripe retry,
+                // which would just re-mark an already-paid order. It is a
+                // reason to log loudly: an admin needs to grant these credits
+                // by hand from the Order id in this line.
+              }
+            } else {
+              console.error(
+                `[stripe webhook] renovation-credits order ${order.id} missing userId/credits metadata — no grant issued`,
+              );
+            }
+          }
+
           break;
         }
 

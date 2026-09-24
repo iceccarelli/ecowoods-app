@@ -33,6 +33,7 @@ import {
   executeGetMarketCost,
   executeGetWantVsValue,
   executeProposeConversion,
+  executeProposeRenovationAnalysis,
   mergePatches,
   workspaceSnapshotBlock,
 } from '@/lib/assistant-workspace/chat-tools';
@@ -255,6 +256,18 @@ export async function POST(req: Request) {
           execute: async (input) => {
             const out = executeProposeConversion(input);
             if (out.ok && Object.keys(out.patch).length) patches.push(out.patch);
+            if (out.card) cards.push(out.card);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        propose_renovation_analysis: tool({
+          description:
+            'Offer the paid Renovation Decision Analysis (Renovation Credits) when there is enough project context to make it worth paying for — an objective plus a sell horizon, square footage, or a selected service. Never charges anything; only shows the offer card. Do not call this on the first turn or with only an objective set.',
+          inputSchema: z.object({}),
+          execute: async () => {
+            const out = executeProposeRenovationAnalysis(body.data.workspace);
             if (out.card) cards.push(out.card);
             providers.push(out.provider);
             return out;
