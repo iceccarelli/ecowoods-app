@@ -12,8 +12,10 @@ import { findOnSite } from '@/lib/assistant-site';
 import { FLOOR_PRODUCTS, BOARD_WIDTHS } from '@/lib/floor-studio/catalog';
 import { SERVICES } from '@/lib/seo-data';
 import { isWorkspaceNextAction, isWorkspaceObjective, isWorkspaceSellHorizon } from './state';
+import { isEligibleForAnalysis } from './renovation-analysis';
+import { ANALYSIS_CREDIT_COST } from './credits-config';
 import type { WorkspacePatch } from './types';
-import type { AssistantChatCard, ProviderOutcome } from './chat-schema';
+import type { AssistantChatCard, ProviderOutcome, WorkspaceSnapshot } from './chat-schema';
 
 const FINISH_IDS = new Set(FINISH_OPTIONS.map((f) => f.id));
 const PATTERN_IDS = new Set(PATTERN_OPTIONS.map((p) => p.id));
@@ -322,6 +324,40 @@ export function executeProposeConversion(input: { action: string; reason?: strin
     card,
     note: 'User must confirm in ConversionPanel. This tool does not write Appointment or QuoteRequest rows.',
     provider: { name: 'propose_conversion', status: 'ok' as const },
+  };
+}
+
+/**
+ * The one paid offer this workspace makes. `workspace` is the SAME snapshot
+ * already validated by assistantChatRequestSchema — the model cannot decide
+ * eligibility on its own; `isEligibleForAnalysis` (the exact function the
+ * checkout/run routes re-check server-side) is the single source of truth
+ * for whether there is enough context to be worth paying for. Never charges
+ * anything — this only proposes; the homeowner buys/runs it from the card.
+ */
+export function executeProposeRenovationAnalysis(workspace: WorkspaceSnapshot | undefined) {
+  const eligibility = isEligibleForAnalysis(workspace ?? {});
+  if (!eligibility.eligible) {
+    const note = eligibility.reason ?? 'Not enough context yet for a paid analysis.';
+    return {
+      status: 'pending_key' as const,
+      note,
+      card: null as AssistantChatCard | null,
+      provider: { name: 'propose_renovation_analysis', status: 'pending_key' as const, note },
+    };
+  }
+  const card: AssistantChatCard = {
+    type: 'renovation_analysis_offer',
+    title: 'Renovation Decision Analysis',
+    body:
+      "I'll turn everything you've told me about this project into a structured sequence: what to prioritize, why, a cost view from published Ecowoods bands where they apply, what's still an assumption, and one concrete next step.",
+    creditsCost: ANALYSIS_CREDIT_COST,
+  };
+  return {
+    status: 'ok' as const,
+    note: 'Offer shown. Nothing charged until the homeowner confirms in the card.',
+    card,
+    provider: { name: 'propose_renovation_analysis', status: 'ok' as const },
   };
 }
 

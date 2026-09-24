@@ -212,7 +212,26 @@ export type AnalyticsEvent =
      code, square footage, or anything typed into the form. */
   | 'workspace_conversion_started'
   | 'workspace_conversion_reviewed'
-  | 'workspace_conversion_cancelled';
+  | 'workspace_conversion_cancelled'
+  /* Phase 3 — the Renovation Decision Analysis commercial funnel (Renovation
+     Credits). The webhook-confirmed facts (a grant, a completed/failed
+     analysis) already live server-side in CreditTransaction / RenovationAnalysis
+     — these are the client-side denominator: how many people saw the offer,
+     how many clicked, how many came back from Checkout, matching MEAS-03's
+     reasoning above for why the corner assistant's own funnel needed the
+     same thing. None of these carry a dollar amount, a credit balance, house
+     details, or analysis content — `creditsCost` is the one fixed constant
+     (ANALYSIS_CREDIT_COST), never a computed balance or price. */
+  | 'analysis_offer_shown'
+  | 'analysis_offer_selected'
+  | 'checkout_started'
+  | 'checkout_completed'
+  | 'credits_granted'
+  | 'analysis_started'
+  | 'analysis_completed'
+  | 'analysis_failed'
+  | 'analysis_result_viewed'
+  | 'analysis_next_action_selected';
 
 export function track(
   event: AnalyticsEvent,
