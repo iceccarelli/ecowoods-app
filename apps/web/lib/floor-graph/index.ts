@@ -51,6 +51,11 @@ export type RecordAssessmentInput = {
   statedIntent?: string | null;
   statedSqFt?: number | null;
   city?: string | null;
+  /** The FloorRecord this assessment is about, when one exists at write time. */
+  floorRecordId?: string | null;
+  /** Who closed this assessment, if it is closed at write time (e.g. a job-execution record — see createFloorRecord's caller). */
+  reviewedBy?: string | null;
+  recommendation?: string | null;
 };
 
 /**
@@ -71,12 +76,16 @@ export async function recordAssessment(
     const row = await db.floorAssessment.create({
       data: {
         source: input.source,
-        status: 'UNREVIEWED',
+        status: input.reviewedBy ? 'CLOSED' : 'UNREVIEWED',
+        floorRecordId: input.floorRecordId ?? null,
         quoteRequestId: input.quoteRequestId ?? null,
         projectId: input.projectId ?? null,
         statedIntent: input.statedIntent ?? null,
         statedSqFt: input.statedSqFt ?? null,
         city: input.city ?? null,
+        reviewedBy: input.reviewedBy ?? null,
+        reviewedAt: input.reviewedBy ? new Date() : null,
+        recommendation: input.recommendation ?? null,
       },
       select: { id: true },
     });
@@ -186,4 +195,71 @@ export async function nextFloorRecordRef(now = new Date()): Promise<string> {
   const prefix = `FR-${year}-`;
   const count = await db.floorRecord.count({ where: { publicRef: { startsWith: prefix } } });
   return `${prefix}${String(count + 1).padStart(4, '0')}`;
+}
+
+export type CreateFloorRecordInput = {
+  /** Soft links only — see the header: no `@relation`, so this table's lifetime never depends on the commercial record's. */
+  originProjectId?: string | null;
+  originQuoteRequestId?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postalPrefix?: string | null;
+  propertyType?: string | null;
+  storey?: string | null;
+  areaSqFt?: number | null;
+  species?: string | null;
+  boardWidthMm?: number | null;
+  boardThickMm?: number | null;
+  pattern?: string | null;
+  finishSystem?: string | null;
+  substrate?: string | null;
+  installMethod?: string | null;
+  installedOn?: Date | null;
+};
+
+/**
+ * OWN-01 — the first real write to `FloorRecord`.
+ *
+ * Every field here is expected to be a fact the caller already has on file
+ * (a `Project`'s city/province/area/species, a crew's stated pattern/finish
+ * at job close) — this function does not infer, guess, or default any of
+ * them; every field left out simply stays null, which is the honest value
+ * for "not yet known" on a row meant to outlive the job that created it.
+ *
+ * Callers decide WHEN a floor earns a passport row (see
+ * `app/api/admin/floor-graph/outcome/route.ts` for the first activation
+ * point: an explicit, admin-confirmed job close — never an inference from a
+ * chat message). This function only owns HOW the row is written.
+ */
+export async function createFloorRecord(
+  input: CreateFloorRecordInput,
+): Promise<CaptureResult<{ id: string; publicRef: string }>> {
+  try {
+    const publicRef = await nextFloorRecordRef();
+    const row = await db.floorRecord.create({
+      data: {
+        publicRef,
+        originProjectId: input.originProjectId ?? null,
+        originQuoteRequestId: input.originQuoteRequestId ?? null,
+        city: input.city ?? null,
+        province: input.province ?? null,
+        postalPrefix: input.postalPrefix ?? null,
+        propertyType: input.propertyType ?? null,
+        storey: input.storey ?? null,
+        areaSqFt: input.areaSqFt ?? null,
+        species: input.species ?? null,
+        boardWidthMm: input.boardWidthMm ?? null,
+        boardThickMm: input.boardThickMm ?? null,
+        pattern: input.pattern ?? null,
+        finishSystem: input.finishSystem ?? null,
+        substrate: input.substrate ?? null,
+        installMethod: input.installMethod ?? null,
+        installedOn: input.installedOn ?? null,
+      },
+      select: { id: true, publicRef: true },
+    });
+    return { ok: true, value: row };
+  } catch (err) {
+    return fail('floor_graph.record_failed', err, { originProjectId: input.originProjectId ?? null });
+  }
 }

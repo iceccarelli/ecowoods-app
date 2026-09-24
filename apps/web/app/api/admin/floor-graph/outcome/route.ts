@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { closePrediction } from '@/lib/floor-graph/prediction';
+import { createFloorRecord, recordAssessment } from '@/lib/floor-graph';
 
 /**
  * POST /api/admin/floor-graph/outcome — close a job into the Floor Graph.
@@ -56,6 +57,20 @@ const outcomeSchema = z.object({
   scheduleDays: z.number().int().nonnegative().max(400).optional(),
   defects: z.array(z.object({ kind: z.string().max(80), note: z.string().max(400).optional() })).optional(),
   notes: z.string().max(4000).optional(),
+
+  /* OWN-01 — Floor Passport first activation. An explicit, admin-checked
+     opt-in at the one moment this schema treats as trustworthy enough to
+     start a floor's permanent record: a confirmed, completed job. Never
+     inferred from anything typed in chat. See lib/floor-graph/index.ts's
+     createFloorRecord() and docs/FLOOR_GRAPH.md. */
+  saveToFloorPassport: z.boolean().optional(),
+  storey: z.string().max(40).optional(),
+  pattern: z.string().max(80).optional(),
+  finishSystem: z.string().max(80).optional(),
+  substrate: z.string().max(80).optional(),
+  installMethod: z.string().max(80).optional(),
+  boardWidthMm: numeric,
+  boardThickMm: numeric,
 });
 
 export async function POST(request: Request) {
@@ -82,10 +97,71 @@ export async function POST(request: Request) {
   const d = parsed.data;
   const completedOn = d.completedOn ? new Date(d.completedOn) : null;
 
+  /* OWN-01 — resolve the FloorRecord before writing the outcome, so the
+     outcome can be linked to it in the same request rather than requiring a
+     second edit. Reuses one already on file for this project rather than
+     minting a duplicate passport for a job closed more than once. Every
+     fact written here is copied from the Project this business already has
+     on record (city/province/area/species) or typed by the admin at this
+     exact moment (storey/pattern/finish/substrate/install method/board
+     dimensions) — nothing here is inferred or guessed. */
+  let floorRecordId = d.floorRecordId ?? null;
+  if (!floorRecordId && d.saveToFloorPassport) {
+    const existing = await db.floorRecord.findFirst({
+      where: { originProjectId: d.projectId },
+      select: { id: true },
+    });
+    if (existing) {
+      floorRecordId = existing.id;
+    } else {
+      const project = await db.project.findUnique({
+        where: { id: d.projectId },
+        select: { city: true, province: true, squareFeet: true, species: true },
+      });
+      const speciesList = Array.isArray(project?.species) ? (project.species as unknown[]) : [];
+      const species = speciesList.length ? speciesList.map(String).join(', ').slice(0, 200) : null;
+
+      const created = await createFloorRecord({
+        originProjectId: d.projectId,
+        city: project?.city ?? null,
+        province: project?.province ?? null,
+        areaSqFt: project?.squareFeet ?? null,
+        species,
+        storey: d.storey ?? null,
+        pattern: d.pattern ?? null,
+        finishSystem: d.finishSystem ?? null,
+        substrate: d.substrate ?? null,
+        installMethod: d.installMethod ?? null,
+        boardWidthMm: d.boardWidthMm ?? null,
+        boardThickMm: d.boardThickMm ?? null,
+        installedOn: completedOn,
+      });
+      if (created.ok) {
+        floorRecordId = created.value.id;
+        /* Provenance — a JOB_EXECUTION assessment records that this passport
+           began at a confirmed job close, by whom, and with what was stated
+           at the time. Never averaged with a photo-triage or measure-visit
+           assessment; `source` is what keeps them apart. */
+        await recordAssessment({
+          source: 'JOB_EXECUTION',
+          floorRecordId,
+          projectId: d.projectId,
+          statedSqFt: project?.squareFeet ?? null,
+          city: project?.city ?? null,
+          reviewedBy: session.user.email ?? session.user.id ?? 'admin',
+        });
+      } else {
+        console.error(
+          JSON.stringify({ event: 'floor_graph.passport_activation_failed', projectId: d.projectId, reason: created.reason }),
+        );
+      }
+    }
+  }
+
   const outcome = await db.jobOutcome.create({
     data: {
       projectId: d.projectId,
-      floorRecordId: d.floorRecordId ?? null,
+      floorRecordId,
       service: d.service ?? null,
       completedOn,
       labourHours: d.labourHours ?? null,
@@ -143,7 +219,10 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ outcomeId: outcome.id, predictionsClosed: closed.length }, { status: 201 });
+  return NextResponse.json(
+    { outcomeId: outcome.id, predictionsClosed: closed.length, floorRecordId },
+    { status: 201 },
+  );
 }
 
 export async function GET() {

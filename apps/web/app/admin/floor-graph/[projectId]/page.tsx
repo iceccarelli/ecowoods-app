@@ -75,6 +75,13 @@ export default async function CloseJobPage({
     select: { id: true, createdAt: true },
   });
 
+  /* OWN-01 read-back — a passport already started for this project is shown,
+     never silently re-offered as if none existed. See docs/FLOOR_GRAPH.md. */
+  const floorRecord = await db.floorRecord.findFirst({
+    where: { originProjectId: projectId },
+    select: { id: true, publicRef: true, createdAt: true },
+  });
+
   const contractValue = project.contractValue === null ? null : Number(project.contractValue);
   const predicted = openPrediction ? Number(openPrediction.predictedValue) : null;
 
@@ -129,11 +136,30 @@ export default async function CloseJobPage({
         )}
       </div>
 
+      <div className="portal-card">
+        <div className="portal-card-header">
+          <h2>Floor Passport</h2>
+        </div>
+        {floorRecord ? (
+          <p>
+            This floor already has a passport: <strong>{floorRecord.publicRef}</strong>, started{' '}
+            {format(floorRecord.createdAt, 'd MMMM yyyy')}. Recording another outcome below will attach
+            to it, not start a second one.
+          </p>
+        ) : (
+          <p>
+            No passport yet. Check &ldquo;Save this floor to the Floor Passport&rdquo; below to start one from
+            what is already on file for this project — nothing is guessed.
+          </p>
+        )}
+      </div>
+
       <OutcomeForm
         projectId={project.id}
         defaultService={quote?.service ?? null}
         defaultCompletedOn={project.endDate ? format(project.endDate, 'yyyy-MM-dd') : null}
         defaultSellingPriceCad={contractValue}
+        hasFloorRecord={Boolean(floorRecord)}
       />
     </div>
   );

@@ -194,10 +194,10 @@ export default async function FloorGraphConsole() {
       </div>
 
       <div className="portal-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        <div className="portal-stat-card">
+        <Link href="/admin/floor-graph/records" className="portal-stat-card">
           <div className="portal-stat-label">Floor records</div>
           <div className="portal-stat-value">{floorRecords}</div>
-        </div>
+        </Link>
         <div className="portal-stat-card">
           <div className="portal-stat-label">Assessments</div>
           <div className="portal-stat-value">{assessments}</div>

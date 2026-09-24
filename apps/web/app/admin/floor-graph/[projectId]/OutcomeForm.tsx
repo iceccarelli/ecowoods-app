@@ -29,6 +29,8 @@ type Props = {
   defaultService: string | null;
   defaultCompletedOn: string | null;
   defaultSellingPriceCad: number | null;
+  /** True when a Floor Passport already exists for this project — changes the checkbox's copy, not its behaviour. */
+  hasFloorRecord: boolean;
 };
 
 function numeric(value: string): number | undefined {
@@ -48,9 +50,18 @@ export default function OutcomeForm({
   defaultService,
   defaultCompletedOn,
   defaultSellingPriceCad,
+  hasFloorRecord,
 }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [saveToFloorPassport, setSaveToFloorPassport] = useState(false);
+  const [storey, setStorey] = useState('');
+  const [pattern, setPattern] = useState('');
+  const [finishSystem, setFinishSystem] = useState('');
+  const [substrate, setSubstrate] = useState('');
+  const [installMethod, setInstallMethod] = useState('');
+  const [boardWidthMm, setBoardWidthMm] = useState('');
+  const [boardThickMm, setBoardThickMm] = useState('');
 
   const [service, setService] = useState(defaultService ?? '');
   const [completedOn, setCompletedOn] = useState(defaultCompletedOn ?? '');
@@ -91,6 +102,14 @@ export default function OutcomeForm({
       labourCostCad: numeric(labourCostCad),
       scheduleDays: numeric(scheduleDays),
       notes: text(notes),
+      saveToFloorPassport: saveToFloorPassport || undefined,
+      storey: text(storey),
+      pattern: text(pattern),
+      finishSystem: text(finishSystem),
+      substrate: text(substrate),
+      installMethod: text(installMethod),
+      boardWidthMm: numeric(boardWidthMm),
+      boardThickMm: numeric(boardThickMm),
     };
     for (const key of Object.keys(payload)) {
       if (payload[key] === undefined) delete payload[key];
@@ -187,6 +206,40 @@ export default function OutcomeForm({
           onChange={(e) => setNotes(e.currentTarget.value)}
         />
       </div>
+
+      {/* OWN-01 — explicit, unchecked-by-default opt-in. A floor becomes a
+          passport row only when a person confirms it at job close, never
+          because a box defaulted to checked. */}
+      <div className="field field-checkbox">
+        <label htmlFor="fg-passport">
+          <input
+            id="fg-passport"
+            type="checkbox"
+            checked={saveToFloorPassport}
+            onChange={(e) => setSaveToFloorPassport(e.currentTarget.checked)}
+          />{' '}
+          {hasFloorRecord
+            ? 'Attach this outcome to the existing Floor Passport'
+            : 'Save this floor to the Floor Passport'}
+        </label>
+        <p className="portal-subtitle">
+          {hasFloorRecord
+            ? 'A passport already exists for this project — this links this outcome to it.'
+            : 'Starts a permanent record for this floor from what is already on file (city, province, square footage, species). Nothing below is required to start it.'}
+        </p>
+      </div>
+
+      {saveToFloorPassport && !hasFloorRecord && (
+        <div className="field-row">
+          {field('fg-storey', 'Storey', storey, setStorey, 'text', 'e.g. main, basement')}
+          {field('fg-pattern', 'Pattern', pattern, setPattern, 'text', 'e.g. herringbone')}
+          {field('fg-finish', 'Finish system', finishSystem, setFinishSystem, 'text', 'e.g. waterborne poly')}
+          {field('fg-substrate', 'Substrate', substrate, setSubstrate, 'text', 'e.g. plywood subfloor')}
+          {field('fg-installmethod', 'Install method', installMethod, setInstallMethod, 'text', 'e.g. nail-down')}
+          {field('fg-boardwidth', 'Board width (mm)', boardWidthMm, setBoardWidthMm, 'number')}
+          {field('fg-boardthick', 'Board thickness (mm)', boardThickMm, setBoardThickMm, 'number')}
+        </div>
+      )}
 
       <button type="button" className="btn btn-copper" onClick={submit} disabled={saving}>
         {saving ? 'Recording…' : 'Record outcome'}
