@@ -94,7 +94,7 @@ vi.mock('@/lib/db', () => {
         create: async ({ data }: { data: Omit<Order, 'id'> & { items?: unknown } }) => {
           const { items: _items, ...rest } = data as Order & { items?: unknown };
           const id = crypto.randomUUID();
-          const o = { id, ...rest } as Order;
+          const o = { ...rest, id } as Order;
           state.orders.set(id, o);
           return { ...o };
         },
