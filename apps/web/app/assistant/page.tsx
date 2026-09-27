@@ -103,6 +103,21 @@ export default async function AssistantPage() {
             <Link href="/estimate">Free in-home measure</Link>
             <span aria-hidden="true"> · </span>
             <Link href="/pricing">Price bands</Link>
+            <span aria-hidden="true"> · </span>
+            {/* This workspace is one of the three things the-vision film
+                actually shows on screen (Floor Studio, the bands, this
+                workspace) — one link back to it, not a video embedded in a
+                page whose own header comment says it deliberately isn't a
+                marketing hero.
+
+                Plain /films, not /films#the-vision: the fragment IS real —
+                films/page.tsx renders id={f.slug} per film and curl confirms
+                id="the-vision" resolves — but verify-destinations.mjs reads
+                chrome as literal text (SiteFooter.tsx documents the same
+                limitation for its own .map()'d hrefs) and cannot see an id
+                built from a JSX expression, so a linked fragment here would
+                read as broken to that guard even though it isn't. */}
+            <Link href="/films">See it in the 90-second tour</Link>
           </p>
           <h1 className="sr-only">
             {WORKSPACE_ASSISTANT.name} — home renovation costs and value, advised by Francisco Oller for Ecowoods

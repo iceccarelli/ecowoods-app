@@ -103,7 +103,7 @@ export default function FilmsPage() {
       </header>
 
       {FILMS.map((f) => (
-        <section key={f.slug} className="tlx-section" aria-label={f.headline}>
+        <section key={f.slug} id={f.slug} className="tlx-section" aria-label={f.headline}>
           <div className="shell">
             <p className="tlx-kicker">{f.kicker}</p>
             <h2 className="tlx-h2">{f.headline}</h2>
