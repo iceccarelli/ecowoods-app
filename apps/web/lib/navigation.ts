@@ -269,7 +269,7 @@ export const LIBRARY_MENU: MegaColumn[] = [
          specified process — the hub every one of those chapters links back
          to, so the menu, footer and ⌘K have one durable destination rather
          than an anchor inside /library that a layout change could move. */
-      { label: 'Films', href: '/films', note: 'Dust-free sanding, staying home during the work, and the tech trends rewriting the rules' },
+      { label: 'Films', href: '/films', note: 'Real job footage, the published price menu explained, and Floor Studio, in one first-party library' },
       { label: 'Case studies', href: '/case-studies', note: 'Measured jobs, published readings' },
       /* Footer-only until NAV-03. It is the first-party proof page — every
          published job, each linked to what was measured — and it is neither

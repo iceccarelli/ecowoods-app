@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import type { Film } from '@/lib/films';
+import { registerMediaElement } from '@/lib/media-coordinator';
 
 /**
  * FilmStage — one first-party film, three chapters, one video element.
@@ -66,6 +67,16 @@ export function FilmStage({
   const [activeId, setActiveId] = useState<number>(defaultChapter ?? film.defaultChapter);
   const [playing, setPlaying] = useState(false);
   const active = film.chapters.find((c) => c.id === activeId) ?? film.chapters[0];
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  /* Re-registers on every chapter switch too: `key={active.src}` below remounts
+     the <video>, so this element is a new node each time and needs a fresh
+     registration, not just one on first mount. */
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    return registerMediaElement(el);
+  }, [playing, active.src]);
 
   return (
     <figure
@@ -81,6 +92,7 @@ export function FilmStage({
         {playing ? (
           <video
             key={active.src}
+            ref={videoRef}
             className="filmstage-video"
             src={active.src}
             controls
