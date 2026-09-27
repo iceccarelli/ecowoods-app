@@ -21,8 +21,22 @@
  *     being served. Same name, same bytes is fine and is what the sync itself
  *     produces.
  *
- *  3. Nothing in apps/web/public is large enough to be a mistake. A 50 MB file
- *     in a static root is a video somebody meant to put in object storage.
+ *  3. Nothing in apps/web/public is large enough to be a mistake, UNLESS it is
+ *     first-party film/audio media that is actually tracked by Git LFS. An
+ *     ordinary static asset (an image, a font, a stray zip) has no business
+ *     being 25+ MB — that is still almost always a mistake, so the 25 MB cap
+ *     stays exactly where it was for everything else. But apps/web/public/films
+ *     is real first-party video and audio (docs/PUBLIC_ASSETS.md, lib/films.ts),
+ *     Git LFS is how this repo stores it (.gitattributes tracks *.mp4/*.m4a/
+ *     *.mov/*.webm), and Vercel's own documented static-file ceiling is 100 MB
+ *     on Hobby / 1 GB on Pro — the 25 MB figure was never Vercel's limit, it
+ *     was this repo's own heuristic for "did somebody forget object storage."
+ *     A file only gets the higher MAX_LFS_BYTES ceiling if `git check-attr`
+ *     confirms `filter: lfs` for it — matching the extension is not enough,
+ *     because that would silently exempt any future *.mp4 that was NOT
+ *     actually LFS-tracked (checked in as a plain multi-MB git blob, which is
+ *     the exact mistake this guard exists to catch — see 6ad3fc5's own history
+ *     of shipping LFS pointer text for files that then needed `git lfs pull`).
  *
  * WHAT IT CANNOT DO
  *
@@ -31,17 +45,43 @@
  * production curl in the command block is the real verification — the same
  * lesson the Access-Control-Allow-Origin note in next.config.js records.
  *
+ * It also cannot prove Vercel's Git LFS project setting is enabled — that is a
+ * dashboard toggle (Project → Settings → Git → Git Large File Storage), not
+ * anything expressible in this repository. Without it, Vercel checks out LFS
+ * *pointer* text instead of the real objects, which 404s or serves garbage in
+ * production while every check here stays green — the same class of gap the
+ * buildCommand sync clause has.
+ *
  * Run:  pnpm verify:assets:public
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const APP_PUBLIC = join(ROOT, 'apps/web/public');
 const ROOT_PUBLIC = join(ROOT, 'public');
 const VERCEL = join(ROOT, 'vercel.json');
 const MAX_BYTES = 25 * 1024 * 1024;
+/* Vercel's documented Hobby-tier static-file ceiling — the conservative of its
+   two published limits (100 MB Hobby / 1 GB Pro), so this guard does not pass
+   a file that would fail on the cheaper tier. */
+const MAX_LFS_BYTES = 100 * 1024 * 1024;
+
+/** True only when `git check-attr` reports this path is actually filtered
+ *  through Git LFS — not merely that its extension matches .gitattributes. */
+const isLfsTracked = (relFromRoot) => {
+  try {
+    const out = execFileSync('git', ['check-attr', 'filter', '--', relFromRoot], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    return out.trim().endsWith('filter: lfs');
+  } catch {
+    return false;
+  }
+};
 
 const errors = [];
 
@@ -91,10 +131,20 @@ for (const f of appFiles) {
     );
   }
   if (f.size > MAX_BYTES) {
-    errors.push(
-      `apps/web/public/${f.rel} is ${(f.size / 1e6).toFixed(1)} MB. A static root is not object storage —` +
-        ' put a file this size behind a bucket and reference it by URL.',
-    );
+    const relFromRoot = relative(ROOT, f.abs);
+    if (isLfsTracked(relFromRoot) && f.size <= MAX_LFS_BYTES) {
+      // First-party media, actually LFS-tracked, under Vercel's own ceiling — fine.
+    } else if (isLfsTracked(relFromRoot)) {
+      errors.push(
+        `apps/web/public/${f.rel} is ${(f.size / 1e6).toFixed(1)} MB, over the ${(MAX_LFS_BYTES / 1e6).toFixed(0)} MB ` +
+          'ceiling even for LFS-tracked media — that is past Vercel’s own Hobby-tier static-file limit. Put it behind object storage.',
+      );
+    } else {
+      errors.push(
+        `apps/web/public/${f.rel} is ${(f.size / 1e6).toFixed(1)} MB and is not Git LFS-tracked. A static root is not` +
+          ' object storage — either track it with Git LFS (if it is genuine first-party media) or put it behind a bucket.',
+      );
+    }
   }
 }
 

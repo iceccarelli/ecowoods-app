@@ -270,7 +270,7 @@ export const FILMS: Film[] = [
     slug: 'the-vision',
     kicker: 'One system, shown whole.',
     headline: 'The floor is no longer imagined.',
-    lede: 'Floor Studio, the published bands, and the AI Home Advisor workspace — the three tools this company built, in one 90-second tour.',
+    lede: 'Floor Studio, the published bands, and the Ask Francisco project workspace — the three tools this company built, in one 90-second tour.',
     poster: theVisionPoster,
     defaultChapter: 1,
     uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
