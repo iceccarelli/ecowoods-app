@@ -531,6 +531,7 @@ const HOME_PROJECT_COVER_OVERRIDE: Record<string, string> = {
 
 /** Series II, chapter 1 — the homepage gets exactly one film, per the brief. */
 const THE_BRIEF = getFilm('the-brief')!;
+const THE_VISION = getFilm('the-vision')!;
 
 /* ---------------------- Page ---------------------- */
 export default function HomePage({ contentPromo }: { contentPromo?: ReactNode }) {
@@ -563,8 +564,8 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           }),
         }}
       />
-      {/* VideoObject per chapter of the one film this page mounts. */}
-      {videoObjectsFor(THE_BRIEF).map((v) => (
+      {/* VideoObject per chapter of the two films this page mounts. */}
+      {[...videoObjectsFor(THE_BRIEF), ...videoObjectsFor(THE_VISION)].map((v) => (
         <script
           key={v.contentUrl}
           type="application/ld+json"
@@ -987,6 +988,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               photo. Either way it runs on your own device: nothing is uploaded, and every floor
               you see is one we can actually supply and install.
             </p>
+            <FilmStage film={THE_VISION} defaultChapter={1} />
             {/* Two doors into one thing, and the live one leads because it is the
                 one people have never seen before. Both land on /floor-studio;
                 the fragment is what opens the camera (LIVE-01). */}

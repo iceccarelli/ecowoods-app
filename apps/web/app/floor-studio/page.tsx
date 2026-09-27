@@ -12,6 +12,8 @@ import { FEELS } from '@/lib/floor-studio/match';
 import { NextStep } from '@/app/components/NextStep';
 import FloorStudio from '@/app/components/floor-studio/FloorStudio';
 import { illustrationImage } from '@/app/data/illustration-images';
+import { getFilm, videoObjectsFor } from '@/lib/films';
+import { FilmStage } from '@/app/components/FilmStage';
 
 /**
  * /floor-studio — ECOWOODS FLOOR STUDIO.
@@ -102,8 +104,11 @@ const REFUSALS = [
 ];
 
 export default function FloorStudioPage() {
+  const seeIt = getFilm('see-it');
   return (
     <div className="tlx-page">
+      {seeIt &&
+        videoObjectsFor(seeIt).map((v) => <SchemaScript key={v.contentUrl} schema={v} />)}
       <SchemaScript
         schema={buildBreadcrumbList([
           { name: 'Home', url: SITE_URL },
@@ -172,6 +177,17 @@ export default function FloorStudioPage() {
       <div id="live">
         <FloorStudio />
       </div>
+
+      {seeIt && (
+        <section className="tlx-section" id="see-it" aria-label="See it before you decide">
+          <div className="shell">
+            <p className="tlx-kicker">{seeIt.kicker}</p>
+            <h2 className="tlx-h2">{seeIt.headline}</h2>
+            <p className="tlx-note">{seeIt.lede}</p>
+            <FilmStage film={seeIt} />
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section" id="how" aria-label="How Floor Studio works">
         <div className="shell">
