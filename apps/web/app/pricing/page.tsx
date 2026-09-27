@@ -17,10 +17,13 @@ import { SITE_URL, FAQ_ITEMS } from '@/lib/seo-data';
 import { getServicePages, serviceFor, priceLabel } from '@/lib/service-pages';
 import { getGuide } from '@/lib/guides';
 import { getRegistry, type PricePrimitive } from '@/lib/registry';
+import { getFilm, AUDIO_TRACKS, videoObjectsFor, audioObjectFor } from '@/lib/films';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { EstimateForm } from '../components/EstimateForm';
 import { Illustration } from '../components/Illustration';
+import { FilmStage } from '../components/FilmStage';
+import { AudioStage } from '../components/AudioStage';
 import { NextStep } from '@/app/components/NextStep';
 import { illustrationImage } from '@/app/data/illustration-images';
 
@@ -153,6 +156,8 @@ export default async function PricingPage() {
   const servicePages = getServicePages();
   const perProject = servicePages.filter((p) => !p.pricing);
   const faq = FAQ_ITEMS.find((f) => f.q.startsWith('How much does hardwood flooring cost'));
+  const priceMenuFilm = getFilm('the-price-menu');
+  const pricingLogicAudio = AUDIO_TRACKS.find((t) => t.slug === 'pricing-logic');
 
   return (
     <div className="tlx-page">
@@ -365,6 +370,30 @@ export default async function PricingPage() {
           </p>
         </div>
       </section>
+
+      {/* (d2) The menu explained — two first-party explainers and the
+          long-form audio behind them, all shipped the same day this section
+          was added. Placed after (d), the section that already makes the
+          promise these films illustrate, not as a standalone gallery. */}
+      {priceMenuFilm && (
+        <section className="tlx-section" id="price-menu-explained" aria-label="The published menu, explained">
+          <div className="shell">
+            <p className="tlx-kicker">{priceMenuFilm.kicker}</p>
+            <h2 className="tlx-h2">{priceMenuFilm.headline}</h2>
+            <p className="tlx-note">{priceMenuFilm.lede}</p>
+            <FilmStage film={priceMenuFilm} />
+            {videoObjectsFor(priceMenuFilm).map((v) => (
+              <SchemaScript key={v.contentUrl} schema={v} />
+            ))}
+            {pricingLogicAudio && (
+              <>
+                <AudioStage track={pricingLogicAudio} />
+                <SchemaScript schema={audioObjectFor(pricingLogicAudio)} />
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* (e) The one FAQ the page answers, rendered visibly. No FAQPage markup here:
           F-27 keeps that node on pages whose main content IS the FAQ. */}

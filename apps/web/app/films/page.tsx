@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FilmStage } from '../components/FilmStage';
-import { FILMS, videoObjectsFor } from '@/lib/films';
+import { FILMS, AUDIO_TRACKS, videoObjectsFor, audioObjectFor } from '@/lib/films';
+import { AudioStage } from '../components/AudioStage';
 import { SITE_URL } from '@/lib/seo-data';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -31,16 +32,28 @@ const MONEY_LINKS: Record<string, { href: string; label: string }[]> = {
     { href: '/hardwood-floor-refinishing-toronto', label: 'Refinishing in Toronto' },
     { href: '/guides/dustless-hardwood-refinishing-toronto', label: 'The dustless guide' },
   ],
+  'the-price-menu': [
+    { href: '/pricing', label: 'The published bands' },
+    { href: '/estimate', label: 'Book the free in-home measure' },
+  ],
+  'the-vision': [
+    { href: '/floor-studio', label: 'Floor Studio' },
+    { href: '/pricing', label: 'The published bands' },
+  ],
+  'see-it': [
+    { href: '/floor-studio', label: 'Floor Studio' },
+    { href: '/hardwood-floor-refinishing-toronto', label: 'Refinishing in Toronto' },
+  ],
 };
 
 export const metadata: Metadata = {
   title: 'Films',
   description:
-    'Every film Ecowoods has published: real camera footage of real jobs, plus a three-part animated explainer answering dust, staying home during the work, and why a specified process beats a commodity quote.',
+    'Every film and audio piece Ecowoods has published: real camera footage of real jobs, animated explainers on dust, staying home during the work, hidden quote costs and the published price menu, and two product films on Floor Studio and the fixed-price system.',
   alternates: { canonical: '/films' },
   openGraph: {
     title: 'Films — Ecowoods',
-    description: 'Real job footage, and an animated explainer for the three questions that actually stall a booking.',
+    description: 'Real job footage, animated explainers, and the two films behind Floor Studio and the published price menu.',
     type: 'website',
     url: `${SITE_URL}/films`,
   },
@@ -70,6 +83,9 @@ export default function FilmsPage() {
       {FILMS.flatMap((f) => videoObjectsFor(f)).map((v) => (
         <SchemaScript key={v.contentUrl} schema={v} />
       ))}
+      {AUDIO_TRACKS.map((t) => (
+        <SchemaScript key={t.src} schema={audioObjectFor(t)} />
+      ))}
 
       <header className="tlx-hero">
         <div className="shell">
@@ -78,9 +94,10 @@ export default function FilmsPage() {
           </nav>
           <h1 className="tlx-title">Films</h1>
           <p className="tlx-lede">
-            {FILMS.length} series, {FILMS.length * 3} chapters. Real camera footage of real jobs,
-            plus a three-part animated explainer answering dust, living at home during the work,
-            and why a specified process beats a commodity quote.
+            {FILMS.length} series, {FILMS.reduce((n, f) => n + f.chapters.length, 0)} chapters,
+            plus one long-form audio piece. Real camera footage of real jobs, animated explainers
+            on dust, living at home during the work, hidden quote costs and the published price
+            menu, and two product films on Floor Studio and the fixed-price system.
           </p>
         </div>
       </header>
@@ -92,6 +109,8 @@ export default function FilmsPage() {
             <h2 className="tlx-h2">{f.headline}</h2>
             <p className="tlx-note">{f.lede}</p>
             <FilmStage film={f} />
+            {f.slug === 'the-price-menu' &&
+              AUDIO_TRACKS.map((t) => <AudioStage key={t.src} track={t} />)}
             {MONEY_LINKS[f.slug] && (
               <p className="tlx-note">
                 {MONEY_LINKS[f.slug].map((l, i) => (

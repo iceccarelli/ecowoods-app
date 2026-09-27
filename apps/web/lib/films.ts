@@ -73,16 +73,24 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import theWorkPoster from '../public/films/the-work/poster.webp';
 import theBriefPoster from '../public/films/the-brief/poster.webp';
 import theHowPoster from '../public/films/the-how/poster.webp';
+import thePriceMenuPoster from '../public/films/the-price-menu/poster.webp';
+import theVisionPoster from '../public/films/the-vision/poster.webp';
+import seeItPoster from '../public/films/see-it/poster.webp';
 
 export type FilmChapter = {
-  id: 1 | 2 | 3;
+  id: number;
   src: string;
   title: string;
   caption: string;
   durationLabel: string;
+  /** Set only when a chapter shipped after the rest of its film — the-how's
+   *  chapters 4 and 5 arrived two weeks after 1-3, so they carry their own
+   *  date instead of inheriting the film's. Falls back to `Film.uploadDate`
+   *  in videoObjectsFor when absent. */
+  uploadDate?: string;
 };
 
-export type FilmSlug = 'the-work' | 'the-brief' | 'the-how';
+export type FilmSlug = 'the-work' | 'the-brief' | 'the-how' | 'the-price-menu' | 'the-vision' | 'see-it';
 
 export type Film = {
   slug: FilmSlug;
@@ -90,8 +98,11 @@ export type Film = {
   headline: string;
   lede: string;
   poster: StaticImageData;
-  chapters: [FilmChapter, FilmChapter, FilmChapter];
-  defaultChapter: 1 | 2 | 3;
+  /** One to N chapters sharing one <video> element — not every series is a
+   *  three-part trilogy. the-work/the-brief ship exactly 3; the-how now
+   *  ships 5; the-vision and see-it ship 1 each. */
+  chapters: FilmChapter[];
+  defaultChapter: number;
   /** The date this series actually went up — per film, not shared, because
    *  the-how did not ship the same day as the-work and the-brief. */
   uploadDate: string;
@@ -105,6 +116,10 @@ export type Film = {
 
 /** the-how went up separately from the-work/the-brief — see the file header. */
 const FILM_HOW_UPLOAD_DATE = '2026-09-21';
+
+/** the-how's chapters 4-5, the-price-menu, the-vision, see-it and the
+ *  pricing-logic audio track all shipped together in the same media drop. */
+const FILM_HOW_CHAPTER_4_5_UPLOAD_DATE = '2026-09-27';
 
 export const FILMS: Film[] = [
   {
@@ -205,13 +220,127 @@ export const FILMS: Film[] = [
         caption: 'Why a specified process beats a commodity quote.',
         durationLabel: '1:12',
       },
+      {
+        id: 4,
+        src: '/films/the-how/04-what-a-typical-quote-hides.mp4',
+        title: 'What a typical quote hides',
+        caption:
+          'Demolition, an "unforeseen" subfloor repair, upgraded materials — the line items that turn one number into three.',
+        durationLabel: '1:25',
+        uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
+      },
+      {
+        id: 5,
+        src: '/films/the-how/05-how-one-toronto-company-fixed-it.mp4',
+        title: 'How one Toronto company fixed it',
+        caption: 'Why a specified, published process is the alternative to a number that grows once the floor is open.',
+        durationLabel: '1:18',
+        uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
+      },
     ],
+  },
+  {
+    slug: 'the-price-menu',
+    kicker: 'The menu, published.',
+    headline: 'Why pricing feels mysterious — and the menu that isn’t.',
+    lede:
+      'Two short explainers: what makes renovation pricing opaque elsewhere, and the six-line menu this shop publishes instead.',
+    poster: thePriceMenuPoster,
+    defaultChapter: 1,
+    uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
+    frame: 'landscape',
+    chapters: [
+      {
+        id: 1,
+        src: '/films/the-price-menu/01-why-pricing-feels-mysterious.mp4',
+        title: 'Why pricing feels mysterious',
+        caption: 'Renovation pricing looks arbitrary from the outside. The six published bands are how this shop makes it not.',
+        durationLabel: '7:04',
+      },
+      {
+        id: 2,
+        src: '/films/the-price-menu/02-the-ecowoods-process.mp4',
+        title: 'The Ecowoods process',
+        caption: 'Measure, checklist, contract, install — the sequence behind the published number, and why it runs on salaried crews rather than subcontractors.',
+        durationLabel: '7:00',
+      },
+    ],
+  },
+  {
+    slug: 'the-vision',
+    kicker: 'One system, shown whole.',
+    headline: 'The floor is no longer imagined.',
+    lede: 'Floor Studio, the published bands, and the Ask Francisco project workspace — the three tools this company built, in one 90-second tour.',
+    poster: theVisionPoster,
+    defaultChapter: 1,
+    uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
+    frame: 'landscape',
+    chapters: [
+      {
+        id: 1,
+        src: '/films/the-vision/01-the-floor-is-no-longer-imagined.mp4',
+        title: 'The floor is no longer imagined',
+        caption: 'A floor rendered into a real room, the published bands behind the estimate, and a conversation turned into a project workspace.',
+        durationLabel: '1:30',
+      },
+    ],
+  },
+  {
+    slug: 'see-it',
+    kicker: 'The decision, seen.',
+    headline: 'See it before you decide.',
+    lede: 'A homeowner weighing whether to refinish, with the floor she is standing on rendered live instead of imagined.',
+    poster: seeItPoster,
+    defaultChapter: 1,
+    uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
+    frame: 'landscape',
+    chapters: [
+      {
+        id: 1,
+        src: '/films/see-it/01-see-it.mp4',
+        title: 'See it',
+        caption: 'The refinish question, and the Floor Designer overlay that answers it without a sample board on the floor.',
+        durationLabel: '1:18',
+      },
+    ],
+  },
+];
+
+/**
+ * AUDIO — Fixed_price_flooring_through_software_logic.m4a. Not a film: no
+ * frame, no poster-then-play affordance. A single 38-minute first-party
+ * audio track, presented as audio because that is what the file is — see
+ * the file's own header for why it is never rendered inside a <video>.
+ */
+export type AudioTrack = {
+  slug: 'pricing-logic';
+  kicker: string;
+  headline: string;
+  lede: string;
+  src: string;
+  title: string;
+  caption: string;
+  durationLabel: string;
+  uploadDate: string;
+};
+
+export const AUDIO_TRACKS: AudioTrack[] = [
+  {
+    slug: 'pricing-logic',
+    kicker: 'Long-form.',
+    headline: 'Fixed-price flooring, through the software logic.',
+    lede: 'The long-form companion to the Transparent Pricing Menu film — how the published bands are set, and held.',
+    src: '/films/pricing-logic/01-fixed-price-flooring-through-software-logic.m4a',
+    title: 'Fixed-price flooring through software logic',
+    caption: 'A 38-minute audio piece on the reasoning behind the published price bands.',
+    durationLabel: '38:28',
+    uploadDate: FILM_HOW_CHAPTER_4_5_UPLOAD_DATE,
   },
 ];
 
 export const getFilm = (slug: FilmSlug): Film | undefined => FILMS.find((f) => f.slug === slug);
 
-export const chapterOf = (film: Film, id: 1 | 2 | 3): FilmChapter =>
+export const chapterOf = (film: Film, id: number): FilmChapter =>
   film.chapters.find((c) => c.id === id) ?? film.chapters[0];
 
 /**
@@ -228,9 +357,24 @@ export const videoObjectsFor = (film: Film) =>
     description: c.caption,
     contentUrl: `${SITE_URL}${c.src}`,
     thumbnailUrl: `${SITE_URL}${film.poster.src}`,
-    uploadDate: film.uploadDate,
+    uploadDate: c.uploadDate ?? film.uploadDate,
     publisher: {
       '@type': 'Organization',
       name: BUSINESS_NAP.legalName,
     },
   }));
+
+/** AudioObject for the pricing-logic track — the audio counterpart of
+ *  videoObjectsFor, kept separate because an AudioTrack has no poster. */
+export const audioObjectFor = (track: AudioTrack) => ({
+  '@context': 'https://schema.org',
+  '@type': 'AudioObject',
+  name: track.title,
+  description: track.caption,
+  contentUrl: `${SITE_URL}${track.src}`,
+  uploadDate: track.uploadDate,
+  publisher: {
+    '@type': 'Organization',
+    name: BUSINESS_NAP.legalName,
+  },
+});

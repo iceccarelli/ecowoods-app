@@ -59,11 +59,11 @@ export function FilmStage({
   className = '',
 }: {
   film: Film;
-  defaultChapter?: 1 | 2 | 3;
+  defaultChapter?: number;
   priority?: boolean;
   className?: string;
 }) {
-  const [activeId, setActiveId] = useState<1 | 2 | 3>(defaultChapter ?? film.defaultChapter);
+  const [activeId, setActiveId] = useState<number>(defaultChapter ?? film.defaultChapter);
   const [playing, setPlaying] = useState(false);
   const active = film.chapters.find((c) => c.id === activeId) ?? film.chapters[0];
 
@@ -113,6 +113,7 @@ export function FilmStage({
         )}
       </div>
 
+      {film.chapters.length > 1 && (
       <div className="filmstage-strip" role="tablist" aria-label={`${film.headline} chapters`}>
         {film.chapters.map((c) => (
           <button
@@ -132,6 +133,7 @@ export function FilmStage({
           </button>
         ))}
       </div>
+      )}
 
       <figcaption className="filmstage-caption">{active.caption}</figcaption>
     </figure>
