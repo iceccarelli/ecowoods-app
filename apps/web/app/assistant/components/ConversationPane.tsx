@@ -38,6 +38,8 @@ interface DisplayMessage {
   earnedCatalog?: EarnedCatalog;
   /** True only for a genuine send failure (network/5xx) — renders the retry affordance, never for a degraded-but-understood reply. */
   failed?: boolean;
+  /** True while this message's text is still arriving from the NDJSON stream — shows the typing state (empty text) or live-growing text, and the Stop action. */
+  streaming?: boolean;
 }
 
 /**
@@ -254,6 +256,16 @@ export function ConversationPane({
     };
   };
 
+  /**
+   * NDJSON line shape the route emits — see chat/route.ts's file header.
+   * `done` carries the same fields as AssistantChatResponse plus the
+   * discriminant, so the two stay structurally compatible on purpose.
+   */
+  type ChatStreamEvent =
+    | { type: 'text'; value: string }
+    | ({ type: 'done' } & AssistantChatResponse)
+    | { type: 'error'; message: string };
+
   const respond = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -261,12 +273,24 @@ export function ConversationPane({
     const prior = messages;
     const userTurn: DisplayMessage = { role: 'user', text: trimmed };
     const history = [...prior, userTurn];
-    setMessages(history);
+    const assistantIndex = history.length;
+    setMessages([...history, { role: 'assistant', text: '', streaming: true }]);
     setDraft('');
     setBusy(true);
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    /* Every branch below replaces the SAME placeholder — the message this
+       turn's reply grows into, in place, rather than appending new bubbles. */
+    const updateAssistant = (next: DisplayMessage) => {
+      setMessages((prev) => {
+        if (!prev[assistantIndex]) return prev;
+        const copy = [...prev];
+        copy[assistantIndex] = next;
+        return copy;
+      });
+    };
 
     try {
       const res = await fetch('/api/assistant/chat', {
@@ -279,18 +303,59 @@ export function ConversationPane({
         signal: controller.signal,
       });
 
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         /* A real server-side failure, not a degraded reply — the honest,
            billing-safe error state, not a silent keyword guess. */
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', text: "I couldn't complete that analysis. Nothing was charged.", failed: true },
-        ]);
+        updateAssistant({
+          role: 'assistant',
+          text: "I couldn't complete that analysis. Nothing was charged.",
+          failed: true,
+        });
         return;
       }
 
-      const data = (await res.json()) as AssistantChatResponse;
-      const nextPatch = coercePatch(data.patch);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamedText = '';
+      let final: ({ type: 'done' } & AssistantChatResponse) | null = null;
+      let streamError: string | null = null;
+
+      for (;;) {
+        const { value, done: readerDone } = await reader.read();
+        if (readerDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newline: number;
+        while ((newline = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, newline);
+          buffer = buffer.slice(newline + 1);
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as ChatStreamEvent;
+          if (event.type === 'text') {
+            streamedText += event.value;
+            updateAssistant({ role: 'assistant', text: streamedText, streaming: true });
+          } else if (event.type === 'done') {
+            final = event;
+          } else {
+            streamError = event.message;
+          }
+        }
+      }
+
+      if (streamError) {
+        updateAssistant({ role: 'assistant', text: streamError, failed: true });
+        return;
+      }
+      if (!final) {
+        updateAssistant({
+          role: 'assistant',
+          text: "I couldn't complete that analysis. Nothing was charged.",
+          failed: true,
+        });
+        return;
+      }
+
+      const nextPatch = coercePatch(final.patch);
       if (Object.keys(nextPatch).length) patch(nextPatch);
 
       const { patch: keywordPatch } = interpretMessage(trimmed);
@@ -306,25 +371,23 @@ export function ConversationPane({
       const combinedPatch: WorkspacePatch = { ...nextPatch, ...keywordPatch };
       const earnedCatalog = computeEarnedCatalog(state, combinedPatch);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          text: typeof data.reply === 'string' && data.reply.trim() ? data.reply.trim() : keywordFallback(trimmed).text,
-          cards: Array.isArray(data.cards) ? data.cards.slice(0, 2) : undefined,
-          earnedCatalog,
-        },
-      ]);
+      updateAssistant({
+        role: 'assistant',
+        text: final.reply.trim() ? final.reply.trim() : keywordFallback(trimmed).text,
+        cards: Array.isArray(final.cards) ? final.cards.slice(0, 2) : undefined,
+        earnedCatalog,
+      });
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         /* Visitor pressed Stop — not an error, no retry affordance. */
-        setMessages((prev) => [...prev, { role: 'assistant', text: 'Stopped.' }]);
+        updateAssistant({ role: 'assistant', text: 'Stopped.' });
         return;
       }
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: "I couldn't complete that analysis. Nothing was charged.", failed: true },
-      ]);
+      updateAssistant({
+        role: 'assistant',
+        text: "I couldn't complete that analysis. Nothing was charged.",
+        failed: true,
+      });
     } finally {
       abortRef.current = null;
       setBusy(false);
@@ -376,7 +439,25 @@ export function ConversationPane({
                 )}
                 <div className="aha-message-body">
                   <p className="aha-message-author">{m.role === 'assistant' ? WORKSPACE_ASSISTANT.name : 'You'}</p>
-                  <p className="aha-message-text">{m.text}</p>
+                  {m.streaming && !m.text ? (
+                    <p className="aha-message-text aha-typing" aria-live="polite">
+                      <span className="aha-typing-label">Francisco is working through that</span>
+                      <span className="aha-typing-dots" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="aha-message-text" aria-live={m.streaming ? 'polite' : undefined}>
+                      {m.text}
+                    </p>
+                  )}
+                  {m.streaming && (
+                    <button type="button" className="aha-message-retry aha-message-stop" onClick={stopGenerating}>
+                      Stop
+                    </button>
+                  )}
                   {m.failed && (
                     <button type="button" className="aha-message-retry" onClick={() => retry(i)}>
                       Try again
@@ -432,28 +513,6 @@ export function ConversationPane({
                 </div>
               </div>
             ))}
-
-            {busy && (
-              <div className="aha-message aha-message--assistant" aria-live="polite">
-                <span className="aha-avatar" aria-hidden="true">
-                  <Image src={EW_MARK} alt="" width={24} height={24} />
-                </span>
-                <div className="aha-message-body">
-                  <p className="aha-message-author">{WORKSPACE_ASSISTANT.name}</p>
-                  <p className="aha-message-text aha-typing">
-                    <span className="aha-typing-label">Francisco is working through that</span>
-                    <span className="aha-typing-dots" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </span>
-                  </p>
-                  <button type="button" className="aha-message-retry aha-message-stop" onClick={stopGenerating}>
-                    Stop
-                  </button>
-                </div>
-              </div>
-            )}
 
             {(onOpenProject || onOpenEconomics) && state.objective && (
               <div className="aha-context-hints">

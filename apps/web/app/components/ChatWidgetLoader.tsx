@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import { ASSISTANT_OPEN_EVENT } from '@/lib/assistant';
 
 /**
@@ -50,10 +51,25 @@ type IdleWindow = Window & {
   cancelIdleCallback?: (id: number) => void;
 };
 
+/**
+ * /assistant is Ask Francisco's own dedicated workspace (WorkspaceShell) — a
+ * second, corner-mounted chat surface on that route would be a duplicate
+ * assistant fighting the primary one for the same conversation. `usePathname`
+ * resolves identically during the server render and the client hydration
+ * pass (both read the same URL), so this never flashes the corner widget in
+ * before hiding it — there is no client-only check running a tick late.
+ */
+function isSuppressedRoute(pathname: string | null): boolean {
+  return pathname === '/assistant' || pathname?.startsWith('/assistant/') === true;
+}
+
 export default function ChatWidgetLoader() {
+  const pathname = usePathname();
+  const suppressed = isSuppressedRoute(pathname);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (suppressed) return;
     if (ready) return;
     let activated = false;
     const activate = () => {
@@ -89,8 +105,8 @@ export default function ChatWidgetLoader() {
       if (hasIdleCallback) w.cancelIdleCallback?.(idleId as number);
       else window.clearTimeout(idleId as number);
     };
-  }, [ready]);
+  }, [ready, suppressed]);
 
-  if (!ready) return null;
+  if (suppressed || !ready) return null;
   return <ChatWidget />;
 }
