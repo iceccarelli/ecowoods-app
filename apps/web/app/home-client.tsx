@@ -988,7 +988,6 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               photo. Either way it runs on your own device: nothing is uploaded, and every floor
               you see is one we can actually supply and install.
             </p>
-            <FilmStage film={THE_VISION} defaultChapter={1} />
             {/* Two doors into one thing, and the live one leads because it is the
                 one people have never seen before. Both land on /floor-studio;
                 the fragment is what opens the camera (LIVE-01). */}
@@ -1003,6 +1002,12 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
               <Link href="/design">Open the full floor designer</Link>.
             </p>
           </div>
+          {/* Outside the 640px text column, not inside it — the same width the
+              craft section's own FilmStage above uses. Trapping the video in
+              the narrow column left a few hundred pixels of dead space beside
+              it on desktop; full-shell width is what every other FilmStage
+              placement on this page already does. */}
+          <FilmStage film={THE_VISION} defaultChapter={1} />
         </div>
       </section>
 
