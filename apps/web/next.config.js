@@ -280,8 +280,19 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
+            // camera=(self) — NOT camera=(). Floor Studio's live view
+            // (/floor-studio#live, LiveRoom.tsx) calls getUserMedia for
+            // real, and Permissions Policy is enforced by the browser
+            // before that call ever reaches the page: `camera=()` denies it
+            // even to this site's own top-level document, silently breaking
+            // the one feature this header exists to gate — a real security
+            // policy directly contradicting a real product capability, not
+            // a theoretical one. `(self)` is still the minimum grant: this
+            // origin only, never a third-party iframe, never `*`.
+            // microphone/geolocation stay denied outright — nothing on this
+            // site uses either.
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(self), microphone=(), geolocation=()',
           },
           /**
            * CSP, in two headers — now the other way round.
