@@ -7,9 +7,17 @@
  * Conversion is propose_conversion → ConversionPanel confirm → existing
  * /api/appointments|/api/leads.
  *
- * Returns structured JSON: { reply, patch, cards, providers, model }.
+ * Streams the reply as NDJSON (one JSON object per line, `Content-Type:
+ * application/x-ndjson`): a `{"type":"text","value":"..."}` line per text
+ * delta as Francisco's reply is generated, then exactly one
+ * `{"type":"done","reply","patch","cards","providers","model"}` line once
+ * every tool call this turn has resolved — cards/patch/providers are only
+ * final at that point, since a tool can still fire after text has already
+ * started streaming in an earlier step. A mid-stream failure sends
+ * `{"type":"error","message"}` instead of the `done` line. See
+ * ConversationPane's `respond()` for the reader.
  */
-import { generateText, tool, stepCountIs, type ModelMessage } from 'ai';
+import { streamText, tool, stepCountIs, type ModelMessage } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
@@ -137,8 +145,11 @@ export async function POST(req: Request) {
     catalogHintsBlock() +
     workspaceSnapshotBlock(body.data.workspace as Record<string, unknown> | undefined);
 
+  const encoder = new TextEncoder();
+  const ndjson = (obj: unknown) => encoder.encode(`${JSON.stringify(obj)}\n`);
+
   try {
-    const result = await generateText({
+    const result = streamText({
       model: anthropic('claude-sonnet-4-6'),
       system,
       messages,
@@ -276,20 +287,49 @@ export async function POST(req: Request) {
       },
     });
 
-    const reply =
-      (result.text && result.text.trim()) ||
-      (cards[0]?.body ??
-        `I heard you — tell me the neighbourhood and what you want done on this house, or call ${BUSINESS_NAP.phoneDisplay}.`);
+    let accumulated = '';
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          for await (const delta of result.textStream) {
+            accumulated += delta;
+            controller.enqueue(ndjson({ type: 'text', value: delta }));
+          }
+          // Draining textStream above guarantees every tool call this turn has
+          // already run its `execute` — patches/cards/providers are complete.
+          const reply =
+            accumulated.trim() ||
+            (cards[0]?.body ??
+              `I heard you — tell me the neighbourhood and what you want done on this house, or call ${BUSINESS_NAP.phoneDisplay}.`);
+          const response: AssistantChatResponse = {
+            reply,
+            patch: mergePatches(patches) as Record<string, unknown>,
+            cards,
+            providers,
+            model: true,
+          };
+          controller.enqueue(ndjson({ type: 'done', ...response }));
+        } catch (err) {
+          console.error(
+            JSON.stringify({
+              event: 'assistant.chat.stream_failed',
+              error: err instanceof Error ? err.message : 'unknown',
+            }),
+          );
+          controller.enqueue(
+            ndjson({
+              type: 'error',
+              message: `Something interrupted that. Try again or call ${BUSINESS_NAP.phoneDisplay}.`,
+            }),
+          );
+        } finally {
+          controller.close();
+        }
+      },
+    });
 
-    const response: AssistantChatResponse = {
-      reply,
-      patch: mergePatches(patches) as Record<string, unknown>,
-      cards,
-      providers,
-      model: true,
-    };
-    return Response.json(response, {
-      headers: { 'Cache-Control': 'no-cache, no-store' },
+    return new Response(stream, {
+      headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache, no-store' },
     });
   } catch (err) {
     console.error(
