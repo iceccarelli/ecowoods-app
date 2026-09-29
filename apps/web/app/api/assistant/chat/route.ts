@@ -25,6 +25,8 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { auth } from '@/lib/auth';
+import { appendTurn } from '@/lib/assistant-workspace/conversation-store';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
 import {
@@ -145,6 +147,19 @@ export async function POST(req: Request) {
   if (messages.length === 0 || messages[messages.length - 1]!.role !== 'user') {
     return NextResponse.json({ error: 'Bad request' }, { status: 400 });
   }
+
+  // Reload-safe transcript (Gate 2, P0) — best-effort, never blocks or fails
+  // the turn. designId is the same MEAS-01 key the workspace snapshot
+  // already carries; userId is attached only when a real session exists.
+  const designId = body.data.workspace?.designId;
+  const session = await auth().catch(() => null);
+  const userId = session?.user?.id ?? null;
+  const lastUserRaw = body.data.messages[body.data.messages.length - 1]!;
+  const lastUserText =
+    typeof lastUserRaw.content === 'string'
+      ? lastUserRaw.content
+      : lastUserRaw.content.map((p) => p.text).join('\n');
+  void appendTurn({ designId, userId, role: 'user', content: lastUserText });
 
   const patches: WorkspacePatch[] = [];
   const cards: AssistantChatCard[] = [];
@@ -413,6 +428,14 @@ export async function POST(req: Request) {
             providers,
             model: true,
           };
+          void appendTurn({
+            designId,
+            userId,
+            role: 'assistant',
+            content: reply,
+            blocks: cards,
+            model: 'claude-sonnet-4-6',
+          });
           controller.enqueue(ndjson({ type: 'done', ...response }));
         } catch (err) {
           console.error(

@@ -25,6 +25,13 @@ import { RenovationAnalysisOffer } from './RenovationAnalysisOffer';
 import { AnswerBlock } from './AnswerBlock';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
 
+/** Shape returned by GET /api/assistant/conversation — matches StoredTurn (conversation-store.ts) minus attachments, not yet rendered client-side. */
+interface StoredTranscriptTurn {
+  role: 'user' | 'assistant';
+  content: string;
+  blocks?: AssistantChatCard[];
+}
+
 interface DisplayMessage {
   role: 'assistant' | 'user';
   text: string;
@@ -136,14 +143,41 @@ export function ConversationPane({
   onOpenProject?: () => void;
   onOpenEconomics?: () => void;
 }) {
-  const { state, patch } = useWorkspaceState();
+  const { state, patch, ready } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
+  const [historyRequested, setHistoryRequested] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /*
+   * Reload-safe transcript (Gate 2, P0): once the workspace has hydrated a
+   * real designId, fetch its stored turns exactly once and replace the
+   * (empty) in-memory history with them. A visitor who closes the tab and
+   * comes back sees the same conversation rather than a blank start
+   * screen — Project Decision State was already reload-safe; this closes
+   * the gap for the transcript itself.
+   */
+  useEffect(() => {
+    if (!ready || !state.designId || historyRequested) return;
+    setHistoryRequested(true);
+    fetch(`/api/assistant/conversation?designId=${encodeURIComponent(state.designId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { turns?: StoredTranscriptTurn[] } | null) => {
+        if (!data?.turns?.length) return;
+        setMessages(
+          data.turns.map((t) => ({
+            role: t.role,
+            text: t.content,
+            cards: Array.isArray(t.blocks) && t.blocks.length ? composeAnswerBlocks(t.blocks) : undefined,
+          })),
+        );
+      })
+      .catch(() => undefined);
+  }, [ready, state.designId, historyRequested]);
 
   /*
    * Returning from Stripe Checkout. The redirect itself proves nothing — the
