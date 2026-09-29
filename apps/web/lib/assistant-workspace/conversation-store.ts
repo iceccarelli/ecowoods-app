@@ -50,21 +50,45 @@ export interface StoredTurn {
 /** Most recent N turns, oldest first — matches the order /api/assistant/chat expects for `messages`. */
 const MAX_LOADED_TURNS = 60;
 
-export async function loadTranscript(designId: string | undefined): Promise<StoredTurn[]> {
+/**
+ * `designId` is deliberately NOT an access-control token elsewhere in this
+ * codebase (see design-id.ts: "it is not a secret... a label that two
+ * records can be joined on" — Floor Studio's own share links depend on it
+ * being freely shareable). Reading a transcript by bare designId inherits
+ * that same anonymous-first posture, which is correct for an anonymous
+ * conversation. It stops being correct the moment a conversation is linked
+ * to a real account: once `userId` is set, only a session authenticated as
+ * that same user may read it — a designId that leaked into a shared link,
+ * a referrer header, or a support screenshot must not become a way to read
+ * a signed-in homeowner's private transcript. `viewerUserId` is the
+ * caller's own session (`auth()`), never a second identity system.
+ *
+ * An unauthorized read returns the same empty result as "no conversation
+ * exists" — never a distinct denial — so probing a design id can't even
+ * learn whether it names someone else's linked conversation.
+ */
+export async function loadTranscript(designId: string | undefined, viewerUserId: string | null): Promise<StoredTurn[]> {
   if (!designId || !isDesignId(designId)) return [];
   try {
     const conversation = await db.assistantConversation.findUnique({
       where: { designId },
       select: {
+        userId: true,
         messages: {
-          orderBy: { createdAt: 'asc' },
+          // Newest first so `take` keeps the MOST RECENT MAX_LOADED_TURNS —
+          // taking from an ascending order instead would keep the OLDEST
+          // ones on a conversation that ever exceeds the cap, which is
+          // backwards for a transcript a visitor is resuming. Reversed
+          // below to restore chronological (oldest-first) display order.
+          orderBy: { createdAt: 'desc' },
           take: MAX_LOADED_TURNS,
           select: { role: true, content: true, blocks: true, attachments: true, model: true, createdAt: true },
         },
       },
     });
     if (!conversation) return [];
-    return conversation.messages.map((m) => ({
+    if (conversation.userId && conversation.userId !== viewerUserId) return [];
+    return conversation.messages.reverse().map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.content,
       blocks: Array.isArray(m.blocks) ? (m.blocks as unknown as AssistantChatCard[]) : undefined,

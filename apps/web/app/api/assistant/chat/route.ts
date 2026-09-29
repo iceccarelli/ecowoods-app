@@ -66,6 +66,15 @@ const FINISH_IDS = FINISH_OPTIONS.map((f) => f.id) as [string, ...string[]];
 const PATTERN_IDS = PATTERN_OPTIONS.map((p) => p.id) as [string, ...string[]];
 
 /**
+ * The one model this route calls. Named here rather than inlined twice
+ * (once for `streamText`, once for the persisted turn's `model` field) so
+ * the two can never drift — persisting a model id that isn't the one that
+ * actually ran would be exactly the invented execution metadata this
+ * surface must never write.
+ */
+const CHAT_MODEL_ID = 'claude-sonnet-4-6';
+
+/**
  * 20 turns/minute/IP, refilled continuously (token bucket, not a fixed
  * window). Backed by Postgres (see rate-limit-durable.ts) rather than an
  * in-memory Map: this route runs up to 8 model tool-call steps per request,
@@ -182,7 +191,7 @@ export async function POST(req: Request) {
 
   try {
     const result = streamText({
-      model: anthropic('claude-sonnet-4-6'),
+      model: anthropic(CHAT_MODEL_ID),
       system,
       messages,
       stopWhen: stepCountIs(8),
@@ -428,13 +437,19 @@ export async function POST(req: Request) {
             providers,
             model: true,
           };
+          // Only attribute the reply to the model when its text is genuinely
+          // model output. `reply` can fall back to a card's own fallback
+          // text or a static canned line (see above) when the model
+          // returned no text this turn — persisting CHAT_MODEL_ID against a
+          // canned string would be exactly the invented execution metadata
+          // this surface must never write.
           void appendTurn({
             designId,
             userId,
             role: 'assistant',
             content: reply,
             blocks: cards,
-            model: 'claude-sonnet-4-6',
+            model: accumulated.trim() ? CHAT_MODEL_ID : undefined,
           });
           controller.enqueue(ndjson({ type: 'done', ...response }));
         } catch (err) {
