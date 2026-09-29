@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: `${WORKSPACE_ASSISTANT.name} — home renovation costs and value`,
   description:
     'A renovation decision workspace: talk through whole-home work with Francisco Oller — which renovations move value, which ones only feel good, and what the work actually costs near your house. When hardwood is the next right job, Ecowoods can measure and bid; for other trades, you get sourced market ranges without anyone pretending we install them.',
-  alternates: { canonical: '/assistant' },
+  alternates: { canonical: '/assistant', types: { 'text/markdown': '/assistant.md' } },
   openGraph: {
     title: WORKSPACE_ASSISTANT.name,
     description:
