@@ -135,6 +135,8 @@ export async function chargeForAnalysis<T>(input: {
   credits: number;
   requestIdempotencyKey: string;
   contextSnapshot: unknown;
+  /** MEAS-01's join key, already validated by the caller (designIdOf) — stored as its own column, not re-derived from contextSnapshot, so this file never has to know that shape. */
+  designId?: string;
   compute: () => T;
 }): Promise<ChargeOutcome<T>> {
   if (!Number.isInteger(input.credits) || input.credits <= 0) {
@@ -167,6 +169,7 @@ export async function chargeForAnalysis<T>(input: {
             status: 'FAILED',
             creditsCharged: 0,
             contextSnapshot: input.contextSnapshot as Prisma.InputJsonValue,
+            designId: input.designId,
             failureReason: message,
             requestIdempotencyKey: input.requestIdempotencyKey,
           },
@@ -203,6 +206,7 @@ export async function chargeForAnalysis<T>(input: {
           status: 'COMPLETED',
           creditsCharged: input.credits,
           contextSnapshot: input.contextSnapshot as Prisma.InputJsonValue,
+          designId: input.designId,
           result: result as Prisma.InputJsonValue,
           requestIdempotencyKey: input.requestIdempotencyKey,
           completedAt: new Date(),

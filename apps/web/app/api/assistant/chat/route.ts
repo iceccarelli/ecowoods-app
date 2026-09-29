@@ -23,6 +23,7 @@ import { z } from 'zod';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
+import { checkDurableRateLimit } from '@/lib/rate-limit-durable';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
 import {
@@ -53,21 +54,17 @@ export const maxDuration = 30;
 const FINISH_IDS = FINISH_OPTIONS.map((f) => f.id) as [string, ...string[]];
 const PATTERN_IDS = PATTERN_OPTIONS.map((p) => p.id) as [string, ...string[]];
 
-const HITS = new Map<string, { n: number; t: number }>();
-function limited(ip: string) {
-  const now = Date.now();
-  const w = 60_000;
-  const max = 20;
-  if (HITS.size > 5_000) {
-    for (const [k, v] of HITS) if (now - v.t > w) HITS.delete(k);
-  }
-  const e = HITS.get(ip);
-  if (!e || now - e.t > w) {
-    HITS.set(ip, { n: 1, t: now });
-    return false;
-  }
-  e.n += 1;
-  return e.n > max;
+/**
+ * 20 turns/minute/IP, refilled continuously (token bucket, not a fixed
+ * window). Backed by Postgres (see rate-limit-durable.ts) rather than an
+ * in-memory Map: this route runs up to 8 model tool-call steps per request,
+ * so a flood spread across serverless instances — each with its own empty
+ * Map — was effectively unthrottled before this.
+ */
+const CHAT_RATE_LIMIT = { windowMs: 60_000, maxRequests: 20 };
+async function limited(ip: string): Promise<boolean> {
+  const { allowed } = await checkDurableRateLimit(`assistant-chat:${ip}`, CHAT_RATE_LIMIT);
+  return !allowed;
 }
 
 async function readBody(
@@ -120,7 +117,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Origin not allowed.' }, { status: 403 });
   }
   const ip = getClientIp(req);
-  if (limited(ip)) {
+  if (await limited(ip)) {
     return Response.json({ error: 'Too many messages, give it a moment.' }, { status: 429 });
   }
   if (!process.env.ANTHROPIC_API_KEY) {

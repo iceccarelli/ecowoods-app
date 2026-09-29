@@ -18,6 +18,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { isTrustedBrowserOrigin, checkRateLimit, getClientIp, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { designIdOf } from '@/lib/floor-studio/design-id';
 import { workspaceSnapshotSchema } from '@/lib/assistant-workspace/chat-schema';
 import { buildRenovationAnalysis, isEligibleForAnalysis } from '@/lib/assistant-workspace/renovation-analysis';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     credits: ANALYSIS_CREDIT_COST,
     requestIdempotencyKey,
     contextSnapshot: workspace,
+    designId: designIdOf(workspace.designId),
     compute: () => buildRenovationAnalysis(workspace),
   });
 

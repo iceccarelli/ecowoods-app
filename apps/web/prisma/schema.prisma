@@ -1315,6 +1315,13 @@ model RenovationAnalysis {
   /// already-paid-for analysis says it used.
   contextSnapshot Json @db.JsonB
 
+  /// The same MEAS-01 join key as QuoteRequest.designId / Project.designId /
+  /// FunnelEvent.designId — copied out of contextSnapshot at creation time so
+  /// it is queryable in SQL instead of buried in a JSONB blob. Nullable for
+  /// the same reason it is nullable everywhere else: a signed-in user can run
+  /// an analysis from a workspace that never minted (or lost) a design id.
+  designId String? @db.VarChar(16)
+
   /// The structured RenovationAnalysisResult (lib/assistant-workspace/
   /// renovation-analysis.ts). Null until COMPLETED.
   result Json? @db.JsonB
@@ -1332,5 +1339,26 @@ model RenovationAnalysis {
 
   @@index([userId])
   @@index([status])
+  @@index([designId])
+  @@schema("ecowoods")
+}
+
+/// A durable token bucket for the assistant chat route (POST
+/// /api/assistant/chat), which previously rate-limited on an in-memory
+/// `Map` — correct on a single long-lived process, meaningless on Vercel's
+/// serverless runtime where a flood is spread across many cold-started
+/// instances that never share that Map. One row per limiter key (the
+/// client IP, see getClientIp), refilled and consumed in a single atomic
+/// UPDATE...FROM statement (lib/rate-limit-durable.ts) so concurrent
+/// instances hitting the same key serialize on Postgres's row lock instead
+/// of racing each other. `key` is intentionally generic (not `ip`) so a
+/// future limiter (authenticated-user quotas, a second route) can reuse
+/// this table with a differently-namespaced key rather than adding another
+/// table for the same shape.
+model RateLimitBucket {
+  key       String   @id @db.VarChar(200)
+  tokens    Float
+  updatedAt DateTime @default(now()) @db.Timestamptz
+
   @@schema("ecowoods")
 }
