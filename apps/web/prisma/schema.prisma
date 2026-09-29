@@ -151,6 +151,7 @@ model User {
 
   creditWallet         CreditWallet?
   renovationAnalyses   RenovationAnalysis[]
+  assistantConversations AssistantConversation[]
 
   @@index([email])
   @@schema("ecowoods")
@@ -1360,5 +1361,72 @@ model RateLimitBucket {
   tokens    Float
   updatedAt DateTime @default(now()) @db.Timestamptz
 
+  /// Backfills a real index this schema was missing an annotation for —
+  /// see migration 20260929010000_add_rate_limit_bucket_cleanup_index,
+  /// which the hourly rate-limit-cleanup cron depends on. Declared here so
+  /// a future `prisma migrate dev` diff never proposes dropping it again.
+  @@index([updatedAt])
+  @@schema("ecowoods")
+}
+
+/// Ask Francisco's durable transcript — one row per design, the SAME MEAS-01
+/// join key as QuoteRequest.designId / Project.designId / FunnelEvent.designId
+/// / RenovationAnalysis.designId. Not a second project state store: Project
+/// Decision State (WorkspaceState) stays exactly where it already lived —
+/// client-side, in localStorage, keyed by designId
+/// (lib/assistant-workspace/persistence.ts). This table only makes the
+/// CONVERSATION reload-safe; the workspace snapshot it references is sent by
+/// the client on every turn as it always was.
+///
+/// Anonymous-first, like every other MEAS-01 row: userId is nullable because
+/// a visitor can talk to Francisco before ever signing in. When they do sign
+/// in later, the existing account linkage (POST /api/assistant/conversation)
+/// backfills userId onto the conversation the browser already holds a
+/// designId for — it does not mint a second identity system to do it.
+model AssistantConversation {
+  id       String  @id @default(uuid()) @db.Uuid
+  designId String  @unique @db.VarChar(16)
+  userId   String? @db.Uuid
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  messages AssistantMessage[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([userId])
+  @@schema("ecowoods")
+}
+
+/// One row per turn. `role` mirrors @ecowoods/shared/schemas' chatMessageSchema
+/// ('user' | 'assistant') rather than a Prisma enum, so the API layer never
+/// round-trips through a second vocabulary for the same two values.
+///
+/// `blocks` is the exact AssistantChatCard[] the client rendered for that
+/// turn (chat-schema.ts) — never a re-derivation, so replaying a saved
+/// transcript can never show a different set of cards than the visitor
+/// actually saw. `attachments` is the per-message attachment metadata (P1);
+/// null until that lands. Only user-visible content is stored — never a
+/// hidden chain-of-thought, never the raw tool-call arguments/results a step
+/// produced along the way.
+model AssistantMessage {
+  id             String                @id @default(uuid()) @db.Uuid
+  conversationId String                @db.Uuid
+  conversation   AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    String @db.VarChar(16)
+  content String @db.Text
+
+  blocks      Json? @db.JsonB
+  attachments Json? @db.JsonB
+
+  /// The model id that generated this turn's reply (assistant turns only) —
+  /// e.g. "claude-sonnet-4-6". Null for a user turn, and null for an
+  /// assistant turn that never reached the model (a keyword fallback).
+  model String? @db.VarChar(80)
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([conversationId, createdAt])
   @@schema("ecowoods")
 }
