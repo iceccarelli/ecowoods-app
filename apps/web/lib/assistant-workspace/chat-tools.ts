@@ -14,8 +14,10 @@ import { SERVICES } from '@/lib/seo-data';
 import { isWorkspaceNextAction, isWorkspaceObjective, isWorkspaceSellHorizon } from './state';
 import { isEligibleForAnalysis } from './renovation-analysis';
 import { ANALYSIS_CREDIT_COST } from './credits-config';
+import { retrieveEvidence, type RetrievalResult } from './retrieval';
+import type { CaseStudyEvidence } from './value-scenario';
 import type { WorkspacePatch } from './types';
-import type { AssistantChatCard, ProviderOutcome, WorkspaceSnapshot } from './chat-schema';
+import type { AssistantChatCard, EvidenceStrength, NextActionKind, ProviderOutcome, WorkspaceSnapshot } from './chat-schema';
 
 const FINISH_IDS = new Set(FINISH_OPTIONS.map((f) => f.id));
 const PATTERN_IDS = new Set(PATTERN_OPTIONS.map((p) => p.id));
@@ -77,6 +79,11 @@ export function executeGetEcowoodsBand(input: EcowoodsBandInput) {
       `CAD for ${r.squareFeet} sq ft` +
       (r.species ? ` (${r.species})` : '') +
       `. Needs an in-home measure to finalize.`,
+    minCad: r.estimatedLowCad,
+    maxCad: r.estimatedHighCad,
+    currency: 'CAD',
+    source: 'published_band',
+    scope: `${r.squareFeet.toLocaleString('en-CA')} sq ft${r.species ? ` · ${r.species}` : ''}`,
   };
   return {
     ok: true as const,
@@ -359,6 +366,157 @@ export function executeProposeRenovationAnalysis(workspace: WorkspaceSnapshot | 
     card,
     provider: { name: 'propose_renovation_analysis', status: 'ok' as const },
   };
+}
+
+/**
+ * Deterministic — built server-side from Project Decision State on every
+ * turn that has real project shape, never left to the model to remember to
+ * ask for. This is the fix for "project facts get lost in prose": the
+ * workspace snapshot the client already sends every request IS the source
+ * of truth, so there is nothing for a tool to invent here.
+ */
+export function buildProjectSnapshotBlock(workspace: WorkspaceSnapshot | undefined): AssistantChatCard | null {
+  if (!workspace) return null;
+  const hasContent = Boolean(
+    workspace.objective ||
+      workspace.sellHorizon ||
+      workspace.rooms?.length ||
+      workspace.selectedServiceSlugs?.length ||
+      workspace.targetFloor?.productId ||
+      workspace.stairs,
+  );
+  if (!hasContent) return null;
+
+  const squareFeet = workspace.rooms?.reduce((sum, r) => sum + (r.squareFeet ?? 0), 0) || undefined;
+  const targetFloor = workspace.targetFloor?.productId
+    ? FLOOR_PRODUCTS.find((p) => p.id === workspace.targetFloor!.productId)?.name
+    : undefined;
+  const selectedServices = workspace.selectedServiceSlugs?.length
+    ? (workspace.selectedServiceSlugs
+        .map((slug) => SERVICES.find((s) => s.slug === slug)?.name)
+        .filter((n): n is string => Boolean(n)))
+    : undefined;
+
+  return {
+    type: 'project_snapshot',
+    title: 'This project so far',
+    objective: workspace.objective ?? undefined,
+    sellHorizon: workspace.sellHorizon ?? undefined,
+    squareFeet,
+    rooms: workspace.rooms?.map((r) => r.label),
+    stairs: workspace.stairs,
+    selectedServices: selectedServices?.length ? selectedServices : undefined,
+    targetFloor,
+    designId: workspace.designId,
+  };
+}
+
+/**
+ * Deterministic retrieval (lib/assistant-workspace/retrieval.ts) over
+ * guides/papers/Framework/case-study evidence — the model chooses WHEN to
+ * ask and what topic string to search with, never what the sources say.
+ * `casePool` is loaded once per request by the chat route from the exact
+ * same loader /assistant's Server Component already uses (see
+ * value-scenario-evidence.ts) — never a second evidence read path.
+ */
+export function executeRetrieveEvidence(topic: string, casePool: readonly CaseStudyEvidence[]) {
+  const results: RetrievalResult[] = retrieveEvidence(topic, casePool);
+  if (!results.length) {
+    return {
+      found: 0,
+      results: [] as RetrievalResult[],
+      note: 'No matching guide, paper, Framework criterion or case study for this topic. Say plainly that there is no sourced evidence for it rather than inventing one.',
+      cards: [] as AssistantChatCard[],
+      provider: { name: 'retrieve_evidence', status: 'ok' as const },
+    };
+  }
+  const STRENGTH: Record<RetrievalResult['evidenceClass'], EvidenceStrength> = {
+    guide: 'strong',
+    paper: 'strong',
+    framework: 'strong',
+    case_study: 'moderate',
+    canonical_ecowoods: 'strong',
+  };
+  const cards: AssistantChatCard[] = results.map((r) => ({
+    type: 'evidence',
+    title: r.title,
+    sourceType: r.entityType,
+    href: `https://ecowoods.ca${r.canonicalPath}`,
+    whyItMatters: r.summary,
+    strength: STRENGTH[r.evidenceClass],
+  }));
+  return {
+    found: results.length,
+    results,
+    note: 'Cite at most one or two of these by name in your reply; do not list every result.',
+    cards,
+    provider: { name: 'retrieve_evidence', status: 'ok' as const },
+  };
+}
+
+export function executeProposeDecisionSummary(input: { situation: string; whatMatters: string[]; firstStep: string }) {
+  const card: AssistantChatCard = {
+    type: 'decision_summary',
+    title: 'What I think is happening',
+    situation: input.situation.slice(0, 400),
+    whatMatters: input.whatMatters.slice(0, 5).map((s) => s.slice(0, 160)),
+    firstStep: input.firstStep.slice(0, 200),
+  };
+  return { ok: true as const, card, provider: { name: 'propose_decision_summary', status: 'ok' as const } satisfies ProviderOutcome };
+}
+
+export function executeProposeSequence(input: { steps: { label: string; rationale?: string }[] }) {
+  const steps = input.steps
+    .slice(0, 6)
+    .map((s) => ({ label: s.label.slice(0, 120), rationale: s.rationale?.slice(0, 200) }));
+  const card: AssistantChatCard = { type: 'sequence', title: 'Suggested sequence', steps };
+  return { ok: true as const, card, provider: { name: 'propose_sequence', status: 'ok' as const } satisfies ProviderOutcome };
+}
+
+export function executeFlagRisk(input: { issue: string; impact: string; unknown?: string; resolvedBy?: string }) {
+  const card: AssistantChatCard = {
+    type: 'risk',
+    title: input.issue.slice(0, 120),
+    issue: input.issue.slice(0, 200),
+    impact: input.impact.slice(0, 200),
+    unknown: input.unknown?.slice(0, 200),
+    resolvedBy: input.resolvedBy?.slice(0, 200),
+  };
+  return { ok: true as const, card, provider: { name: 'flag_risk', status: 'ok' as const } satisfies ProviderOutcome };
+}
+
+const NEXT_ACTION_HREF: Record<NextActionKind, string | undefined> = {
+  measure: '/estimate',
+  estimate: '/estimate',
+  quote: '/estimate',
+  floor_studio: '/floor-studio',
+  quote_check: '/quote-check',
+  document_upload: '/quote-check',
+  external_trade_followup: undefined,
+};
+const NEXT_ACTION_KINDS = new Set<NextActionKind>([
+  'measure', 'estimate', 'quote', 'floor_studio', 'quote_check', 'document_upload', 'external_trade_followup',
+]);
+
+/**
+ * Distinct from propose_conversion: that tool sets WorkspacePatch.nextAction
+ * (measure/estimate/quote only) for Ecowoods-executable work, gated by the
+ * ConversionPanel confirm step. This tool never touches WorkspacePatch — it
+ * only surfaces a card pointing at a real destination (including Floor
+ * Studio, Quote Check, or "this is another trade's job") for the broader
+ * set of next moves a whole-home conversation produces.
+ */
+export function executeSuggestNextAction(input: { action: string; body: string }) {
+  const action = NEXT_ACTION_KINDS.has(input.action as NextActionKind) ? (input.action as NextActionKind) : 'measure';
+  const path = NEXT_ACTION_HREF[action];
+  const card: AssistantChatCard = {
+    type: 'next_action',
+    title: 'Next step',
+    action,
+    body: input.body.slice(0, 200),
+    href: path ? `https://ecowoods.ca${path}` : undefined,
+  };
+  return { ok: true as const, card, provider: { name: 'suggest_next_action', status: 'ok' as const } satisfies ProviderOutcome };
 }
 
 /** Merge successive WorkspacePatch objects (later wins on scalars; floor prefs merge). */
