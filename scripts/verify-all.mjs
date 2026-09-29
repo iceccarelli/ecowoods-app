@@ -57,6 +57,7 @@ const SKIP = new Map([
   ['verify:live', 'hits the live site over the network; run it after a deploy, not before'],
   ['verify:live-images', 'hits the live site over the network'],
   ['verify:live-routes', 'fetches every route from the live host; run it after a deploy — it is the check that catches a deployment serving code you did not build'],
+  ['verify:live-deploy', 'hits the live site over the network; run it after a deploy — it is the check that catches production serving the wrong commit'],
   ['seo:crawl', 'crawls the live site over the network'],
   ['seo:consistency', 'composite of guards this runner already runs individually'],
   ['seo:links', 'same script as verify:links'],
