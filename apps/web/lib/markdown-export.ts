@@ -88,6 +88,9 @@ import { PRICE_PROMISE } from '@/lib/pricing';
 import { NEW_INSTALL, formatBand } from '@/content/constants/pricing';
 import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { BOARD_WIDTHS, FLOOR_PRODUCTS } from '@/lib/floor-studio/catalog';
+import { WORKSPACE_ASSISTANT, WORKSPACE_GREETING } from '@/lib/assistant-workspace/identity';
+import { NON_FLOOR_TRADES } from '@/lib/assistant-workspace/chat-tools';
+import { SCREEN_RECOAT, FULL_SAND_FINISH } from '@/content/constants/pricing';
 import { FEELS } from '@/lib/floor-studio/match';
 import { CLAIMS } from '@/content/claims';
 import { buildPrices, buildActions } from '@/lib/registry/registry';
@@ -1262,6 +1265,113 @@ export const floorStudioToMarkdown = (): string => {
     '',
   ];
   out.push(...provenance(canonical, [`- Structured actions: ${abs('/api/v1/actions')}`]));
+  return out.join('\n');
+};
+
+/**
+ * /assistant.md — Ask Francisco's machine edition.
+ *
+ * The HTML page is a streamed conversation: there is no DOM a crawler with
+ * limited or no JS execution can read to learn what the workspace is, what
+ * it can retrieve, or where its commercial authority actually ends. This
+ * states that boundary in the same terms lib/assistant-workspace/identity.ts
+ * and system-prompt.ts already enforce at runtime — never a second copy of
+ * the rule, only a second projection of it.
+ *
+ * Every "Ask Francisco" occurrence below comes from WORKSPACE_ASSISTANT.name,
+ * never typed as a literal — scripts/verify-assistant.mjs polices exactly
+ * that discipline for every other surface.
+ */
+export const assistantToMarkdown = (): string => {
+  const canonical = abs('/assistant');
+  const executes = SERVICES.map((s) => `- **${s.name}** — ${s.blurb}`);
+  /* NON_FLOOR_TRADES carries both 'roof' and 'roofing' so the keyword matcher
+     catches either word in a homeowner's message — display them once. */
+  const advisesOnly = [...new Set(NON_FLOOR_TRADES.map((t) => (t === 'roofing' ? 'roof' : t)))]
+    .map((t) => (t === 'hvac' ? 'HVAC' : t[0]!.toUpperCase() + t.slice(1)))
+    .join(', ');
+  const out: string[] = [
+    `# ${WORKSPACE_ASSISTANT.name} — Ecowoods renovation intelligence`,
+    '',
+    `> A renovation decision workspace, not a general chatbot. It reasons about the whole home,`,
+    `> retrieves canonical Ecowoods information — published pricing, service scope, evidence — and`,
+    `> hands a conversation off to the real Ecowoods systems (Floor Studio, Quote Check, the estimate`,
+    `> and quote path) at the point where a decision becomes an action.`,
+    '',
+    identitySentence(),
+    '',
+    `"${WORKSPACE_GREETING}"`,
+    '',
+    '## What Ecowoods executes',
+    '',
+    'Published services only. If it is not in this list, Ecowoods does not perform the work:',
+    '',
+    ...executes,
+    '',
+    `Published bands: ${link('Pricing', '/pricing')} (${md('/pricing')}) — ${formatBand(SCREEN_RECOAT)} to`,
+    `refinish, ${formatBand(FULL_SAND_FINISH)} for a full sand and finish, ${formatBand(NEW_INSTALL)} for a`,
+    `new installation. ${PRICE_PROMISE}`,
+    '',
+    `${WORKSPACE_ASSISTANT.name} calls the same pricing function the site's own configurator and`,
+    'estimate form call — never a second number for the same question.',
+    '',
+    '## What it advises on without executing',
+    '',
+    `A homeowner asking about a whole-home renovation is not asking only about floors.`,
+    `${WORKSPACE_ASSISTANT.name} can reason about sequencing and tradeoffs involving other trades —`,
+    `${advisesOnly}, and general construction — using sourced market context where a licensed`,
+    'adapter for it exists, and saying plainly when one does not. It never claims Ecowoods installs',
+    'any of them. That boundary is enforced in code, not just in copy: the tools available to the',
+    'model can attach flooring/stair facts to a project and propose a measure, estimate or quote —',
+    'there is no tool that books work in another trade.',
+    '',
+    '## What it can calculate',
+    '',
+    '- Published installed-cost ranges for hardwood/stair work, from the same function as the',
+    '  configurator and the estimate form.',
+    '- A visual configuration of a real, buyable floor rendered into a room, via Floor Studio.',
+    '- A structured Renovation Decision Analysis (a paid, credit-metered artifact) — project facts,',
+    '  evidence, options, sequence and open questions, computed by a deterministic engine, never a',
+    '  free-text model guess dressed up as a report.',
+    '',
+    '## What it cannot know',
+    '',
+    'It never fabricates:',
+    '',
+    '- exact measurements from a description or a photograph',
+    '- property facts, appraisals or a specific house’s value',
+    '- a contractor quote, or the content of one it has not been shown',
+    '- return-on-investment or a guaranteed resale outcome',
+    '- certifications, availability or scheduling it has not been given',
+    '- market data for a trade with no licensed adapter — it says so instead of guessing',
+    '',
+    '## Where it routes',
+    '',
+    `- ${link('Floor Studio', '/floor-studio')} (${md('/floor-studio')}) — see a real configuration in a room`,
+    `- ${link('Design your floor', '/design')} (${md('/design')}) — specify species, finish, pattern and width directly`,
+    `- ${link('Quote Check', '/quote-check')} — compare a contractor quote against what a hardwood quote should specify`,
+    `- ${link('Request an estimate', '/estimate')} (${md('/estimate')}) — a fixed written price after a free in-home measure`,
+    `- ${link('The Well-Installed Framework', '/framework')} — the ${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}, ${criterionCount()} criteria a hardwood job is checked against`,
+    `- ${link('Reviews', '/reviews')} (${md('/reviews')}) — cited, sourced customer evidence`,
+    `- ${link('Guides', '/guides')} and ${link('technical papers', '/papers')} — the evidence behind the guidance`,
+    `- ${link('Case studies', '/case-studies')} — real, photographed jobs`,
+    '',
+    '## Service area',
+    '',
+    `${PUBLISHED_PARTITION.total} published municipalities across ${BUSINESS_NAP.region} and the GTA —`,
+    `see ${link('service areas', '/service-areas')} (${md('/service-areas')}) for the current, canonical list.`,
+    'This number is generated from the same geography registry every other surface on this site',
+    'reads; it is never typed separately here.',
+    '',
+    '## How it persists across the site',
+    '',
+    `A visit is identified by a Design ID — an opaque join key, never a person or a device — minted`,
+    'the moment a project takes shape and carried into Floor Studio, a saved analysis, and a',
+    'submitted measure/estimate/quote request, so a homeowner is never asked to re-describe a',
+    'project they already started.',
+    '',
+  ];
+  out.push(...provenance(canonical, [`- Corner assistant (a separate product): ${abs('/')}`]));
   return out.join('\n');
 };
 

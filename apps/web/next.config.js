@@ -37,6 +37,13 @@ const MARKDOWN_TWINS = [
   ['/estimate', '/estimate.md'],
   ['/floor-studio', '/floor-studio.md'],
   ['/design', '/design.md'],
+  /* Ask Francisco's own machine edition. The interactive half is a streamed
+     conversation — exactly the kind of content a crawler with no JS
+     execution, or a limited one, cannot read at all. The twin states what
+     the workspace is, what it can retrieve and calculate, what it refuses
+     to invent, and the canonical destinations it hands a conversation off
+     to — the same boundary already enforced in the workspace itself. */
+  ['/assistant', '/assistant.md'],
   ['/contact', '/contact.md'],
   ['/papers/:slug([a-z0-9-]+)', '/papers/:slug.md'],
   ['/guides/:slug([a-z0-9-]+)', '/guides/:slug.md'],
@@ -177,6 +184,7 @@ const nextConfig = {
          advertised it. /design.md is new here and lands with its rewrite. */
       { source: '/floor-studio.md', destination: '/md/floor-studio' },
       { source: '/design.md', destination: '/md/design' },
+      { source: '/assistant.md', destination: '/md/assistant' },
       { source: '/pricing.md', destination: '/md/pricing' },
       { source: '/reviews.md', destination: '/md/reviews' },
       { source: '/estimate.md', destination: '/md/estimate' },
