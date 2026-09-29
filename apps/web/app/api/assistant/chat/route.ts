@@ -29,24 +29,32 @@ import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
 import {
   assistantChatRequestSchema,
+  cardFallbackText,
   CHAT_MAX_BODY_BYTES,
   type AssistantChatCard,
   type AssistantChatResponse,
   type ProviderOutcome,
 } from '@/lib/assistant-workspace/chat-schema';
 import {
+  buildProjectSnapshotBlock,
   catalogHintsBlock,
   executeAttachToProject,
   executeFindOnSite,
+  executeFlagRisk,
   executeGetEcowoodsBand,
   executeGetHouseProfile,
   executeGetMarketCost,
   executeGetWantVsValue,
   executeProposeConversion,
+  executeProposeDecisionSummary,
   executeProposeRenovationAnalysis,
+  executeProposeSequence,
+  executeRetrieveEvidence,
+  executeSuggestNextAction,
   mergePatches,
   workspaceSnapshotBlock,
 } from '@/lib/assistant-workspace/chat-tools';
+import { loadCaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario-evidence';
 import type { WorkspacePatch } from '@/lib/assistant-workspace/types';
 
 export const runtime = 'nodejs';
@@ -141,6 +149,12 @@ export async function POST(req: Request) {
   const patches: WorkspacePatch[] = [];
   const cards: AssistantChatCard[] = [];
   const providers: ProviderOutcome[] = [];
+
+  // Same loader /assistant's Server Component already uses for value
+  // scenarios (value-scenario-evidence.ts) — never a second evidence read
+  // path. Evidence retrieval is supplementary: a filesystem hiccup here
+  // must not break the conversation, so failure degrades to an empty pool.
+  const caseStudyPool = await loadCaseStudyEvidence().catch(() => []);
 
   const system =
     ASK_FRANCISCO_SYSTEM_PROMPT +
@@ -287,6 +301,80 @@ export async function POST(req: Request) {
             return out;
           },
         }),
+
+        retrieve_evidence: tool({
+          description:
+            'Look up real Ecowoods evidence for a topic — guides, technical papers, Well-Installed Framework criteria, and case studies. Returns at most a few sourced results with a canonical path each. Use this before making a claim that a guide/paper/case study would materially strengthen (e.g. "cupping", "refinish vs replace", "herringbone pattern", "moisture"). Returns found: 0 when nothing matches — say plainly there is no sourced evidence rather than inventing one.',
+          inputSchema: z.object({ topic: z.string().min(2).max(120) }),
+          execute: async ({ topic }) => {
+            const out = executeRetrieveEvidence(topic, caseStudyPool);
+            cards.push(...out.cards);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        propose_decision_summary: tool({
+          description:
+            'State your read of the situation as a structured summary: the situation in one or two sentences, up to five short bullet points of what matters most, and the single first step. Call this once, after you have enough of the picture (objective plus at least one more fact) — never on the very first turn with nothing attached yet.',
+          inputSchema: z.object({
+            situation: z.string().min(10).max(400),
+            whatMatters: z.array(z.string().min(3).max(160)).min(1).max(5),
+            firstStep: z.string().min(5).max(200),
+          }),
+          execute: async (input) => {
+            const out = executeProposeDecisionSummary(input);
+            cards.push(out.card);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        propose_sequence: tool({
+          description:
+            'Lay out an ordered sequence of work with a one-line reason per step, for whole-home sequencing questions ("what should I do first"). Up to 6 steps. Use real trade/service names, never invented ones.',
+          inputSchema: z.object({
+            steps: z.array(z.object({ label: z.string().min(2).max(120), rationale: z.string().max(200).optional() })).min(2).max(6),
+          }),
+          execute: async (input) => {
+            const out = executeProposeSequence(input);
+            cards.push(out.card);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        flag_risk: tool({
+          description:
+            'Name one real risk or unknown that affects the decision — e.g. "subfloor condition not yet inspected", "sale timeline could compress the schedule". State the issue, its impact, what specifically is unknown, and what would resolve it (usually the free in-home measure). Do not invent a risk that is not actually implied by what the homeowner said.',
+          inputSchema: z.object({
+            issue: z.string().min(5).max(200),
+            impact: z.string().min(5).max(200),
+            unknown: z.string().max(200).optional(),
+            resolvedBy: z.string().max(200).optional(),
+          }),
+          execute: async (input) => {
+            const out = executeFlagRisk(input);
+            cards.push(out.card);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
+
+        suggest_next_action: tool({
+          description:
+            'Point at ONE concrete next destination beyond propose_conversion\'s measure/estimate/quote — Floor Studio for visualization, Quote Check for reviewing a contractor quote, or "this is a job for another trade" for a non-floor scope. Does not book anything and does not touch Project Decision State; it only surfaces a destination card.',
+          inputSchema: z.object({
+            action: z.enum(['measure', 'estimate', 'quote', 'floor_studio', 'quote_check', 'document_upload', 'external_trade_followup']),
+            body: z.string().min(5).max(200),
+          }),
+          execute: async (input) => {
+            const out = executeSuggestNextAction(input);
+            cards.push(out.card);
+            providers.push(out.provider);
+            return out;
+          },
+        }),
       },
     });
 
@@ -300,13 +388,27 @@ export async function POST(req: Request) {
           }
           // Draining textStream above guarantees every tool call this turn has
           // already run its `execute` — patches/cards/providers are complete.
+          const mergedPatch = mergePatches(patches);
+
           const reply =
             accumulated.trim() ||
-            (cards[0]?.body ??
-              `I heard you — tell me the neighbourhood and what you want done on this house, or call ${BUSINESS_NAP.phoneDisplay}.`);
+            (cards[0] && cardFallbackText(cards[0])) ||
+            `I heard you — tell me the neighbourhood and what you want done on this house, or call ${BUSINESS_NAP.phoneDisplay}.`;
+
+          // Deterministic, not model-dependent: whenever this turn's patch (or
+          // the incoming snapshot) gives the project real shape, the fact
+          // block leads the answer stack — never left to the model to
+          // remember to call a tool for something the client already sent.
+          const snapshotForBlock = {
+            ...(body.data.workspace ?? {}),
+            ...(mergedPatch as Record<string, unknown>),
+          } as typeof body.data.workspace;
+          const projectSnapshot = buildProjectSnapshotBlock(snapshotForBlock);
+          if (projectSnapshot) cards.unshift(projectSnapshot);
+
           const response: AssistantChatResponse = {
             reply,
-            patch: mergePatches(patches) as Record<string, unknown>,
+            patch: mergedPatch as Record<string, unknown>,
             cards,
             providers,
             model: true,

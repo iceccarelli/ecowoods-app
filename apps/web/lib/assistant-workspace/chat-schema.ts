@@ -69,13 +69,241 @@ export interface ProviderOutcome {
   note?: string;
 }
 
-export interface AssistantChatCard {
-  type: 'ecowoods_band' | 'pending_provider' | 'site_link' | 'conversion_proposed' | 'renovation_analysis_offer';
+/**
+ * The five original card types (unchanged, still the exact shape
+ * chat-tools.test.ts and ConversationPane already depend on) plus the
+ * structured answer-stack blocks below. This stays ONE discriminated union,
+ * never a second response system: everything the workspace can show a
+ * homeowner is a member of `AssistantChatCard['type']`, and every renderer
+ * switches on that one field.
+ *
+ * The new block types exist because a real renovation answer is not one
+ * paragraph plus at most two generic cards (the `.slice(0, 2)` this
+ * replaced) — it is a small, intent-driven stack: a direct answer, the
+ * project facts that back it, a cost or scenario view when one applies,
+ * the evidence behind it, what's still unknown, and one next action.
+ * ConversationPane composes and caps that stack; this file only defines
+ * what each block IS.
+ *
+ * Every block is either:
+ *   - a deterministic server-side builder reading canonical data directly
+ *     (project_snapshot from Project Decision State, cost ranges from
+ *     bandForWork/estimateInstalledRangeCad), or
+ *   - a typed tool the model calls with STRUCTURED arguments (decision
+ *     summary text, sequence steps, a flagged risk) — the model supplies
+ *     content, the application still owns the shape. There is no tool that
+ *     lets the model hand back arbitrary card JSON.
+ */
+export type EvidenceStrength = 'strong' | 'moderate' | 'weak';
+export type CostSource = 'published_band' | 'estimate' | 'unavailable';
+export type NextActionKind =
+  | 'measure'
+  | 'estimate'
+  | 'quote'
+  | 'floor_studio'
+  | 'quote_check'
+  | 'document_upload'
+  | 'external_trade_followup';
+/** Mirrors ProviderStatus but scoped to a single evidence/data block's own availability, not a whole tool call. */
+export type BlockAvailability = 'ok' | 'pending_key' | 'unavailable';
+
+export interface EcowoodsBandCard {
+  type: 'ecowoods_band';
   title: string;
   body: string;
   href?: string;
-  /** renovation_analysis_offer only — the exact credit cost, never omitted so the UI never has to guess a price. */
+  /** Structured cost-range fields alongside the original prose `body` — additive, never replacing it. */
+  minCad?: number;
+  maxCad?: number;
+  currency?: 'CAD' | 'USD';
+  source?: CostSource;
+  scope?: string;
+}
+
+export interface PendingProviderCard {
+  type: 'pending_provider';
+  title: string;
+  body: string;
+  href?: string;
+}
+
+export interface SiteLinkCard {
+  type: 'site_link';
+  title: string;
+  body: string;
+  href?: string;
+}
+
+export interface ConversionProposedCard {
+  type: 'conversion_proposed';
+  title: string;
+  body: string;
+  href?: string;
+}
+
+export interface RenovationAnalysisOfferCard {
+  type: 'renovation_analysis_offer';
+  title: string;
+  body: string;
+  href?: string;
+  /** The exact credit cost, never omitted so the UI never has to guess a price. */
   creditsCost?: number;
+}
+
+/** "Here's what I think is happening, and what to do first" — one per turn, at most. */
+export interface DecisionSummaryBlock {
+  type: 'decision_summary';
+  title: string;
+  situation: string;
+  whatMatters: string[];
+  firstStep: string;
+}
+
+/** Project Decision State, rendered as a fact block instead of left implicit — built server-side, never by the model. */
+export interface ProjectSnapshotBlock {
+  type: 'project_snapshot';
+  title: string;
+  objective?: string;
+  sellHorizon?: string;
+  squareFeet?: number;
+  rooms?: string[];
+  stairs?: boolean;
+  selectedServices?: string[];
+  targetFloor?: string;
+  designId?: string;
+}
+
+/** A comparison of named options — e.g. refinish vs. replace — never the same fact repeated as prose + card. */
+export interface ScenarioComparisonBlock {
+  type: 'scenario_comparison';
+  title: string;
+  scenarios: {
+    label: string;
+    minCad?: number;
+    maxCad?: number;
+    currency?: 'CAD' | 'USD';
+    assumptions: string[];
+  }[];
+}
+
+/** A cited source — guide, paper, Framework criterion or case study — never a bare claim with no path. */
+export interface EvidenceBlock {
+  type: 'evidence';
+  title: string;
+  sourceType: 'guide' | 'paper' | 'framework' | 'case_study' | 'review';
+  href?: string;
+  whyItMatters: string;
+  strength: EvidenceStrength;
+}
+
+/** A named unknown or risk, and what would resolve it — "inspection needed" is a valid, complete answer. */
+export interface RiskBlock {
+  type: 'risk';
+  title: string;
+  issue: string;
+  impact: string;
+  unknown?: string;
+  resolvedBy?: string;
+}
+
+/** Ordered work with a reason per step — whole-home sequencing, not just floor scope. */
+export interface SequenceBlock {
+  type: 'sequence';
+  title: string;
+  steps: { label: string; rationale?: string }[];
+}
+
+/** Property facts the workspace was actually given/sourced — never a fabricated AVM. Absence is a valid state. */
+export interface PropertyContextBlock {
+  type: 'property_context';
+  title: string;
+  status: BlockAvailability;
+  source?: string;
+  freshness?: string;
+  confidence?: string;
+  body: string;
+}
+
+/** Market cost context for a non-floor trade — status-first, so "no licensed source yet" reads as structured, not as a dead end. */
+export interface MarketContextBlock {
+  type: 'market_context';
+  title: string;
+  status: BlockAvailability;
+  source?: string;
+  geography?: string;
+  asOf?: string;
+  body: string;
+}
+
+/** One concrete next move, tied to a real Ecowoods destination — never a fake booking confirmation. */
+export interface NextActionBlock {
+  type: 'next_action';
+  title: string;
+  action: NextActionKind;
+  body: string;
+  href?: string;
+}
+
+/** A pointer to a REAL saved RenovationAnalysis row — the paid artifact, rendered as itself, never re-described in prose. */
+export interface AnalysisResultBlock {
+  type: 'analysis_result';
+  title: string;
+  analysisId: string;
+  href: string;
+  body: string;
+}
+
+export type AssistantChatCard =
+  | EcowoodsBandCard
+  | PendingProviderCard
+  | SiteLinkCard
+  | ConversionProposedCard
+  | RenovationAnalysisOfferCard
+  | DecisionSummaryBlock
+  | ProjectSnapshotBlock
+  | ScenarioComparisonBlock
+  | EvidenceBlock
+  | RiskBlock
+  | SequenceBlock
+  | PropertyContextBlock
+  | MarketContextBlock
+  | NextActionBlock
+  | AnalysisResultBlock;
+
+/**
+ * A one-line fallback string for any card, used only when the model
+ * produced no reply text of its own (route.ts) — never rendered instead of
+ * the card itself. Every block type gets a sentence here; the switch is
+ * exhaustive so a new block type is a compile error until it's added.
+ */
+export function cardFallbackText(card: AssistantChatCard): string {
+  switch (card.type) {
+    case 'ecowoods_band':
+    case 'pending_provider':
+    case 'site_link':
+    case 'conversion_proposed':
+    case 'renovation_analysis_offer':
+      return card.body;
+    case 'decision_summary':
+      return card.situation;
+    case 'project_snapshot':
+      return card.title;
+    case 'scenario_comparison':
+      return card.title;
+    case 'evidence':
+      return card.whyItMatters;
+    case 'risk':
+      return card.issue;
+    case 'sequence':
+      return card.title;
+    case 'property_context':
+    case 'market_context':
+      return card.body;
+    case 'next_action':
+      return card.body;
+    case 'analysis_result':
+      return card.body;
+  }
 }
 
 export interface AssistantChatResponse {

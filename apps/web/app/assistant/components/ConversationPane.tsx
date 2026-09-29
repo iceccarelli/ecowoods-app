@@ -14,6 +14,7 @@ import { selectionIncompatibilities } from '@/lib/assistant-workspace/recommenda
 import { projectRangeForState } from '@/lib/assistant-workspace/economics';
 import { buildValueScenario, type CaseStudyEvidence } from '@/lib/assistant-workspace/value-scenario';
 import { computeEarnedCatalog, type EarnedCatalog } from '@/lib/assistant-workspace/earned-catalog';
+import { composeAnswerBlocks } from '@/lib/assistant-workspace/answer-composition';
 import type { AssistantChatCard, AssistantChatResponse } from '@/lib/assistant-workspace/chat-schema';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 import { useWorkspaceState } from './WorkspaceStateProvider';
@@ -21,6 +22,7 @@ import { ProductCard } from './ProductCard';
 import { ServiceCard } from './ServiceCard';
 import { ConversionPanel } from './ConversionPanel';
 import { RenovationAnalysisOffer } from './RenovationAnalysisOffer';
+import { AnswerBlock } from './AnswerBlock';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
 
 interface DisplayMessage {
@@ -40,25 +42,6 @@ interface DisplayMessage {
   failed?: boolean;
   /** True while this message's text is still arriving from the NDJSON stream — shows the typing state (empty text) or live-growing text, and the Stop action. */
   streaming?: boolean;
-}
-
-/**
- * The link CTA reads as the homeowner's goal, not the implementation
- * ("Open"). Directive rule 22 — "Add to project" (and a generic "Open") are
- * implementation actions; a person thinks in terms of see/understand/book.
- */
-function cardLinkLabel(type: AssistantChatCard['type']): string {
-  switch (type) {
-    case 'site_link':
-      return 'See this page';
-    case 'conversion_proposed':
-      return 'Review in Next step';
-    case 'pending_provider':
-      return 'Learn what is available now';
-    case 'ecowoods_band':
-    default:
-      return 'See the published band';
-  }
 }
 
 /** Presentation-only: mobile keeps the composer placeholder short, per spec. */
@@ -374,7 +357,7 @@ export function ConversationPane({
       updateAssistant({
         role: 'assistant',
         text: final.reply.trim() ? final.reply.trim() : keywordFallback(trimmed).text,
-        cards: Array.isArray(final.cards) ? final.cards.slice(0, 2) : undefined,
+        cards: Array.isArray(final.cards) ? composeAnswerBlocks(final.cards) : undefined,
         earnedCatalog,
       });
     } catch (err) {
@@ -464,26 +447,19 @@ export function ConversationPane({
                     </button>
                   )}
                   {m.cards && m.cards.length > 0 && (
-                    <ul className="aha-inline-cards">
-                      {m.cards.map((c, j) =>
-                        c.type === 'renovation_analysis_offer' ? (
-                          <RenovationAnalysisOffer
-                            key={j}
-                            creditsCost={c.creditsCost ?? ANALYSIS_CREDIT_COST}
-                            workspaceSnapshot={snapshotFromState(state)}
-                          />
-                        ) : (
-                          <li key={j} className="aha-inline-card" data-card-type={c.type}>
-                            <p className="aha-inline-card-title">{c.title}</p>
-                            <p className="aha-inline-card-body">{c.body}</p>
-                            {c.href ? (
-                              <a className="aha-inline-card-link" href={c.href} target="_blank" rel="noopener noreferrer">
-                                {cardLinkLabel(c.type)}
-                              </a>
-                            ) : null}
-                          </li>
-                        ),
-                      )}
+                    <ul className="aha-inline-cards aha-answer-stack">
+                      {m.cards.map((c, j) => (
+                        <li key={j} className="aha-inline-card" data-card-type={c.type}>
+                          {c.type === 'renovation_analysis_offer' ? (
+                            <RenovationAnalysisOffer
+                              creditsCost={c.creditsCost ?? ANALYSIS_CREDIT_COST}
+                              workspaceSnapshot={snapshotFromState(state)}
+                            />
+                          ) : (
+                            <AnswerBlock card={c} />
+                          )}
+                        </li>
+                      ))}
                     </ul>
                   )}
                   {m.earnedCatalog && (m.earnedCatalog.products.length > 0 || m.earnedCatalog.services.length > 0) && (

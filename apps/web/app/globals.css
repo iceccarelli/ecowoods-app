@@ -13220,6 +13220,61 @@ body.aha-active .site-footer { display: none; }
   font-weight: 600;
   color: var(--copper);
 }
+
+/*
+ * The answer-stack blocks (AnswerBlock.tsx) — the typed response contract's
+ * visual half. `.aha-inline-card` still supplies the shared frame (border,
+ * padding, left accent); `.aha-block*` are the compact, information-dense
+ * insides for each block type, replacing the one-size title+body+link shape
+ * for anything richer than a plain card.
+ */
+.aha-answer-stack { gap: var(--space-sm); }
+.aha-block-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.35rem;
+}
+.aha-block-lede { font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: var(--ink); margin: 0 0 0.35rem; }
+.aha-block-body { font-size: 0.9rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.35rem; }
+.aha-block-body:last-child { margin-bottom: 0; }
+.aha-block-list { margin: 0 0 0.5rem; padding-left: 1.1rem; font-size: 0.88rem; line-height: 1.5; color: var(--ink); }
+.aha-block-list--tight { margin-bottom: 0; }
+.aha-block-first-step { font-size: 0.9rem; line-height: 1.5; color: var(--ink); margin: 0; }
+.aha-block-range { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin: 0 0 0.3rem; font-variant-numeric: tabular-nums; }
+.aha-block-scope { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+.aha-block-source-tag { font-size: 0.76rem; color: var(--muted); margin: 0.35rem 0 0; }
+.aha-block-status-tag { text-transform: none; letter-spacing: normal; color: var(--muted-soft); }
+.aha-block-unavailable { font-size: 0.88rem; color: var(--muted); font-style: italic; margin: 0 0 0.3rem; }
+.aha-block-link { display: inline-block; margin-top: 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--copper); }
+.aha-block-link--primary { color: var(--copper-deep); }
+
+.aha-block-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem 1rem; margin: 0; }
+.aha-block-fact dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0; }
+.aha-block-fact dd { font-size: 0.88rem; color: var(--ink); margin: 0.1rem 0 0; font-weight: 500; }
+
+.aha-block-scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-sm); }
+.aha-block-scenario { border: 1px solid var(--line); border-radius: 6px; padding: 0.6rem 0.7rem; }
+.aha-block-scenario-label { font-size: 0.82rem; font-weight: 600; color: var(--ink); margin: 0 0 0.3rem; }
+
+.aha-block-sequence { margin: 0; padding-left: 1.2rem; font-size: 0.89rem; line-height: 1.6; color: var(--ink); }
+.aha-block-sequence-label { font-weight: 600; }
+.aha-block-sequence-rationale { color: var(--muted-soft); }
+
+/* Per-type left accents, same visual language as .aha-inline-card's existing ones. */
+.aha-inline-card[data-card-type='decision_summary'] { border-left-color: var(--copper); background: color-mix(in srgb, var(--copper-surface) 6%, var(--surface)); }
+.aha-inline-card[data-card-type='project_snapshot'] { border-left-color: var(--line-strong); }
+.aha-inline-card[data-card-type='scenario_comparison'] { border-left-color: var(--copper-surface); }
+.aha-inline-card[data-card-type='evidence'] { border-left-color: var(--muted-soft); }
+.aha-inline-card[data-card-type='risk'] { border-left-color: var(--line-strong); border-style: dashed; background: var(--surface-warm); }
+.aha-inline-card[data-card-type='sequence'] { border-left-color: var(--copper-surface); }
+.aha-inline-card[data-card-type='property_context'],
+.aha-inline-card[data-card-type='market_context'] { border-left-color: var(--line-strong); }
+.aha-inline-card[data-card-type='next_action'] { border-left-color: var(--copper); background: color-mix(in srgb, var(--copper-surface) 6%, var(--surface)); }
+.aha-inline-card[data-card-type='analysis_result'] { border-left-color: var(--copper); }
+
 .aha-composer-send:disabled,
 .aha-chip:disabled,
 .aha-composer-input:disabled {
