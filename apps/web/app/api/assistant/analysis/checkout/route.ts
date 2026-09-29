@@ -21,7 +21,8 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
-import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
 
 export const runtime = 'nodejs';
@@ -44,9 +45,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Sign in to buy Renovation Credits.' }, { status: 401 });
   }
 
-  const rl = checkRateLimit(getClientIp(req), LEAD_POST_LIMIT);
+  // Keyed by userId (auth required just above) and failed closed: this
+  // creates a real Stripe Checkout Session, so a Postgres outage should
+  // deny the attempt rather than fall back to a per-instance guess.
+  const rl = await enforceRateLimit({
+    routeKey: 'assistant-analysis-checkout',
+    identity: userId,
+    config: { windowMs: 60_000, maxRequests: 5 },
+    failClosed: true,
+  });
   if (!rl.allowed) {
-    return NextResponse.json({ error: 'Please wait a moment before trying again.' }, { status: 429, headers: { 'Retry-After': '60' } });
+    return NextResponse.json(
+      { error: 'Please wait a moment before trying again.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    );
   }
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));

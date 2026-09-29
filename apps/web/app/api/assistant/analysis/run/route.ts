@@ -17,7 +17,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { isTrustedBrowserOrigin, checkRateLimit, getClientIp, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { designIdOf } from '@/lib/floor-studio/design-id';
 import { workspaceSnapshotSchema } from '@/lib/assistant-workspace/chat-schema';
 import { buildRenovationAnalysis, isEligibleForAnalysis } from '@/lib/assistant-workspace/renovation-analysis';
@@ -32,6 +33,21 @@ const bodySchema = z.object({
   requestIdempotencyKey: z.string().min(8).max(200),
 });
 
+/**
+ * 5 runs/minute/user — keyed by userId, not IP: this route requires auth
+ * (right below), so the authenticated identity is both more precise than an
+ * IP (no false sharing behind NAT/CGNAT) and the right unit to protect,
+ * since what it spends is that user's Renovation Credits.
+ *
+ * `failClosed: true` — this is a paid, credit-charging route. A Postgres
+ * outage DENIES the request rather than falling back to an in-memory
+ * bucket: `chargeForAnalysis` itself touches this same database for the
+ * credit charge, so an outage fails the request either way, and failing
+ * closed here means that failure happens before any compute is spent, not
+ * after.
+ */
+const ANALYSIS_RUN_RATE_LIMIT = { windowMs: 60_000, maxRequests: 5 };
+
 export async function POST(req: Request) {
   if (!isTrustedBrowserOrigin(req)) {
     return NextResponse.json({ error: 'Origin not allowed.' }, { status: 403 });
@@ -42,9 +58,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Sign in to run this analysis.' }, { status: 401 });
   }
 
-  const rl = checkRateLimit(getClientIp(req), LEAD_POST_LIMIT);
+  const rl = await enforceRateLimit({
+    routeKey: 'assistant-analysis-run',
+    identity: userId,
+    config: ANALYSIS_RUN_RATE_LIMIT,
+    failClosed: true,
+  });
   if (!rl.allowed) {
-    return NextResponse.json({ error: 'Please wait a moment before trying again.' }, { status: 429, headers: { 'Retry-After': '60' } });
+    return NextResponse.json(
+      { error: 'Please wait a moment before trying again.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    );
   }
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));

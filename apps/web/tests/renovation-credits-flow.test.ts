@@ -110,6 +110,12 @@ vi.mock('@/lib/db', () => {
       renovationAnalysis: renovationAnalysisOps,
       $transaction: async (fn: (tx: unknown) => unknown) =>
         fn({ creditWallet: walletOps, creditTransaction: creditTransactionOps, renovationAnalysis: renovationAnalysisOps }),
+      // enforceRateLimit (lib/rate-limit-durable.ts) calls rate_limit_consume
+      // through this — this suite is about the credit ledger, not the
+      // limiter (that has its own real-Postgres-verified tests), so this
+      // always reports "plenty of tokens left" rather than exercising the
+      // real SQL function against a mock that doesn't have it.
+      $queryRaw: async () => [{ tokens: 999, allowed: true }],
     },
   };
 });
