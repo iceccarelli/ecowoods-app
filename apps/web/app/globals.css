@@ -13053,6 +13053,31 @@ body.aha-active .site-footer { display: none; }
 }
 .aha-conversation-scroll { flex: 1; padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-lg); overflow-y: auto; scroll-behavior: smooth; }
 
+/*
+ * Empty / first-contact state (STATE A) — an intelligence interface, not a
+ * landing page. `.aha-conversation--empty` has no scroll region and no
+ * bottom composer bar; this stage IS the whole surface, and the composer is
+ * its only content, vertically centered in whatever height `.aha-page`'s
+ * viewport math (see that rule's own comment) leaves for the canvas. On a
+ * short viewport or with the keyboard open on mobile, `min-height: 0` lets
+ * it shrink rather than clip — there is nothing below it to scroll past.
+ */
+.aha-empty-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+.aha-empty-stage-inner {
+  width: 100%;
+  max-width: 640px;
+}
+@media (max-width: 480px) {
+  .aha-empty-stage { padding: var(--space-md); }
+}
+
 /* Messages — no chat bubbles for the assistant: a small identity marker,
    generous vertical rhythm, left-aligned. The user's own turn is the only
    bubble-like shape on the page, offset right, capped at ~70% width. */
@@ -13341,6 +13366,28 @@ body.aha-active .site-footer { display: none; }
 .aha-composer:focus-within {
   border-color: var(--copper-surface);
   box-shadow: var(--shadow-md);
+}
+/* Hero variant — the composer as the empty state's only content. Same
+   shape language (pill, copper focus ring), scaled up so it reads as the
+   product's hero element rather than a bottom-docked input box. */
+.aha-composer--hero {
+  min-height: 68px;
+  padding: var(--space-sm);
+  border-radius: 32px;
+  box-shadow: var(--shadow-md, 0 8px 28px color-mix(in srgb, var(--ink) 10%, transparent));
+}
+.aha-composer--hero .aha-composer-input {
+  font-size: 1.15rem;
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+}
+.aha-composer--hero .aha-composer-send {
+  width: 48px;
+  height: 48px;
+}
+@media (max-width: 480px) {
+  .aha-composer--hero { min-height: 60px; border-radius: 28px; }
+  .aha-composer--hero .aha-composer-input { font-size: 1rem; }
 }
 .aha-composer-input {
   flex: 1;
