@@ -3,12 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { EW_MARK, EW_MARK_ALT } from '@/lib/brand';
-import {
-  WORKSPACE_ASSISTANT,
-  WORKSPACE_GREETING,
-  WORKSPACE_RENOVATION_CHIPS,
-  WORKSPACE_COMPOSER_PLACEHOLDER,
-} from '@/lib/assistant-workspace/identity';
+import { WORKSPACE_ASSISTANT, WORKSPACE_COMPOSER_PLACEHOLDER } from '@/lib/assistant-workspace/identity';
 import { interpretMessage } from '@/lib/assistant-workspace/interpret';
 import { selectionIncompatibilities } from '@/lib/assistant-workspace/recommendations';
 import { projectRangeForState } from '@/lib/assistant-workspace/economics';
@@ -54,8 +49,20 @@ interface DisplayMessage {
 /** Presentation-only: mobile keeps the composer placeholder short, per spec. */
 const COMPOSER_PLACEHOLDER_MOBILE = `${WORKSPACE_ASSISTANT.name}…`;
 
-/** Start screen: 3–4 starters only (v8). */
-const START_CHIPS = WORKSPACE_RENOVATION_CHIPS.slice(0, 4);
+/**
+ * Runs `update` inside a View Transition when the browser supports one
+ * (Chromium today; every other browser just runs `update` directly). Tried
+ * for the empty→active handoff and REMOVED: without wrapping the state
+ * update in `flushSync`, `document.startViewTransition(update)` let the
+ * browser's before/after snapshot pass desync from React's own commit —
+ * proven live (see PR history): with the transition active, every
+ * `setMessages` updater callback afterward saw `prev.length === 0` (state
+ * reverted), so the very first assistant reply after sending the opening
+ * message was silently dropped — an indefinite "typing" placeholder with
+ * no error. Disabling `document.startViewTransition` outright made the
+ * exact same conversation complete correctly. The empty→active swap is now
+ * a plain, instant state update — correctness over a transition effect.
+ */
 
 function snapshotFromState(state: WorkspaceState) {
   return {
@@ -283,14 +290,30 @@ export function ConversationPane({
     | ({ type: 'done' } & AssistantChatResponse)
     | { type: 'error'; message: string };
 
-  const respond = async (text: string) => {
+  /**
+   * `basePrior` lets a caller (retry, below) hand in the history to build
+   * on explicitly instead of reading the `messages` closure. Reading
+   * `messages` here is correct for a normal send — it IS the current
+   * history — but retry() calls `setMessages(prev => prev.slice(...))` and
+   * then `respond()` in the same synchronous tick: this function's `prior =
+   * messages` would still read the PRE-trim array (state updates in the
+   * same batch don't turn into a fresh render until React flushes), so the
+   * plain-value `setMessages([...history, ...])` a few lines down would
+   * silently overwrite the trim with a `history` computed from the
+   * untrimmed array — the failed message and a duplicated user turn both
+   * surviving. Found and proven live while testing retry for this slice.
+   */
+  const respond = async (text: string, basePrior?: DisplayMessage[]) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
 
-    const prior = messages;
+    const prior = basePrior ?? messages;
     const userTurn: DisplayMessage = { role: 'user', text: trimmed };
     const history = [...prior, userTurn];
     const assistantIndex = history.length;
+    /* A plain, synchronous state update — including for the empty→active
+       handoff. See this file's earlier comment on why that swap is not
+       wrapped in a View Transition: it silently broke every first reply. */
     setMessages([...history, { role: 'assistant', text: '', streaming: true }]);
     setDraft('');
     setBusy(true);
@@ -413,12 +436,22 @@ export function ConversationPane({
 
   const stopGenerating = () => abortRef.current?.abort();
 
-  /** Retry: drop the failed placeholder and the user turn that failed no longer exists in `messages`'s copy — resend the same text as a fresh turn. */
+  /**
+   * Retry: drop the failed assistant turn AND the user turn that triggered
+   * it (always the immediately preceding message in this one-bubble-per-turn
+   * UI), then resend as a genuinely fresh turn. `respond` recreates the user
+   * turn itself — trimming only the failed reply and keeping the old user
+   * turn would leave two copies of it once respond appends its own. The
+   * trimmed array is passed as `basePrior` (see respond's comment) rather
+   * than relying on the `messages` closure, which is still the pre-trim
+   * array in this same synchronous tick.
+   */
   const retry = (failedIndex: number) => {
-    const priorUser = [...messages].slice(0, failedIndex).reverse().find((m) => m.role === 'user');
-    if (!priorUser) return;
-    setMessages((prev) => prev.slice(0, failedIndex));
-    void respond(priorUser.text);
+    const priorUser = messages[failedIndex - 1];
+    if (!priorUser || priorUser.role !== 'user') return;
+    const trimmed = messages.slice(0, failedIndex - 1);
+    setMessages(trimmed);
+    void respond(priorUser.text, trimmed);
   };
 
   const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
@@ -427,26 +460,81 @@ export function ConversationPane({
     patch({ selectedServiceSlugs: [...state.selectedServiceSlugs, slug] });
   };
 
+  /**
+   * The composer — the single component rendered in two different places
+   * depending on interaction state (empty vs. active), never duplicated
+   * markup. `hero` only changes sizing via a CSS modifier class; behaviour
+   * (submit, Enter-to-send, autosize, disabled-while-busy) is identical
+   * either way, and both instances share `view-transition-name: aha-composer`
+   * (globals.css) so the browser morphs one into the other on the first
+   * send instead of a hard cut.
+   */
+  const renderComposer = (hero: boolean) => (
+    <form
+      className={`aha-composer${hero ? ' aha-composer--hero' : ''}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void respond(draft);
+      }}
+      aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
+    >
+      <textarea
+        ref={textareaRef}
+        className="aha-composer-input"
+        placeholder={isNarrow ? COMPOSER_PLACEHOLDER_MOBILE : WORKSPACE_COMPOSER_PLACEHOLDER}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          /* Enter sends; Shift+Enter (or any IME composition) inserts a newline. */
+          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            void respond(draft);
+          }
+        }}
+        aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
+        disabled={busy}
+        rows={1}
+        autoFocus
+      />
+      <button
+        type="submit"
+        className="aha-composer-send"
+        disabled={!draft.trim() || busy}
+        aria-label={`Send message to ${WORKSPACE_ASSISTANT.name}`}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 19V5M12 5l-6 6M12 5l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    </form>
+  );
+
+  /*
+   * STATE A (empty/first contact): the composer alone, centered in the
+   * available viewport — an intelligence interface, not a landing page. No
+   * greeting sentence, no starter pills, no logo mark: the placeholder text
+   * already carries the name and the invitation.
+   *
+   * STATE B (active conversation): the composer docks to the bottom, the
+   * transcript becomes the primary surface above it. The swap happens the
+   * instant the first message is committed to `messages` state — a plain
+   * synchronous setState, not after the reply arrives and not wrapped in
+   * any transition API (see the comment above `snapshotFromState` for why).
+   */
+  if (!messages.length) {
+    return (
+      <section className="aha-conversation aha-conversation--canvas aha-conversation--empty" aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}>
+        <div className="aha-empty-stage">
+          <div className="aha-empty-stage-inner">{renderComposer(true)}</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="aha-conversation aha-conversation--canvas" aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}>
       <div className="aha-conversation-scroll" ref={scrollRef}>
-        {!messages.length ? (
-          <div className="aha-start">
-            <span className="aha-avatar aha-avatar--start" aria-hidden="true">
-              <Image src={EW_MARK} alt="" width={40} height={40} />
-            </span>
-            <p className="aha-start-name">{WORKSPACE_ASSISTANT.name}</p>
-            <p className="aha-start-lede">{WORKSPACE_GREETING}</p>
-            <div className="aha-chips" role="group" aria-label="Starter prompts">
-              {START_CHIPS.map((chip) => (
-                <button key={chip} type="button" className="aha-chip" onClick={() => void respond(chip)} disabled={busy}>
-                  {chip}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
+        <>
             {messages.map((m, i) => (
               <div key={i} className={`aha-message aha-message--${m.role}${m.failed ? ' aha-message--failed' : ''}`}>
                 {m.role === 'assistant' && (
@@ -553,49 +641,10 @@ export function ConversationPane({
                 <ConversionPanel projectRange={projectRange} />
               </div>
             )}
-          </>
-        )}
+        </>
       </div>
 
-      <div className="aha-composer-bar">
-      <form
-        className="aha-composer"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void respond(draft);
-        }}
-        aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
-      >
-        <textarea
-          ref={textareaRef}
-          className="aha-composer-input"
-          placeholder={isNarrow ? COMPOSER_PLACEHOLDER_MOBILE : WORKSPACE_COMPOSER_PLACEHOLDER}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            /* Enter sends; Shift+Enter (or any IME composition) inserts a newline. */
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault();
-              void respond(draft);
-            }
-          }}
-          aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
-          disabled={busy}
-          rows={1}
-          autoFocus
-        />
-        <button
-          type="submit"
-          className="aha-composer-send"
-          disabled={!draft.trim() || busy}
-          aria-label={`Send message to ${WORKSPACE_ASSISTANT.name}`}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12 19V5M12 5l-6 6M12 5l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </form>
-      </div>
+      <div className="aha-composer-bar">{renderComposer(false)}</div>
     </section>
   );
 }
