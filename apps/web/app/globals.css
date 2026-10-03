@@ -12743,6 +12743,17 @@ body.aha-active .topbar { box-shadow: none; }
  * its footer untouched.
  */
 body.aha-active .site-footer { display: none; }
+/*
+ * `.sticky-cta-mobile` (Header.tsx) is `position: fixed` on phones — it
+ * never consumes layout height, so `.aha-page`'s "fill what's left after
+ * the sticky chrome" math (see above) never accounts for it. Found live:
+ * it was rendering on top of the workspace's OWN composer, the one control
+ * this whole surface exists to keep reachable, silently covering most of
+ * it. ChatWidget.tsx already carries a comment about this exact bar
+ * colliding with its own launcher for the same reason. Hidden for the same
+ * lifetime and by the same mechanism as the footer above.
+ */
+body.aha-active .sticky-cta-mobile { display: none; }
 
 .aha-workspace-bar {
   display: flex;
@@ -13274,7 +13285,29 @@ body.aha-active .site-footer { display: none; }
 .aha-block-status-tag { text-transform: none; letter-spacing: normal; color: var(--muted-soft); }
 .aha-block-unavailable { font-size: 0.88rem; color: var(--muted); font-style: italic; margin: 0 0 0.3rem; }
 .aha-block-link { display: inline-block; margin-top: 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--copper); }
-.aha-block-link--primary { color: var(--copper-deep); }
+/*
+ * A `next_action` card's own link rendered with the same text-link
+ * treatment as every other card's "see source" link (e.g. evidence's "Read
+ * the source") — correct for a secondary reference, wrong for the one
+ * control a homeowner is meant to act on next. Found live: in a real
+ * screenshot it read as another citation, not the answer's actual next
+ * step. Styled as a real filled button (same shape language as the
+ * composer's send control) so it visibly differs from every other link on
+ * the card stack.
+ */
+.aha-block-link--primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-full);
+  background: var(--copper-surface);
+  color: var(--on-copper);
+  font-size: 0.85rem;
+}
+.aha-block-link--primary:hover,
+.aha-block-link--primary:focus-visible { background: var(--copper-deep); }
 
 .aha-block-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem 1rem; margin: 0; }
 .aha-block-fact dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0; }
