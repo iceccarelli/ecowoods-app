@@ -23,7 +23,8 @@ export type ConsentPurpose =
   | 'ASSESSMENT_PHOTOS'
   | 'MODEL_TRAINING'
   | 'BENCHMARK_CONTRIBUTION'
-  | 'FLOOR_RECORD';
+  | 'FLOOR_RECORD'
+  | 'ASSISTANT_PHOTOS';
 
 export type ConsentWording = {
   purpose: ConsentPurpose;
@@ -56,6 +57,12 @@ export const CONSENT_WORDING: Record<ConsentPurpose, ConsentWording> = {
     purpose: 'FLOOR_RECORD',
     text:
       'Keep a durable record of this floor — what was installed, when, and with what — that stays with the property and can be handed to a future owner.',
+    version: '1',
+  },
+  ASSISTANT_PHOTOS: {
+    purpose: 'ASSISTANT_PHOTOS',
+    text:
+      'Send this photo to Francisco so he can look at it and answer your question. Kept with this conversation only, not published, not shared, and not used to train anything.',
     version: '1',
   },
 };

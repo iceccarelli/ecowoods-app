@@ -19,18 +19,34 @@ import { ConversionPanel } from './ConversionPanel';
 import { RenovationAnalysisOffer } from './RenovationAnalysisOffer';
 import { AnswerBlock } from './AnswerBlock';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
+import { compressPhoto } from '@/lib/image-compress';
 
-/** Shape returned by GET /api/assistant/conversation — matches StoredTurn (conversation-store.ts) minus attachments, not yet rendered client-side. */
+/** A photo attached to one turn — uploaded, displayed, and (once sent) referenced in the request to /api/assistant/chat. Mirrors StoredAttachment (conversation-store.ts) without importing it directly — that module pulls in Prisma and must never reach the client bundle. */
+interface DisplayAttachment {
+  id: string;
+  kind: 'room_photo' | 'document';
+  status: 'uploading' | 'uploaded' | 'analyzed' | 'failed';
+  filename?: string;
+  /** A short-lived signed URL — renderable now, but never assumed valid later (see conversation-store.ts's loadTranscript, which re-signs on every read). */
+  previewUrl?: string;
+  /** The opaque internal storage path returned by the upload route. Sent back to /api/assistant/chat as `url`; never rendered. */
+  path?: string;
+  contentType?: string;
+}
+
+/** Shape returned by GET /api/assistant/conversation — matches StoredTurn (conversation-store.ts). */
 interface StoredTranscriptTurn {
   role: 'user' | 'assistant';
   content: string;
   blocks?: AssistantChatCard[];
+  attachments?: { id: string; kind: 'room_photo' | 'document'; status: DisplayAttachment['status']; filename?: string; url?: string }[];
 }
 
 interface DisplayMessage {
   role: 'assistant' | 'user';
   text: string;
   cards?: AssistantChatCard[];
+  attachments?: DisplayAttachment[];
   /**
    * Contextual "Worth considering" / "Services" cards, computed ONLY for the
    * turn that actually changed floor-relevant state (objective, targetFloor,
@@ -156,9 +172,11 @@ export function ConversationPane({
   const [busy, setBusy] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [historyRequested, setHistoryRequested] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<DisplayAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /*
    * Reload-safe transcript (Gate 2, P0): once the workspace has hydrated a
@@ -180,6 +198,9 @@ export function ConversationPane({
             role: t.role,
             text: t.content,
             cards: Array.isArray(t.blocks) && t.blocks.length ? composeAnswerBlocks(t.blocks) : undefined,
+            attachments: Array.isArray(t.attachments) && t.attachments.length
+              ? t.attachments.map((a) => ({ id: a.id, kind: a.kind, status: a.status as DisplayAttachment['status'], filename: a.filename, previewUrl: a.url }))
+              : undefined,
           })),
         );
       })
@@ -303,12 +324,12 @@ export function ConversationPane({
    * untrimmed array — the failed message and a duplicated user turn both
    * surviving. Found and proven live while testing retry for this slice.
    */
-  const respond = async (text: string, basePrior?: DisplayMessage[]) => {
+  const respond = async (text: string, basePrior?: DisplayMessage[], attachments: DisplayAttachment[] = []) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
 
     const prior = basePrior ?? messages;
-    const userTurn: DisplayMessage = { role: 'user', text: trimmed };
+    const userTurn: DisplayMessage = { role: 'user', text: trimmed, attachments: attachments.length ? attachments : undefined };
     const history = [...prior, userTurn];
     const assistantIndex = history.length;
     /* A plain, synchronous state update — including for the empty→active
@@ -337,7 +358,20 @@ export function ConversationPane({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role, content: m.text })),
+          messages: history.map((m, idx) => {
+            const base = { role: m.role, content: m.text };
+            // Only the newest turn's attachments are ever sent — see
+            // attachmentRefSchema's comment (chat-schema.ts). A photo that
+            // failed to upload is never forwarded; the server would have
+            // nothing to download and no way to tell a client bug from a
+            // homeowner's claim that a photo was attached.
+            const uploaded = idx === history.length - 1 ? m.attachments?.filter((a) => a.status === 'uploaded' && a.path) : undefined;
+            if (!uploaded?.length) return base;
+            return {
+              ...base,
+              attachments: uploaded.map((a) => ({ id: a.id, kind: a.kind, url: a.path!, contentType: a.contentType ?? 'image/jpeg', filename: a.filename })),
+            };
+          }),
           workspace: snapshotFromState(state),
         }),
         signal: controller.signal,
@@ -451,7 +485,7 @@ export function ConversationPane({
     if (!priorUser || priorUser.role !== 'user') return;
     const trimmed = messages.slice(0, failedIndex - 1);
     setMessages(trimmed);
-    void respond(priorUser.text, trimmed);
+    void respond(priorUser.text, trimmed, priorUser.attachments ?? []);
   };
 
   const onAddProduct = (productId: string) => patch({ targetFloor: { productId } });
@@ -459,6 +493,67 @@ export function ConversationPane({
     if (state.selectedServiceSlugs.includes(slug)) return;
     patch({ selectedServiceSlugs: [...state.selectedServiceSlugs, slug] });
   };
+
+  const MAX_ATTACHMENTS = 3;
+
+  /**
+   * One photo, start to finish: client-side compression (lib/image-compress.ts,
+   * the same helper the estimate form's photo triage uses), then POST to
+   * /api/assistant/attachments. `localId` lets the UI show an immediate
+   * thumbnail and swap it for the server's real id/signed-preview-URL/path
+   * once the upload resolves — never a fabricated "uploaded" state before
+   * the request actually succeeds.
+   */
+  const uploadPhoto = async (file: File) => {
+    const localId = `local_${Math.random().toString(36).slice(2, 10)}`;
+    setPendingAttachments((prev) => [
+      ...prev,
+      { id: localId, kind: 'room_photo', status: 'uploading', filename: file.name, previewUrl: URL.createObjectURL(file) },
+    ]);
+
+    if (!state.designId) {
+      setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+      return;
+    }
+
+    const compressed = await compressPhoto(file);
+    if (!compressed.ok) {
+      setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+      return;
+    }
+
+    try {
+      const form = new FormData();
+      form.append('photo', compressed.file);
+      form.append('designId', state.designId);
+      const res = await fetch('/api/assistant/attachments', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('upload failed');
+      const data: { id: string; kind: 'room_photo'; path: string; previewUrl: string | null; contentType: string; filename: string } =
+        await res.json();
+      setPendingAttachments((prev) =>
+        prev.map((a) =>
+          a.id === localId
+            ? { id: data.id, kind: data.kind, status: 'uploaded', filename: data.filename, previewUrl: data.previewUrl ?? a.previewUrl, path: data.path, contentType: data.contentType }
+            : a,
+        ),
+      );
+    } catch {
+      setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+    }
+  };
+
+  const handleFilesSelected = (files: FileList | null) => {
+    if (!files?.length) return;
+    const room = MAX_ATTACHMENTS - pendingAttachments.length;
+    Array.from(files)
+      .slice(0, Math.max(0, room))
+      .forEach((file) => void uploadPhoto(file));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removePendingAttachment = (id: string) => setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+
+  const attachmentsUploading = pendingAttachments.some((a) => a.status === 'uploading');
 
   /**
    * The composer — the single component rendered in two different places
@@ -469,43 +564,103 @@ export function ConversationPane({
    * (globals.css) so the browser morphs one into the other on the first
    * send instead of a hard cut.
    */
+  const submitDraft = () => {
+    const attachmentsToSend = pendingAttachments;
+    setPendingAttachments([]);
+    void respond(draft, undefined, attachmentsToSend);
+  };
+
   const renderComposer = (hero: boolean) => (
     <form
       className={`aha-composer${hero ? ' aha-composer--hero' : ''}`}
       onSubmit={(event) => {
         event.preventDefault();
-        void respond(draft);
+        submitDraft();
       }}
       aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
     >
-      <textarea
-        ref={textareaRef}
-        className="aha-composer-input"
-        placeholder={isNarrow ? COMPOSER_PLACEHOLDER_MOBILE : WORKSPACE_COMPOSER_PLACEHOLDER}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={(event) => {
-          /* Enter sends; Shift+Enter (or any IME composition) inserts a newline. */
-          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-            event.preventDefault();
-            void respond(draft);
-          }
-        }}
-        aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
-        disabled={busy}
-        rows={1}
-        autoFocus
-      />
-      <button
-        type="submit"
-        className="aha-composer-send"
-        disabled={!draft.trim() || busy}
-        aria-label={`Send message to ${WORKSPACE_ASSISTANT.name}`}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 19V5M12 5l-6 6M12 5l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      {pendingAttachments.length > 0 && (
+        <div className="aha-attachment-row" aria-label="Attached photos">
+          {pendingAttachments.map((a) => (
+            <div key={a.id} className={`aha-attachment-thumb aha-attachment-thumb--${a.status}`}>
+              {a.previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a blob:/signed URL, not an optimizable site asset
+                <img src={a.previewUrl} alt={a.filename ?? 'Attached photo'} />
+              ) : (
+                <span className="aha-attachment-fallback" aria-hidden="true" />
+              )}
+              {a.status === 'uploading' && <span className="aha-attachment-status">Uploading…</span>}
+              {a.status === 'failed' && <span className="aha-attachment-status">Failed</span>}
+              <button
+                type="button"
+                className="aha-attachment-remove"
+                aria-label={`Remove ${a.filename ?? 'photo'}`}
+                onClick={() => removePendingAttachment(a.id)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="aha-composer-row">
+        <input
+          ref={fileInputRef}
+          type="file"
+          aria-label="Choose photos to attach"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          multiple
+          hidden
+          onChange={(event) => handleFilesSelected(event.target.files)}
+        />
+        <button
+          type="button"
+          className="aha-composer-attach"
+          aria-label="Attach a photo"
+          disabled={busy || pendingAttachments.length >= MAX_ATTACHMENTS}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="M21 11.5V7a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v12a3 3 0 0 0 3 3h8a4 4 0 0 0 4-4v-1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <circle cx="9" cy="9" r="1.6" fill="currentColor" />
+            <path d="M5 16l3.5-3.5a2 2 0 0 1 2.8 0L15 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <textarea
+          ref={textareaRef}
+          className="aha-composer-input"
+          placeholder={isNarrow ? COMPOSER_PLACEHOLDER_MOBILE : WORKSPACE_COMPOSER_PLACEHOLDER}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            /* Enter sends; Shift+Enter (or any IME composition) inserts a newline. */
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              submitDraft();
+            }
+          }}
+          aria-label={WORKSPACE_ASSISTANT.ariaWorkspace}
+          disabled={busy}
+          rows={1}
+          autoFocus
+        />
+        <button
+          type="submit"
+          className="aha-composer-send"
+          disabled={!draft.trim() || busy || attachmentsUploading}
+          aria-label={`Send message to ${WORKSPACE_ASSISTANT.name}`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 19V5M12 5l-6 6M12 5l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
     </form>
   );
 
@@ -544,6 +699,21 @@ export function ConversationPane({
                 )}
                 <div className="aha-message-body">
                   <p className="aha-message-author">{m.role === 'assistant' ? WORKSPACE_ASSISTANT.name : 'You'}</p>
+                  {m.attachments && m.attachments.length > 0 && (
+                    <div className="aha-message-attachments" aria-label="Attached photos">
+                      {m.attachments.map((a) => (
+                        <div key={a.id} className={`aha-attachment-thumb aha-attachment-thumb--${a.status}`}>
+                          {a.previewUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- a signed storage URL, not an optimizable site asset
+                            <img src={a.previewUrl} alt={a.filename ?? 'Photo'} />
+                          ) : (
+                            <span className="aha-attachment-fallback" aria-hidden="true" />
+                          )}
+                          {a.status === 'failed' && <span className="aha-attachment-status">Couldn&apos;t load</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {m.streaming && !m.text ? (
                     <p className="aha-message-text aha-typing" aria-live="polite">
                       <span className="aha-typing-label">Francisco is working through that</span>

@@ -28,6 +28,7 @@
  */
 import { db } from '@/lib/db';
 import { isDesignId } from '@/lib/floor-studio/design-id';
+import { signAttachmentUrl } from './attachment-storage';
 import type { AssistantChatCard } from './chat-schema';
 
 export interface StoredAttachment {
@@ -88,14 +89,31 @@ export async function loadTranscript(designId: string | undefined, viewerUserId:
     });
     if (!conversation) return [];
     if (conversation.userId && conversation.userId !== viewerUserId) return [];
-    return conversation.messages.reverse().map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-      blocks: Array.isArray(m.blocks) ? (m.blocks as unknown as AssistantChatCard[]) : undefined,
-      attachments: Array.isArray(m.attachments) ? (m.attachments as unknown as StoredAttachment[]) : undefined,
-      model: m.model ?? undefined,
-      createdAt: m.createdAt.toISOString(),
-    }));
+    return await Promise.all(
+      conversation.messages.reverse().map(async (m) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content,
+        blocks: Array.isArray(m.blocks) ? (m.blocks as unknown as AssistantChatCard[]) : undefined,
+        /*
+         * `url` on the stored row is the opaque internal storage path
+         * (supabase://... or file://...), never renderable in a browser —
+         * see attachment-storage.ts. The signed URL minted at upload time
+         * is long expired by the time a transcript is reloaded, so every
+         * read mints a fresh one here rather than persisting one that
+         * would silently go stale.
+         */
+        attachments: Array.isArray(m.attachments)
+          ? await Promise.all(
+              (m.attachments as unknown as StoredAttachment[]).map(async (a) => ({
+                ...a,
+                url: a.url ? ((await signAttachmentUrl(a.url)) ?? undefined) : undefined,
+              })),
+            )
+          : undefined,
+        model: m.model ?? undefined,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    ) as StoredTurn[];
   } catch (err) {
     console.error(JSON.stringify({ event: 'assistant.conversation.load_failed', error: err instanceof Error ? err.message : 'unknown' }));
     return [];
