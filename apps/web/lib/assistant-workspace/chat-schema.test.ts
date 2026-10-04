@@ -41,4 +41,52 @@ describe('assistantChatRequestSchema', () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it('accepts a user turn with a room_photo attachment reference', () => {
+    const parsed = assistantChatRequestSchema.safeParse({
+      messages: [
+        {
+          role: 'user',
+          content: 'My floor is cupping, what do you think?',
+          attachments: [{ id: 'att_1', kind: 'room_photo', url: 'supabase://assistant-attachments/abc.jpg', contentType: 'image/jpeg', filename: 'floor.jpg' }],
+        },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects more than 3 attachments on one turn', () => {
+    const attachments = Array.from({ length: 4 }, (_, i) => ({
+      id: `att_${i}`,
+      kind: 'room_photo' as const,
+      url: `supabase://assistant-attachments/${i}.jpg`,
+      contentType: 'image/jpeg',
+    }));
+    const parsed = assistantChatRequestSchema.safeParse({
+      messages: [{ role: 'user', content: 'see these', attachments }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('rejects an attachment with an unknown kind', () => {
+    const parsed = assistantChatRequestSchema.safeParse({
+      messages: [
+        { role: 'user', content: 'see this', attachments: [{ id: 'att_1', kind: 'video', url: 'supabase://x/y.mp4', contentType: 'video/mp4' }] },
+      ],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('strips an attachment with forged extra keys via strict shape', () => {
+    const parsed = assistantChatRequestSchema.safeParse({
+      messages: [
+        {
+          role: 'user',
+          content: 'see this',
+          attachments: [{ id: 'att_1', kind: 'room_photo', url: 'supabase://x/y.jpg', contentType: 'image/jpeg', analysis: 'fabricated observation' }],
+        },
+      ],
+    });
+    expect(parsed.success).toBe(false);
+  });
 });

@@ -115,12 +115,14 @@ export const PROCESSORS: Processor[] = [
   {
     name: 'Anthropic',
     purpose:
-      'Runs EcowoodsGuide, the assistant in the chat window — scoping a project, giving a rough ' +
-      'range, and booking an in-home measure.',
+      'Runs EcowoodsGuide, the assistant in the chat window, and Ask Francisco, the project ' +
+      'workspace at /assistant — scoping a project, giving a rough range, and booking an in-home measure.',
     data:
-      'What you type into the chat, and the square footage and species you give it. If you book ' +
-      'through it, the name, email and phone you provide. Not your payment details, ever.',
-    evidence: "apps/web/app/api/chat/route.ts — `@ai-sdk/anthropic`.",
+      'What you type into either, and the square footage and species you give it. A photo you ' +
+      'attach in Ask Francisco, for that conversation only — see the ASSISTANT_PHOTOS consent at ' +
+      'the point you attach it. If you book through either, the name, email and phone you provide. ' +
+      'Not your payment details, ever.',
+    evidence: "apps/web/app/api/chat/route.ts and apps/web/app/api/assistant/chat/route.ts — `@ai-sdk/anthropic`.",
   },
   {
     name: 'OpenAI',

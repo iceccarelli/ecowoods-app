@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const findUniqueMock = vi.fn();
 const upsertMock = vi.fn();
 const createMock = vi.fn();
+const signAttachmentUrlMock = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -14,6 +15,10 @@ vi.mock('@/lib/db', () => ({
       create: (...args: unknown[]) => createMock(...args),
     },
   },
+}));
+
+vi.mock('./attachment-storage', () => ({
+  signAttachmentUrl: (...args: unknown[]) => signAttachmentUrlMock(...args),
 }));
 
 import { appendTurn, loadTranscript } from './conversation-store';
@@ -100,6 +105,47 @@ describe('loadTranscript', () => {
   it('never throws when the database is unreachable — degrades to an empty transcript', async () => {
     findUniqueMock.mockRejectedValueOnce(new Error('connection refused'));
     expect(await loadTranscript(VALID_DESIGN_ID, null)).toEqual([]);
+  });
+
+  it('mints a fresh signed URL for a stored attachment rather than returning its opaque storage path', async () => {
+    signAttachmentUrlMock.mockResolvedValueOnce('https://signed.example/fresh-url');
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        {
+          role: 'user',
+          content: 'my floor is cupping',
+          blocks: null,
+          attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', filename: 'floor.jpg', url: 'supabase://assistant-attachments/DESIGN123/att_1.jpg' }],
+          model: null,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    const turns = await loadTranscript(VALID_DESIGN_ID, null);
+    expect(signAttachmentUrlMock).toHaveBeenCalledWith('supabase://assistant-attachments/DESIGN123/att_1.jpg');
+    expect(turns[0]!.attachments?.[0]?.url).toBe('https://signed.example/fresh-url');
+    // The opaque storage path itself must never reach the client.
+    expect(turns[0]!.attachments?.[0]?.url).not.toContain('supabase://');
+  });
+
+  it('degrades an attachment to no preview URL, never the raw storage path, when signing fails', async () => {
+    signAttachmentUrlMock.mockResolvedValueOnce(null);
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        {
+          role: 'user',
+          content: 'see this',
+          blocks: null,
+          attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg' }],
+          model: null,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    const turns = await loadTranscript(VALID_DESIGN_ID, null);
+    expect(turns[0]!.attachments?.[0]?.url).toBeUndefined();
   });
 });
 

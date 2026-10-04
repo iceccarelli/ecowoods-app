@@ -4,6 +4,7 @@
     "ASSESSMENT_PHOTOS": { "version": "1", "sha": "2bd2431eabb37888" },
     "MODEL_TRAINING": { "version": "1", "sha": "64396d4d009028e7" },
     "BENCHMARK_CONTRIBUTION": { "version": "1", "sha": "f6ae70737781c490" },
-    "FLOOR_RECORD": { "version": "1", "sha": "71a6ffcc93762d8e" }
+    "FLOOR_RECORD": { "version": "1", "sha": "71a6ffcc93762d8e" },
+    "ASSISTANT_PHOTOS": { "version": "1", "sha": "2af80d3f68115388" }
   }
 }

@@ -26,15 +26,17 @@ import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
-import { appendTurn } from '@/lib/assistant-workspace/conversation-store';
+import { appendTurn, type StoredAttachment } from '@/lib/assistant-workspace/conversation-store';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
+import { downloadAttachment } from '@/lib/assistant-workspace/attachment-storage';
 import {
   assistantChatRequestSchema,
   cardFallbackText,
   CHAT_MAX_BODY_BYTES,
   type AssistantChatCard,
   type AssistantChatResponse,
+  type AttachmentRef,
   type ProviderOutcome,
 } from '@/lib/assistant-workspace/chat-schema';
 import {
@@ -168,7 +170,53 @@ export async function POST(req: Request) {
     typeof lastUserRaw.content === 'string'
       ? lastUserRaw.content
       : lastUserRaw.content.map((p) => p.text).join('\n');
-  void appendTurn({ designId, userId, role: 'user', content: lastUserText });
+
+  /*
+   * Multimodal augmentation — a photo the homeowner just attached. Only the
+   * NEWEST user turn may carry attachments (see attachmentRefSchema's
+   * comment); downloaded once, here, so the per-attachment outcome below is
+   * ground truth, not an assumption. An attachment the model never actually
+   * received is named as unavailable in the prompt text, never silently
+   * dropped — Francisco must never claim to have looked at a photo he did
+   * not get. Documents (kind: 'document') are not sent to the model yet —
+   * P0 scope is photos; see this PR's description for what's deferred.
+   */
+  const attachmentRefs: AttachmentRef[] = lastUserRaw.role === 'user' ? (lastUserRaw.attachments ?? []) : [];
+  const attachmentOutcomes: { ref: AttachmentRef; delivered: boolean }[] = [];
+  if (attachmentRefs.length > 0 && messages.length > 0) {
+    const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: Buffer; mediaType: string }> = [];
+    if (lastUserText.trim()) parts.push({ type: 'text', text: lastUserText });
+    const unavailable: string[] = [];
+    for (const ref of attachmentRefs) {
+      if (ref.kind !== 'room_photo') continue;
+      const downloaded = await downloadAttachment(ref.url).catch(() => null);
+      if (downloaded) {
+        parts.push({ type: 'image', image: downloaded.buffer, mediaType: downloaded.contentType });
+        attachmentOutcomes.push({ ref, delivered: true });
+      } else {
+        unavailable.push(ref.filename ?? 'a photo');
+        attachmentOutcomes.push({ ref, delivered: false });
+      }
+    }
+    if (unavailable.length) {
+      parts.push({
+        type: 'text',
+        text: `[${unavailable.join(', ')} did not come through — you do not have it. Say so plainly and ask the homeowner to try attaching it again. Do not describe or guess at its contents.]`,
+      });
+    }
+    if (parts.length) messages[messages.length - 1] = { role: 'user', content: parts };
+  }
+
+  const persistedAttachments: StoredAttachment[] | undefined = attachmentOutcomes.length
+    ? attachmentOutcomes.map(({ ref, delivered }) => ({
+        id: ref.id,
+        kind: ref.kind,
+        status: delivered ? 'analyzed' : 'failed',
+        filename: ref.filename,
+        url: ref.url,
+      }))
+    : undefined;
+  void appendTurn({ designId, userId, role: 'user', content: lastUserText, attachments: persistedAttachments });
 
   const patches: WorkspacePatch[] = [];
   const cards: AssistantChatCard[] = [];

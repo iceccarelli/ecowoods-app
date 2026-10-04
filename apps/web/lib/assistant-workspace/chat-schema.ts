@@ -45,9 +45,35 @@ export const workspaceSnapshotSchema = z
   })
   .strict();
 
+/**
+ * A reference to a photo already uploaded via POST /api/assistant/attachments
+ * — never the bytes themselves, and never a public URL. `url` here is the
+ * opaque internal storage path (`supabase://...` or `file://...`, see
+ * attachment-storage.ts), resolved server-side in chat/route.ts; the client
+ * never reads or displays it directly, only the short-lived signed preview
+ * URL the upload/conversation-read routes hand back separately. At most 3
+ * per turn — a homeowner showing a few rooms, not a bulk upload.
+ */
+const attachmentRefSchema = z
+  .object({
+    id: z.string().min(1).max(80),
+    kind: z.enum(['room_photo', 'document']),
+    url: z.string().min(1).max(300),
+    contentType: z.string().min(1).max(100),
+    filename: z.string().max(200).optional(),
+  })
+  .strict();
+
+export type AttachmentRef = z.infer<typeof attachmentRefSchema>;
+
+/** chatMessageSchema plus an optional attachment list — only meaningful on the newest user turn. */
+const assistantChatMessageSchema = chatMessageSchema.extend({
+  attachments: z.array(attachmentRefSchema).max(3).optional(),
+});
+
 export const assistantChatRequestSchema = z.object({
   messages: z
-    .array(chatMessageSchema)
+    .array(assistantChatMessageSchema)
     .min(1)
     .max(CHAT_MAX_MESSAGES)
     .refine((m) => m.length > 0 && m[m.length - 1]!.role === 'user', 'The last message must be from the user'),

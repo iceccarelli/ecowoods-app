@@ -753,6 +753,8 @@ enum ConsentPurpose {
   BENCHMARK_CONTRIBUTION
   /// Keep a durable record of this floor and hand it to a future owner.
   FLOOR_RECORD
+  /// Analyze a photo the homeowner attached in Ask Francisco (/assistant), for this conversation only.
+  ASSISTANT_PHOTOS
 
   @@schema("ecowoods")
 }
