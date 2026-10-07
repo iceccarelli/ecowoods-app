@@ -172,14 +172,6 @@ export const PROFILE_LINKS: ProfileLink[] = [
     label: 'YellowPages',
     href: 'https://www.yellowpages.ca/bus/Ontario/Etobicoke/Ecowoods-Inc/102363922.html',
   },
-  /**
-   * Additional HomeStars identity ("Ecowood"), owner-confirmed 2026-09-04.
-   * Included in sameAs so "Ecowood" resolves to this organization.
-   * Not marked `review` and not listed in REVIEW_EVIDENCE: the live hardwood
-   * review record is HOMESTARS_CANONICAL (177) plus Google (19).
-   * Merge into 2776939-ecowoods with HomeStars when ready; the graph stays
-   * joined either way.
-   */
   {
     label: 'HomeStars (Ecowood identity)',
     href: 'https://www.homestars.com/profile/2897115-ecowood',
