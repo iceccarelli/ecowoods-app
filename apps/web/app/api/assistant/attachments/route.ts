@@ -116,6 +116,12 @@ export async function POST(request: Request) {
       previewUrl,
       contentType,
       filename: file.name || 'photo.jpg',
+      // Echoed straight through by the client into the attachment ref it
+      // sends with the chat turn — see chat-schema.ts's attachmentRefSchema
+      // and StoredAttachment.consentId for why this is the one way the
+      // persisted row can later be told "delete this, and withdraw the
+      // consent that named its lawful basis" without guessing.
+      consentId,
     },
     { status: 201 },
   );

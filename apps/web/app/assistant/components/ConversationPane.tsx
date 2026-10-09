@@ -25,13 +25,15 @@ import { compressPhoto } from '@/lib/image-compress';
 interface DisplayAttachment {
   id: string;
   kind: 'room_photo' | 'document';
-  status: 'uploading' | 'uploaded' | 'analyzed' | 'failed';
+  status: 'uploading' | 'uploaded' | 'analyzed' | 'failed' | 'unavailable';
   filename?: string;
   /** A short-lived signed URL — renderable now, but never assumed valid later (see conversation-store.ts's loadTranscript, which re-signs on every read). */
   previewUrl?: string;
   /** The opaque internal storage path returned by the upload route. Sent back to /api/assistant/chat as `url`; never rendered. */
   path?: string;
   contentType?: string;
+  /** Echoed from the upload route's response, forwarded unseen to the chat request — see chat-schema.ts's attachmentRefSchema. Lets a later DELETE withdraw the exact consent grant this photo was attached under. */
+  consentId?: string;
 }
 
 /** Shape returned by GET /api/assistant/conversation — matches StoredTurn (conversation-store.ts). */
@@ -369,7 +371,7 @@ export function ConversationPane({
             if (!uploaded?.length) return base;
             return {
               ...base,
-              attachments: uploaded.map((a) => ({ id: a.id, kind: a.kind, url: a.path!, contentType: a.contentType ?? 'image/jpeg', filename: a.filename })),
+              attachments: uploaded.map((a) => ({ id: a.id, kind: a.kind, url: a.path!, contentType: a.contentType ?? 'image/jpeg', filename: a.filename, consentId: a.consentId })),
             };
           }),
           workspace: snapshotFromState(state),
@@ -528,12 +530,12 @@ export function ConversationPane({
       form.append('designId', state.designId);
       const res = await fetch('/api/assistant/attachments', { method: 'POST', body: form });
       if (!res.ok) throw new Error('upload failed');
-      const data: { id: string; kind: 'room_photo'; path: string; previewUrl: string | null; contentType: string; filename: string } =
+      const data: { id: string; kind: 'room_photo'; path: string; previewUrl: string | null; contentType: string; filename: string; consentId: string } =
         await res.json();
       setPendingAttachments((prev) =>
         prev.map((a) =>
           a.id === localId
-            ? { id: data.id, kind: data.kind, status: 'uploaded', filename: data.filename, previewUrl: data.previewUrl ?? a.previewUrl, path: data.path, contentType: data.contentType }
+            ? { id: data.id, kind: data.kind, status: 'uploaded', filename: data.filename, previewUrl: data.previewUrl ?? a.previewUrl, path: data.path, contentType: data.contentType, consentId: data.consentId }
             : a,
         ),
       );
@@ -554,6 +556,40 @@ export function ConversationPane({
   const removePendingAttachment = (id: string) => setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
 
   const attachmentsUploading = pendingAttachments.some((a) => a.status === 'uploading');
+
+  /**
+   * Delete an already-sent photo for real: calls DELETE
+   * /api/assistant/attachments/[id], which removes the stored bytes and
+   * withdraws the consent grant that named them (see that route's own
+   * comment). Only updates local state to "unavailable" on a confirmed
+   * server success — a failed request leaves the thumbnail exactly as it
+   * was rather than pretending the photo is gone when it is not.
+   */
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const deleteSentAttachment = async (messageIndex: number, attachmentId: string) => {
+    if (!state.designId || deletingAttachmentId) return;
+    setDeletingAttachmentId(attachmentId);
+    try {
+      const res = await fetch(`/api/assistant/attachments/${encodeURIComponent(attachmentId)}?designId=${encodeURIComponent(state.designId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) return;
+      setMessages((prev) => {
+        const copy = [...prev];
+        const target = copy[messageIndex];
+        if (!target?.attachments) return prev;
+        copy[messageIndex] = {
+          ...target,
+          attachments: target.attachments.map((a) => (a.id === attachmentId ? { ...a, status: 'unavailable', previewUrl: undefined } : a)),
+        };
+        return copy;
+      });
+    } catch {
+      // Network failure — the thumbnail stays as-is; the homeowner can try again.
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
 
   /**
    * The composer — the single component rendered in two different places
@@ -701,17 +737,35 @@ export function ConversationPane({
                   <p className="aha-message-author">{m.role === 'assistant' ? WORKSPACE_ASSISTANT.name : 'You'}</p>
                   {m.attachments && m.attachments.length > 0 && (
                     <div className="aha-message-attachments" aria-label="Attached photos">
-                      {m.attachments.map((a) => (
-                        <div key={a.id} className={`aha-attachment-thumb aha-attachment-thumb--${a.status}`}>
-                          {a.previewUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- a signed storage URL, not an optimizable site asset
-                            <img src={a.previewUrl} alt={a.filename ?? 'Photo'} />
-                          ) : (
+                      {m.attachments.map((a) =>
+                        a.status === 'unavailable' ? (
+                          <div key={a.id} className="aha-attachment-thumb aha-attachment-thumb--unavailable">
                             <span className="aha-attachment-fallback" aria-hidden="true" />
-                          )}
-                          {a.status === 'failed' && <span className="aha-attachment-status">Couldn&apos;t load</span>}
-                        </div>
-                      ))}
+                            <span className="aha-attachment-status">Removed</span>
+                          </div>
+                        ) : (
+                          <div key={a.id} className={`aha-attachment-thumb aha-attachment-thumb--${a.status}`}>
+                            {a.previewUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- a signed storage URL, not an optimizable site asset
+                              <img src={a.previewUrl} alt={a.filename ?? 'Photo'} />
+                            ) : (
+                              <span className="aha-attachment-fallback" aria-hidden="true" />
+                            )}
+                            {a.status === 'failed' && <span className="aha-attachment-status">Couldn&apos;t load</span>}
+                            {m.role === 'user' && (a.status === 'uploaded' || a.status === 'analyzed') && (
+                              <button
+                                type="button"
+                                className="aha-attachment-remove"
+                                aria-label={`Remove ${a.filename ?? 'this photo'}`}
+                                disabled={deletingAttachmentId === a.id}
+                                onClick={() => void deleteSentAttachment(i, a.id)}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
                   )}
                   {m.streaming && !m.text ? (

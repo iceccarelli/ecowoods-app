@@ -37,6 +37,17 @@ export interface StoredAttachment {
   status: 'selected' | 'uploading' | 'uploaded' | 'analyzing' | 'analyzed' | 'failed' | 'unavailable';
   filename?: string;
   url?: string;
+  /**
+   * The ConsentRecord row this attachment's retention is named under (see
+   * lib/floor-graph/consent.ts's law: "a photograph whose lawful basis
+   * cannot be named is a photograph we should not be holding"). Set once,
+   * at persist time, from the value the upload route's grantConsent() call
+   * returned — never client-supplied. Internal only: loadTranscript strips
+   * it before the transcript reaches the browser, and the delete route
+   * reads it straight from this stored row rather than trusting an id a
+   * caller might hand it.
+   */
+  consentId?: string;
 }
 
 export interface StoredTurn {
@@ -104,10 +115,16 @@ export async function loadTranscript(designId: string | undefined, viewerUserId:
          */
         attachments: Array.isArray(m.attachments)
           ? await Promise.all(
-              (m.attachments as unknown as StoredAttachment[]).map(async (a) => ({
-                ...a,
-                url: a.url ? ((await signAttachmentUrl(a.url)) ?? undefined) : undefined,
-              })),
+              (m.attachments as unknown as StoredAttachment[]).map(async (a) => {
+                // consentId is internal (see StoredAttachment's doc comment)
+                // — destructured out rather than spread, so it can never
+                // reach the browser by a future field added to `a`.
+                const { consentId: _consentId, ...rest } = a;
+                return {
+                  ...rest,
+                  url: a.url ? ((await signAttachmentUrl(a.url)) ?? undefined) : undefined,
+                };
+              }),
             )
           : undefined,
         model: m.model ?? undefined,
@@ -142,6 +159,60 @@ async function ensureConversation(designId: string, userId: string | null): Prom
   } catch (err) {
     console.error(JSON.stringify({ event: 'assistant.conversation.ensure_failed', error: err instanceof Error ? err.message : 'unknown' }));
     return null;
+  }
+}
+
+export type DeleteAttachmentResult =
+  | { ok: true; storedPath?: string; consentId?: string }
+  | { ok: false; reason: 'not_found' | 'forbidden' | 'db_error' };
+
+/**
+ * Find the one attachment with `attachmentId` inside this conversation and
+ * mark it `unavailable` in place — the message's text and any other
+ * attachments are untouched. Returns the removed attachment's storage path
+ * and consent id so the caller (the delete route) can remove the actual
+ * bytes and withdraw the actual consent; this function only owns the
+ * database row.
+ *
+ * Same ownership boundary as loadTranscript: a conversation linked to a
+ * real account can only be touched by that same account's session. Unlike
+ * loadTranscript, an unauthorized or missing attachment is NOT folded into
+ * one silent empty result — a delete request needs to tell "already gone"
+ * apart from "not yours" apart from "worked", so the route can report
+ * honestly instead of claiming success for a no-op.
+ */
+export async function deleteStoredAttachment(
+  designId: string | undefined,
+  attachmentId: string,
+  viewerUserId: string | null,
+): Promise<DeleteAttachmentResult> {
+  if (!designId || !isDesignId(designId)) return { ok: false, reason: 'not_found' };
+  try {
+    const conversation = await db.assistantConversation.findUnique({
+      where: { designId },
+      select: {
+        userId: true,
+        messages: { select: { id: true, attachments: true } },
+      },
+    });
+    if (!conversation) return { ok: false, reason: 'not_found' };
+    if (conversation.userId && conversation.userId !== viewerUserId) return { ok: false, reason: 'forbidden' };
+
+    for (const message of conversation.messages) {
+      const attachments = Array.isArray(message.attachments) ? (message.attachments as unknown as StoredAttachment[]) : [];
+      const index = attachments.findIndex((a) => a.id === attachmentId);
+      if (index === -1) continue;
+      const removed = attachments[index]!;
+      if (removed.status === 'unavailable') return { ok: true }; // already deleted — idempotent, nothing left to clean up
+      const next = [...attachments];
+      next[index] = { id: removed.id, kind: removed.kind, status: 'unavailable' };
+      await db.assistantMessage.update({ where: { id: message.id }, data: { attachments: next as unknown as object } });
+      return { ok: true, storedPath: removed.url, consentId: removed.consentId };
+    }
+    return { ok: false, reason: 'not_found' };
+  } catch (err) {
+    console.error(JSON.stringify({ event: 'assistant.conversation.delete_attachment_failed', error: err instanceof Error ? err.message : 'unknown' }));
+    return { ok: false, reason: 'db_error' };
   }
 }
 

@@ -113,6 +113,42 @@ export async function withdrawConsent(
   return closed.count;
 }
 
+/**
+ * Withdraw one specific grant by its row id, rather than by (purpose,
+ * subjectEmail). `withdrawConsent` above cannot close an anonymous grant at
+ * all — `normaliseSubject(undefined)` is `null`, which it refuses to act on
+ * — and Ask Francisco's attachments are anonymous-first, consented without
+ * an email the way the estimate-form triage flow collects one. A caller
+ * that already holds the exact grant id (e.g. deleting one specific photo)
+ * needs a way to close exactly that row regardless of whether a subject was
+ * ever named. Same append-only discipline as `withdrawConsent`: the open
+ * row is stamped, and a second WITHDRAWN row is appended — never a bare
+ * update-in-place that would leave no trace of when the row was open.
+ *
+ * Returns false for a row that does not exist or was already withdrawn —
+ * never throws, so a caller cleaning up a photo can still remove the bytes
+ * even if the consent row is already gone.
+ */
+export async function withdrawConsentById(consentId: string): Promise<boolean> {
+  const row = await db.consentRecord.findUnique({ where: { id: consentId } });
+  if (!row || row.state !== 'GRANTED' || row.withdrawnAt) return false;
+  const now = new Date();
+  await db.consentRecord.update({ where: { id: consentId }, data: { withdrawnAt: now } });
+  await db.consentRecord.create({
+    data: {
+      purpose: row.purpose,
+      state: 'WITHDRAWN',
+      subjectEmail: row.subjectEmail,
+      userId: row.userId,
+      wording: row.wording,
+      surface: row.surface,
+      version: row.version,
+      withdrawnAt: now,
+    },
+  });
+  return true;
+}
+
 /** Is there a live grant for this purpose right now? */
 export async function hasLiveConsent(
   purpose: ConsentPurpose,
