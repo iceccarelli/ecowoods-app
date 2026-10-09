@@ -214,6 +214,7 @@ export async function POST(req: Request) {
         status: delivered ? 'analyzed' : 'failed',
         filename: ref.filename,
         url: ref.url,
+        consentId: ref.consentId,
       }))
     : undefined;
   void appendTurn({ designId, userId, role: 'user', content: lastUserText, attachments: persistedAttachments });

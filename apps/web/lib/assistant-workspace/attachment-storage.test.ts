@@ -65,4 +65,32 @@ describe('attachment-storage', () => {
     expect(await downloadAttachment('https://example.com/not-ours.jpg')).toBeNull();
     expect(await signAttachmentUrl('https://example.com/not-ours.jpg')).toBeNull();
   });
+
+  it('deleteAttachment actually removes the local-fallback file — downloadAttachment can no longer read it afterward', async () => {
+    clearSupabaseEnv();
+    vi.stubEnv('NODE_ENV', 'test');
+    const { storeAttachment, downloadAttachment, deleteAttachment } = await import('./attachment-storage');
+    const stored = await storeAttachment(Buffer.from('a photo to be deleted'), 'DESIGN123/att_5', 'image/jpeg');
+    expect(stored.ok).toBe(true);
+    if (!stored.ok) return;
+
+    expect(await downloadAttachment(stored.path)).not.toBeNull();
+    expect(await deleteAttachment(stored.path)).toBe(true);
+    expect(await downloadAttachment(stored.path)).toBeNull();
+  });
+
+  it('deleteAttachment is idempotent — deleting a path that was never written still reports success', async () => {
+    clearSupabaseEnv();
+    vi.stubEnv('NODE_ENV', 'test');
+    const { deleteAttachment } = await import('./attachment-storage');
+    expect(await deleteAttachment('file://.assistant-attachments/DESIGN123/never-existed.jpg')).toBe(true);
+  });
+
+  it('deleteAttachment returns false for an unrecognised path scheme and for no store configured, rather than throwing', async () => {
+    clearSupabaseEnv();
+    vi.stubEnv('NODE_ENV', 'production');
+    const { deleteAttachment } = await import('./attachment-storage');
+    expect(await deleteAttachment('https://example.com/not-ours.jpg')).toBe(false);
+    expect(await deleteAttachment('supabase://assistant-attachments/x.jpg')).toBe(false);
+  });
 });

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const findUniqueMock = vi.fn();
 const upsertMock = vi.fn();
 const createMock = vi.fn();
+const updateMock = vi.fn();
 const signAttachmentUrlMock = vi.fn();
 
 vi.mock('@/lib/db', () => ({
@@ -13,6 +14,7 @@ vi.mock('@/lib/db', () => ({
     },
     assistantMessage: {
       create: (...args: unknown[]) => createMock(...args),
+      update: (...args: unknown[]) => updateMock(...args),
     },
   },
 }));
@@ -21,7 +23,7 @@ vi.mock('./attachment-storage', () => ({
   signAttachmentUrl: (...args: unknown[]) => signAttachmentUrlMock(...args),
 }));
 
-import { appendTurn, loadTranscript } from './conversation-store';
+import { appendTurn, deleteStoredAttachment, loadTranscript } from './conversation-store';
 
 const VALID_DESIGN_ID = 'abcdefgh1234';
 const OTHER_DESIGN_ID = 'zzyyxxwwvvtt';
@@ -127,6 +129,27 @@ describe('loadTranscript', () => {
     expect(turns[0]!.attachments?.[0]?.url).toBe('https://signed.example/fresh-url');
     // The opaque storage path itself must never reach the client.
     expect(turns[0]!.attachments?.[0]?.url).not.toContain('supabase://');
+  });
+
+  it('never sends the internal consentId to the client, even though it is stored on the row', async () => {
+    signAttachmentUrlMock.mockResolvedValueOnce('https://signed.example/fresh-url');
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        {
+          role: 'user',
+          content: 'see this',
+          blocks: null,
+          attachments: [
+            { id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-row-id' },
+          ],
+          model: null,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    const turns = await loadTranscript(VALID_DESIGN_ID, null);
+    expect(turns[0]!.attachments?.[0]).not.toHaveProperty('consentId');
   });
 
   it('degrades an attachment to no preview URL, never the raw storage path, when signing fails', async () => {
@@ -276,5 +299,82 @@ describe('appendTurn', () => {
 
     expect(createMock.mock.calls[0]![0].data.conversationId).toBe('conv-1');
     expect(createMock.mock.calls[1]![0].data.conversationId).toBe('conv-2');
+  });
+});
+
+describe('deleteStoredAttachment', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('returns not_found for a missing or invalid designId — never queries the database', async () => {
+    expect(await deleteStoredAttachment(undefined, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(await deleteStoredAttachment('not-a-real-id', 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(findUniqueMock).not.toHaveBeenCalled();
+  });
+
+  it('returns not_found when no conversation exists for the designId', async () => {
+    findUniqueMock.mockResolvedValueOnce(null);
+    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+  });
+
+  it('returns forbidden for a conversation linked to a different account', async () => {
+    findUniqueMock.mockResolvedValueOnce({ userId: 'owner-user-id', messages: [] });
+    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'forbidden' });
+    findUniqueMock.mockResolvedValueOnce({ userId: 'owner-user-id', messages: [] });
+    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', 'someone-else')).toEqual({ ok: false, reason: 'forbidden' });
+  });
+
+  it('allows the linked account to delete its own conversation\'s attachment', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: 'owner-user-id',
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }] }],
+    });
+    updateMock.mockResolvedValueOnce({});
+    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', 'owner-user-id');
+    expect(result).toEqual({ ok: true, storedPath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' });
+  });
+
+  it('returns not_found when the attachment id does not exist in any message of the conversation', async () => {
+    findUniqueMock.mockResolvedValueOnce({ userId: null, messages: [{ id: 'msg-1', attachments: [{ id: 'att_other', kind: 'room_photo', status: 'analyzed' }] }] });
+    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+  });
+
+  it('marks the matching attachment unavailable and strips its url/consentId in the persisted row, leaving the rest of the message intact', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        {
+          id: 'msg-1',
+          attachments: [
+            { id: 'att_keep', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/keep.jpg', consentId: 'consent-keep' },
+            { id: 'att_1', kind: 'room_photo', status: 'analyzed', filename: 'floor.jpg', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' },
+          ],
+        },
+      ],
+    });
+    updateMock.mockResolvedValueOnce({});
+    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null);
+    expect(result).toEqual({ ok: true, storedPath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' });
+
+    const written = updateMock.mock.calls[0]![0];
+    expect(written.where).toEqual({ id: 'msg-1' });
+    expect(written.data.attachments).toEqual([
+      { id: 'att_keep', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/keep.jpg', consentId: 'consent-keep' },
+      { id: 'att_1', kind: 'room_photo', status: 'unavailable' },
+    ]);
+  });
+
+  it('is idempotent — deleting an already-unavailable attachment succeeds without writing again', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] }],
+    });
+    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null);
+    expect(result).toEqual({ ok: true });
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('never throws when the database is unreachable', async () => {
+    findUniqueMock.mockRejectedValueOnce(new Error('connection refused'));
+    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'db_error' });
   });
 });

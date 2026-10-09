@@ -140,6 +140,38 @@ export async function signAttachmentUrl(storedPath: string, expiresInSeconds = 6
   return null;
 }
 
+/**
+ * Remove the stored object. The one real "retention correctness" primitive
+ * this module was missing: without it, a homeowner who attached a photo had
+ * no way to make it actually go away — the bytes would sit in the bucket
+ * forever. Called from the attachment-delete route; idempotent (deleting an
+ * already-gone object is success, not an error — matches Supabase/fs
+ * semantics for a missing key).
+ */
+export async function deleteAttachment(storedPath: string): Promise<boolean> {
+  const supa = parseSupabasePath(storedPath);
+  if (supa) {
+    const supabase = await supabaseAdmin();
+    if (!supabase) return false;
+    try {
+      const { error } = await supabase.storage.from(supa.bucket).remove([supa.key]);
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+  if (storedPath.startsWith('file://')) {
+    try {
+      const rel = storedPath.slice('file://'.length);
+      fs.rmSync(path.join(process.cwd(), rel), { force: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 /** The bytes themselves — for the one caller that needs them: the chat route, sending the photo to the model. */
 export async function downloadAttachment(storedPath: string): Promise<{ buffer: Buffer; contentType: string } | null> {
   const supa = parseSupabasePath(storedPath);
