@@ -25,7 +25,7 @@ import { compressPhoto } from '@/lib/image-compress';
 interface DisplayAttachment {
   id: string;
   kind: 'room_photo' | 'document';
-  status: 'uploading' | 'uploaded' | 'analyzed' | 'failed' | 'unavailable';
+  status: 'uploading' | 'uploaded' | 'analyzed' | 'failed' | 'deleting' | 'unavailable';
   filename?: string;
   /** A short-lived signed URL — renderable now, but never assumed valid later (see conversation-store.ts's loadTranscript, which re-signs on every read). */
   previewUrl?: string;
@@ -559,33 +559,52 @@ export function ConversationPane({
 
   /**
    * Delete an already-sent photo for real: calls DELETE
-   * /api/assistant/attachments/[id], which removes the stored bytes and
-   * withdraws the consent grant that named them (see that route's own
-   * comment). Only updates local state to "unavailable" on a confirmed
-   * server success — a failed request leaves the thumbnail exactly as it
-   * was rather than pretending the photo is gone when it is not.
+   * /api/assistant/attachments/[id]. That route's own contract is explicit:
+   * `res.ok` means only "the request was handled," never "the photo is
+   * gone" — the response's `complete` field is the only honest signal of
+   * that, because storage deletion and consent withdrawal are separate
+   * external operations that can each fail independently.
+   *
+   * So this function never shows "Removed" on `res.ok` alone. It always
+   * puts the attachment into `'deleting'` first (hiding the preview
+   * immediately — the photo must never stay visibly "live" while a
+   * deletion is in flight or has partially failed, matching the server's
+   * own never-re-expose-while-deleting posture), then only flips to
+   * `'unavailable'` once the response says `complete: true`. On
+   * `complete: false` or any request failure, it STAYS in `'deleting'`
+   * with a retry affordance — clicking the same button calls DELETE again,
+   * and the route resumes exactly the leg(s) that didn't finish rather
+   * than redoing completed work.
    */
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const setAttachmentStatus = (messageIndex: number, attachmentId: string, status: DisplayAttachment['status']) => {
+    setMessages((prev) => {
+      const copy = [...prev];
+      const target = copy[messageIndex];
+      if (!target?.attachments) return prev;
+      copy[messageIndex] = {
+        ...target,
+        attachments: target.attachments.map((a) => (a.id === attachmentId ? { ...a, status, previewUrl: undefined } : a)),
+      };
+      return copy;
+    });
+  };
   const deleteSentAttachment = async (messageIndex: number, attachmentId: string) => {
     if (!state.designId || deletingAttachmentId) return;
     setDeletingAttachmentId(attachmentId);
+    setAttachmentStatus(messageIndex, attachmentId, 'deleting');
     try {
       const res = await fetch(`/api/assistant/attachments/${encodeURIComponent(attachmentId)}?designId=${encodeURIComponent(state.designId)}`, {
         method: 'DELETE',
       });
-      if (!res.ok) return;
-      setMessages((prev) => {
-        const copy = [...prev];
-        const target = copy[messageIndex];
-        if (!target?.attachments) return prev;
-        copy[messageIndex] = {
-          ...target,
-          attachments: target.attachments.map((a) => (a.id === attachmentId ? { ...a, status: 'unavailable', previewUrl: undefined } : a)),
-        };
-        return copy;
-      });
+      if (!res.ok) return; // stays 'deleting' — the retry button is already showing
+      const data: { complete?: boolean } = await res.json().catch(() => ({}));
+      if (data.complete) setAttachmentStatus(messageIndex, attachmentId, 'unavailable');
+      // complete: false → stays 'deleting' on purpose; the route itself
+      // already retried whichever leg it could, so another click resumes
+      // from there rather than silently looping on its own.
     } catch {
-      // Network failure — the thumbnail stays as-is; the homeowner can try again.
+      // Network failure — stays 'deleting' with the retry affordance showing.
     } finally {
       setDeletingAttachmentId(null);
     }
@@ -742,6 +761,28 @@ export function ConversationPane({
                           <div key={a.id} className="aha-attachment-thumb aha-attachment-thumb--unavailable">
                             <span className="aha-attachment-fallback" aria-hidden="true" />
                             <span className="aha-attachment-status">Removed</span>
+                          </div>
+                        ) : a.status === 'deleting' ? (
+                          // Never shows the preview while a deletion is in
+                          // flight or has partially failed — matches the
+                          // server's own never-re-expose-mid-cleanup
+                          // posture. `deletingAttachmentId === a.id` means
+                          // THIS request is in flight right now; otherwise a
+                          // prior attempt didn't fully finish and the same
+                          // button resumes it.
+                          <div key={a.id} className="aha-attachment-thumb aha-attachment-thumb--deleting">
+                            <span className="aha-attachment-fallback" aria-hidden="true" />
+                            <span className="aha-attachment-status">{deletingAttachmentId === a.id ? 'Removing…' : 'Couldn’t finish — tap to retry'}</span>
+                            {m.role === 'user' && deletingAttachmentId !== a.id && (
+                              <button
+                                type="button"
+                                className="aha-attachment-remove"
+                                aria-label={`Retry removing ${a.filename ?? 'this photo'}`}
+                                onClick={() => void deleteSentAttachment(i, a.id)}
+                              >
+                                ↻
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div key={a.id} className={`aha-attachment-thumb aha-attachment-thumb--${a.status}`}>

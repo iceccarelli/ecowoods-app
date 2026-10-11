@@ -29,7 +29,8 @@ import { auth } from '@/lib/auth';
 import { appendTurn, type StoredAttachment } from '@/lib/assistant-workspace/conversation-store';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
-import { downloadAttachment } from '@/lib/assistant-workspace/attachment-storage';
+import { downloadAttachment, isOwnAttachmentPath, attachmentConsentSurface } from '@/lib/assistant-workspace/attachment-storage';
+import { isConsentValidForAttachment } from '@/lib/floor-graph/consent';
 import {
   assistantChatRequestSchema,
   cardFallbackText,
@@ -180,22 +181,53 @@ export async function POST(req: Request) {
    * dropped — Francisco must never claim to have looked at a photo he did
    * not get. Documents (kind: 'document') are not sent to the model yet —
    * P0 scope is photos; see this PR's description for what's deferred.
+   *
+   * PROVENANCE GATE — every ref is CLIENT-SUPPLIED and must be proven, not
+   * trusted, before it is downloaded or persisted:
+   *   1. `url` must be the EXACT path this (designId, id, contentType)
+   *      would have been stored at (isOwnAttachmentPath) — not merely a
+   *      well-formed `supabase://`/`file://` string. A path naming another
+   *      design's folder, another attachment's id, or a different bucket
+   *      entirely is rejected outright; attachment-storage.ts's own parser
+   *      additionally refuses any bucket but this feature's own as a second
+   *      layer, but this is the real authorization check.
+   *   2. `consentId` must name a live ASSISTANT_PHOTOS grant whose
+   *      `surface` was stamped for exactly this attachment id at upload
+   *      time (isConsentValidForAttachment) — never merely "some grant
+   *      exists."
+   * A ref failing either check is treated exactly like a download failure:
+   * named as unavailable to the model, and persisted with NO url/consentId
+   * at all — there is nothing legitimate behind it to retry, resend, or
+   * clean up later, and persisting the forged value would let it sit in
+   * the transcript indistinguishable from a real one.
    */
   const attachmentRefs: AttachmentRef[] = lastUserRaw.role === 'user' ? (lastUserRaw.attachments ?? []) : [];
-  const attachmentOutcomes: { ref: AttachmentRef; delivered: boolean }[] = [];
+  const attachmentOutcomes: { ref: AttachmentRef; delivered: boolean; verified: boolean }[] = [];
   if (attachmentRefs.length > 0 && messages.length > 0) {
     const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: Buffer; mediaType: string }> = [];
     if (lastUserText.trim()) parts.push({ type: 'text', text: lastUserText });
     const unavailable: string[] = [];
     for (const ref of attachmentRefs) {
       if (ref.kind !== 'room_photo') continue;
+
+      const pathValid = !!designId && isOwnAttachmentPath(ref.url, designId, ref.id, ref.contentType);
+      const consentValid = pathValid && !!ref.consentId && (await isConsentValidForAttachment(ref.consentId, attachmentConsentSurface(ref.id)));
+      if (!pathValid || !consentValid) {
+        console.warn(
+          JSON.stringify({ event: 'assistant.attachment.rejected', attachmentId: ref.id, pathValid, consentValid }),
+        );
+        unavailable.push(ref.filename ?? 'a photo');
+        attachmentOutcomes.push({ ref, delivered: false, verified: false });
+        continue;
+      }
+
       const downloaded = await downloadAttachment(ref.url).catch(() => null);
       if (downloaded) {
         parts.push({ type: 'image', image: downloaded.buffer, mediaType: downloaded.contentType });
-        attachmentOutcomes.push({ ref, delivered: true });
+        attachmentOutcomes.push({ ref, delivered: true, verified: true });
       } else {
         unavailable.push(ref.filename ?? 'a photo');
-        attachmentOutcomes.push({ ref, delivered: false });
+        attachmentOutcomes.push({ ref, delivered: false, verified: true });
       }
     }
     if (unavailable.length) {
@@ -208,13 +240,13 @@ export async function POST(req: Request) {
   }
 
   const persistedAttachments: StoredAttachment[] | undefined = attachmentOutcomes.length
-    ? attachmentOutcomes.map(({ ref, delivered }) => ({
+    ? attachmentOutcomes.map(({ ref, delivered, verified }) => ({
         id: ref.id,
         kind: ref.kind,
         status: delivered ? 'analyzed' : 'failed',
         filename: ref.filename,
-        url: ref.url,
-        consentId: ref.consentId,
+        url: verified ? ref.url : undefined,
+        consentId: verified ? ref.consentId : undefined,
       }))
     : undefined;
   void appendTurn({ designId, userId, role: 'user', content: lastUserText, attachments: persistedAttachments });

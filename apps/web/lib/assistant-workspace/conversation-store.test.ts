@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const findUniqueMock = vi.fn();
 const upsertMock = vi.fn();
 const createMock = vi.fn();
-const updateMock = vi.fn();
+const executeRawMock = vi.fn();
 const signAttachmentUrlMock = vi.fn();
 
 vi.mock('@/lib/db', () => ({
@@ -14,8 +14,11 @@ vi.mock('@/lib/db', () => ({
     },
     assistantMessage: {
       create: (...args: unknown[]) => createMock(...args),
-      update: (...args: unknown[]) => updateMock(...args),
     },
+    // Prisma's tagged-template raw-SQL call — mocked as a plain function
+    // taking the same (strings, ...values) shape a template tag receives,
+    // so tests can assert on the bound values without parsing SQL text.
+    $executeRaw: (strings: TemplateStringsArray, ...values: unknown[]) => executeRawMock(strings, ...values),
   },
 }));
 
@@ -23,7 +26,14 @@ vi.mock('./attachment-storage', () => ({
   signAttachmentUrl: (...args: unknown[]) => signAttachmentUrlMock(...args),
 }));
 
-import { appendTurn, deleteStoredAttachment, loadTranscript } from './conversation-store';
+import { appendTurn, claimAttachmentForDeletion, finalizeAttachmentDeletion, loadTranscript } from './conversation-store';
+
+/** Pulls the two JSON-ish template values a casSwapAttachments call bound, in the order the UPDATE statement interpolates them: SET attachments = ${next}::jsonb WHERE id = ${messageId}::uuid AND attachments = ${expected}::jsonb. */
+function lastSwapValues(): { next: unknown; messageId: unknown; expected: unknown } {
+  const call = executeRawMock.mock.calls.at(-1)!;
+  // call = [strings, next, messageId, expected].
+  return { next: JSON.parse(call[1] as string), messageId: call[2], expected: JSON.parse(call[3] as string) };
+}
 
 const VALID_DESIGN_ID = 'abcdefgh1234';
 const OTHER_DESIGN_ID = 'zzyyxxwwvvtt';
@@ -150,6 +160,30 @@ describe('loadTranscript', () => {
     });
     const turns = await loadTranscript(VALID_DESIGN_ID, null);
     expect(turns[0]!.attachments?.[0]).not.toHaveProperty('consentId');
+  });
+
+  it('never exposes the preview (or the real url) for an attachment mid-deletion — status "deleting" gets the same no-preview treatment as "unavailable"', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        {
+          role: 'user',
+          content: 'see this',
+          blocks: null,
+          attachments: [
+            { id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: true },
+          ],
+          model: null,
+          createdAt: new Date(),
+        },
+      ],
+    });
+    const turns = await loadTranscript(VALID_DESIGN_ID, null);
+    expect(turns[0]!.attachments?.[0]?.url).toBeUndefined();
+    expect(signAttachmentUrlMock).not.toHaveBeenCalled();
+    // The cleanup bookkeeping fields are server-internal too.
+    expect(turns[0]!.attachments?.[0]).not.toHaveProperty('storageDeleted');
+    expect(turns[0]!.attachments?.[0]).not.toHaveProperty('consentWithdrawn');
   });
 
   it('degrades an attachment to no preview URL, never the raw storage path, when signing fails', async () => {
@@ -302,79 +336,261 @@ describe('appendTurn', () => {
   });
 });
 
-describe('deleteStoredAttachment', () => {
+describe('claimAttachmentForDeletion', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('returns not_found for a missing or invalid designId — never queries the database', async () => {
-    expect(await deleteStoredAttachment(undefined, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
-    expect(await deleteStoredAttachment('not-a-real-id', 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(await claimAttachmentForDeletion(undefined, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(await claimAttachmentForDeletion('not-a-real-id', 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
     expect(findUniqueMock).not.toHaveBeenCalled();
   });
 
   it('returns not_found when no conversation exists for the designId', async () => {
     findUniqueMock.mockResolvedValueOnce(null);
-    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
   });
 
-  it('returns forbidden for a conversation linked to a different account', async () => {
+  it('returns forbidden for a conversation linked to a different account — never claims, never writes', async () => {
     findUniqueMock.mockResolvedValueOnce({ userId: 'owner-user-id', messages: [] });
-    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'forbidden' });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'forbidden' });
     findUniqueMock.mockResolvedValueOnce({ userId: 'owner-user-id', messages: [] });
-    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', 'someone-else')).toEqual({ ok: false, reason: 'forbidden' });
-  });
-
-  it('allows the linked account to delete its own conversation\'s attachment', async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      userId: 'owner-user-id',
-      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }] }],
-    });
-    updateMock.mockResolvedValueOnce({});
-    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', 'owner-user-id');
-    expect(result).toEqual({ ok: true, storedPath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', 'someone-else')).toEqual({ ok: false, reason: 'forbidden' });
+    expect(executeRawMock).not.toHaveBeenCalled();
   });
 
   it('returns not_found when the attachment id does not exist in any message of the conversation', async () => {
     findUniqueMock.mockResolvedValueOnce({ userId: null, messages: [{ id: 'msg-1', attachments: [{ id: 'att_other', kind: 'room_photo', status: 'analyzed' }] }] });
-    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'not_found' });
   });
 
-  it('marks the matching attachment unavailable and strips its url/consentId in the persisted row, leaving the rest of the message intact', async () => {
+  it('is a true no-op for an already-unavailable attachment — reports complete without any write', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] }],
+    });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: true, alreadyComplete: true });
+    expect(executeRawMock).not.toHaveBeenCalled();
+  });
+
+  it('claims a fresh analyzed attachment via a guarded compare-and-swap, keeping url/consentId (never wiping them up front) and reporting both legs outstanding', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: 'owner-user-id',
+      messages: [
+        {
+          id: 'msg-1',
+          attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', filename: 'floor.jpg', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }],
+        },
+      ],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    const result = await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', 'owner-user-id');
+    expect(result).toEqual({ ok: true, alreadyComplete: false, storagePath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', needsStorage: true, needsConsent: true });
+
+    const { next, expected } = lastSwapValues();
+    expect(expected).toEqual([{ id: 'att_1', kind: 'room_photo', status: 'analyzed', filename: 'floor.jpg', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }]);
+    // url/consentId are KEPT on the claimed row — this is the actual fix:
+    // the old behaviour wiped them here, before cleanup even ran.
+    expect(next).toEqual([{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }]);
+  });
+
+  it('a retry of a row already "deleting" with one leg done reports only the outstanding leg, without writing again', async () => {
     findUniqueMock.mockResolvedValueOnce({
       userId: null,
       messages: [
         {
           id: 'msg-1',
-          attachments: [
-            { id: 'att_keep', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/keep.jpg', consentId: 'consent-keep' },
-            { id: 'att_1', kind: 'room_photo', status: 'analyzed', filename: 'floor.jpg', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' },
-          ],
+          attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: true, consentWithdrawn: false }],
         },
       ],
     });
-    updateMock.mockResolvedValueOnce({});
-    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null);
-    expect(result).toEqual({ ok: true, storedPath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' });
-
-    const written = updateMock.mock.calls[0]![0];
-    expect(written.where).toEqual({ id: 'msg-1' });
-    expect(written.data.attachments).toEqual([
-      { id: 'att_keep', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/keep.jpg', consentId: 'consent-keep' },
-      { id: 'att_1', kind: 'room_photo', status: 'unavailable' },
-    ]);
+    const result = await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null);
+    expect(result).toEqual({ ok: true, alreadyComplete: false, storagePath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', needsStorage: false, needsConsent: true });
+    expect(executeRawMock).not.toHaveBeenCalled(); // no write needed to re-report an already-claimed row
   });
 
-  it('is idempotent — deleting an already-unavailable attachment succeeds without writing again', async () => {
-    findUniqueMock.mockResolvedValueOnce({
-      userId: null,
-      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] }],
-    });
-    const result = await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null);
-    expect(result).toEqual({ ok: true });
-    expect(updateMock).not.toHaveBeenCalled();
+  it('retries the compare-and-swap when a concurrent writer changed the row first (affected !== 1), and succeeds on the next read', async () => {
+    findUniqueMock
+      .mockResolvedValueOnce({
+        userId: null,
+        messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }] }],
+      })
+      .mockResolvedValueOnce({
+        // Someone else already claimed it by the time we re-read.
+        userId: null,
+        messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] }],
+      });
+    executeRawMock.mockResolvedValueOnce(0); // our swap lost the race
+    const result = await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null);
+    expect(result).toEqual({ ok: true, alreadyComplete: false, storagePath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', needsStorage: true, needsConsent: true });
+    expect(executeRawMock).toHaveBeenCalledTimes(1); // the second read found it already 'deleting' — no second swap attempt needed
   });
 
   it('never throws when the database is unreachable', async () => {
     findUniqueMock.mockRejectedValueOnce(new Error('connection refused'));
-    expect(await deleteStoredAttachment(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'db_error' });
+    expect(await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null)).toEqual({ ok: false, reason: 'db_error' });
+  });
+
+  /**
+   * Found live, against this sandbox's own Postgres, while integration-
+   * testing this feature: the SAME attachment id ended up persisted into
+   * THREE separate messages (one legitimate upload, two inert rows left by
+   * rejected forged refs that happened to reuse the real id — see
+   * chat/route.ts's provenance gate, which rejects the forged ref's
+   * url/consentId but still writes a `status: 'failed'` row under the id it
+   * claimed). DELETE on that id reported `complete: true` after clearing
+   * only the FIRST matching row it found — the real photo, in a DIFFERENT
+   * message, was never touched: file still on disk, consent still GRANTED,
+   * confirmed directly in Postgres. This is the regression test for the fix.
+   */
+  it('claims EVERY message that holds this attachment id, not just the first one found — the exact bug found live in this sandbox', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        { id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'analyzed', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1' }] },
+        { id: 'msg-2', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'failed' }] }, // inert duplicate: a rejected forged ref that reused this id
+      ],
+    });
+    executeRawMock.mockResolvedValue(1);
+    const result = await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null);
+    expect(result).toEqual({ ok: true, alreadyComplete: false, storagePath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', needsStorage: true, needsConsent: true });
+    // BOTH rows were claimed into 'deleting' — not just msg-1.
+    expect(executeRawMock).toHaveBeenCalledTimes(2);
+    const calls = executeRawMock.mock.calls.map((c) => ({ next: JSON.parse(c[1] as string), messageId: c[2] }));
+    const msg1 = calls.find((c) => c.messageId === 'msg-1')!;
+    const msg2 = calls.find((c) => c.messageId === 'msg-2')!;
+    expect(msg1.next[0].status).toBe('deleting');
+    expect(msg1.next[0].url).toBe('supabase://assistant-attachments/x.jpg'); // the real data, kept
+    expect(msg2.next[0].status).toBe('deleting'); // the inert duplicate converges too, not left stranded at 'failed'
+  });
+
+  it('reports alreadyComplete only once EVERY occurrence is unavailable, not just one of several', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        { id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] },
+        { id: 'msg-2', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: true, consentWithdrawn: false }] },
+      ],
+    });
+    const result = await claimAttachmentForDeletion(VALID_DESIGN_ID, 'att_1', null);
+    // msg-1 is done, but msg-2 is NOT — this must not be reported complete.
+    expect(result).toEqual({ ok: true, alreadyComplete: false, storagePath: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', needsStorage: false, needsConsent: true });
+  });
+});
+
+describe('finalizeAttachmentDeletion', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('flips to unavailable and WIPES url/consentId only once both legs actually succeeded', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] }],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: true });
+    expect(result).toEqual({ ok: true, complete: true });
+    const { next } = lastSwapValues();
+    expect(next).toEqual([{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }]);
+  });
+
+  it('a legacy attachment with no consentId at all completes on storage success alone — never fabricates a consent withdrawal that never happened', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', storageDeleted: false, consentWithdrawn: false }] }],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: false });
+    expect(result).toEqual({ ok: true, complete: true });
+  });
+
+  it('a storage failure keeps the row "deleting" WITH url/consentId retained — not wiped — so a retry can still find them', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] }],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: false, consentWithdrawn: true });
+    expect(result).toEqual({ ok: true, complete: false });
+    const { next } = lastSwapValues();
+    expect(next).toEqual([{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: true }]);
+  });
+
+  it('a consent-withdrawal failure alone also keeps the row retryable, with storageDeleted already recorded true so a retry never re-deletes the (already-gone) object', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] }],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: false });
+    expect(result).toEqual({ ok: true, complete: false });
+    const { next } = lastSwapValues();
+    expect((next as { storageDeleted: boolean }[])[0]!.storageDeleted).toBe(true);
+    expect((next as { consentWithdrawn: boolean }[])[0]!.consentWithdrawn).toBe(false);
+  });
+
+  it('a prior-finalize flag is never regressed — once storageDeleted is true on the row, a later finalize call reporting false for THIS attempt still keeps it true', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: true, consentWithdrawn: false }] }],
+    });
+    executeRawMock.mockResolvedValueOnce(1);
+    // This call's OWN outcome only attempted the consent leg (storageDeleted
+    // wasn't re-attempted, so it reports false for "did I just do it" —
+    // finalize must OR it with what the row already recorded, not overwrite.
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: false, consentWithdrawn: false });
+    expect(result).toEqual({ ok: true, complete: false });
+    const { next } = lastSwapValues();
+    expect((next as { storageDeleted: boolean }[])[0]!.storageDeleted).toBe(true);
+  });
+
+  it('returns complete:true without writing when a concurrent finalize already won', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [{ id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] }],
+    });
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: true });
+    expect(result).toEqual({ ok: true, complete: true });
+    expect(executeRawMock).not.toHaveBeenCalled();
+  });
+
+  it('respects the same account-linked authorization boundary as claim', async () => {
+    findUniqueMock.mockResolvedValueOnce({ userId: 'owner-user-id', messages: [] });
+    expect(await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', 'someone-else', { storageDeleted: true, consentWithdrawn: true })).toEqual({ ok: false, reason: 'forbidden' });
+  });
+
+  it('never throws when the database is unreachable', async () => {
+    findUniqueMock.mockRejectedValueOnce(new Error('connection refused'));
+    expect(await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: true })).toEqual({ ok: false, reason: 'db_error' });
+  });
+
+  it('finalizes EVERY message holding this attachment id — the regression test for the live-found multi-row bug, at the finalize stage', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        { id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] },
+        { id: 'msg-2', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', storageDeleted: false, consentWithdrawn: false }] }, // the inert duplicate, already claimed
+      ],
+    });
+    executeRawMock.mockResolvedValue(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: true, consentWithdrawn: true });
+    expect(result).toEqual({ ok: true, complete: true });
+    expect(executeRawMock).toHaveBeenCalledTimes(2);
+    const calls = executeRawMock.mock.calls.map((c) => ({ next: JSON.parse(c[1] as string), messageId: c[2] }));
+    expect(calls.find((c) => c.messageId === 'msg-1')!.next[0]).toEqual({ id: 'att_1', kind: 'room_photo', status: 'unavailable' });
+    expect(calls.find((c) => c.messageId === 'msg-2')!.next[0]).toEqual({ id: 'att_1', kind: 'room_photo', status: 'unavailable' });
+  });
+
+  it('does not report complete while ANY occurrence still has an outstanding leg, even if others are already done', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      userId: null,
+      messages: [
+        { id: 'msg-1', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'unavailable' }] },
+        { id: 'msg-2', attachments: [{ id: 'att_1', kind: 'room_photo', status: 'deleting', url: 'supabase://assistant-attachments/x.jpg', consentId: 'consent-1', storageDeleted: false, consentWithdrawn: false }] },
+      ],
+    });
+    executeRawMock.mockResolvedValue(1);
+    const result = await finalizeAttachmentDeletion(VALID_DESIGN_ID, 'att_1', null, { storageDeleted: false, consentWithdrawn: true });
+    expect(result).toEqual({ ok: true, complete: false });
+    // msg-1 (already unavailable) must not be touched again.
+    expect(executeRawMock).toHaveBeenCalledTimes(1);
   });
 });

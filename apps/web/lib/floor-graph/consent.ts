@@ -125,15 +125,33 @@ export async function withdrawConsent(
  * row is stamped, and a second WITHDRAWN row is appended — never a bare
  * update-in-place that would leave no trace of when the row was open.
  *
- * Returns false for a row that does not exist or was already withdrawn —
- * never throws, so a caller cleaning up a photo can still remove the bytes
- * even if the consent row is already gone.
+ * CONCURRENCY: the stamp is a single conditional `updateMany` guarded on
+ * `state: 'GRANTED', withdrawnAt: null` — not a read-then-write. Two
+ * concurrent calls for the same id race on that one UPDATE; Postgres row
+ * locking lets exactly one of them match and flip the row, so only that
+ * caller's `count` comes back 1 and only that caller appends the audit
+ * row. The loser's `count` is 0 and it returns false without writing
+ * anything — "recorded at most once" is enforced by the database, not by
+ * a race the caller has to avoid triggering.
+ *
+ * ERROR CONTRACT: returns false for a row that does not exist, was already
+ * withdrawn, or lost the race above — this is the expected, non-exceptional
+ * "nothing to do" outcome. A database connectivity failure is NOT swallowed
+ * here (consistent with `withdrawConsent` above, which also has no
+ * try/catch of its own) — it propagates as a thrown rejection. The one
+ * caller of this function (the attachment-delete path in
+ * conversation-store.ts) is expected to catch and log that case itself,
+ * exactly as it already does for the storage-deletion call beside it.
  */
 export async function withdrawConsentById(consentId: string): Promise<boolean> {
   const row = await db.consentRecord.findUnique({ where: { id: consentId } });
-  if (!row || row.state !== 'GRANTED' || row.withdrawnAt) return false;
+  if (!row) return false;
   const now = new Date();
-  await db.consentRecord.update({ where: { id: consentId }, data: { withdrawnAt: now } });
+  const claimed = await db.consentRecord.updateMany({
+    where: { id: consentId, state: 'GRANTED', withdrawnAt: null },
+    data: { withdrawnAt: now },
+  });
+  if (claimed.count !== 1) return false;
   await db.consentRecord.create({
     data: {
       purpose: row.purpose,
@@ -147,6 +165,39 @@ export async function withdrawConsentById(consentId: string): Promise<boolean> {
     },
   });
   return true;
+}
+
+/**
+ * Does `consentId` name a currently-live ASSISTANT_PHOTOS grant whose
+ * `surface` matches `expectedSurface` exactly?
+ *
+ * WHY THIS EXISTS: `consentId` travels back from the upload route to the
+ * client, and the client echoes it on the chat request that persists the
+ * attachment (see chat-schema.ts's attachmentRefSchema). An echoed id is
+ * not proof of anything by itself — a client could send ANY syntactically
+ * valid id. What makes it trustworthy is that `grantConsent` stamps each
+ * grant's `surface` with the SERVER-GENERATED attachment id it was issued
+ * for (see attachment-storage.ts's `attachmentConsentSurface`), so this
+ * check — purpose, state, and an EXACT surface match against the id the
+ * caller claims this consent belongs to — is the only way a client-echoed
+ * consentId is ever trusted. A UUID for someone else's real, live,
+ * unrelated grant fails this check every time, because its surface names a
+ * different attachment id. Called from chat/route.ts before an attachment
+ * is persisted at all — a ref that fails this is dropped, never stored.
+ *
+ * Fails closed: any lookup error (including the database being
+ * unreachable) is treated as "not valid," never as "assume it's fine."
+ */
+export async function isConsentValidForAttachment(consentId: string, expectedSurface: string): Promise<boolean> {
+  try {
+    const row = await db.consentRecord.findUnique({
+      where: { id: consentId },
+      select: { purpose: true, state: true, withdrawnAt: true, surface: true },
+    });
+    return !!row && row.purpose === 'ASSISTANT_PHOTOS' && row.state === 'GRANTED' && !row.withdrawnAt && row.surface === expectedSurface;
+  } catch {
+    return false;
+  }
 }
 
 /** Is there a live grant for this purpose right now? */

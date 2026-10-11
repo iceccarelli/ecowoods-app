@@ -34,7 +34,7 @@ import type { AssistantChatCard } from './chat-schema';
 export interface StoredAttachment {
   id: string;
   kind: 'room_photo' | 'floor_photo' | 'document';
-  status: 'selected' | 'uploading' | 'uploaded' | 'analyzing' | 'analyzed' | 'failed' | 'unavailable';
+  status: 'selected' | 'uploading' | 'uploaded' | 'analyzing' | 'analyzed' | 'failed' | 'deleting' | 'unavailable';
   filename?: string;
   url?: string;
   /**
@@ -42,12 +42,26 @@ export interface StoredAttachment {
    * lib/floor-graph/consent.ts's law: "a photograph whose lawful basis
    * cannot be named is a photograph we should not be holding"). Set once,
    * at persist time, from the value the upload route's grantConsent() call
-   * returned — never client-supplied. Internal only: loadTranscript strips
-   * it before the transcript reaches the browser, and the delete route
-   * reads it straight from this stored row rather than trusting an id a
-   * caller might hand it.
+   * returned — and only after chat/route.ts has independently verified that
+   * grant was actually issued for THIS attachment id (never trusted as a
+   * bare client echo — see chat/route.ts's validation gate). Internal only:
+   * loadTranscript strips it before the transcript reaches the browser, and
+   * the delete path reads it straight from this stored row.
    */
   consentId?: string;
+  /**
+   * Cleanup progress for a `status: 'deleting'` row — present only while a
+   * deletion is in flight or partially failed. `url`/`consentId` are
+   * DELIBERATELY KEPT (not wiped) while either flag is still false: that is
+   * the only record of where the bytes are and which grant to withdraw, and
+   * wiping it on the first attempt — the bug this replaced — makes a failed
+   * cleanup unretryable forever. Both fields, and `url`/`consentId`
+   * themselves, are cleared together only once BOTH are true (or
+   * `consentId` was never set), at which point `status` becomes
+   * `'unavailable'` and there is nothing left to retry.
+   */
+  storageDeleted?: boolean;
+  consentWithdrawn?: boolean;
 }
 
 export interface StoredTurn {
@@ -116,13 +130,19 @@ export async function loadTranscript(designId: string | undefined, viewerUserId:
         attachments: Array.isArray(m.attachments)
           ? await Promise.all(
               (m.attachments as unknown as StoredAttachment[]).map(async (a) => {
-                // consentId is internal (see StoredAttachment's doc comment)
-                // — destructured out rather than spread, so it can never
+                // consentId / storageDeleted / consentWithdrawn are internal
+                // cleanup bookkeeping (see StoredAttachment's doc comment) —
+                // destructured out rather than spread, so none of them can
                 // reach the browser by a future field added to `a`.
-                const { consentId: _consentId, ...rest } = a;
+                const { consentId: _consentId, storageDeleted: _storageDeleted, consentWithdrawn: _consentWithdrawn, ...rest } = a;
+                // A 'deleting' row keeps its real `url` server-side so a
+                // retry can resume — but the browser must never see it
+                // re-appear mid-cleanup, so it gets the exact same
+                // no-preview treatment as 'unavailable'.
+                const stillVisible = a.status !== 'unavailable' && a.status !== 'deleting';
                 return {
                   ...rest,
-                  url: a.url ? ((await signAttachmentUrl(a.url)) ?? undefined) : undefined,
+                  url: stillVisible && a.url ? ((await signAttachmentUrl(a.url)) ?? undefined) : undefined,
                 };
               }),
             )
@@ -162,58 +182,228 @@ async function ensureConversation(designId: string, userId: string | null): Prom
   }
 }
 
-export type DeleteAttachmentResult =
-  | { ok: true; storedPath?: string; consentId?: string }
-  | { ok: false; reason: 'not_found' | 'forbidden' | 'db_error' };
+interface AttachmentLocation {
+  messageId: string;
+  attachments: StoredAttachment[];
+  index: number;
+}
+
+type AuthorizedLookup = { ok: true; locations: AttachmentLocation[] } | { ok: false; reason: 'not_found' | 'forbidden' | 'db_error' };
 
 /**
- * Find the one attachment with `attachmentId` inside this conversation and
- * mark it `unavailable` in place — the message's text and any other
- * attachments are untouched. Returns the removed attachment's storage path
- * and consent id so the caller (the delete route) can remove the actual
- * bytes and withdraw the actual consent; this function only owns the
- * database row.
+ * Shared by claim/finalize below: find EVERY message holding `attachmentId`
+ * inside `designId`'s conversation, enforcing the same ownership boundary as
+ * loadTranscript.
  *
- * Same ownership boundary as loadTranscript: a conversation linked to a
- * real account can only be touched by that same account's session. Unlike
- * loadTranscript, an unauthorized or missing attachment is NOT folded into
- * one silent empty result — a delete request needs to tell "already gone"
- * apart from "not yours" apart from "worked", so the route can report
- * honestly instead of claiming success for a no-op.
+ * WHY EVERY MESSAGE, NOT THE FIRST ONE FOUND: an id is minted once per
+ * upload, but nothing guarantees it is ever persisted exactly once — a
+ * retried chat POST (a network hiccup resubmitting the identical attachment
+ * ref) legitimately writes the same id into a second message row, and a
+ * rejected forged ref (see chat/route.ts's provenance gate) can ALSO leave
+ * an inert `status: 'failed'`, no-url row under an id the attacker
+ * borrowed. An earlier version of this function returned only the first
+ * match; found live, against this sandbox's own Postgres, to let a DELETE
+ * call report `complete: true` after only clearing ONE of several rows
+ * sharing the id — the real photo stayed fully intact, undeleted, with its
+ * consent ungranted-but-never-withdrawn, in whichever row wasn't picked.
+ * Operating on every location closes that: a photo is "deleted" only once
+ * every row that ever claimed to hold it agrees.
  */
-export async function deleteStoredAttachment(
+async function findOwnedAttachment(
   designId: string | undefined,
   attachmentId: string,
   viewerUserId: string | null,
-): Promise<DeleteAttachmentResult> {
+): Promise<AuthorizedLookup> {
   if (!designId || !isDesignId(designId)) return { ok: false, reason: 'not_found' };
   try {
     const conversation = await db.assistantConversation.findUnique({
       where: { designId },
-      select: {
-        userId: true,
-        messages: { select: { id: true, attachments: true } },
-      },
+      select: { userId: true, messages: { select: { id: true, attachments: true } } },
     });
     if (!conversation) return { ok: false, reason: 'not_found' };
     if (conversation.userId && conversation.userId !== viewerUserId) return { ok: false, reason: 'forbidden' };
-
+    const locations: AttachmentLocation[] = [];
     for (const message of conversation.messages) {
       const attachments = Array.isArray(message.attachments) ? (message.attachments as unknown as StoredAttachment[]) : [];
       const index = attachments.findIndex((a) => a.id === attachmentId);
-      if (index === -1) continue;
-      const removed = attachments[index]!;
-      if (removed.status === 'unavailable') return { ok: true }; // already deleted — idempotent, nothing left to clean up
-      const next = [...attachments];
-      next[index] = { id: removed.id, kind: removed.kind, status: 'unavailable' };
-      await db.assistantMessage.update({ where: { id: message.id }, data: { attachments: next as unknown as object } });
-      return { ok: true, storedPath: removed.url, consentId: removed.consentId };
+      if (index !== -1) locations.push({ messageId: message.id, attachments, index });
     }
-    return { ok: false, reason: 'not_found' };
+    if (locations.length === 0) return { ok: false, reason: 'not_found' };
+    return { ok: true, locations };
   } catch (err) {
-    console.error(JSON.stringify({ event: 'assistant.conversation.delete_attachment_failed', error: err instanceof Error ? err.message : 'unknown' }));
+    console.error(JSON.stringify({ event: 'assistant.conversation.find_attachment_failed', error: err instanceof Error ? err.message : 'unknown' }));
     return { ok: false, reason: 'db_error' };
   }
+}
+
+/**
+ * Picks which of several same-id locations is "the real one" to read
+ * url/consentId/flags from: the first that actually carries a url or
+ * consentId, falling back to the first location of all if none do (every
+ * occurrence is already inert — e.g. all of them are rejected-forged
+ * echoes). Real occurrences of a legitimately-duplicated id should always
+ * agree on url/consentId (they are echoes of the same upload), so "first
+ * one with data" and "true state" coincide in practice.
+ */
+function representativeAttachment(locations: AttachmentLocation[]): StoredAttachment {
+  const withData = locations.find((l) => {
+    const a = l.attachments[l.index]!;
+    return !!a.url || !!a.consentId;
+  });
+  return (withData ?? locations[0]!).attachments[(withData ?? locations[0]!).index]!;
+}
+
+/**
+ * Compare-and-swap the whole `attachments` array on one message row. A
+ * plain read-then-write here is exactly the bug this replaces: two
+ * concurrent DELETE calls (or a retry racing the original request) could
+ * both read the same array, each compute their own "next" version, and
+ * whichever write lands last silently discards the other's progress. The
+ * `WHERE ... AND attachments = $expected` clause makes Postgres the
+ * arbiter — only the caller whose `expected` still matches the live row
+ * wins; everyone else gets `affected !== 1` back and knows to re-read and
+ * retry rather than having clobbered anything. Same raw-SQL-with-guarded-
+ * WHERE technique as rate-limit-durable.ts's bucket consume, just without
+ * needing a stored function for a one-column swap.
+ */
+async function casSwapAttachments(messageId: string, expected: StoredAttachment[], next: StoredAttachment[]): Promise<boolean> {
+  const affected = await db.$executeRaw`
+    UPDATE "ecowoods"."AssistantMessage"
+    SET attachments = ${JSON.stringify(next)}::jsonb
+    WHERE id = ${messageId}::uuid AND attachments = ${JSON.stringify(expected)}::jsonb
+  `;
+  return affected === 1;
+}
+
+const MAX_CAS_ATTEMPTS = 8;
+
+export type ClaimAttachmentResult =
+  | { ok: true; alreadyComplete: true }
+  | { ok: true; alreadyComplete: false; storagePath?: string; consentId?: string; needsStorage: boolean; needsConsent: boolean }
+  | { ok: false; reason: 'not_found' | 'forbidden' | 'db_error' };
+
+/**
+ * Step 1 of a DELETE request: find the attachment, authorize it, and mark
+ * it `'deleting'` — KEEPING its `url`/`consentId` and any cleanup flags a
+ * prior attempt already set, never wiping them up front. The caller (the
+ * delete route) then performs whatever cleanup `needsStorage`/`needsConsent`
+ * says is still outstanding and calls `finalizeAttachmentDeletion` with the
+ * real outcome. Calling this again on a row already `'deleting'` is exactly
+ * how a retry resumes: it returns the SAME unfinished legs, not a fresh
+ * claim that would re-attempt work already done.
+ */
+export async function claimAttachmentForDeletion(
+  designId: string | undefined,
+  attachmentId: string,
+  viewerUserId: string | null,
+): Promise<ClaimAttachmentResult> {
+  for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId);
+    if (!found.ok) return found;
+
+    if (found.locations.every((l) => l.attachments[l.index]!.status === 'unavailable')) {
+      return { ok: true, alreadyComplete: true };
+    }
+
+    const current = representativeAttachment(found.locations);
+    const needsStorage = !current.storageDeleted && !!current.url;
+    const needsConsent = !current.consentWithdrawn && !!current.consentId;
+
+    // Claim every location that isn't already 'deleting' or 'unavailable' —
+    // an inert duplicate (e.g. a rejected forged echo, no url/consentId of
+    // its own) still gets marked 'deleting' here so it converges to
+    // 'unavailable' alongside the real one, rather than sitting forever in
+    // whatever status it had when the forged request was rejected.
+    let raced = false;
+    for (const loc of found.locations) {
+      const row = loc.attachments[loc.index]!;
+      if (row.status === 'unavailable' || row.status === 'deleting') continue;
+      const claimed: StoredAttachment = {
+        id: row.id,
+        kind: row.kind,
+        status: 'deleting',
+        url: row.url,
+        consentId: row.consentId,
+        storageDeleted: row.storageDeleted ?? false,
+        consentWithdrawn: row.consentWithdrawn ?? false,
+      };
+      const next = [...loc.attachments];
+      next[loc.index] = claimed;
+      const swapped = await casSwapAttachments(loc.messageId, loc.attachments, next).catch((err) => {
+        console.error(JSON.stringify({ event: 'assistant.conversation.claim_attachment_failed', error: err instanceof Error ? err.message : 'unknown' }));
+        return 'error' as const;
+      });
+      if (swapped === 'error') return { ok: false, reason: 'db_error' };
+      if (!swapped) {
+        raced = true;
+        break; // someone else changed this row between our read and our swap — re-read everything and retry
+      }
+    }
+    if (raced) continue;
+    return { ok: true, alreadyComplete: false, storagePath: current.url, consentId: current.consentId, needsStorage, needsConsent };
+  }
+  return { ok: false, reason: 'db_error' };
+}
+
+export type FinalizeAttachmentResult = { ok: true; complete: boolean } | { ok: false; reason: 'not_found' | 'forbidden' | 'db_error' };
+
+/**
+ * Step 2: record what the route's cleanup calls actually accomplished.
+ * Only flips to `'unavailable'` (and only THEN wipes `url`/`consentId`) once
+ * storage deletion succeeded AND either consent was withdrawn or there was
+ * never a consent grant to withdraw (a legacy attachment persisted before
+ * this association existed — see chat/route.ts). Otherwise the row stays
+ * `'deleting'` with the real per-leg outcome recorded, so the next DELETE
+ * call on this id retries only the leg that actually failed.
+ */
+export async function finalizeAttachmentDeletion(
+  designId: string | undefined,
+  attachmentId: string,
+  viewerUserId: string | null,
+  outcome: { storageDeleted: boolean; consentWithdrawn: boolean },
+): Promise<FinalizeAttachmentResult> {
+  for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId);
+    if (!found.ok) return found;
+
+    if (found.locations.every((l) => l.attachments[l.index]!.status === 'unavailable')) {
+      return { ok: true, complete: true }; // a concurrent finalize already won everywhere
+    }
+
+    // `complete` is computed from the REPRESENTATIVE row's real url/consentId
+    // — an inert duplicate (no url/consentId of its own) never has an
+    // outstanding leg to block completion on. Applied uniformly to every
+    // non-'unavailable' location below, so a photo is only ever reported
+    // gone once EVERY row that references it agrees.
+    const representative = representativeAttachment(found.locations);
+    const storageDeleted = outcome.storageDeleted || !!representative.storageDeleted;
+    const consentWithdrawn = outcome.consentWithdrawn || !!representative.consentWithdrawn;
+    const complete = storageDeleted && (consentWithdrawn || !representative.consentId);
+
+    let raced = false;
+    for (const loc of found.locations) {
+      const row = loc.attachments[loc.index]!;
+      if (row.status === 'unavailable') continue;
+      const rowStorageDeleted = outcome.storageDeleted || !!row.storageDeleted;
+      const rowConsentWithdrawn = outcome.consentWithdrawn || !!row.consentWithdrawn;
+      const next = [...loc.attachments];
+      next[loc.index] = complete
+        ? { id: row.id, kind: row.kind, status: 'unavailable' }
+        : { id: row.id, kind: row.kind, status: 'deleting', url: row.url, consentId: row.consentId, storageDeleted: rowStorageDeleted, consentWithdrawn: rowConsentWithdrawn };
+      const swapped = await casSwapAttachments(loc.messageId, loc.attachments, next).catch((err) => {
+        console.error(JSON.stringify({ event: 'assistant.conversation.finalize_attachment_failed', error: err instanceof Error ? err.message : 'unknown' }));
+        return 'error' as const;
+      });
+      if (swapped === 'error') return { ok: false, reason: 'db_error' };
+      if (!swapped) {
+        raced = true;
+        break;
+      }
+    }
+    if (raced) continue;
+    return { ok: true, complete };
+  }
+  return { ok: false, reason: 'db_error' };
 }
 
 export interface AppendTurnInput {
