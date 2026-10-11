@@ -61,6 +61,8 @@ const attachmentRefSchema = z
     url: z.string().min(1).max(300),
     contentType: z.string().min(1).max(100),
     filename: z.string().max(200).optional(),
+    /** Echoed back verbatim from the upload route's own response — the client never invents or reuses one across attachments; see conversation-store.ts's StoredAttachment.consentId. */
+    consentId: z.string().max(80).optional(),
   })
   .strict();
 

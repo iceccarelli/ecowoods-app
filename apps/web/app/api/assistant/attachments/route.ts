@@ -31,7 +31,7 @@ import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
 import { isDesignId } from '@/lib/floor-studio/design-id';
 import { grantConsent } from '@/lib/floor-graph/consent';
-import { storeAttachment, signAttachmentUrl } from '@/lib/assistant-workspace/attachment-storage';
+import { storeAttachment, signAttachmentUrl, attachmentConsentSurface } from '@/lib/assistant-workspace/attachment-storage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,7 +90,12 @@ export async function POST(request: Request) {
 
   const consentId = await grantConsent({
     purpose: 'ASSISTANT_PHOTOS',
-    surface: 'assistant-chat:attachments',
+    // Stamped per-attachment (not a flat 'assistant-chat:attachments'
+    // label) so chat/route.ts can later verify a client-echoed consentId
+    // was actually issued for THIS id, not replayed from a different
+    // upload — see isConsentValidForAttachment's own comment for why that
+    // matters.
+    surface: attachmentConsentSurface(id),
     userId: session?.user?.id ?? null,
   }).catch((err) => {
     console.error(JSON.stringify({ event: 'assistant.attachment.consent_failed', error: err instanceof Error ? err.message : 'unknown' }));
@@ -116,6 +121,12 @@ export async function POST(request: Request) {
       previewUrl,
       contentType,
       filename: file.name || 'photo.jpg',
+      // Echoed straight through by the client into the attachment ref it
+      // sends with the chat turn — see chat-schema.ts's attachmentRefSchema
+      // and StoredAttachment.consentId for why this is the one way the
+      // persisted row can later be told "delete this, and withdraw the
+      // consent that named its lawful basis" without guessing.
+      consentId,
     },
     { status: 201 },
   );
