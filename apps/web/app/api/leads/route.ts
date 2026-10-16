@@ -12,6 +12,7 @@ import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
 import { productById } from '@/lib/floor-studio/catalog';
 import { safeLeadSource } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
+import { runAfterResponse } from '@/lib/background';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -196,6 +197,7 @@ export async function POST(request: Request) {
   //    city ← explicit city if provided; postal is stored on address (not city).
   let quoteId: string | null = null;
   let duplicate = false;
+  let persisted = false;
   try {
     const session = await auth().catch(() => null);
     const existing = await findRecentDuplicate(db, {
@@ -208,7 +210,7 @@ export async function POST(request: Request) {
       duplicate = true;
       console.log(JSON.stringify({ event: 'lead.duplicate', leadId, quoteId }));
     }
-    const quote = duplicate ? null : await db.quoteRequest.create({
+    const createQuote = () => db.quoteRequest.create({
       data: {
         name: String(lead.name ?? ''),
         email: String(lead.email ?? ''),
@@ -241,34 +243,57 @@ export async function POST(request: Request) {
         userId: session?.user?.id ?? null,
       },
     });
-    if (quote) quoteId = quote.id;
+    /* One retry: most database failures are a dropped connection on a cold
+       function, and the second attempt succeeds. */
+    const quote = duplicate ? null : await createQuote().catch(async (first: unknown) => {
+      console.warn(JSON.stringify({ event: 'lead.db_retry', leadId, error: first instanceof Error ? first.message : 'unknown' }));
+      await new Promise((r) => setTimeout(r, 400));
+      return createQuote();
+    });
+    if (quote) { quoteId = quote.id; persisted = true; }
+    if (duplicate) persisted = true;
     /* MEAS-02 — not awaited. A lead that was captured is captured whether or
        not its ledger row lands, and holding this response open for a row only
        a report will read would be trading a customer's wait for a statistic. */
     if (quote) {
-      void recordFunnelEvent({
+      runAfterResponse(recordFunnelEvent({
         stage: 'LEAD_CAPTURED',
         designId: lead.designId as string | undefined,
         source: lead.source as string | undefined,
         quoteId: quote.id,
-      });
+      }));
       /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
          reason the ledger row is not: a homeowner's request must not wait on a
          carrier. Inert and silent when no credentials are set. */
-      void sendLeadAlert({
+      runAfterResponse(sendLeadAlert({
         kind: 'lead',
         name: String(lead.name ?? ''),
         phone: lead.phone ? String(lead.phone) : null,
         where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
         service: lead.service ? String(lead.service) : null,
         source: lead.source ? String(lead.source) : null,
-      });
+      }));
     }
   } catch (err) {
     console.error(JSON.stringify({
       event: 'lead.db_persist_failed', leadId,
       error: err instanceof Error ? err.message : 'unknown',
       hint: 'Lead is safe in lead.captured log above. Check DATABASE_URL in this environment.',
+    }));
+  }
+
+  /* A lead that is not in the database must not be invisible. The desk is told
+     by SMS and by a marked email that this one has to be entered by hand; the
+     full record is in the email and in the lead.captured log line. */
+  if (!persisted) {
+    console.error(JSON.stringify({ event: 'lead.unsaved', leadId, note: 'Not in database. Recover from lead.captured log / admin email.' }));
+    runAfterResponse(sendLeadAlert({
+      kind: 'lead (NOT SAVED)',
+      name: String(lead.name ?? ''),
+      phone: lead.phone ? String(lead.phone) : null,
+      where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
+      service: lead.service ? String(lead.service) : null,
+      source: lead.source ? String(lead.source) : null,
     }));
   }
 
@@ -297,26 +322,26 @@ export async function POST(request: Request) {
 
   // 3. BEST-EFFORT admin email. Never blocks, never fails the request.
   // A duplicate of a request already captured stops here: one lead, one alert.
-  if (!duplicate) sendAdminNewQuoteEmail({
+  if (!duplicate) runAfterResponse(sendAdminNewQuoteEmail({
     quoteId: quoteId ?? leadId,
     name: String(lead.name ?? ''),
     email: String(lead.email ?? ''),
     phone: lead.phone ? String(lead.phone) : undefined,
     service: lead.service ? String(lead.service) : undefined,
     squareFeet: lead.sqft ? Number(lead.sqft) : undefined,
-    notes: leadNotes(lead) ?? undefined,
+    notes: (persisted ? '' : `NOT SAVED TO DATABASE (ref ${leadId}) — enter this lead by hand.\n\n`) + (leadNotes(lead) ?? ''),
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
-  );
+  ));
 
   // 4. Customer acknowledgement — best-effort, never fatal.
-  if (!duplicate) sendQuoteReceivedEmail({
+  if (!duplicate) runAfterResponse(sendQuoteReceivedEmail({
     name: String(lead.name ?? ''),
     email: String(lead.email ?? ''),
     leadId: quoteId ?? leadId,
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
-  );
+  ));
 
   // 5. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
   //    The URL is validated at use (https, public host, no bare IP, no
@@ -325,9 +350,9 @@ export async function POST(request: Request) {
   //    lead PII never leaves for an address nobody checked.
   const webhookUrl = webhookFromEnv('LEADS_WEBHOOK_URL');
   if (webhookUrl && !duplicate) {
-    postWebhook(webhookUrl, { leadId, quoteId, ...lead }).catch((err) =>
+    runAfterResponse(postWebhook(webhookUrl, { leadId, quoteId, persisted, ...lead }).catch((err) =>
       console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
-    );
+    ));
   }
 
   // The lead is captured. Always acknowledge success to the customer.

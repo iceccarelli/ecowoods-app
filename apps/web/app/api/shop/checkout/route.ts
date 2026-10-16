@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { parseProductOptions, resolveSelectedOptions, round2 } from '@/lib/shop';
@@ -20,6 +21,9 @@ type CartItemInput = {
 };
 
 export async function POST(req: Request) {
+  if (!isTrustedBrowserOrigin(req)) {
+    return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 });
+  }
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

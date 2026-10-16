@@ -4,15 +4,19 @@
  * 인보이스 결제를 위한 Stripe Checkout 세션 생성
  */
 
+import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isTrustedBrowserOrigin(req)) {
+    return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 });
+  }
   const { id } = await params;
   const session = await auth();
   if (!session?.user) {
