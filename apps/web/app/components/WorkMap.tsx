@@ -60,9 +60,9 @@ const FRAME = (() => {
   const cLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
   const scale = Math.cos((cLat * Math.PI) / 180);
 
-  let spanLat = Math.max(Math.max(...lats) - Math.min(...lats), MIN_SPAN_LAT) * (1 + PAD * 2);
+  const spanLat = Math.max(Math.max(...lats) - Math.min(...lats), MIN_SPAN_LAT) * (1 + PAD * 2);
   // Keep the drawing close to 3:2 by deriving the longitude span from it.
-  let spanLng = (spanLat * 1.5) / scale;
+  const spanLng = (spanLat * 1.5) / scale;
 
   const minLat = Math.max(GTA_BOUNDS.minLat, cLat - spanLat / 2);
   const maxLat = Math.min(GTA_BOUNDS.maxLat, cLat + spanLat / 2);

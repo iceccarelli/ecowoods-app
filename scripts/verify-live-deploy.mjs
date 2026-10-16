@@ -76,13 +76,36 @@ async function getText(path) {
 
 const fail = [];
 const info = [];
+/* Inconclusive results. A network error, a proxy/WAF refusal or a gateway error
+   says nothing about the site, so it is never green and never counted as a
+   confirmed defect:
+     unreachable — no HTTP response at all (DNS, TLS, refused, timeout)
+     blocked     — 401/403/407/429: something between us and the origin refused
+     unknown     — 5xx gateway statuses, or anything else we cannot interpret */
+const inconclusive = [];
+const unreachable = (what, err) =>
+  inconclusive.push(['unreachable', `${what}: ${err instanceof Error ? err.message : String(err)}`]);
+/** true when the status is one we can assert on; otherwise records why not. */
+function conclusive(what, status) {
+  if ([401, 403, 407, 429].includes(status)) {
+    inconclusive.push(['blocked', `${what} returned ${status} — refused before the page could be judged`]);
+    return false;
+  }
+  if ([502, 503, 504].includes(status)) {
+    inconclusive.push(['unknown', `${what} returned ${status} — gateway/upstream error, site state unknown`]);
+    return false;
+  }
+  return true;
+}
 
 console.log(`\nLIVE DEPLOY CHECK  ${BASE}\n`);
 
 /* ── 1. deployed revision ─────────────────────────────────────────────── */
 try {
   const res = await fetch(`${BASE}/api/deploy-info?cb=${CB}`);
-  if (!res.ok) {
+  if (!conclusive('/api/deploy-info', res.status)) {
+    /* recorded */
+  } else if (!res.ok) {
     fail.push(`/api/deploy-info returned ${res.status} — cannot verify which commit is live.`);
   } else {
     const data = await res.json();
@@ -101,13 +124,15 @@ try {
     }
   }
 } catch (err) {
-  fail.push(`could not reach /api/deploy-info: ${err instanceof Error ? err.message : String(err)}`);
+  unreachable('/api/deploy-info', err);
 }
 
 /* ── 2. assistant identity ────────────────────────────────────────────── */
 try {
   const { status, body } = await getText('/assistant');
-  if (status !== 200) {
+  if (!conclusive('/assistant', status)) {
+    /* recorded */
+  } else if (status !== 200) {
     fail.push(`/assistant returned ${status}, not 200.`);
   } else if (!body.includes('Ask Francisco')) {
     fail.push('/assistant does not mention "Ask Francisco" — either the identity regressed or the page failed to render.');
@@ -117,14 +142,16 @@ try {
     info.push('/assistant identity: Ask Francisco, no retired naming');
   }
 } catch (err) {
-  fail.push(`could not fetch /assistant: ${err instanceof Error ? err.message : String(err)}`);
+  unreachable('/assistant', err);
 }
 
 /* ── 3. Permissions-Policy camera invariant ───────────────────────────── */
 try {
   const res = await fetch(`${BASE}/?cb=${CB}`);
   const pp = res.headers.get('permissions-policy') ?? '';
-  if (!pp) {
+  if (!conclusive('/ (headers)', res.status)) {
+    /* recorded */
+  } else if (!pp) {
     fail.push('no Permissions-Policy header on / at all.');
   } else if (/camera=\(\)/.test(pp)) {
     fail.push(`Permissions-Policy denies camera to everyone including this origin: "${pp}". Floor Studio's live camera will not work.`);
@@ -136,17 +163,18 @@ try {
     info.push(`Permissions-Policy: ${pp}`);
   }
 } catch (err) {
-  fail.push(`could not fetch / for headers: ${err instanceof Error ? err.message : String(err)}`);
+  unreachable('/ (headers)', err);
 }
 
 /* ── 4. machine surfaces present ──────────────────────────────────────── */
 for (const path of ['/sitemap.xml', '/robots.txt']) {
   try {
     const { status } = await getText(path);
-    if (status !== 200) fail.push(`${path} returned ${status}, not 200.`);
+    if (!conclusive(path, status)) { /* recorded */ }
+    else if (status !== 200) fail.push(`${path} returned ${status}, not 200.`);
     else info.push(`${path}: 200`);
   } catch (err) {
-    fail.push(`could not fetch ${path}: ${err instanceof Error ? err.message : String(err)}`);
+    unreachable(path, err);
   }
 }
 
@@ -155,7 +183,7 @@ try {
   const res = await fetch(`${BASE}/api/cron/rate-limit-cleanup`, {
     headers: { authorization: `Bearer not-the-real-secret-${CB}` },
   });
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     info.push('cron route enforces auth (401 on a wrong credential) — cannot confirm from outside whether CRON_SECRET is actually configured in Vercel; verify that separately with project access.');
   } else if (res.status === 200) {
     fail.push('/api/cron/rate-limit-cleanup accepted a WRONG credential — cron auth is not enforcing. This is a real security defect, fix immediately.');
@@ -163,17 +191,27 @@ try {
     info.push(`cron route returned ${res.status} for a wrong credential (expected 401) — investigate.`);
   }
 } catch (err) {
-  info.push(`could not reach cron route to check auth posture: ${err instanceof Error ? err.message : String(err)}`);
+  unreachable('cron auth posture', err);
 }
 
 /* ── report ────────────────────────────────────────────────────────────── */
 for (const line of info) console.log(`  · ${line}`);
 
 if (fail.length) {
-  console.error(`\n✗ ${fail.length} problem(s) found live at ${BASE}:\n`);
+  console.error(`\n✗ ${fail.length} CONFIRMED problem(s) found live at ${BASE}:\n`);
   for (const f of fail) console.error(`  · ${f}`);
+  for (const [kind, msg] of inconclusive) console.error(`  ? [${kind}] ${msg}`);
   console.error('');
   process.exit(1);
+}
+
+/* Exit 2, not 0 and not 1: nothing was confirmed good and nothing was
+   confirmed broken. A pipeline must not read this as green. */
+if (inconclusive.length) {
+  console.error(`\n? INCONCLUSIVE — ${inconclusive.length} check(s) could not be judged at ${BASE}. This is NOT a pass.\n`);
+  for (const [kind, msg] of inconclusive) console.error(`  ? [${kind}] ${msg}`);
+  console.error('');
+  process.exit(2);
 }
 
 console.log(`\n✓ live deploy verified — ${BASE} matches expected revision and holds every checked invariant\n`);

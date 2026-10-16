@@ -178,7 +178,7 @@ export default async function ServiceDetailPage({
      served by /api/v1/services/{id} so the page and the API cannot disagree. */
   const reg = await getRegistry();
   const wrongWhen = reg.services.find((sv) => sv.data.slug === page.slug)?.data.wrong_when ?? [];
-  const useInstead = (ref: string): { href?: string; label: string } => {
+  const insteadFor = (ref: string): { href?: string; label: string } => {
     if (ref.startsWith('service:')) {
       const target = ref.slice('service:'.length);
       return { href: `/services/${target}`, label: SERVICES.find((sv) => sv.slug === target)?.name ?? target };
@@ -437,7 +437,7 @@ export default async function ServiceDetailPage({
             </p>
             <dl className="gd-spec">
               {wrongWhen.map((w) => {
-                const alt = useInstead(w.use_instead);
+                const alt = insteadFor(w.use_instead);
                 return (
                   <div className="gd-spec-row" key={w.situation}>
                     <dt>{w.situation}</dt>

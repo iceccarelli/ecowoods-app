@@ -195,7 +195,7 @@ export function nextScrollState(prev: ScrollState, rawY: number): ScrollState {
   /* Dead band, so resting on the boundary cannot strobe the backdrop-filter. */
   const scrolled = prev.scrolled ? y > SCROLLED_OFF_PX : y > SCROLLED_ON_PX;
 
-  let direction = prev.direction;
+  const direction = prev.direction;
   let anchorY = prev.anchorY;
   let pending = prev.pending;
 
