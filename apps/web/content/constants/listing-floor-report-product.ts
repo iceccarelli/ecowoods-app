@@ -5,8 +5,7 @@
  *
  * Same Class C posture as content/constants/paid-review-product.ts (EW-0001):
  * the $349/$799 figures are the ecowoods-product agent's researched
- * recommendation, not an owner-confirmed price. Per
- * ECOWOODS_AUTONOMOUS_EXECUTION_PROTOCOL.md §7/§23, a new public price claim
+ * recommendation, not an owner-confirmed price. A new public price claim
  * is Class C — this file, and the PR it ships in, is the prepared patch
  * waiting on that confirmation, not a live commercial term.
  *
