@@ -112,7 +112,7 @@ export function FigureRotator({
             key={s.id}
             className={`figrot-slide ${n === i ? 'is-active' : ''}`}
             aria-hidden={n === i ? undefined : true}
-            {...(n === i ? {} : { inert: '' as unknown as boolean })}
+            inert={n !== i}
           >
             <Image
               src={s.src}
