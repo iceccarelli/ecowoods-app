@@ -91,9 +91,9 @@ export default function ContactPage() {
           </nav>
           <h1 className="tlx-title">Contact Ecowoods</h1>
           <p className="tlx-lede">
-            {BUSINESS_NAP.legalName} is reached by phone, by email, or at the showroom in{' '}
-            {BUSINESS_NAP.address.addressLocality}. For a price, the fastest path is the free
-            in-home estimate: <Link href="/estimate">request it here</Link>.
+            Call {BUSINESS_NAP.legalName} on <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>{' '}
+            ({HOURS_LINE}) or visit the showroom at {BUSINESS_ADDRESS_LINE}. For a price, the fastest
+            path is the free in-home estimate: <Link href="/estimate">request it here</Link>.
           </p>
         </div>
       </header>

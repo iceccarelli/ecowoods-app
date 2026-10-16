@@ -8981,6 +8981,7 @@ html { scroll-padding-top: calc(var(--header-h) + var(--ub-h) + 12px); }
 
 .gl-aka-head { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--muted); margin: 0 0 0.9rem; }
+.gl-question { font-family: var(--font-display); font-size: clamp(1rem, 1.8vw, 1.15rem); font-weight: 600; margin: 1.25rem 0 .35rem; }
 .gl-definition { font-family: var(--font-display); font-size: clamp(1.05rem, 2.1vw, 1.32rem);
   line-height: 1.5; color: var(--ink); margin: 0; max-width: 62ch;
   padding-left: 1rem; border-left: 3px solid var(--copper); }
