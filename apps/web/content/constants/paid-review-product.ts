@@ -15,8 +15,7 @@
  * interior consults at $500–$900 CAD — attached to
  * `/Users/grimaldi/ecowoods-factory/results/opportunity.md`.
  *
- * That is a prepared patch, not a confirmed price. Per
- * ECOWOODS_AUTONOMOUS_EXECUTION_PROTOCOL.md §7 and §23, "new public price
+ * That is a prepared patch, not a confirmed price. "New public price
  * claims" and "changes to commercial terms" are Class C — human business
  * confirmation required before the claim goes live to a real customer. This
  * PR ships on a factory branch behind a pull request precisely so that gate

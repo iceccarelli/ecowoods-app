@@ -4,8 +4,7 @@
  *
  * Same Class C posture as the other paid-review constants files in this
  * branch: $99 is the ecowoods-opportunity agent's researched recommendation,
- * not an owner-confirmed price. See ECOWOODS_AUTONOMOUS_EXECUTION_PROTOCOL.md
- * §7/§23.
+ * not an owner-confirmed price.
  *
  * studio-products.ts already declares this exact rung — id 'floor-plan',
  * `priceCad: null`, `published: false` — and that file is deliberately not

@@ -1,0 +1,1069 @@
+{
+  "observed_at": null,
+  "observer": null,
+  "engines": [
+    "chatgpt",
+    "gemini",
+    "perplexity",
+    "google-ai"
+  ],
+  "note": "Ask each question cold, in a fresh session, without naming Ecowoods. cited = the answer named or linked ecowoods.ca.",
+  "observations": [
+    {
+      "query": "d1",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor cupping"
+    },
+    {
+      "query": "d1",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor cupping"
+    },
+    {
+      "query": "d1",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor cupping"
+    },
+    {
+      "query": "d1",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor cupping"
+    },
+    {
+      "query": "d2",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor crowning"
+    },
+    {
+      "query": "d2",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor crowning"
+    },
+    {
+      "query": "d2",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor crowning"
+    },
+    {
+      "query": "d2",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why is my hardwood floor crowning"
+    },
+    {
+      "query": "d3",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my floorboards separating"
+    },
+    {
+      "query": "d3",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my floorboards separating"
+    },
+    {
+      "query": "d3",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my floorboards separating"
+    },
+    {
+      "query": "d3",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my floorboards separating"
+    },
+    {
+      "query": "d4",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "can over sanded hardwood be saved"
+    },
+    {
+      "query": "d4",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "can over sanded hardwood be saved"
+    },
+    {
+      "query": "d4",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "can over sanded hardwood be saved"
+    },
+    {
+      "query": "d4",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "can over sanded hardwood be saved"
+    },
+    {
+      "query": "d5",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how do I know if my floor can be refinished again"
+    },
+    {
+      "query": "d5",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how do I know if my floor can be refinished again"
+    },
+    {
+      "query": "d5",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how do I know if my floor can be refinished again"
+    },
+    {
+      "query": "d5",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how do I know if my floor can be refinished again"
+    },
+    {
+      "query": "d6",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what causes edge peaking on hardwood floors"
+    },
+    {
+      "query": "d6",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what causes edge peaking on hardwood floors"
+    },
+    {
+      "query": "d6",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what causes edge peaking on hardwood floors"
+    },
+    {
+      "query": "d6",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what causes edge peaking on hardwood floors"
+    },
+    {
+      "query": "d7",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor water damage can it be repaired"
+    },
+    {
+      "query": "d7",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor water damage can it be repaired"
+    },
+    {
+      "query": "d7",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor water damage can it be repaired"
+    },
+    {
+      "query": "d7",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor water damage can it be repaired"
+    },
+    {
+      "query": "c1",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "engineered vs solid hardwood which is better"
+    },
+    {
+      "query": "c1",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "engineered vs solid hardwood which is better"
+    },
+    {
+      "query": "c1",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "engineered vs solid hardwood which is better"
+    },
+    {
+      "query": "c1",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "engineered vs solid hardwood which is better"
+    },
+    {
+      "query": "c2",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "should I refinish or replace my hardwood floor"
+    },
+    {
+      "query": "c2",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "should I refinish or replace my hardwood floor"
+    },
+    {
+      "query": "c2",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "should I refinish or replace my hardwood floor"
+    },
+    {
+      "query": "c2",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "should I refinish or replace my hardwood floor"
+    },
+    {
+      "query": "c3",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "nail down vs glue down vs floating hardwood"
+    },
+    {
+      "query": "c3",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "nail down vs glue down vs floating hardwood"
+    },
+    {
+      "query": "c3",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "nail down vs glue down vs floating hardwood"
+    },
+    {
+      "query": "c3",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "nail down vs glue down vs floating hardwood"
+    },
+    {
+      "query": "c4",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "white oak vs red oak flooring"
+    },
+    {
+      "query": "c4",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "white oak vs red oak flooring"
+    },
+    {
+      "query": "c4",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "white oak vs red oak flooring"
+    },
+    {
+      "query": "c4",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "white oak vs red oak flooring"
+    },
+    {
+      "query": "c5",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how much will my hardwood floor move in winter"
+    },
+    {
+      "query": "c5",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how much will my hardwood floor move in winter"
+    },
+    {
+      "query": "c5",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how much will my hardwood floor move in winter"
+    },
+    {
+      "query": "c5",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how much will my hardwood floor move in winter"
+    },
+    {
+      "query": "c6",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood over concrete slab in a condo"
+    },
+    {
+      "query": "c6",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood over concrete slab in a condo"
+    },
+    {
+      "query": "c6",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood over concrete slab in a condo"
+    },
+    {
+      "query": "c6",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood over concrete slab in a condo"
+    },
+    {
+      "query": "c7",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring over radiant heat"
+    },
+    {
+      "query": "c7",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring over radiant heat"
+    },
+    {
+      "query": "c7",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring over radiant heat"
+    },
+    {
+      "query": "c7",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring over radiant heat"
+    },
+    {
+      "query": "m1",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Toronto"
+    },
+    {
+      "query": "m1",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Toronto"
+    },
+    {
+      "query": "m1",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Toronto"
+    },
+    {
+      "query": "m1",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Toronto"
+    },
+    {
+      "query": "m2",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost per square foot"
+    },
+    {
+      "query": "m2",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost per square foot"
+    },
+    {
+      "query": "m2",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost per square foot"
+    },
+    {
+      "query": "m2",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost per square foot"
+    },
+    {
+      "query": "m3",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "cost to refinish hardwood stairs"
+    },
+    {
+      "query": "m3",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "cost to refinish hardwood stairs"
+    },
+    {
+      "query": "m3",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "cost to refinish hardwood stairs"
+    },
+    {
+      "query": "m3",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "cost to refinish hardwood stairs"
+    },
+    {
+      "query": "m4",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Mississauga"
+    },
+    {
+      "query": "m4",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Mississauga"
+    },
+    {
+      "query": "m4",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Mississauga"
+    },
+    {
+      "query": "m4",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Mississauga"
+    },
+    {
+      "query": "m5",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Oakville"
+    },
+    {
+      "query": "m5",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Oakville"
+    },
+    {
+      "query": "m5",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Oakville"
+    },
+    {
+      "query": "m5",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood flooring cost Oakville"
+    },
+    {
+      "query": "m6",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Burlington"
+    },
+    {
+      "query": "m6",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Burlington"
+    },
+    {
+      "query": "m6",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Burlington"
+    },
+    {
+      "query": "m6",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Burlington"
+    },
+    {
+      "query": "m7",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Hamilton"
+    },
+    {
+      "query": "m7",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Hamilton"
+    },
+    {
+      "query": "m7",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Hamilton"
+    },
+    {
+      "query": "m7",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood floor refinishing cost Hamilton"
+    },
+    {
+      "query": "m8",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "dust free floor sanding Toronto"
+    },
+    {
+      "query": "m8",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "dust free floor sanding Toronto"
+    },
+    {
+      "query": "m8",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "dust free floor sanding Toronto"
+    },
+    {
+      "query": "m8",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "dust free floor sanding Toronto"
+    },
+    {
+      "query": "e1",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what should a hardwood flooring quote include"
+    },
+    {
+      "query": "e1",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what should a hardwood flooring quote include"
+    },
+    {
+      "query": "e1",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what should a hardwood flooring quote include"
+    },
+    {
+      "query": "e1",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what should a hardwood flooring quote include"
+    },
+    {
+      "query": "e2",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how to evaluate a hardwood flooring contractor"
+    },
+    {
+      "query": "e2",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how to evaluate a hardwood flooring contractor"
+    },
+    {
+      "query": "e2",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how to evaluate a hardwood flooring contractor"
+    },
+    {
+      "query": "e2",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "how to evaluate a hardwood flooring contractor"
+    },
+    {
+      "query": "e3",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "is this flooring quote fair"
+    },
+    {
+      "query": "e3",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "is this flooring quote fair"
+    },
+    {
+      "query": "e3",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "is this flooring quote fair"
+    },
+    {
+      "query": "e3",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "is this flooring quote fair"
+    },
+    {
+      "query": "e4",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what moisture testing should a flooring contractor do"
+    },
+    {
+      "query": "e4",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what moisture testing should a flooring contractor do"
+    },
+    {
+      "query": "e4",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what moisture testing should a flooring contractor do"
+    },
+    {
+      "query": "e4",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what moisture testing should a flooring contractor do"
+    },
+    {
+      "query": "e5",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "questions to ask a hardwood flooring contractor"
+    },
+    {
+      "query": "e5",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "questions to ask a hardwood flooring contractor"
+    },
+    {
+      "query": "e5",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "questions to ask a hardwood flooring contractor"
+    },
+    {
+      "query": "e5",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "questions to ask a hardwood flooring contractor"
+    },
+    {
+      "query": "e6",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my two flooring quotes so different"
+    },
+    {
+      "query": "e6",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my two flooring quotes so different"
+    },
+    {
+      "query": "e6",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my two flooring quotes so different"
+    },
+    {
+      "query": "e6",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "why are my two flooring quotes so different"
+    },
+    {
+      "query": "p1",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what sander do professionals use on hardwood floors"
+    },
+    {
+      "query": "p1",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what sander do professionals use on hardwood floors"
+    },
+    {
+      "query": "p1",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what sander do professionals use on hardwood floors"
+    },
+    {
+      "query": "p1",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what sander do professionals use on hardwood floors"
+    },
+    {
+      "query": "p2",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what circuit does a floor sander need"
+    },
+    {
+      "query": "p2",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what circuit does a floor sander need"
+    },
+    {
+      "query": "p2",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what circuit does a floor sander need"
+    },
+    {
+      "query": "p2",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "what circuit does a floor sander need"
+    },
+    {
+      "query": "p3",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood grading NHLA vs NWFA"
+    },
+    {
+      "query": "p3",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood grading NHLA vs NWFA"
+    },
+    {
+      "query": "p3",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood grading NHLA vs NWFA"
+    },
+    {
+      "query": "p3",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "hardwood grading NHLA vs NWFA"
+    },
+    {
+      "query": "p4",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "grit sequence for sanding hardwood floors"
+    },
+    {
+      "query": "p4",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "grit sequence for sanding hardwood floors"
+    },
+    {
+      "query": "p4",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "grit sequence for sanding hardwood floors"
+    },
+    {
+      "query": "p4",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "grit sequence for sanding hardwood floors"
+    },
+    {
+      "query": "p5",
+      "engine": "chatgpt",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "equilibrium moisture content Toronto"
+    },
+    {
+      "query": "p5",
+      "engine": "gemini",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "equilibrium moisture content Toronto"
+    },
+    {
+      "query": "p5",
+      "engine": "perplexity",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "equilibrium moisture content Toronto"
+    },
+    {
+      "query": "p5",
+      "engine": "google-ai",
+      "cited": null,
+      "position": null,
+      "competitors": [],
+      "note": "equilibrium moisture content Toronto"
+    }
+  ]
+}
