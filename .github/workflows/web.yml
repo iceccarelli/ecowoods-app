@@ -262,6 +262,11 @@ jobs:
         run: pnpm --filter @ecowoods/web exec prisma generate
       - name: Typecheck
         run: pnpm --filter @ecowoods/web exec tsc --noEmit
+      # `next build --no-lint` is deliberate (lint would double the build time),
+      # which means nothing else enforces it. Errors fail here; warnings are
+      # reported but do not gate.
+      - name: Lint (errors only; the build skips lint)
+        run: pnpm --filter @ecowoods/web lint
       # In-process: the registry, the matcher and the /api/v1 handlers are
       # exercised with real Request objects and no server. Contract, negative,
       # invariant and drift suites — a fact that differs between two surfaces
