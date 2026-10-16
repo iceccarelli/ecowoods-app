@@ -46,7 +46,7 @@ const TIMEOUT_MS = 4000;
 
 export type LeadAlert = {
   /** What happened. Kept short — it is the first thing read on a lock screen. */
-  kind: 'lead' | 'measure booked' | 'photos';
+  kind: 'lead' | 'lead (NOT SAVED)' | 'measure booked' | 'photos';
   name: string;
   /** The number to call back. This is the entire point of the message. */
   phone?: string | null;
