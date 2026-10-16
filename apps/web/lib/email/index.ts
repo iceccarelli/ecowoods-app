@@ -76,6 +76,15 @@ export async function sendEmail({
 }) {
   // ── Dev mode — log to console, no real email ────────────────────────────
   if (transport === 'dev') {
+    /* In production an unconfigured mailer must be LOUD. Logging "would send"
+       there means every lead and customer acknowledgement silently never left,
+       and the caller (which treats email as best-effort) would never know. The
+       throw is caught by each caller's .catch, which logs a structured failure
+       event; the lead itself is unaffected. */
+    if (process.env.VERCEL_ENV === 'production') {
+      console.error(JSON.stringify({ event: 'email.not_configured', hint: 'Set RESEND_API_KEY (or SMTP_HOST) in the production environment.', subject }));
+      throw new Error('Email is not configured in production (RESEND_API_KEY / SMTP_HOST unset).');
+    }
     console.log('\n[email] DEV MODE — would send:');
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
