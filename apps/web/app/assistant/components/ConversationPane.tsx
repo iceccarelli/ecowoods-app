@@ -1,5 +1,6 @@
 'use client';
 
+import { stoppedReplyText } from '@/lib/assistant-workspace/stopped-reply';
 import { chatFailure } from '@/lib/assistant-workspace/chat-failure';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -356,6 +357,9 @@ export function ConversationPane({
       });
     };
 
+    /* Hoisted so a Stop press can keep whatever had already streamed. */
+    let streamedText = '';
+
     try {
       const res = await fetch('/api/assistant/chat', {
         method: 'POST',
@@ -391,7 +395,6 @@ export function ConversationPane({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let streamedText = '';
       let final: ({ type: 'done' } & AssistantChatResponse) | null = null;
       let streamError: string | null = null;
 
@@ -453,8 +456,9 @@ export function ConversationPane({
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        /* Visitor pressed Stop — not an error, no retry affordance. */
-        updateAssistant({ role: 'assistant', text: 'Stopped.' });
+        /* Visitor pressed Stop — not an error, no retry affordance. Text that
+           already streamed stays on screen, marked as unfinished. */
+        updateAssistant({ role: 'assistant', text: stoppedReplyText(streamedText) });
         return;
       }
       updateAssistant({
