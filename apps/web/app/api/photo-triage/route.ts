@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { photoTriageSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
+import { sniffFile, safeFilename, type SniffedImage } from '@/lib/image-sniff';
 import { sendAdminPhotoTriageEmail, type EmailAttachment } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
@@ -52,7 +53,6 @@ export const dynamic = 'force-dynamic';
 
 const MAX_FILES = 3;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // client targets 1.5 MB; small server headroom
-const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 
 function triageId(): string {
   return `triage_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -112,9 +112,13 @@ export async function POST(request: Request) {
   const fileErrors: string[] = [];
   if (files.length === 0) fileErrors.push('Attach at least one photo (up to 3).');
   if (files.length > MAX_FILES) fileErrors.push(`At most ${MAX_FILES} photos.`);
+  /* Decided from the bytes, not the declared type. */
+  const sniffedByFile = new Map<File, SniffedImage>();
   for (const f of files.slice(0, MAX_FILES)) {
-    if (f.type && !ACCEPTED_TYPES.has(f.type)) fileErrors.push(`${f.name}: use JPEG, PNG, WebP or HEIC.`);
+    const kind = await sniffFile(f);
+    if (!kind) fileErrors.push(`${f.name}: use JPEG, PNG, WebP or HEIC.`);
     else if (f.size > MAX_FILE_BYTES) fileErrors.push(`${f.name} is too large — photos must be under 2 MB each.`);
+    else sniffedByFile.set(f, kind);
   }
 
   if (!parsed.success || fileErrors.length) {
@@ -201,7 +205,7 @@ export async function POST(request: Request) {
   try {
     const attachments: EmailAttachment[] = [];
     for (const f of files.slice(0, MAX_FILES)) {
-      attachments.push({ filename: f.name || 'photo.jpg', content: Buffer.from(await f.arrayBuffer()) });
+      attachments.push({ filename: safeFilename(f.name, sniffedByFile.get(f)?.ext ?? 'jpg'), content: Buffer.from(await f.arrayBuffer()) });
     }
     await sendAdminPhotoTriageEmail({
       leadId: quoteId ?? leadId,
@@ -245,7 +249,7 @@ export async function POST(request: Request) {
       let position = 0;
       for (const f of files.slice(0, MAX_FILES)) {
         const buffer = Buffer.from(await f.arrayBuffer());
-        const contentType = f.type || 'image/jpeg';
+        const contentType = sniffedByFile.get(f)?.contentType ?? 'image/jpeg';
         const put = await storePhoto(buffer, `${assessment.value}-${position}`, contentType);
         if (!put.ok) {
           /* Fails closed: no private store configured, or the upload failed.

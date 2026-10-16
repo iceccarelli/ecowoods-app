@@ -29,6 +29,7 @@ import { NextResponse } from 'next/server';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
+import { sniffFile, safeFilename } from '@/lib/image-sniff';
 import { isDesignId } from '@/lib/floor-studio/design-id';
 import { grantConsent } from '@/lib/floor-graph/consent';
 import { storeAttachment, signAttachmentUrl, attachmentConsentSurface } from '@/lib/assistant-workspace/attachment-storage';
@@ -37,7 +38,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // client targets 1.5 MB (lib/image-compress.ts); small server headroom
-const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 
 /** 10 uploads/minute/IP — generous for a homeowner attaching a couple of photos, tight enough to blunt a storage-filling flood. */
 const ATTACHMENT_RATE_LIMIT = { windowMs: 60_000, maxRequests: 10 };
@@ -76,16 +76,19 @@ export async function POST(request: Request) {
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: 'Attach one photo.' }, { status: 400 });
   }
-  if (file.type && !ACCEPTED_TYPES.has(file.type)) {
-    return NextResponse.json({ error: 'Use JPEG, PNG, WebP or HEIC.' }, { status: 400 });
-  }
   if (file.size > MAX_FILE_BYTES) {
     return NextResponse.json({ error: 'That photo is too large — please use one under 2 MB.' }, { status: 400 });
+  }
+  /* The type is decided from the bytes. The declared type is only a hint and a
+     missing one no longer skips the check. */
+  const sniffed = await sniffFile(file);
+  if (!sniffed) {
+    return NextResponse.json({ error: 'Use JPEG, PNG, WebP or HEIC.' }, { status: 400 });
   }
 
   const session = await auth().catch(() => null);
   const id = attachmentId();
-  const contentType = file.type || 'image/jpeg';
+  const contentType = sniffed.contentType;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const consentId = await grantConsent({
@@ -120,7 +123,7 @@ export async function POST(request: Request) {
       path: stored.path,
       previewUrl,
       contentType,
-      filename: file.name || 'photo.jpg',
+      filename: safeFilename(file.name, sniffed.ext),
       // Echoed straight through by the client into the attachment ref it
       // sends with the chat turn — see chat-schema.ts's attachmentRefSchema
       // and StoredAttachment.consentId for why this is the one way the
