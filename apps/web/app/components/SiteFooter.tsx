@@ -237,6 +237,7 @@ export default function SiteFooter() {
               <a href="/pricing">Pricing — the three published bands</a>
               <a href="/estimate">Request a free estimate</a>
               <a href="/contact">Contact &amp; hours</a>
+              <a href="/search">Search this site</a>
             </FooterGroup>
 
             {/* P1 — the two buyers who are not homeowners, plus the referral

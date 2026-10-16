@@ -256,6 +256,11 @@ export interface WebSite extends SchemaBase {
   name: string;
   inLanguage: string;
   publisher: { '@id': string };
+  potentialAction?: {
+    '@type': 'SearchAction';
+    target: { '@type': 'EntryPoint'; urlTemplate: string };
+    'query-input': string;
+  };
 }
 
 /* ────────────────────────────────────────────────────────────────────────
