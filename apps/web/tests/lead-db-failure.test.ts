@@ -51,7 +51,21 @@ describe('POST /api/leads — database failure', () => {
     expect(res.status).toBe(201);
     expect(alert).toHaveBeenCalledTimes(1);
     expect(alert.mock.calls[0]?.[0]).toMatchObject({ kind: 'lead (NOT SAVED)', phone: '(416) 555-0143' });
-    expect(String((admin.mock.calls[0]?.[0] as { notes?: string }).notes)).toContain('NOT SAVED TO DATABASE');
+    expect(String((admin.mock.calls[0]?.[0] as { notes?: string }).notes)).toContain('NOT CONFIRMED SAVED');
     expect(customer).toHaveBeenCalledTimes(1);
+  });
+
+  it('a database that hangs does not hold the customer: 201 within the budget, desk alerted', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    try {
+      create.mockImplementation(() => new Promise(() => undefined)); // never settles
+      const pending = post();
+      await vi.advanceTimersByTimeAsync(9000);
+      const res = await pending;
+      expect(res.status).toBe(201);
+      expect(alert.mock.calls[0]?.[0]).toMatchObject({ kind: 'lead (NOT SAVED)' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

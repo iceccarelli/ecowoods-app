@@ -13,6 +13,7 @@ import { productById } from '@/lib/floor-studio/catalog';
 import { safeLeadSource } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
 import { runAfterResponse } from '@/lib/background';
+import { withinMs } from '@/lib/with-timeout';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -198,13 +199,22 @@ export async function POST(request: Request) {
   let quoteId: string | null = null;
   let duplicate = false;
   let persisted = false;
+  /* The customer must not wait on a database that is down: an unreachable one
+     can hold a connection attempt for 10s or more per call, and a slow 201 is
+     indistinguishable from a failure to the person (and to a serverless
+     timeout), who then submits again. One shared budget covers the whole
+     persistence phase; past it the lead is treated as not saved, the desk is
+     told, and the customer gets their acknowledgement. */
+  const DB_BUDGET_MS = 8000;
+  const dbDeadline = Date.now() + DB_BUDGET_MS;
+  const left = () => Math.max(250, dbDeadline - Date.now());
   try {
-    const session = await auth().catch(() => null);
-    const existing = await findRecentDuplicate(db, {
+    const session = await withinMs(auth(), Math.min(3000, left()), 'auth').catch(() => null);
+    const existing = await withinMs(findRecentDuplicate(db, {
       email: String(lead.email ?? ''),
       phone: lead.phone ? String(lead.phone) : null,
       service: lead.service ? String(lead.service) : null,
-    }).catch(() => null);
+    }), Math.min(3000, left()), 'dedupe').catch(() => null);
     if (existing) {
       quoteId = existing;
       duplicate = true;
@@ -245,10 +255,11 @@ export async function POST(request: Request) {
     });
     /* One retry: most database failures are a dropped connection on a cold
        function, and the second attempt succeeds. */
-    const quote = duplicate ? null : await createQuote().catch(async (first: unknown) => {
+    const quote = duplicate ? null : await withinMs(createQuote(), left(), 'create').catch(async (first: unknown) => {
       console.warn(JSON.stringify({ event: 'lead.db_retry', leadId, error: first instanceof Error ? first.message : 'unknown' }));
+      if (dbDeadline - Date.now() < 1500) throw first; // no time left for a second attempt
       await new Promise((r) => setTimeout(r, 400));
-      return createQuote();
+      return withinMs(createQuote(), left(), 'create-retry');
     });
     if (quote) { quoteId = quote.id; persisted = true; }
     if (duplicate) persisted = true;
@@ -329,7 +340,7 @@ export async function POST(request: Request) {
     phone: lead.phone ? String(lead.phone) : undefined,
     service: lead.service ? String(lead.service) : undefined,
     squareFeet: lead.sqft ? Number(lead.sqft) : undefined,
-    notes: (persisted ? '' : `NOT SAVED TO DATABASE (ref ${leadId}) — enter this lead by hand.\n\n`) + (leadNotes(lead) ?? ''),
+    notes: (persisted ? '' : `NOT CONFIRMED SAVED (ref ${leadId}) — check /admin/quotes for this email/phone before entering it by hand.\n\n`) + (leadNotes(lead) ?? ''),
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
   ));
