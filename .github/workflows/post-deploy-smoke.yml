@@ -1,0 +1,41 @@
+name: Post-deploy smoke
+
+# After a Production deploy succeeds, ask the live site what commit it is
+# serving and whether its invariants hold. Three outcomes, never conflated:
+#   exit 0  confirmed good
+#   exit 1  confirmed failure         -> job fails
+#   exit 2  inconclusive (unreachable / blocked / unknown) -> warning, NOT green
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment_status.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Live deploy check
+        id: live
+        env:
+          EXPECT_SHA: ${{ github.event.deployment.sha }}
+        run: |
+          set +e
+          if [ -n "$EXPECT_SHA" ]; then node scripts/verify-live-deploy.mjs --expect "$EXPECT_SHA"; else node scripts/verify-live-deploy.mjs --expect HEAD; fi
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "2" ]; then
+            echo "::warning title=Post-deploy smoke INCONCLUSIVE::The live site could not be judged (unreachable, blocked or unknown). This is not a pass."
+            exit 0
+          fi
+          exit $code
