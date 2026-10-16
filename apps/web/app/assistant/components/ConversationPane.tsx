@@ -1,5 +1,6 @@
 'use client';
 
+import { chatFailure } from '@/lib/assistant-workspace/chat-failure';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { EW_MARK, EW_MARK_ALT } from '@/lib/brand';
@@ -382,11 +383,8 @@ export function ConversationPane({
       if (!res.ok || !res.body) {
         /* A real server-side failure, not a degraded reply — the honest,
            billing-safe error state, not a silent keyword guess. */
-        updateAssistant({
-          role: 'assistant',
-          text: "I couldn't complete that analysis. Nothing was charged.",
-          failed: true,
-        });
+        const failure = chatFailure(res.status, res.headers?.get('retry-after'));
+        updateAssistant({ role: 'assistant', text: failure.text, failed: failure.retryable });
         return;
       }
 
