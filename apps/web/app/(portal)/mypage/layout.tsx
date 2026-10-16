@@ -10,6 +10,10 @@ import {
   ShopIcon,
 } from '@/app/components/PortalIcons';
 
+/* Private surface: noindex in the document as well as in the X-Robots-Tag
+   header (vercel.json), so one cannot silently lose the other. */
+export const metadata = { robots: { index: false, follow: false } };
+
 const navItems = [
   { href: '/mypage', label: 'Dashboard', icon: <DashboardIcon /> },
   { href: '/mypage/orders', label: 'My Orders', icon: <ShopIcon /> },

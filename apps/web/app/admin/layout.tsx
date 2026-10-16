@@ -13,6 +13,10 @@ import {
   FloorGraphIcon,
 } from '@/app/components/PortalIcons';
 
+/* Private surface: noindex in the document as well as in the X-Robots-Tag
+   header (vercel.json), so one cannot silently lose the other. */
+export const metadata = { robots: { index: false, follow: false } };
+
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: <DashboardIcon /> },
   { href: '/admin/quotes', label: 'Quotes & Leads', icon: <QuotesIcon /> },
