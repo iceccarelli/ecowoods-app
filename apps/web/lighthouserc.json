@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "pnpm --filter web start",
+      "startServerCommand": "pnpm --filter @ecowoods/web start",
       "startServerReadyPattern": "Ready in",
       "url": [
         "http://localhost:3000/",

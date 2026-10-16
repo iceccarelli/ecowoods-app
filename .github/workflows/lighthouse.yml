@@ -17,7 +17,7 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
       - name: Build
-        run: pnpm --filter web build
+        run: pnpm --filter @ecowoods/web build
         env:
           # Build needs a DB URL for prisma generate; a dummy is fine for static build.
           DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
