@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const c = corridorById(id);
   if (!c) return {};
   return {
-    title: `${c.name} — hardwood flooring coverage along ${c.route}`,
-    description: `${c.members.length} municipalities on the ${c.name} route, what coverage means in each, and where Ecowoods actually works. No claim of coverage that has not been confirmed.`,
+    title: `${c.name}: hardwood flooring coverage`,
+    description: `${c.members.length} municipalities on the ${c.name} route and where Ecowoods actually works. No coverage is claimed that has not been confirmed.`,
     alternates: {
       canonical: `/corridors/${c.id}`,
       /* The machine edition (GEO-002). next.config.js rewrites
