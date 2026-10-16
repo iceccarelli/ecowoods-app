@@ -2,6 +2,7 @@
  * Case Study detail page — renders single case study with schema injection and related content.
  */
 
+import { clampTitle, clampDescription } from '@/lib/meta-clamp';
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
@@ -58,8 +59,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${SITE_URL}/case-studies/${slug}`;
 
   return {
-    title: caseStudy.title,
-    description: caseStudy.description,
+    title: clampTitle(caseStudy.title),
+    description: clampDescription(caseStudy.description),
     authors: caseStudy.author ? [{ name: caseStudy.author }] : undefined,
     openGraph: {
       title: caseStudy.title,
