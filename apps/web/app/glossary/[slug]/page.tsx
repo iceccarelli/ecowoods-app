@@ -125,6 +125,7 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
           {t.aka && t.aka.length > 0 && (
             <p className="gl-aka-head">Also called {t.aka.join(', ')}</p>
           )}
+          <h2 className="gl-question">What is {t.term}?</h2>
           <p className="gl-definition">{t.short}</p>
         </div>
       </header>
