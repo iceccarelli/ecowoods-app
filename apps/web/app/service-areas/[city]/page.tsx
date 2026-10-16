@@ -11,6 +11,7 @@ import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
+import { areaOpening } from '@/lib/opening-answers';
 import { EstimateForm } from '@/app/components/EstimateForm';
 
 export function generateStaticParams() {
@@ -205,6 +206,9 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             {`Ecowoods serves ${areaDisplayName(city)}. Book the measure.`}
             {isUS && ` The showroom is Toronto. The job is in ${city.name}. We take this work.`}
           </p>
+
+          {/* Who, what, where, what it costs and the next step, from the registries. */}
+          <p className="area-opening" style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>{areaOpening(city)}</p>
 
           {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
               This paragraph used to be one shared sentence pair with the city

@@ -16,6 +16,7 @@ import { getGuide } from '@/lib/guides';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import { JobCardRail } from '@/app/components/JobCard';
 import { jobCardsForService } from '@/content/job-cards';
+import { serviceOpening } from '@/lib/opening-answers';
 import { getRegistry } from '@/lib/registry/registry';
 import { getProject, stillById } from '@/lib/projects';
 import KenBurnsStill from '../../components/project/KenBurnsStill';
@@ -258,7 +259,8 @@ export default async function ServiceDetailPage({
           </nav>
           <h1 className="tlx-title">{page.h1}</h1>
           <p className="tlx-lede">{page.standfirst}</p>
-          <p className="tlx-note">{svc?.blurb}</p>
+          {/* The service blurb is the second sentence of this opening answer. */}
+          <p className="tlx-note">{serviceOpening(page)}</p>
         </div>
       </header>
 
