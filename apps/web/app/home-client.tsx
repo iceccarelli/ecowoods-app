@@ -1,5 +1,6 @@
 'use client';
 
+import { HomeIntro } from './components/HomeIntro';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EstimateForm } from './components/EstimateForm';
 import {
@@ -616,6 +617,8 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           <span className="line" />
         </div>
       </section>
+
+      <HomeIntro />
 
       {/* 1b · WORK RAIL — six real jobs, all three frames. Hover scrubs
              room → approach → fingertip on desktop; leave restores frame
