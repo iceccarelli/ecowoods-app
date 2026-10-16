@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/db', () => ({
   db: {
-    quoteRequest: { create: vi.fn(async () => ({ id: 'q_1' })) },
+    quoteRequest: { create: vi.fn(async () => ({ id: 'q_1' })), findFirst: vi.fn(async () => null) },
     quoteRecovery: { updateMany: vi.fn(async () => ({ count: 0 })) },
   },
 }));

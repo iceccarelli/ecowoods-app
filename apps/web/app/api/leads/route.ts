@@ -11,6 +11,7 @@ import { sendLeadAlert } from '@/lib/lead-alert';
 import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
 import { productById } from '@/lib/floor-studio/catalog';
 import { safeLeadSource } from '@/lib/lead-redirect';
+import { findRecentDuplicate } from '@/lib/lead-dedupe';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -194,9 +195,20 @@ export async function POST(request: Request) {
   // 2. BEST-EFFORT DB persistence. Failure is logged, never fatal.
   //    city ← explicit city if provided; postal is stored on address (not city).
   let quoteId: string | null = null;
+  let duplicate = false;
   try {
     const session = await auth().catch(() => null);
-    const quote = await db.quoteRequest.create({
+    const existing = await findRecentDuplicate(db, {
+      email: String(lead.email ?? ''),
+      phone: lead.phone ? String(lead.phone) : null,
+      service: lead.service ? String(lead.service) : null,
+    }).catch(() => null);
+    if (existing) {
+      quoteId = existing;
+      duplicate = true;
+      console.log(JSON.stringify({ event: 'lead.duplicate', leadId, quoteId }));
+    }
+    const quote = duplicate ? null : await db.quoteRequest.create({
       data: {
         name: String(lead.name ?? ''),
         email: String(lead.email ?? ''),
@@ -229,27 +241,29 @@ export async function POST(request: Request) {
         userId: session?.user?.id ?? null,
       },
     });
-    quoteId = quote.id;
+    if (quote) quoteId = quote.id;
     /* MEAS-02 — not awaited. A lead that was captured is captured whether or
        not its ledger row lands, and holding this response open for a row only
        a report will read would be trading a customer's wait for a statistic. */
-    void recordFunnelEvent({
-      stage: 'LEAD_CAPTURED',
-      designId: lead.designId as string | undefined,
-      source: lead.source as string | undefined,
-      quoteId: quote.id,
-    });
-    /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
-       reason the ledger row is not: a homeowner's request must not wait on a
-       carrier. Inert and silent when no credentials are set. */
-    void sendLeadAlert({
-      kind: 'lead',
-      name: String(lead.name ?? ''),
-      phone: lead.phone ? String(lead.phone) : null,
-      where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
-      service: lead.service ? String(lead.service) : null,
-      source: lead.source ? String(lead.source) : null,
-    });
+    if (quote) {
+      void recordFunnelEvent({
+        stage: 'LEAD_CAPTURED',
+        designId: lead.designId as string | undefined,
+        source: lead.source as string | undefined,
+        quoteId: quote.id,
+      });
+      /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
+         reason the ledger row is not: a homeowner's request must not wait on a
+         carrier. Inert and silent when no credentials are set. */
+      void sendLeadAlert({
+        kind: 'lead',
+        name: String(lead.name ?? ''),
+        phone: lead.phone ? String(lead.phone) : null,
+        where: lead.postal ? String(lead.postal) : (lead.city ? String(lead.city) : null),
+        service: lead.service ? String(lead.service) : null,
+        source: lead.source ? String(lead.source) : null,
+      });
+    }
   } catch (err) {
     console.error(JSON.stringify({
       event: 'lead.db_persist_failed', leadId,
@@ -264,7 +278,7 @@ export async function POST(request: Request) {
      conversion is recorded here — server-side and authoritative — rather than
      trusted to a client that may have already navigated away. Best-effort like
      everything else after the durable log. */
-  if (lead.email) {
+  if (lead.email && !duplicate) {
     db.quoteRecovery
       .updateMany({
         where: { email: String(lead.email), sentAt: null, convertedAt: null },
@@ -282,7 +296,8 @@ export async function POST(request: Request) {
   }
 
   // 3. BEST-EFFORT admin email. Never blocks, never fails the request.
-  sendAdminNewQuoteEmail({
+  // A duplicate of a request already captured stops here: one lead, one alert.
+  if (!duplicate) sendAdminNewQuoteEmail({
     quoteId: quoteId ?? leadId,
     name: String(lead.name ?? ''),
     email: String(lead.email ?? ''),
@@ -295,7 +310,7 @@ export async function POST(request: Request) {
   );
 
   // 4. Customer acknowledgement — best-effort, never fatal.
-  sendQuoteReceivedEmail({
+  if (!duplicate) sendQuoteReceivedEmail({
     name: String(lead.name ?? ''),
     email: String(lead.email ?? ''),
     leadId: quoteId ?? leadId,
@@ -309,7 +324,7 @@ export async function POST(request: Request) {
   //    lib/outbound-webhook.ts. A misconfigured value is logged once and skipped;
   //    lead PII never leaves for an address nobody checked.
   const webhookUrl = webhookFromEnv('LEADS_WEBHOOK_URL');
-  if (webhookUrl) {
+  if (webhookUrl && !duplicate) {
     postWebhook(webhookUrl, { leadId, quoteId, ...lead }).catch((err) =>
       console.error(JSON.stringify({ event: 'lead.webhook_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
     );
