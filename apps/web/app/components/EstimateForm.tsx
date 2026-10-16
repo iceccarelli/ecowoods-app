@@ -315,6 +315,7 @@ export function EstimateForm({
           source,
           form_track: 'measure',
           design_id: studio?.designId ?? designId,
+          event_id: typeof json?.leadId === 'string' ? json.leadId : undefined,
         });
         setSentTrack('measure');
         setState('sent');
@@ -350,7 +351,11 @@ export function EstimateForm({
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        track('photo_triage_submit', { source, photos: photos.length });
+        track('photo_triage_submit', {
+          source,
+          photos: photos.length,
+          event_id: typeof json?.leadId === 'string' ? json.leadId : undefined,
+        });
         setSentTrack('photos');
         setState('sent');
         form.reset();
