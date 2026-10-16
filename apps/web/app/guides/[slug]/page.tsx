@@ -1,3 +1,4 @@
+import { clampTitle, clampDescription } from '@/lib/meta-clamp';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -156,8 +157,8 @@ export async function generateMetadata({
     /* The searcher's phrasing, where the guide sets one. See the note on
        Guide.seoTitle — the slug already carried the keyword and the title did
        not, which is the one place a rename is worth more than a new page. */
-    title: guide.seoTitle ?? guide.title,
-    description: guide.summary,
+    title: clampTitle(guide.seoTitle ?? guide.title),
+    description: clampDescription(guide.summary),
     alternates: { canonical: `/guides/${guide.slug}`, types: { 'text/markdown': `/guides/${guide.slug}.md` } },
     openGraph: {
       title: guide.question,

@@ -2,6 +2,7 @@
  * Article detail page — renders single article with schema injection and related content.
  */
 
+import { clampTitle, clampDescription } from '@/lib/meta-clamp';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getArticle, getArticles } from '@/lib/content/loader';
@@ -47,8 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${SITE_URL}/blog/${slug}`;
 
   return {
-    title: article.title,
-    description: article.description,
+    title: clampTitle(article.title),
+    description: clampDescription(article.description),
     authors: article.author ? [{ name: article.author }] : undefined,
     openGraph: {
       title: article.title,
