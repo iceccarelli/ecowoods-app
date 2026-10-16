@@ -69,6 +69,8 @@ const claims = [...registrySrc.matchAll(
   status: (body.match(/status:\s*'([a-z]+)'/) || [, 'unknown'])[1],
   source: (body.match(/source:\s*\n?\s*'([^']*)'/) || [, ''])[1],
   verifiedAt: (body.match(/verifiedAt:\s*'([^']+)'/) || [, ''])[1],
+  /* verifiedAt taken from a registry value, e.g. PRIMARY_REVIEW_EVIDENCE.asOf */
+  verifiedAtFromAsOf: /verifiedAt:\s*[A-Za-z_]+\.asOf\b/.test(body),
   contexts: [...(body.match(/allowedContexts:\s*\[([^\]]*)\]/) || [, ''])[1]
     .matchAll(/'([a-z]+)'/g)].map((m) => m[1]),
 }));
@@ -83,6 +85,10 @@ if (claims.length === 0) {
   );
   process.exit(1);
 }
+
+/* Resolve `X.asOf` conservatively: the OLDEST asOf date in the constants module. */
+const asOfDates = [...read(join(ROOT, CONSTANTS)).matchAll(/asOf:\s*'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]).sort();
+for (const c of claims) if (!c.verifiedAt && c.verifiedAtFromAsOf && asOfDates.length) c.verifiedAt = asOfDates[0];
 
 const deadline = (registrySrc.match(/UNSOURCED_DEADLINE\s*=\s*'([^']+)'/) || [, 'unset'])[1];
 
@@ -164,6 +170,33 @@ for (const f of walk(join(ROOT, SCHEMA_DIR))) {
 
 /* ── pass 3: the unsourced queue ──────────────────────────────────────────── */
 const unsourced = claims.filter((c) => c.status === 'unsourced');
+
+/* ── pass 4: expiry — an unsupported or expired claim fails the build ───────
+ *
+ *  a. An `unsourced` claim still published after UNSOURCED_DEADLINE fails.
+ *  b. An `unsourced` claim may not be allowed in a machine-repeated context
+ *     (schema, machine, document); those restate it verbatim, with no hedging.
+ *  c. A `verified` claim whose `verifiedAt` is older than MAX_AGE_DAYS, or is
+ *     missing/unparseable, fails: nobody has re-confirmed the source.
+ *
+ * ECOWOODS_TODAY (YYYY-MM-DD) overrides the clock so the rule can be tested.
+ */
+const MAX_AGE_DAYS = 400;
+const today = new Date(process.env.ECOWOODS_TODAY ?? new Date().toISOString().slice(0, 10));
+const expired = [];
+if (/^\d{4}-\d{2}-\d{2}$/.test(deadline) && today > new Date(deadline)) {
+  for (const c of unsourced) expired.push({ id: c.id, why: `unsourced past the ${deadline} deadline — source it or remove it from the surfaces that use it.` });
+}
+for (const c of unsourced) {
+  const bad = c.contexts.filter((x) => ['schema', 'machine', 'document'].includes(x));
+  if (bad.length) expired.push({ id: c.id, why: `unsourced but allowed in ${bad.join(', ')} (machine-repeated, no hedging).` });
+}
+for (const c of claims.filter((x) => x.status === 'verified')) {
+  const d = new Date(c.verifiedAt);
+  if (!c.verifiedAt || Number.isNaN(d.getTime())) expired.push({ id: c.id, why: 'verified but verifiedAt is missing or not a date.' });
+  else if ((today - d) / 86400000 > MAX_AGE_DAYS) expired.push({ id: c.id, why: `verified ${c.verifiedAt}, older than ${MAX_AGE_DAYS} days — re-confirm the source and update verifiedAt.` });
+}
+for (const e of expired) hard.push({ rel: REGISTRY, line: 0, text: e.id, why: e.why });
 
 /* ── output ───────────────────────────────────────────────────────────────── */
 console.log('');
