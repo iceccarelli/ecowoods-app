@@ -10,6 +10,7 @@ import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
 import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
 import { productById } from '@/lib/floor-studio/catalog';
+import { safeLeadSource } from '@/lib/lead-redirect';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -58,13 +59,17 @@ async function readBody(request: Request): Promise<{ body: unknown; isFormPost: 
 }
 
 /** Where to send a no-JS browser back to. Same-origin only. */
-function backTo(request: Request, ok: boolean): string {
+function backTo(request: Request, ok: boolean, source?: unknown): string {
   const ref = request.headers.get('referer');
   try {
     const u = new URL(ref ?? '/', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
     const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
     if (u.host !== site.host) return '/?sent=1';
+    u.searchParams.delete('sent');
+    u.searchParams.delete('error');
     u.searchParams.set(ok ? 'sent' : 'error', '1');
+    const from = safeLeadSource(source);
+    if (from) u.searchParams.set('from', from);
     u.hash = 'estimate';
     return `${u.pathname}${u.search}${u.hash}`;
   } catch {
@@ -114,7 +119,7 @@ export async function POST(request: Request) {
   // traffic never consumes a real visitor's allowance.
   if (typeof (body as { company?: unknown }).company === 'string' && (body as { company: string }).company.trim()) {
     console.log(JSON.stringify({ event: 'lead.honeypot', at: new Date().toISOString() }));
-    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true, (body as { source?: unknown }).source), request.url), 303);
     return NextResponse.json(
       { success: true, message: 'Quote request received! A specialist will call you within 1 business day.' },
       { status: 201 },
@@ -128,7 +133,7 @@ export async function POST(request: Request) {
       const key = issue.path[0];
       if (typeof key === 'string' && !(key in fieldErrors)) fieldErrors[key] = issue.message;
     }
-    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, false), request.url), 303);
+    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, false, (body as { source?: unknown }).source), request.url), 303);
     return NextResponse.json(
       { success: false, message: 'Please check the highlighted fields.', fieldErrors },
       { status: 400 },
@@ -311,7 +316,7 @@ export async function POST(request: Request) {
   }
 
   // The lead is captured. Always acknowledge success to the customer.
-  if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+  if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true, lead.source), request.url), 303);
   return NextResponse.json(
     { success: true, leadId, quoteId, message: 'Quote request received! A specialist will call you within 1 business day.', ecoPointsEarned: 750 },
     { status: 201 },
