@@ -93,7 +93,7 @@ function FooterCol({
   if (!mobile) {
     return (
       <div>
-        <h5>{title}</h5>
+        <h3>{title}</h3>
         {body}
       </div>
     );
@@ -101,7 +101,7 @@ function FooterCol({
   return (
     <details className="footer-col">
       <summary className="footer-col-summary">
-        <h5>{title}</h5>
+        <h3>{title}</h3>
         <span className="footer-col-chevron" aria-hidden="true" />
       </summary>
       <div className="footer-col-body">{body}</div>

@@ -32,7 +32,7 @@ export default function StandardDeck({
           <div className="standard-pillar-icon" aria-hidden="true">
             {icon[p.icon]}
           </div>
-          <h4>{p.title}</h4>
+          <h3>{p.title}</h3>
           <p>{p.proof}</p>
         </div>
       ))}
@@ -56,7 +56,7 @@ export default function StandardDeck({
           <div className="pfd-panel-icon" aria-hidden="true">
             {icon[p.icon]}
           </div>
-          <h4 className="pfd-panel-title">{p.title}</h4>
+          <h3 className="pfd-panel-title">{p.title}</h3>
           <p className="pfd-panel-body">{p.proof}</p>
         </>
       )}

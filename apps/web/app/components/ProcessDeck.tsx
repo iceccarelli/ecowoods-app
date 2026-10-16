@@ -41,7 +41,7 @@ export default function ProcessDeck({
             </span>
             <span className="funnel-step-num">{step.num}</span>
           </div>
-          <h4>{step.title}</h4>
+          <h3>{step.title}</h3>
           <p>{step.line}</p>
         </div>
       ))}
@@ -68,7 +68,7 @@ export default function ProcessDeck({
               {s.num}
             </span>
           </div>
-          <h4 className="pfd-step-title">{s.title}</h4>
+          <h3 className="pfd-step-title">{s.title}</h3>
           <p className="pfd-step-body">{s.line}</p>
         </>
       )}
