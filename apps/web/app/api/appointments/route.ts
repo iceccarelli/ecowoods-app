@@ -1,3 +1,4 @@
+import { runAfterResponse } from '@/lib/background';
 import { NextResponse } from 'next/server';
 import { appointmentSchema, APPOINTMENT_SERVICES } from '@ecowoods/shared';
 import { db } from '@/lib/db';
@@ -142,33 +143,33 @@ export async function POST(request: Request) {
     /* SALE-04 — a booked measure is the most time-critical alert of the
        three: a slot is now held, and if it needs moving the customer should
        hear that today rather than on the day. */
-    void sendLeadAlert({
+    runAfterResponse(sendLeadAlert({
       kind: 'measure booked',
       name: data.name,
       phone: data.phone ?? null,
       where: data.postal ?? null,
       service: data.service,
       source: sanitiseSource(data.source) ?? 'booking',
-    });
-    void recordFunnelEvent({
+    }));
+    runAfterResponse(recordFunnelEvent({
       stage: 'APPOINTMENT_BOOKED',
       designId,
       source: sanitiseSource(data.source) ?? 'booking',
       quoteId: quote.id,
-    });
+    }));
 
     // Notifications — non-blocking; a booking is never lost to a flaky email.
     const label = whenLabel(startsAt);
     const serviceLabel = SERVICE_LABELS[data.service] ?? data.service;
-    sendAppointmentConfirmationEmail({
+    runAfterResponse(sendAppointmentConfirmationEmail({
       to: data.email, name: data.name, whenLabel: label,
       durationMinutes: SLOT_DURATION_MINUTES, service: serviceLabel,
-    }).catch((e) => console.error('[appointments] customer email failed:', e));
-    sendAdminNewQuoteEmail({
+    }).catch((e) => console.error('[appointments] customer email failed:', e)));
+    runAfterResponse(sendAdminNewQuoteEmail({
       quoteId: quote.id, name: data.name, email: data.email,
       phone: data.phone, city: data.postal, service: serviceLabel,
       notes: `In-home estimate booked for ${label}.${data.notes ? ' ' + data.notes : ''}`,
-    }).catch((e) => console.error('[appointments] admin email failed:', e));
+    }).catch((e) => console.error('[appointments] admin email failed:', e)));
 
     return NextResponse.json(
       { id: appt.id, startsAt: appt.startsAt.toISOString(), durationMinutes: SLOT_DURATION_MINUTES, service: data.service },

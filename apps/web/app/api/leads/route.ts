@@ -256,12 +256,12 @@ export async function POST(request: Request) {
        not its ledger row lands, and holding this response open for a row only
        a report will read would be trading a customer's wait for a statistic. */
     if (quote) {
-      void recordFunnelEvent({
+      runAfterResponse(recordFunnelEvent({
         stage: 'LEAD_CAPTURED',
         designId: lead.designId as string | undefined,
         source: lead.source as string | undefined,
         quoteId: quote.id,
-      });
+      }));
       /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
          reason the ledger row is not: a homeowner's request must not wait on a
          carrier. Inert and silent when no credentials are set. */
