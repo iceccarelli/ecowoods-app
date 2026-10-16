@@ -233,6 +233,60 @@ export type AnalyticsEvent =
   | 'analysis_result_viewed'
   | 'analysis_next_action_selected';
 
+/**
+ * What an event MEANS, stated once.
+ *
+ * - `conversion`: the server accepted the request. Fired only after a 2xx from
+ *   /api/leads, /api/photo-triage or /api/appointments — never from a click.
+ * - `intent`: a visitor did something that suggests interest (a tap on a phone
+ *   number, a CTA). Useful as a signal; it must never be summed with
+ *   conversions, because a tap is not a call and a call is not a job.
+ * - `engagement`: everything else.
+ *
+ * `quote_accepted` and `measure_booked` as commercial facts are SERVER events
+ * (funnel ledger stages QUOTE_ACCEPTED / APPOINTMENT_BOOKED); the client-side
+ * `workspace_measure_requested` is the booking *request* accepted by the API.
+ */
+export type EventClass = 'conversion' | 'intent' | 'engagement';
+
+export const CONVERSION_EVENTS = [
+  'quote_submit',
+  'photo_triage_submit',
+  'workspace_measure_requested',
+  'workspace_estimate_requested',
+  'workspace_quote_requested',
+] as const satisfies readonly AnalyticsEvent[];
+
+export const INTENT_EVENTS = ['tel_click', 'commercial_cta', 'realtor_cta', 'design_handoff'] as const satisfies readonly AnalyticsEvent[];
+
+export function eventClass(event: AnalyticsEvent): EventClass {
+  if ((CONVERSION_EVENTS as readonly string[]).includes(event)) return 'conversion';
+  if ((INTENT_EVENTS as readonly string[]).includes(event)) return 'intent';
+  return 'engagement';
+}
+
+/* No personal data to analytics: refuse by key name AND by value shape, so a
+   future call site that passes `email` or a phone number in a free label is
+   dropped rather than shipped. */
+const PII_KEY = /^(e?-?mail|phone|tel|name|first_?name|last_?name|address|street|postal|postcode|zip|message|notes?|text|query|ip)$/i;
+const PII_VALUE = /[^\s@]+@[^\s@]+\.[a-z]{2,}|\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b|\b[A-Za-z]\d[A-Za-z][\s-]?\d[A-Za-z]\d\b/i;
+
+export function scrubParams(
+  params: Record<string, string | number | boolean | undefined> | undefined,
+): Record<string, string | number | boolean> {
+  const clean: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(params ?? {})) {
+    if (v === undefined) continue;
+    if (PII_KEY.test(k)) continue;
+    if (typeof v === 'string' && PII_VALUE.test(v)) continue;
+    clean[k] = v;
+  }
+  return clean;
+}
+
+/** event + event_id already sent in this page session. */
+const sent = new Set<string>();
+
 export function track(
   event: AnalyticsEvent,
   /* `undefined` is accepted so a call site can write `design_id: design.designId`
@@ -240,18 +294,25 @@ export function track(
      sent: a parameter present with no value is worse than an absent one,
      because it registers in GA4 as a dimension that exists and is always
      empty, and somebody eventually builds a report on it. */
-  params?: Record<string, string | number | boolean | undefined>,
+  params?: Record<string, string | number | boolean | undefined> & { event_id?: string },
 ): void {
   if (typeof window === 'undefined') return;
   try {
+    /* DEDUPLICATION. A conversion that carries a stable `event_id` (the server's
+       lead id, which a repeated submission shares) is sent once per page
+       session; a double-fired handler or a resubmitted form cannot count twice. */
+    const eventId = params?.event_id;
+    if (typeof eventId === 'string' && eventId) {
+      const key = `${event}:${eventId}`;
+      if (sent.has(key)) return;
+      sent.add(key);
+    }
     const w = window as Window & {
       gtag?: (...args: unknown[]) => void;
       dataLayer?: unknown[];
     };
-    const clean: Record<string, string | number | boolean> = {};
-    for (const [k, v] of Object.entries(params ?? {})) {
-      if (v !== undefined) clean[k] = v;
-    }
+    const clean = scrubParams(params);
+    clean.event_class = eventClass(event);
     if (typeof w.gtag === 'function') {
       w.gtag('event', event, clean);
     } else if (Array.isArray(w.dataLayer)) {
