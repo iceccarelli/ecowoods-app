@@ -504,6 +504,13 @@ export function buildWebSite(siteUrl: string, siteName: string = 'Ecowoods'): We
     name: siteName,
     inLanguage: 'en-CA',
     publisher: { '@id': `${baseUrl}/#organization` },
+    /* The on-site search is real: /search renders results server-side from the
+       same navigation registry the ⌘K palette reads. */
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/search?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
   };
 }
 
