@@ -1,5 +1,5 @@
 {
-  "observed_at": null,
+  "observed_at": "2026-10-16",
   "observer": null,
   "engines": [
     "chatgpt",
@@ -7,39 +7,117 @@
     "perplexity",
     "google-ai"
   ],
-  "note": "Ask each question cold, in a fresh session, without naming Ecowoods. cited = the answer named or linked ecowoods.ca.",
+  "market": "Toronto and GTA hardwood install, refinish, dust-controlled sanding",
+  "note": "cited remains null until a qualifying cold session in the named engine is actually inspected. A cited=true value requires evidence that the engine answer names Ecowoods or links ecowoods.ca; cited=false requires an inspected answer that does not. index_hit is only a web-index observation, not an engine citation. Do not score index_hit as cited. Unknown/unobserved is not equivalent to false.",
+  "takeover_order": [
+    "m1",
+    "m2",
+    "m8",
+    "m4",
+    "m5",
+    "d1",
+    "c1",
+    "c2",
+    "e1",
+    "e3"
+  ],
+  "win_condition": "A cold answer on chatgpt, gemini, perplexity, or google-ai names or links ecowoods.ca for the priority queries, ahead of the competitors listed on that row.",
   "observations": [
     {
       "query": "d1",
       "engine": "chatgpt",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "why is my hardwood floor cupping"
+      "competitors": [
+        "12thandoak.com",
+        "flooringbysammer.com",
+        "floorcentral.com",
+        "signaturehardwoodfloors.com",
+        "vcfloor.ca"
+      ],
+      "note": "why is my hardwood floor cupping",
+      "target_url": "https://ecowoods.ca/glossary/cupping",
+      "priority": 2,
+      "declared_gap": false,
+      "index_hit": false,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d1",
       "engine": "gemini",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "why is my hardwood floor cupping"
+      "competitors": [
+        "12thandoak.com",
+        "flooringbysammer.com",
+        "floorcentral.com",
+        "signaturehardwoodfloors.com",
+        "vcfloor.ca"
+      ],
+      "note": "why is my hardwood floor cupping",
+      "target_url": "https://ecowoods.ca/glossary/cupping",
+      "priority": 2,
+      "declared_gap": false,
+      "index_hit": false,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d1",
       "engine": "perplexity",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "why is my hardwood floor cupping"
+      "competitors": [
+        "12thandoak.com",
+        "flooringbysammer.com",
+        "floorcentral.com",
+        "signaturehardwoodfloors.com",
+        "vcfloor.ca"
+      ],
+      "note": "why is my hardwood floor cupping",
+      "target_url": "https://ecowoods.ca/glossary/cupping",
+      "priority": 2,
+      "declared_gap": false,
+      "index_hit": false,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d1",
       "engine": "google-ai",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "why is my hardwood floor cupping"
+      "competitors": [
+        "12thandoak.com",
+        "flooringbysammer.com",
+        "floorcentral.com",
+        "signaturehardwoodfloors.com",
+        "vcfloor.ca"
+      ],
+      "note": "why is my hardwood floor cupping",
+      "target_url": "https://ecowoods.ca/glossary/cupping",
+      "priority": 2,
+      "declared_gap": false,
+      "index_hit": false,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d2",
@@ -47,7 +125,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why is my hardwood floor crowning"
+      "note": "why is my hardwood floor crowning",
+      "target_url": "https://ecowoods.ca/glossary/crowning",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d2",
@@ -55,7 +141,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why is my hardwood floor crowning"
+      "note": "why is my hardwood floor crowning",
+      "target_url": "https://ecowoods.ca/glossary/crowning",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d2",
@@ -63,7 +157,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why is my hardwood floor crowning"
+      "note": "why is my hardwood floor crowning",
+      "target_url": "https://ecowoods.ca/glossary/crowning",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d2",
@@ -71,7 +173,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why is my hardwood floor crowning"
+      "note": "why is my hardwood floor crowning",
+      "target_url": "https://ecowoods.ca/glossary/crowning",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d3",
@@ -79,7 +189,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my floorboards separating"
+      "note": "why are my floorboards separating",
+      "target_url": "https://ecowoods.ca/glossary/seasonal-gapping",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d3",
@@ -87,7 +205,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my floorboards separating"
+      "note": "why are my floorboards separating",
+      "target_url": "https://ecowoods.ca/glossary/seasonal-gapping",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d3",
@@ -95,7 +221,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my floorboards separating"
+      "note": "why are my floorboards separating",
+      "target_url": "https://ecowoods.ca/glossary/seasonal-gapping",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d3",
@@ -103,7 +237,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my floorboards separating"
+      "note": "why are my floorboards separating",
+      "target_url": "https://ecowoods.ca/glossary/seasonal-gapping",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d4",
@@ -111,7 +253,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "can over sanded hardwood be saved"
+      "note": "can over sanded hardwood be saved",
+      "target_url": "https://ecowoods.ca/glossary/wear-layer",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d4",
@@ -119,7 +269,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "can over sanded hardwood be saved"
+      "note": "can over sanded hardwood be saved",
+      "target_url": "https://ecowoods.ca/glossary/wear-layer",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d4",
@@ -127,7 +285,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "can over sanded hardwood be saved"
+      "note": "can over sanded hardwood be saved",
+      "target_url": "https://ecowoods.ca/glossary/wear-layer",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d4",
@@ -135,7 +301,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "can over sanded hardwood be saved"
+      "note": "can over sanded hardwood be saved",
+      "target_url": "https://ecowoods.ca/glossary/wear-layer",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d5",
@@ -143,7 +317,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how do I know if my floor can be refinished again"
+      "note": "how do I know if my floor can be refinished again",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d5",
@@ -151,7 +333,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how do I know if my floor can be refinished again"
+      "note": "how do I know if my floor can be refinished again",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d5",
@@ -159,7 +349,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how do I know if my floor can be refinished again"
+      "note": "how do I know if my floor can be refinished again",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d5",
@@ -167,7 +365,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how do I know if my floor can be refinished again"
+      "note": "how do I know if my floor can be refinished again",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d6",
@@ -175,7 +381,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what causes edge peaking on hardwood floors"
+      "note": "what causes edge peaking on hardwood floors",
+      "target_url": "https://ecowoods.ca/glossary/edge-peaking",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d6",
@@ -183,7 +397,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what causes edge peaking on hardwood floors"
+      "note": "what causes edge peaking on hardwood floors",
+      "target_url": "https://ecowoods.ca/glossary/edge-peaking",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d6",
@@ -191,7 +413,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what causes edge peaking on hardwood floors"
+      "note": "what causes edge peaking on hardwood floors",
+      "target_url": "https://ecowoods.ca/glossary/edge-peaking",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d6",
@@ -199,7 +429,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what causes edge peaking on hardwood floors"
+      "note": "what causes edge peaking on hardwood floors",
+      "target_url": "https://ecowoods.ca/glossary/edge-peaking",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d7",
@@ -207,7 +445,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor water damage can it be repaired"
+      "note": "hardwood floor water damage can it be repaired",
+      "target_url": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d7",
@@ -215,7 +461,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor water damage can it be repaired"
+      "note": "hardwood floor water damage can it be repaired",
+      "target_url": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d7",
@@ -223,7 +477,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor water damage can it be repaired"
+      "note": "hardwood floor water damage can it be repaired",
+      "target_url": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "d7",
@@ -231,7 +493,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor water damage can it be repaired"
+      "note": "hardwood floor water damage can it be repaired",
+      "target_url": "https://ecowoods.ca/hardwood-floor-problems-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c1",
@@ -239,7 +509,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "engineered vs solid hardwood which is better"
+      "note": "engineered vs solid hardwood which is better",
+      "target_url": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c1",
@@ -247,7 +525,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "engineered vs solid hardwood which is better"
+      "note": "engineered vs solid hardwood which is better",
+      "target_url": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c1",
@@ -255,7 +541,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "engineered vs solid hardwood which is better"
+      "note": "engineered vs solid hardwood which is better",
+      "target_url": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c1",
@@ -263,7 +557,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "engineered vs solid hardwood which is better"
+      "note": "engineered vs solid hardwood which is better",
+      "target_url": "https://ecowoods.ca/guides/solid-vs-engineered-hardwood-toronto",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c2",
@@ -271,7 +573,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "should I refinish or replace my hardwood floor"
+      "note": "should I refinish or replace my hardwood floor",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c2",
@@ -279,7 +589,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "should I refinish or replace my hardwood floor"
+      "note": "should I refinish or replace my hardwood floor",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c2",
@@ -287,7 +605,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "should I refinish or replace my hardwood floor"
+      "note": "should I refinish or replace my hardwood floor",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c2",
@@ -295,7 +621,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "should I refinish or replace my hardwood floor"
+      "note": "should I refinish or replace my hardwood floor",
+      "target_url": "https://ecowoods.ca/guides/reference-refinishing-existing-hardwood",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c3",
@@ -303,7 +637,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "nail down vs glue down vs floating hardwood"
+      "note": "nail down vs glue down vs floating hardwood",
+      "target_url": "https://ecowoods.ca/guides/nail-down-glue-down-or-floating",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c3",
@@ -311,7 +653,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "nail down vs glue down vs floating hardwood"
+      "note": "nail down vs glue down vs floating hardwood",
+      "target_url": "https://ecowoods.ca/guides/nail-down-glue-down-or-floating",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c3",
@@ -319,7 +669,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "nail down vs glue down vs floating hardwood"
+      "note": "nail down vs glue down vs floating hardwood",
+      "target_url": "https://ecowoods.ca/guides/nail-down-glue-down-or-floating",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c3",
@@ -327,7 +685,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "nail down vs glue down vs floating hardwood"
+      "note": "nail down vs glue down vs floating hardwood",
+      "target_url": "https://ecowoods.ca/guides/nail-down-glue-down-or-floating",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c4",
@@ -335,7 +701,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "white oak vs red oak flooring"
+      "note": "white oak vs red oak flooring",
+      "target_url": "https://ecowoods.ca/guides/white-oak-flooring-toronto",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c4",
@@ -343,7 +717,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "white oak vs red oak flooring"
+      "note": "white oak vs red oak flooring",
+      "target_url": "https://ecowoods.ca/guides/white-oak-flooring-toronto",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c4",
@@ -351,7 +733,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "white oak vs red oak flooring"
+      "note": "white oak vs red oak flooring",
+      "target_url": "https://ecowoods.ca/guides/white-oak-flooring-toronto",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c4",
@@ -359,7 +749,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "white oak vs red oak flooring"
+      "note": "white oak vs red oak flooring",
+      "target_url": "https://ecowoods.ca/guides/white-oak-flooring-toronto",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c5",
@@ -367,7 +765,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how much will my hardwood floor move in winter"
+      "note": "how much will my hardwood floor move in winter",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c5",
@@ -375,7 +781,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how much will my hardwood floor move in winter"
+      "note": "how much will my hardwood floor move in winter",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c5",
@@ -383,7 +797,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how much will my hardwood floor move in winter"
+      "note": "how much will my hardwood floor move in winter",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c5",
@@ -391,7 +813,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how much will my hardwood floor move in winter"
+      "note": "how much will my hardwood floor move in winter",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c6",
@@ -399,7 +829,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood over concrete slab in a condo"
+      "note": "hardwood over concrete slab in a condo",
+      "target_url": "https://ecowoods.ca/guides/reference-condominium-concrete-slab",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c6",
@@ -407,7 +845,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood over concrete slab in a condo"
+      "note": "hardwood over concrete slab in a condo",
+      "target_url": "https://ecowoods.ca/guides/reference-condominium-concrete-slab",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c6",
@@ -415,7 +861,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood over concrete slab in a condo"
+      "note": "hardwood over concrete slab in a condo",
+      "target_url": "https://ecowoods.ca/guides/reference-condominium-concrete-slab",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c6",
@@ -423,7 +877,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood over concrete slab in a condo"
+      "note": "hardwood over concrete slab in a condo",
+      "target_url": "https://ecowoods.ca/guides/reference-condominium-concrete-slab",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c7",
@@ -431,7 +893,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring over radiant heat"
+      "note": "hardwood flooring over radiant heat",
+      "target_url": "https://ecowoods.ca/guides/reference-radiant-heat-main-floor",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c7",
@@ -439,7 +909,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring over radiant heat"
+      "note": "hardwood flooring over radiant heat",
+      "target_url": "https://ecowoods.ca/guides/reference-radiant-heat-main-floor",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c7",
@@ -447,7 +925,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring over radiant heat"
+      "note": "hardwood flooring over radiant heat",
+      "target_url": "https://ecowoods.ca/guides/reference-radiant-heat-main-floor",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "c7",
@@ -455,71 +941,195 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring over radiant heat"
+      "note": "hardwood flooring over radiant heat",
+      "target_url": "https://ecowoods.ca/guides/reference-radiant-heat-main-floor",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m1",
       "engine": "chatgpt",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood flooring cost Toronto"
+      "competitors": [
+        "costcanada.com",
+        "topfloorings.com",
+        "flooringoffice.com",
+        "renovateindex.ca",
+        "gmco.ca"
+      ],
+      "note": "hardwood flooring cost Toronto",
+      "target_url": "https://ecowoods.ca/pricing",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m1",
       "engine": "gemini",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood flooring cost Toronto"
+      "competitors": [
+        "costcanada.com",
+        "topfloorings.com",
+        "flooringoffice.com",
+        "renovateindex.ca",
+        "gmco.ca"
+      ],
+      "note": "hardwood flooring cost Toronto",
+      "target_url": "https://ecowoods.ca/pricing",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m1",
       "engine": "perplexity",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood flooring cost Toronto"
+      "competitors": [
+        "costcanada.com",
+        "topfloorings.com",
+        "flooringoffice.com",
+        "renovateindex.ca",
+        "gmco.ca"
+      ],
+      "note": "hardwood flooring cost Toronto",
+      "target_url": "https://ecowoods.ca/pricing",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m1",
       "engine": "google-ai",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood flooring cost Toronto"
+      "competitors": [
+        "costcanada.com",
+        "topfloorings.com",
+        "flooringoffice.com",
+        "renovateindex.ca",
+        "gmco.ca"
+      ],
+      "note": "hardwood flooring cost Toronto",
+      "target_url": "https://ecowoods.ca/pricing",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m2",
       "engine": "chatgpt",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood floor refinishing cost per square foot"
+      "competitors": [
+        "topfloorings.com",
+        "flooringoffice.com"
+      ],
+      "note": "hardwood floor refinishing cost per square foot",
+      "target_url": "https://ecowoods.ca/guides/hardwood-flooring-cost-toronto",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m2",
       "engine": "gemini",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood floor refinishing cost per square foot"
+      "competitors": [
+        "topfloorings.com",
+        "flooringoffice.com"
+      ],
+      "note": "hardwood floor refinishing cost per square foot",
+      "target_url": "https://ecowoods.ca/guides/hardwood-flooring-cost-toronto",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m2",
       "engine": "perplexity",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood floor refinishing cost per square foot"
+      "competitors": [
+        "topfloorings.com",
+        "flooringoffice.com"
+      ],
+      "note": "hardwood floor refinishing cost per square foot",
+      "target_url": "https://ecowoods.ca/guides/hardwood-flooring-cost-toronto",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m2",
       "engine": "google-ai",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "hardwood floor refinishing cost per square foot"
+      "competitors": [
+        "topfloorings.com",
+        "flooringoffice.com"
+      ],
+      "note": "hardwood floor refinishing cost per square foot",
+      "target_url": "https://ecowoods.ca/guides/hardwood-flooring-cost-toronto",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m3",
@@ -527,7 +1137,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "cost to refinish hardwood stairs"
+      "note": "cost to refinish hardwood stairs",
+      "target_url": "https://ecowoods.ca/hardwood-stairs-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m3",
@@ -535,7 +1153,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "cost to refinish hardwood stairs"
+      "note": "cost to refinish hardwood stairs",
+      "target_url": "https://ecowoods.ca/hardwood-stairs-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m3",
@@ -543,7 +1169,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "cost to refinish hardwood stairs"
+      "note": "cost to refinish hardwood stairs",
+      "target_url": "https://ecowoods.ca/hardwood-stairs-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m3",
@@ -551,7 +1185,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "cost to refinish hardwood stairs"
+      "note": "cost to refinish hardwood stairs",
+      "target_url": "https://ecowoods.ca/hardwood-stairs-toronto",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m4",
@@ -559,7 +1201,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Mississauga"
+      "note": "hardwood flooring cost Mississauga",
+      "target_url": "https://ecowoods.ca/service-areas/mississauga",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m4",
@@ -567,7 +1217,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Mississauga"
+      "note": "hardwood flooring cost Mississauga",
+      "target_url": "https://ecowoods.ca/service-areas/mississauga",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m4",
@@ -575,7 +1233,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Mississauga"
+      "note": "hardwood flooring cost Mississauga",
+      "target_url": "https://ecowoods.ca/service-areas/mississauga",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m4",
@@ -583,7 +1249,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Mississauga"
+      "note": "hardwood flooring cost Mississauga",
+      "target_url": "https://ecowoods.ca/service-areas/mississauga",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m5",
@@ -591,7 +1265,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Oakville"
+      "note": "hardwood flooring cost Oakville",
+      "target_url": "https://ecowoods.ca/service-areas/oakville",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m5",
@@ -599,7 +1281,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Oakville"
+      "note": "hardwood flooring cost Oakville",
+      "target_url": "https://ecowoods.ca/service-areas/oakville",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m5",
@@ -607,7 +1297,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Oakville"
+      "note": "hardwood flooring cost Oakville",
+      "target_url": "https://ecowoods.ca/service-areas/oakville",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m5",
@@ -615,7 +1313,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood flooring cost Oakville"
+      "note": "hardwood flooring cost Oakville",
+      "target_url": "https://ecowoods.ca/service-areas/oakville",
+      "priority": 2,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m6",
@@ -623,7 +1329,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Burlington"
+      "note": "hardwood floor refinishing cost Burlington",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m6",
@@ -631,7 +1345,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Burlington"
+      "note": "hardwood floor refinishing cost Burlington",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m6",
@@ -639,7 +1361,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Burlington"
+      "note": "hardwood floor refinishing cost Burlington",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m6",
@@ -647,7 +1377,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Burlington"
+      "note": "hardwood floor refinishing cost Burlington",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m7",
@@ -655,7 +1393,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Hamilton"
+      "note": "hardwood floor refinishing cost Hamilton",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m7",
@@ -663,7 +1409,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Hamilton"
+      "note": "hardwood floor refinishing cost Hamilton",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m7",
@@ -671,7 +1425,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Hamilton"
+      "note": "hardwood floor refinishing cost Hamilton",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m7",
@@ -679,39 +1441,115 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood floor refinishing cost Hamilton"
+      "note": "hardwood floor refinishing cost Hamilton",
+      "target_url": null,
+      "priority": 4,
+      "declared_gap": true,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m8",
       "engine": "chatgpt",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "dust free floor sanding Toronto"
+      "competitors": [
+        "lvflooring.ca",
+        "woodmood.com",
+        "heritagehardwood-flooring.com",
+        "hollandflooring.ca",
+        "torontors.com",
+        "secada.ca"
+      ],
+      "note": "dust free floor sanding Toronto",
+      "target_url": "https://ecowoods.ca/services/dust-free-sanding",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m8",
       "engine": "gemini",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "dust free floor sanding Toronto"
+      "competitors": [
+        "lvflooring.ca",
+        "woodmood.com",
+        "heritagehardwood-flooring.com",
+        "hollandflooring.ca",
+        "torontors.com",
+        "secada.ca"
+      ],
+      "note": "dust free floor sanding Toronto",
+      "target_url": "https://ecowoods.ca/services/dust-free-sanding",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m8",
       "engine": "perplexity",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "dust free floor sanding Toronto"
+      "competitors": [
+        "lvflooring.ca",
+        "woodmood.com",
+        "heritagehardwood-flooring.com",
+        "hollandflooring.ca",
+        "torontors.com",
+        "secada.ca"
+      ],
+      "note": "dust free floor sanding Toronto",
+      "target_url": "https://ecowoods.ca/services/dust-free-sanding",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "m8",
       "engine": "google-ai",
       "cited": null,
       "position": null,
-      "competitors": [],
-      "note": "dust free floor sanding Toronto"
+      "competitors": [
+        "lvflooring.ca",
+        "woodmood.com",
+        "heritagehardwood-flooring.com",
+        "hollandflooring.ca",
+        "torontors.com",
+        "secada.ca"
+      ],
+      "note": "dust free floor sanding Toronto",
+      "target_url": "https://ecowoods.ca/services/dust-free-sanding",
+      "priority": 1,
+      "declared_gap": false,
+      "index_hit": true,
+      "index_observed_at": "2026-10-16",
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e1",
@@ -719,7 +1557,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what should a hardwood flooring quote include"
+      "note": "what should a hardwood flooring quote include",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e1",
@@ -727,7 +1573,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what should a hardwood flooring quote include"
+      "note": "what should a hardwood flooring quote include",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e1",
@@ -735,7 +1589,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what should a hardwood flooring quote include"
+      "note": "what should a hardwood flooring quote include",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e1",
@@ -743,7 +1605,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what should a hardwood flooring quote include"
+      "note": "what should a hardwood flooring quote include",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e2",
@@ -751,7 +1621,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how to evaluate a hardwood flooring contractor"
+      "note": "how to evaluate a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e2",
@@ -759,7 +1637,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how to evaluate a hardwood flooring contractor"
+      "note": "how to evaluate a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e2",
@@ -767,7 +1653,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how to evaluate a hardwood flooring contractor"
+      "note": "how to evaluate a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e2",
@@ -775,7 +1669,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "how to evaluate a hardwood flooring contractor"
+      "note": "how to evaluate a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e3",
@@ -783,7 +1685,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "is this flooring quote fair"
+      "note": "is this flooring quote fair",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e3",
@@ -791,7 +1701,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "is this flooring quote fair"
+      "note": "is this flooring quote fair",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e3",
@@ -799,7 +1717,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "is this flooring quote fair"
+      "note": "is this flooring quote fair",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e3",
@@ -807,7 +1733,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "is this flooring quote fair"
+      "note": "is this flooring quote fair",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 3,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e4",
@@ -815,7 +1749,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what moisture testing should a flooring contractor do"
+      "note": "what moisture testing should a flooring contractor do",
+      "target_url": "https://ecowoods.ca/papers/toronto-hardwood-climate-moisture-protocol",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e4",
@@ -823,7 +1765,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what moisture testing should a flooring contractor do"
+      "note": "what moisture testing should a flooring contractor do",
+      "target_url": "https://ecowoods.ca/papers/toronto-hardwood-climate-moisture-protocol",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e4",
@@ -831,7 +1781,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what moisture testing should a flooring contractor do"
+      "note": "what moisture testing should a flooring contractor do",
+      "target_url": "https://ecowoods.ca/papers/toronto-hardwood-climate-moisture-protocol",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e4",
@@ -839,7 +1797,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what moisture testing should a flooring contractor do"
+      "note": "what moisture testing should a flooring contractor do",
+      "target_url": "https://ecowoods.ca/papers/toronto-hardwood-climate-moisture-protocol",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e5",
@@ -847,7 +1813,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "questions to ask a hardwood flooring contractor"
+      "note": "questions to ask a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework/assess",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e5",
@@ -855,7 +1829,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "questions to ask a hardwood flooring contractor"
+      "note": "questions to ask a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework/assess",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e5",
@@ -863,7 +1845,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "questions to ask a hardwood flooring contractor"
+      "note": "questions to ask a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework/assess",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e5",
@@ -871,7 +1861,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "questions to ask a hardwood flooring contractor"
+      "note": "questions to ask a hardwood flooring contractor",
+      "target_url": "https://ecowoods.ca/framework/assess",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e6",
@@ -879,7 +1877,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my two flooring quotes so different"
+      "note": "why are my two flooring quotes so different",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e6",
@@ -887,7 +1893,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my two flooring quotes so different"
+      "note": "why are my two flooring quotes so different",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e6",
@@ -895,7 +1909,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my two flooring quotes so different"
+      "note": "why are my two flooring quotes so different",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "e6",
@@ -903,7 +1925,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "why are my two flooring quotes so different"
+      "note": "why are my two flooring quotes so different",
+      "target_url": "https://ecowoods.ca/quote-check",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p1",
@@ -911,7 +1941,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what sander do professionals use on hardwood floors"
+      "note": "what sander do professionals use on hardwood floors",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p1",
@@ -919,7 +1957,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what sander do professionals use on hardwood floors"
+      "note": "what sander do professionals use on hardwood floors",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p1",
@@ -927,7 +1973,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what sander do professionals use on hardwood floors"
+      "note": "what sander do professionals use on hardwood floors",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p1",
@@ -935,7 +1989,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what sander do professionals use on hardwood floors"
+      "note": "what sander do professionals use on hardwood floors",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p2",
@@ -943,7 +2005,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what circuit does a floor sander need"
+      "note": "what circuit does a floor sander need",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p2",
@@ -951,7 +2021,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what circuit does a floor sander need"
+      "note": "what circuit does a floor sander need",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p2",
@@ -959,7 +2037,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what circuit does a floor sander need"
+      "note": "what circuit does a floor sander need",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p2",
@@ -967,7 +2053,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "what circuit does a floor sander need"
+      "note": "what circuit does a floor sander need",
+      "target_url": "https://ecowoods.ca/equipment",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p3",
@@ -975,7 +2069,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood grading NHLA vs NWFA"
+      "note": "hardwood grading NHLA vs NWFA",
+      "target_url": "https://ecowoods.ca/papers/hardwood-grading-standards-nhla-nwfa",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p3",
@@ -983,7 +2085,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood grading NHLA vs NWFA"
+      "note": "hardwood grading NHLA vs NWFA",
+      "target_url": "https://ecowoods.ca/papers/hardwood-grading-standards-nhla-nwfa",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p3",
@@ -991,7 +2101,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood grading NHLA vs NWFA"
+      "note": "hardwood grading NHLA vs NWFA",
+      "target_url": "https://ecowoods.ca/papers/hardwood-grading-standards-nhla-nwfa",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p3",
@@ -999,7 +2117,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "hardwood grading NHLA vs NWFA"
+      "note": "hardwood grading NHLA vs NWFA",
+      "target_url": "https://ecowoods.ca/papers/hardwood-grading-standards-nhla-nwfa",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p4",
@@ -1007,7 +2133,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "grit sequence for sanding hardwood floors"
+      "note": "grit sequence for sanding hardwood floors",
+      "target_url": "https://ecowoods.ca/papers/hardwood-refinishing-machines-and-sequence",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p4",
@@ -1015,7 +2149,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "grit sequence for sanding hardwood floors"
+      "note": "grit sequence for sanding hardwood floors",
+      "target_url": "https://ecowoods.ca/papers/hardwood-refinishing-machines-and-sequence",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p4",
@@ -1023,7 +2165,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "grit sequence for sanding hardwood floors"
+      "note": "grit sequence for sanding hardwood floors",
+      "target_url": "https://ecowoods.ca/papers/hardwood-refinishing-machines-and-sequence",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p4",
@@ -1031,7 +2181,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "grit sequence for sanding hardwood floors"
+      "note": "grit sequence for sanding hardwood floors",
+      "target_url": "https://ecowoods.ca/papers/hardwood-refinishing-machines-and-sequence",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p5",
@@ -1039,7 +2197,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "equilibrium moisture content Toronto"
+      "note": "equilibrium moisture content Toronto",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p5",
@@ -1047,7 +2213,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "equilibrium moisture content Toronto"
+      "note": "equilibrium moisture content Toronto",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p5",
@@ -1055,7 +2229,15 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "equilibrium moisture content Toronto"
+      "note": "equilibrium moisture content Toronto",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     },
     {
       "query": "p5",
@@ -1063,7 +2245,135 @@
       "cited": null,
       "position": null,
       "competitors": [],
-      "note": "equilibrium moisture content Toronto"
+      "note": "equilibrium moisture content Toronto",
+      "target_url": "https://ecowoods.ca/tools/floor-movement",
+      "priority": 5,
+      "declared_gap": false,
+      "citation_status": "unmeasured",
+      "citation_checked_at": null,
+      "citation_evidence_url": null,
+      "citation_excerpt": null,
+      "session_context": null
     }
-  ]
+  ],
+  "schema_version": "1.1.0",
+  "measurement_policy": {
+    "citation_field": "cited",
+    "allowed_values": [
+      true,
+      false,
+      null
+    ],
+    "definitions": {
+      "true": "A recorded cold-session answer from the named engine explicitly names Ecowoods or includes a link to ecowoods.ca.",
+      "false": "A recorded cold-session answer was inspected and did not name or link Ecowoods.",
+      "null": "No qualifying cold-session result has been captured for this engine-query pair."
+    },
+    "evidence_rule": "A cited=true value requires a captured answer excerpt and a source/session reference. A cited=false value requires evidence that the relevant answer was inspected. Never infer either value from an index_hit, a target URL, ranking assumptions, a competitor list, or site publication alone.",
+    "index_hit_rule": "index_hit describes only the web-index observation recorded for the row. It is not evidence of an AI engine citation and must not change cited.",
+    "cold_session_requirements": [
+      "Start a new, context-free session in the named engine for the exact query.",
+      "Record the exact query submitted and the date/time of the observation.",
+      "Record the engine/product surface and whether web search or grounding was enabled, where visible.",
+      "Inspect the answer and any source/citation links actually shown.",
+      "Set cited=true only if Ecowoods is named or ecowoods.ca is linked in that answer or its displayed sources.",
+      "Set cited=false only after inspecting a valid answer that does not cite or name Ecowoods.",
+      "Leave cited=null when the session cannot be run, the result cannot be inspected, or evidence is ambiguous.",
+      "Record the observed citation position only when the answer visibly establishes it; otherwise leave position null."
+    ]
+  },
+  "measurement_summary": {
+    "query_ids": 33,
+    "query_id_list": [
+      "c1",
+      "c2",
+      "c3",
+      "c4",
+      "c5",
+      "c6",
+      "c7",
+      "d1",
+      "d2",
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "e1",
+      "e2",
+      "e3",
+      "e4",
+      "e5",
+      "e6",
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m5",
+      "m6",
+      "m7",
+      "m8",
+      "p1",
+      "p2",
+      "p3",
+      "p4",
+      "p5"
+    ],
+    "engine_count": 4,
+    "engine_list": [
+      "chatgpt",
+      "gemini",
+      "perplexity",
+      "google-ai"
+    ],
+    "expected_observations": 132,
+    "actual_observations": 132,
+    "observations_by_engine": {
+      "chatgpt": 33,
+      "gemini": 33,
+      "perplexity": 33,
+      "google-ai": 33
+    },
+    "citation_state_counts": {
+      "cited_true": 0,
+      "cited_false": 0,
+      "unmeasured_null": 132
+    },
+    "index_observations": {
+      "index_hit_true": 12,
+      "index_hit_false": 4,
+      "index_hit_field_not_recorded": 116,
+      "queries_with_index_hit_true": [
+        "m1",
+        "m2",
+        "m8"
+      ]
+    },
+    "declared_gap": {
+      "query_ids": [
+        "m6",
+        "m7"
+      ],
+      "observation_rows": 8
+    },
+    "observations_by_priority": {
+      "priority_1": 12,
+      "priority_2": 20,
+      "priority_3": 20,
+      "priority_4": 8,
+      "priority_5": 72
+    },
+    "interpretation": "The current file contains a complete 33-query x 4-engine observation matrix, but no qualifying AI-engine citation outcomes have been measured. Index observations for m1, m2, and m8 are not citations."
+  },
+  "observation_evidence_contract": {
+    "fields_added_to_each_row": {
+      "citation_status": "unmeasured until a qualifying cold session is captured; use cited, not_cited, or unmeasured after observation.",
+      "citation_checked_at": "ISO 8601 timestamp for the actual engine session; null until sampled.",
+      "citation_evidence_url": "A URL to the inspected answer/source capture, where available; null until sampled.",
+      "citation_excerpt": "Short exact excerpt showing whether Ecowoods is named/linked; null until sampled.",
+      "session_context": "Engine product/surface and relevant search/grounding context; null until sampled."
+    },
+    "position_rule": "position is null unless the inspected answer makes a citation position observable. Never use ranking guesses or search-index position.",
+    "competitor_rule": "Competitors are the recorded comparison set for the query, not proof that those sites were cited in the current engine session."
+  }
 }
