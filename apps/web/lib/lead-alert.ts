@@ -117,7 +117,10 @@ export function sendLeadAlert(
        deployment that has not bought a number yet — have no credentials, and
        an alert path that shouted on every lead would be turned off within a
        day and then be off when it mattered. */
-    console.log(JSON.stringify({ event: 'lead_alert.skipped', reason: 'not configured' }));
+    /* Quiet everywhere except production, where a missing alert path means the
+       desk is not being texted and someone should be told in the logs. */
+    const log = env.VERCEL_ENV === 'production' ? console.error : console.log;
+    log(JSON.stringify({ event: 'lead_alert.skipped', reason: 'not configured', production: env.VERCEL_ENV === 'production' }));
     return Promise.resolve();
   }
 
