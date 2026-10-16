@@ -7,6 +7,7 @@ import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
 import { PHOTO_TRIAGE_INTENTS } from '@ecowoods/shared/schemas';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
+import { leadRedirectOutcome } from '@/lib/lead-redirect';
 import { compressPhoto, MAX_PHOTO_BYTES } from '@/lib/image-compress';
 import {
   readDesignConfig,
@@ -116,6 +117,26 @@ export function EstimateForm({
   const sectionRef = useRef<HTMLElement | null>(null);
   const startedRef = useRef(false);
   const viewedRef = useRef(false);
+  const [bounced, setBounced] = useState(false);
+
+  /* A submit that happened before hydration (or with no JavaScript) is a native
+     POST that /api/leads answers with a redirect back here carrying ?sent=1 or
+     ?error=1&from=<source>. Read it once on mount and say what happened; then
+     drop the params so a refresh does not repeat the message. */
+  useEffect(() => {
+    const outcome = leadRedirectOutcome(window.location.search, source);
+    if (!outcome) return;
+    if (outcome === 'sent') {
+      setSentTrack('measure');
+      setState('sent');
+    } else {
+      setBounced(true);
+      setState('error');
+    }
+    const u = new URL(window.location.href);
+    for (const k of ['sent', 'error', 'from']) u.searchParams.delete(k);
+    window.history.replaceState(null, '', `${u.pathname}${u.search}${u.hash}`);
+  }, [source]);
 
   /* Design handoff — read once on mount, never during render (SSR match).
 
@@ -275,6 +296,7 @@ export function EstimateForm({
     if (typeof body.sqft === 'string') body.sqft = Number(body.sqft);
 
     setState('sending');
+    setBounced(false);
     setErrors({});
     try {
       const res = await fetch('/api/leads', {
@@ -549,8 +571,10 @@ export function EstimateForm({
 
           {state === 'error' && (
             <p className="ef-err ef-err--block" role="alert">
-              Something went wrong sending that. Please call {BUSINESS_NAP.phoneDisplay} — we do not want you to have to
-              try twice.
+              {bounced
+                ? 'That request was not accepted — please check your name, phone, email and postal code and send it again.'
+                : 'Something went wrong sending that.'}{' '}
+              Please call {BUSINESS_NAP.phoneDisplay} — we do not want you to have to try twice.
             </p>
           )}
 
