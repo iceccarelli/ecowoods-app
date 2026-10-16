@@ -11,7 +11,7 @@ import {
 import { ALL_PRICE_BANDS, formatBand } from '@/content/constants/pricing';
 import { getArticles } from '@/lib/content/loader';
 import { getCaseStudies } from '@/lib/content/case-study-loader';
-import { getPapers } from '@/lib/papers';
+import { getPapers, pdfIsPublished } from '@/lib/papers';
 import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { CLUSTERS } from '@/content/search/topic-map';
 
@@ -204,7 +204,7 @@ export async function GET() {
         `Topics: ${p.topics.join(', ')}`,
         `Audience: ${p.audience}`,
         `Version: ${p.version} · Published: ${p.publishedAt}`,
-        `PDF: ${SITE_URL}/papers/${p.pdf}`,
+        ...(pdfIsPublished(p) ? [`PDF: ${SITE_URL}/papers/${p.pdf}`] : []),
         '',
       ]),
     );
