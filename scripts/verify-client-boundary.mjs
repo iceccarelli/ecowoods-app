@@ -52,8 +52,13 @@ const BUILTINS = [
   'stream', 'zlib', 'worker_threads', 'dns', 'cluster', 'readline', 'v8', 'vm',
   'perf_hooks', 'async_hooks', 'module',
 ];
+/* Server-only packages. A client component that reaches one of these ships the
+   SDK (or an ORM that cannot run in a browser) to every visitor of that page —
+   admin/inquiries imported lib/ai, which reads the database and holds the
+   OpenAI client, from a 'use client' file. Same finding, same chain report. */
+const SERVER_ONLY = ['@prisma/client', 'openai', 'stripe', 'resend', 'nodemailer', 'bcryptjs', 'pg', '@supabase/supabase-js'];
 const BUILTIN_RE = new RegExp(
-  `(?:from|require\\()\\s*['"\`](?:node:)?(${BUILTINS.join('|')})['"\`]`,
+  `(?:from|require\\()\\s*['"\`](?:(?:node:)?(${BUILTINS.join('|')})|(${SERVER_ONLY.map((x) => x.replace(/[/@.-]/g, '\\$&')).join('|')})(?:/[^'"\`]*)?)['"\`]`,
 );
 
 /* ── collect source files ─────────────────────────────────────────────────── */
@@ -124,11 +129,12 @@ for (const entry of clients) {
   while (queue.length) {
     const [file, chain] = queue.shift();
     const text = src.get(file);
-    const hit = text.match(BUILTIN_RE);
+    // `import type` / `export type … from` are erased at compile time; they cannot ship code.
+    const hit = text.replace(/^\s*(?:import|export)\s+type\b[^;]*;/gm, '').match(BUILTIN_RE);
     // The entry itself declaring 'use client' AND importing fs is its own,
     // louder bug — but it is the same finding, so report it the same way.
     if (hit) {
-      problems.push({ entry, chain, builtin: hit[1] });
+      problems.push({ entry, chain, builtin: hit[1] ?? hit[2] });
       break; // one finding per client component is enough to act on
     }
     for (const spec of importsOf(text)) {

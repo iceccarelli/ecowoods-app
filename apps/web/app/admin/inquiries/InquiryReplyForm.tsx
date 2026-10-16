@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { replyToInquiry, closeInquiry } from '@/lib/actions/inquiries';
-import { generateInquiryReply } from '@/lib/ai';
+import { replyToInquiry, closeInquiry, draftInquiryReply } from '@/lib/actions/inquiries';
 
 export default function InquiryReplyForm({
   inquiryId,
@@ -55,7 +54,7 @@ export default function InquiryReplyForm({
   const handleAiDraft = async () => {
     setAiLoading(true);
     try {
-      const draft = await generateInquiryReply({ subject, customerName });
+      const draft = await draftInquiryReply({ subject, customerName });
       setReply(draft);
       toast.success('AI draft generated. Review before sending!');
     } catch {
