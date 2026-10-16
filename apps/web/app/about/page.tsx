@@ -12,7 +12,7 @@ import { CatalogueRail } from '@/app/components/CatalogueRail';
 
 export const metadata: Metadata = {
   title: `About ${BUSINESS_NAP.shortName} — who we are, what we do, where we work`,
-  description: `${BUSINESS_NAP.legalName}: a hardwood flooring contractor in ${BUSINESS_NAP.region}, established ${BUSINESS_NAP.foundedYear}. Every question about the company answered directly, in one page.`,
+  description: `${BUSINESS_NAP.legalName}: a hardwood flooring contractor in ${BUSINESS_NAP.region}, established ${BUSINESS_NAP.foundedYear}. Who we are, what we do, where we work.`,
   alternates: { canonical: '/about', types: { 'text/markdown': '/about.md' } },
   openGraph: {
     title: `About ${BUSINESS_NAP.legalName}`,

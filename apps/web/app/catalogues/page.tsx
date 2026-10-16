@@ -44,14 +44,9 @@ import { SchemaScript } from '@/lib/schema/components';
 
 export const metadata: Metadata = {
   title: 'Field Catalogues',
+  /* Kept short and count-free: a description that lists or counts its own subject is a fact with two copies. */
   description:
-    /*
-     * Derived, not typed. The first version of this line listed the eight
-     * subjects by hand; three more documents arrived within the day and the
-     * description would have gone on describing eight of them. A meta
-     * description that counts its own subject is a fact with two copies.
-     */
-    `Landscape field catalogues on hardwood flooring in Toronto and the GTA: ${CATALOGUES.map((c) => c.title.replace(/\?$/, '').toLowerCase()).join('; ')}. Free to read, free to keep, nothing gated.`,
+    'Free field catalogues on hardwood flooring in Toronto and the GTA: dust-free refinishing, installation, stairs, cost, species and machines. Nothing gated.',
   alternates: { canonical: '/catalogues' },
   openGraph: {
     title: 'Field Catalogues — Ecowoods',

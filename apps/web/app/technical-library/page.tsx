@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Technical Library',
   alternates: { canonical: '/technical-library' },
   description:
-    'Engineering reference for hardwood flooring installation, finishing, and maintenance in Toronto and the GTA: moisture protocols, species science, and finish chemistry.',
+    'Engineering reference for hardwood installation, finishing and maintenance in Toronto and the GTA: moisture, species science and finish chemistry.',
   openGraph: {
     title: 'Technical Library — Ecowoods',
     description:

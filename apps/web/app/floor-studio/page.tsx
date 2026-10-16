@@ -50,7 +50,7 @@ const url = `${SITE_URL}/floor-studio`;
 export const metadata: Metadata = {
   title: 'Floor Studio — see your new floor in your room',
   description:
-    `Point your camera at the room and watch real ${BUSINESS_NAP.name} floors change in it live, or upload a photo — species, finish, pattern and board width, with an estimated installed range in the currency of the region the floor is in \u2014 Canadian dollars in Ontario, United States dollars in New York State. Nothing is uploaded and nothing is generated: every floor shown is one we can supply and install.`,
+    `See real ${BUSINESS_NAP.name} floors in your room, live or from a photo: species, finish, pattern, width and an estimated installed range. Nothing uploaded.`,
   alternates: { canonical: '/floor-studio', types: { 'text/markdown': '/floor-studio.md' } },
   openGraph: {
     images: [{ url: illustrationImage('og-floor-studio')?.src ?? '/illustrations/og-floor-studio.webp', width: 1200, height: 630 }],

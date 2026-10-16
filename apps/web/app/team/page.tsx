@@ -99,9 +99,8 @@ const FAQS = [
 export const metadata: Metadata = {
   title: 'The Ecowoods crew — salaried hardwood craftsmen in Toronto',
   description:
-    `Every Ecowoods hardwood installation and refinishing in Toronto is worked by salaried ` +
-    `employees, never subcontractors. The same crew from the first board to the final coat — ` +
-    `which is what makes a published standard and a lifetime workmanship warranty enforceable.`,
+    `Every Ecowoods hardwood installation and refinishing in Toronto is done by salaried ` +
+    `employees, never subcontractors: one crew, first board to final coat.`,
   alternates: { canonical: '/team' },
   openGraph: {
     title: 'The Ecowoods crew — salaried craftsmen, no subcontractors',
