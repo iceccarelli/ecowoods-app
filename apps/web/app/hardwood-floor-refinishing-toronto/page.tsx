@@ -185,18 +185,6 @@ export default function RefinishingTorontoPage() {
         </div>
       </header>
 
-      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
-          This used to be a link to `/#quote`, which is a different url whose form
-          only exists after React opens a modal. Zero `<form>` elements reached the
-          served HTML of any page on this site. It is here now, above every
-          explanatory section, because a buyer who has read the price and decided
-          should not have to navigate to act on it. */}
-      <section className="tlx-section" aria-label="Request an estimate">
-        <div className="shell">
-          <EstimateForm source="hardwood-floor-refinishing-toronto" service="refinishing" heading="Get a fixed written price for your refinish" intro="Whether a screen and recoat will do, or the floor needs a full sand, is decided by looking at it. The measurement is free and the written price does not move afterwards." />
-        </div>
-      </section>
-
       {/* The one trilogy honestly placeable here. Its own copy never claims
           "refinish" — it describes a finished floor, not a job type — so
           neither does this page. Never label a new install as a refinish. */}
@@ -261,6 +249,18 @@ export default function RefinishingTorontoPage() {
               the whole objection, so it opens on the-how's stay-home chapter
               rather than the shop's general numbers reel. */}
           <FilmStage film={getFilm('the-how')!} defaultChapter={2} />
+        </div>
+      </section>
+
+      {/* THE ASK, ON THE PAGE THAT EARNED IT — F-160.
+          This used to be a link to `/#quote`, which is a different url whose form
+          only exists after React opens a modal. Zero `<form>` elements reached the
+          served HTML of any page on this site. It follows the cost and the sanding and dust
+          sections, in the order a buyer decides: price, then the house, then the
+          booking. The hero CTA anchors straight to it. */}
+      <section className="tlx-section" aria-label="Request an estimate">
+        <div className="shell">
+          <EstimateForm source="hardwood-floor-refinishing-toronto" service="refinishing" heading="Get a fixed written price for your refinish" intro="Whether a screen and recoat will do, or the floor needs a full sand, is decided by looking at it. The measurement is free and the written price does not move afterwards." />
         </div>
       </section>
 

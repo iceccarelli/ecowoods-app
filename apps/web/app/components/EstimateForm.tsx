@@ -458,26 +458,26 @@ export function EstimateForm({
           <div className="ef-row">
             <label className="ef-field">
               <span>Name</span>
-              <input name="name" type="text" autoComplete="name" required placeholder="Jane Doe" />
-              {errors.name && <em className="ef-err">{errors.name}</em>}
+              <input name="name" aria-invalid={errors.name ? true : undefined} aria-describedby={errors.name ? `ef-err-name-${source}` : undefined} type="text" autoComplete="name" required placeholder="Jane Doe" />
+              {errors.name && <em className="ef-err" id={`ef-err-name-${source}`}>{errors.name}</em>}
             </label>
             <label className="ef-field">
               <span>Phone</span>
-              <input name="phone" type="tel" autoComplete="tel" required placeholder="(416) 555-0142" />
-              {errors.phone && <em className="ef-err">{errors.phone}</em>}
+              <input name="phone" aria-invalid={errors.phone ? true : undefined} aria-describedby={errors.phone ? `ef-err-phone-${source}` : undefined} type="tel" autoComplete="tel" required placeholder="(416) 555-0142" />
+              {errors.phone && <em className="ef-err" id={`ef-err-phone-${source}`}>{errors.phone}</em>}
             </label>
           </div>
 
           <div className="ef-row">
             <label className="ef-field">
               <span>Email</span>
-              <input name="email" type="email" autoComplete="email" required placeholder="jane@example.com" />
-              {errors.email && <em className="ef-err">{errors.email}</em>}
+              <input name="email" aria-invalid={errors.email ? true : undefined} aria-describedby={errors.email ? `ef-err-email-${source}` : undefined} type="email" autoComplete="email" required placeholder="jane@example.com" />
+              {errors.email && <em className="ef-err" id={`ef-err-email-${source}`}>{errors.email}</em>}
             </label>
             <label className="ef-field">
               <span>Postal code</span>
-              <input name="postal" type="text" autoComplete="postal-code" required placeholder="M5V 3A8" />
-              {errors.postal && <em className="ef-err">{errors.postal}</em>}
+              <input name="postal" aria-invalid={errors.postal ? true : undefined} aria-describedby={errors.postal ? `ef-err-postal-${source}` : undefined} type="text" autoComplete="postal-code" required placeholder="M5V 3A8" />
+              {errors.postal && <em className="ef-err" id={`ef-err-postal-${source}`}>{errors.postal}</em>}
             </label>
           </div>
 
