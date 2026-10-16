@@ -10,6 +10,8 @@ import {
 } from '@/lib/navigation';
 
 import { useState, useEffect, useRef } from 'react';
+import { trapTarget, FOCUSABLE } from '@/lib/focus-trap';
+import { whenNotTyping } from '@/lib/keyboard';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
@@ -146,6 +148,9 @@ export default function Header() {
   const [baseUrl, setBaseUrl] = useState('/');
   const { data: session, status } = useSession();
   const portalMenuRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const sheetWasOpen = useRef(false);
 
   useEffect(() => {
     setBaseUrl(window.location.origin + '/');
@@ -172,6 +177,39 @@ export default function Header() {
       setPortalExpanded(false);
       setOpenGroup(null);
     }
+  }, [mobileOpen]);
+
+  /* The open drawer is a modal surface: focus moves into it, Tab cycles
+     between the menu button and the drawer's own controls, and closing returns
+     focus to the button that opened it. Before this, opening it left focus on
+     the button and Tab walked out into the page behind the drawer. */
+  useEffect(() => {
+    if (mobileOpen) {
+      sheetWasOpen.current = true;
+      const first = sheetRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      first?.focus();
+    } else if (sheetWasOpen.current) {
+      sheetWasOpen.current = false;
+      hamburgerRef.current?.focus();
+    }
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onTab = whenNotTyping((e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const inSheet = Array.from(sheetRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
+      const ring = [hamburgerRef.current, ...inSheet].filter((el): el is HTMLElement => Boolean(el));
+      const next = trapTarget(ring, document.activeElement as HTMLElement | null, e.shiftKey);
+      if (next) {
+        e.preventDefault();
+        next.focus();
+      }
+    });
+    document.addEventListener('keydown', onTab);
+    return () => document.removeEventListener('keydown', onTab);
   }, [mobileOpen]);
 
   // Close on escape
@@ -376,6 +414,7 @@ export default function Header() {
               </svg>
             </a>
             <button
+              ref={hamburgerRef}
               className={`hamburger ${mobileOpen ? 'open' : ''}`}
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -398,6 +437,7 @@ export default function Header() {
           invisible off-screen menu. See audit/FINDINGS.md F-30. */}
       <div
         id="mobile-sheet"
+        ref={sheetRef}
         className={`mobile-sheet ${mobileOpen ? 'open' : ''}`}
         aria-hidden={!mobileOpen}
         inert={!mobileOpen}

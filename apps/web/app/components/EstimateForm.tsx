@@ -115,6 +115,14 @@ export function EstimateForm({
   const [recoverConsent, setRecoverConsent] = useState(false);
   const recoverySent = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
+
+  /* Both forms are noValidate, so the browser never moves focus to a bad field.
+     When server-side errors arrive, put focus on the first invalid control so a
+     keyboard or screen-reader user lands where the problem is. */
+  useEffect(() => {
+    if (Object.keys(errors).length === 0) return;
+    sectionRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [errors]);
   const startedRef = useRef(false);
   const viewedRef = useRef(false);
   const [bounced, setBounced] = useState(false);
