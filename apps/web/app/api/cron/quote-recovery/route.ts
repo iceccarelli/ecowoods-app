@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { escapeHtml } from '@/lib/email/html';
 
 /**
  * GET /api/cron/quote-recovery — send the one reminder, once.
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
           `The measurement is free and the written price does not move afterwards.\n\n` +
           `— ${BUSINESS_NAP.legalName}\n${BUSINESS_NAP.phoneDisplay}\n`,
         html:
-          `<p>${greeting}</p>` +
+          `<p>${escapeHtml(greeting)}</p>` +
           `<p>You started an estimate with us and did not finish it — no problem, and this is the only time we will mention it.</p>` +
           `<p>If it is easier, <strong>reply to this email with three photos of the floor</strong> and we will tell you what it needs. ` +
           `Or call <a href="${BUSINESS_NAP.phoneHref}">${BUSINESS_NAP.phoneDisplay}</a> and we will book the measure in about a minute.</p>` +

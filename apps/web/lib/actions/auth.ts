@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signOut } from '@/lib/auth';
 import { addMinutes } from 'date-fns';
+import { escapeHtml } from '@/lib/email/html';
 
 // ─── Registration (step 1) ────────────────────────────────────────────────────
 // Stores a pending token and sends a verification email.
@@ -90,7 +91,7 @@ async function sendVerificationEmail({
             <h1 style="color:#fdfbf6;margin:0;font-size:18px;font-weight:300;letter-spacing:2px;">ECOWOODS</h1>
           </div>
           <div style="padding:32px;">
-            <h2 style="margin-bottom:0.5rem;">Hi ${name},</h2>
+            <h2 style="margin-bottom:0.5rem;">Hi ${escapeHtml(name)},</h2>
             <p>Click the button below to verify your email and activate your account.</p>
             <p style="color:#6b5d52;font-size:13px;">This link expires in 30 minutes.</p>
             <div style="text-align:center;margin:28px 0;">

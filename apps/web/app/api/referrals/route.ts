@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { referralSchema } from '@ecowoods/shared/schemas';
 import { sendEmail } from '@/lib/email';
+import { detailRowsHtml } from '@/lib/email/html';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { REFERRAL, referralOfferLine } from '@/content/referral';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const rows = [
+    const rows = detailRowsHtml([
       ['Referred by', `${d.referrerName} — ${d.referrerEmail}, ${d.referrerPhone}`],
       ['Who they referred', d.friendName],
       ['How to reach them', d.friendContact],
@@ -120,9 +121,7 @@ export async function POST(request: Request) {
       ['Note', d.note ?? '—'],
       ['Reward owed on completion', referralOfferLine()],
       ['Reference', id],
-    ]
-      .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`)
-      .join('');
+    ] as const);
 
     await sendEmail({
       to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,

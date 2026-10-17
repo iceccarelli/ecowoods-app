@@ -26,6 +26,7 @@ import {
 } from '@/lib/listing-floor-report/notes';
 import { listingReportSkuConfig } from '@/content/constants/listing-floor-report-product';
 import type { ComposeInput } from '@/lib/listing-floor-report/types';
+import { escapeHtml } from '@/lib/email/html';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
       subject: 'Your Pre-List Floor Condition Report is ready',
       html:
         `<h2 style="margin:0 0 8px;">Your floor condition report is ready</h2>` +
-        `<p style="margin:0 0 16px;">Read it here: <a href="${reportLink}">${reportLink}</a></p>` +
+        `<p style="margin:0 0 16px;">Read it here: <a href="${escapeHtml(reportLink)}">${escapeHtml(reportLink)}</a></p>` +
         `<p style="margin:0 0 16px;">${skuConfig?.sla ?? ''}</p>`,
       text: `Your Pre-List Floor Condition Report is ready: ${reportLink}`,
     },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
+import { detailRowsHtml } from '@/lib/email/html';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { safeFilename, sniffDocumentFile, type SniffedDocument } from '@/lib/image-sniff';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
@@ -138,16 +139,14 @@ export async function POST(request: Request) {
     for (const f of files.slice(0, MAX_FILES)) {
       attachments.push({ filename: safeFilename(f.name, sniffedByFile.get(f)!.ext, 'quote'), content: Buffer.from(await f.arrayBuffer()) });
     }
-    const rows = [
+    const rows = detailRowsHtml([
       ['Name', data.name],
       ['Email', data.email],
       ['Came from', data.source ?? '—'],
       ['Framework result', data.context ?? '—'],
       ['They suspect', data.message ?? '—'],
       ['Reference', id],
-    ]
-      .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`)
-      .join('');
+    ] as const);
 
     await sendEmail({
       to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,
