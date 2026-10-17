@@ -12,7 +12,7 @@ describe('buildCheckoutNotes / extractDesignCode / isFloorPlanOrder', () => {
     expect(isFloorPlanOrder(null)).toBe(false);
     expect(isFloorPlanOrder('Well-Installed Quote Review (Standard)')).toBe(false);
     expect(isFloorPlanOrder('Listing Floor Report (photo)')).toBe(false);
-    expect(isFloorPlanOrder('Shop order\\nPersonal Floor Plan\\nFP_DESIGN:abc')).toBe(false);
+    expect(isFloorPlanOrder('Shop order\nPersonal Floor Plan\nFP_DESIGN:abc')).toBe(false);
     expect(isFloorPlanOrder('Some note mentioning Personal Floor Plan')).toBe(false);
     expect(extractDesignCode('Well-Installed Quote Review (Standard)')).toBeNull();
   });
