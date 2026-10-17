@@ -21,12 +21,16 @@
  */
 
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import { safeFilename, sniffFile, type SniffedImage } from '@/lib/image-sniff';
 import { checkListingReportSubmissionEligibility } from '@/lib/listing-floor-report';
 import { appendIntakeMarker, appendMetaMarker, extractListingReportSku, hasIntakeMarker, isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
+/* The lease line is a generic Order.notes claim (compare-and-swap, expires); it is
+   always stripped before the intake is recorded, so no product marker is shared. */
+import { isIntakeClaimLive, stripIntakeClaim, withIntakeClaim } from '@/lib/quote-intelligence/notes';
 import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
 import { storePhoto } from '@/lib/floor-graph/photo-storage';
 import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
@@ -64,6 +68,8 @@ function reasonMessage(reason: string): { message: string; status: number } {
       };
     case 'already_submitted':
       return { message: 'This order has already been submitted.', status: 409 };
+    case 'in_progress':
+      return { message: 'We are already processing a submission for this order. If it does not complete in a couple of minutes, try again.', status: 409 };
     case 'email_mismatch':
       return { message: 'That email does not match the one used at checkout.', status: 409 };
     default:
@@ -155,6 +161,20 @@ export async function POST(request: Request) {
     );
   }
 
+  /* Claim the order before anything is stored or sent: of any number of
+     simultaneous submissions exactly one proceeds (compare-and-swap on the
+     exact notes text), so photos are retained and the desk emailed once. The
+     claim is a lease; a request that dies mid-way frees the order on expiry. */
+  const claimedAt = Date.now();
+  const inProgress = () => NextResponse.json({ success: false, message: reasonMessage('in_progress').message }, { status: 409, headers: { 'Retry-After': '120' } });
+  if (isIntakeClaimLive(order!.notes, claimedAt)) return inProgress();
+  const token = randomUUID();
+  const claimedNotes = withIntakeClaim(order!.notes, token, claimedAt);
+  const claim = await db.order.updateMany({ where: { id: order!.id, status: 'PAID', notes: order!.notes }, data: { notes: claimedNotes } });
+  if (claim.count !== 1) return inProgress();
+  const release = () =>
+    db.order.updateMany({ where: { id: order!.id, status: 'PAID', notes: claimedNotes }, data: { notes: stripIntakeClaim(claimedNotes) } }).catch(() => undefined);
+
   const photoConsent = readCheckbox(fields.photoConsent);
   let retainedPhotoCount = 0;
 
@@ -207,6 +227,7 @@ export async function POST(request: Request) {
     }
     const rows = [
       ['Order', order!.id],
+      ['Submission', token],
       ['SKU', sku],
       ['Role', data.role],
       ['Brokerage', data.brokerage ?? '—'],
@@ -228,20 +249,21 @@ export async function POST(request: Request) {
         `<h2 style="margin:0 0 8px;">Paid Pre-List Floor Condition Report intake</h2>` +
         `<p style="margin:0 0 16px;">${attachments.length} photo(s) attached.</p>` +
         `<table style="border-collapse:collapse;">${rows}</table>`,
-      text: `Listing floor report intake, order ${order!.id}, sku ${sku}. ${attachments.length} photo(s).`,
+      text: `Listing floor report intake, order ${order!.id}, submission ${token}, sku ${sku}. ${attachments.length} photo(s).`,
       attachments,
     });
   } catch (err) {
     console.error(
       JSON.stringify({ event: 'listing_floor_report.email_failed', orderId: data.orderId, error: err instanceof Error ? err.message : 'unknown' }),
     );
+    await release();
     return NextResponse.json(
       { success: false, message: 'Something went wrong sending that. Please call and we will pick it up directly.' },
       { status: 500 },
     );
   }
 
-  const notesWithMeta = appendMetaMarker(order!.notes, {
+  const notesWithMeta = appendMetaMarker(stripIntakeClaim(claimedNotes), {
     role: data.role,
     brokerage: data.brokerage,
     phone: data.phone,
@@ -251,7 +273,26 @@ export async function POST(request: Request) {
     listingGoLiveDate: data.listingGoLiveDate,
     message: data.message,
   });
-  await db.order.update({ where: { id: order!.id }, data: { notes: appendIntakeMarker(notesWithMeta) } });
+  /* The desk has the email. Recording the intake is retried; if it still fails the
+     customer is told "received" (not invited to resend) and the failure is logged.
+     The "Submission" id in the email lets the desk spot a duplicate if the lease
+     later expires and the order is resubmitted. Email is at-least-once. */
+  let recorded = false;
+  for (let attempt = 0; attempt < 3 && !recorded; attempt++) {
+    try {
+      const done = await db.order.updateMany({
+        where: { id: order!.id, status: 'PAID', notes: claimedNotes },
+        data: { notes: appendIntakeMarker(notesWithMeta) },
+      });
+      recorded = done.count === 1;
+      if (!recorded) break;
+    } catch {
+      /* retry */
+    }
+  }
+  if (!recorded) {
+    console.error(JSON.stringify({ event: 'listing_floor_report.intake_not_recorded', orderId: order!.id, submission: token }));
+  }
 
   console.log(JSON.stringify({ event: 'listing_floor_report.intake_submitted', orderId: order!.id, photoCount: files.length }));
 

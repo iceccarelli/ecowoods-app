@@ -16,6 +16,7 @@ vi.mock('@/lib/db', () => ({
     order: {
       findUnique: async () => (state.order ? { ...state.order } : null),
       update: async (args: unknown) => void state.updates.push(args),
+      updateMany: async () => ({ count: 1 }),
     },
   },
 }));
