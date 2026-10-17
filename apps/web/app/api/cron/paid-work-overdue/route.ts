@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     await sendEmail({
       to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,
       subject: `${overdue.length} paid report(s) need desk action`,
-      text: `Paid reports needing desk action:\n\n${lines.join('\n')}\n\nOpen /admin/quote-intelligence/<orderId> or /admin/listing-floor-report/<orderId> to publish the report or retry a pending customer email.`,
+      text: `Paid reports needing desk action:\n\n${lines.join('\n')}\n\nOpen /admin/quote-intelligence/<orderId> or /admin/listing-floor-report/<orderId> to publish the report or retry a pending customer email; for an order marked "paid, no documents/intake received", contact the customer.`,
       html:
         `<h2 style="margin:0 0 8px;">Paid reports needing desk action</h2><ul>` +
         overdue.map((o) => `<li>${escapeHtml(o.product)} — <code>${escapeHtml(o.orderId)}</code> — ${escapeHtml(o.detail)} — waiting ${o.hoursWaiting}h</li>`).join('') +

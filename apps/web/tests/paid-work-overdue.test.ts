@@ -29,7 +29,7 @@ describe('findOverdueOrders', () => {
     const items = findOverdueOrders(
       [
         row({ id: 'published', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/a.pdf\nREPORT_NOTIFIED:1792238400000' }),
-        row({ id: 'no-docs-yet', status: 'PAID' }),
+        row({ id: 'no-docs-yet', status: 'PAID', updatedAt: ago(47) }),
         row({ id: 'pending', status: 'PENDING' }),
         row({ id: 'shop', notes: 'Shop order' }),
         row({ id: 'ancient', updatedAt: ago(31 * 24) }),
@@ -59,13 +59,50 @@ describe('findOverdueOrders', () => {
       [
         row({ id: 'photo-late', status: 'PAID', notes: `${lfr('photo')}\nLFR_INTAKE:received`, updatedAt: ago(49) }),
         row({ id: 'photo-early', status: 'PAID', notes: `${lfr('photo')}\nLFR_INTAKE:received`, updatedAt: ago(47) }),
-        row({ id: 'photo-no-intake', status: 'PAID', notes: lfr('photo'), updatedAt: ago(90) }),
         row({ id: 'onsite', status: 'PAID', notes: `${lfr('onsite')}\nLFR_INTAKE:received`, updatedAt: ago(90) }),
         row({ id: 'published', status: 'FULFILLED', notes: `${lfr('photo')}\nLFR_INTAKE:received\nLFR_REPORT:https://x.test/a.pdf\nREPORT_NOTIFIED:1792238400000`, updatedAt: ago(90) }),
       ],
       NOW,
     );
     expect(items.map((i) => i.orderId)).toEqual(['photo-late']);
+  });
+});
+
+describe('paid but never submitted intake', () => {
+  const lfr = (sku: string, extra = '') => `Listing Floor Report (${sku})${extra}`;
+  it('flags a PAID order with no intake after 48 h for both products, whatever the tier or SKU', () => {
+    const items = findOverdueOrders(
+      [
+        row({ id: 'wir-std', status: 'PAID', updatedAt: ago(49) }),
+        row({ id: 'wir-rush', status: 'PAID', notes: 'Well-Installed Quote Review (Rush)', updatedAt: ago(72) }),
+        row({ id: 'lfr-photo', status: 'PAID', notes: lfr('photo'), updatedAt: ago(60) }),
+        row({ id: 'lfr-onsite', status: 'PAID', notes: lfr('onsite'), updatedAt: ago(50) }),
+      ],
+      NOW,
+    );
+    expect(items.map((i) => i.orderId)).toEqual(['wir-rush', 'lfr-photo', 'lfr-onsite', 'wir-std']);
+    expect(items.every((i) => /contact the customer/.test(i.detail))).toBe(true);
+  });
+  it('does not flag them early, unpaid, once intake exists, or past the 30-day horizon', () => {
+    const items = findOverdueOrders(
+      [
+        row({ id: 'early', status: 'PAID', updatedAt: ago(47) }),
+        row({ id: 'unpaid', status: 'PENDING', updatedAt: ago(90) }),
+        row({ id: 'lfr-intake-onsite', status: 'PAID', notes: lfr('onsite', '\nLFR_INTAKE:received'), updatedAt: ago(90) }),
+        row({ id: 'wir-submitted', status: 'FULFILLED', notes: 'Well-Installed Quote Review (Standard)', updatedAt: ago(20) }),
+        row({ id: 'ancient', status: 'PAID', updatedAt: ago(31 * 24) }),
+      ],
+      NOW,
+    );
+    expect(items).toEqual([]);
+  });
+  it('the cron emails the digest for an order whose customer never submitted', async () => {
+    state.rows = [{ id: 'never-sent', status: 'PAID', notes: 'Well-Installed Quote Review (Standard)', updatedAt: new Date(Date.now() - 60 * 3_600_000) }];
+    process.env.CRON_SECRET = 's3cret';
+    const res = await route.GET(new Request('http://localhost/api/cron/paid-work-overdue', { headers: { authorization: 'Bearer s3cret' } }));
+    expect(await res.json()).toMatchObject({ ok: true, overdue: 1 });
+    expect(state.emails[0]!.text).toContain('order never-sent');
+    state.rows = [];
   });
 });
 
