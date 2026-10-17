@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { CheckoutForm } from './CheckoutForm';
 import { LISTING_FLOOR_REPORT_PRODUCT, LISTING_REPORT_SKUS } from '@/content/constants/listing-floor-report-product';
 import { SITE_URL } from '@/lib/seo-data';
@@ -61,11 +62,22 @@ export default function ListingFloorReportPage() {
         </div>
       </header>
 
-      <section className="tlx-section">
-        <div className="shell">
-          <CheckoutForm />
-        </div>
-      </section>
+      {LISTING_FLOOR_REPORT_PRODUCT.priceConfirmed ? (
+        <section className="tlx-section">
+          <div className="shell">
+            <CheckoutForm />
+          </div>
+        </section>
+      ) : (
+        <section className="tlx-section">
+          <div className="shell">
+          <div className="tlx-note" role="status">
+            Paid checkout is paused while this product's price is awaiting owner confirmation. Please call{' '}
+            <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> to discuss availability.
+          </div>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section">
         <div className="shell">
@@ -80,6 +92,7 @@ export default function ListingFloorReportPage() {
         </div>
       </section>
 
+      {LISTING_FLOOR_REPORT_PRODUCT.priceConfirmed && (
       <section className="tlx-section">
         <div className="shell">
           <h2 className="tlx-h2">Options</h2>
@@ -103,6 +116,7 @@ export default function ListingFloorReportPage() {
           </table>
         </div>
       </section>
+      )}
       <NextStep route="/listing-floor-report" />
     </div>
   );
