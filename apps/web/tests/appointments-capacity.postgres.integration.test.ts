@@ -88,6 +88,7 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
 
     // Concurrent arrivals contend at the actual PostgreSQL predicate read and insert.
     const firstWave = await Promise.all(Array.from({ length: 6 }, () => book(slot!)));
+    expect(firstWave.every((response) => response.status === 201 || response.status === 409)).toBe(true);
     const firstWaveAccepted = firstWave.filter((response) => response.status === 201).length;
     expect(firstWaveAccepted).toBeGreaterThan(0);
     expect(firstWaveAccepted).toBeLessThanOrEqual(SLOTS_PER_WINDOW);
