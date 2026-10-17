@@ -61,6 +61,10 @@ vi.mock('@/lib/db', () => {
     },
   };
   const creditTransactionOps = {
+    findUnique: async ({ where }: { where: { idempotencyKey: string } }) => {
+      const t = state.txns.get(where.idempotencyKey);
+      return t ? { ...t } : null;
+    },
     create: async ({ data }: { data: Omit<CreditTxn, 'id'> }) => {
       if (state.txns.has(data.idempotencyKey)) uniqueViolation();
       const t = { id: `txn-${state.txns.size + 1}`, ...data };
@@ -103,6 +107,13 @@ vi.mock('@/lib/db', () => {
           const o = state.orders.get(where.id)!;
           Object.assign(o, data);
           return { ...o };
+        },
+        updateMany: async ({ where, data }: { where: { id: string; status: string | { in: string[] } }; data: Partial<Order> }) => {
+          const o = state.orders.get(where.id);
+          const allowed = typeof where.status === 'string' ? [where.status] : where.status.in;
+          if (!o || !allowed.includes(o.status)) return { count: 0 };
+          Object.assign(o, data);
+          return { count: 1 };
         },
       },
       creditWallet: walletOps,
@@ -188,6 +199,7 @@ function signedWebhookRequest(payload: Record<string, unknown>): Request {
 }
 
 function checkoutCompletedEvent(overrides: { orderId: string; userId: string; credits: number }) {
+  const order = state.orders.get(overrides.orderId);
   return {
     id: `evt_${crypto.randomUUID()}`,
     type: 'checkout.session.completed',
@@ -195,7 +207,9 @@ function checkoutCompletedEvent(overrides: { orderId: string; userId: string; cr
       object: {
         id: 'cs_test_1',
         payment_intent: 'pi_test_1',
-        amount_total: 2148,
+        payment_status: 'paid',
+        currency: 'cad',
+        amount_total: Math.round(Number(order?.total ?? 0) * 100),
         metadata: { orderId: overrides.orderId, userId: overrides.userId, kind: 'renovation-credits', pack: 'starter-40', credits: String(overrides.credits) },
       },
     },
@@ -280,7 +294,7 @@ describe('webhook — signature and idempotency', () => {
 
   it('grants the exact configured credits on a genuinely signed event', async () => {
     const { orderId, credits } = await buyAndDeliverWebhook('user-1');
-    expect(state.orders.get(orderId)!.status).toBe('PAID');
+    expect(state.orders.get(orderId)!.status).toBe('FULFILLED');
     expect(state.wallets.get('user-1')!.balance).toBe(credits);
     expect(credits).toBe(40);
   });
