@@ -59,6 +59,8 @@ vi.mock('@/lib/db', () => ({
           },
         },
         appointment: {
+          // The capacity re-check now runs inside the transaction.
+          findMany: async () => [...state.appointments.values()].map((a) => ({ startsAt: a.startsAt })),
           create: async ({ data }: { data: Omit<AppointmentRow, 'id'> }) => {
             const row: AppointmentRow = { id: freshId(), ...data };
             state.appointments.set(row.id, row);
