@@ -4,6 +4,11 @@ import { db } from '@/lib/db';
 import { sendAdminNewPilotLeadEmail } from '@/lib/email';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
+import { runAfterResponse } from '@/lib/background';
+import { withinMs } from '@/lib/with-timeout';
+
+/** A hung database must not hold the visitor's response open: the lead is already in the log. */
+const DB_BUDGET_MS = 8000;
 
 /**
  * POST /api/pilot-leads — Durable, production-safe pilot interest capture.
@@ -11,7 +16,9 @@ import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
  * INVARIANT: once a pilot lead validates, it is captured. Period.
  * - Durable structured log happens FIRST and always (recoverable from Vercel logs).
  * - DB persistence is best-effort: a DB outage must NOT surface as a customer error.
- * - Admin email is best-effort.
+ * - Admin email and the webhook forward are best-effort, and run after the response
+ *   via runAfterResponse so a serverless freeze cannot drop them.
+ * - The database write is bounded (DB_BUDGET_MS).
  * - Rate limiting protects against spam and abuse.
  * We only ever return non-2xx for a genuinely malformed/invalid submission (400),
  * never because a downstream system (DB/email) hiccupped.
@@ -93,7 +100,7 @@ export async function POST(request: Request) {
   // 2. BEST-EFFORT DB persistence. Failure is logged, never fatal.
   let savedLeadId: string | null = null;
   try {
-    const savedLead = await db.pilotLead.create({
+    const savedLead = await withinMs(db.pilotLead.create({
       data: {
         name: String(lead.name ?? ''),
         email: String(lead.email ?? ''),
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
         source: lead.source ? String(lead.source) : 'floorforge-pilot-form',
         status: 'new',
       },
-    });
+    }), DB_BUDGET_MS, 'pilot-lead-create');
     savedLeadId = savedLead.id;
   } catch (err) {
     console.error(
@@ -120,7 +127,7 @@ export async function POST(request: Request) {
   }
 
   // 3. BEST-EFFORT admin email. Never blocks, never fails the request.
-  sendAdminNewPilotLeadEmail({
+  runAfterResponse(sendAdminNewPilotLeadEmail({
     pilotLeadId: savedLeadId ?? pilotLeadId,
     name: String(lead.name ?? ''),
     email: String(lead.email ?? ''),
@@ -139,13 +146,13 @@ export async function POST(request: Request) {
         hint: 'Lead is still captured in database and logs. Check email configuration (RESEND_API_KEY, ADMIN_EMAIL, etc.).',
       })
     )
-  );
+  ));
 
   // 4. Optional CRM/webhook forward (set PILOT_LEADS_WEBHOOK_URL to enable).
   //    Validated and redirect-free — see lib/outbound-webhook.ts.
   const webhookUrl = webhookFromEnv('PILOT_LEADS_WEBHOOK_URL');
   if (webhookUrl) {
-    postWebhook(webhookUrl, {
+    runAfterResponse(postWebhook(webhookUrl, {
       pilotLeadId: savedLeadId ?? pilotLeadId,
       ...lead,
     }).catch((err) =>
@@ -156,7 +163,7 @@ export async function POST(request: Request) {
           error: err instanceof Error ? err.message : 'unknown',
         })
       )
-    );
+    ));
   }
 
   // The lead is captured. Always acknowledge success to the customer.
