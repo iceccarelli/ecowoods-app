@@ -296,17 +296,9 @@ export const getPublishedCatalogues = (): Catalogue[] =>
  * on purpose: the papers are a different family and their pages stay untouched.
  */
 export const CATALOGUE_RAILS: Record<string, string[]> = {
-  '/': ['01'],
-  '/about': ['01'],
-  '/contact': ['01', '06'],
-  '/estimate': ['01', '06'],
   '/hardwood-floor-refinishing-toronto': ['02', '07'],
   '/guides/dustless-hardwood-refinishing-toronto': ['02'],
-  '/hardwood-flooring-toronto': ['03', '06'],
   '/hardwood-stairs-toronto': ['04'],
-  '/framework': ['05'],
-  '/standards': ['05'],
-  '/guides/hardwood-flooring-cost-toronto': ['06'],
   '/guides/solid-vs-engineered-hardwood-toronto': ['08'],
   '/equipment': ['10'],
   '/guides/white-oak-flooring-toronto': ['11', '09'],
