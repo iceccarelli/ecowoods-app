@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { CheckoutForm } from './CheckoutForm';
 import { WELL_INSTALLED_REVIEW_PRODUCT, REVIEW_TIERS } from '@/content/constants/paid-review-product';
 import { criterionCount, FRAMEWORK_VERSION } from '@/lib/framework';
@@ -66,11 +67,22 @@ export default function WellInstalledReviewPage() {
         </div>
       </header>
 
-      <section className="tlx-section">
-        <div className="shell">
-          <CheckoutForm />
-        </div>
-      </section>
+      {WELL_INSTALLED_REVIEW_PRODUCT.priceConfirmed ? (
+        <section className="tlx-section">
+          <div className="shell">
+            <CheckoutForm />
+          </div>
+        </section>
+      ) : (
+        <section className="tlx-section">
+          <div className="shell">
+          <div className="tlx-note" role="status">
+            Paid checkout is paused while this product's price is awaiting owner confirmation. Please call{' '}
+            <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> to discuss availability.
+          </div>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section">
         <div className="shell">
@@ -90,6 +102,7 @@ export default function WellInstalledReviewPage() {
         </div>
       </section>
 
+      {WELL_INSTALLED_REVIEW_PRODUCT.priceConfirmed && (
       <section className="tlx-section">
         <div className="shell">
           <h2 className="tlx-h2">Tiers</h2>
@@ -113,6 +126,7 @@ export default function WellInstalledReviewPage() {
           </table>
         </div>
       </section>
+      )}
       <NextStep route="/well-installed-review" />
     </div>
   );
