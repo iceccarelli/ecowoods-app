@@ -57,11 +57,12 @@ describe('unconfirmed paid-product prices are not saleable', () => {
     expect(FLOOR_PLAN_PRODUCT.priceConfirmed).toBe(false);
   });
 
-  it.each([
+  const checkoutCases: Array<[string, { POST: (req: Request) => Promise<Response> }, string]> = [
     ['Well-Installed Quote Review', wellInstalled, 'http://localhost/api/well-installed-review/checkout'],
     ['Pre-List Floor Condition Report', listingReport, 'http://localhost/api/listing-floor-report/checkout'],
     ['Personal Floor Plan', floorPlan, 'http://localhost/api/floor-plan/checkout'],
-  ])('%s refuses direct checkout before touching the Order or Stripe', async (_name, handler, url) => {
+  ];
+  it.each(checkoutCases)('%s refuses direct checkout before touching the Order or Stripe', async (_name, handler, url) => {
     const response = await handler.POST(request(url, { name: 'Jane Customer', email: 'jane@example.test', tier: 'rush', sku: 'onsite', code: 'anything' }));
 
     expect(response.status).toBe(503);
