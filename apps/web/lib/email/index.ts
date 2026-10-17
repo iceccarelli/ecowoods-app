@@ -27,7 +27,7 @@
 
 import { Resend } from 'resend';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, LIVE_REVIEW_DESTINATIONS } from '@ecowoods/shared/constants';
-import { detailRowsHtml, escapeHtml } from './html';
+import { detailRowsHtml, escapeHtml, nl2br } from './html';
 
 // ── Transport selection ────────────────────────────────────────────────────────
 
@@ -303,21 +303,21 @@ export async function sendInvoiceEmail({
             ${dueDateStr ? `<div style="font-size:13px;color:#6b5d52;margin-top:4px;">${dueDateStr}</div>` : ''}
           </div>
           <div style="text-align:center;margin:24px 0;">
-            <a href="${payUrl}" style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
+            <a href="${escapeHtml(payUrl)}" style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
               Pay Now — Card / Apple Pay / Google Pay
             </a>
           </div>
           <div style="text-align:center;margin:12px 0 24px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-            <a href="${viewUrl}" style="color:#1a0f08;font-size:14px;font-weight:600;text-decoration:none;border:1px solid #1a0f08;padding:10px 20px;border-radius:6px;display:inline-block;">
+            <a href="${escapeHtml(viewUrl)}" style="color:#1a0f08;font-size:14px;font-weight:600;text-decoration:none;border:1px solid #1a0f08;padding:10px 20px;border-radius:6px;display:inline-block;">
               🔍 View Invoice Online
             </a>
             ${pdfUrl ? `
-            <a href="${pdfUrl}" style="color:#6b5d52;font-size:14px;font-weight:600;text-decoration:underline;">
+            <a href="${escapeHtml(pdfUrl)}" style="color:#6b5d52;font-size:14px;font-weight:600;text-decoration:underline;">
               📄 Download PDF
             </a>` : ''}
           </div>
           <p style="color:#6b5d52;font-size:13px;">
-            Prefer to pay by e-transfer? Send to <strong>accounting@ecowoods.ca</strong> with <strong>#${invoiceNumber}</strong> as the memo.<br/>
+            Prefer to pay by e-transfer? Send to <strong>accounting@ecowoods.ca</strong> with <strong>#${escapeHtml(invoiceNumber)}</strong> as the memo.<br/>
             Questions? Call ${BUSINESS_NAP.phoneDisplay}.
           </p>
         </div>
@@ -368,13 +368,13 @@ export async function sendAdminNewQuoteEmail(data: {
             ['Square Footage', data.squareFeet ? `${data.squareFeet.toLocaleString()} sq ft` : '—'],
           ].map(([label, value]) => `
             <tr>
-              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${label}</td>
-              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${value}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${escapeHtml(label)}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(value)}</td>
             </tr>
           `).join('')}
         </table>
-        ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
-        <a href="${adminUrl}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">
+        ${data.notes ? `<p><strong>Notes:</strong> ${nl2br(data.notes)}</p>` : ''}
+        <a href="${escapeHtml(adminUrl)}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">
           Review in Admin Portal →
         </a>
       </div>
@@ -398,13 +398,13 @@ export async function sendAdminNewInquiryEmail(data: {
     subject: `✉ New Inquiry — ${data.subject}`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
-        <h2>New Inquiry from ${data.name}</h2>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Subject:</strong> ${data.subject}</p>
+        <h2>New Inquiry from ${escapeHtml(data.name)}</h2>
+        <p><strong>Email:</strong> ${escapeHtml(data.email)}</p>
+        <p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>
         <blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;">
-          ${data.message.replace(/\n/g, '<br>')}
+          ${nl2br(data.message)}
         </blockquote>
-        <a href="${adminUrl}" style="display:inline-block;margin-top:16px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">
+        <a href="${escapeHtml(adminUrl)}" style="display:inline-block;margin-top:16px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">
           Reply in Admin Portal →
         </a>
       </div>
@@ -436,12 +436,12 @@ export async function sendInquiryReplyEmail(data: {
           <h2 style="color:#fdfbf6;margin:0;font-size:18px;font-weight:300;">ECOWOODS</h2>
         </div>
         <div style="padding:32px;">
-          <p>Hi ${data.name},</p>
-          <p>Our team has replied to your inquiry: <strong>${data.subject}</strong></p>
+          <p>Hi ${escapeHtml(data.name)},</p>
+          <p>Our team has replied to your inquiry: <strong>${escapeHtml(data.subject)}</strong></p>
           <div style="background:#f5efe6;padding:16px;border-left:3px solid #c87e4f;margin:20px 0;border-radius:4px;white-space:pre-wrap;line-height:1.7;">
-            ${data.replyContent.replace(/\n/g, '<br>')}
+            ${nl2br(data.replyContent)}
           </div>
-          <a href="${portalUrl}" style="display:inline-block;background:#c87e4f;color:#fdfbf6;padding:12px 24px;text-decoration:none;border-radius:6px;">
+          <a href="${escapeHtml(portalUrl)}" style="display:inline-block;background:#c87e4f;color:#fdfbf6;padding:12px 24px;text-decoration:none;border-radius:6px;">
             View Full Conversation
           </a>
           <p style="color:#6b5d52;font-size:13px;margin-top:24px;">
@@ -484,27 +484,27 @@ export async function sendContractEmail({
           <p style="color:#c87e4f;margin:4px 0 0;font-size:12px;">TORONTO HARDWOOD FLOORING</p>
         </div>
         <div style="padding:32px;">
-          <h2 style="color:#1a0f08;margin-top:0;">Your Contract is Ready, ${name}</h2>
+          <h2 style="color:#1a0f08;margin-top:0;">Your Contract is Ready, ${escapeHtml(name)}</h2>
           <p>We're excited to move forward with your project. Please review and sign the contract at your earliest convenience.</p>
           <div style="background:#faf6ef;padding:16px 20px;border-left:3px solid #c87e4f;border-radius:4px;margin:24px 0;">
             <div style="font-size:12px;color:#6b5d52;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Project</div>
-            <div style="font-size:16px;font-weight:700;">${projectTitle}</div>
+            <div style="font-size:16px;font-weight:700;">${escapeHtml(projectTitle)}</div>
           </div>
           ${viewUrl ? `
           <div style="text-align:center;margin:28px 0 12px;">
-            <a href="${viewUrl}"
+            <a href="${escapeHtml(viewUrl)}"
                style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
               🔍 View Contract Online
             </a>
           </div>` : ''}
           <div style="text-align:center;margin:${viewUrl ? '0' : '28px 0'} 0 16px;">
-            <a href="${contractPdfUrl}"
+            <a href="${escapeHtml(contractPdfUrl)}"
                style="color:#6b5d52;font-size:13px;font-weight:600;text-decoration:underline;">
               📄 Download PDF directly
             </a>
           </div>
           <div style="text-align:center;margin:16px 0 28px;">
-            <a href="${portalProjectUrl}"
+            <a href="${escapeHtml(portalProjectUrl)}"
                style="color:#c87e4f;font-size:13px;font-weight:600;text-decoration:underline;">
               View in My Account
             </a>
@@ -548,11 +548,11 @@ export async function sendAppointmentConfirmationEmail(data: {
     html: `
       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
         <h2 style="color:#1a0f08;">Your estimate is confirmed</h2>
-        <p>Hi ${data.name}, thanks for booking a free in-home estimate with Ecowoods.</p>
+        <p>Hi ${escapeHtml(data.name)}, thanks for booking a free in-home estimate with Ecowoods.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-          <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">When</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.whenLabel}</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">When</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(data.whenLabel)}</td></tr>
           <tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Duration</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.durationMinutes} minutes</td></tr>
-          ${data.service ? `<tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Service</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${data.service}</td></tr>` : ''}
+          ${data.service ? `<tr><td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;color:#6b5d52;">Service</td><td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(data.service)}</td></tr>` : ''}
         </table>
         <p>A senior estimator will arrive on time with species and finish samples. Need to change it? Just call <a href="${BUSINESS_NAP.phoneHref}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
         <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
@@ -574,7 +574,7 @@ export async function sendQuoteReceivedEmail(data: {
     html: `
       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
         <h2>Request received</h2>
-        <p>Hi ${data.name}, Ecowoods has your estimate request (reference ${data.leadId}). A specialist will call within one business day.</p>
+        <p>Hi ${escapeHtml(data.name)}, Ecowoods has your estimate request (reference ${escapeHtml(data.leadId)}). A specialist will call within one business day.</p>
         <p>If it is urgent, call <a href="tel:${BUSINESS_NAP.phoneE164}">${BUSINESS_NAP.phoneDisplay}</a>.</p>
         <p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p>
       </div>
@@ -609,7 +609,7 @@ export async function sendAdminNewPilotLeadEmail(data: {
     subject: `🚀 New Pilot Lead — ${data.name} (${data.role})`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
-        <h2>New ${data.program} Pilot Submission</h2>
+        <h2>New ${escapeHtml(data.program)} Pilot Submission</h2>
         <table style="width:100%;border-collapse:collapse;">
           ${[
             ['Name', data.name],
@@ -621,13 +621,13 @@ export async function sendAdminNewPilotLeadEmail(data: {
             ['Program', data.program],
           ].map(([label, value]) => `
             <tr>
-              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${label}</td>
-              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${value}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${escapeHtml(label)}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(value)}</td>
             </tr>
           `).join('')}
         </table>
-        ${data.message ? `<p><strong>About their work:</strong></p><blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;margin:16px 0;">${data.message.replace(/\n/g, '<br>')}</blockquote>` : ''}
-        <a href="${adminUrl}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
+        ${data.message ? `<p><strong>About their work:</strong></p><blockquote style="border-left:3px solid #c87e4f;padding-left:12px;color:#6b5d52;margin:16px 0;">${nl2br(data.message)}</blockquote>` : ''}
+        <a href="${escapeHtml(adminUrl)}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;">
           Review in Admin Portal →
         </a>
       </div>
@@ -658,7 +658,7 @@ export function reviewRequestEmail({ name, projectTitle }: { name: string; proje
           <p style="color:#c87e4f;margin:4px 0 0;font-size:12px;">TORONTO HARDWOOD FLOORING</p>
         </div>
         <div style="padding:32px;">
-          <h2 style="color:#1a0f08;margin-top:0;">Thank you, ${firstName}.</h2>
+          <h2 style="color:#1a0f08;margin-top:0;">Thank you, ${escapeHtml(firstName)}.</h2>
           <p>Your project — <strong>${escapeHtml(projectTitle)}</strong> — is complete. If you have two minutes, a review
              on the platform you prefer helps the next homeowner choose with confidence.</p>
           ${destinations

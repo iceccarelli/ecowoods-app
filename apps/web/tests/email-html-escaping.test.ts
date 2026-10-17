@@ -10,7 +10,9 @@ function sources(dir: string): string[] {
   });
 }
 
-describe('email bodies never embed raw customer text', () => {
+/* Narrow tripwire for ONE hand-written pattern. It does not prove email safety;
+   lib/email/render-escaping.test.ts renders the real templates with hostile input. */
+describe('legacy raw key/value email row pattern stays gone', () => {
   it('has no hand-rolled key/value row with an unescaped value cell', () => {
     const offenders = [...sources('app'), ...sources('lib')].filter((f) => /<strong>\$\{v\}<\/strong>/.test(readFileSync(f, 'utf8')));
     expect(offenders).toEqual([]);
