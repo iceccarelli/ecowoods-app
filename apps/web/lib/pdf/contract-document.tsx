@@ -299,27 +299,22 @@ export function ContractDocument({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. TERMS &amp; CONDITIONS</Text>
 
-          <Text style={styles.clauseTitle}>4.1 Workmanship Warranty</Text>
-          <Text style={styles.bodyText}>
-            Ecowoods provides a lifetime workmanship warranty for all installation and finishing work performed under this agreement, valid for as long as the Client owns the property. Material warranties are provided by manufacturers and passed through to the Client. The warranty covers defects in workmanship only and does not cover damage from misuse, water flooding, pet damage, or failure to maintain appropriate humidity levels (35–55% RH).
-          </Text>
-
-          <Text style={styles.clauseTitle}>4.2 Scope Changes</Text>
+          <Text style={styles.clauseTitle}>4.1 Scope Changes</Text>
           <Text style={styles.bodyText}>
             Any changes to the scope of work must be agreed upon in writing by both parties and may result in price adjustments. Verbal change orders are not binding.
           </Text>
 
-          <Text style={styles.clauseTitle}>4.3 Site Conditions</Text>
+          <Text style={styles.clauseTitle}>4.2 Site Conditions</Text>
           <Text style={styles.bodyText}>
             Client must ensure the premises are accessible, heated to 60–80°F, and cleared of furniture as agreed. Ecowoods is not responsible for delays caused by site inaccessibility or subfloor conditions not disclosed prior to project commencement.
           </Text>
 
-          <Text style={styles.clauseTitle}>4.4 Payment Terms</Text>
+          <Text style={styles.clauseTitle}>4.3 Payment Terms</Text>
           <Text style={styles.bodyText}>
             Invoices are due within 7 days of issuance. A 1.5% monthly interest charge applies to balances outstanding beyond 30 days. Ecowoods reserves the right to suspend work on unpaid accounts.
           </Text>
 
-          <Text style={styles.clauseTitle}>4.5 Governing Law</Text>
+          <Text style={styles.clauseTitle}>4.4 Governing Law</Text>
           <Text style={styles.bodyText}>
             This agreement is governed by the laws of the Province of Ontario and the federal laws of Canada applicable therein. Any disputes shall be resolved through binding arbitration in Toronto, Ontario.
           </Text>

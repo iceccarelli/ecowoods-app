@@ -208,7 +208,7 @@ as in §2. "Guard" means a script under `scripts/`; "test" a vitest file under
 | `/ai.txt` | `app/ai.txt/route.ts` (67, 97–104) | C, F7 | F3, F7 | "Service area: Toronto & the GTA"; list of C | verify-aeo | — |
 | `/about` "Where does Ecowoods work?" | `lib/entity-answers.ts` (75–80) | C, F7 | F3, F7 | "89 areas across Toronto & the GTA: …" | verify-entity | — |
 | `/team`, `/press`, `/hardwood-*-toronto`, `/commercial`, `/realtors` | the page files (team 79, 143; press 160; hardwood-flooring-toronto 31, 100, 373) | C | F3 | `SERVICE_AREAS.length` + "Toronto and the GTA" | verify-geo-green §5 | — |
-| FAQ geography | `FAQ_ITEMS` (seo-data 223–249) | — | — | no geographic membership list; Toronto-titled questions only | verify-claims | — |
+| FAQ geography | `FAQ_ITEMS` (seo-data 223–249) | — | — | no geographic membership list; Toronto-titled questions only | — | — |
 | Organisation JSON-LD `areaServed` (every page) | `root-schema.ts` `ROOT_ORG_CONFIG` (247–312) → `builders.ts` `buildOrganization` (184–186) | D + shop locality, `SERVICE_REGION` | F3, F6, F7 | `[AdministrativeArea GTA ⊂ Ontario ⊂ Canada, City × 54]`; price-band offers carry the same 54 (228) | verify-schema, verify-schema-figures | schema.test |
 | `/services/{slug}` JSON-LD `areaServed` | `app/services/[slug]/page.tsx` (131) | D | F3 | `City` × 53 | verify-services | — |
 | `/commercial` JSON-LD | `lib/schema/commercial.ts` (65–84) | C via `placeForArea` | F3, F6 | Service areaServed per area | verify-schema | — |

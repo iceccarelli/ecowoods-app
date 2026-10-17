@@ -235,8 +235,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               business guarantees everywhere — but it is now the SECOND thing
               read, after the reason to believe we work here. */}
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
-            Dust-free sanding that keeps you living at home, fixed written estimates with no
-            &ldquo;unforeseen conditions,&rdquo; and manufacturer warranties passed through to you in writing.
+            Dust-free sanding that keeps you living at home, and fixed written estimates with no
+            &ldquo;unforeseen conditions.&rdquo;
           </p>
           <p style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center' }}>
             {/* SALE-03 — SAME PAGE. This was `/#quote`, a cross-page anchor:
@@ -354,7 +354,6 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           <ul style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
             <li><strong>Fixed written estimates.</strong> Moisture-tested and inspected up front — the number on paper is the number on your invoice.</li>
             <li><strong>Dust-free sanding.</strong> HEPA-sealed extraction at the machine and containment at the room, so most clients stay home during the work.</li>
-            <li><strong>Warranties in writing.</strong> Manufacturer finish and material warranties passed through, itemized in your contract.</li>
             <li><strong>Salaried craftsmen.</strong> No day-labour subcontractors — the same crew from first board to final coat.</li>
           </ul>
           <p style={{ marginTop: '1.25rem' }}>

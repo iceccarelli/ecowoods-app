@@ -48,8 +48,8 @@ const OUT = join(ROOT, 'audit/ai-prompts.json');
 const src = readFileSync(TOPIC_MAP, 'utf8');
 
 /* Parse each cluster block: id, intent, canonical, coverage, and the queries
-   array. Text parsing, like every other guard here — see verify-claims.mjs for
-   why, and note the same rule applies: zero clusters is a failure, not a pass. */
+   array. Text parsing, like every other guard here;
+   zero clusters is a failure, not a pass. */
 const blocks = [...src.matchAll(
   /\{\s*\n\s*id:\s*'([^']+)',\s*\n\s*intent:\s*'([^']+)',\s*\n\s*canonical:\s*'([^']+)',([\s\S]*?)\n  \},/g,
 )];

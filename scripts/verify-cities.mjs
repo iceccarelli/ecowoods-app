@@ -31,8 +31,7 @@
  * 2. Each entry has a non-empty intro, at least three neighbourhoods, and a
  *    housing note — the three fields that make the page specific to the place.
  * 3. No entry carries `signatureProject`. That is the one field that asserts a
- *    real job, and no job has been confirmed for publication. See
- *    docs/outreach/CLAIMS_REGISTER.md.
+ *    real job, and no job has been confirmed for publication..
  * 4. No two entries share an intro or a housing note. Duplicated copy across
  *    city pages is the failure this guard exists to prevent, and pasting one
  *    entry sixteen times would otherwise satisfy every check above.
@@ -196,7 +195,7 @@ for (const [slug, block] of entries) {
       where: slug,
       detail:
         'declares signatureProject, which asserts a specific real job. If it is confirmed for ' +
-        'publication, add the slug to SIGNATURE_BASELINE in this file. See docs/outreach/CLAIMS_REGISTER.md.',
+        'publication, add the slug to SIGNATURE_BASELINE in this file.',
     });
   }
 }

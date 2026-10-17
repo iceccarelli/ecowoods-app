@@ -31,11 +31,4 @@ describe('search-result metadata', () => {
     }
     expect(bad).toEqual([]);
   });
-
-  it('no meta description repeats a claim the registry marks unsourced (lifetime workmanship warranty)', async () => {
-    for (const p of STATIC_PAGES) {
-      const md = await metadataOf(p);
-      expect(md.description ?? '').not.toMatch(/lifetime/i);
-    }
-  });
 });

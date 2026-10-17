@@ -122,7 +122,7 @@ export const CATALOGUES: Catalogue[] = [
     kicker: 'Toronto · the house',
     series: 'house',
     purpose:
-      'One company, salaried craftsmen and no revolving subcontractors — the six services, the warranty structure that is passed through in writing, and how a fixed price is arrived at after a free in-home measure.',
+      'One company, salaried craftsmen and no revolving subcontractors — the six services, and how a fixed price is arrived at after a free in-home measure.',
     related: [{ href: '/about', label: 'About Ecowoods — legal identity, crew model, what we do not do' }],
     pages: 6,
     trim: '14 × 10 in',

@@ -292,9 +292,7 @@ const Icon = {
  *
  * "0 · Subcontractors" restates the claim the rest of the site already makes
  * ("Salaried master craftsmen. No subcontractors — ever.") — and a zero sitting
- * among big numbers is the most arresting figure on the row. The lifetime
- * warranty is not lost: it keeps its own pillar in #services, where there is
- * room to state it precisely rather than compress it into one word over a photo.
+ * among big numbers is the most arresting figure on the row.
  */
 /**
  * Only figures with a published source stand in front of a customer.
@@ -333,11 +331,6 @@ const featuredReviews: Review[] = [];
 const homestarsUrl = REVIEW_PROFILES.find((p) => p.label === 'HomeStars')?.href;
 
 const standardPillars: Pillar[] = [
-  {
-    icon: 'shield',
-    title: 'Manufacturer-Backed',
-    proof: 'Premium finishes carry 25–35 year manufacturer warranties, structural to 50 — passed straight through to you, in writing.',
-  },
   {
     icon: 'diamond',
     title: 'Master Craftsmen — Never Subcontractors',
@@ -401,12 +394,6 @@ const funnelSteps: FunnelStep[] = [
     title: 'Flawless Execution — Dust-Free',
     line: 'Salaried master craftsmen. No subcontractors — ever. HEPA-sealed containment at every machine.',
   },
-  {
-    num: '04',
-    icon: 'shield',
-    title: 'Warranties in Writing',
-    line: 'Manufacturer finish and structural warranties — 25 to 50 years — documented in your contract, not just promised.',
-  },
 ];
 
 
@@ -433,10 +420,6 @@ const faqItems: FaqItem[] = [
   {
     q: 'Can we stay in the house during the work?',
     a: 'Yes. Containment is HEPA-sealed Festool and Bona Atomic extraction at the machine plus containment at the room. We do not publish a room-capture percentage, because we have not measured one on a job. Most refinishing clients sleep at home every night of the job, and our water-based finishes are low-odour and walk-on ready in 2–4 hours.',
-  },
-  {
-    q: 'What warranty comes with the work?',
-    a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — and we pass every one through to you in writing, itemized in your contract. If anything in our workmanship isn\'t right, we come back and make it right. No runaround.',
   },
   {
     q: 'How long will my project take?',
@@ -933,7 +916,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
           <div className="section-head reveal">
             <span className="eyebrow">The Process</span>
             <h2>
-              Four steps to <span className="serif-italic">certainty.</span>
+              Three steps to <span className="serif-italic">certainty.</span>
             </h2>
             <p>
               Fixed price guarantee at every stage. No subcontractors — ever.

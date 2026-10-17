@@ -15,7 +15,7 @@
  * case study is the page nobody re-reads, so the WRONG figure is the one most
  * people see and the RIGHT one sits three clicks away contradicting it. The
  * repository already refuses this pattern for prices (verify-pricing-source)
- * and for NAP (verify-claims). Proof is not a lesser category.
+ * Proof is not a lesser category.
  *
  * So the rule is the same one: the card may restate the case study, and the
  * moment it stops agreeing with it, the build fails.

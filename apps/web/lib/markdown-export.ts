@@ -482,7 +482,7 @@ export const areaToMarkdown = (slug: string, name: string, cc: CityContent): str
  * Same rule as everything above: nothing here originates a fact. The NAP is
  * BUSINESS_NAP, the bands are the registry's projection of PRICE_BANDS, the
  * services are SERVICES, the review figures are REVIEW_EVIDENCE, the crew
- * model and the containment method are the claim registry's own statements.
+ * model and the containment method are the claims in content/claims.ts.
  * A twin cannot disagree with its page because both read the same constant.
  *
  * Nothing here is an instruction to the reader. These files describe a

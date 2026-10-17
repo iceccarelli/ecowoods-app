@@ -308,7 +308,7 @@ export default function ShopScreen() {
                 <View style={s.estimateBox}>
                   <Text style={s.estimateLabel}>ESTIMATED TOTAL</Text>
                   <Text style={s.estimate}>${estimate}</Text>
-                  <Text style={s.estimateNote}>7-day price hold • 5-year warranty included</Text>
+                  <Text style={s.estimateNote}>7-day price hold</Text>
                 </View>
 
                 <Pressable style={s.modalSubmit} onPress={submitQuote}>

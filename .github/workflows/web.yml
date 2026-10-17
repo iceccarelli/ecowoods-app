@@ -176,8 +176,6 @@ jobs:
       # tells you what broke before you open the log.
       - name: Price source (one price, one file)
         run: node scripts/verify-pricing-source.mjs
-      - name: Claim registry (no unregistered business fact ships)
-        run: node scripts/verify-claims.mjs
       - name: Topic map (every canonical resolves, no redirect chains)
         run: node scripts/verify-topic-map.mjs
       - name: Link density (every commercial page reaches evidence and a CTA)

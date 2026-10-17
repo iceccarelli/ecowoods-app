@@ -327,8 +327,7 @@ const advisory = [...needsDark]
 
 /* ── report ──────────────────────────────────────────────────────────────── */
 /**
- * The advisory list is printed and never failed, deliberately — the same shape
- * as the unsourced-claim queue in verify-claims.mjs. Most entries are correct:
+ * The advisory list is printed and never failed, deliberately. Most entries are correct:
  * light text sitting on a dark ground this parser cannot see. The ones that are
  * not correct are found by reading it, and each one that turns out to be real
  * becomes a line in CONTEXT_RULES above, where it becomes a hard failure forever.

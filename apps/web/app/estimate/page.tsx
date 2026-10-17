@@ -54,7 +54,7 @@ const STEPS = [
     id: 'step-price',
     title: 'The written price',
     body:
-      `${PRICE_PROMISE} The estimate names the service, the species and finish where they apply, the schedule the crew commits to, and the manufacturer warranties itemised in writing.`,
+      `${PRICE_PROMISE} The estimate names the service, the species and finish where they apply, and the schedule the crew commits to.`,
   },
   {
     id: 'step-work',

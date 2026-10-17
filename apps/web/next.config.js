@@ -2,7 +2,7 @@
  * The canonical origin, derived from the same environment variable every other
  * surface reads (lib/seo-data.ts, the schema graph, the machine editions). It
  * is used for the Access-Control-Allow-Origin override below; a second copy of
- * the site's own address is exactly the drift `pnpm seo:claims` exists to stop.
+ * the site's own address is exactly the drift to avoid.
  */
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 

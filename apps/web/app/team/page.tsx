@@ -18,8 +18,8 @@ import { TERRITORY } from '@/lib/geo/territory';
  * question in this trade and the site answered it in a single line inside
  * /about's entity answers. It deserves the page, because the answer is the
  * company's actual operating structure and everything else on this site
- * depends on it: a published warranty, an enforceable protocol and a
- * versioned standard all require that the same employer controls the crew.
+ * depends on it: an enforceable protocol and a
+ * versioned standard both require that the same employer controls the crew.
  *
  * ONE NAMED PERSON, AND ONLY WHAT IS SOURCED
  *
@@ -27,7 +27,7 @@ import { TERRITORY } from '@/lib/geo/territory';
  * name, a tenure figure or a photograph. Francisco Oller is named now because
  * the sourcing changed, not the standard: `content/claims.ts` records him as
  * the owner-confirmed source for this company's founding year — literally so,
- * since he owns it — and the same claim registry now records his ownership of
+ * since he owns it — and content/claims.ts now records his ownership of
  * Ecowoods Inc. and the ecowoods.ca domain, alongside his hands-on role as
  * professional contractor and lead craftsman, confirmed directly on
  * 2026-09-18. What is still not here is everything that is not sourced: no
@@ -39,7 +39,6 @@ import { TERRITORY } from '@/lib/geo/territory';
  *
  * EVERY CLAIM BELOW HAS A SOURCE IN THIS REPOSITORY:
  *   · salaried employees, never subcontractors → lib/entity-answers.ts
- *   · lifetime workmanship warranty + exclusions → lib/pdf/contract-document.tsx §4.1
  *   · founded year, years in business → shared/constants BUSINESS_NAP
  *   · Francisco Oller, ownership, role and scope → content/claims.ts workforce.francisco
  *   · the standard, its pillars and criteria → lib/framework.ts
@@ -65,18 +64,7 @@ const FAQS = [
     answer:
       `Because a protocol can only be enforced on people you employ. ${FRAMEWORK_NAME} ` +
       `v${FRAMEWORK_VERSION} sets ${criterionCount()} criteria across ${PILLARS.length} pillars; ` +
-      `a subcontracted crew can be asked to follow them and a salaried one can be required to. ` +
-      `The same is true of the warranty: a lifetime workmanship commitment is only meaningful ` +
-      `from a company that still controls the people whose workmanship it covers.`,
-  },
-  {
-    question: 'What does the workmanship warranty cover?',
-    answer:
-      `Defects in workmanship on installation and finishing work, for as long as you own the ` +
-      `property. Material warranties are the manufacturers' and are passed through to you in ` +
-      `writing. It does not cover misuse, flooding, pet damage, or a failure to keep indoor ` +
-      `relative humidity within 35–55%. The clause is in the contract you sign, not on a page ` +
-      `like this one.`,
+      `a subcontracted crew can be asked to follow them and a salaried one can be required to.`,
   },
   {
     question: `How long has ${BUSINESS_NAP.shortName} been working in Toronto?`,
@@ -165,9 +153,8 @@ export default function TeamPage() {
           <p className="tlx-lede">
             Every hour of installation, sanding and finishing on an {BUSINESS_NAP.shortName} project
             is worked by salaried employees of {BUSINESS_NAP.legalName}. That single structural fact
-            is what the rest of this site rests on — a published standard, a written protocol and a
-            lifetime workmanship warranty are all only enforceable against people the company
-            employs.
+            is what the rest of this site rests on — a published standard and a written protocol
+            are only enforceable against people the company employs.
           </p>
           <p className="fw-meta">
             <span>Established {BUSINESS_NAP.foundedYear}</span>
@@ -257,28 +244,6 @@ export default function TeamPage() {
         </div>
       </section>
 
-      <section className="tlx-section" aria-label="The warranty">
-        <div className="shell">
-          <p className="tlx-kicker">What the structure buys you</p>
-          <h2 className="tlx-h2">A lifetime workmanship warranty, in the contract</h2>
-          <p className="tlx-note">
-            {BUSINESS_NAP.shortName} warrants its workmanship on installation and finishing for as
-            long as you own the property. Manufacturer material warranties are passed through to you
-            in writing and itemised in the agreement. The warranty covers defects in workmanship
-            only — not misuse, flooding, pet damage, or a failure to keep indoor relative humidity
-            inside the 35–55% band in which hardwood is dimensionally stable.
-          </p>
-          <p className="tlx-note">
-            That clause is in the contract you sign, not a badge on a website. When you are
-            comparing companies, the question worth asking is not whether a lifetime warranty is
-            offered — it is who will still be employing the crew that did the work when you call.
-            The guide on{' '}
-            <Link href="/guides/how-to-evaluate-a-hardwood-quote">how to evaluate a quote</Link>{' '}
-            sets out the language to look for.
-          </p>
-        </div>
-      </section>
-
       <section className="tlx-section" aria-label="How this page is sourced">
         <div className="shell">
           <p className="tlx-kicker">Verifiable by design</p>
@@ -290,8 +255,7 @@ export default function TeamPage() {
           </p>
           <p className="tlx-note">
             What is stated above is: salaried employees rather than subcontractors, the same crew
-            start to finish, {yearsInBusiness()} years of it, and a warranty clause you can read in
-            the agreement before you sign. The rest is on{' '}
+            start to finish, and {yearsInBusiness()} years of it. The rest is on{' '}
             <Link href="/reviews">the review evidence page</Link>, written by clients on a platform
             we cannot edit.
           </p>

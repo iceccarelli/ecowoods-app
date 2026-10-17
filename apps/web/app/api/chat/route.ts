@@ -190,7 +190,7 @@ export async function POST(req: Request) {
             owner: 'Francisco Oller — owns the company and the domain, and leads the crew as professional contractor and lead craftsman',
             phone: BUSINESS_NAP.phoneDisplay,
             email: s?.companyEmail ?? BUSINESS_NAP.email,
-            note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}. Manufacturer finish and material warranties passed through in writing.`,
+            note: `Toronto / GTA hardwood flooring. Est. ${BUSINESS_NAP.foundedYear}.`,
           };
         },
       }),

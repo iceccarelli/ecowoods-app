@@ -64,8 +64,8 @@ read. Two rules:
   the number is deliberately not ours to state, so an image showing 8.2% and
   7.4% carries a caption saying those are illustrative.
 
-Never label a certification, a warranty term, a price, or a company statistic
-inside an image. Those live in `docs/outreach/CLAIMS_REGISTER.md` and change.
+Never label a certification, a price, or a company statistic inside an image.
+Those change.
 
 ## The six pillars, spelled exactly
 

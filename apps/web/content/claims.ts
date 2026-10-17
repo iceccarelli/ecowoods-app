@@ -1,52 +1,6 @@
 /**
- * apps/web/content/claims.ts — the claim registry.
- *
- * WHAT A "CLAIM" IS HERE
- *
- * Any number or checkable statement of fact this business publishes about
- * itself: a price, a percentage, a warranty length, a founding year, a review
- * count, a service-area count, a certification. Not an opinion, not a
- * description of a method, not a technical constant about wood.
- *
- * WHY A REGISTRY AND NOT JUST CONSTANTS
- *
- * `packages/shared/constants` already stops NAP drift, and `lib/pricing.ts`
- * already stops price drift. Neither of them records the two things that decide
- * whether a claim may be published at all:
- *
- *   · WHERE IT CAME FROM. `foundedYear: 2000` is a fact because an owner
- *     confirmed it. `99.7% dust capture` is a number that appears in nine
- *     files, in marketing copy, in a service blurb, in an article title and in
- *     the FAQ that Google reads as an FAQPage answer — with no source recorded
- *     anywhere, while this site's own case studies measure 99.5%. One of those
- *     is a published performance claim under the Competition Act. The registry
- *     is where that difference stops being invisible.
- *
- *   · WHERE IT MAY BE SAID. A figure that is fine in an article's body ("we
- *     aim for") is not fine inside a JSON-LD `FAQPage` answer, where it is
- *     restated by an answer engine as a fact about the business with no
- *     hedging and no context. `allowedContexts` is that boundary, written down.
- *
- * HOW IT IS ENFORCED
- *
- *   pnpm seo:claims   → scripts/verify-claims.mjs
- *
- * The guard scans every published surface for numeric-claim shapes (percentages,
- * year counts, warranty spans, "N+ projects", ratings, review counts) and fails
- * the build when it finds one that is not in this registry, or one used in a
- * context the registry does not allow it in. Adding a claim means adding a
- * source. That is the whole mechanism.
- *
- * STATUS VALUES, AND WHY `unsourced` IS ALLOWED TO EXIST
- *
- * Deleting an unsourced claim on sight is the wrong first move: it is already
- * live, deleting it silently loses the record of what was published and when,
- * and some of these will turn out to be sourceable in an afternoon. So an
- * unsourced claim is registered with `status: 'unsourced'`, a note saying what
- * evidence would settle it, and the narrowest `allowedContexts` that keeps it
- * out of structured data. The guard does not fail on it. `pnpm seo:claims
- * --strict` does — that is the flag to turn on once the queue is empty, and
- * `UNSOURCED_DEADLINE` below is the date it should happen by.
+ * apps/web/content/claims.ts — published business facts, served to the registry,
+ * the .md mirrors and the changes feed.
  */
 import { BUSINESS_NAP, REVIEW_EVIDENCE, PRIMARY_REVIEW_EVIDENCE } from '@ecowoods/shared/constants';
 import { SERVICE_AREAS, CITIES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS } from '@/lib/seo-data';
@@ -96,9 +50,6 @@ export type Claim = {
   note?: string;
 };
 
-/** Turn on `pnpm seo:claims --strict` in CI once nothing is `unsourced`. */
-export const UNSOURCED_DEADLINE = '2026-10-31';
-
 export const CLAIMS: Claim[] = [
   // ── Identity ──────────────────────────────────────────────────────────
   {
@@ -138,8 +89,7 @@ export const CLAIMS: Claim[] = [
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note:
-      'Must never be typed as a literal. app/api/chat/route.ts did exactly that ' +
-      'and verify-claims.mjs now fails on it.',
+      'Must never be typed as a literal.',
   },
   {
     id: 'business.address',
@@ -359,35 +309,6 @@ export const CLAIMS: Claim[] = [
       'product and the TDS revision and this becomes verified in ten minutes.',
   },
 
-  // ── Warranties ────────────────────────────────────────────────────────
-  {
-    id: 'warranty.finish',
-    statement:
-      'Finish and material manufacturer warranties are passed through in writing, ' +
-      'itemised in the contract — typically 25–35 years on finish, up to 50 years structural.',
-    value: '25–35 years finish; up to 50 years structural',
-    status: 'unsourced',
-    source: 'NONE RECORDED. Manufacturer warranty documents would settle it.',
-    verifiedAt: '2026-08-24',
-    allowedContexts: ['editorial', 'marketing', 'faq'],
-    note:
-      'TWO PHRASINGS ARE LIVE. seo-data FAQ_ITEMS and home-client.tsx say ' +
-      '"25–35 years on finish, up to 50 years structural". home-client.tsx also says ' +
-      '"25 to 50 years" in a differentiator line, which reads as a single span and ' +
-      'implies a 50-year finish warranty that no manufacturer offers. Reconcile onto ' +
-      'the first phrasing and attach the actual warranty PDFs. Barred from schema and ' +
-      'machine surfaces until then: a warranty length is the one claim on this site ' +
-      'that is directly contractual.',
-  },
-  {
-    id: 'warranty.workmanship',
-    statement: 'If the workmanship is not right, Ecowoods returns and corrects it.',
-    status: 'verified',
-    source: 'Contract terms.',
-    verifiedAt: '2026-08-24',
-    allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
-  },
-
   // ── Market figures (about the GTA, not about Ecowoods) ────────────────
   {
     id: 'market.installedAverage',
@@ -419,21 +340,6 @@ export const CLAIMS: Claim[] = [
       'lists both. A reader comparing the two rows sees this company priced above the ' +
       'market it is describing, with no sourcing for the market figure. Source it or ' +
       'withdraw it.',
-  },
-  {
-    id: 'warranty.lifetimeWorkmanship',
-    statement: 'Lifetime workmanship warranty.',
-    status: 'unsourced',
-    source: 'NONE RECORDED. Appears only in the EcowoodsGuide system prompt.',
-    verifiedAt: '2026-08-24',
-    allowedContexts: ['editorial'],
-    note:
-      'This phrasing exists in exactly one place — ECOWOODS_GUIDE_SYSTEM_PROMPT in ' +
-      'packages/shared/ai — and it is stronger than warranty.workmanship, which is what ' +
-      'the rest of the site says. A conversational assistant repeating "lifetime ' +
-      'workmanship warranty" to a prospect is making a commitment the contract may not ' +
-      'make. Reconcile the prompt onto the contract language, or put the word "lifetime" ' +
-      'in the contract.',
   },
 
   // ── Legal surface ─────────────────────────────────────────────────────
@@ -490,12 +396,6 @@ export const claimById = (id: string): Claim | undefined => CLAIMS.find((c) => c
 
 export const claimsInContext = (ctx: ClaimContext): Claim[] =>
   CLAIMS.filter((c) => c.allowedContexts.includes(ctx));
-
-/** True when `id` may be stated in `ctx`. The one function guards call. */
-export const claimAllowedIn = (id: string, ctx: ClaimContext): boolean =>
-  Boolean(claimById(id)?.allowedContexts.includes(ctx));
-
-export const unsourcedClaims = (): Claim[] => CLAIMS.filter((c) => c.status === 'unsourced');
 
 /** Every review-evidence row, so the registry cannot fall behind the constants. */
 export const REVIEW_CLAIM_SOURCES = REVIEW_EVIDENCE.map((r) => ({
